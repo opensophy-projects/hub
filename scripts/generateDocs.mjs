@@ -32,7 +32,6 @@ function extractFrontMatter(content) {
 }
 
 function processImageSyntax(content) {
-  // Заменяем [filename.png] на ![](/assets/filename.png) с АБСОЛЮТНЫМ путём
   return content.replace(/\[([^\]]+\.(png|jpg|jpeg|gif|webp|svg))\]/gi, '![](/assets/$1)');
 }
 
@@ -48,7 +47,12 @@ function getFirstParagraph(content) {
 }
 
 function generateSlug(fileName) {
-  return fileName.replace('.md', '').toLowerCase().replace(/\s+/g, '-');
+  return fileName
+    .replace('.md', '')
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
 }
 
 function scanDocs(dir) {
@@ -72,7 +76,6 @@ function scanDocs(dir) {
         const content = fs.readFileSync(fullPath, 'utf-8');
         const { metadata, content: cleanContent } = extractFrontMatter(content);
 
-        // Обрабатываем синтаксис изображений [filename.png]
         const processedContent = processImageSyntax(cleanContent);
 
         const fileName = path.basename(fullPath, '.md');
