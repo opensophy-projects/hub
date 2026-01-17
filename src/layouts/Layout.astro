@@ -145,12 +145,6 @@ const jsonLd =
       <slot />
     </div>
     <script>
-      import { inject } from '@vercel/analytics';
-      import { injectSpeedInsights } from '@vercel/speed-insights';
-
-      inject();
-      injectSpeedInsights();
-
       function applyTheme(isDark: boolean) {
         const html = document.documentElement;
         
