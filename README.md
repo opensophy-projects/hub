@@ -6,7 +6,6 @@
 
 [![License: Apache 2.0](https://img.shields.io/badge/Code-Apache%202.0-blue.svg)](LICENSE)
 [![License: CC BY-ND 4.0](https://img.shields.io/badge/Docs-CC%20BY--ND%204.0-lightgrey.svg)](LICENSE-DOCS)
-[![GitHub Stars](https://img.shields.io/github/stars/opensophy/hub?style=social)](https://github.com/opensophy/hub)
 
 [🚀 Открыть Hub](https://hub.opensophy.com) • [📧 Контакты](mailto:opensophy@gmail.com) • [🔒 Security Policy](SECURITY.md)
 
@@ -221,7 +220,7 @@ lang: ru
 
 <div align="center">
 
-**Сделано с ❤️ командой Opensophy**
+**Сделано с ❤️ Opensophy**
 
 [hub.opensophy.com](https://hub.opensophy.com)
 
