@@ -20,6 +20,10 @@ async function generateDocs() {
 export default defineConfig({
   integrations: [react(), tailwind()],
   site: 'https://hub.opensophy.com',
+  output: 'static',
+  build: {
+    assets: 'assets',
+  },
   vite: {
     ssr: {
       external: ['isomorphic-dompurify'],
