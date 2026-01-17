@@ -10,6 +10,7 @@
 [🚀 Открыть Hub](https://hub.opensophy.com) • [📧 Контакты](mailto:opensophy@gmail.com) • [🔒 Security Policy](SECURITY.md)
 
 </div>
+<img width="2560" height="1440" alt="image" src="https://github.com/user-attachments/assets/99ca55f2-559e-49e4-8502-c559d7328897" />
 
 ---
 
