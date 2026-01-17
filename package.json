@@ -13,8 +13,6 @@
     "generate": "npm run generate:docs && npm run generate:sitemap"
   },
   "dependencies": {
-    "@vercel/analytics": "^1.5.0",
-    "@vercel/speed-insights": "^1.2.0",
     "astro": "^5.16.11",
     "clsx": "^2.1.1",
     "dompurify": "^3.3.0",
