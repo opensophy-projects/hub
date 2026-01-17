@@ -1,0 +1,34 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import DocContent from '@/components/DocContent';
+import docs from '@/data/docs.json';
+
+export async function getStaticPaths() {
+  const docsByType = docs.filter(d => d.type === 'news');
+  return docsByType.map(doc => ({
+    params: { slug: doc.slug },
+    props: { doc },
+  }));
+}
+
+const { slug } = Astro.params;
+const { doc } = Astro.props as { doc: any };
+
+if (!doc) {
+  return Astro.redirect('/404');
+}
+---
+
+<Layout
+  title={doc.title}
+  description={doc.description}
+  image={doc.image}
+  url={`/news/${doc.slug}`}
+  type="article"
+  author={doc.author}
+  date={doc.date}
+  keywords={doc.keywords}
+  robots={doc.robots}
+>
+  <DocContent client:only="react" doc={doc} />
+</Layout>

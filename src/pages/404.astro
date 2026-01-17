@@ -1,0 +1,13 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import NotFound from '@/components/NotFound';
+---
+
+<Layout
+  title="404 - Страница не найдена"
+  description="Запрашиваемая страница не найдена"
+  url="/404"
+  robots="noindex, nofollow"
+>
+  <NotFound client:only="react" />
+</Layout>
