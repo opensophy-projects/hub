@@ -15,11 +15,11 @@
   "dependencies": {
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
-    "astro": "^5.1.7",
+    "astro": "^5.16.11",
     "clsx": "^2.1.1",
     "dompurify": "^3.3.0",
     "framer-motion": "^12.23.12",
-    "isomorphic-dompurify": "^2.31.0",
+    "isomorphic-dompurify": "^2.34.0",
     "lucide-react": "^0.344.0",
     "marked": "^16.4.1",
     "react": "^18.3.1",
