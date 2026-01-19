@@ -20,8 +20,10 @@ function getTypePrefix(type) {
 }
 
 function generateSitemap() {
+  console.log('🔄 Generating sitemap...');
+
   if (!fs.existsSync(docsJsonPath)) {
-    console.error('docs.json not found');
+    console.error('❌ docs.json not found. Run generate:docs first.');
     return;
   }
 
@@ -49,8 +51,10 @@ function generateSitemap() {
 
   docs.forEach(doc => {
     const typePrefix = getTypePrefix(doc.type);
+    const cleanSlug = doc.slug.replace(/^-+/, '').replace(/-+$/, '');
+    
     sitemap += `  <url>
-    <loc>${baseUrl}/${typePrefix}/${doc.slug}</loc>
+    <loc>${baseUrl}/${typePrefix}/${cleanSlug}</loc>
     <lastmod>${doc.date}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
