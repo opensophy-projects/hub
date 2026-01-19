@@ -544,7 +544,7 @@ const MobileNavbar: React.FC = () => {
                     </div>
                   </a>
                   <a
-                    href="https://github.com/opensophy"
+                    href="https://github.com/opensophy-projects"
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`flex items-center gap-4 px-4 py-4 rounded-lg transition-colors ${
