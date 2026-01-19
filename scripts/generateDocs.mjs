@@ -50,9 +50,11 @@ function generateSlug(fileName) {
   return fileName
     .replace('.md', '')
     .toLowerCase()
+    .replace(/[^\w\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/^-+/, '')
-    .replace(/-+$/, '');
+    .replace(/-+$/, '')
+    .replace(/--+/g, '-');
 }
 
 function scanDocs(dir) {
@@ -122,10 +124,10 @@ function scanDocs(dir) {
 }
 
 function generateDocs() {
-  console.log('Generating docs...');
+  console.log('🔄 Generating docs...');
 
   if (!fs.existsSync(docsDir)) {
-    console.error(`Docs directory not found: ${docsDir}`);
+    console.error(`❌ Docs directory not found: ${docsDir}`);
     return;
   }
 
@@ -133,11 +135,16 @@ function generateDocs() {
 
   docs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+  const outputDir = path.dirname(outputFile);
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+
   fs.writeFileSync(outputFile, JSON.stringify(docs, null, 2));
   console.log(`✅ Generated docs.json with ${docs.length} documents`);
   
   docs.forEach(doc => {
-    console.log(`  - ${doc.title} (${doc.type}) - Banner: ${doc.bannercolor}`);
+    console.log(`  - ${doc.title} (${doc.type}) - slug: ${doc.slug}`);
   });
 }
 
