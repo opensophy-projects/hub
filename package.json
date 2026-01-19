@@ -4,7 +4,7 @@
   "version": "1.0.2",
   "type": "module",
   "scripts": {
-    "dev": "astro dev",
+    "dev": "npm run generate:docs && npm run generate:sitemap && astro dev",
     "build": "npm run generate:docs && npm run generate:sitemap && astro build",
     "preview": "astro preview",
     "lint": "eslint .",
