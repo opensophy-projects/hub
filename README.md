@@ -65,7 +65,7 @@
 Если хотите запустить проект локально или использовать код для своего хаба:
 ```bash
 # Клонирование репозитория
-git clone https://github.com/opensophy/hub.git
+git clone https://github.com/opensophy-projects/hub.git
 cd hub
 
 # Установка зависимостей
