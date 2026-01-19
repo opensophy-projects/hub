@@ -204,7 +204,7 @@ lang: ru
 
 - **Email:** opensophy@gmail.com
 - **Telegram:** [@veilosophy](https://t.me/veilosophy)
-- **GitHub:** [github.com/opensophy](https://github.com/opensophy)
+- **GitHub:** [github.com/opensophy](https://github.com/opensophy-projects)
 - **Habr:** [habr.com/ru/users/opensophy](https://habr.com/ru/users/opensophy)
 
 ---
