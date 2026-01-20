@@ -63,17 +63,17 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
 
   const codeContent = (
     <div className={`rounded-lg overflow-hidden border ${
-      isDark ? 'border-white/10 bg-transparent' : 'border-black/10 bg-white'
+      isDark ? 'border-white/10' : 'border-gray-300'
     }`}>
       {/* Toolbar */}
       <div className={`border-b px-4 py-3 flex items-center justify-between ${
-        isDark ? 'border-white/10' : 'border-black/10'
+        isDark ? 'border-white/10 bg-gray-950' : 'border-gray-300 bg-gray-50'
       }`}>
         {/* Search Input */}
         <div className={`flex-1 flex items-center gap-2 px-3 py-2 rounded border mr-3 ${
           isDark 
-            ? 'border-white/10 bg-white/5' 
-            : 'border-black/10 bg-black/5'
+            ? 'border-white/10 bg-gray-900' 
+            : 'border-gray-300 bg-white'
         }`}>
           <Search size={16} className={isDark ? 'text-white/50' : 'text-black/50'} />
           <input
@@ -144,10 +144,12 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
       {/* Code */}
       <div
         ref={codeRef}
-        className="overflow-x-auto overflow-y-auto max-h-96"
+        className={`overflow-x-auto overflow-y-auto max-h-96 ${
+          isDark ? 'bg-gray-950' : 'bg-gray-50'
+        }`}
       >
         <pre className={`p-4 text-sm font-mono leading-relaxed ${
-          isDark ? 'text-white bg-transparent' : 'text-black bg-white'
+          isDark ? 'text-white' : 'text-black'
         }`}>
           <code>
             {displayedLines.map((line, index) => {
@@ -192,8 +194,8 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
           onClick={() => setIsExpanded(true)}
           className={`w-full border-t px-4 py-3 flex items-center justify-center gap-2 transition-colors text-sm font-medium ${
             isDark 
-              ? 'border-white/10 text-white/70 hover:text-white hover:bg-white/5' 
-              : 'border-black/10 text-black/70 hover:text-black hover:bg-black/5'
+              ? 'border-white/10 bg-gray-950 text-white/70 hover:text-white hover:bg-gray-900' 
+              : 'border-gray-300 bg-gray-50 text-black/70 hover:text-black hover:bg-gray-100'
           }`}
         >
           <ChevronDown size={16} />
@@ -210,17 +212,17 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div className={`rounded-lg w-full max-w-4xl max-h-screen flex flex-col border ${
           isDark 
-            ? 'bg-transparent border-white/10' 
-            : 'bg-white border-black/10'
+            ? 'bg-gray-950 border-white/10' 
+            : 'bg-gray-50 border-gray-300'
         }`}>
           {/* Fullscreen Header */}
           <div className={`border-b px-6 py-4 flex items-center justify-between ${
-            isDark ? 'border-white/10' : 'border-black/10'
+            isDark ? 'border-white/10 bg-gray-950' : 'border-gray-300 bg-gray-50'
           }`}>
             <div className={`flex-1 flex items-center gap-2 px-3 py-2 rounded border mr-4 ${
               isDark 
-                ? 'border-white/10 bg-white/5' 
-                : 'border-black/10 bg-black/5'
+                ? 'border-white/10 bg-gray-900' 
+                : 'border-gray-300 bg-white'
             }`}>
               <Search size={16} className={isDark ? 'text-white/50' : 'text-black/50'} />
               <input
@@ -267,9 +269,9 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
           </div>
 
           {/* Fullscreen Code */}
-          <div className="overflow-auto flex-1">
+          <div className={`overflow-auto flex-1 ${isDark ? 'bg-gray-950' : 'bg-gray-50'}`}>
             <pre className={`p-6 text-sm font-mono leading-relaxed ${
-              isDark ? 'text-white bg-transparent' : 'text-black bg-white'
+              isDark ? 'text-white' : 'text-black'
             }`}>
               <code>
                 {lines.map((line, index) => {
@@ -301,7 +303,7 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
 
           {/* Fullscreen Footer */}
           <div className={`border-t px-6 py-3 flex items-center justify-between ${
-            isDark ? 'border-white/10' : 'border-black/10'
+            isDark ? 'border-white/10 bg-gray-950' : 'border-gray-300 bg-gray-50'
           }`}>
             <span className={`text-xs ${
               isDark ? 'text-white/50' : 'text-black/50'
