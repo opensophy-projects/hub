@@ -25,7 +25,6 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ code, language = 'plaintext', isD
     <div className={`relative rounded-lg border overflow-hidden my-4 ${
       isDark ? 'border-white/10 bg-[#1a1a1a]' : 'border-black/10 bg-gray-50'
     }`}>
-      {/* Панель с кнопками */}
       <div className={`flex items-center justify-between px-4 py-2 border-b ${
         isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-gray-100'
       }`}>
@@ -70,7 +69,6 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ code, language = 'plaintext', isD
         </div>
       </div>
 
-      {/* Код */}
       <pre className={`p-4 overflow-x-auto text-sm ${
         isDark ? 'text-white/90' : 'text-black/90'
       }`}>
