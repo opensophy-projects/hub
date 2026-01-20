@@ -112,9 +112,8 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   });
 
   const renderer = new marked.Renderer();
-  const originalCodeRenderer = renderer.code.bind(renderer);
   
-  renderer.code = function(code, language, isEscaped) {
+  renderer.code = function(code, language) {
     const lang = language || 'bash';
     return `<pre data-language="${lang}"><code>${code}</code></pre>`;
   };
@@ -179,9 +178,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
         style={{ width: `${scrollProgress}%` }}
       />
 
-      <main
-        className={`min-h-screen ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}
-      >
+      <main className={`min-h-screen ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}>
         <header
           className={`hidden md:flex fixed top-0 left-0 right-0 z-40 border-b ${
             isDark
@@ -203,7 +200,9 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
               <span>Назад</span>
             </a>
 
-            <h1 className={`text-xl font-bold max-w-2xl text-center ${isDark ? 'text-white' : 'text-black'}`}>{doc.title}</h1>
+            <h1 className={`text-xl font-bold max-w-2xl text-center ${isDark ? 'text-white' : 'text-black'}`}>
+              {doc.title}
+            </h1>
 
             <button
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -242,7 +241,11 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
                 <div
                   className={`flex items-center gap-4 mt-6 pt-4 border-t flex-wrap ${isDark ? 'border-white/10' : 'border-black/10'}`}
                 >
-                  {doc.author && <span className={`text-sm ${isDark ? 'text-white/60' : 'text-black/60'}`}>Автор: <strong className={isDark ? 'text-white' : 'text-black'}>{doc.author}</strong></span>}
+                  {doc.author && (
+                    <span className={`text-sm ${isDark ? 'text-white/60' : 'text-black/60'}`}>
+                      Автор: <strong className={isDark ? 'text-white' : 'text-black'}>{doc.author}</strong>
+                    </span>
+                  )}
                   {doc.date && (
                     <span className={`text-sm ${isDark ? 'text-white/60' : 'text-black/60'}`}>
                       {new Date(doc.date).toLocaleDateString('ru-RU', {
@@ -252,7 +255,11 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
                       })}
                     </span>
                   )}
-                  {doc.category && <span className={`text-sm ${isDark ? 'text-white/60' : 'text-black/60'}`}>Категория: <strong className={isDark ? 'text-white' : 'text-black'}>{doc.category}</strong></span>}
+                  {doc.category && (
+                    <span className={`text-sm ${isDark ? 'text-white/60' : 'text-black/60'}`}>
+                      Категория: <strong className={isDark ? 'text-white' : 'text-black'}>{doc.category}</strong>
+                    </span>
+                  )}
                 </div>
               </div>
 
