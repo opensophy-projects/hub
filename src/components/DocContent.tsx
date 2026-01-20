@@ -104,7 +104,9 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
     setFullscreenTableHtml(tableHtml);
   };
 
-  const htmlContent = DOMPurify.sanitize(marked(doc.content || ''));
+  const htmlContent = DOMPurify.sanitize(marked(doc.content || ''), {
+    ADD_ATTR: ['data-caption', 'data-lang', 'data-table-index', 'data-line'],
+  });
   const contentNodes = parseHtmlToReact(htmlContent);
 
   const DocIcon = ({ type, className = 'w-10 h-10' }: { type: string; className?: string }) => {
@@ -235,7 +237,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
                 isCard={false}
               />
 
-              <TableContext.Provider value={{ onTableClick: handleTableClick, isDark }}>
+              <TableContext.Provider value={{ onTableClick: handleTableClick, isNegative: isDark }}>
                 <div
                   ref={contentRef}
                   className="prose max-w-none prose-invert w-full overflow-x-auto"
