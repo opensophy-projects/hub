@@ -14,7 +14,7 @@ robots: index, follow
 lang: ru
 ---
 
-**Обновлено 19.01.2026**
+**Обновлено 20.01.2026**
 
 ## 1. Сравнительная Таблица Сетевых Моделей (OSI и TCP/IP)
 
@@ -37,12 +37,16 @@ lang: ru
 | **Ethernet** (IEEE 802.3) | L1 (Физ.) / L2 (Кан.) | Проводная передача данных в локальной сети (LAN). | Определяет формат кадров (Frames) и MAC-адресацию. **Примечание:** Наиболее распространенный формат кадра — **Ethernet II (DIX)**. | VLAN Hopping, ARP Spoofing, MAC Flooding. | `ip link`, `ethtool`, `wireshark` |
 | **Wi-Fi** (IEEE 802.11) | L1 (Физ.) / L2 (Кан.) | Беспроводная передача данных в локальной сети. | Использует радиоволны (2.4/5/6 ГГц) для передачи данных. | WPA2/WPA3 Cracking, Evil Twin, Deauthentication Attacks. | `aircrack-ng`, `iw`, `iwconfig` |
 | **WPA2/WPA3** | L2 (Канальный) | Протоколы безопасности для защиты Wi-Fi сетей. | WPA2: шифрование AES (CCMP). WPA3: улучшенная защита (SAE), защита от брутфорса. | WPA2: KRACK Attack, PMF Bypass. WPA3: Dragonblood, Downgrade Attacks. | `aircrack-ng`, `wpa_supplicant` |
+| **VLAN** (IEEE 802.1Q) | L2 (Канальный) | Логическое разделение одной физической сети на несколько изолированных сегментов. | Добавляет 4-байтовый тег (Tag) в заголовок Ethernet-кадра для идентификации сети. | VLAN Hopping, Double Tagging. | `ip link add link ... type vlan`, Switch CLI |
 | **ARP** (Address Resolution Protocol) | L2 (Канальный) | Находит физический адрес (MAC) устройства по его логическому адресу (IP) в локальной сети. | Broadcast-запрос (кто имеет IP X, скажи свой MAC) и Unicast-ответ. | ARP Spoofing (MITM), ARP Cache Poisoning. | `arp -a`, `arping`, `wireshark` |
+| **PPP** (Point-to-Point Protocol) | L2 (Канальный) | Прямая связь между двумя узлами с поддержкой авторизации и сжатия. | Использует LCP для настройки канала и NCP для выбора сетевых протоколов. Поддерживает PAP/CHAP. | Credential Theft (PAP), Weak Authentication. | `pppd`, `pon/poff` |
 | **STP/RSTP/MSTP** (Spanning Tree Protocol) | L2 (Канальный) | Предотвращает петли в сетях с избыточными путями (коммутаторы). | Строит древовидную топологию, блокируя избыточные порты. RSTP — быстрая конвергенция. | Root Bridge Hijacking, BPDU Flooding, DoS. | Switch CLI, `tcpdump` |
 | **LACP** (Link Aggregation Control Protocol) | L2 (Канальный) | Объединяет несколько физических каналов в один логический для увеличения пропускной способности. | Динамическое управление агрегацией каналов (802.3ad). | Misconfiguration, Hash Collision. | `ip link`, Switch CLI |
+| **LLDP / CDP** | L2 (Канальный) | Протоколы обнаружения соседних сетевых устройств. | Рассылают информацию о себе (имя, порт, возможности) соседям. CDP — проприетарный (Cisco), LLDP — стандарт. | Information Disclosure (разведка сети). | `lldpctl`, `show cdp neighbors` |
 | **PPPoE** (PPP over Ethernet) | L2 (Канальный) | Инкапсуляция PPP-кадров в Ethernet для подключения к провайдеру (WAN). | Добавляет аутентификацию и управление сессией поверх Ethernet. Используется в **DSL, FTTx** и других широкополосных подключениях. | Session Hijacking, Credential Theft. | `pppoeconf`, `pppd` |
 | **IPv4 / IPv6** | L3 (Сетевой) | Доставка данных между разными сетями (маршрутизация). | IPv4: 32-битные адреса. IPv6: 128-битные адреса, автоконфигурация (SLAAC). | IP Spoofing, Fragmentation Attacks, NDP Spoofing (IPv6). | `ping`, `traceroute`, `ip route`, `ndp` (для IPv6) |
-| **ICMP** (Internet Control Message Protocol) | L3 (Сетевой) | Диагностика и передача служебных сообщений об ошибках. | Используется командами `ping` и `traceroute`. Не имеет портов. | ICMP Flood (DoS), ICMP Tunneling (передача данных через ICMP). | `ping`, `traceroute`, `hping3` |
+| **NAT / PAT** | L3 / L4 | Трансляция сетевых адресов и портов. | Позволяет множеству устройств в локальной сети выходить в интернет через один публичный IP. | End-to-end connectivity break, NAT Traversal issues. | `iptables -t nat`, `ip nat` (Cisco) |
+| **ICMP** (Internet Control Message Protocol) | L3 (Сетевой) | Диагностика и передача служебных сообщений об ошибках. | Использует команды `ping` и `traceroute`. Не имеет портов. | ICMP Flood (DoS), ICMP Tunneling (передача данных через ICMP). | `ping`, `traceroute`, `hping3` |
 | **BGP** (Border Gateway Protocol) | **L7 (Прикладной)** | Протокол динамической маршрутизации между автономными системами (Интернетом). | Использует **TCP (порт 179)**. **Анонсирует** пути к сетям и **выбирает** лучший путь на основе политик и атрибутов. | BGP Hijacking, Route Leaks. | `show ip bgp`, `bird`, `quagga` |
 | **RIP** (Routing Information Protocol) | **L7 (Прикладной)** | Протокол динамической маршрутизации внутри автономной системы (IGP). | Использует **UDP (порт 520)**. Простой алгоритм на основе счетчика переходов. | Route Poisoning, Authentication Bypass. | `show ip rip`, `frr` |
 | **OSPF** (Open Shortest Path First) | L3 (Сетевой) | Протокол динамической маршрутизации внутри автономной системы (IGP). | Использует алгоритм Дейкстры (SPF). Работает поверх IP (протокол 89). | LSA Spoofing, Authentication Bypass. | `show ip ospf`, `frr` |
