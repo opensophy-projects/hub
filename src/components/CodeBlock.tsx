@@ -5,10 +5,17 @@ interface CodeBlockProps {
   code: string;
   language?: string;
   isDark: boolean;
-  onFullscreen?: (code: string) => void;
+  maxLines?: number;
+  onFullscreen?: (code: string, language: string) => void;
 }
 
-const CodeBlock: React.FC<CodeBlockProps> = ({ code, language = 'plaintext', isDark, onFullscreen }) => {
+const CodeBlock: React.FC<CodeBlockProps> = ({ 
+  code, 
+  language = 'plaintext', 
+  isDark, 
+  maxLines,
+  onFullscreen 
+}) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -20,6 +27,15 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ code, language = 'plaintext', isD
       console.error('Failed to copy:', err);
     }
   };
+
+  const handleFullscreen = () => {
+    if (onFullscreen) {
+      onFullscreen(code, language);
+    }
+  };
+
+  const lines = code.split('\n');
+  const totalLines = lines.length;
 
   return (
     <div className={`relative rounded-lg border overflow-hidden my-4 ${
@@ -55,25 +71,47 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ code, language = 'plaintext', isD
             )}
           </button>
           
-          {onFullscreen && (
-            <button
-              onClick={() => onFullscreen(code)}
-              className={`p-1 rounded transition-colors ${
-                isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-black/10 text-black'
-              }`}
-              title="Открыть на весь экран"
-            >
-              <Maximize2 className="w-3 h-3" />
-            </button>
-          )}
+          <button
+            onClick={handleFullscreen}
+            className={`p-1 rounded transition-colors ${
+              isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-black/10 text-black'
+            }`}
+            title="Открыть на весь экран"
+          >
+            <Maximize2 className="w-3 h-3" />
+          </button>
         </div>
       </div>
 
-      <pre className={`p-4 overflow-x-auto text-sm ${
-        isDark ? 'text-white/90' : 'text-black/90'
-      }`}>
-        <code className={`language-${language}`}>{code}</code>
-      </pre>
+      <div className="flex overflow-x-auto">
+        {/* Номера строк */}
+        <div className={`select-none py-4 px-2 text-right border-r ${
+          isDark ? 'bg-[#0a0a0a] border-white/10 text-white/30' : 'bg-gray-100 border-black/10 text-black/30'
+        }`}>
+          {lines.map((_, index) => (
+            <div key={index} className="font-mono text-xs leading-5">
+              {index + 1}
+            </div>
+          ))}
+        </div>
+
+        {/* Код */}
+        <pre className={`flex-1 p-4 overflow-x-auto text-sm ${
+          isDark ? 'text-white/90' : 'text-black/90'
+        }`}>
+          <code className={`language-${language} block`} style={{ lineHeight: '1.25rem' }}>
+            {code}
+          </code>
+        </pre>
+      </div>
+
+      {maxLines && totalLines > maxLines && (
+        <div className={`text-center py-2 text-xs ${
+          isDark ? 'text-white/40' : 'text-black/40'
+        }`}>
+          {totalLines} строк
+        </div>
+      )}
     </div>
   );
 };
