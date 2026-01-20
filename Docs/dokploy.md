@@ -750,7 +750,7 @@ services:
 volumes:
   n8n_data:
 ```
-
+ENV:
 ```
 N8N_HOST=localhost
 N8N_PORT=5678
