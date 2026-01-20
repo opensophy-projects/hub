@@ -6,6 +6,7 @@ import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import MobileNavbar from '@/components/MobileNavbar';
 import DocBanner from './DocBanner';
 import TableModal from './TableModal';
+import CodeModal from './CodeModal';
 import { parseHtmlToReact, TableContext } from '@/lib/htmlParser';
 
 interface DocContentProps {
@@ -37,6 +38,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const [toc, setToc] = useState<TableOfContentsItem[]>([]);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
+  const [fullscreenCode, setFullscreenCode] = useState<{ code: string; language: string } | null>(null);
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window === 'undefined') return false;
     return window.innerWidth < 768;
@@ -102,6 +104,10 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
 
   const handleTableClick = (tableHtml: string) => {
     setFullscreenTableHtml(tableHtml);
+  };
+
+  const handleCodeClick = (code: string, language: string) => {
+    setFullscreenCode({ code, language });
   };
 
   const htmlContent = DOMPurify.sanitize(marked(doc.content || ''), {
@@ -237,7 +243,11 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
                 isCard={false}
               />
 
-              <TableContext.Provider value={{ onTableClick: handleTableClick, isNegative: isDark }}>
+              <TableContext.Provider value={{ 
+                onTableClick: handleTableClick, 
+                onCodeClick: handleCodeClick,
+                isNegative: isDark 
+              }}>
                 <div
                   ref={contentRef}
                   className="prose max-w-none prose-invert w-full overflow-x-auto"
@@ -285,6 +295,18 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
             tableHtml={fullscreenTableHtml}
             isDark={isDark}
             onClose={() => setFullscreenTableHtml(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {fullscreenCode && (
+          <CodeModal
+            isOpen={!!fullscreenCode}
+            code={fullscreenCode.code}
+            language={fullscreenCode.language}
+            isDark={isDark}
+            onClose={() => setFullscreenCode(null)}
           />
         )}
       </AnimatePresence>
