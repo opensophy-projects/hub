@@ -12,6 +12,7 @@ interface HtmlNode {
 
 interface TableContextType {
   onTableClick?: (tableHtml: string) => void;
+  onCodeClick?: (code: string, language: string) => void;
   isNegative?: boolean;
 }
 
@@ -169,15 +170,21 @@ function extractTextFromChildren(children?: (HtmlNode | string)[]): string {
 }
 
 const CodeBlockWrapper = ({ node }: { node: HtmlNode }) => {
-  const { isNegative } = React.useContext(TableContext);
+  const { onCodeClick, isNegative } = React.useContext(TableContext);
   const language = node.attrs?.['data-lang'] || 'plaintext';
   const code = extractTextFromChildren(node.children);
+
+  const handleFullscreen = (codeContent: string, lang: string) => {
+    if (onCodeClick) {
+      onCodeClick(codeContent, lang);
+    }
+  };
 
   return React.createElement(CodeBlock, {
     code,
     language,
     isDark: isNegative || false,
-    maxLines: 10
+    onFullscreen: handleFullscreen
   });
 };
 
