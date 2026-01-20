@@ -293,3 +293,214 @@ body {
   background-color: rgb(59 130 246);
   color: rgb(255 255 255);
 }
+
+/* === Markdown Formatting === */
+/* Заголовки */
+.heading-1, .heading-2, .heading-3, .heading-4, .heading-5, .heading-6 {
+  @apply font-bold tracking-tight;
+}
+.heading-1 { @apply text-4xl mt-8 mb-4; }
+.heading-2 { @apply text-3xl mt-7 mb-3; }
+.heading-3 { @apply text-2xl mt-6 mb-2; }
+.heading-4 { @apply text-xl mt-5 mb-2; }
+.heading-5 { @apply text-lg mt-4 mb-1; }
+.heading-6 { @apply text-base mt-3 mb-1; }
+
+/* Параграфы */
+.paragraph {
+  @apply my-4 leading-7;
+}
+
+/* Inline код */
+.inline-code {
+  @apply px-2 py-1 rounded text-sm font-mono;
+}
+.dark .inline-code {
+  @apply bg-white/10 text-white/90;
+}
+.light .inline-code {
+  @apply bg-black/10 text-black/90;
+}
+
+/* Блок-цитаты */
+.blockquote {
+  @apply my-4 pl-4 border-l-4;
+}
+.dark .blockquote {
+  @apply border-white/30 text-white/80;
+}
+.light .blockquote {
+  @apply border-black/30 text-black/80;
+}
+.blockquote-depth-2 {
+  @apply ml-4;
+}
+.blockquote-depth-3 {
+  @apply ml-8;
+}
+
+/* Списки */
+.markdown-list {
+  @apply my-4 space-y-2;
+}
+.markdown-unordered {
+  @apply list-disc list-inside ml-4;
+}
+.markdown-ordered {
+  @apply list-decimal list-inside ml-4;
+}
+.list-item {
+  @apply flex items-start gap-2;
+}
+.checkbox-icon {
+  @apply inline-block w-5 text-center flex-shrink-0 mt-0.5 font-bold;
+}
+.checkbox-unchecked .checkbox-icon {
+  @apply text-red-500;
+}
+.checkbox-checked .checkbox-icon {
+  @apply text-green-500;
+}
+.checkbox-warning .checkbox-icon {
+  @apply text-orange-500;
+}
+.checkbox-info .checkbox-icon {
+  @apply text-blue-500;
+}
+
+/* Ссылки */
+.markdown-link,
+.markdown-autolink,
+.markdown-email {
+  @apply font-medium underline transition-colors;
+}
+.dark .markdown-link,
+.dark .markdown-autolink,
+.dark .markdown-email {
+  @apply text-blue-400 hover:text-blue-300;
+}
+.light .markdown-link,
+.light .markdown-autolink,
+.light .markdown-email {
+  @apply text-blue-600 hover:text-blue-700;
+}
+
+/* Изображения */
+.markdown-figure {
+  @apply my-6 flex flex-col items-center gap-2;
+}
+.markdown-image {
+  @apply max-w-full h-auto rounded-lg shadow-lg;
+}
+.image-caption {
+  @apply text-center text-sm italic;
+}
+.dark .image-caption {
+  @apply text-white/60;
+}
+.light .image-caption {
+  @apply text-black/60;
+}
+
+/* Горизонтальный разделитель */
+.horizontal-separator {
+  @apply my-6;
+}
+.dark .horizontal-separator {
+  @apply border-white/10;
+}
+.light .horizontal-separator {
+  @apply border-black/10;
+}
+
+/* Details / Summary */
+details {
+  @apply my-4 rounded-lg border cursor-pointer transition-colors;
+}
+.dark details {
+  @apply border-white/10 hover:bg-white/5;
+}
+.light details {
+  @apply border-black/10 hover:bg-black/5;
+}
+summary {
+  @apply p-4 font-semibold outline-none;
+}
+.dark summary {
+  @apply text-white hover:bg-white/5;
+}
+.light summary {
+  @apply text-black hover:bg-black/5;
+}
+details[open] summary {
+  @apply mb-0;
+}
+
+/* Код-блоки */
+.code-block {
+  @apply relative rounded-lg border overflow-hidden my-4;
+}
+.dark .code-block {
+  @apply border-white/10 bg-[#1a1a1a];
+}
+.light .code-block {
+  @apply border-black/10 bg-gray-50;
+}
+
+/* Таблицы */
+table {
+  @apply w-full my-4 border-collapse;
+}
+th {
+  @apply font-semibold text-left px-4 py-3;
+}
+td {
+  @apply px-4 py-3;
+}
+th, td {
+  @apply border;
+}
+.dark th,
+.dark td {
+  @apply border-white/10;
+}
+.light th,
+.light td {
+  @apply border-black/10;
+}
+.dark th {
+  @apply bg-white/5 text-white;
+}
+.light th {
+  @apply bg-black/5 text-black;
+}
+.dark td {
+  @apply text-white/80;
+}
+.light td {
+  @apply text-black/80;
+}
+
+/* Callout блоки */
+.callout {
+  @apply rounded-lg border-l-4 p-4 my-4;
+}
+
+/* Inline математика */
+.math-inline {
+  @apply inline-block mx-1;
+}
+.dark .math-inline {
+  @apply text-white;
+}
+.light .math-inline {
+  @apply text-black;
+}
+
+/* === KaTeX стили === */
+.katex {
+  @apply text-base;
+}
+.katex-display {
+  @apply block my-4 text-center;
+}
