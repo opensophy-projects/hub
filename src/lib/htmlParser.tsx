@@ -31,7 +31,8 @@ const ALLOWED_ATTRS: Record<string, Set<string>> = {
   'img': new Set(['src', 'alt', 'title', 'width', 'height', 'style', 'loading']),
   'pre': new Set(['class', 'data-lang']),
   'code': new Set(['class']),
-  '*': new Set(['class', 'data-table-index', 'data-line', 'id', 'style', 'data-caption'])
+  'figure': new Set(['class']),
+  '*': new Set(['class', 'data-table-index', 'data-line', 'id', 'style'])
 };
 
 function isAllowedAttribute(tag: string, attr: string): boolean {
@@ -113,7 +114,11 @@ function nodeToReact(node: HtmlNode | string, key: string | number): React.React
       return React.createElement(TableWrapper, { key, node });
     }
 
-    if (node.tag === 'img') {
+    if (node.tag === 'figure' && node.attrs?.class === 'image-with-caption') {
+      return React.createElement(FigureWrapper, { key, node });
+    }
+
+    if (node.tag === 'img' && !(node.attrs?.class === 'image-with-caption')) {
       return React.createElement(ImageWrapper, { key, node });
     }
 
@@ -176,88 +181,80 @@ const CodeBlockWrapper = ({ node }: { node: HtmlNode }) => {
   });
 };
 
-const ImageWrapper = ({ node }: { node: HtmlNode }) => {
+const FigureWrapper = ({ node }: { node: HtmlNode }) => {
   const { isNegative } = React.useContext(TableContext);
-  const attrs = node.attrs || {};
-  const caption = attrs['data-caption'];
   
+  if (!node.children) return null;
+
+  let imgNode: HtmlNode | null = null;
+  let captionText = '';
+
+  for (const child of node.children) {
+    if (typeof child !== 'string' && child.type === 'element') {
+      if (child.tag === 'img') {
+        imgNode = child;
+      } else if (child.tag === 'figcaption') {
+        captionText = extractTextFromChildren(child.children);
+      }
+    }
+  }
+
+  if (!imgNode) return null;
+
+  const attrs = imgNode.attrs || {};
   const imgProps: Record<string, any> = {
     src: attrs.src || '',
     alt: attrs.alt || '',
     loading: attrs.loading || 'lazy',
-    style: {
-      maxWidth: '100%',
-      height: 'auto',
-      borderRadius: '8px',
-      display: 'block',
-      border: isNegative ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
-    }
+    className: 'image-main'
   };
 
-  if (attrs.width) {
-    imgProps.width = attrs.width;
-  }
-  if (attrs.height) {
-    imgProps.height = attrs.height;
-  }
-  if (attrs.title) {
-    imgProps.title = attrs.title;
-  }
+  if (attrs.width) imgProps.width = attrs.width;
+  if (attrs.height) imgProps.height = attrs.height;
+  if (attrs.title) imgProps.title = attrs.title;
 
-  if (caption) {
-    return React.createElement(
-      'figure',
-      { 
-        style: { 
-          margin: '24px auto',
-          position: 'relative',
-          display: 'inline-block',
-          width: '100%'
-        } 
-      },
-      React.createElement('div', {
+  return React.createElement(
+    'figure',
+    { 
+      className: `image-figure ${isNegative ? 'dark' : 'light'}`,
+      style: {
+        margin: '2rem auto',
+        maxWidth: '100%'
+      }
+    },
+    React.createElement('img', imgProps),
+    captionText && React.createElement(
+      'figcaption',
+      {
+        className: 'image-caption',
         style: {
-          position: 'relative',
-          display: 'inline-block',
-          width: '100%',
+          marginTop: '0.75rem',
+          textAlign: 'center',
+          fontSize: '0.875rem',
+          fontStyle: 'italic',
+          opacity: 0.8,
+          color: isNegative ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)'
         }
       },
-        React.createElement('img', imgProps),
-        React.createElement(
-          'div',
-          {
-            style: {
-              position: 'absolute',
-              bottom: '0',
-              left: '0',
-              right: '0',
-              background: isNegative 
-                ? 'linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent)' 
-                : 'linear-gradient(to top, rgba(0, 0, 0, 0.5), transparent)',
-              padding: '16px 12px 12px',
-              textAlign: 'center',
-              borderBottomLeftRadius: '8px',
-              borderBottomRightRadius: '8px',
-            }
-          },
-          React.createElement(
-            'p',
-            {
-              style: {
-                fontSize: '0.75rem',
-                color: '#ffffff',
-                margin: '0',
-                lineHeight: '1.3',
-                fontWeight: '500',
-                textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
-              }
-            },
-            caption
-          )
-        )
-      )
-    );
-  }
+      captionText
+    )
+  );
+};
+
+const ImageWrapper = ({ node }: { node: HtmlNode }) => {
+  const { isNegative } = React.useContext(TableContext);
+  const attrs = node.attrs || {};
+
+  const imgProps: Record<string, any> = {
+    src: attrs.src || '',
+    alt: attrs.alt || '',
+    loading: attrs.loading || 'lazy',
+    className: 'image-standalone'
+  };
+
+  if (attrs.width) imgProps.width = attrs.width;
+  if (attrs.height) imgProps.height = attrs.height;
+  if (attrs.title) imgProps.title = attrs.title;
 
   return React.createElement('img', imgProps);
 };
