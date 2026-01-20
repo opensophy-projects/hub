@@ -30,7 +30,7 @@ const ALLOWED_TAGS = new Set([
 const ALLOWED_ATTRS: Record<string, Set<string>> = {
   'a': new Set(['href', 'title', 'target', 'rel']),
   'img': new Set(['src', 'alt', 'title', 'width', 'height', 'style', 'loading']),
-  'pre': new Set(['class', 'data-lang']),
+  'pre': new Set(['class', 'data-lang', 'data-files']),
   'code': new Set(['class']),
   'figure': new Set(['class']),
   '*': new Set(['class', 'data-table-index', 'data-line', 'id', 'style'])
@@ -127,6 +127,10 @@ function nodeToReact(node: HtmlNode | string, key: string | number): React.React
       return React.createElement(CodeBlockWrapper, { key, node });
     }
 
+    if (node.tag === 'pre' && node.attrs && node.attrs['class'] === 'code-block-multifile') {
+      return React.createElement(MultiFileCodeBlockWrapper, { key, node });
+    }
+
     const props: Record<string, any> = {
       key,
       ...node.attrs
@@ -186,6 +190,31 @@ const CodeBlockWrapper = ({ node }: { node: HtmlNode }) => {
     isDark: isNegative || false,
     onFullscreen: handleFullscreen
   });
+};
+
+const MultiFileCodeBlockWrapper = ({ node }: { node: HtmlNode }) => {
+  const { onCodeClick, isNegative } = React.useContext(TableContext);
+  
+  if (!node.attrs || !node.attrs['data-files']) return null;
+  
+  try {
+    const files = JSON.parse(node.attrs['data-files']);
+    
+    const handleFullscreen = (code: string, language: string) => {
+      if (onCodeClick) {
+        onCodeClick(code, language);
+      }
+    };
+
+    return React.createElement(CodeBlock, {
+      code: files,
+      isDark: isNegative || false,
+      onFullscreen: handleFullscreen
+    });
+  } catch (err) {
+    console.error('Failed to parse multi-file code block:', err);
+    return null;
+  }
 };
 
 const FigureWrapper = ({ node }: { node: HtmlNode }) => {
