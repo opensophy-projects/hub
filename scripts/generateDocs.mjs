@@ -35,6 +35,16 @@ function processImageSyntax(content) {
   return content.replace(/\[([^\]]+\.(png|jpg|jpeg|gif|webp|svg))\]/gi, '![](/assets/$1)');
 }
 
+function processCodeSections(content) {
+  // Заменяем <code section>язык\nкод<code section> на стандартные markdown code blocks
+  const codeSectionRegex = /<code section>\s*(\w+)?\s*\n([\s\S]*?)<code section>/gi;
+  
+  return content.replace(codeSectionRegex, (match, language, code) => {
+    const lang = language || 'plaintext';
+    return '```' + lang + '\n' + code.trim() + '\n```';
+  });
+}
+
 function getFirstParagraph(content) {
   const lines = content.split('\n');
   for (const line of lines) {
@@ -78,7 +88,9 @@ function scanDocs(dir) {
         const content = fs.readFileSync(fullPath, 'utf-8');
         const { metadata, content: cleanContent } = extractFrontMatter(content);
 
-        const processedContent = processImageSyntax(cleanContent);
+        // Обрабатываем code sections ПЕРЕД обработкой изображений
+        let processedContent = processCodeSections(cleanContent);
+        processedContent = processImageSyntax(processedContent);
 
         const fileName = path.basename(fullPath, '.md');
         const slug = generateSlug(fileName);
