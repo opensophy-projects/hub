@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import DOMPurify from 'isomorphic-dompurify';
+import katex from 'katex';
 import CodeBlock from '../components/CodeBlock';
 import Callout from '../components/Callout';
 import AdvancedTable from '../components/AdvancedTable';
@@ -20,31 +21,35 @@ interface HtmlParserProps {
 }
 
 const MathInline: React.FC<{ formula: string; isDark: boolean }> = ({ formula, isDark }) => {
-  const [rendered, setRendered] = React.useState(false);
+  const [html, setHtml] = React.useState('');
+  const [error, setError] = React.useState(false);
 
   React.useEffect(() => {
-    const renderMath = async () => {
-      try {
-        const katex = (await import('katex')).default;
-        setRendered(true);
-      } catch (err) {
-        console.error('KaTeX render error:', err);
-      }
-    };
-
-    renderMath();
+    try {
+      const rendered = katex.renderToString(formula, { 
+        throwOnError: false,
+        displayMode: false
+      });
+      setHtml(rendered);
+      setError(false);
+    } catch (err) {
+      console.error('KaTeX render error:', err);
+      setError(true);
+    }
   }, [formula]);
 
-  if (!rendered) {
+  if (error) {
+    return <span className={`inline-code ${isDark ? 'bg-white/10' : 'bg-black/10'}`}>${formula}$</span>;
+  }
+
+  if (!html) {
     return <span className={`inline-code ${isDark ? 'bg-white/10' : 'bg-black/10'}`}>${formula}$</span>;
   }
 
   return (
     <span 
       className="math-inline"
-      dangerouslySetInnerHTML={{
-        __html: require('katex').renderToString(formula, { throwOnError: false })
-      }}
+      dangerouslySetInnerHTML={{ __html: html }}
     />
   );
 };
@@ -75,11 +80,9 @@ const parseHtmlToReact = (
     const tag = element.tagName.toLowerCase();
     const key = `${tag}-${index}`;
 
-    // Стили на основе темы
     const classPrefix = isDark ? 'dark' : 'light';
 
     switch (tag) {
-      // Заголовки
       case 'h1':
         return (
           <motion.h1
@@ -152,7 +155,6 @@ const parseHtmlToReact = (
           </motion.h6>
         );
 
-      // Параграфы
       case 'p':
         return (
           <motion.p
@@ -165,7 +167,6 @@ const parseHtmlToReact = (
           </motion.p>
         );
 
-      // Жирный текст
       case 'strong':
         return (
           <strong key={key} className="font-bold">
@@ -173,7 +174,6 @@ const parseHtmlToReact = (
           </strong>
         );
 
-      // Курсив
       case 'em':
         return (
           <em key={key} className="italic">
@@ -181,7 +181,6 @@ const parseHtmlToReact = (
           </em>
         );
 
-      // Зачёркнутый
       case 'del':
         return (
           <del key={key} className="line-through opacity-70">
@@ -189,7 +188,6 @@ const parseHtmlToReact = (
           </del>
         );
 
-      // Inline код
       case 'code':
         if (element.parentElement?.tagName !== 'PRE') {
           return (
@@ -205,7 +203,6 @@ const parseHtmlToReact = (
         }
         return null;
 
-      // Блоки кода
       case 'code-block':
         const language = element.getAttribute('language') || 'plaintext';
         const code = element.textContent || '';
@@ -231,7 +228,6 @@ const parseHtmlToReact = (
           />
         );
 
-      // Блок-цитаты
       case 'blockquote':
         return (
           <motion.blockquote
@@ -248,7 +244,6 @@ const parseHtmlToReact = (
           </motion.blockquote>
         );
 
-      // Списки
       case 'ul':
       case 'ol':
         return (
@@ -294,7 +289,6 @@ const parseHtmlToReact = (
           </li>
         );
 
-      // Ссылки
       case 'a':
         const href = element.getAttribute('href') || '#';
         const isEmail = href.startsWith('mailto:');
@@ -314,7 +308,6 @@ const parseHtmlToReact = (
           </a>
         );
 
-      // Изображения
       case 'figure':
         return (
           <motion.figure
@@ -353,7 +346,6 @@ const parseHtmlToReact = (
           </motion.figcaption>
         );
 
-      // Горизонтальный разделитель
       case 'hr':
         return (
           <motion.hr
@@ -364,7 +356,6 @@ const parseHtmlToReact = (
           />
         );
 
-      // Таблицы
       case 'table':
         return (
           <AdvancedTable
@@ -375,7 +366,6 @@ const parseHtmlToReact = (
           />
         );
 
-      // Callout блоки
       case 'callout':
         const calloutType = element.getAttribute('type') as any || 'note';
         return (
@@ -388,7 +378,6 @@ const parseHtmlToReact = (
           </Callout>
         );
 
-      // Collapsed sections
       case 'collapsed-section':
         const title = element.getAttribute('title') || 'Details';
         return (
@@ -407,7 +396,6 @@ const parseHtmlToReact = (
           </details>
         );
 
-      // Mermaid диаграммы
       case 'mermaid-diagram':
         const diagramCode = element.textContent || '';
         return (
@@ -418,7 +406,6 @@ const parseHtmlToReact = (
           />
         );
 
-      // Inline математика
       case 'math-inline':
         const formula = element.textContent || '';
         return (
@@ -464,7 +451,7 @@ const parseHtmlToReact = (
     onFullscreenTable?: (html: string) => void
   ): React.ReactNode[] => {
     return Array.from(element.childNodes)
-      .map((child, idx) => parseHtmlToReact(child.outerHTML || child.textContent || '', isDark, onFullscreenCode, onFullscreenTable))
+      .map((child, idx) => parseNode(child, idx))
       .filter(Boolean) as React.ReactNode[];
   };
 
