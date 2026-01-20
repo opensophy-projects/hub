@@ -226,33 +226,78 @@ body {
   font-style: italic;
 }
 
-/* IMAGE STYLES */
-.prose img {
+/* IMAGE STYLES - ПЕРЕДЕЛАННЫЕ */
+
+/* Standalone изображения (без подписей) */
+.prose img.image-standalone,
+.prose .image-main {
   max-width: 100%;
   height: auto;
   border-radius: 8px;
-  margin: 16px auto;
+  margin: 1.5rem auto;
   display: block;
 }
 
-.dark .prose img {
+.dark .prose img.image-standalone,
+.dark .prose .image-main {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.prose img:not(.dark) {
+.prose img.image-standalone:not(.dark),
+.prose .image-main:not(.dark) {
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-/* IMAGE CAPTION STYLES */
+/* Figure с подписями */
+.prose figure.image-figure {
+  margin: 2rem auto;
+  max-width: 100%;
+  text-align: center;
+}
+
+.prose figure.image-figure img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  display: block;
+  margin: 0 auto;
+}
+
+.dark .prose figure.image-figure img {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.prose figure.image-figure:not(.dark) img {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.prose figure.image-figure figcaption {
+  margin-top: 0.75rem;
+  text-align: center;
+  font-size: 0.875rem;
+  font-style: italic;
+  line-height: 1.4;
+  padding: 0 1rem;
+}
+
+.dark .prose figure.image-figure figcaption {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.prose figure.image-figure:not(.dark) figcaption {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+/* Старые стили для обратной совместимости */
 .prose figure {
-  margin: 16px 0;
+  margin: 2rem auto;
 }
 
 .prose figcaption {
   text-align: center;
   font-size: 0.875rem;
   font-style: italic;
-  margin-top: 8px;
+  margin-top: 0.75rem;
   opacity: 0.8;
 }
 
@@ -332,9 +377,16 @@ body {
     white-space: nowrap;
   }
 
-  .prose img {
+  .prose img.image-standalone,
+  .prose .image-main,
+  .prose figure.image-figure img {
     max-width: 100%;
-    margin: 12px 0;
+    margin: 1rem auto;
+  }
+
+  .prose figure.image-figure figcaption {
+    font-size: 0.75rem;
+    padding: 0 0.5rem;
   }
 }
 
@@ -407,6 +459,10 @@ body {
   .prose th,
   .prose td {
     padding: 0.75rem 1rem;
+  }
+
+  .prose figure.image-figure figcaption {
+    font-size: 0.875rem;
   }
 }
 
