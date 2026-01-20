@@ -44,8 +44,8 @@ function parseHtmlString(html: string): HtmlNode[] {
 
   function traverse(element: Element | Node): HtmlNode | null {
     if (element.nodeType === Node.TEXT_NODE) {
-      const text = element.textContent?.trim();
-      if (text) {
+      const text = element.textContent;
+      if (text && text.length > 0) {
         return { type: 'text', text };
       }
       return null;
