@@ -153,7 +153,6 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
             {displayedLines.map((line, index) => {
               const actualLineIndex = isExpanded ? index : index;
               const lineNumber = actualLineIndex + 1;
-              const isGradientLine = !isExpanded && isLongCode && lineNumber >= 14 && lineNumber <= 16;
               const isMatched = matchedLines.has(actualLineIndex);
 
               return (
@@ -164,12 +163,6 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
                       ? isDark 
                         ? 'bg-yellow-900/40' 
                         : 'bg-yellow-100/60'
-                      : ''
-                  } ${
-                    isGradientLine
-                      ? isDark
-                        ? 'text-white/30'
-                        : 'text-black/30'
                       : ''
                   }`}
                 >
