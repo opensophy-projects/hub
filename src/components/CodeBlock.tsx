@@ -1,5 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useContext } from 'react';
 import { Copy, Maximize2, ChevronDown } from 'lucide-react';
+import { TableContext } from '@/lib/htmlParser';
 
 interface CodeBlockProps {
   code: string;
@@ -7,6 +8,7 @@ interface CodeBlockProps {
 }
 
 export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
+  const { isDark } = useContext(TableContext);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -27,23 +29,32 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
   };
 
   const codeContent = (
-    <div className="bg-slate-950 rounded-lg overflow-hidden">
+    <div className={`rounded-lg overflow-hidden border ${
+      isDark ? 'border-white/10' : 'border-black/10'
+    }`}>
       {/* Toolbar */}
-      <div className="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between">
-        <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">
-          {language}
-        </span>
+      <div className={`border-b px-4 py-3 flex items-center justify-end ${
+        isDark ? 'border-white/10' : 'border-black/10'
+      }`}>
         <div className="flex items-center gap-2">
           <button
             onClick={handleCopy}
-            className="p-2 rounded hover:bg-slate-800 transition-colors text-slate-400 hover:text-slate-200"
+            className={`p-2 rounded transition-colors ${
+              isDark 
+                ? 'text-white/70 hover:text-white hover:bg-white/5' 
+                : 'text-black/70 hover:text-black hover:bg-black/5'
+            }`}
             title="Копировать"
           >
             <Copy size={16} />
           </button>
           <button
             onClick={handleFullscreen}
-            className="p-2 rounded hover:bg-slate-800 transition-colors text-slate-400 hover:text-slate-200"
+            className={`p-2 rounded transition-colors ${
+              isDark 
+                ? 'text-white/70 hover:text-white hover:bg-white/5' 
+                : 'text-black/70 hover:text-black hover:bg-black/5'
+            }`}
             title="Полный экран"
           >
             <Maximize2 size={16} />
@@ -54,9 +65,11 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
       {/* Code */}
       <div
         ref={codeRef}
-        className="overflow-x-auto max-h-96"
+        className="overflow-x-auto overflow-y-auto max-h-96"
       >
-        <pre className="p-4 text-sm font-mono text-slate-100 leading-relaxed">
+        <pre className={`p-4 text-sm font-mono leading-relaxed ${
+          isDark ? 'text-white' : 'text-black'
+        }`}>
           <code>
             {displayedLines.map((line, index) => {
               const lineNumber = index + 1;
@@ -65,13 +78,19 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
               return (
                 <div
                   key={index}
-                  className={`${
+                  className={`whitespace-pre ${
                     isGradientLine
-                      ? 'bg-gradient-to-r from-slate-950/50 to-slate-950/0 text-slate-600'
+                      ? isDark
+                        ? 'text-white/30'
+                        : 'text-black/30'
                       : ''
                   }`}
                 >
-                  <span className="text-slate-600 mr-4 select-none">{lineNumber}</span>
+                  <span className={`mr-4 select-none ${
+                    isDark ? 'text-white/40' : 'text-black/40'
+                  }`}>
+                    {lineNumber}
+                  </span>
                   {line}
                 </div>
               );
@@ -84,7 +103,11 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
       {isLongCode && !isExpanded && (
         <button
           onClick={() => setIsExpanded(true)}
-          className="w-full bg-slate-900 border-t border-slate-800 px-4 py-3 flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors text-slate-400 hover:text-slate-200 text-sm font-medium"
+          className={`w-full border-t px-4 py-3 flex items-center justify-center gap-2 transition-colors text-sm font-medium ${
+            isDark 
+              ? 'border-white/10 text-white/70 hover:text-white hover:bg-white/5' 
+              : 'border-black/10 text-black/70 hover:text-black hover:bg-black/5'
+          }`}
         >
           <ChevronDown size={16} />
           Открыть полностью ({lines.length} строк)
@@ -96,15 +119,27 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
   if (isFullscreen) {
     return (
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-slate-950 rounded-lg w-full max-w-4xl max-h-screen flex flex-col">
+        <div className={`rounded-lg w-full max-w-4xl max-h-screen flex flex-col border ${
+          isDark 
+            ? 'bg-[#0a0a0a] border-white/10' 
+            : 'bg-[#E8E7E3] border-black/10'
+        }`}>
           {/* Fullscreen Header */}
-          <div className="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between">
-            <span className="text-sm font-medium text-slate-400 uppercase tracking-wide">
-              {language} ({lines.length} строк)
+          <div className={`border-b px-6 py-4 flex items-center justify-between ${
+            isDark ? 'border-white/10' : 'border-black/10'
+          }`}>
+            <span className={`text-sm font-medium ${
+              isDark ? 'text-white/70' : 'text-black/70'
+            }`}>
+              {lines.length} строк
             </span>
             <button
               onClick={() => setIsFullscreen(false)}
-              className="text-slate-400 hover:text-slate-200 transition-colors text-xl font-semibold"
+              className={`transition-colors text-xl font-semibold ${
+                isDark 
+                  ? 'text-white/70 hover:text-white' 
+                  : 'text-black/70 hover:text-black'
+              }`}
             >
               ✕
             </button>
@@ -112,11 +147,15 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
 
           {/* Fullscreen Code */}
           <div className="overflow-auto flex-1">
-            <pre className="p-6 text-sm font-mono text-slate-100 leading-relaxed">
+            <pre className={`p-6 text-sm font-mono leading-relaxed ${
+              isDark ? 'text-white' : 'text-black'
+            }`}>
               <code>
                 {lines.map((line, index) => (
-                  <div key={index}>
-                    <span className="text-slate-600 mr-4 select-none inline-block w-10 text-right">
+                  <div key={index} className="whitespace-pre">
+                    <span className={`mr-4 select-none inline-block w-10 text-right ${
+                      isDark ? 'text-white/40' : 'text-black/40'
+                    }`}>
                       {index + 1}
                     </span>
                     {line}
@@ -127,13 +166,21 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
           </div>
 
           {/* Fullscreen Footer */}
-          <div className="bg-slate-900 border-t border-slate-800 px-6 py-3 flex items-center justify-between">
-            <span className="text-xs text-slate-500">
+          <div className={`border-t px-6 py-3 flex items-center justify-between ${
+            isDark ? 'border-white/10' : 'border-black/10'
+          }`}>
+            <span className={`text-xs ${
+              isDark ? 'text-white/50' : 'text-black/50'
+            }`}>
               Всего строк: {lines.length}
             </span>
             <button
               onClick={handleCopy}
-              className="px-3 py-2 rounded bg-blue-600 hover:bg-blue-700 transition-colors text-white text-sm font-medium flex items-center gap-2"
+              className={`px-3 py-2 rounded transition-colors text-sm font-medium flex items-center gap-2 ${
+                isDark 
+                  ? 'bg-white/10 hover:bg-white/20 text-white' 
+                  : 'bg-black/10 hover:bg-black/20 text-black'
+              }`}
             >
               <Copy size={14} />
               {isCopied ? 'Скопировано!' : 'Копировать'}
@@ -148,7 +195,9 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
     <div className="my-4">
       {codeContent}
       {isCopied && (
-        <div className="mt-2 text-sm text-green-400 flex items-center gap-2">
+        <div className={`mt-2 text-sm flex items-center gap-2 ${
+          isDark ? 'text-green-400' : 'text-green-600'
+        }`}>
           ✓ Код скопирован в буфер обмена
         </div>
       )}
