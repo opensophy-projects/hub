@@ -104,7 +104,35 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
     setFullscreenTableHtml(tableHtml);
   };
 
-  const htmlContent = DOMPurify.sanitize(marked(doc.content || ''));
+  // Настраиваем marked для добавления data-language к блокам кода
+  marked.setOptions({
+    highlight: function(code, lang) {
+      return code;
+    }
+  });
+
+  const renderer = new marked.Renderer();
+  const originalCodeRenderer = renderer.code.bind(renderer);
+  
+  renderer.code = function(code, language, isEscaped) {
+    const lang = language || 'bash';
+    return `<pre data-language="${lang}"><code>${code}</code></pre>`;
+  };
+
+  marked.setOptions({ renderer });
+
+  const htmlContent = DOMPurify.sanitize(marked(doc.content || ''), {
+    ALLOWED_TAGS: [
+      'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+      'p', 'br', 'strong', 'em', 'u', 'a',
+      'ul', 'ol', 'li', 'blockquote', 'code',
+      'pre', 'img', 'table', 'tr', 'td', 'th',
+      'thead', 'tbody', 'div', 'span'
+    ],
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'id', 'data-language'],
+    ALLOW_DATA_ATTR: true,
+  });
+
   const contentNodes = parseHtmlToReact(htmlContent);
 
   const DocIcon = ({ type, className = 'w-10 h-10' }: { type: string; className?: string }) => {
@@ -157,11 +185,12 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
         <header
           className={`hidden md:flex fixed top-0 left-0 right-0 z-40 border-b ${
             isDark
-              ? 'bg-[#0a0a0a]/95 border-white/10 backdrop-blur-sm' : 'bg-[#E8E7E3]/95 border-black/10 backdrop-blur-sm'
+              ? 'bg-[#0a0a0a]/95 border-white/10 backdrop-blur-sm' 
+              : 'bg-[#E8E7E3]/95 border-black/10 backdrop-blur-sm'
           }`}
         >
           <div className="flex items-center justify-between px-8 h-16 w-full">
-            <a
+            
               href="/"
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                 isDark ? 'text-white/70 hover:text-white hover:bg-white/5' : 'text-black/70 hover:text-black hover:bg-black/5'
