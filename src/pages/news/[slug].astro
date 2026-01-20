@@ -1,6 +1,6 @@
 ---
 import Layout from '@/layouts/Layout.astro';
-import DocContent from '@/components/DocContent';
+import DocPage from '@/components/DocPage';
 import docs from '@/data/docs.json';
 
 export async function getStaticPaths() {
@@ -30,5 +30,5 @@ if (!doc) {
   keywords={doc.keywords}
   robots={doc.robots}
 >
-  <DocContent client:only="react" doc={doc} />
+  <DocPage client:only="react" doc={doc} />
 </Layout>
