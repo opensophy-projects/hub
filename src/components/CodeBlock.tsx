@@ -63,11 +63,11 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
 
   const codeContent = (
     <div className={`rounded-lg overflow-hidden border ${
-      isDark ? 'border-white/10 bg-transparent' : 'border-black/10 bg-white'
+      isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-[#E8E7E3]'
     }`}>
       {/* Toolbar */}
       <div className={`border-b px-4 py-3 flex items-center justify-between ${
-        isDark ? 'border-white/10' : 'border-black/10'
+        isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-[#E8E7E3]'
       }`}>
         {/* Search Input */}
         <div className={`flex-1 flex items-center gap-2 px-3 py-2 rounded border mr-3 ${
@@ -147,7 +147,7 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
         className="overflow-x-auto overflow-y-auto max-h-96"
       >
         <pre className={`p-4 text-sm font-mono leading-relaxed ${
-          isDark ? 'text-white bg-transparent' : 'text-black bg-white'
+          isDark ? 'text-white bg-[#0a0a0a]' : 'text-black bg-[#E8E7E3]'
         }`}>
           <code>
             {displayedLines.map((line, index) => {
@@ -210,12 +210,12 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div className={`rounded-lg w-full max-w-4xl max-h-screen flex flex-col border ${
           isDark 
-            ? 'bg-transparent border-white/10' 
-            : 'bg-white border-black/10'
+            ? 'bg-[#0a0a0a] border-white/10' 
+            : 'bg-[#E8E7E3] border-black/10'
         }`}>
           {/* Fullscreen Header */}
           <div className={`border-b px-6 py-4 flex items-center justify-between ${
-            isDark ? 'border-white/10' : 'border-black/10'
+            isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-[#E8E7E3]'
           }`}>
             <div className={`flex-1 flex items-center gap-2 px-3 py-2 rounded border mr-4 ${
               isDark 
@@ -269,7 +269,7 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
           {/* Fullscreen Code */}
           <div className="overflow-auto flex-1">
             <pre className={`p-6 text-sm font-mono leading-relaxed ${
-              isDark ? 'text-white bg-transparent' : 'text-black bg-white'
+              isDark ? 'text-white bg-[#0a0a0a]' : 'text-black bg-[#E8E7E3]'
             }`}>
               <code>
                 {lines.map((line, index) => {
@@ -301,7 +301,7 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
 
           {/* Fullscreen Footer */}
           <div className={`border-t px-6 py-3 flex items-center justify-between ${
-            isDark ? 'border-white/10' : 'border-black/10'
+            isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-[#E8E7E3]'
           }`}>
             <span className={`text-xs ${
               isDark ? 'text-white/50' : 'text-black/50'
