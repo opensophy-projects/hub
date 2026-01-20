@@ -43,7 +43,6 @@ body {
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 }
 
-/* HEADINGS - добавлены h5 и h6 */
 .prose h1 {
   margin-top: 2rem;
   margin-bottom: 1rem;
@@ -106,7 +105,6 @@ body {
   font-size: 0.875rem;
 }
 
-/* СПИСКИ - исправлены маркеры и отступы */
 .prose ul,
 .prose ol {
   margin-bottom: 1rem;
@@ -138,13 +136,14 @@ body {
   margin-bottom: 0.5rem;
   font-size: 0.875rem;
   display: list-item;
+  margin-left: 1.5rem;
 }
 
 .prose li::marker {
   color: inherit;
+  font-weight: 700;
 }
 
-/* INLINE CODE - добавлена обводка */
 .prose code {
   border-radius: 0.25rem;
   padding: 0.25rem 0.5rem;
@@ -166,7 +165,6 @@ body {
   color: #ff79c6;
 }
 
-/* CODE BLOCKS */
 .prose pre {
   margin-bottom: 1rem;
   overflow-x: auto;
@@ -183,9 +181,9 @@ body {
   line-height: 1rem;
   border: none;
   background-color: transparent;
+  color: inherit;
 }
 
-/* BLOCKQUOTE - исправлена инверсия линий */
 .prose blockquote {
   margin-top: 1rem;
   margin-bottom: 1rem;
@@ -207,22 +205,15 @@ body {
 
 .prose a {
   color: rgb(59 130 246);
+  word-spacing: 0;
 }
 
 .prose a:hover {
   text-decoration-line: underline;
 }
 
-/* ЖИРНЫЙ ТЕКСТ - добавлены пробелы вокруг */
 .prose strong {
   font-weight: 700;
-}
-
-.prose strong::before,
-.prose strong::after {
-  content: '';
-  display: inline;
-  white-space: pre;
 }
 
 .prose em {
@@ -243,7 +234,6 @@ body {
   text-align: left;
 }
 
-/* Media queries для больших экранов */
 @media (min-width: 768px) {
   .prose h1 {
     font-size: 2.25rem;
@@ -307,7 +297,6 @@ body {
   }
 }
 
-/* IMAGE STYLES */
 .prose img {
   max-width: 100%;
   height: auto;
@@ -323,8 +312,6 @@ body {
 .prose img:not(.dark) {
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
-
-/* TABLE STYLES - PROPER STICKY HEADER & ZEBRA STRIPING */
 
 .prose table {
   width: 100%;
