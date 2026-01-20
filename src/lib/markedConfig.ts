@@ -1,5 +1,3 @@
-/src/lib/markedConfig.ts
-```ts
 import { marked, Renderer, Token } from 'marked';
 import DOMPurify from 'isomorphic-dompurify';
 
