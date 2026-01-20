@@ -189,7 +189,6 @@ const ImageWrapper = ({ node }: { node: HtmlNode }) => {
       maxWidth: '100%',
       height: 'auto',
       borderRadius: '8px',
-      margin: caption ? '16px auto 0 auto' : '16px auto',
       display: 'block',
       border: isNegative ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
     }
@@ -208,21 +207,54 @@ const ImageWrapper = ({ node }: { node: HtmlNode }) => {
   if (caption) {
     return React.createElement(
       'figure',
-      { style: { margin: '16px 0' } },
-      React.createElement('img', imgProps),
-      React.createElement(
-        'figcaption',
-        {
-          style: {
-            textAlign: 'center',
-            fontSize: '0.875rem',
-            fontStyle: 'italic',
-            marginTop: '8px',
-            opacity: 0.8,
-            color: isNegative ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)'
-          }
-        },
-        caption
+      { 
+        style: { 
+          margin: '24px auto',
+          position: 'relative',
+          display: 'inline-block',
+          width: '100%'
+        } 
+      },
+      React.createElement('div', {
+        style: {
+          position: 'relative',
+          display: 'inline-block',
+          width: '100%',
+        }
+      },
+        React.createElement('img', imgProps),
+        React.createElement(
+          'div',
+          {
+            style: {
+              position: 'absolute',
+              bottom: '0',
+              left: '0',
+              right: '0',
+              background: isNegative 
+                ? 'linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent)' 
+                : 'linear-gradient(to top, rgba(0, 0, 0, 0.5), transparent)',
+              padding: '16px 12px 12px',
+              textAlign: 'center',
+              borderBottomLeftRadius: '8px',
+              borderBottomRightRadius: '8px',
+            }
+          },
+          React.createElement(
+            'p',
+            {
+              style: {
+                fontSize: '0.75rem',
+                color: '#ffffff',
+                margin: '0',
+                lineHeight: '1.3',
+                fontWeight: '500',
+                textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
+              }
+            },
+            caption
+          )
+        )
       )
     );
   }
