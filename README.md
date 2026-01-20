@@ -54,35 +54,6 @@
 
 ---
 
-## 🚀 Быстрый старт
-
-### Для читателей
-
-Просто откройте [hub.opensophy.com](https://hub.opensophy.com) и начните изучать материалы!
-
-### Для разработчиков
-
-Если хотите запустить проект локально или использовать код для своего хаба:
-```bash
-# Клонирование репозитория
-git clone https://github.com/opensophy-projects/hub.git
-cd hub
-
-# Установка зависимостей
-npm install
-
-# Генерация документации из Markdown
-npm run generate:docs
-
-# Запуск dev-сервера
-npm run dev
-
-# Сборка для production
-npm run build
-```
-
----
-
 ## 📝 Структура проекта
 ```
 hub/
