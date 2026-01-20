@@ -44,6 +44,7 @@ body {
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 }
 
+/* HEADINGS - добавлены h5 и h6 */
 .prose h1 {
   margin-top: 2rem;
   margin-bottom: 1rem;
@@ -82,31 +83,91 @@ body {
   font-weight: 700;
 }
 
+.prose h5 {
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 700;
+}
+
+.prose h6 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 .prose p {
   margin-bottom: 1rem;
   line-height: 1.625;
   font-size: 0.875rem;
 }
 
+/* СПИСКИ - исправлены маркеры и отступы */
 .prose ul,
 .prose ol {
   margin-bottom: 1rem;
+  margin-left: 1.5rem;
+  padding-left: 0;
+}
+
+.prose ul {
+  list-style-type: disc;
+}
+
+.prose ol {
+  list-style-type: decimal;
+}
+
+.prose ul ul,
+.prose ol ul {
+  list-style-type: circle;
+  margin-left: 1.5rem;
+}
+
+.prose ul ol,
+.prose ol ol {
+  list-style-type: lower-alpha;
   margin-left: 1.5rem;
 }
 
 .prose li {
   margin-bottom: 0.5rem;
   font-size: 0.875rem;
+  display: list-item;
 }
 
+.prose li::marker {
+  color: inherit;
+}
+
+/* INLINE CODE - добавлена обводка */
 .prose code {
   border-radius: 0.25rem;
   padding: 0.25rem 0.5rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
   font-size: 0.75rem;
   line-height: 1rem;
+  border: 1px solid;
 }
 
+.prose code {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #e83e8c;
+}
+
+.dark .prose code {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #ff79c6;
+}
+
+/* CODE BLOCKS */
 .prose pre {
   margin-bottom: 1rem;
   overflow-x: auto;
@@ -121,8 +182,11 @@ body {
   border-radius: 0;
   font-size: 0.75rem;
   line-height: 1rem;
+  border: none;
+  background-color: transparent;
 }
 
+/* BLOCKQUOTE - исправлена инверсия линий */
 .prose blockquote {
   margin-top: 1rem;
   margin-bottom: 1rem;
@@ -130,6 +194,16 @@ body {
   padding-left: 1rem;
   font-style: italic;
   font-size: 0.875rem;
+}
+
+.prose blockquote {
+  border-left-color: rgba(0, 0, 0, 0.2);
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.dark .prose blockquote {
+  border-left-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .prose a {
@@ -182,6 +256,16 @@ body {
   .prose h4 {
     font-size: 1.25rem;
     line-height: 1.75rem;
+  }
+
+  .prose h5 {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
+  .prose h6 {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
   }
 
   .prose p {
