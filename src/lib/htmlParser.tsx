@@ -1,5 +1,6 @@
 import React from 'react';
 import { Maximize2 } from 'lucide-react';
+import CodeBlock from '@/components/CodeBlock';
 
 interface HtmlNode {
   type: 'text' | 'element';
@@ -22,13 +23,15 @@ const ALLOWED_TAGS = new Set([
   'ul', 'ol', 'li', 'blockquote',
   'table', 'thead', 'tbody', 'tr', 'th', 'td',
   'a', 'img', 'div', 'span', 'hr',
-  'section', 'article', 'main'
+  'section', 'article', 'main', 'figure', 'figcaption'
 ]);
 
 const ALLOWED_ATTRS: Record<string, Set<string>> = {
   'a': new Set(['href', 'title', 'target', 'rel']),
   'img': new Set(['src', 'alt', 'title', 'width', 'height', 'style', 'loading']),
-  '*': new Set(['class', 'data-table-index', 'data-line', 'id', 'style'])
+  'pre': new Set(['class', 'data-lang']),
+  'code': new Set(['class']),
+  '*': new Set(['class', 'data-table-index', 'data-line', 'id', 'style', 'data-caption'])
 };
 
 function isAllowedAttribute(tag: string, attr: string): boolean {
@@ -44,8 +47,8 @@ function parseHtmlString(html: string): HtmlNode[] {
 
   function traverse(element: Element | Node): HtmlNode | null {
     if (element.nodeType === Node.TEXT_NODE) {
-      const text = element.textContent?.trim();
-      if (text) {
+      const text = element.textContent;
+      if (text && text.trim()) {
         return { type: 'text', text };
       }
       return null;
@@ -114,6 +117,10 @@ function nodeToReact(node: HtmlNode | string, key: string | number): React.React
       return React.createElement(ImageWrapper, { key, node });
     }
 
+    if (node.tag === 'pre' && node.attrs && node.attrs['class'] === 'code-block') {
+      return React.createElement(CodeBlockWrapper, { key, node });
+    }
+
     const props: Record<string, any> = {
       key,
       ...node.attrs
@@ -156,9 +163,23 @@ function extractTextFromChildren(children?: (HtmlNode | string)[]): string {
     .join('');
 }
 
+const CodeBlockWrapper = ({ node }: { node: HtmlNode }) => {
+  const { isNegative } = React.useContext(TableContext);
+  const language = node.attrs?.['data-lang'] || 'plaintext';
+  const code = extractTextFromChildren(node.children);
+
+  return React.createElement(CodeBlock, {
+    code,
+    language,
+    isDark: isNegative || false,
+    maxLines: 10
+  });
+};
+
 const ImageWrapper = ({ node }: { node: HtmlNode }) => {
   const { isNegative } = React.useContext(TableContext);
   const attrs = node.attrs || {};
+  const caption = attrs['data-caption'];
   
   const imgProps: Record<string, any> = {
     src: attrs.src || '',
@@ -168,7 +189,7 @@ const ImageWrapper = ({ node }: { node: HtmlNode }) => {
       maxWidth: '100%',
       height: 'auto',
       borderRadius: '8px',
-      margin: '16px 0',
+      margin: caption ? '16px auto 0 auto' : '16px auto',
       display: 'block',
       border: isNegative ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
     }
@@ -182,6 +203,28 @@ const ImageWrapper = ({ node }: { node: HtmlNode }) => {
   }
   if (attrs.title) {
     imgProps.title = attrs.title;
+  }
+
+  if (caption) {
+    return React.createElement(
+      'figure',
+      { style: { margin: '16px 0' } },
+      React.createElement('img', imgProps),
+      React.createElement(
+        'figcaption',
+        {
+          style: {
+            textAlign: 'center',
+            fontSize: '0.875rem',
+            fontStyle: 'italic',
+            marginTop: '8px',
+            opacity: 0.8,
+            color: isNegative ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)'
+          }
+        },
+        caption
+      )
+    );
   }
 
   return React.createElement('img', imgProps);
