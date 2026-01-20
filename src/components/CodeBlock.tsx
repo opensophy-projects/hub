@@ -154,13 +154,7 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
               return (
                 <div
                   key={index}
-                  className={`whitespace-pre transition-colors ${
-                    isMatched 
-                      ? isDark 
-                        ? 'bg-yellow-900/40' 
-                        : 'bg-yellow-100/60'
-                      : ''
-                  }`}
+                  className="whitespace-pre transition-colors"
                 >
                   <span className={`mr-4 select-none inline-block w-8 text-right ${
                     isDark ? 'text-white/40' : 'text-black/40'
@@ -266,13 +260,7 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
                   return (
                     <div 
                       key={index}
-                      className={`whitespace-pre transition-colors ${
-                        isMatched 
-                          ? isDark 
-                            ? 'bg-yellow-900/40' 
-                            : 'bg-yellow-100/60'
-                          : ''
-                      }`}
+                      className="whitespace-pre transition-colors"
                     >
                       <span className={`mr-4 select-none inline-block w-10 text-right ${
                         isDark ? 'text-white/40' : 'text-black/40'
