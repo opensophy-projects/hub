@@ -12,7 +12,6 @@ export function setupMarked() {
       const alt = token.text || '';
       const title = token.title || '';
 
-      // Если путь не начинается с http и не начинается с /, добавляем /assets/
       if (src && !src.startsWith('http') && !src.startsWith('/')) {
         src = `/assets/${src}`;
       }
@@ -20,7 +19,6 @@ export function setupMarked() {
       const titleAttr = title ? `title="${title}"` : '';
       const captionAttr = title ? `data-caption="${title}"` : '';
       
-      // Добавлен loading="lazy" для ленивой загрузки изображений
       return `<img src="${src}" alt="${alt}" ${titleAttr} ${captionAttr} style="max-width: 100%; height: auto; border-radius: 8px; margin: 16px auto; display: block;" loading="lazy" />`;
     },
     link: (token: any) => {
@@ -40,7 +38,6 @@ export function setupMarked() {
     },
     paragraph: (token: any) => {
       const text = token.text || '';
-      // Сохраняем пробелы в параграфах
       return `<p>${text}</p>`;
     },
     list: (token: any) => {
