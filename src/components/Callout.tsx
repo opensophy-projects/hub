@@ -1,5 +1,5 @@
 import React from 'react';
-import { Info, Lightbulb, AlertTriangle, AlertCircle, OctagonAlert } from 'lucide-react';
+import { Info, Lightbulb, AlertTriangle, AlertCircle } from 'lucide-react';
 
 interface CalloutProps {
   type: 'note' | 'tip' | 'warning' | 'important' | 'caution';
@@ -47,18 +47,18 @@ const Callout: React.FC<CalloutProps> = ({ type, children, isDark }) => {
     },
     important: {
       icon: AlertCircle,
-      bgLight: 'bg-purple-50',
-      bgDark: 'bg-purple-950/30',
-      borderLight: 'border-purple-200',
-      borderDark: 'border-purple-800',
-      iconLight: 'text-purple-600',
-      iconDark: 'text-purple-400',
-      textLight: 'text-purple-900',
-      textDark: 'text-purple-100',
+      bgLight: 'bg-orange-50',
+      bgDark: 'bg-orange-950/30',
+      borderLight: 'border-orange-200',
+      borderDark: 'border-orange-800',
+      iconLight: 'text-orange-600',
+      iconDark: 'text-orange-400',
+      textLight: 'text-orange-900',
+      textDark: 'text-orange-100',
       label: 'IMPORTANT'
     },
     caution: {
-      icon: OctagonAlert,
+      icon: AlertCircle,
       bgLight: 'bg-red-50',
       bgDark: 'bg-red-950/30',
       borderLight: 'border-red-200',
