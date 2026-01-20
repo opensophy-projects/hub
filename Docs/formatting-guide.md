@@ -115,7 +115,7 @@ Hub поддерживает шесть уровней заголовков:
 Блоки кода поддерживают подсветку синтаксиса, копирование и полноэкранный режим:
 
 <code section>
-javascript
+javascript 
 // Пример JavaScript кода
 function greet(name) {
   console.log(`Привет, ${name}!`);
