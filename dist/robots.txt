@@ -1,0 +1,53 @@
+# Allow all search engines
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /*.json$
+Disallow: /banner.png
+
+# Sitemap location
+Sitemap: https://hub.opensophy.com/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 0
+
+# Specific bots configuration
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 0
+
+User-agent: Yandex
+Allow: /
+Crawl-delay: 0
+Host: hub.opensophy.com
+
+User-agent: YandexBot
+Allow: /
+Crawl-delay: 0
+
+# Allow media bots
+User-agent: Mediapartners-Google
+Allow: /
+
+User-agent: AdsBot-Google
+Allow: /
+
+# Social media crawlers
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: TelegramBot
+Allow: /
