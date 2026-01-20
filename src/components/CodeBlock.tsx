@@ -13,7 +13,6 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
   const [isCopied, setIsCopied] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchIndex, setSearchIndex] = useState(0);
   const codeRef = useRef<HTMLDivElement>(null);
 
   const lines = code.split('\n');
@@ -77,10 +76,7 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
             type="text"
             placeholder="Поиск..."
             value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setSearchIndex(0);
-            }}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className={`flex-1 bg-transparent outline-none text-sm ${
               isDark 
                 ? 'text-white placeholder-white/40' 
@@ -89,10 +85,7 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
           />
           {searchQuery && (
             <button
-              onClick={() => {
-                setSearchQuery('');
-                setSearchIndex(0);
-              }}
+              onClick={() => setSearchQuery('')}
               className={`p-1 rounded transition-colors ${
                 isDark 
                   ? 'text-white/50 hover:text-white hover:bg-white/10' 
@@ -139,27 +132,24 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
 
       <div
         ref={codeRef}
-        className="overflow-x-auto overflow-y-auto max-h-96"
+        className={isLongCode && !isExpanded ? 'overflow-hidden' : 'overflow-x-auto overflow-y-auto max-h-96'}
       >
         <pre className={`p-4 text-sm font-mono leading-relaxed ${
           isDark ? 'text-white bg-[#0a0a0a]' : 'text-black bg-[#E8E7E3]'
         }`}>
           <code>
             {displayedLines.map((line, index) => {
-              const actualLineIndex = isExpanded ? index : index;
-              const lineNumber = actualLineIndex + 1;
-              const isGradientLine = !isExpanded && isLongCode && lineNumber >= 14 && lineNumber <= 16;
-              const isMatched = matchedLines.has(actualLineIndex);
+              const isMatched = matchedLines.has(index);
 
               return (
                 <div
                   key={index}
-                  className="whitespace-pre transition-colors"
+                  className="whitespace-pre"
                 >
                   <span className={`mr-4 select-none inline-block w-8 text-right ${
                     isDark ? 'text-white/40' : 'text-black/40'
                   }`}>
-                    {lineNumber}
+                    {index + 1}
                   </span>
                   <span className={isDark ? 'text-white' : 'text-black'}>
                     {isMatched ? highlightMatch(line) : line}
@@ -260,7 +250,7 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
                   return (
                     <div 
                       key={index}
-                      className="whitespace-pre transition-colors"
+                      className="whitespace-pre"
                     >
                       <span className={`mr-4 select-none inline-block w-10 text-right ${
                         isDark ? 'text-white/40' : 'text-black/40'
