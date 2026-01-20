@@ -20,7 +20,6 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
   const isLongCode = lines.length > 15;
   const displayedLines = isExpanded ? lines : lines.slice(0, 15);
 
-  // Поиск по коду
   const getMatchedLines = () => {
     if (!searchQuery.trim()) return new Set();
     
@@ -65,11 +64,9 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
     <div className={`rounded-lg overflow-hidden border ${
       isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-[#E8E7E3]'
     }`}>
-      {/* Toolbar */}
       <div className={`border-b px-4 py-3 flex items-center justify-between ${
         isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-[#E8E7E3]'
       }`}>
-        {/* Search Input */}
         <div className={`flex-1 flex items-center gap-2 px-3 py-2 rounded border mr-3 ${
           isDark 
             ? 'border-white/10 bg-white/5' 
@@ -114,7 +111,6 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
           )}
         </div>
 
-        {/* Copy & Fullscreen buttons */}
         <div className="flex items-center gap-2">
           <button
             onClick={handleCopy}
@@ -141,7 +137,6 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
         </div>
       </div>
 
-      {/* Code */}
       <div
         ref={codeRef}
         className="overflow-x-auto overflow-y-auto max-h-96"
@@ -165,12 +160,6 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
                         ? 'bg-yellow-900/40' 
                         : 'bg-yellow-100/60'
                       : ''
-                  } ${
-                    isGradientLine
-                      ? isDark
-                        ? 'text-white/30'
-                        : 'text-black/30'
-                      : ''
                   }`}
                 >
                   <span className={`mr-4 select-none inline-block w-8 text-right ${
@@ -178,7 +167,9 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
                   }`}>
                     {lineNumber}
                   </span>
-                  {isMatched ? highlightMatch(line) : line}
+                  <span className={isDark ? 'text-white' : 'text-black'}>
+                    {isMatched ? highlightMatch(line) : line}
+                  </span>
                 </div>
               );
             })}
@@ -186,7 +177,6 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
         </pre>
       </div>
 
-      {/* Expand button */}
       {isLongCode && !isExpanded && (
         <button
           onClick={() => setIsExpanded(true)}
@@ -213,7 +203,6 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
             ? 'bg-[#0a0a0a] border-white/10' 
             : 'bg-[#E8E7E3] border-black/10'
         }`}>
-          {/* Fullscreen Header */}
           <div className={`border-b px-6 py-4 flex items-center justify-between ${
             isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-[#E8E7E3]'
           }`}>
@@ -266,7 +255,6 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
             </button>
           </div>
 
-          {/* Fullscreen Code */}
           <div className="overflow-auto flex-1">
             <pre className={`p-6 text-sm font-mono leading-relaxed ${
               isDark ? 'text-white bg-[#0a0a0a]' : 'text-black bg-[#E8E7E3]'
@@ -291,7 +279,9 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
                       }`}>
                         {index + 1}
                       </span>
-                      {isMatched ? highlightMatch(line) : line}
+                      <span className={isDark ? 'text-white' : 'text-black'}>
+                        {isMatched ? highlightMatch(line) : line}
+                      </span>
                     </div>
                   );
                 })}
@@ -299,7 +289,6 @@ export function CodeBlock({ code, language = 'bash' }: CodeBlockProps) {
             </pre>
           </div>
 
-          {/* Fullscreen Footer */}
           <div className={`border-t px-6 py-3 flex items-center justify-between ${
             isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-[#E8E7E3]'
           }`}>
