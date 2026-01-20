@@ -196,3 +196,49 @@ CTF — это не только про «хакинг», но и про:
 5. Общение с сообществом.
 
 И чем раньше вы начнёте думать как инженер, а не как «новичок, ищущий волшебный курс», тем быстрее окажетесь в профессии.
+
+
+## Обычный code block
+
+\`\`\`javascript
+function hello() {
+  console.log('Hello World');
+}
+\`\`\`
+
+## Multi-file code block
+
+<code multifile>
+---file: package.json | language: json
+{
+  "name": "my-app",
+  "version": "1.0.0",
+  "dependencies": {
+    "express": "^4.18.0"
+  }
+}
+---file: server.js | language: javascript
+const express = require('express');
+const app = express();
+
+app.get('/', (req, res) => {
+  res.send('Hello World!');
+});
+
+app.listen(3000, () => {
+  console.log('Server running on port 3000');
+});
+---file: .env | language: bash
+PORT=3000
+DATABASE_URL=postgresql://localhost:5432/mydb
+NODE_ENV=development
+<code multifile>
+
+## Еще один обычный блок
+
+\`\`\`python
+def fibonacci(n):
+    if n <= 1:
+        return n
+    return fibonacci(n-1) + fibonacci(n-2)
+\`\`\`
