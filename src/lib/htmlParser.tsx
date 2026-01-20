@@ -249,7 +249,6 @@ const FigureWrapper = ({ node }: { node: HtmlNode }) => {
 };
 
 const ImageWrapper = ({ node }: { node: HtmlNode }) => {
-  const { isNegative } = React.useContext(TableContext);
   const attrs = node.attrs || {};
 
   const imgProps: Record<string, any> = {
