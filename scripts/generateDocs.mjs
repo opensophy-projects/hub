@@ -35,8 +35,28 @@ function processImageSyntax(content) {
   return content.replace(/\[([^\]]+\.(png|jpg|jpeg|gif|webp|svg))\]/gi, '![](/assets/$1)');
 }
 
+function processMultiFileCodeBlocks(content) {
+  const multiFileRegex = /<code multifile>([\s\S]*?)<code multifile>/gi;
+  
+  return content.replace(multiFileRegex, (match, innerContent) => {
+    const fileRegex = /---file:\s*(.+?)\s*\|\s*language:\s*(\w+)\s*\n([\s\S]*?)(?=---file:|$)/gi;
+    const files = [];
+    let fileMatch;
+    
+    while ((fileMatch = fileRegex.exec(innerContent)) !== null) {
+      const filename = fileMatch[1].trim();
+      const language = fileMatch[2].trim();
+      const code = fileMatch[3].trim();
+      files.push({ filename, language, code });
+    }
+    
+    if (files.length === 0) return match;
+    
+    return `<pre class="code-block-multifile" data-files='${JSON.stringify(files)}'></pre>`;
+  });
+}
+
 function processCodeSections(content) {
-  // Заменяем <code section>язык\nкод<code section> на стандартные markdown code blocks
   const codeSectionRegex = /<code section>\s*(\w+)?\s*\n([\s\S]*?)<code section>/gi;
   
   return content.replace(codeSectionRegex, (match, language, code) => {
@@ -88,8 +108,8 @@ function scanDocs(dir) {
         const content = fs.readFileSync(fullPath, 'utf-8');
         const { metadata, content: cleanContent } = extractFrontMatter(content);
 
-        // Обрабатываем code sections ПЕРЕД обработкой изображений
-        let processedContent = processCodeSections(cleanContent);
+        let processedContent = processMultiFileCodeBlocks(cleanContent);
+        processedContent = processCodeSections(processedContent);
         processedContent = processImageSyntax(processedContent);
 
         const fileName = path.basename(fullPath, '.md');
