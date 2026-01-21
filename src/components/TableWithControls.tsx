@@ -151,7 +151,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
     <div className="my-4">
       <div className={`rounded-lg border ${isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-[#E8E7E3]'}`}>
         <div
-          className={`flex flex-wrap items-center gap-2 p-3 border-b ${isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-[#E8E7E3]'}`}
+          className={`flex flex-wrap items-center gap-2 p-3 border-b ${isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-[#f1f0ec]'}`}
         >
           <input
             type="text"
@@ -267,92 +267,106 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
           </div>
         )}
 
-        <div className="relative w-full max-h-96">
-          <div className="overflow-x-auto overflow-y-auto max-h-96">
-            <table className={`w-full border-collapse text-sm`}>
-              <thead className="sticky top-0 z-20">
-                <tr
-                  className={`${
-                    isDark ? 'border-white/10' : 'border-black/10'
-                  } border-b`}
-                >
-                  {headers.map((header, colIndex) => (
-                    state.visibleColumns.has(colIndex) && (
-                      <th
-                        key={colIndex}
-                        className={`px-4 py-3 text-left font-semibold cursor-pointer transition-colors ${
-                          isDark ? 'text-white hover:bg-white/20' : 'text-black hover:bg-[#ddd8cd]'
-                        }`}
-                        onClick={() => handleSort(colIndex)}
-                        style={{
-                          backgroundColor: isDark ? '#1a1a1a' : '#E8E7E3'
-                        }}
-                      >
-                        <div className="flex items-center gap-2 whitespace-nowrap">
-                          <span>{header}</span>
-                          {state.sortColumn === colIndex && state.sortDirection !== 'none' && (
-                            <span className="text-xs">{state.sortDirection === 'asc' ? '↑' : '↓'}</span>
-                          )}
-                        </div>
-                      </th>
-                    )
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAndSortedRows.map((row, rowIndex) => (
-                  <tr
-                    key={rowIndex}
-                    className={`border-b transition-colors ${
-                      isDark
-                        ? 'border-white/10 hover:bg-white/5'
-                        : 'border-black/10 hover:bg-[#ddd8cd]'
-                    } ${rowIndex % 2 === 0
-                      ? isDark ? '' : 'bg-[#E8E7E3]'
-                      : isDark ? '' : 'bg-[#f1f0ec]'
-                    }`}
-                  >
-                    {row.cells.map((cell, colIndex) => {
-                      if (!state.visibleColumns.has(colIndex)) return null;
-
-                      let displayCell = cell;
-                      if (state.searchQuery && cell.toLowerCase().includes(state.searchQuery.toLowerCase())) {
-                        const regex = new RegExp(`(${state.searchQuery})`, 'gi');
-                        displayCell = cell.replace(regex, '<mark style="background-color: rgb(59, 130, 246); color: white; padding: 2px 4px; border-radius: 2px; font-weight: 600;">$1</mark>');
-                      }
-
-                      return (
-                        <td
-                          key={colIndex}
-                          className={`px-4 py-3 ${isDark ? 'text-white/90' : 'text-black'}`}
-                          dangerouslySetInnerHTML={{ __html: displayCell }}
-                        />
-                      );
-                    })}
-                  </tr>
+        <div style={{ overflowX: 'auto', overflowY: 'visible' }}>
+          <table className={`w-full border-collapse text-sm`}>
+            <thead className="sticky top-0 z-20">
+              <tr
+                className={`${
+                  isDark ? 'border-white/10' : 'border-black/10'
+                } border-b`}
+              >
+                {headers.map((header, colIndex) => (
+                  state.visibleColumns.has(colIndex) && (
+                    <th
+                      key={colIndex}
+                      className={`px-4 py-3 text-left font-semibold cursor-pointer transition-colors ${
+                        isDark ? 'text-white hover:bg-white/20' : 'text-black hover:bg-[#ddd8cd]'
+                      }`}
+                      onClick={() => handleSort(colIndex)}
+                      style={{
+                        backgroundColor: isDark ? '#1a1a1a' : '#E8E7E3'
+                      }}
+                    >
+                      <div className="flex items-center gap-2 whitespace-nowrap">
+                        <span>{header}</span>
+                        {state.sortColumn === colIndex && state.sortDirection !== 'none' && (
+                          <span className="text-xs">{state.sortDirection === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </div>
+                    </th>
+                  )
                 ))}
-              </tbody>
-            </table>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAndSortedRows.map((row, rowIndex) => (
+                <tr
+                  key={rowIndex}
+                  className={`border-b transition-colors ${
+                    isDark
+                      ? 'border-white/10 hover:bg-white/5'
+                      : 'border-black/10 hover:bg-[#ddd8cd]'
+                  } ${rowIndex % 2 === 0
+                    ? isDark ? '' : 'bg-[#E8E7E3]'
+                    : isDark ? '' : 'bg-[#f1f0ec]'
+                  }`}
+                >
+                  {row.cells.map((cell, colIndex) => {
+                    if (!state.visibleColumns.has(colIndex)) return null;
 
-            {filteredAndSortedRows.length === 0 && (
-              <div className={`p-6 text-center ${isDark ? 'text-white/50' : 'text-black/50'}`}>
-                Нет результатов
-              </div>
-            )}
-          </div>
+                    let displayCell = cell;
+                    if (state.searchQuery && cell.toLowerCase().includes(state.searchQuery.toLowerCase())) {
+                      const regex = new RegExp(`(${state.searchQuery})`, 'gi');
+                      displayCell = cell.replace(regex, '<mark style="background-color: rgb(59, 130, 246); color: white; padding: 2px 4px; border-radius: 2px; font-weight: 600;">$1</mark>');
+                    }
+
+                    return (
+                      <td
+                        key={colIndex}
+                        className={`px-4 py-3 ${isDark ? 'text-white/90' : 'text-black'}`}
+                        dangerouslySetInnerHTML={{ __html: displayCell }}
+                      />
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {filteredAndSortedRows.length === 0 && (
+            <div className={`p-6 text-center ${isDark ? 'text-white/50' : 'text-black/50'}`}>
+              Нет результатов
+            </div>
+          )}
         </div>
       </div>
 
       <style>{`
         table {
-          font-size: inherit;
+          border-collapse: collapse;
+          width: 100%;
         }
         th, td {
+          border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)'};
+          padding: 0.75rem;
+          text-align: left;
+          color: ${isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgb(0, 0, 0)'};
           word-break: break-word;
           overflow-wrap: break-word;
           white-space: normal;
           hyphens: auto;
           min-width: 120px;
+        }
+        th {
+          background-color: ${isDark ? '#1a1a1a' : '#E8E7E3'};
+          font-weight: 600;
+          color: ${isDark ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)'};
+          position: sticky;
+          top: 0;
+          z-index: 20;
+        }
+        tr:nth-child(even) {
+          background-color: ${isDark ? 'rgba(255, 255, 255, 0.03)' : '#f1f0ec'};
         }
       `}</style>
     </div>
