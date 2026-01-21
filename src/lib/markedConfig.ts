@@ -11,15 +11,21 @@ export function setupMarked() {
       let src = token.href || '';
       const alt = token.text || '';
       const title = token.title || '';
+      let caption = '';
 
-      // Если путь не начинается с http и не начинается с /, добавляем /assets/
-      if (src && !src.startsWith('http') && !src.startsWith('/')) {
+      if (!title && src && !src.startsWith('http') && !src.startsWith('/')) {
+        if (!src.includes('.')) {
+          caption = src;
+          src = `/assets/${alt}`;
+        } else {
+          src = `/assets/${src}`;
+        }
+      } else if (src && !src.startsWith('http') && !src.startsWith('/')) {
         src = `/assets/${src}`;
       }
 
-      const titleAttr = title ? `title="${title}"` : '';
+      const titleAttr = title || caption ? `title="${title || caption}"` : '';
       
-      // Добавлен loading="lazy" для ленивой загрузки изображений
       return `<img src="${src}" alt="${alt}" ${titleAttr} style="max-width: 100%; height: auto; border-radius: 8px; margin: 16px 0; display: block;" loading="lazy" />`;
     },
     link: (token: any) => {
