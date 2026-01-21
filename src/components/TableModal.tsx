@@ -175,13 +175,13 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
       />
 
       <div
-        className={`relative z-[101] max-h-[90vh] max-w-[95vw] rounded-lg shadow-2xl flex flex-col ${
+        className={`relative z-[101] w-full h-full max-w-[95vw] max-h-[95vh] rounded-lg shadow-2xl flex flex-col ${
           isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div
-          className={`flex items-center justify-between p-4 border-b ${
+          className={`flex items-center justify-between p-4 border-b flex-shrink-0 ${
             isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
           }`}
         >
@@ -195,7 +195,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
         </div>
 
         <div
-          className={`flex flex-wrap items-center gap-2 p-3 border-b ${isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-[#f1f0ec]'}`}
+          className={`flex flex-wrap items-center gap-2 p-3 border-b flex-shrink-0 ${isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-[#f1f0ec]'}`}
         >
           <input
             type="text"
@@ -250,7 +250,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
 
         {showFilters && (
           <div
-            className={`border-b p-4 grid gap-3 ${isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-[#f1f0ec]'}`}
+            className={`border-b p-4 grid gap-3 flex-shrink-0 overflow-y-auto max-h-60 ${isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-[#f1f0ec]'}`}
             style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}
           >
             {headers.map((header, colIndex) => {
@@ -280,7 +280,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
 
         {showColumns && (
           <div
-            className={`border-b p-4 space-y-2 ${isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-[#f1f0ec]'}`}
+            className={`border-b p-4 space-y-2 flex-shrink-0 ${isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-[#f1f0ec]'}`}
           >
             <h4 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-black'}`}>Видимость колонок</h4>
             <div className="space-y-2">
@@ -373,33 +373,33 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
             )}
           </div>
         </div>
-
-        <style>{`
-          table {
-            border-collapse: collapse;
-            width: 100%;
-          }
-          th, td {
-            border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)'};
-            padding: 0.75rem;
-            text-align: left;
-            color: ${isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgb(0, 0, 0)'};
-            word-break: break-word;
-            overflow-wrap: break-word;
-            white-space: normal;
-            hyphens: auto;
-            min-width: 120px;
-          }
-          th {
-            background-color: ${isDark ? '#1a1a1a' : '#E8E7E3'};
-            font-weight: 600;
-            color: ${isDark ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)'};
-          }
-          tr:nth-child(even) {
-            background-color: ${isDark ? 'rgba(255, 255, 255, 0.03)' : '#f1f0ec'};
-          }
-        `}</style>
       </div>
+
+      <style>{`
+        table {
+          border-collapse: collapse;
+          width: 100%;
+        }
+        th, td {
+          border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)'};
+          padding: 0.75rem;
+          text-align: left;
+          color: ${isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgb(0, 0, 0)'};
+          word-break: break-word;
+          overflow-wrap: break-word;
+          white-space: normal;
+          hyphens: auto;
+          min-width: 120px;
+        }
+        th {
+          background-color: ${isDark ? '#1a1a1a' : '#E8E7E3'};
+          font-weight: 600;
+          color: ${isDark ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)'};
+        }
+        tr:nth-child(even) {
+          background-color: ${isDark ? 'rgba(255, 255, 255, 0.03)' : '#f1f0ec'};
+        }
+      `}</style>
     </div>
   );
 };
