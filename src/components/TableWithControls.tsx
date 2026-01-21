@@ -272,7 +272,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
             <thead>
               <tr
                 className={`${
-                  isDark ? 'bg-white/8 border-white/10' : 'bg-gray-100 border-gray-200'
+                  isDark ? 'border-white/10' : 'border-gray-200'
                 } border-b`}
                 style={{
                   position: 'sticky',
@@ -285,12 +285,11 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
                     <th
                       key={colIndex}
                       className={`px-4 py-3 text-left font-semibold cursor-pointer transition-colors ${
-                        isDark ? 'hover:bg-white/15 text-white' : 'hover:bg-gray-200 text-gray-900'
+                        isDark ? 'hover:bg-white/25 text-white' : 'hover:bg-[#ddd8cd] text-gray-900'
                       }`}
                       onClick={() => handleSort(colIndex)}
                       style={{
-                        position: 'relative',
-                        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgb(243, 244, 246)'
+                        backgroundColor: isDark ? '#1a1a1a' : '#E8E7E3'
                       }}
                     >
                       <div className="flex items-center gap-2 whitespace-nowrap">
@@ -312,7 +311,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
                     isDark
                       ? 'border-white/10 hover:bg-white/5'
                       : 'border-gray-200 hover:bg-gray-100'
-                  } ${rowIndex % 2 === 0 ? (isDark ? '' : 'bg-white') : (isDark ? '' : 'bg-gray-50')}`}
+                  } ${rowIndex % 2 === 0 ? (isDark ? '' : 'bg-white') : (isDark ? '' : 'bg-[#E8E7E3]')}`}
                 >
                   {row.cells.map((cell, colIndex) => {
                     if (!state.visibleColumns.has(colIndex)) return null;
