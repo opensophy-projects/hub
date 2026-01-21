@@ -8,25 +8,35 @@ export function setupMarked() {
 
   const renderer = {
     image: (token: any) => {
-      let src = token.href || '';
       const alt = token.text || '';
+      let src = token.href || '';
       const title = token.title || '';
       let caption = '';
 
-      if (!title && src && !src.startsWith('http') && !src.startsWith('/')) {
-        if (!src.includes('.')) {
-          caption = src;
-          src = `/assets/${alt}`;
-        } else {
-          src = `/assets/${src}`;
-        }
-      } else if (src && !src.startsWith('http') && !src.startsWith('/')) {
+      // Если href выглядит как текст (не путь), то это подпись
+      if (src && !src.startsWith('http') && !src.startsWith('/') && !src.includes('.')) {
+        caption = src;
+        src = `/assets/${alt}`;
+      } 
+      // Если src - это имя файла
+      else if (src && !src.startsWith('http') && !src.startsWith('/')) {
         src = `/assets/${src}`;
+        // Если есть title, используем его как подпись
+        if (title) {
+          caption = title;
+        }
+      } 
+      // Если src уже полный путь
+      else if (src) {
+        if (title) {
+          caption = title;
+        }
       }
 
-      const titleAttr = title || caption ? `title="${title || caption}"` : '';
+      const titleAttr = caption ? `title="${caption}"` : '';
+      const captionClass = caption ? 'has-caption' : '';
       
-      return `<img src="${src}" alt="${alt}" ${titleAttr} style="max-width: 100%; height: auto; border-radius: 8px; margin: 16px 0; display: block;" loading="lazy" />`;
+      return `<img src="${src}" alt="${alt}" ${titleAttr} class="${captionClass}" style="max-width: 100%; height: auto; border-radius: 8px; margin: 16px 0; display: block;" loading="lazy" />`;
     },
     link: (token: any) => {
       const href = token.href || '';
