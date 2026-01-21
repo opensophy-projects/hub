@@ -1,6 +1,7 @@
 import React, { createContext } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
 import { CodeBlock } from '@/components/CodeBlock';
+import TableWithControls from '@/components/TableWithControls';
 
 export const TableContext = createContext<{
   onTableClick?: (tableHtml: string) => void;
@@ -157,19 +158,11 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
           elements.push(
             <TableContext.Consumer key={key}>
               {({ onTableClick, isDark }) => (
-                <div className="overflow-x-auto my-4">
-                  <div className="inline-block min-w-full align-middle">
-                    <button
-                      onClick={() => onTableClick?.(tableHtml)}
-                      className={`w-full text-left transition-all ${
-                        isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'
-                      }`}
-                      title="Нажмите для просмотра в полном размере"
-                    >
-                      <div dangerouslySetInnerHTML={{ __html: tableHtml }} />
-                    </button>
-                  </div>
-                </div>
+                <TableWithControls
+                  tableHtml={tableHtml}
+                  isDark={isDark}
+                  onFullscreen={(html) => onTableClick?.(html)}
+                />
               )}
             </TableContext.Consumer>
           );
