@@ -16,7 +16,7 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       'pre', 'img', 'table', 'tr', 'td', 'th',
       'thead', 'tbody', 'div', 'span', 'hr', 'figure', 'figcaption'
     ],
-    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'id', 'data-language', 'data-lang'],
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'id', 'data-language', 'data-lang', 'style'],
     ALLOW_DATA_ATTR: true,
   });
 
@@ -39,6 +39,7 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
         const element = node as Element;
         const tagName = element.tagName.toLowerCase();
 
+        // Обработка кодовых блоков
         if (tagName === 'pre') {
           const codeElement = element.querySelector('code');
           if (codeElement) {
@@ -60,6 +61,7 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
           return;
         }
 
+        // Обработка inline code (не внутри pre)
         if (tagName === 'code' && element.parentElement?.tagName.toLowerCase() !== 'pre') {
           elements.push(
             <code
@@ -72,6 +74,7 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
           return;
         }
 
+        // Обработка заголовков
         if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tagName)) {
           const HeadingTag = tagName as keyof JSX.IntrinsicElements;
           elements.push(
@@ -84,6 +87,7 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
           return;
         }
 
+        // Обработка параграфов
         if (tagName === 'p') {
           elements.push(
             <p key={key} dangerouslySetInnerHTML={{ __html: element.innerHTML }} />
@@ -91,6 +95,7 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
           return;
         }
 
+        // Обработка списков
         if (tagName === 'ul' || tagName === 'ol') {
           const ListTag = tagName as keyof JSX.IntrinsicElements;
           elements.push(
@@ -99,9 +104,10 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
           return;
         }
 
+        // Обработка ссылок
         if (tagName === 'a') {
           elements.push(
-            <a
+            
               key={key}
               href={element.getAttribute('href') || '#'}
               target="_blank"
@@ -112,12 +118,15 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
           return;
         }
 
+        // Обработка изображений с подписями
         if (tagName === 'img') {
           const src = element.getAttribute('src') || '';
           const alt = element.getAttribute('alt') || 'Image';
           const title = element.getAttribute('title') || '';
+          const hasCaption = element.classList.contains('has-caption');
 
-          if (title) {
+          // Если есть подпись (title или класс has-caption)
+          if (title || hasCaption) {
             elements.push(
               <figure key={key} className="my-6 w-full">
                 <img
@@ -126,7 +135,7 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
                   loading="lazy"
                   className="rounded-lg shadow-md max-w-full h-auto w-full"
                 />
-                <figcaption className="mt-2 text-center text-xs text-slate-400 italic font-medium">
+                <figcaption className="mt-3 text-center text-sm text-slate-400 italic font-medium">
                   {title}
                 </figcaption>
               </figure>
@@ -138,13 +147,14 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
                 src={src}
                 alt={alt}
                 loading="lazy"
-                className="rounded-lg shadow-md max-w-full h-auto my-4"
+                className="rounded-lg shadow-md max-w-full h-auto"
               />
             );
           }
           return;
         }
 
+        // Обработка blockquote
         if (tagName === 'blockquote') {
           elements.push(
             <blockquote key={key} dangerouslySetInnerHTML={{ __html: element.innerHTML }} />
@@ -152,6 +162,7 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
           return;
         }
 
+        // Обработка таблиц
         if (tagName === 'table') {
           const tableHtml = element.outerHTML;
           elements.push(
@@ -176,11 +187,13 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
           return;
         }
 
+        // Обработка hr
         if (tagName === 'hr') {
           elements.push(<hr key={key} />);
           return;
         }
 
+        // Обработка strong, em
         if (tagName === 'strong') {
           elements.push(
             <strong key={key} dangerouslySetInnerHTML={{ __html: element.innerHTML }} />
@@ -195,6 +208,7 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
           return;
         }
 
+        // Рекурсивная обработка дочерних элементов
         if (element.childNodes.length > 0) {
           processNodes(element.childNodes, key);
         }
