@@ -51,10 +51,10 @@ We have tested on the following Linux Distros:
 
 1 вариант: ``curl -sSL https://dokploy.com/install.sh | sh``
 
-![dokploy1.png](dokploy1.png)
+[dokploy1.png]
 *Частая ошибка со скриптом.*
 
-![dokploy2.png](dokploy2.png)
+[dokploy2.png]
 *Правильная установка если вы обычный пользователь вы сначала должны перейти в режим root, к примеру с помощью команды: ``sudo -i``*
 
 **Внутри скрипта**
@@ -448,8 +448,7 @@ bash: Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the
 ``systemctl status docker`` проверка статуса
 
 ``systemctl start docker`` запуск / перезапуск docker
-
-![dokploy3.png](dokploy3.png)
+[dokploy3.png]
 *как мы видим проблема исправилась.*
 
 теперь можем запустить снова скрипт и посмотреть docker ps чтобы посмотреть какие контейнеры работают, какие работают на 0.0.0.0 (мб многие пользователи не хотят чтобы они были на 0.0.0.0, через скрипт будет по стандарту работать на 0.0.0.0 dokploy и traefik)
@@ -460,13 +459,14 @@ bash: Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the
 
 > Сразу скажу что в статье рассмотрим только основные функции которые в большинстве случаев используется.
 
-![dokploy5.png](dokploy5.png)
+[dokploy5.png]
 *Впервые при заходе в Dokploy вы устанавливаете вход: Setup the server*
 
-![dokploy6.png](dokploy6.png)
+[dokploy6.png]
+
 *После setup'а вы попадаете в сам уже dokploy*
 
-# Кастомизация
+### Кастомизация
 [dokploy7.png]
 
 - смена темы
@@ -477,14 +477,14 @@ bash: Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the
 
 Можно изменить фавикон, имя организации и добавить новую организацию / сервер.
 
-![dokploy9.png](dokploy9.png)
+[dokploy9.png]
 *Web Server*
 
-## Раздел Web Server в Dokploy
+### Раздел Web Server в Dokploy
 
 На странице **Web Server** в настройках Dokploy можно управлять основными параметрами сервера и системой. Рассмотрим доступные функции:
 
-### 1. Домен сервера
+# 1. Домен сервера
 
 Здесь настраивается домен для панели управления Dokploy:
 
@@ -494,7 +494,7 @@ bash: Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the
 
 После настройки нажмите **"Сохранить"**, и панель будет доступна по вашему домену с HTTPS.
 
-### 2. Веб-сервер (Server)
+# 2. Веб-сервер (Server)
 
 В этом блоке показана информация о сервере и доступны действия по управлению:
 
@@ -524,7 +524,7 @@ bash: Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the
 - **Очистить мониторинг** — удаление данных мониторинга
 - **Очистить всё** — полная очистка всех неиспользуемых ресурсов
 
-### 3. Traefik (Reverse Proxy)
+## 3. Traefik (Reverse Proxy)
 
 Traefik — это reverse proxy, который автоматически управляет маршрутизацией трафика к вашим приложениям.
 
@@ -538,18 +538,18 @@ Traefik — это reverse proxy, который автоматически уп
 # Кнопка "Check for updates":
 Проверка доступных обновлений для Traefik.
 
-## 4. Backups
+# 4. Backups
 
 Блок для настройки резервного копирования базы данных Dokploy на внешние хранилища (S3, Google Cloud, и т.д.).
 
-![dokploy10.png](dokploy10.png)
+[dokploy10.png]
 *Profile*
 
-## Раздел Profile в Dokploy
+### Раздел Profile в Dokploy
 
 На странице **Profile** настраивается профиль пользователя и управление API-ключами для доступа к Dokploy через API/CLI.
 
-### 1. Аккаунт
+# 1. Аккаунт
 
 Здесь можно изменить данные профиля администратора:
 
@@ -570,7 +570,7 @@ Traefik — это reverse proxy, который автоматически уп
 
 После внесения изменений нажмите **"Сохранить"**.
 
-### 2. API/CLI Keys
+# 2. API/CLI Keys
 
 Этот раздел позволяет создавать и управлять API-ключами для доступа к Dokploy через API или командную строку (CLI).
 
@@ -592,11 +592,11 @@ API-ключи используются для:
    
 [dokploy11.png]
 
-## Раздел Git в Dokploy
+### Раздел Git в Dokploy
 
 На странице **Git** настраивается интеграция с Git-провайдерами для автоматического деплоя приложений из репозиториев.
 
-## Git Providers
+# Git Providers
 
 **Описание:** "Connect your Git provider for authentication" — подключите ваш Git-провайдер для аутентификации и автоматического деплоя проектов.
 
@@ -647,14 +647,14 @@ Dokploy поддерживает интеграцию с четырьмя осн
 
 **И МНОГО ЧЕГО ПОЛЕЗНОГО!**
 
-![dokploy12.png](dokploy12.png)
+[dokploy12.png]
 *Мониторинг (Redis)*
 
 Дальше рекомендую изучить остальные функции самостоятельно а мы переходим к самому необходимому - **к деплою.**
 
 [dokploy13.png]
 
-## 3 Часть. Деплой приложений. Какие можно?
+# 3 Часть. Деплой приложений. Какие можно?
 
 в основном в работе я использовал его как деплой docker контейнеров, но по вашему усмотрению вы можете задеплоить и github проекты( к примеру какой нибудь сайт ваш). 
 
@@ -662,10 +662,10 @@ Dokploy поддерживает интеграцию с четырьмя осн
 [dokploy14.png]
 
 
-![dokploy15.png](dokploy15.png)
+[dokploy15.png]
 *пишите имя и описание(необязательно) и нажимаете Create*
 
-![dokploy16.png](dokploy16.png)
+[dokploy16.png]
 *результат*
 
 Далее в зависимости от необходимости вы можете настроить **Environments**
@@ -675,17 +675,17 @@ Dokploy поддерживает интеграцию с четырьмя осн
 
 Application - ваши приложения ( к примеру из гитхаб сайт ) 
 
-![dokploy18.png](dokploy18.png)
+[dokploy18.png]
 *Application - обзор функций и варианты сборок видны на скриншоте*
 
 Templates - готовые конфиги докер для быстрого развертывания сервисов.
 
-![dokploy19.png](dokploy19.png)
+[dokploy19.png]
 *выбор шаблонов докер*
 
 > ВНИМАНИЕ: Не так давно шаблоны перестали работать по неизвестной причине(возможная причина это блокировки тк с впн у меня все ок работает.) Решение: https://templates.dokploy.com/ - это теже шаблоны просто в онлайн версии.
 
-![dokploy20.png](dokploy20.png)
+[dokploy20.png]
 *ошибка с загрузкой шаблонов*
 
 Database - создаются БД под ваши настройки.
@@ -716,11 +716,11 @@ N8N_HOST=your-domain.com  *или просто IP, если нет домена:
 N8N_PORT=5678
 GENERIC_TIMEZONE=Europe/Moscow
 
-![dokploy27.png](dokploy27.png)
+[dokploy27.png]
 *возвращаемся в General и нажимаем Deploy*
 
 
-![dokploy28.png](dokploy28.png)
+[dokploy28.png]
 *логи n8n установки*
 
 вас потом перекинет возможно в логи - там вы смотрите успешно ли все запустилось или нет.
