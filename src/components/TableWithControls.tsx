@@ -14,6 +14,19 @@ interface TableWithControlsProps {
   onFullscreen: (html: string) => void;
 }
 
+const EyeIcon = () => (
+  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
+const ExpandIcon = () => (
+  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+  </svg>
+);
+
 const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark, onFullscreen }) => {
   const [state, setState] = useState<TableControlsState>({
     searchQuery: '',
@@ -57,14 +70,12 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
       cells: Array.from(row.querySelectorAll('td')).map((td) => td.textContent?.trim() || ''),
     }));
 
-    // Filter
     state.filters.forEach((values, colIndex) => {
       if (values.size > 0) {
         result = result.filter((row) => values.has(row.cells[colIndex]));
       }
     });
 
-    // Search
     if (state.searchQuery) {
       const query = state.searchQuery.toLowerCase();
       result = result.filter((row) =>
@@ -72,7 +83,6 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
       );
     }
 
-    // Sort
     if (state.sortColumn !== null && state.sortDirection !== 'none') {
       result.sort((a, b) => {
         const aVal = a.cells[state.sortColumn] || '';
@@ -139,9 +149,9 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
 
   return (
     <div className="overflow-x-auto my-4">
-      <div className={`rounded-lg border ${isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-white'}`}>
+      <div className={`rounded-lg border ${isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-gray-200 bg-gray-50'}`}>
         <div
-          className={`flex flex-wrap items-center gap-2 p-3 border-b ${isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-black/5'}`}
+          className={`flex flex-wrap items-center gap-2 p-3 border-b ${isDark ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-white'}`}
         >
           <input
             type="text"
@@ -151,7 +161,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
             className={`flex-1 min-w-[200px] px-3 py-2 rounded-lg text-sm transition-colors ${
               isDark
                 ? 'bg-white/10 border border-white/20 text-white placeholder-white/50 focus:bg-white/15 focus:border-white/40'
-                : 'bg-black/10 border border-black/20 text-black placeholder-black/50 focus:bg-black/15 focus:border-black/40'
+                : 'bg-white border border-gray-300 text-gray-900 placeholder-gray-500 focus:bg-gray-50 focus:border-gray-400'
             } focus:outline-none`}
           />
 
@@ -160,7 +170,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
             className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
               isDark
                 ? 'bg-white/10 hover:bg-white/20 text-white'
-                : 'bg-black/10 hover:bg-black/20 text-black'
+                : 'bg-white hover:bg-gray-100 text-gray-900 border border-gray-300'
             }`}
             title="Фильтрация"
           >
@@ -169,14 +179,15 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
 
           <button
             onClick={() => setShowColumns(!showColumns)}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
               isDark
                 ? 'bg-white/10 hover:bg-white/20 text-white'
-                : 'bg-black/10 hover:bg-black/20 text-black'
+                : 'bg-white hover:bg-gray-100 text-gray-900 border border-gray-300'
             }`}
-            title="Управление колонками"
+            title="Видимость колонок"
           >
-            ⚙
+            <EyeIcon />
+            Колонки
           </button>
 
           {activeFilterCount > 0 && (
@@ -185,7 +196,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isDark
                   ? 'bg-white/10 hover:bg-white/20 text-white'
-                  : 'bg-black/10 hover:bg-black/20 text-black'
+                  : 'bg-white hover:bg-gray-100 text-gray-900 border border-gray-300'
               }`}
             >
               Сбросить
@@ -194,19 +205,20 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
 
           <button
             onClick={() => onFullscreen(tableHtml)}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
               isDark
-                ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                : 'bg-blue-500 hover:bg-blue-600 text-white'
+                ? 'bg-blue-600/80 hover:bg-blue-600 text-white'
+                : 'bg-blue-500 hover:bg-blue-600 text-white border border-blue-600'
             }`}
+            title="Открыть в полном размере"
           >
-            Полноэкран
+            <ExpandIcon />
           </button>
         </div>
 
         {showFilters && (
           <div
-            className={`border-b p-4 grid gap-3 ${isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-black/5'}`}
+            className={`border-b p-4 grid gap-3 ${isDark ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-white'}`}
             style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))' }}
           >
             {headers.map((header, colIndex) => {
@@ -214,7 +226,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
               const activeFilters = state.filters.get(colIndex) || new Set();
               return (
                 <div key={colIndex} className="space-y-2">
-                  <h4 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-black'}`}>{header}</h4>
+                  <h4 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>{header}</h4>
                   <div className="space-y-1 max-h-40 overflow-y-auto">
                     {values.map((value) => (
                       <label key={value} className="flex items-center gap-2 cursor-pointer text-sm">
@@ -224,7 +236,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
                           onChange={() => toggleFilter(colIndex, value)}
                           className="rounded"
                         />
-                        <span className={isDark ? 'text-white/70' : 'text-black/70'}>{value}</span>
+                        <span className={isDark ? 'text-white/70' : 'text-gray-700'}>{value}</span>
                       </label>
                     ))}
                   </div>
@@ -236,9 +248,9 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
 
         {showColumns && (
           <div
-            className={`border-b p-4 space-y-2 ${isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-black/5'}`}
+            className={`border-b p-4 space-y-2 ${isDark ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-white'}`}
           >
-            <h4 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-black'}`}>Видимость колонок</h4>
+            <h4 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Видимость колонок</h4>
             <div className="space-y-2">
               {headers.map((header, colIndex) => (
                 <label key={colIndex} className="flex items-center gap-2 cursor-pointer text-sm">
@@ -248,7 +260,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
                     onChange={() => toggleColumnVisibility(colIndex)}
                     className="rounded"
                   />
-                  <span className={isDark ? 'text-white/70' : 'text-black/70'}>{header}</span>
+                  <span className={isDark ? 'text-white/70' : 'text-gray-700'}>{header}</span>
                 </label>
               ))}
             </div>
@@ -260,15 +272,15 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
             <thead>
               <tr
                 className={`${
-                  isDark ? 'bg-white/8 border-white/10' : 'bg-black/8 border-black/10'
-                } border-b`}
+                  isDark ? 'bg-white/8 border-white/10' : 'bg-gray-100 border-gray-200'
+                } border-b sticky top-0 z-10`}
               >
                 {headers.map((header, colIndex) => (
                   state.visibleColumns.has(colIndex) && (
                     <th
                       key={colIndex}
                       className={`px-4 py-3 text-left font-semibold cursor-pointer transition-colors ${
-                        isDark ? 'hover:bg-white/15' : 'hover:bg-black/15'
+                        isDark ? 'hover:bg-white/15 text-white' : 'hover:bg-gray-200 text-gray-900'
                       }`}
                       onClick={() => handleSort(colIndex)}
                     >
@@ -290,7 +302,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
                   className={`border-b transition-colors ${
                     isDark
                       ? 'border-white/10 hover:bg-white/5'
-                      : 'border-black/10 hover:bg-black/5'
+                      : 'border-gray-200 hover:bg-gray-100'
                   }`}
                 >
                   {row.cells.map((cell, colIndex) => {
@@ -299,13 +311,13 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
                     let displayCell = cell;
                     if (state.searchQuery && cell.toLowerCase().includes(state.searchQuery.toLowerCase())) {
                       const regex = new RegExp(`(${state.searchQuery})`, 'gi');
-                      displayCell = cell.replace(regex, '<mark style="background-color: yellow; color: black;">$1</mark>');
+                      displayCell = cell.replace(regex, '<mark style="background-color: rgb(59, 130, 246); color: white; padding: 2px 4px; border-radius: 2px; font-weight: 600;">$1</mark>');
                     }
 
                     return (
                       <td
                         key={colIndex}
-                        className={`px-4 py-3 ${isDark ? 'text-white/90' : 'text-black/90'}`}
+                        className={`px-4 py-3 ${isDark ? 'text-white/90' : 'text-gray-900'}`}
                         dangerouslySetInnerHTML={{ __html: displayCell }}
                       />
                     );
@@ -316,7 +328,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
           </table>
 
           {filteredAndSortedRows.length === 0 && (
-            <div className={`p-6 text-center ${isDark ? 'text-white/50' : 'text-black/50'}`}>
+            <div className={`p-6 text-center ${isDark ? 'text-white/50' : 'text-gray-500'}`}>
               Нет результатов
             </div>
           )}
@@ -333,11 +345,6 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
           white-space: normal;
           hyphens: auto;
           min-width: 120px;
-        }
-        mark {
-          padding: 2px 4px;
-          border-radius: 2px;
-          font-weight: 600;
         }
       `}</style>
     </div>
