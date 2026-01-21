@@ -14,7 +14,7 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       'p', 'br', 'strong', 'em', 'u', 'a',
       'ul', 'ol', 'li', 'blockquote', 'code',
       'pre', 'img', 'table', 'tr', 'td', 'th',
-      'thead', 'tbody', 'div', 'span', 'hr'
+      'thead', 'tbody', 'div', 'span', 'hr', 'figure', 'figcaption'
     ],
     ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'id', 'data-language', 'data-lang'],
     ALLOW_DATA_ATTR: true,
@@ -118,16 +118,39 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
           return;
         }
 
-        // Обработка изображений
+        // Обработка изображений с поддержкой комментариев/caption'ов
         if (tagName === 'img') {
-          elements.push(
-            <img
-              key={key}
-              src={element.getAttribute('src') || ''}
-              alt={element.getAttribute('alt') || 'Image'}
-              loading="lazy"
-            />
-          );
+          const src = element.getAttribute('src') || '';
+          const alt = element.getAttribute('alt') || 'Image';
+          const title = element.getAttribute('title') || '';
+
+          if (title) {
+            // Если есть caption - обернуть в figure с figcaption
+            elements.push(
+              <figure key={key} className="my-6 flex flex-col items-center">
+                <img
+                  src={src}
+                  alt={alt}
+                  loading="lazy"
+                  className="rounded-lg shadow-md max-w-full h-auto"
+                />
+                <figcaption className="mt-3 text-center text-sm text-slate-400 italic max-w-full">
+                  {title}
+                </figcaption>
+              </figure>
+            );
+          } else {
+            // Если нет caption - просто изображение
+            elements.push(
+              <img
+                key={key}
+                src={src}
+                alt={alt}
+                loading="lazy"
+                className="rounded-lg shadow-md max-w-full h-auto my-4"
+              />
+            );
+          }
           return;
         }
 
