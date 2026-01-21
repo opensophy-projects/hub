@@ -14,9 +14,9 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       'p', 'br', 'strong', 'em', 'u', 'a',
       'ul', 'ol', 'li', 'blockquote', 'code',
       'pre', 'img', 'table', 'tr', 'td', 'th',
-      'thead', 'tbody', 'div', 'span', 'hr', 'figure', 'figcaption'
+      'thead', 'tbody', 'div', 'span', 'hr'
     ],
-    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'id', 'data-language', 'data-lang', 'style'],
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'id', 'data-language', 'data-lang'],
     ALLOW_DATA_ATTR: true,
   });
 
@@ -107,7 +107,7 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
         // Обработка ссылок
         if (tagName === 'a') {
           elements.push(
-            
+            <a
               key={key}
               href={element.getAttribute('href') || '#'}
               target="_blank"
@@ -118,37 +118,16 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
           return;
         }
 
-        // Обработка изображений с подписями
+        // Обработка изображений
         if (tagName === 'img') {
-          const src = element.getAttribute('src') || '';
-          const alt = element.getAttribute('alt') || 'Image';
-          const title = element.getAttribute('title') || '';
-          const hasCaption = element.classList.contains('has-caption');
-
-          if (title || hasCaption) {
-            elements.push(
-              <figure key={key} className="my-6 w-full">
-                <img
-                  src={src}
-                  alt={alt}
-                  loading="lazy"
-                  className="rounded-lg shadow-md max-w-full h-auto w-full"
-                />
-                <figcaption className="mt-3 text-center text-sm text-slate-400 italic font-medium">
-                  {title}
-                </figcaption>
-              </figure>
-            );
-          } else {
-            elements.push(
-              <img
-                key={key}
-                src={src}
-                alt={alt}
-                loading="lazy"
-              />
-            );
-          }
+          elements.push(
+            <img
+              key={key}
+              src={element.getAttribute('src') || ''}
+              alt={element.getAttribute('alt') || 'Image'}
+              loading="lazy"
+            />
+          );
           return;
         }
 
