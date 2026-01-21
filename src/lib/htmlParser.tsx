@@ -125,7 +125,6 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
           const title = element.getAttribute('title') || '';
           const hasCaption = element.classList.contains('has-caption');
 
-          // Если есть подпись (title или класс has-caption)
           if (title || hasCaption) {
             elements.push(
               <figure key={key} className="my-6 w-full">
@@ -147,7 +146,6 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
                 src={src}
                 alt={alt}
                 loading="lazy"
-                className="rounded-lg shadow-md max-w-full h-auto"
               />
             );
           }
