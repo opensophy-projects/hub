@@ -15,6 +15,20 @@ interface ModalTableState {
   visibleColumns: Set<number>;
 }
 
+const XIcon = () => (
+  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
+
+const EyeIcon = () => (
+  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
 const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onClose }) => {
   const [state, setState] = useState<ModalTableState>({
     searchQuery: '',
@@ -148,13 +162,6 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
     }));
   };
 
-  const XIcon = () => (
-    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  );
-
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center p-4"
@@ -179,20 +186,20 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
       >
         <div
           className={`sticky top-0 flex items-center justify-between p-4 border-b z-10 ${
-            isDark ? 'bg-[#0a0a0a] border-gray-500' : 'bg-white border-gray-400'
+            isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-white border-gray-300'
           }`}
         >
-          <h3 className={`font-bold ${isDark ? 'text-white' : 'text-black'}`}>Таблица в полном размере</h3>
+          <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Таблица в полном размере</h3>
           <button
             onClick={onClose}
-            className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-black/10 text-black'}`}
+            className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-900'}`}
           >
             <XIcon />
           </button>
         </div>
 
         <div
-          className={`flex flex-wrap items-center gap-2 p-3 border-b ${isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-black/5'}`}
+          className={`flex flex-wrap items-center gap-2 p-3 border-b ${isDark ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-white'}`}
         >
           <input
             type="text"
@@ -202,7 +209,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
             className={`flex-1 min-w-[200px] px-3 py-2 rounded-lg text-sm transition-colors ${
               isDark
                 ? 'bg-white/10 border border-white/20 text-white placeholder-white/50 focus:bg-white/15 focus:border-white/40'
-                : 'bg-black/10 border border-black/20 text-black placeholder-black/50 focus:bg-black/15 focus:border-black/40'
+                : 'bg-white border border-gray-300 text-gray-900 placeholder-gray-500 focus:bg-gray-50 focus:border-gray-400'
             } focus:outline-none`}
           />
 
@@ -211,21 +218,24 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
             className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
               isDark
                 ? 'bg-white/10 hover:bg-white/20 text-white'
-                : 'bg-black/10 hover:bg-black/20 text-black'
+                : 'bg-white hover:bg-gray-100 text-gray-900 border border-gray-300'
             }`}
+            title="Фильтрация"
           >
             Фильтр {activeFilterCount > 0 && `(${activeFilterCount})`}
           </button>
 
           <button
             onClick={() => setShowColumns(!showColumns)}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
               isDark
                 ? 'bg-white/10 hover:bg-white/20 text-white'
-                : 'bg-black/10 hover:bg-black/20 text-black'
+                : 'bg-white hover:bg-gray-100 text-gray-900 border border-gray-300'
             }`}
+            title="Видимость колонок"
           >
-            ⚙
+            <EyeIcon />
+            Колонки
           </button>
 
           {activeFilterCount > 0 && (
@@ -234,7 +244,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isDark
                   ? 'bg-white/10 hover:bg-white/20 text-white'
-                  : 'bg-black/10 hover:bg-black/20 text-black'
+                  : 'bg-white hover:bg-gray-100 text-gray-900 border border-gray-300'
               }`}
             >
               Сбросить
@@ -244,7 +254,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
 
         {showFilters && (
           <div
-            className={`border-b p-4 grid gap-3 max-h-64 overflow-y-auto ${isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-black/5'}`}
+            className={`border-b p-4 grid gap-3 max-h-64 overflow-y-auto ${isDark ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-white'}`}
             style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}
           >
             {headers.map((header, colIndex) => {
@@ -252,7 +262,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
               const activeFilters = state.filters.get(colIndex) || new Set();
               return (
                 <div key={colIndex} className="space-y-2">
-                  <h4 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-black'}`}>{header}</h4>
+                  <h4 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>{header}</h4>
                   <div className="space-y-1 max-h-32 overflow-y-auto">
                     {values.map((value) => (
                       <label key={value} className="flex items-center gap-2 cursor-pointer text-sm">
@@ -262,7 +272,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
                           onChange={() => toggleFilter(colIndex, value)}
                           className="rounded"
                         />
-                        <span className={isDark ? 'text-white/70' : 'text-black/70'}>{value}</span>
+                        <span className={isDark ? 'text-white/70' : 'text-gray-700'}>{value}</span>
                       </label>
                     ))}
                   </div>
@@ -274,9 +284,9 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
 
         {showColumns && (
           <div
-            className={`border-b p-4 space-y-2 max-h-48 overflow-y-auto ${isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-black/5'}`}
+            className={`border-b p-4 space-y-2 max-h-48 overflow-y-auto ${isDark ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-white'}`}
           >
-            <h4 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-black'}`}>Видимость колонок</h4>
+            <h4 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Видимость колонок</h4>
             <div className="space-y-2">
               {headers.map((header, colIndex) => (
                 <label key={colIndex} className="flex items-center gap-2 cursor-pointer text-sm">
@@ -286,7 +296,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
                     onChange={() => toggleColumnVisibility(colIndex)}
                     className="rounded"
                   />
-                  <span className={isDark ? 'text-white/70' : 'text-black/70'}>{header}</span>
+                  <span className={isDark ? 'text-white/70' : 'text-gray-700'}>{header}</span>
                 </label>
               ))}
             </div>
@@ -298,15 +308,15 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
             <thead>
               <tr
                 className={`${
-                  isDark ? 'bg-white/8 border-white/10' : 'bg-black/8 border-black/10'
-                } border-b`}
+                  isDark ? 'bg-white/8 border-white/10' : 'bg-gray-100 border-gray-200'
+                } border-b sticky top-0 z-10`}
               >
                 {headers.map((header, colIndex) => (
                   state.visibleColumns.has(colIndex) && (
                     <th
                       key={colIndex}
                       className={`px-4 py-3 text-left font-semibold cursor-pointer transition-colors ${
-                        isDark ? 'hover:bg-white/15' : 'hover:bg-black/15'
+                        isDark ? 'hover:bg-white/15 text-white' : 'hover:bg-gray-200 text-gray-900'
                       }`}
                       onClick={() => handleSort(colIndex)}
                     >
@@ -328,7 +338,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
                   className={`border-b transition-colors ${
                     isDark
                       ? 'border-white/10 hover:bg-white/5'
-                      : 'border-black/10 hover:bg-black/5'
+                      : 'border-gray-200 hover:bg-gray-100'
                   }`}
                 >
                   {row.cells.map((cell, colIndex) => {
@@ -337,13 +347,13 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
                     let displayCell = cell;
                     if (state.searchQuery && cell.toLowerCase().includes(state.searchQuery.toLowerCase())) {
                       const regex = new RegExp(`(${state.searchQuery})`, 'gi');
-                      displayCell = cell.replace(regex, '<mark style="background-color: yellow; color: black;">$1</mark>');
+                      displayCell = cell.replace(regex, '<mark style="background-color: rgb(59, 130, 246); color: white; padding: 2px 4px; border-radius: 2px; font-weight: 600;">$1</mark>');
                     }
 
                     return (
                       <td
                         key={colIndex}
-                        className={`px-4 py-3 ${isDark ? 'text-white/90' : 'text-black/90'}`}
+                        className={`px-4 py-3 ${isDark ? 'text-white/90' : 'text-gray-900'}`}
                         dangerouslySetInnerHTML={{ __html: displayCell }}
                       />
                     );
@@ -354,7 +364,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
           </table>
 
           {filteredAndSortedRows.length === 0 && (
-            <div className={`p-6 text-center ${isDark ? 'text-white/50' : 'text-black/50'}`}>
+            <div className={`p-6 text-center ${isDark ? 'text-white/50' : 'text-gray-500'}`}>
               Нет результатов
             </div>
           )}
@@ -365,10 +375,10 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
               width: 100%;
             }
             th, td {
-              border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)'};
+              border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgb(229, 231, 235)'};
               padding: 0.75rem;
               text-align: left;
-              color: ${isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)'};
+              color: ${isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgb(17, 24, 39)'};
               word-break: break-word;
               overflow-wrap: break-word;
               white-space: normal;
@@ -376,17 +386,12 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
               min-width: 120px;
             }
             th {
-              background-color: ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'};
+              background-color: ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgb(249, 250, 251)'};
               font-weight: 600;
-              color: ${isDark ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)'};
+              color: ${isDark ? 'rgb(255, 255, 255)' : 'rgb(17, 24, 39)'};
             }
             tr:nth-child(even) {
-              background-color: ${isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)'};
-            }
-            mark {
-              padding: 2px 4px;
-              border-radius: 2px;
-              font-weight: 600;
+              background-color: ${isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgb(249, 250, 251)'};
             }
           `}</style>
         </div>
