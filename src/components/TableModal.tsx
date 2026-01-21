@@ -175,27 +175,27 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
       />
 
       <div
-        className={`relative z-[101] max-h-[90vh] max-w-[95vw] overflow-hidden rounded-lg shadow-2xl flex flex-col ${
-          isDark ? 'bg-[#0a0a0a]' : 'bg-gray-50'
+        className={`relative z-[101] max-h-[90vh] max-w-[95vw] rounded-lg shadow-2xl flex flex-col ${
+          isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div
-          className={`sticky top-0 flex items-center justify-between p-4 border-b z-30 ${
-            isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-gray-50 border-gray-200'
+          className={`flex items-center justify-between p-4 border-b ${
+            isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
           }`}
         >
-          <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Таблица в полном размере</h3>
+          <h3 className={`font-bold ${isDark ? 'text-white' : 'text-black'}`}>Таблица в полном размере</h3>
           <button
             onClick={onClose}
-            className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-200 text-gray-900'}`}
+            className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-[#ddd8cd] text-black'}`}
           >
             <XIcon />
           </button>
         </div>
 
         <div
-          className={`flex flex-wrap items-center gap-2 p-3 border-b ${isDark ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-white'}`}
+          className={`flex flex-wrap items-center gap-2 p-3 border-b ${isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-[#f1f0ec]'}`}
         >
           <input
             type="text"
@@ -205,7 +205,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
             className={`flex-1 min-w-[200px] px-3 py-2 rounded-lg text-sm transition-colors ${
               isDark
                 ? 'bg-white/10 border border-white/20 text-white placeholder-white/50 focus:bg-white/15 focus:border-white/40'
-                : 'bg-white border border-gray-300 text-gray-900 placeholder-gray-500 focus:bg-gray-50 focus:border-gray-400'
+                : 'bg-white border border-black/20 text-black placeholder-black/50 focus:bg-white focus:border-black/40'
             } focus:outline-none`}
           />
 
@@ -214,7 +214,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
             className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
               isDark
                 ? 'bg-white/10 hover:bg-white/20 text-white'
-                : 'bg-white hover:bg-gray-100 text-gray-900 border border-gray-300'
+                : 'bg-white hover:bg-[#ddd8cd] text-black border border-black/20'
             }`}
             title="Фильтрация"
           >
@@ -226,7 +226,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
             className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
               isDark
                 ? 'bg-white/10 hover:bg-white/20 text-white'
-                : 'bg-white hover:bg-gray-100 text-gray-900 border border-gray-300'
+                : 'bg-white hover:bg-[#ddd8cd] text-black border border-black/20'
             }`}
             title="Видимость колонок"
           >
@@ -240,7 +240,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isDark
                   ? 'bg-white/10 hover:bg-white/20 text-white'
-                  : 'bg-white hover:bg-gray-100 text-gray-900 border border-gray-300'
+                  : 'bg-white hover:bg-[#ddd8cd] text-black border border-black/20'
               }`}
             >
               Сбросить
@@ -250,7 +250,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
 
         {showFilters && (
           <div
-            className={`border-b p-4 grid gap-3 max-h-64 overflow-y-auto ${isDark ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-white'}`}
+            className={`border-b p-4 grid gap-3 ${isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-[#f1f0ec]'}`}
             style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}
           >
             {headers.map((header, colIndex) => {
@@ -258,8 +258,8 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
               const activeFilters = state.filters.get(colIndex) || new Set();
               return (
                 <div key={colIndex} className="space-y-2">
-                  <h4 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>{header}</h4>
-                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                  <h4 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-black'}`}>{header}</h4>
+                  <div className="space-y-1">
                     {values.map((value) => (
                       <label key={value} className="flex items-center gap-2 cursor-pointer text-sm">
                         <input
@@ -268,7 +268,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
                           onChange={() => toggleFilter(colIndex, value)}
                           className="rounded"
                         />
-                        <span className={isDark ? 'text-white/70' : 'text-gray-700'}>{value}</span>
+                        <span className={isDark ? 'text-white/70' : 'text-black/70'}>{value}</span>
                       </label>
                     ))}
                   </div>
@@ -280,9 +280,9 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
 
         {showColumns && (
           <div
-            className={`border-b p-4 space-y-2 max-h-48 overflow-y-auto ${isDark ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-white'}`}
+            className={`border-b p-4 space-y-2 ${isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-[#f1f0ec]'}`}
           >
-            <h4 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Видимость колонок</h4>
+            <h4 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-black'}`}>Видимость колонок</h4>
             <div className="space-y-2">
               {headers.map((header, colIndex) => (
                 <label key={colIndex} className="flex items-center gap-2 cursor-pointer text-sm">
@@ -292,114 +292,113 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
                     onChange={() => toggleColumnVisibility(colIndex)}
                     className="rounded"
                   />
-                  <span className={isDark ? 'text-white/70' : 'text-gray-700'}>{header}</span>
+                  <span className={isDark ? 'text-white/70' : 'text-black/70'}>{header}</span>
                 </label>
               ))}
             </div>
           </div>
         )}
 
-        <div className="flex-1 overflow-x-auto overflow-y-auto relative">
-          <table className={`w-full border-collapse text-sm`}>
-            <thead>
-              <tr
-                className={`${
-                  isDark ? 'border-white/10' : 'border-gray-200'
-                } border-b`}
-                style={{
-                  position: 'sticky',
-                  top: 0,
-                  zIndex: 20
-                }}
-              >
-                {headers.map((header, colIndex) => (
-                  state.visibleColumns.has(colIndex) && (
-                    <th
-                      key={colIndex}
-                      className={`px-4 py-3 text-left font-semibold cursor-pointer transition-colors ${
-                        isDark ? 'hover:bg-white/25 text-white' : 'hover:bg-[#ddd8cd] text-gray-900'
-                      }`}
-                      onClick={() => handleSort(colIndex)}
-                      style={{
-                        position: 'relative',
-                        backgroundColor: isDark ? '#1a1a1a' : '#E8E7E3'
-                      }}
-                    >
-                      <div className="flex items-center gap-2 whitespace-nowrap">
-                        <span>{header}</span>
-                        {state.sortColumn === colIndex && state.sortDirection !== 'none' && (
-                          <span className="text-xs">{state.sortDirection === 'asc' ? '↑' : '↓'}</span>
-                        )}
-                      </div>
-                    </th>
-                  )
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredAndSortedRows.map((row, rowIndex) => (
+        <div className="flex-1 relative overflow-hidden">
+          <div className="overflow-x-auto overflow-y-auto h-full">
+            <table className={`w-full border-collapse text-sm`}>
+              <thead className="sticky top-0 z-40">
                 <tr
-                  key={rowIndex}
-                  className={`border-b transition-colors ${
-                    isDark
-                      ? 'border-white/10 hover:bg-white/5'
-                      : 'border-gray-200 hover:bg-gray-100'
-                  } ${rowIndex % 2 === 0 ? (isDark ? '' : 'bg-white') : (isDark ? '' : 'bg-[#E8E7E3]')}`}
+                  className={`${
+                    isDark ? 'border-white/10' : 'border-black/10'
+                  } border-b`}
                 >
-                  {row.cells.map((cell, colIndex) => {
-                    if (!state.visibleColumns.has(colIndex)) return null;
-
-                    let displayCell = cell;
-                    if (state.searchQuery && cell.toLowerCase().includes(state.searchQuery.toLowerCase())) {
-                      const regex = new RegExp(`(${state.searchQuery})`, 'gi');
-                      displayCell = cell.replace(regex, '<mark style="background-color: rgb(59, 130, 246); color: white; padding: 2px 4px; border-radius: 2px; font-weight: 600;">$1</mark>');
-                    }
-
-                    return (
-                      <td
+                  {headers.map((header, colIndex) => (
+                    state.visibleColumns.has(colIndex) && (
+                      <th
                         key={colIndex}
-                        className={`px-4 py-3 ${isDark ? 'text-white/90' : 'text-gray-900'}`}
-                        dangerouslySetInnerHTML={{ __html: displayCell }}
-                      />
-                    );
-                  })}
+                        className={`px-4 py-3 text-left font-semibold cursor-pointer transition-colors ${
+                          isDark ? 'text-white hover:bg-white/20' : 'text-black hover:bg-[#ddd8cd]'
+                        }`}
+                        onClick={() => handleSort(colIndex)}
+                        style={{
+                          backgroundColor: isDark ? '#1a1a1a' : '#E8E7E3'
+                        }}
+                      >
+                        <div className="flex items-center gap-2 whitespace-nowrap">
+                          <span>{header}</span>
+                          {state.sortColumn === colIndex && state.sortDirection !== 'none' && (
+                            <span className="text-xs">{state.sortDirection === 'asc' ? '↑' : '↓'}</span>
+                          )}
+                        </div>
+                      </th>
+                    )
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredAndSortedRows.map((row, rowIndex) => (
+                  <tr
+                    key={rowIndex}
+                    className={`border-b transition-colors ${
+                      isDark
+                        ? 'border-white/10 hover:bg-white/5'
+                        : 'border-black/10 hover:bg-[#ddd8cd]'
+                    } ${rowIndex % 2 === 0
+                      ? isDark ? '' : 'bg-[#E8E7E3]'
+                      : isDark ? '' : 'bg-[#f1f0ec]'
+                    }`}
+                  >
+                    {row.cells.map((cell, colIndex) => {
+                      if (!state.visibleColumns.has(colIndex)) return null;
 
-          {filteredAndSortedRows.length === 0 && (
-            <div className={`p-6 text-center ${isDark ? 'text-white/50' : 'text-gray-500'}`}>
-              Нет результатов
-            </div>
-          )}
+                      let displayCell = cell;
+                      if (state.searchQuery && cell.toLowerCase().includes(state.searchQuery.toLowerCase())) {
+                        const regex = new RegExp(`(${state.searchQuery})`, 'gi');
+                        displayCell = cell.replace(regex, '<mark style="background-color: rgb(59, 130, 246); color: white; padding: 2px 4px; border-radius: 2px; font-weight: 600;">$1</mark>');
+                      }
 
-          <style>{`
-            table {
-              border-collapse: collapse;
-              width: 100%;
-            }
-            th, td {
-              border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgb(229, 231, 235)'};
-              padding: 0.75rem;
-              text-align: left;
-              color: ${isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgb(17, 24, 39)'};
-              word-break: break-word;
-              overflow-wrap: break-word;
-              white-space: normal;
-              hyphens: auto;
-              min-width: 120px;
-            }
-            th {
-              background-color: ${isDark ? '#1a1a1a' : '#E8E7E3'};
-              font-weight: 600;
-              color: ${isDark ? 'rgb(255, 255, 255)' : 'rgb(17, 24, 39)'};
-            }
-            tr:nth-child(even) {
-              background-color: ${isDark ? 'rgba(255, 255, 255, 0.03)' : '#E8E7E3'};
-            }
-          `}</style>
+                      return (
+                        <td
+                          key={colIndex}
+                          className={`px-4 py-3 ${isDark ? 'text-white/90' : 'text-black'}`}
+                          dangerouslySetInnerHTML={{ __html: displayCell }}
+                        />
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {filteredAndSortedRows.length === 0 && (
+              <div className={`p-6 text-center ${isDark ? 'text-white/50' : 'text-black/50'}`}>
+                Нет результатов
+              </div>
+            )}
+          </div>
         </div>
+
+        <style>{`
+          table {
+            border-collapse: collapse;
+            width: 100%;
+          }
+          th, td {
+            border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)'};
+            padding: 0.75rem;
+            text-align: left;
+            color: ${isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgb(0, 0, 0)'};
+            word-break: break-word;
+            overflow-wrap: break-word;
+            white-space: normal;
+            hyphens: auto;
+            min-width: 120px;
+          }
+          th {
+            background-color: ${isDark ? '#1a1a1a' : '#E8E7E3'};
+            font-weight: 600;
+            color: ${isDark ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)'};
+          }
+          tr:nth-child(even) {
+            background-color: ${isDark ? 'rgba(255, 255, 255, 0.03)' : '#f1f0ec'};
+          }
+        `}</style>
       </div>
     </div>
   );
