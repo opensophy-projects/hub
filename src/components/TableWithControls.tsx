@@ -148,7 +148,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
   };
 
   return (
-    <div className="overflow-x-auto my-4">
+    <div className="my-4">
       <div className={`rounded-lg border ${isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-gray-200 bg-gray-50'}`}>
         <div
           className={`flex flex-wrap items-center gap-2 p-3 border-b ${isDark ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-white'}`}
@@ -207,8 +207,8 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
             onClick={() => onFullscreen(tableHtml)}
             className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
               isDark
-                ? 'bg-blue-600/80 hover:bg-blue-600 text-white'
-                : 'bg-blue-500 hover:bg-blue-600 text-white border border-blue-600'
+                ? 'bg-white/10 hover:bg-white/20 text-white'
+                : 'bg-white hover:bg-gray-100 text-gray-900 border border-gray-300'
             }`}
             title="Открыть в полном размере"
           >
@@ -267,13 +267,18 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
           </div>
         )}
 
-        <div className="overflow-x-auto">
+        <div className="relative w-full overflow-x-auto">
           <table className={`w-full border-collapse text-sm ${isDark ? 'prose-invert' : ''}`}>
             <thead>
               <tr
                 className={`${
                   isDark ? 'bg-white/8 border-white/10' : 'bg-gray-100 border-gray-200'
-                } border-b sticky top-0 z-10`}
+                } border-b`}
+                style={{
+                  position: 'sticky',
+                  top: 0,
+                  zIndex: 20
+                }}
               >
                 {headers.map((header, colIndex) => (
                   state.visibleColumns.has(colIndex) && (
@@ -283,6 +288,10 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
                         isDark ? 'hover:bg-white/15 text-white' : 'hover:bg-gray-200 text-gray-900'
                       }`}
                       onClick={() => handleSort(colIndex)}
+                      style={{
+                        position: 'relative',
+                        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgb(243, 244, 246)'
+                      }}
                     >
                       <div className="flex items-center gap-2 whitespace-nowrap">
                         <span>{header}</span>
@@ -303,7 +312,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
                     isDark
                       ? 'border-white/10 hover:bg-white/5'
                       : 'border-gray-200 hover:bg-gray-100'
-                  }`}
+                  } ${rowIndex % 2 === 0 ? (isDark ? '' : 'bg-white') : (isDark ? '' : 'bg-gray-50')}`}
                 >
                   {row.cells.map((cell, colIndex) => {
                     if (!state.visibleColumns.has(colIndex)) return null;
