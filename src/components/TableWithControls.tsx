@@ -267,7 +267,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
           </div>
         )}
 
-        <div className="relative w-full overflow-x-auto">
+        <div className="relative w-full overflow-x-auto overflow-y-auto max-h-96">
           <table className={`w-full border-collapse text-sm ${isDark ? 'prose-invert' : ''}`}>
             <thead>
               <tr
