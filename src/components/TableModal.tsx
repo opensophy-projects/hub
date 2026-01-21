@@ -175,24 +175,20 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
       />
 
       <div
-        className={`relative z-[101] max-h-[90vh] max-w-[95vw] overflow-auto rounded-lg shadow-2xl ${
-          isDark ? 'bg-[#0a0a0a]' : 'bg-white'
+        className={`relative z-[101] max-h-[90vh] max-w-[95vw] overflow-hidden rounded-lg shadow-2xl flex flex-col ${
+          isDark ? 'bg-[#0a0a0a]' : 'bg-gray-50'
         }`}
         onClick={(e) => e.stopPropagation()}
-        style={{
-          display: 'flex',
-          flexDirection: 'column'
-        }}
       >
         <div
-          className={`sticky top-0 flex items-center justify-between p-4 border-b z-10 ${
-            isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-white border-gray-300'
+          className={`sticky top-0 flex items-center justify-between p-4 border-b z-30 ${
+            isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-gray-50 border-gray-200'
           }`}
         >
           <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Таблица в полном размере</h3>
           <button
             onClick={onClose}
-            className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-900'}`}
+            className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-200 text-gray-900'}`}
           >
             <XIcon />
           </button>
@@ -303,13 +299,18 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
           </div>
         )}
 
-        <div className="p-6 overflow-auto flex-1">
+        <div className="flex-1 overflow-x-auto overflow-y-auto relative">
           <table className={`w-full border-collapse text-sm`}>
             <thead>
               <tr
                 className={`${
                   isDark ? 'bg-white/8 border-white/10' : 'bg-gray-100 border-gray-200'
-                } border-b sticky top-0 z-10`}
+                } border-b`}
+                style={{
+                  position: 'sticky',
+                  top: 0,
+                  zIndex: 20
+                }}
               >
                 {headers.map((header, colIndex) => (
                   state.visibleColumns.has(colIndex) && (
@@ -319,6 +320,10 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
                         isDark ? 'hover:bg-white/15 text-white' : 'hover:bg-gray-200 text-gray-900'
                       }`}
                       onClick={() => handleSort(colIndex)}
+                      style={{
+                        position: 'relative',
+                        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgb(243, 244, 246)'
+                      }}
                     >
                       <div className="flex items-center gap-2 whitespace-nowrap">
                         <span>{header}</span>
@@ -339,7 +344,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
                     isDark
                       ? 'border-white/10 hover:bg-white/5'
                       : 'border-gray-200 hover:bg-gray-100'
-                  }`}
+                  } ${rowIndex % 2 === 0 ? (isDark ? '' : 'bg-white') : (isDark ? '' : 'bg-gray-50')}`}
                 >
                   {row.cells.map((cell, colIndex) => {
                     if (!state.visibleColumns.has(colIndex)) return null;
@@ -386,7 +391,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
               min-width: 120px;
             }
             th {
-              background-color: ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgb(249, 250, 251)'};
+              background-color: ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgb(243, 244, 246)'};
               font-weight: 600;
               color: ${isDark ? 'rgb(255, 255, 255)' : 'rgb(17, 24, 39)'};
             }
