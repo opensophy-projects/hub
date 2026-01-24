@@ -7,6 +7,11 @@ interface CodeBlockProps {
   language?: string;
 }
 
+// Безопасное экранирование спецсимволов регулярных выражений
+const escapeRegExp = (str: string): string => {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
 export function CodeBlock({ code }: CodeBlockProps) {
   const { isDark } = useContext(TableContext);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -28,14 +33,23 @@ export function CodeBlock({ code }: CodeBlockProps) {
   );
 
   const highlightMatch = (text: string) => {
-    if (!searchQuery) return text;
-    const r = new RegExp(`(${searchQuery})`, 'gi');
-    return text.split(r).map((p, i) =>
-      r.test(p) ? (
-        <span key={i} style={{ background: '#78350f', color: '#fff' }}>
-          {p}
-        </span>
-      ) : p
+    if (!searchQuery) return <>{text}</>;
+    
+    const escapedQuery = escapeRegExp(searchQuery);
+    const parts = text.split(new RegExp(`(${escapedQuery})`, 'gi'));
+    
+    return (
+      <>
+        {parts.map((p, i) =>
+          p.toLowerCase() === searchQuery.toLowerCase() ? (
+            <span key={i} style={{ background: '#78350f', color: '#fff' }}>
+              {p}
+            </span>
+          ) : (
+            <span key={i}>{p}</span>
+          )
+        )}
+      </>
     );
   };
 
@@ -86,7 +100,7 @@ export function CodeBlock({ code }: CodeBlockProps) {
           >
             {i + 1}
           </span>
-          {matchedLines.has(i) ? highlightMatch(l) : l}
+          {matchedLines.has(i) ? highlightMatch(l) : <span>{l}</span>}
         </div>
       ))}
     </pre>
