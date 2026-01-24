@@ -29,6 +29,33 @@ const EyeIcon = () => (
   </svg>
 );
 
+// Безопасное экранирование спецсимволов регулярных выражений
+const escapeRegExp = (str: string): string => {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
+// Безопасный компонент для подсветки текста
+const HighlightText: React.FC<{ text: string; query: string }> = ({ text, query }) => {
+  if (!query) return <>{text}</>;
+  
+  const escapedQuery = escapeRegExp(query);
+  const parts = text.split(new RegExp(`(${escapedQuery})`, 'gi'));
+  
+  return (
+    <>
+      {parts.map((part, i) => 
+        part.toLowerCase() === query.toLowerCase() ? (
+          <mark key={i} style={{ backgroundColor: 'rgb(59, 130, 246)', color: 'white', padding: '2px 4px', borderRadius: '2px', fontWeight: 600 }}>
+            {part}
+          </mark>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
+};
+
 const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onClose }) => {
   const [state, setState] = useState<ModalTableState>({
     searchQuery: '',
@@ -347,18 +374,13 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
                     {row.cells.map((cell, colIndex) => {
                       if (!state.visibleColumns.has(colIndex)) return null;
 
-                      let displayCell = cell;
-                      if (state.searchQuery && cell.toLowerCase().includes(state.searchQuery.toLowerCase())) {
-                        const regex = new RegExp(`(${state.searchQuery})`, 'gi');
-                        displayCell = cell.replace(regex, '<mark style="background-color: rgb(59, 130, 246); color: white; padding: 2px 4px; border-radius: 2px; font-weight: 600;">$1</mark>');
-                      }
-
                       return (
                         <td
                           key={colIndex}
                           className={`px-4 py-3 ${isDark ? 'text-white/90' : 'text-black'}`}
-                          dangerouslySetInnerHTML={{ __html: displayCell }}
-                        />
+                        >
+                          <HighlightText text={cell} query={state.searchQuery} />
+                        </td>
                       );
                     })}
                   </tr>
