@@ -6,8 +6,8 @@ author: veilosophy
 date: 2025-01-13
 tags: dokploy, docker, деплой, devops, self-hosted, coolify, traefik, ci/cd
 keywords: dokploy, docker деплой, self-hosted платформа, альтернатива heroku, coolify vs dokploy, автоматический деплой, traefik, docker swarm
-bannercolor: #4d1f9c
-bannertext: DevOps & Deployment
+bannercolor: #2e2e2e
+bannertext: dokploy
 canonical: null
 robots: index, follow
 lang: ru
