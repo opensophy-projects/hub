@@ -518,7 +518,7 @@ const MobileNavbar: React.FC = () => {
                   </button>
                 </div>
                 <div className="space-y-2">
-                  
+                  <a
                     href="mailto:opensophy@gmail.com"
                     className={`flex items-center gap-4 px-4 py-4 rounded-lg transition-colors ${
                       isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black'
@@ -530,7 +530,7 @@ const MobileNavbar: React.FC = () => {
                       <div className="text-sm opacity-70">opensophy@gmail.com</div>
                     </div>
                   </a>
-                  
+                  <a
                     href="https://t.me/veilosophy"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -544,7 +544,7 @@ const MobileNavbar: React.FC = () => {
                       <div className="text-sm opacity-70">@veilosophy</div>
                     </div>
                   </a>
-                  
+                  <a
                     href="https://github.com/opensophy-projects"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -558,7 +558,7 @@ const MobileNavbar: React.FC = () => {
                       <div className="text-sm opacity-70">opensophy</div>
                     </div>
                   </a>
-                  
+                  <a
                     href="https://habr.com/ru/users/opensophy/"
                     target="_blank"
                     rel="noopener noreferrer"
