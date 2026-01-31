@@ -1,6 +1,6 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,7 +22,7 @@ function extractFrontMatter(content) {
   for (const line of lines) {
     const [key, ...valueParts] = line.split(':');
     if (key && valueParts.length > 0) {
-      const value = valueParts.join(':').trim().replace(/^["']|["']$/g, '');
+      const value = valueParts.join(':').trim().replaceAll(/^["']|["']$/g, '');
       metadata[key.trim()] = value;
     }
   }
@@ -32,7 +32,7 @@ function extractFrontMatter(content) {
 }
 
 function processImageSyntax(content) {
-  return content.replace(/\[([^\]]+\.(png|jpg|jpeg|gif|webp|svg))\]/gi, '![](/assets/$1)');
+  return content.replaceAll(/\[([^\]]+\.(?:png|jpg|jpeg|gif|webp|svg))\]/gi, '![](/assets/$1)');
 }
 
 function getFirstParagraph(content) {
@@ -50,11 +50,11 @@ function generateSlug(fileName) {
   return fileName
     .replace('.md', '')
     .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/^-+/, '')
-    .replace(/-+$/, '')
-    .replace(/--+/g, '-');
+    .replaceAll(/[^\w\s-]/g, '')
+    .replaceAll(/\s+/g, '-')
+    .replaceAll(/^-+/g, '')
+    .replaceAll(/-+$/g, '')
+    .replaceAll(/--+/g, '-');
 }
 
 function scanDocs(dir) {
