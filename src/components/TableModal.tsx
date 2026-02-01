@@ -99,7 +99,6 @@ export const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDar
       <div
         className={`relative w-full max-w-[95vw] max-h-[95vh] rounded-lg shadow-2xl flex flex-col overflow-hidden ${isDark ? 'bg-[#1a1a1a]' : 'bg-[#E8E7E3]'}`}
         onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
       >
         <ModalHeader isDark={isDark} onClose={onClose} />
 
