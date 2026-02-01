@@ -258,7 +258,7 @@ const MobileNavbar: React.FC = () => {
   return (
     <>
       <nav
-        className={`fixed bottom-0 left-0 right-0 z-50 border-t transition-all duration-500 ${
+        className={`fixed bottom-0 left-0 right-0 z-50 border-t ${
           isDark ? 'bg-[#0a0a0a]/95 border-white/10 backdrop-blur-sm' : 'bg-[#E8E7E3]/95 border-black/10 backdrop-blur-sm'
         }`}
       >
