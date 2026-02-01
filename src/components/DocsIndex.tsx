@@ -9,9 +9,9 @@ const DocsIndexContent: React.FC = () => {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof globalThis === 'undefined' || !globalThis.location) return;
 
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(globalThis.location.search);
     setType(params.get('type') || 'all');
     setSearch(params.get('search') || '');
   }, []);
@@ -60,9 +60,9 @@ const DocsIndexContent: React.FC = () => {
                   title: 'Разнообразный Контент',
                   description: 'Документация, блоги, новости и статьи в одном месте',
                 },
-              ].map((item, index) => (
+              ].map((item) => (
                 <div
-                  key={index}
+                  key={item.title}
                   className={`p-6 rounded-lg border ${
                     isDark
                       ? 'bg-[#0a0a0a] border-white/10 hover:border-white/20'
