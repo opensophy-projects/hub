@@ -17,17 +17,32 @@ export const ModalHeader: React.FC<ModalHeaderProps> = ({ isDark, onClose, isOpe
     }
   }, [isOpen]);
 
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {
-    if (e.target === dialogRef.current) {
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    const handleCancel = () => {
       onClose();
-    }
-  };
+    };
+
+    const handleBackdropClick = (e: MouseEvent) => {
+      if (e.target === dialog) {
+        onClose();
+      }
+    };
+
+    dialog.addEventListener('cancel', handleCancel);
+    dialog.addEventListener('click', handleBackdropClick);
+
+    return () => {
+      dialog.removeEventListener('cancel', handleCancel);
+      dialog.removeEventListener('click', handleBackdropClick);
+    };
+  }, [onClose]);
 
   return (
     <dialog
       ref={dialogRef}
-      onClick={handleBackdropClick}
-      onClose={onClose}
       className={`rounded-lg shadow-2xl [&::backdrop]:${isDark ? 'bg-black/80' : 'bg-white/80'}`}
     >
       <div
