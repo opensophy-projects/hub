@@ -14,7 +14,6 @@ interface TableModalProps {
 
 export const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
   const [showColumns, setShowColumns] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Map<string, Set<string>>>(new Map());
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set());
@@ -83,12 +82,21 @@ export const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDar
     setVisibleColumns(newVisible);
   };
 
+  const handleBackdropKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape') {
+      onClose();
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
     <div
       className={`fixed inset-0 z-[100] flex items-center justify-center ${isDark ? 'bg-black/80' : 'bg-white/80'}`}
       onClick={onClose}
+      onKeyDown={handleBackdropKeyDown}
+      role="presentation"
+      tabIndex={-1}
     >
       <div
         className={`relative w-full max-w-[95vw] max-h-[95vh] rounded-lg shadow-2xl flex flex-col overflow-hidden ${isDark ? 'bg-[#1a1a1a]' : 'bg-[#E8E7E3]'}`}
@@ -98,7 +106,7 @@ export const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDar
 
         <FilterSection
           isDark={isDark}
-          showFilters={showFilters}
+          showFilters={false}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           headers={parsedTable.headers}
