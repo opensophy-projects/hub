@@ -89,7 +89,7 @@ const ContactLink: React.FC<{
   const { isDark } = useTheme();
 
   return (
-    
+    <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
