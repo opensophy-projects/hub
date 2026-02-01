@@ -32,7 +32,9 @@ function extractFrontMatter(content) {
 }
 
 function processImageSyntax(content) {
-  return content.replaceAll(/\[([^\]]+\.(?:png|jpg|jpeg|gif|webp|svg))\]/gi, '![](/assets/$1)');
+  // Безопасная замена синтаксиса изображений
+  // Ограничиваем длину имени файла до 500 символов для предотвращения ReDoS
+  return content.replaceAll(/\[([^\]]{1,500}\.(?:png|jpg|jpeg|gif|webp|svg))\]/gi, '![](/assets/$1)');
 }
 
 function getFirstParagraph(content) {
@@ -47,14 +49,30 @@ function getFirstParagraph(content) {
 }
 
 function generateSlug(fileName) {
-  return fileName
+  let slug = fileName
     .replace('.md', '')
-    .toLowerCase()
-    .replaceAll(/[^\w\s-]/g, '')
-    .replaceAll(/\s+/g, '-')
-    .replaceAll(/^-+/g, '')
-    .replaceAll(/-+$/g, '')
-    .replaceAll(/--+/g, '-');
+    .toLowerCase();
+  
+  // Безопасное удаление специальных символов (ограничиваем итерации)
+  slug = slug.replace(/[^\w\s-]/g, '');
+  
+  // Заменяем множественные пробелы на один дефис
+  slug = slug.replace(/\s+/g, '-');
+  
+  // Безопасное удаление лидирующих дефисов
+  while (slug.startsWith('-') && slug.length > 0) {
+    slug = slug.slice(1);
+  }
+  
+  // Безопасное удаление завершающих дефисов
+  while (slug.endsWith('-') && slug.length > 0) {
+    slug = slug.slice(0, -1);
+  }
+  
+  // Заменяем множественные дефисы на один
+  slug = slug.replace(/--+/g, '-');
+  
+  return slug;
 }
 
 function scanDocs(dir) {
