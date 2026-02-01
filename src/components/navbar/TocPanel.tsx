@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 
 interface ToContentsItem {
@@ -23,7 +23,6 @@ const XIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
 );
 
 interface TocPanelProps {
-  isOpen: boolean;
   toc: ToContentsItem[];
   onTocClick: (id: string) => void;
   onClose: () => void;
@@ -32,15 +31,31 @@ interface TocPanelProps {
 const TocPanel: React.FC<TocPanelProps> = ({ toc, onTocClick, onClose }) => {
   const { isDark } = useTheme();
 
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [onClose]);
+
   return (
-    <button
-      className="fixed inset-0 z-[60] flex items-end bg-transparent border-0 p-0 cursor-default"
+    <div
+      className="fixed inset-0 z-[60] flex items-end"
       onClick={onClose}
-      aria-label="Закрыть оглавление"
+      role="presentation"
     >
-      <div className={`fixed inset-0 ${isDark ? 'bg-black/50' : 'bg-white/50'} backdrop-blur-sm pointer-events-none`} />
+      <div className={`fixed inset-0 ${isDark ? 'bg-black/50' : 'bg-white/50'} backdrop-blur-sm`} aria-hidden="true" />
       <div
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="toc-panel-title"
         className={`relative w-full rounded-t-2xl border-t max-h-[70vh] overflow-y-auto ${
           isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
         }`}
@@ -50,8 +65,12 @@ const TocPanel: React.FC<TocPanelProps> = ({ toc, onTocClick, onClose }) => {
             isDark ? 'bg-[#0a0a0a]/95 border-white/10' : 'bg-[#E8E7E3]/95 border-black/10'
           }`}
         >
-          <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>На этой странице</h3>
-          <button onClick={onClose} className={`p-2 rounded-lg ${isDark ? 'hover:bg-white/10' : 'hover:bg-black/10'}`}>
+          <h3 id="toc-panel-title" className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>На этой странице</h3>
+          <button
+            onClick={onClose}
+            className={`p-2 rounded-lg ${isDark ? 'hover:bg-white/10' : 'hover:bg-black/10'}`}
+            aria-label="Закрыть оглавление"
+          >
             <XIcon />
           </button>
         </div>
@@ -70,7 +89,7 @@ const TocPanel: React.FC<TocPanelProps> = ({ toc, onTocClick, onClose }) => {
           ))}
         </div>
       </div>
-    </button>
+    </div>
   );
 };
 
