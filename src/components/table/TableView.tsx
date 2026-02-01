@@ -127,7 +127,8 @@ const TableRow: React.FC<TableRowProps> = ({
   searchQuery,
 }) => {
   const isEvenRow = rowIndex % 2 === 0;
-  const rowBackgroundClass = isEvenRow
+  
+  const backgroundClass = isEvenRow
     ? isDark ? '' : 'bg-[#E8E7E3]'
     : isDark ? '' : 'bg-[#f1f0ec]';
 
@@ -137,7 +138,7 @@ const TableRow: React.FC<TableRowProps> = ({
         isDark
           ? 'border-white/10 hover:bg-white/5'
           : 'border-black/10 hover:bg-[#ddd8cd]'
-      } ${rowBackgroundClass}`}
+      } ${backgroundClass}`}
     >
       {row.cells.map((cell, colIndex) =>
         visibleColumns.has(colIndex) ? (
