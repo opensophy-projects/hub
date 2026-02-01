@@ -150,14 +150,17 @@ const NavButton: React.FC<{
 }> = ({ icon, label, onClick, isActive = false }) => {
   const { isDark } = useTheme();
   
-  const textColor = isActive
-    ? isDark ? 'text-white' : 'text-black'
-    : isDark ? 'text-white/60 hover:text-white' : 'text-black/60 hover:text-black';
+  const getTextColor = () => {
+    if (isActive) {
+      return isDark ? 'text-white' : 'text-black';
+    }
+    return isDark ? 'text-white/60 hover:text-white' : 'text-black/60 hover:text-black';
+  };
 
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center justify-center gap-1 px-2 py-2 transition-colors ${textColor}`}
+      className={`flex flex-col items-center justify-center gap-1 px-2 py-2 transition-colors ${getTextColor()}`}
     >
       <div className="w-6 h-6 flex items-center justify-center">{icon}</div>
       <span className="text-[10px] font-medium">{label}</span>
@@ -286,7 +289,6 @@ const MobileNavbar: React.FC = () => {
       <AnimatePresence>
         {isFiltersOpen && (
           <FilterPanel
-            isOpen={isFiltersOpen}
             types={types}
             selectedType={selectedType}
             onTypeSelect={handleTypeSelect}
@@ -298,7 +300,6 @@ const MobileNavbar: React.FC = () => {
       <AnimatePresence>
         {isSearchOpen && (
           <SearchPanel
-            isOpen={isSearchOpen}
             searchQuery={searchQuery}
             searchResults={searchResults}
             onSearchChange={setSearchQuery}
@@ -311,7 +312,6 @@ const MobileNavbar: React.FC = () => {
       <AnimatePresence>
         {isTocOpen && toc.length > 0 && (
           <TocPanel
-            isOpen={isTocOpen}
             toc={toc}
             onTocClick={handleTocClick}
             onClose={() => setIsTocOpen(false)}
@@ -322,7 +322,6 @@ const MobileNavbar: React.FC = () => {
       <AnimatePresence>
         {isContactsOpen && (
           <ContactsPanel
-            isOpen={isContactsOpen}
             onClose={() => setIsContactsOpen(false)}
           />
         )}
