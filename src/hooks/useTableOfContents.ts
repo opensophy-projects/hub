@@ -25,7 +25,7 @@ export function useTableOfContents(
         items.push({
           id,
           text: heading.textContent || '',
-          level: parseInt(heading.tagName[1], 10),
+          level: Number.parseInt(heading.tagName[1], 10),
         });
       });
 
