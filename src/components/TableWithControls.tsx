@@ -29,7 +29,7 @@ const ExpandIcon = () => (
 
 // Безопасное экранирование спецсимволов регулярных выражений
 const escapeRegExp = (str: string): string => {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return str.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 };
 
 // Безопасный компонент для подсветки текста
@@ -43,11 +43,11 @@ const HighlightText: React.FC<{ text: string; query: string }> = ({ text, query 
     <>
       {parts.map((part, i) => 
         part.toLowerCase() === query.toLowerCase() ? (
-          <mark key={i} style={{ backgroundColor: 'rgb(59, 130, 246)', color: 'white', padding: '2px 4px', borderRadius: '2px', fontWeight: 600 }}>
+          <mark key={`highlight-${i}-${part.slice(0, 10)}`} style={{ backgroundColor: 'rgb(59, 130, 246)', color: 'white', padding: '2px 4px', borderRadius: '2px', fontWeight: 600 }}>
             {part}
           </mark>
         ) : (
-          <span key={i}>{part}</span>
+          <span key={`text-${i}-${part.slice(0, 10)}`}>{part}</span>
         )
       )}
     </>
@@ -252,11 +252,11 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
               const values = getUniqueValuesForColumn(colIndex);
               const activeFilters = state.filters.get(colIndex) || new Set();
               return (
-                <div key={colIndex} className="space-y-2">
+                <div key={`filter-col-${colIndex}-${header}`} className="space-y-2">
                   <h4 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-black'}`}>{header}</h4>
                   <div className="space-y-1">
                     {values.map((value) => (
-                      <label key={value} className="flex items-center gap-2 cursor-pointer text-sm">
+                      <label key={`filter-${colIndex}-${value}`} className="flex items-center gap-2 cursor-pointer text-sm">
                         <input
                           type="checkbox"
                           checked={activeFilters.has(value)}
@@ -280,7 +280,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
             <h4 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-black'}`}>Видимость колонок</h4>
             <div className="space-y-2">
               {headers.map((header, colIndex) => (
-                <label key={colIndex} className="flex items-center gap-2 cursor-pointer text-sm">
+                <label key={`col-toggle-${colIndex}-${header}`} className="flex items-center gap-2 cursor-pointer text-sm">
                   <input
                     type="checkbox"
                     checked={state.visibleColumns.has(colIndex)}
@@ -305,7 +305,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
                 {headers.map((header, colIndex) => (
                   state.visibleColumns.has(colIndex) && (
                     <th
-                      key={colIndex}
+                      key={`header-${colIndex}-${header}`}
                       className={`px-4 py-3 text-left font-semibold cursor-pointer transition-colors ${
                         isDark ? 'text-white hover:bg-white/20' : 'text-black hover:bg-[#ddd8cd]'
                       }`}
@@ -328,7 +328,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
             <tbody>
               {filteredAndSortedRows.map((row, rowIndex) => (
                 <tr
-                  key={rowIndex}
+                  key={`row-${rowIndex}-${row.cells[0]?.slice(0, 20)}`}
                   className={`border-b transition-colors ${
                     isDark
                       ? 'border-white/10 hover:bg-white/5'
@@ -343,7 +343,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
 
                     return (
                       <td
-                        key={colIndex}
+                        key={`cell-${rowIndex}-${colIndex}-${cell.slice(0, 20)}`}
                         className={`px-4 py-3 ${isDark ? 'text-white/90' : 'text-black'}`}
                       >
                         <HighlightText text={cell} query={state.searchQuery} />
