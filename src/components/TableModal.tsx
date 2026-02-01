@@ -82,25 +82,24 @@ export const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDar
     setVisibleColumns(newVisible);
   };
 
-  const handleBackdropKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Escape') {
-      onClose();
-    }
-  };
-
   if (!isOpen) return null;
 
   return (
-    <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center ${isDark ? 'bg-black/80' : 'bg-white/80'}`}
+    <button
+      className={`fixed inset-0 z-[100] flex items-center justify-center bg-transparent border-0 p-0 cursor-default ${isDark ? 'bg-black/80' : 'bg-white/80'}`}
       onClick={onClose}
-      onKeyDown={handleBackdropKeyDown}
-      role="presentation"
-      tabIndex={-1}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+          onClose();
+        }
+      }}
+      aria-label="Закрыть модальное окно таблицы"
+      type="button"
     >
       <div
         className={`relative w-full max-w-[95vw] max-h-[95vh] rounded-lg shadow-2xl flex flex-col overflow-hidden ${isDark ? 'bg-[#1a1a1a]' : 'bg-[#E8E7E3]'}`}
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
       >
         <ModalHeader isDark={isDark} onClose={onClose} />
 
@@ -127,6 +126,8 @@ export const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDar
           <button
             onClick={() => setShowColumns(!showColumns)}
             className={`px-3 py-2 border-l ${isDark ? 'border-white/10 hover:bg-white/5' : 'border-black/10 hover:bg-black/5'}`}
+            aria-label="Переключить видимость колонок"
+            type="button"
           >
             ☰
           </button>
@@ -142,6 +143,6 @@ export const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDar
           />
         )}
       </div>
-    </div>
+    </button>
   );
 };
