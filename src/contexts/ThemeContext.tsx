@@ -23,7 +23,7 @@ interface ThemeProviderProps {
 }
 
 const getInitialTheme = (): boolean => {
-  if (typeof globalThis.window === 'undefined') {
+  if (globalThis.window === undefined) {
     return true;
   }
   
@@ -36,7 +36,7 @@ const getInitialTheme = (): boolean => {
 };
 
 const applyThemeToDOM = (dark: boolean) => {
-  if (typeof globalThis.window === 'undefined') return;
+  if (globalThis.window === undefined) return;
   
   const html = globalThis.document.documentElement;
   const body = globalThis.document.body;
@@ -59,10 +59,10 @@ const applyThemeToDOM = (dark: boolean) => {
 };
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [isDark, setIsDarkState] = useState<boolean>(() => getInitialTheme());
+  const [isDark, setIsDark] = useState<boolean>(() => getInitialTheme());
   
   const setTheme = (dark: boolean) => {
-    setIsDarkState(dark);
+    setIsDark(dark);
     globalThis.localStorage.setItem('theme', dark ? 'dark' : 'light');
     applyThemeToDOM(dark);
     globalThis.window.dispatchEvent(new CustomEvent('themechange', { detail: { isDark: dark } }));
@@ -76,7 +76,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'theme' && e.newValue) {
         const newIsDark = e.newValue === 'dark';
-        setIsDarkState(newIsDark);
+        setIsDark(newIsDark);
         applyThemeToDOM(newIsDark);
       }
     };
@@ -84,7 +84,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     const handleThemeChange = (e: Event) => {
       const customEvent = e as CustomEvent<{ isDark: boolean }>;
       if (customEvent.detail) {
-        setIsDarkState(customEvent.detail.isDark);
+        setIsDark(customEvent.detail.isDark);
         applyThemeToDOM(customEvent.detail.isDark);
       }
     };
