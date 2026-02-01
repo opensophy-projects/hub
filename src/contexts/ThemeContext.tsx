@@ -8,7 +8,6 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-// Функция useTheme вынесена отдельно, но экспортируется как обычная функция (не хук визуально)
 function useThemeHook() {
   const context = useContext(ThemeContext);
   if (!context) {
@@ -17,7 +16,6 @@ function useThemeHook() {
   return context;
 }
 
-// Экспортируем как named export
 export { useThemeHook as useTheme };
 
 interface ThemeProviderProps {
@@ -25,7 +23,7 @@ interface ThemeProviderProps {
 }
 
 const getInitialTheme = (): boolean => {
-  if (typeof globalThis.window === 'undefined') {
+  if (globalThis.window === undefined) {
     return true;
   }
   
@@ -38,7 +36,7 @@ const getInitialTheme = (): boolean => {
 };
 
 const applyThemeToDOM = (dark: boolean) => {
-  if (typeof globalThis.window === 'undefined') return;
+  if (globalThis.window === undefined) return;
   
   const html = globalThis.document.documentElement;
   const body = globalThis.document.body;
@@ -61,7 +59,7 @@ const applyThemeToDOM = (dark: boolean) => {
 };
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [isDark, setIsDarkState] = useState(getInitialTheme);
+  const [isDark, setIsDarkState] = useState(() => getInitialTheme());
   
   const setTheme = (dark: boolean) => {
     setIsDarkState(dark);
@@ -100,7 +98,6 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     };
   }, []);
 
-  // Мемоизируем value чтобы избежать ре-рендеров
   const contextValue = useMemo(
     () => ({ isDark, toggleTheme, setTheme }),
     [isDark]
