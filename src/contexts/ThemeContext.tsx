@@ -23,23 +23,23 @@ interface ThemeProviderProps {
 }
 
 const getInitialTheme = (): boolean => {
-  if (typeof window === 'undefined') {
+  if (typeof globalThis.window === 'undefined') {
     return true;
   }
   
-  const savedTheme = localStorage.getItem('theme');
+  const savedTheme = globalThis.localStorage.getItem('theme');
   if (savedTheme) {
     return savedTheme === 'dark';
   }
   
-  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return globalThis.window.matchMedia('(prefers-color-scheme: dark)').matches;
 };
 
 const applyThemeToDOM = (dark: boolean) => {
-  if (typeof window === 'undefined') return;
+  if (typeof globalThis.window === 'undefined') return;
   
-  const html = document.documentElement;
-  const body = document.body;
+  const html = globalThis.document.documentElement;
+  const body = globalThis.document.body;
   
   if (dark) {
     html.classList.add('dark');
@@ -63,9 +63,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   
   const setTheme = (dark: boolean) => {
     setIsDarkState(dark);
-    localStorage.setItem('theme', dark ? 'dark' : 'light');
+    globalThis.localStorage.setItem('theme', dark ? 'dark' : 'light');
     applyThemeToDOM(dark);
-    window.dispatchEvent(new CustomEvent('themechange', { detail: { isDark: dark } }));
+    globalThis.window.dispatchEvent(new CustomEvent('themechange', { detail: { isDark: dark } }));
   };
 
   const toggleTheme = () => {
@@ -89,12 +89,12 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       }
     };
 
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('themechange', handleThemeChange);
+    globalThis.window.addEventListener('storage', handleStorageChange);
+    globalThis.window.addEventListener('themechange', handleThemeChange);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('themechange', handleThemeChange);
+      globalThis.window.removeEventListener('storage', handleStorageChange);
+      globalThis.window.removeEventListener('themechange', handleThemeChange);
     };
   }, []);
 
