@@ -6,6 +6,7 @@ import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import MobileNavbar from '@/components/MobileNavbar';
 import DocBanner from './DocBanner';
 import TableModal from './TableModal';
+import DocIcon from './DocIcon';
 import { parseHtmlToReact, TableContext } from '@/lib/htmlParser';
 import { useMobileDetection } from '@/hooks/useMobileDetection';
 import { useTableOfContents } from '@/hooks/useTableOfContents';
@@ -55,41 +56,35 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const htmlContent = DOMPurify.sanitize(marked(doc.content || ''));
   const contentNodes = parseHtmlToReact(htmlContent);
 
-  const DocIcon = ({ type, className = 'w-10 h-10' }: { type: string; className?: string }) => {
-    switch (type) {
-      case 'docs':
-        return (
-          <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="16" y1="13" x2="8" y2="13" />
-            <line x1="16" y1="17" x2="8" y2="17" />
-            <polyline points="10 9 9 9 8 9" />
-          </svg>
-        );
-      case 'blog':
-        return (
-          <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-          </svg>
-        );
-      case 'news':
-        return (
-          <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" />
-            <path d="M18 14h-8" />
-            <path d="M15 18h-5" />
-            <path d="M10 6h8v4h-8z" />
-          </svg>
-        );
-      default:
-        return (
-          <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-          </svg>
-        );
-    }
+  const getTypeLabel = (type: string): string => {
+    const labels: Record<string, string> = {
+      docs: 'Документация',
+      blog: 'Блог',
+      news: 'Новости',
+    };
+    return labels[type] || 'Контент';
+  };
+
+  const getTextColorClass = (isDark: boolean, opacity = '70'): string => {
+    return isDark ? `text-white/${opacity}` : `text-black/${opacity}`;
+  };
+
+  const getBgBorderClass = (isDark: boolean): string => {
+    return isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10';
+  };
+
+  const getHeaderClass = (isDark: boolean): string => {
+    return isDark
+      ? 'bg-[#0a0a0a]/95 border-white/10 backdrop-blur-sm'
+      : 'bg-[#E8E7E3]/95 border-black/10 backdrop-blur-sm';
+  };
+
+  const getButtonClass = (isDark: boolean): string => {
+    return isDark ? 'text-white/70 hover:text-white hover:bg-white/5' : 'text-black/70 hover:text-black hover:bg-black/5';
+  };
+
+  const getTocButtonClass = (isDark: boolean): string => {
+    return isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black';
   };
 
   return (
@@ -99,22 +94,10 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
         style={{ width: `${scrollProgress}%` }}
       />
 
-      <main
-        className={`min-h-screen ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}
-      >
-        <header
-          className={`hidden md:flex fixed top-0 left-0 right-0 z-40 border-b ${
-            isDark
-              ? 'bg-[#0a0a0a]/95 border-white/10 backdrop-blur-sm' : 'bg-[#E8E7E3]/95 border-black/10 backdrop-blur-sm'
-          }`}
-        >
+      <main className={`min-h-screen ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}>
+        <header className={`hidden md:flex fixed top-0 left-0 right-0 z-40 border-b ${getHeaderClass(isDark)}`}>
           <div className="flex items-center justify-between px-8 h-16 w-full">
-            <a
-              href="/"
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                isDark ? 'text-white/70 hover:text-white hover:bg-white/5' : 'text-black/70 hover:text-black hover:bg-black/5'
-              }`}
-            >
+            <a href="/" className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${getButtonClass(isDark)}`}>
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="19" y1="12" x2="5" y2="12" />
                 <polyline points="12 19 5 12 12 5" />
@@ -126,9 +109,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
 
             <button
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                isDark ? 'text-white/70 hover:text-white hover:bg-white/5' : 'text-black/70 hover:text-black hover:bg-black/5'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${getButtonClass(isDark)}`}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" y1="19" x2="12" y2="5" />
@@ -145,11 +126,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
               <div className="mb-8">
                 <div className="flex items-center gap-3 mb-4">
                   <DocIcon type={doc.type} />
-                  <span className={`text-sm font-semibold ${isDark ? 'text-white/70' : 'text-black/70'}`}>
-                    {doc.type === 'docs' && 'Документация'}
-                    {doc.type === 'blog' && 'Блог'}
-                    {doc.type === 'news' && 'Новости'}
-                  </span>
+                  <span className={`text-sm font-semibold ${getTextColorClass(isDark)}`}>{getTypeLabel(doc.type)}</span>
                 </div>
                 <h1
                   className={`text-4xl md:text-5xl font-bold mb-4 ${isDark ? 'text-white' : 'text-black'}`}
@@ -157,13 +134,15 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
                 >
                   {doc.title}
                 </h1>
-                <p className={`text-lg ${isDark ? 'text-white/70' : 'text-black/70'}`}>{doc.description}</p>
-                <div
-                  className={`flex items-center gap-4 mt-6 pt-4 border-t flex-wrap ${isDark ? 'border-white/10' : 'border-black/10'}`}
-                >
-                  {doc.author && <span className={`text-sm ${isDark ? 'text-white/60' : 'text-black/60'}`}>Автор: <strong className={isDark ? 'text-white' : 'text-black'}>{doc.author}</strong></span>}
+                <p className={`text-lg ${getTextColorClass(isDark)}`}>{doc.description}</p>
+                <div className={`flex items-center gap-4 mt-6 pt-4 border-t flex-wrap ${isDark ? 'border-white/10' : 'border-black/10'}`}>
+                  {doc.author && (
+                    <span className={`text-sm ${getTextColorClass(isDark, '60')}`}>
+                      Автор: <strong className={isDark ? 'text-white' : 'text-black'}>{doc.author}</strong>
+                    </span>
+                  )}
                   {doc.date && (
-                    <span className={`text-sm ${isDark ? 'text-white/60' : 'text-black/60'}`}>
+                    <span className={`text-sm ${getTextColorClass(isDark, '60')}`}>
                       {new Date(doc.date).toLocaleDateString('ru-RU', {
                         year: 'numeric',
                         month: 'long',
@@ -171,7 +150,11 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
                       })}
                     </span>
                   )}
-                  {doc.category && <span className={`text-sm ${isDark ? 'text-white/60' : 'text-black/60'}`}>Категория: <strong className={isDark ? 'text-white' : 'text-black'}>{doc.category}</strong></span>}
+                  {doc.category && (
+                    <span className={`text-sm ${getTextColorClass(isDark, '60')}`}>
+                      Категория: <strong className={isDark ? 'text-white' : 'text-black'}>{doc.category}</strong>
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -184,10 +167,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
               />
 
               <TableContext.Provider value={{ onTableClick: handleTableClick, isDark }}>
-                <div
-                  ref={contentRef}
-                  className="prose max-w-none prose-invert w-full overflow-x-auto"
-                >
+                <div ref={contentRef} className="prose max-w-none prose-invert w-full overflow-x-auto">
                   {contentNodes}
                 </div>
               </TableContext.Provider>
@@ -195,11 +175,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
           </article>
 
           {toc.length > 0 && (
-            <aside
-              className={`hidden md:block fixed right-8 top-24 w-64 max-h-[calc(100vh-160px)] overflow-y-auto rounded-lg border ${
-                isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
-              }`}
-            >
+            <aside className={`hidden md:block fixed right-8 top-24 w-64 max-h-[calc(100vh-160px)] overflow-y-auto rounded-lg border ${getBgBorderClass(isDark)}`}>
               <div className="p-6 pb-2">
                 <h2 className={`text-lg font-bold mb-4 ${isDark ? 'text-white' : 'text-black'}`}>На этой странице</h2>
               </div>
@@ -208,9 +184,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
                   <button
                     key={item.id}
                     onClick={() => handleTocClick(item.id)}
-                    className={`w-full text-left px-4 py-2 rounded-lg transition-colors text-sm ${
-                      isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black'
-                    }`}
+                    className={`w-full text-left px-4 py-2 rounded-lg transition-colors text-sm ${getTocButtonClass(isDark)}`}
                     style={{ paddingLeft: `${12 + (item.level - 2) * 16}px` }}
                   >
                     {item.text}
