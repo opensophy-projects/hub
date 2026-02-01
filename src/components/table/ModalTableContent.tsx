@@ -7,6 +7,22 @@ interface ModalTableContentProps {
   visibleColumns: Set<string>;
 }
 
+const getRowClassName = (rowIndex: number, isDark: boolean): string => {
+  const isEvenRow = rowIndex % 2 === 0;
+  const baseClass = 'border-t';
+  
+  if (isEvenRow) {
+    return `${baseClass} ${isDark ? 'bg-[#1a1a1a]' : 'bg-white'}`;
+  }
+  
+  return `${baseClass} ${isDark ? 'bg-[#252525]' : 'bg-gray-50'}`;
+};
+
+const generateRowKey = (row: Record<string, string>, index: number, headers: Array<{ text: string; colIndex: number }>): string => {
+  const rowContent = headers.map(h => row[h.text] || '').join('|');
+  return `row-${index}-${rowContent.substring(0, 50)}`;
+};
+
 export const ModalTableContent: React.FC<ModalTableContentProps> = ({
   isDark,
   headers,
@@ -39,10 +55,13 @@ export const ModalTableContent: React.FC<ModalTableContentProps> = ({
             </tr>
           ) : (
             filteredRows.map((row, idx) => (
-              <tr key={idx} className={`border-t ${idx % 2 === 0 ? (isDark ? 'bg-[#1a1a1a]' : 'bg-white') : (isDark ? 'bg-[#252525]' : 'bg-gray-50')}`}>
+              <tr 
+                key={generateRowKey(row, idx, visibleHeaders)} 
+                className={getRowClassName(idx, isDark)}
+              >
                 {visibleHeaders.map((header) => (
                   <td
-                    key={`${idx}-${header.colIndex}`}
+                    key={`cell-${idx}-${header.colIndex}`}
                     className={`border p-2 ${isDark ? 'border-white/10' : 'border-black/10'}`}
                   >
                     {row[header.text] || '-'}
