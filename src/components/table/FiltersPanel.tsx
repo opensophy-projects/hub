@@ -24,7 +24,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
     >
       {headers.map((header, colIndex) => (
         <FilterColumn
-          key={`filter-${colIndex}`}
+          key={header}
           header={header}
           colIndex={colIndex}
           isDark={isDark}
@@ -62,7 +62,7 @@ const FilterColumn: React.FC<FilterColumnProps> = ({
       <div className="space-y-1">
         {values.map((value) => (
           <label
-            key={`filter-item-${colIndex}-${value}`}
+            key={`${header}-${value}`}
             className="flex items-center gap-2 cursor-pointer text-sm"
           >
             <input
