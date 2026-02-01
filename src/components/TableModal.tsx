@@ -12,7 +12,7 @@ interface TableModalProps {
   onClose: () => void;
 }
 
-export const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onClose }) => {
+const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showColumns, setShowColumns] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Map<string, Set<string>>>(new Map());
@@ -108,7 +108,7 @@ export const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDar
         aria-modal="true"
         aria-label="Модальное окно таблицы"
       >
-        <ModalHeader isDark={isDark} onClose={onClose} />
+        <ModalHeader isDark={isDark} onClose={onClose} isOpen={isOpen} />
 
         <FilterSection
           isDark={isDark}
@@ -154,3 +154,5 @@ export const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDar
     </div>
   );
 };
+
+export default TableModal;
