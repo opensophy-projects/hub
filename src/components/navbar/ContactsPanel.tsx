@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 
 const MailIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
@@ -77,7 +77,6 @@ const XIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
 );
 
 interface ContactsPanelProps {
-  isOpen: boolean;
   onClose: () => void;
 }
 
@@ -110,25 +109,42 @@ const ContactLink: React.FC<{
 const ContactsPanel: React.FC<ContactsPanelProps> = ({ onClose }) => {
   const { isDark } = useTheme();
 
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [onClose]);
+
   return (
-    <button
-      className="fixed inset-0 z-[60] flex items-end bg-transparent border-0 p-0 cursor-default"
+    <div
+      className="fixed inset-0 z-[60] flex items-end"
       onClick={onClose}
-      aria-label="Закрыть контакты"
+      role="presentation"
     >
-      <div className={`fixed inset-0 ${isDark ? 'bg-black/50' : 'bg-white/50'} backdrop-blur-sm pointer-events-none`} />
+      <div className={`fixed inset-0 ${isDark ? 'bg-black/50' : 'bg-white/50'} backdrop-blur-sm`} aria-hidden="true" />
       <div
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="contacts-panel-title"
         className={`relative w-full rounded-t-2xl border-t ${
           isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
         }`}
       >
         <div className="p-4">
           <div className="flex items-center justify-between mb-4">
-            <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>Контакты</h3>
+            <h3 id="contacts-panel-title" className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>Контакты</h3>
             <button
               onClick={onClose}
               className={`p-2 rounded-lg ${isDark ? 'hover:bg-white/10' : 'hover:bg-black/10'}`}
+              aria-label="Закрыть контакты"
             >
               <XIcon />
             </button>
@@ -161,7 +177,7 @@ const ContactsPanel: React.FC<ContactsPanelProps> = ({ onClose }) => {
           </div>
         </div>
       </div>
-    </button>
+    </div>
   );
 };
 
