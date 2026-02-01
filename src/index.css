@@ -44,7 +44,6 @@ body {
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 }
 
-/* HEADINGS - добавлены h5 и h6 */
 .prose h1 {
   margin-top: 2rem;
   margin-bottom: 1rem;
@@ -107,7 +106,6 @@ body {
   font-size: 0.875rem;
 }
 
-/* СПИСКИ - исправлены маркеры и отступы */
 .prose ul,
 .prose ol {
   margin-bottom: 1rem;
@@ -145,7 +143,7 @@ body {
   color: inherit;
 }
 
-/* INLINE CODE - добавлена обводка */
+/* INLINE CODE - объединенные стили */
 .prose code {
   border-radius: 0.25rem;
   padding: 0.25rem 0.5rem;
@@ -153,21 +151,17 @@ body {
   font-size: 0.75rem;
   line-height: 1rem;
   border: 1px solid;
-}
-
-.prose code {
   background-color: rgba(0, 0, 0, 0.05);
   border-color: rgba(0, 0, 0, 0.1);
-  color: #e83e8c;
+  color: #c7254e;
 }
 
 .dark .prose code {
   background-color: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.1);
-  color: #ff79c6;
+  color: #ff91d1;
 }
 
-/* CODE BLOCKS */
 .prose pre {
   margin-bottom: 1rem;
   overflow-x: auto;
@@ -186,7 +180,7 @@ body {
   background-color: transparent;
 }
 
-/* BLOCKQUOTE - исправлена инверсия линий */
+/* BLOCKQUOTE - объединенные стили */
 .prose blockquote {
   margin-top: 1rem;
   margin-bottom: 1rem;
@@ -194,9 +188,6 @@ body {
   padding-left: 1rem;
   font-style: italic;
   font-size: 0.875rem;
-}
-
-.prose blockquote {
   border-left-color: rgba(0, 0, 0, 0.2);
   color: rgba(0, 0, 0, 0.7);
 }
@@ -236,7 +227,6 @@ body {
   text-align: left;
 }
 
-/* Media queries для больших экранов */
 @media (min-width: 768px) {
   .prose h1 {
     font-size: 2.25rem;
@@ -327,6 +317,6 @@ body {
 }
 
 ::selection {
-  background-color: rgb(59 130 246);
+  background-color: rgb(37 99 235);
   color: rgb(255 255 255);
 }
