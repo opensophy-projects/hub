@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { marked } from 'marked';
 import DOMPurify from 'isomorphic-dompurify';
@@ -7,6 +7,9 @@ import MobileNavbar from '@/components/MobileNavbar';
 import DocBanner from './DocBanner';
 import TableModal from './TableModal';
 import { parseHtmlToReact, TableContext } from '@/lib/htmlParser';
+import { useMobileDetection } from '@/hooks/useMobileDetection';
+import { useTableOfContents } from '@/hooks/useTableOfContents';
+import { useScrollProgress } from '@/hooks/useScrollProgress';
 
 interface DocContentProps {
   doc: {
@@ -34,66 +37,11 @@ interface TableOfContentsItem {
 const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const { isDark } = useTheme();
   const contentRef = useRef<HTMLDivElement>(null);
-  const [toc, setToc] = useState<TableOfContentsItem[]>([]);
-  const [scrollProgress, setScrollProgress] = useState(0);
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.innerWidth < 768;
-  });
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-
-    return () => {
-      window.removeEventListener('resize', checkMobile);
-    };
-  }, []);
-
-  useEffect(() => {
-    const generateTOC = () => {
-      if (!contentRef.current) return;
-      
-      const headings = contentRef.current.querySelectorAll('h2, h3, h4');
-      const items: TableOfContentsItem[] = [];
-
-      headings.forEach((heading, index) => {
-        const id = `heading-${index}`;
-        heading.id = id;
-        items.push({
-          id,
-          text: heading.textContent || '',
-          level: parseInt(heading.tagName[1]),
-        });
-      });
-
-      setToc(items);
-    };
-
-    const timer = setTimeout(generateTOC, 100);
-    return () => clearTimeout(timer);
-  }, [doc]);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!contentRef.current) return;
-
-      const { scrollHeight, scrollTop, clientHeight } = document.documentElement;
-      const windowHeight = scrollHeight - clientHeight;
-      const progress = windowHeight > 0 ? (scrollTop / windowHeight) * 100 : 0;
-      setScrollProgress(progress);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  const isMobile = useMobileDetection();
+  const toc = useTableOfContents(contentRef, doc);
+  const scrollProgress = useScrollProgress();
 
   const handleTocClick = (id: string) => {
     const element = document.getElementById(id);
