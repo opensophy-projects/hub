@@ -39,7 +39,7 @@ export const TableView: React.FC<TableViewProps> = ({
         <tbody>
           {rows.map((row, rowIndex) => (
             <TableRow
-              key={`row-${rowIndex}`}
+              key={`row-${rowIndex}-${row.cells.join('-')}`}
               isDark={isDark}
               row={row}
               rowIndex={rowIndex}
@@ -84,7 +84,7 @@ const TableHead: React.FC<TableHeadProps> = ({
         {headers.map((header, colIndex) =>
           visibleColumns.has(colIndex) ? (
             <th
-              key={`header-${colIndex}`}
+              key={header}
               className={`px-4 py-3 text-left font-semibold cursor-pointer transition-colors ${
                 isDark
                   ? 'text-white hover:bg-white/20'
@@ -126,15 +126,18 @@ const TableRow: React.FC<TableRowProps> = ({
   visibleColumns,
   searchQuery,
 }) => {
+  const isEvenRow = rowIndex % 2 === 0;
+  const rowBackgroundClass = isEvenRow
+    ? isDark ? '' : 'bg-[#E8E7E3]'
+    : isDark ? '' : 'bg-[#f1f0ec]';
+
   return (
     <tr
       className={`border-b transition-colors ${
         isDark
           ? 'border-white/10 hover:bg-white/5'
           : 'border-black/10 hover:bg-[#ddd8cd]'
-      } ${
-        rowIndex % 2 === 0 ? (isDark ? '' : 'bg-[#E8E7E3]') : isDark ? '' : 'bg-[#f1f0ec]'
-      }`}
+      } ${rowBackgroundClass}`}
     >
       {row.cells.map((cell, colIndex) =>
         visibleColumns.has(colIndex) ? (
