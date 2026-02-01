@@ -4,15 +4,41 @@ import { TableContext } from '@/lib/htmlParser';
 
 interface CodeBlockProps {
   code: string;
-  language?: string;
 }
 
 // Безопасное экранирование спецсимволов регулярных выражений
 const escapeRegExp = (str: string): string => {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return str.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 };
 
-export function CodeBlock({ code }: CodeBlockProps) {
+// Вынесенный компонент для отображения кода
+const CodeBody: React.FC<{
+  lines: string[];
+  matchedLines: Set<number>;
+  highlightMatch: (text: string) => JSX.Element;
+  fg: string;
+  bg: string;
+  isDark: boolean;
+}> = ({ lines, matchedLines, highlightMatch, fg, bg, isDark }) => (
+  <pre
+    className="p-4 text-sm font-mono not-prose"
+    style={{ background: bg, color: fg }}
+  >
+    {lines.map((l, i) => (
+      <div key={`line-${i}-${l.slice(0, 10)}`} className="whitespace-pre" style={{ color: fg }}>
+        <span
+          className="inline-block w-8 mr-4 text-right select-none"
+          style={{ color: isDark ? '#888' : '#666' }}
+        >
+          {i + 1}
+        </span>
+        {matchedLines.has(i) ? highlightMatch(l) : <span>{l}</span>}
+      </div>
+    ))}
+  </pre>
+);
+
+export function CodeBlock({ code }: Readonly<CodeBlockProps>) {
   const { isDark } = useContext(TableContext);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -32,7 +58,7 @@ export function CodeBlock({ code }: CodeBlockProps) {
       : []
   );
 
-  const highlightMatch = (text: string) => {
+  const highlightMatch = (text: string): JSX.Element => {
     if (!searchQuery) return <>{text}</>;
     
     const escapedQuery = escapeRegExp(searchQuery);
@@ -42,11 +68,11 @@ export function CodeBlock({ code }: CodeBlockProps) {
       <>
         {parts.map((p, i) =>
           p.toLowerCase() === searchQuery.toLowerCase() ? (
-            <span key={i} style={{ background: '#78350f', color: '#fff' }}>
+            <span key={`highlight-${i}-${p}`} style={{ background: '#78350f', color: '#fff' }}>
               {p}
             </span>
           ) : (
-            <span key={i}>{p}</span>
+            <span key={`text-${i}-${p.slice(0, 10)}`}>{p}</span>
           )
         )}
       </>
@@ -87,25 +113,6 @@ export function CodeBlock({ code }: CodeBlockProps) {
     </div>
   );
 
-  const CodeBody = (list: string[]) => (
-    <pre
-      className="p-4 text-sm font-mono not-prose"
-      style={{ background: bg, color: fg }}
-    >
-      {list.map((l, i) => (
-        <div key={i} className="whitespace-pre" style={{ color: fg }}>
-          <span
-            className="inline-block w-8 mr-4 text-right select-none"
-            style={{ color: isDark ? '#888' : '#666' }}
-          >
-            {i + 1}
-          </span>
-          {matchedLines.has(i) ? highlightMatch(l) : <span>{l}</span>}
-        </div>
-      ))}
-    </pre>
-  );
-
   const NormalView = (
     <div
       className={`rounded-lg overflow-hidden border ${border} not-prose`}
@@ -127,7 +134,14 @@ export function CodeBlock({ code }: CodeBlockProps) {
       </div>
 
       <div ref={codeRef} className="overflow-auto max-h-96 not-prose">
-        {CodeBody(displayedLines)}
+        <CodeBody
+          lines={displayedLines}
+          matchedLines={matchedLines}
+          highlightMatch={highlightMatch}
+          fg={fg}
+          bg={bg}
+          isDark={isDark}
+        />
       </div>
 
       {isLongCode && !isExpanded && (
@@ -158,7 +172,14 @@ export function CodeBlock({ code }: CodeBlockProps) {
           </div>
 
           <div className="flex-1 overflow-auto not-prose">
-            {CodeBody(lines)}
+            <CodeBody
+              lines={lines}
+              matchedLines={matchedLines}
+              highlightMatch={highlightMatch}
+              fg={fg}
+              bg={bg}
+              isDark={isDark}
+            />
           </div>
 
           <div
