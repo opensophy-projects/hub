@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 
 export function useMobileDetection(): boolean {
   const [isMobile, setIsMobile] = useState(() => {
-    if (typeof globalThis.window === 'undefined') return false;
+    if (!globalThis.window) return false;
     return globalThis.window.innerWidth < 768;
   });
 
   useEffect(() => {
-    if (typeof globalThis.window === 'undefined') return;
+    if (!globalThis.window) return;
 
     const checkMobile = () => {
       setIsMobile(globalThis.window.innerWidth < 768);
