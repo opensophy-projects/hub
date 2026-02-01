@@ -22,7 +22,7 @@ function extractFrontMatter(content) {
   for (const line of lines) {
     const [key, ...valueParts] = line.split(':');
     if (key && valueParts.length > 0) {
-      const value = valueParts.join(':').trim().replaceAll(/^["']|["']$/g, '');
+      const value = valueParts.join(':').trim().replace(/^['"]/, '').replace(/['"]$/, '');
       metadata[key.trim()] = value;
     }
   }
@@ -32,8 +32,6 @@ function extractFrontMatter(content) {
 }
 
 function processImageSyntax(content) {
-  // Безопасная замена синтаксиса изображений
-  // Ограничиваем длину имени файла до 500 символов для предотвращения ReDoS
   return content.replaceAll(/\[([^\]]{1,500}\.(?:png|jpg|jpeg|gif|webp|svg))\]/gi, '![](/assets/$1)');
 }
 
@@ -53,24 +51,18 @@ function generateSlug(fileName) {
     .replace('.md', '')
     .toLowerCase();
   
-  // Безопасное удаление специальных символов (ограничиваем итерации)
-  slug = slug.replace(/[^\w\s-]/g, '');
+  slug = slug.replaceAll(/[^\w\s-]/g, '');
+  slug = slug.replaceAll(/\s+/g, '-');
   
-  // Заменяем множественные пробелы на один дефис
-  slug = slug.replace(/\s+/g, '-');
-  
-  // Безопасное удаление лидирующих дефисов
   while (slug.startsWith('-') && slug.length > 0) {
     slug = slug.slice(1);
   }
   
-  // Безопасное удаление завершающих дефисов
   while (slug.endsWith('-') && slug.length > 0) {
     slug = slug.slice(0, -1);
   }
   
-  // Заменяем множественные дефисы на один
-  slug = slug.replace(/--+/g, '-');
+  slug = slug.replaceAll(/-+/g, '-');
   
   return slug;
 }
