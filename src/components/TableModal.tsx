@@ -82,23 +82,34 @@ export const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDar
     setVisibleColumns(newVisible);
   };
 
+  const handleBackdropClick = (e: React.MouseEvent | React.KeyboardEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  const handleBackdropKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      onClose();
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
-    <button
-      className={`fixed inset-0 z-[100] flex items-center justify-center bg-transparent border-0 p-0 cursor-default ${isDark ? 'bg-black/80' : 'bg-white/80'}`}
-      onClick={onClose}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
-          onClose();
-        }
-      }}
-      aria-label="Закрыть модальное окно таблицы"
-      type="button"
+    <div
+      className={`fixed inset-0 z-[100] flex items-center justify-center ${isDark ? 'bg-black/80' : 'bg-white/80'}`}
+      onClick={handleBackdropClick}
+      onKeyDown={handleBackdropKeyDown}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Модальное окно таблицы"
+      tabIndex={-1}
     >
       <div
         className={`relative w-full max-w-[95vw] max-h-[95vh] rounded-lg shadow-2xl flex flex-col overflow-hidden ${isDark ? 'bg-[#1a1a1a]' : 'bg-[#E8E7E3]'}`}
         onClick={(e) => e.stopPropagation()}
+        role="document"
       >
         <ModalHeader isDark={isDark} onClose={onClose} />
 
@@ -126,6 +137,7 @@ export const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDar
             onClick={() => setShowColumns(!showColumns)}
             className={`px-3 py-2 border-l ${isDark ? 'border-white/10 hover:bg-white/5' : 'border-black/10 hover:bg-black/5'}`}
             aria-label="Переключить видимость колонок"
+            aria-expanded={showColumns}
             type="button"
           >
             ☰
@@ -142,6 +154,6 @@ export const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDar
           />
         )}
       </div>
-    </button>
+    </div>
   );
 };
