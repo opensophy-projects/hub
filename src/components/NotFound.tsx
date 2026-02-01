@@ -11,7 +11,7 @@ const NotFoundContent: React.FC = () => {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          window.location.href = '/';
+          globalThis.location.href = '/';
           return 0;
         }
         return prev - 1;
@@ -30,7 +30,7 @@ const NotFoundContent: React.FC = () => {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
           <button
-            onClick={() => window.history.back()}
+            onClick={() => globalThis.history.back()}
             className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium ${
               isDark 
                 ? 'bg-white/10 hover:bg-white/20 text-white' 
