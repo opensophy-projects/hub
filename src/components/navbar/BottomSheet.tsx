@@ -18,9 +18,9 @@ const BottomSheet: React.FC<BottomSheetProps> = ({ title, onClose, children }) =
       }
     };
 
-    document.addEventListener('keydown', handleEscape);
+    globalThis.document.addEventListener('keydown', handleEscape);
     return () => {
-      document.removeEventListener('keydown', handleEscape);
+      globalThis.document.removeEventListener('keydown', handleEscape);
     };
   }, [onClose]);
 
@@ -35,6 +35,8 @@ const BottomSheet: React.FC<BottomSheetProps> = ({ title, onClose, children }) =
         role="dialog"
         aria-modal="true"
         aria-labelledby="bottom-sheet-title"
+        aria-describedby="bottom-sheet-content"
+        tabIndex={-1}
         className={`relative w-full rounded-t-2xl border-t max-h-[70vh] overflow-y-auto ${
           isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
         }`}
@@ -44,7 +46,9 @@ const BottomSheet: React.FC<BottomSheetProps> = ({ title, onClose, children }) =
             isDark ? 'bg-[#0a0a0a]/95 border-white/10' : 'bg-[#E8E7E3]/95 border-black/10'
           }`}
         >
-          <h3 id="bottom-sheet-title" className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>{title}</h3>
+          <h3 id="bottom-sheet-title" className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>
+            {title}
+          </h3>
           <button
             onClick={onClose}
             className={`p-2 rounded-lg ${isDark ? 'hover:bg-white/10' : 'hover:bg-black/10'}`}
@@ -53,7 +57,9 @@ const BottomSheet: React.FC<BottomSheetProps> = ({ title, onClose, children }) =
             <XIcon />
           </button>
         </div>
-        {children}
+        <div id="bottom-sheet-content">
+          {children}
+        </div>
       </div>
     </div>
   );
