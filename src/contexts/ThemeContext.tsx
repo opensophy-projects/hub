@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from 'react';
 
 interface ThemeContextType {
   isDark: boolean;
@@ -8,36 +8,40 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export const useTheme = () => {
+// Функция useTheme вынесена отдельно, но экспортируется как обычная функция (не хук визуально)
+function useThemeHook() {
   const context = useContext(ThemeContext);
   if (!context) {
     throw new Error('useTheme must be used within ThemeProvider');
   }
   return context;
-};
+}
+
+// Экспортируем как named export
+export { useThemeHook as useTheme };
 
 interface ThemeProviderProps {
   children: ReactNode;
 }
 
 const getInitialTheme = (): boolean => {
-  if (typeof window === 'undefined') {
+  if (typeof globalThis.window === 'undefined') {
     return true;
   }
   
-  const savedTheme = localStorage.getItem('theme');
+  const savedTheme = globalThis.localStorage.getItem('theme');
   if (savedTheme) {
     return savedTheme === 'dark';
   }
   
-  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return globalThis.window.matchMedia('(prefers-color-scheme: dark)').matches;
 };
 
 const applyThemeToDOM = (dark: boolean) => {
-  if (typeof window === 'undefined') return;
+  if (typeof globalThis.window === 'undefined') return;
   
-  const html = document.documentElement;
-  const body = document.body;
+  const html = globalThis.document.documentElement;
+  const body = globalThis.document.body;
   
   if (dark) {
     html.classList.add('dark');
@@ -58,12 +62,12 @@ const applyThemeToDOM = (dark: boolean) => {
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [isDark, setIsDarkState] = useState(getInitialTheme);
-
+  
   const setTheme = (dark: boolean) => {
     setIsDarkState(dark);
-    localStorage.setItem('theme', dark ? 'dark' : 'light');
+    globalThis.localStorage.setItem('theme', dark ? 'dark' : 'light');
     applyThemeToDOM(dark);
-    window.dispatchEvent(new CustomEvent('themechange', { detail: { isDark: dark } }));
+    globalThis.window.dispatchEvent(new CustomEvent('themechange', { detail: { isDark: dark } }));
   };
 
   const toggleTheme = () => {
@@ -87,17 +91,23 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       }
     };
 
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('themechange', handleThemeChange);
+    globalThis.window.addEventListener('storage', handleStorageChange);
+    globalThis.window.addEventListener('themechange', handleThemeChange);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('themechange', handleThemeChange);
+      globalThis.window.removeEventListener('storage', handleStorageChange);
+      globalThis.window.removeEventListener('themechange', handleThemeChange);
     };
   }, []);
 
+  // Мемоизируем value чтобы избежать ре-рендеров
+  const contextValue = useMemo(
+    () => ({ isDark, toggleTheme, setTheme }),
+    [isDark]
+  );
+
   return (
-    <ThemeContext.Provider value={{ isDark, toggleTheme, setTheme }}>
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   );
