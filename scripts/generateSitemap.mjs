@@ -52,7 +52,16 @@ function generateSitemap() {
 
   docs.forEach(doc => {
     const typePrefix = getTypePrefix(doc.type);
-    const cleanSlug = doc.slug.replace(/^-+/, '').replace(/-+$/, '');
+    // Безопасная очистка slug от лидирующих и завершающих дефисов
+    let cleanSlug = doc.slug;
+    // Удаляем лидирующие дефисы
+    while (cleanSlug.startsWith('-')) {
+      cleanSlug = cleanSlug.slice(1);
+    }
+    // Удаляем завершающие дефисы
+    while (cleanSlug.endsWith('-')) {
+      cleanSlug = cleanSlug.slice(0, -1);
+    }
     
     sitemap += `  <url>
     <loc>${baseUrl}/${typePrefix}/${cleanSlug}</loc>
