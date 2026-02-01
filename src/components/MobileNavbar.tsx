@@ -285,6 +285,14 @@ const MobileNavbar: React.FC = () => {
     globalThis.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Функция для получения className в зависимости от состояния (исправление вложенных тернарных операторов)
+  const getTypeButtonClassName = (isSelected: boolean): string => {
+    if (isSelected) {
+      return isDark ? 'bg-white/10 text-white' : 'bg-black/10 text-black';
+    }
+    return isDark ? 'text-white/70 hover:bg-white/5' : 'text-black/70 hover:bg-black/5';
+  };
+
   const NavButton: React.FC<{
     icon: React.ReactNode;
     label: string;
@@ -341,11 +349,12 @@ const MobileNavbar: React.FC = () => {
 
       <AnimatePresence>
         {isFiltersOpen && (
-          <div
-            className="fixed inset-0 z-[60] flex items-end"
+          <button
+            className="fixed inset-0 z-[60] flex items-end bg-transparent border-0 p-0 cursor-default"
             onClick={() => setIsFiltersOpen(false)}
+            aria-label="Закрыть фильтры"
           >
-            <div className={`fixed inset-0 ${isDark ? 'bg-black/50' : 'bg-white/50'} backdrop-blur-sm`} />
+            <div className={`fixed inset-0 ${isDark ? 'bg-black/50' : 'bg-white/50'} backdrop-blur-sm pointer-events-none`} />
             <div
               onClick={(e) => e.stopPropagation()}
               className={`relative w-full rounded-t-2xl border-t max-h-[70vh] overflow-y-auto ${
@@ -367,32 +376,25 @@ const MobileNavbar: React.FC = () => {
                   <button
                     key={type.id}
                     onClick={() => handleTypeSelect(type.id)}
-                    className={`w-full flex items-center gap-4 px-4 py-4 rounded-lg transition-colors text-left ${
-                      selectedType === type.id
-                        ? isDark
-                          ? 'bg-white/10 text-white'
-                          : 'bg-black/10 text-black'
-                        : isDark
-                        ? 'text-white/70 hover:bg-white/5'
-                        : 'text-black/70 hover:bg-black/5'
-                    }`}
+                    className={`w-full flex items-center gap-4 px-4 py-4 rounded-lg transition-colors text-left ${getTypeButtonClassName(selectedType === type.id)}`}
                   >
                     <span className="text-base font-medium">{type.name}</span>
                   </button>
                 ))}
               </div>
             </div>
-          </div>
+          </button>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {isSearchOpen && (
-          <div
-            className="fixed inset-0 z-[60] flex items-end"
+          <button
+            className="fixed inset-0 z-[60] flex items-end bg-transparent border-0 p-0 cursor-default"
             onClick={() => setIsSearchOpen(false)}
+            aria-label="Закрыть поиск"
           >
-            <div className={`fixed inset-0 ${isDark ? 'bg-black/50' : 'bg-white/50'} backdrop-blur-sm`} />
+            <div className={`fixed inset-0 ${isDark ? 'bg-black/50' : 'bg-white/50'} backdrop-blur-sm pointer-events-none`} />
             <div
               onClick={(e) => e.stopPropagation()}
               className={`relative w-full rounded-t-2xl border-t max-h-[80vh] overflow-y-auto flex flex-col ${
@@ -448,17 +450,18 @@ const MobileNavbar: React.FC = () => {
                 </div>
               )}
             </div>
-          </div>
+          </button>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {isTocOpen && toc.length > 0 && (
-          <div
-            className="fixed inset-0 z-[60] flex items-end"
+          <button
+            className="fixed inset-0 z-[60] flex items-end bg-transparent border-0 p-0 cursor-default"
             onClick={() => setIsTocOpen(false)}
+            aria-label="Закрыть оглавление"
           >
-            <div className={`fixed inset-0 ${isDark ? 'bg-black/50' : 'bg-white/50'} backdrop-blur-sm`} />
+            <div className={`fixed inset-0 ${isDark ? 'bg-black/50' : 'bg-white/50'} backdrop-blur-sm pointer-events-none`} />
             <div
               onClick={(e) => e.stopPropagation()}
               className={`relative w-full rounded-t-2xl border-t max-h-[70vh] overflow-y-auto ${
@@ -490,17 +493,18 @@ const MobileNavbar: React.FC = () => {
                 ))}
               </div>
             </div>
-          </div>
+          </button>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {isContactsOpen && (
-          <div
-            className="fixed inset-0 z-[60] flex items-end"
+          <button
+            className="fixed inset-0 z-[60] flex items-end bg-transparent border-0 p-0 cursor-default"
             onClick={() => setIsContactsOpen(false)}
+            aria-label="Закрыть контакты"
           >
-            <div className={`fixed inset-0 ${isDark ? 'bg-black/50' : 'bg-white/50'} backdrop-blur-sm`} />
+            <div className={`fixed inset-0 ${isDark ? 'bg-black/50' : 'bg-white/50'} backdrop-blur-sm pointer-events-none`} />
             <div
               onClick={(e) => e.stopPropagation()}
               className={`relative w-full rounded-t-2xl border-t ${
@@ -575,7 +579,7 @@ const MobileNavbar: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </button>
         )}
       </AnimatePresence>
     </>
