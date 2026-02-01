@@ -6,12 +6,10 @@ interface CodeBlockProps {
   code: string;
 }
 
-// Безопасное экранирование спецсимволов регулярных выражений
 const escapeRegExp = (str: string): string => {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
+  return str.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 };
 
-// Вынесенный компонент для отображения кода
 const CodeBody: React.FC<{
   lines: string[];
   matchedLines: Set<number>;
