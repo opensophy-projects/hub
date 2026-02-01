@@ -25,7 +25,7 @@ export const ColumnsPanel: React.FC<ColumnsPanelProps> = ({
       <div className="space-y-2">
         {headers.map((header, colIndex) => (
           <label
-            key={`col-toggle-${colIndex}`}
+            key={header}
             className="flex items-center gap-2 cursor-pointer text-sm"
           >
             <input
