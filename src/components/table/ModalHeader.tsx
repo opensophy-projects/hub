@@ -1,35 +1,37 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 
 interface ModalHeaderProps {
   isDark: boolean;
   onClose: () => void;
+  isOpen: boolean;
 }
 
-export const ModalHeader: React.FC<ModalHeaderProps> = ({ isDark, onClose }) => {
-  const handleBackdropKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Escape') {
-      onClose();
-    }
-  };
+export const ModalHeader: React.FC<ModalHeaderProps> = ({ isDark, onClose, isOpen }) => {
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
+  useEffect(() => {
+    if (isOpen && dialogRef.current) {
+      dialogRef.current.showModal();
+    } else if (!isOpen && dialogRef.current?.open) {
+      dialogRef.current.close();
+    }
+  }, [isOpen]);
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {
+    if (e.target === dialogRef.current) {
       onClose();
     }
   };
 
   return (
-    <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center ${isDark ? 'bg-black/80' : 'bg-white/80'}`}
+    <dialog
+      ref={dialogRef}
       onClick={handleBackdropClick}
-      onKeyDown={handleBackdropKeyDown}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Модальное окно таблицы"
-      tabIndex={-1}
+      onClose={onClose}
+      className={`rounded-lg shadow-2xl [&::backdrop]:${isDark ? 'bg-black/80' : 'bg-white/80'}`}
     >
       <div
-        className={`relative w-full max-w-[95vw] max-h-[95vh] rounded-lg shadow-2xl flex flex-col ${isDark ? 'bg-[#1a1a1a]' : 'bg-[#E8E7E3]'}`}
+        className={`relative w-full max-w-[95vw] max-h-[95vh] flex flex-col ${isDark ? 'bg-[#1a1a1a]' : 'bg-[#E8E7E3]'}`}
       >
         <div
           className={`flex items-center justify-between p-4 border-b ${isDark ? 'border-white/10 bg-[#252525]' : 'border-black/10 bg-white'}`}
@@ -39,15 +41,16 @@ export const ModalHeader: React.FC<ModalHeaderProps> = ({ isDark, onClose }) => 
           >
             Таблица в полном размере
           </h3>
-          <button
-            onClick={onClose}
-            aria-label="Закрыть модальное окно"
-            className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-black/10 text-black'}`}
-          >
-            ✕
-          </button>
+          <form method="dialog">
+            <button
+              aria-label="Закрыть модальное окно"
+              className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-black/10 text-black'}`}
+            >
+              ✕
+            </button>
+          </form>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 };
