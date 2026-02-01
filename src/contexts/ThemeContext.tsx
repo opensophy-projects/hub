@@ -59,7 +59,7 @@ const applyThemeToDOM = (dark: boolean) => {
 };
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [isDark, setIsDarkState] = useState(() => getInitialTheme());
+  const [isDark, setIsDarkState] = useState<boolean>(() => getInitialTheme());
   
   const setTheme = (dark: boolean) => {
     setIsDarkState(dark);
