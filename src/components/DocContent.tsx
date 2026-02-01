@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { marked } from 'marked';
 import DOMPurify from 'isomorphic-dompurify';
@@ -8,7 +8,6 @@ import DocBanner from './DocBanner';
 import TableModal from './TableModal';
 import DocIcon from './DocIcon';
 import { parseHtmlToReact, TableContext } from '@/lib/htmlParser';
-import { useMobileDetection } from '@/hooks/useMobileDetection';
 import { useTableOfContents } from '@/hooks/useTableOfContents';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
 
@@ -40,7 +39,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
 
-  const isMobile = useMobileDetection();
   const toc = useTableOfContents(contentRef, doc);
   const scrollProgress = useScrollProgress();
 
@@ -86,6 +84,11 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const getTocButtonClass = (isDark: boolean): string => {
     return isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black';
   };
+
+  const tableContextValue = useMemo(
+    () => ({ onTableClick: handleTableClick, isDark }),
+    [isDark]
+  );
 
   return (
     <div style={{ minHeight: '100vh' }}>
@@ -166,7 +169,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
                 isCard={false}
               />
 
-              <TableContext.Provider value={{ onTableClick: handleTableClick, isDark }}>
+              <TableContext.Provider value={tableContextValue}>
                 <div ref={contentRef} className="prose max-w-none prose-invert w-full overflow-x-auto">
                   {contentNodes}
                 </div>
