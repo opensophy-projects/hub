@@ -8,6 +8,167 @@ export const TableContext = createContext<{
   isDark: boolean;
 }>({ isDark: false });
 
+// Вспомогательные функции для обработки разных типов элементов
+const processTextNode = (node: Node, key: string, elements: React.ReactNode[]) => {
+  const text = (node.textContent || '').trim();
+  if (text) {
+    elements.push(
+      <span key={key} dangerouslySetInnerHTML={{ __html: text }} />
+    );
+  }
+};
+
+const processPreElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  const codeElement = element.querySelector('code');
+  if (codeElement) {
+    const code = codeElement.textContent || '';
+    const language = 
+      element.dataset.lang || 
+      element.dataset.language || 
+      codeElement.className.replace('language-', '') || 
+      'bash';
+    
+    elements.push(
+      <CodeBlock
+        key={key}
+        code={code.trim()}
+        language={language}
+      />
+    );
+  }
+};
+
+const processCodeElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  if (element.parentElement?.tagName.toLowerCase() !== 'pre') {
+    elements.push(
+      <code
+        key={key}
+        className="bg-slate-900 px-2 py-1 rounded text-slate-100 font-mono text-sm"
+      >
+        {element.textContent}
+      </code>
+    );
+  }
+};
+
+const processHeadingElement = (element: Element, tagName: string, key: string, elements: React.ReactNode[]) => {
+  const HeadingTag = tagName as keyof JSX.IntrinsicElements;
+  elements.push(
+    <HeadingTag
+      key={key}
+      id={element.id}
+      dangerouslySetInnerHTML={{ __html: element.innerHTML }}
+    />
+  );
+};
+
+const processParagraphElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  elements.push(
+    <p key={key} dangerouslySetInnerHTML={{ __html: element.innerHTML }} />
+  );
+};
+
+const processListElement = (element: Element, tagName: string, key: string, elements: React.ReactNode[]) => {
+  const ListTag = tagName as keyof JSX.IntrinsicElements;
+  elements.push(
+    <ListTag key={key} dangerouslySetInnerHTML={{ __html: element.innerHTML }} />
+  );
+};
+
+const processLinkElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  elements.push(
+    <a
+      key={key}
+      href={element.getAttribute('href') || '#'}
+      target="_blank"
+      rel="noopener noreferrer"
+      dangerouslySetInnerHTML={{ __html: element.innerHTML }}
+    />
+  );
+};
+
+const processImageElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  const src = element.getAttribute('src') || '';
+  const alt = element.getAttribute('alt') || 'Image';
+  const title = element.getAttribute('title') || '';
+
+  if (title) {
+    elements.push(
+      <figure key={key} className="my-6 w-full">
+        <img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          className="rounded-lg shadow-md max-w-full h-auto w-full"
+        />
+        <figcaption className="mt-2 text-center text-xs text-slate-400 italic font-medium">
+          {title}
+        </figcaption>
+      </figure>
+    );
+  } else {
+    elements.push(
+      <img
+        key={key}
+        src={src}
+        alt={alt}
+        loading="lazy"
+        className="rounded-lg shadow-md max-w-full h-auto my-4"
+      />
+    );
+  }
+};
+
+const processBlockquoteElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  elements.push(
+    <blockquote key={key} dangerouslySetInnerHTML={{ __html: element.innerHTML }} />
+  );
+};
+
+// Компонент для рендеринга таблицы
+const TableRenderer: React.FC<{ 
+  tableHtml: string; 
+  onTableClick?: (html: string) => void; 
+  isDark: boolean;
+}> = ({ tableHtml, onTableClick, isDark }) => (
+  <TableWithControls
+    tableHtml={tableHtml}
+    isDark={isDark}
+    onFullscreen={(html) => onTableClick?.(html)}
+  />
+);
+
+const processTableElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  const tableHtml = element.outerHTML;
+  elements.push(
+    <TableContext.Consumer key={key}>
+      {({ onTableClick, isDark }) => (
+        <TableRenderer 
+          tableHtml={tableHtml}
+          onTableClick={onTableClick}
+          isDark={isDark}
+        />
+      )}
+    </TableContext.Consumer>
+  );
+};
+
+const processHrElement = (key: string, elements: React.ReactNode[]) => {
+  elements.push(<hr key={key} />);
+};
+
+const processStrongElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  elements.push(
+    <strong key={key} dangerouslySetInnerHTML={{ __html: element.innerHTML }} />
+  );
+};
+
+const processEmElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  elements.push(
+    <em key={key} dangerouslySetInnerHTML={{ __html: element.innerHTML }} />
+  );
+};
+
 export const parseHtmlToReact = (html: string): React.ReactNode[] => {
   const sanitized = DOMPurify.sanitize(html, {
     ALLOWED_TAGS: [
@@ -30,167 +191,48 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       const key = `${parentKey}-${index}`;
 
       if (node.nodeType === Node.TEXT_NODE) {
-        const text = (node.textContent || '').trim();
-        if (text) {
-          elements.push(
-            <span key={key} dangerouslySetInnerHTML={{ __html: text }} />
-          );
-        }
-      } else if (node.nodeType === Node.ELEMENT_NODE) {
-        const element = node as Element;
-        const tagName = element.tagName.toLowerCase();
+        processTextNode(node, key, elements);
+        return;
+      }
 
-        if (tagName === 'pre') {
-          const codeElement = element.querySelector('code');
-          if (codeElement) {
-            const code = codeElement.textContent || '';
-            const language = 
-              element.getAttribute('data-lang') || 
-              element.getAttribute('data-language') || 
-              codeElement.className.replace('language-', '') || 
-              'bash';
-            
-            elements.push(
-              <CodeBlock
-                key={key}
-                code={code.trim()}
-                language={language}
-              />
-            );
-          }
-          return;
-        }
+      if (node.nodeType !== Node.ELEMENT_NODE) {
+        return;
+      }
 
-        if (tagName === 'code' && element.parentElement?.tagName.toLowerCase() !== 'pre') {
-          elements.push(
-            <code
-              key={key}
-              className="bg-slate-900 px-2 py-1 rounded text-slate-100 font-mono text-sm"
-            >
-              {element.textContent}
-            </code>
-          );
-          return;
-        }
+      const element = node as Element;
+      const tagName = element.tagName.toLowerCase();
 
-        if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tagName)) {
-          const HeadingTag = tagName as keyof JSX.IntrinsicElements;
-          elements.push(
-            <HeadingTag
-              key={key}
-              id={element.id}
-              dangerouslySetInnerHTML={{ __html: element.innerHTML }}
-            />
-          );
-          return;
-        }
+      // Маппинг тегов на обработчики
+      const handlers: Record<string, () => void> = {
+        'pre': () => processPreElement(element, key, elements),
+        'code': () => processCodeElement(element, key, elements),
+        'p': () => processParagraphElement(element, key, elements),
+        'ul': () => processListElement(element, tagName, key, elements),
+        'ol': () => processListElement(element, tagName, key, elements),
+        'a': () => processLinkElement(element, key, elements),
+        'img': () => processImageElement(element, key, elements),
+        'blockquote': () => processBlockquoteElement(element, key, elements),
+        'table': () => processTableElement(element, key, elements),
+        'hr': () => processHrElement(key, elements),
+        'strong': () => processStrongElement(element, key, elements),
+        'em': () => processEmElement(element, key, elements),
+      };
 
-        if (tagName === 'p') {
-          elements.push(
-            <p key={key} dangerouslySetInnerHTML={{ __html: element.innerHTML }} />
-          );
-          return;
-        }
+      // Обработка заголовков
+      if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tagName)) {
+        processHeadingElement(element, tagName, key, elements);
+        return;
+      }
 
-        if (tagName === 'ul' || tagName === 'ol') {
-          const ListTag = tagName as keyof JSX.IntrinsicElements;
-          elements.push(
-            <ListTag key={key} dangerouslySetInnerHTML={{ __html: element.innerHTML }} />
-          );
-          return;
-        }
+      // Вызов соответствующего обработчика
+      if (handlers[tagName]) {
+        handlers[tagName]();
+        return;
+      }
 
-        if (tagName === 'a') {
-          elements.push(
-            <a
-              key={key}
-              href={element.getAttribute('href') || '#'}
-              target="_blank"
-              rel="noopener noreferrer"
-              dangerouslySetInnerHTML={{ __html: element.innerHTML }}
-            />
-          );
-          return;
-        }
-
-        if (tagName === 'img') {
-          const src = element.getAttribute('src') || '';
-          const alt = element.getAttribute('alt') || 'Image';
-          const title = element.getAttribute('title') || '';
-
-          if (title) {
-            elements.push(
-              <figure key={key} className="my-6 w-full">
-                <img
-                  src={src}
-                  alt={alt}
-                  loading="lazy"
-                  className="rounded-lg shadow-md max-w-full h-auto w-full"
-                />
-                <figcaption className="mt-2 text-center text-xs text-slate-400 italic font-medium">
-                  {title}
-                </figcaption>
-              </figure>
-            );
-          } else {
-            elements.push(
-              <img
-                key={key}
-                src={src}
-                alt={alt}
-                loading="lazy"
-                className="rounded-lg shadow-md max-w-full h-auto my-4"
-              />
-            );
-          }
-          return;
-        }
-
-        if (tagName === 'blockquote') {
-          elements.push(
-            <blockquote key={key} dangerouslySetInnerHTML={{ __html: element.innerHTML }} />
-          );
-          return;
-        }
-
-        if (tagName === 'table') {
-          const tableHtml = element.outerHTML;
-          elements.push(
-            <TableContext.Consumer key={key}>
-              {({ onTableClick, isDark }) => (
-                <TableWithControls
-                  tableHtml={tableHtml}
-                  isDark={isDark}
-                  onFullscreen={(html) => onTableClick?.(html)}
-                />
-              )}
-            </TableContext.Consumer>
-          );
-          return;
-        }
-
-        if (tagName === 'hr') {
-          elements.push(<hr key={key} />);
-          return;
-        }
-
-        if (tagName === 'strong') {
-          elements.push(
-            <strong key={key} dangerouslySetInnerHTML={{ __html: element.innerHTML }} />
-          );
-          return;
-        }
-
-        if (tagName === 'em') {
-          elements.push(
-            <em key={key} dangerouslySetInnerHTML={{ __html: element.innerHTML }} />
-          );
-          return;
-        }
-
-        if (element.childNodes.length > 0) {
-          processNodes(element.childNodes, key);
-        }
+      // Если нет специального обработчика, обрабатываем дочерние элементы
+      if (element.childNodes.length > 0) {
+        processNodes(element.childNodes, key);
       }
     });
   };
