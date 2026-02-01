@@ -2,6 +2,10 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import docs from '@/data/docs.json';
 import { useTheme } from '@/contexts/ThemeContext';
+import FilterPanel from './navbar/FilterPanel';
+import SearchPanel from './navbar/SearchPanel';
+import TocPanel from './navbar/TocPanel';
+import ContactsPanel from './navbar/ContactsPanel';
 
 interface ToContentsItem {
   id: string;
@@ -9,7 +13,6 @@ interface ToContentsItem {
   level: number;
 }
 
-// Вынесенные SVG компоненты
 const SearchIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
   <svg
     className={className}
@@ -139,65 +142,28 @@ const ListIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) =
   </svg>
 );
 
-const SendIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <line x1="22" y1="2" x2="11" y2="13" />
-    <polygon points="22 2 15 22 11 13 2 9 22 2" />
-  </svg>
-);
+const NavButton: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  isActive?: boolean;
+}> = ({ icon, label, onClick, isActive = false }) => {
+  const { isDark } = useTheme();
+  
+  const textColor = isActive
+    ? isDark ? 'text-white' : 'text-black'
+    : isDark ? 'text-white/60 hover:text-white' : 'text-black/60 hover:text-black';
 
-const GithubIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
-    <path d="M9 18c-4.51 2-5-2-7-2" />
-  </svg>
-);
-
-const HabrIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <rect x="2" y="2" width="20" height="20" rx="2" />
-    <path d="M7 7h10M7 12h10M7 17h10" />
-  </svg>
-);
-
-const XIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <line x1="18" y1="6" x2="6" y2="18" />
-    <line x1="6" y1="6" x2="18" y2="18" />
-  </svg>
-);
+  return (
+    <button
+      onClick={onClick}
+      className={`flex flex-col items-center justify-center gap-1 px-2 py-2 transition-colors ${textColor}`}
+    >
+      <div className="w-6 h-6 flex items-center justify-center">{icon}</div>
+      <span className="text-[10px] font-medium">{label}</span>
+    </button>
+  );
+};
 
 const MobileNavbar: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
@@ -212,9 +178,10 @@ const MobileNavbar: React.FC = () => {
   const [isArticlePage, setIsArticlePage] = useState(false);
 
   useEffect(() => {
-    setIsArticlePage(/^\/docs\/|^\/blog\/|^\/news\//.test(globalThis.location.pathname));
+    const pathMatch = /^\/docs\/|^\/blog\/|^\/news\//.test(globalThis.location.pathname);
+    setIsArticlePage(pathMatch);
 
-    if (isArticlePage) {
+    if (pathMatch) {
       const generateTOC = () => {
         const articleContent = document.querySelector('[data-article-content]');
         if (!articleContent) return;
@@ -238,7 +205,7 @@ const MobileNavbar: React.FC = () => {
       const timer = setTimeout(generateTOC, 100);
       return () => clearTimeout(timer);
     }
-  }, [isArticlePage]);
+  }, []);
 
   const types = [
     { id: 'all', name: 'Все' },
@@ -285,37 +252,6 @@ const MobileNavbar: React.FC = () => {
     globalThis.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Функция для получения className в зависимости от состояния (исправление вложенных тернарных операторов)
-  const getTypeButtonClassName = (isSelected: boolean): string => {
-    if (isSelected) {
-      return isDark ? 'bg-white/10 text-white' : 'bg-black/10 text-black';
-    }
-    return isDark ? 'text-white/70 hover:bg-white/5' : 'text-black/70 hover:bg-black/5';
-  };
-
-  const NavButton: React.FC<{
-    icon: React.ReactNode;
-    label: string;
-    onClick: () => void;
-    isActive?: boolean;
-  }> = ({ icon, label, onClick, isActive = false }) => (
-    <button
-      onClick={onClick}
-      className={`flex flex-col items-center justify-center gap-1 px-2 py-2 transition-colors ${
-        isActive
-          ? isDark
-            ? 'text-white'
-            : 'text-black'
-          : isDark
-          ? 'text-white/60 hover:text-white'
-          : 'text-black/60 hover:text-black'
-      }`}
-    >
-      <div className="w-6 h-6 flex items-center justify-center">{icon}</div>
-      <span className="text-[10px] font-medium">{label}</span>
-    </button>
-  );
-
   return (
     <>
       <nav
@@ -349,237 +285,46 @@ const MobileNavbar: React.FC = () => {
 
       <AnimatePresence>
         {isFiltersOpen && (
-          <button
-            className="fixed inset-0 z-[60] flex items-end bg-transparent border-0 p-0 cursor-default"
-            onClick={() => setIsFiltersOpen(false)}
-            aria-label="Закрыть фильтры"
-          >
-            <div className={`fixed inset-0 ${isDark ? 'bg-black/50' : 'bg-white/50'} backdrop-blur-sm pointer-events-none`} />
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className={`relative w-full rounded-t-2xl border-t max-h-[70vh] overflow-y-auto ${
-                isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
-              }`}
-            >
-              <div
-                className={`sticky top-0 flex items-center justify-between p-4 border-b backdrop-blur-sm ${
-                  isDark ? 'bg-[#0a0a0a]/95 border-white/10' : 'bg-[#E8E7E3]/95 border-black/10'
-                }`}
-              >
-                <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>Фильтр по типам</h3>
-                <button onClick={() => setIsFiltersOpen(false)} className={`p-2 rounded-lg ${isDark ? 'hover:bg-white/10' : 'hover:bg-black/10'}`}>
-                  <XIcon />
-                </button>
-              </div>
-              <div className="p-4 space-y-2">
-                {types.map((type) => (
-                  <button
-                    key={type.id}
-                    onClick={() => handleTypeSelect(type.id)}
-                    className={`w-full flex items-center gap-4 px-4 py-4 rounded-lg transition-colors text-left ${getTypeButtonClassName(selectedType === type.id)}`}
-                  >
-                    <span className="text-base font-medium">{type.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </button>
+          <FilterPanel
+            isOpen={isFiltersOpen}
+            types={types}
+            selectedType={selectedType}
+            onTypeSelect={handleTypeSelect}
+            onClose={() => setIsFiltersOpen(false)}
+          />
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {isSearchOpen && (
-          <button
-            className="fixed inset-0 z-[60] flex items-end bg-transparent border-0 p-0 cursor-default"
-            onClick={() => setIsSearchOpen(false)}
-            aria-label="Закрыть поиск"
-          >
-            <div className={`fixed inset-0 ${isDark ? 'bg-black/50' : 'bg-white/50'} backdrop-blur-sm pointer-events-none`} />
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className={`relative w-full rounded-t-2xl border-t max-h-[80vh] overflow-y-auto flex flex-col ${
-                isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
-              }`}
-            >
-              <div className="p-4 flex-shrink-0">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>Поиск</h3>
-                  <button
-                    onClick={() => setIsSearchOpen(false)}
-                    className={`p-2 rounded-lg ${isDark ? 'hover:bg-white/10' : 'hover:bg-black/10'}`}
-                  >
-                    <XIcon />
-                  </button>
-                </div>
-                <div className="relative">
-                  <SearchIcon
-                    className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${
-                      isDark ? 'text-white/40' : 'text-black/40'
-                    }`}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Поиск статей..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    autoFocus
-                    className={`w-full pl-12 pr-4 py-4 rounded-lg border transition-colors outline-none ${
-                      isDark ? 'bg-[#0a0a0a] border-white/10 text-white placeholder-white/40 focus:border-white/20' : 'bg-[#E8E7E3] border-black/10 text-black placeholder-black/40 focus:border-black/20'
-                    }`}
-                  />
-                </div>
-              </div>
-
-              {searchResults.length > 0 && (
-                <div className="flex-1 overflow-y-auto px-4 pb-4">
-                  <p className={`text-xs font-semibold mb-3 ${isDark ? 'text-white/50' : 'text-black/50'}`}>Возможно вы ищете:</p>
-                  <div className="space-y-2">
-                    {searchResults.map((result) => (
-                      <button
-                        key={result.id}
-                        onClick={() => handleSearchResult(result.slug)}
-                        className={`w-full text-left p-3 rounded-lg transition-colors border ${
-                          isDark ? 'bg-[#0a0a0a] border-white/10 hover:border-white/20' : 'bg-[#E8E7E3] border-black/10 hover:border-black/20'
-                        }`}
-                      >
-                        <h4 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-black'}`}>{result.title}</h4>
-                        <p className={`text-xs mt-1 ${isDark ? 'text-white/50' : 'text-black/50'}`}>{result.description.substring(0, 80)}...</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </button>
+          <SearchPanel
+            isOpen={isSearchOpen}
+            searchQuery={searchQuery}
+            searchResults={searchResults}
+            onSearchChange={setSearchQuery}
+            onSearchResult={handleSearchResult}
+            onClose={() => setIsSearchOpen(false)}
+          />
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {isTocOpen && toc.length > 0 && (
-          <button
-            className="fixed inset-0 z-[60] flex items-end bg-transparent border-0 p-0 cursor-default"
-            onClick={() => setIsTocOpen(false)}
-            aria-label="Закрыть оглавление"
-          >
-            <div className={`fixed inset-0 ${isDark ? 'bg-black/50' : 'bg-white/50'} backdrop-blur-sm pointer-events-none`} />
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className={`relative w-full rounded-t-2xl border-t max-h-[70vh] overflow-y-auto ${
-                isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
-              }`}
-            >
-              <div
-                className={`sticky top-0 flex items-center justify-between p-4 border-b backdrop-blur-sm ${
-                  isDark ? 'bg-[#0a0a0a]/95 border-white/10' : 'bg-[#E8E7E3]/95 border-black/10'
-                }`}
-              >
-                <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>На этой странице</h3>
-                <button onClick={() => setIsTocOpen(false)} className={`p-2 rounded-lg ${isDark ? 'hover:bg-white/10' : 'hover:bg-black/10'}`}>
-                  <XIcon />
-                </button>
-              </div>
-              <div className="p-4 space-y-1">
-                {toc.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => handleTocClick(item.id)}
-                    className={`w-full text-left px-4 py-2 rounded-lg transition-colors text-sm ${
-                      isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black'
-                    }`}
-                    style={{ paddingLeft: `${12 + (item.level - 2) * 16}px` }}
-                  >
-                    {item.text}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </button>
+          <TocPanel
+            isOpen={isTocOpen}
+            toc={toc}
+            onTocClick={handleTocClick}
+            onClose={() => setIsTocOpen(false)}
+          />
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {isContactsOpen && (
-          <button
-            className="fixed inset-0 z-[60] flex items-end bg-transparent border-0 p-0 cursor-default"
-            onClick={() => setIsContactsOpen(false)}
-            aria-label="Закрыть контакты"
-          >
-            <div className={`fixed inset-0 ${isDark ? 'bg-black/50' : 'bg-white/50'} backdrop-blur-sm pointer-events-none`} />
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className={`relative w-full rounded-t-2xl border-t ${
-                isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
-              }`}
-            >
-              <div className="p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>Контакты</h3>
-                  <button
-                    onClick={() => setIsContactsOpen(false)}
-                    className={`p-2 rounded-lg ${isDark ? 'hover:bg-white/10' : 'hover:bg-black/10'}`}
-                  >
-                    <XIcon />
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  <a
-                    href="mailto:opensophy@gmail.com"
-                    className={`flex items-center gap-4 px-4 py-4 rounded-lg transition-colors ${
-                      isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black'
-                    }`}
-                  >
-                    <MailIcon className="w-6 h-6" />
-                    <div>
-                      <div className="font-medium">Email</div>
-                      <div className="text-sm opacity-70">opensophy@gmail.com</div>
-                    </div>
-                  </a>
-                  <a
-                    href="https://t.me/veilosophy"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`flex items-center gap-4 px-4 py-4 rounded-lg transition-colors ${
-                      isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black'
-                    }`}
-                  >
-                    <SendIcon className="w-6 h-6" />
-                    <div>
-                      <div className="font-medium">Telegram</div>
-                      <div className="text-sm opacity-70">@veilosophy</div>
-                    </div>
-                  </a>
-                  <a
-                    href="https://github.com/opensophy-projects"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`flex items-center gap-4 px-4 py-4 rounded-lg transition-colors ${
-                      isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black'
-                    }`}
-                  >
-                    <GithubIcon className="w-6 h-6" />
-                    <div>
-                      <div className="font-medium">GitHub</div>
-                      <div className="text-sm opacity-70">opensophy</div>
-                    </div>
-                  </a>
-                  <a
-                    href="https://habr.com/ru/users/opensophy/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`flex items-center gap-4 px-4 py-4 rounded-lg transition-colors ${
-                      isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black'
-                    }`}
-                  >
-                    <HabrIcon className="w-6 h-6" />
-                    <div>
-                      <div className="font-medium">Habr</div>
-                      <div className="text-sm opacity-70">opensophy</div>
-                    </div>
-                  </a>
-                </div>
-              </div>
-            </div>
-          </button>
+          <ContactsPanel
+            isOpen={isContactsOpen}
+            onClose={() => setIsContactsOpen(false)}
+          />
         )}
       </AnimatePresence>
     </>
