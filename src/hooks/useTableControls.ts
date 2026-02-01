@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { TableControlsState, ParsedRow } from '../types/table';
+import { TableControlsState } from '../types/table';
 import { filterAndSortRows } from '../lib/tableFiltering';
 
 export function useTableControls(rows: Element[], headers: string[]) {
