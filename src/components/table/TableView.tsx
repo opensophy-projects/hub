@@ -119,6 +119,18 @@ interface TableRowProps {
   searchQuery: string;
 }
 
+const getRowBackgroundClass = (isEvenRow: boolean, isDark: boolean): string => {
+  if (isDark) {
+    return '';
+  }
+  
+  if (isEvenRow) {
+    return 'bg-[#E8E7E3]';
+  }
+  
+  return 'bg-[#f1f0ec]';
+};
+
 const TableRow: React.FC<TableRowProps> = ({
   isDark,
   row,
@@ -127,10 +139,7 @@ const TableRow: React.FC<TableRowProps> = ({
   searchQuery,
 }) => {
   const isEvenRow = rowIndex % 2 === 0;
-  
-  const backgroundClass = isEvenRow
-    ? isDark ? '' : 'bg-[#E8E7E3]'
-    : isDark ? '' : 'bg-[#f1f0ec]';
+  const backgroundClass = getRowBackgroundClass(isEvenRow, isDark);
 
   return (
     <tr
