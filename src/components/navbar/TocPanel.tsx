@@ -45,14 +45,13 @@ const TocPanel: React.FC<TocPanelProps> = ({ toc, onTocClick, onClose }) => {
   }, [onClose]);
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-end"
-      onClick={onClose}
-      role="presentation"
-    >
-      <div className={`fixed inset-0 ${isDark ? 'bg-black/50' : 'bg-white/50'} backdrop-blur-sm`} aria-hidden="true" />
+    <div className="fixed inset-0 z-[60] flex items-end">
+      <div 
+        className={`fixed inset-0 ${isDark ? 'bg-black/50' : 'bg-white/50'} backdrop-blur-sm`}
+        onClick={onClose}
+        aria-hidden="true"
+      />
       <div
-        onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="toc-panel-title"
