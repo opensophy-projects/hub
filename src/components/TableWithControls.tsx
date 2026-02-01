@@ -1,5 +1,4 @@
-import React, { useState, useMemo } from 'react';
-import { TableControlsState } from '../types/table';
+import React from 'react';
 import { useTableControls } from '../hooks/useTableControls';
 import { parseTableHtml } from '../lib/tableParser';
 import { TableControlsBar } from './table/TableControlsBar';
