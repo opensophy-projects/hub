@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { FilterSection } from './table/FilterSection';
-import { ColumnsSection } from './table/ColumnsSection';
 import { ModalTableContent } from './table/ModalTableContent';
 import { parseTableFromHTML, filterRows, getUniqueValuesForColumn } from '../lib/tableModalUtils';
 
