@@ -26,7 +26,7 @@ export function setupMarked() {
       const text = token.text || '';
       
       if (text.startsWith('<em>') && text.endsWith('</em>') && lastImageSrc) {
-        const caption = text.replace(/<\/?em>/g, '').trim();
+        const caption = text.replaceAll(/<\/?em>/g, '').trim();
         lastImageSrc = '';
         return `<figcaption style="text-align: center; margin-top: -12px; margin-bottom: 24px; font-style: italic; font-size: 0.95em; opacity: 0.85; color: #999;">${caption}</figcaption>`;
       }
@@ -45,10 +45,10 @@ export function setupMarked() {
       const text = token.text || '';
       const lang = token.lang || 'plaintext';
       const escaped = text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+        .replaceAll(/&/g, '&amp;')
+        .replaceAll(/</g, '&lt;')
+        .replaceAll(/>/g, '&gt;')
+        .replaceAll(/"/g, '&quot;');
       return `<pre class="code-block" data-lang="${lang}"><code class="language-${lang}">${escaped}</code></pre>`;
     },
   };
