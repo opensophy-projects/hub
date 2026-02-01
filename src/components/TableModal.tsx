@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ModalHeader } from './table/ModalHeader';
 import { FilterSection } from './table/FilterSection';
 import { ColumnsSection } from './table/ColumnsSection';
 import { ModalTableContent } from './table/ModalTableContent';
@@ -108,8 +107,6 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
         aria-modal="true"
         aria-label="Модальное окно таблицы"
       >
-        <ModalHeader isDark={isDark} onClose={onClose} isOpen={isOpen} />
-
         <FilterSection
           isDark={isDark}
           showFilters={false}
@@ -120,6 +117,12 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
           uniqueValues={uniqueValues}
           onFilterChange={handleFilterChange}
           onResetFilters={handleResetFilters}
+          isFullscreen={true}
+          onClose={onClose}
+          showColumns={showColumns}
+          onToggleColumns={() => setShowColumns(!showColumns)}
+          visibleColumns={visibleColumns}
+          onColumnToggle={handleColumnToggle}
         />
 
         <div className="flex flex-1 overflow-hidden">
@@ -129,27 +132,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
             filteredRows={filteredRows}
             visibleColumns={visibleColumns}
           />
-
-          <button
-            onClick={() => setShowColumns(!showColumns)}
-            className={`px-3 py-2 border-l ${isDark ? 'border-white/10 hover:bg-white/5' : 'border-black/10 hover:bg-black/5'}`}
-            aria-label="Переключить видимость колонок"
-            aria-expanded={showColumns}
-            type="button"
-          >
-            ☰
-          </button>
         </div>
-
-        {showColumns && (
-          <ColumnsSection
-            isDark={isDark}
-            showColumns={showColumns}
-            headers={parsedTable.headers}
-            visibleColumns={visibleColumns}
-            onColumnToggle={handleColumnToggle}
-          />
-        )}
       </div>
     </div>
   );
