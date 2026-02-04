@@ -277,7 +277,7 @@ const MobileNavbar: React.FC = () => {
               <NavButton icon={<FolderIcon />} label="Фильтр" onClick={() => setIsFiltersOpen(true)} />
               <NavButton icon={<SearchIcon />} label="Поиск" onClick={() => setIsSearchOpen(true)} />
               <a href="/" className="flex flex-col items-center justify-center gap-1 px-2 py-2">
-                <img src="/favicon.png" alt="Opensophy" className="w-7 h-7 object-contain" />
+                <img src="/favicon.png" alt="Opensophy" className="w-10 h-10 object-contain" />
               </a>
               <NavButton icon={isDark ? <SunIcon /> : <MoonIcon />} label="Тема" onClick={toggleTheme} />
               <NavButton icon={<MailIcon />} label="Контакты" onClick={() => setIsContactsOpen(true)} />
