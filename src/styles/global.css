@@ -216,44 +216,80 @@ body {
   font-style: italic;
 }
 
+/* ТАБЛИЦЫ - исправленные стили */
 .prose table {
   width: 100%;
   border-collapse: collapse;
+  border-spacing: 0;
   margin-top: 2rem;
   margin-bottom: 2rem;
   font-size: 0.875rem;
   line-height: 1.7;
-  overflow-x: auto;
-  display: block;
-  -webkit-overflow-scrolling: touch;
+  overflow: visible;
+  display: table;
+}
+
+.prose thead {
+  border-bottom: 2px solid;
+}
+
+.prose thead {
+  border-color: rgba(0, 0, 0, 0.3);
+}
+
+.dark .prose thead {
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .prose th,
 .prose td {
-  border: 1px solid #6b7280;
+  border: 1px solid;
+  border-color: rgba(0, 0, 0, 0.2);
   padding: 0.75rem 1rem;
   text-align: left;
   word-break: break-word;
   overflow-wrap: break-word;
   white-space: normal;
   hyphens: auto;
+  vertical-align: top;
 }
 
 .dark .prose th,
 .dark .prose td {
-  border-color: #6b7280;
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .prose th {
   font-weight: 600;
+  background-color: rgba(0, 0, 0, 0.04);
   position: sticky;
   top: 0;
   z-index: 10;
-  background-color: rgba(0, 0, 0, 0.08);
 }
 
 .dark .prose th {
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.prose tbody tr {
+  border-bottom: 1px solid;
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.dark .prose tbody tr {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.prose tbody tr:last-child {
+  border-bottom: none;
+}
+
+.prose tbody tr:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.dark .prose tbody tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.02);
 }
 
 .prose th code,
@@ -264,14 +300,7 @@ body {
   font-family: ui-monospace, monospace;
   white-space: pre-wrap;
   word-break: break-word;
-}
-
-.prose tbody tr:nth-child(even) {
-  background-color: rgba(0, 0, 0, 0.02);
-}
-
-.dark .prose tbody tr:nth-child(even) {
-  background-color: rgba(255, 255, 255, 0.03);
+  border: none;
 }
 
 @media (min-width: 768px) {
