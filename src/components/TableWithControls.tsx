@@ -37,7 +37,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({
   if (!headers.length) return null;
 
   return (
-    <div className="my-4">
+    <div className="not-prose">
       <div className={`rounded-lg border ${isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-[#E8E7E3]'}`}>
         <TableControlsBar
           isDark={isDark}
