@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import BottomSheet from './BottomSheet';
+import { smoothScrollToElement } from '@/lib/scrollUtils';
 
 interface ToContentsItem {
   id: string;
@@ -17,13 +18,18 @@ interface TocPanelProps {
 const TocPanel: React.FC<TocPanelProps> = ({ toc, onTocClick, onClose }) => {
   const { isDark } = useTheme();
 
+  const handleClick = (id: string) => {
+    smoothScrollToElement(id, 80);
+    onClose();
+  };
+
   return (
     <BottomSheet title="На этой странице" onClose={onClose}>
       <div className="p-4 space-y-1">
         {toc.map((item) => (
           <button
             key={item.id}
-            onClick={() => onTocClick(item.id)}
+            onClick={() => handleClick(item.id)}
             className={`w-full text-left px-4 py-2 rounded-lg transition-colors text-sm ${
               isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black'
             }`}
