@@ -10,6 +10,7 @@ import DocIcon from './DocIcon';
 import { parseHtmlToReact, TableContext } from '@/lib/htmlParser';
 import { useTableOfContents } from '@/hooks/useTableOfContents';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
+import { smoothScrollToElement } from '@/lib/scrollUtils';
 
 interface DocContentProps {
   doc: {
@@ -43,8 +44,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const scrollProgress = useScrollProgress();
 
   const handleTocClick = (id: string) => {
-    const element = document.getElementById(id);
-    element?.scrollIntoView({ behavior: 'smooth' });
+    smoothScrollToElement(id, 120);
   };
 
   const handleTableClick = (tableHtml: string) => {
