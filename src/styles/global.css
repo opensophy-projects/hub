@@ -216,16 +216,28 @@ body {
   font-style: italic;
 }
 
+/* Убираем стандартные отступы у таблиц - они будут контролироваться контейнером */
 .prose table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 2rem;
-  margin-bottom: 2rem;
+  margin-top: 0;
+  margin-bottom: 0;
   font-size: 0.875rem;
   line-height: 1.7;
   overflow-x: auto;
   display: block;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Контейнер таблицы (not-prose) контролирует отступы */
+.prose .not-prose {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Убираем двойные отступы между соседними таблицами */
+.prose .not-prose + .not-prose {
+  margin-top: 1rem;
 }
 
 .prose th,
