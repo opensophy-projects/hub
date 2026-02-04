@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { ParsedRow } from '../../types/table';
 import { HighlightText } from '../HighlightText';
+import { SortIcon } from './SortIcons';
 
 interface TableViewProps {
   isDark: boolean;
@@ -85,7 +86,7 @@ const TableHead: React.FC<TableHeadProps> = ({
           visibleColumns.has(colIndex) ? (
             <th
               key={header}
-              className={`px-4 py-3 text-left font-semibold cursor-pointer transition-colors ${
+              className={`px-4 py-3 text-left font-semibold cursor-pointer transition-colors select-none ${
                 isDark
                   ? 'text-white hover:bg-white/20'
                   : 'text-black hover:bg-[#ddd8cd]'
@@ -94,14 +95,14 @@ const TableHead: React.FC<TableHeadProps> = ({
               style={{
                 backgroundColor: isDark ? '#1a1a1a' : '#E8E7E3',
               }}
+              title="Нажмите для сортировки"
             >
               <div className="flex items-center gap-2 whitespace-nowrap">
                 <span>{header}</span>
-                {sortColumn === colIndex && sortDirection !== 'none' && (
-                  <span className="text-xs">
-                    {sortDirection === 'asc' ? '↑' : '↓'}
-                  </span>
-                )}
+                <SortIcon
+                  direction={sortColumn === colIndex ? sortDirection : 'none'}
+                  isDark={isDark}
+                />
               </div>
             </th>
           ) : null
