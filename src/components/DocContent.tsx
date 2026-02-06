@@ -46,7 +46,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
     const element = document.getElementById(id);
     if (!element) return;
 
-    const headerOffset = 100;
+    const headerOffset = 80;
     const elementPosition = element.getBoundingClientRect().top;
     const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
 
