@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { scrollToElement } from '@/lib/scrollUtils';
 import BottomSheet from './BottomSheet';
 
 interface ToContentsItem {
@@ -18,7 +19,7 @@ const TocPanel: React.FC<TocPanelProps> = ({ toc, onTocClick, onClose }) => {
   const { isDark } = useTheme();
 
   const handleClick = (id: string) => {
-    onTocClick(id);
+    scrollToElement(id);
     onClose();
   };
 
