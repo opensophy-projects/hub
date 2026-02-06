@@ -27,7 +27,7 @@ export const TableView: React.FC<TableViewProps> = ({
   const styles = useMemo(() => getTableStyles(isDark), [isDark]);
 
   return (
-    <div style={{ overflowX: 'auto', overflowY: 'visible' }}>
+    <div style={{ overflowX: 'auto', overflowY: 'visible', minHeight: '200px' }}>
       <table className="w-full border-collapse text-sm">
         <TableHead
           isDark={isDark}
@@ -94,6 +94,8 @@ const TableHead: React.FC<TableHeadProps> = ({
               onClick={() => onSort(colIndex)}
               style={{
                 backgroundColor: isDark ? '#1a1a1a' : '#E8E7E3',
+                minWidth: '150px',
+                flex: 1
               }}
               title="Нажмите для сортировки"
             >
@@ -155,6 +157,10 @@ const TableRow: React.FC<TableRowProps> = ({
           <td
             key={`cell-${rowIndex}-${colIndex}`}
             className={`px-4 py-3 ${isDark ? 'text-white/90' : 'text-black'}`}
+            style={{
+              minWidth: '150px',
+              flex: 1
+            }}
           >
             <HighlightText text={cell} query={searchQuery} />
           </td>
@@ -169,6 +175,7 @@ function getTableStyles(isDark: boolean): string {
     table {
       border-collapse: collapse;
       width: 100%;
+      table-layout: fixed;
     }
     th, td {
       border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)'};
@@ -179,7 +186,8 @@ function getTableStyles(isDark: boolean): string {
       overflow-wrap: break-word;
       white-space: normal;
       hyphens: auto;
-      min-width: 120px;
+      min-width: 150px;
+      flex: 1;
     }
     th {
       background-color: ${isDark ? '#1a1a1a' : '#E8E7E3'};
