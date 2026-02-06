@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import { ParsedRow } from '../../types/table';
-import { HighlightText } from '../HighlightText';
 import { SortIcon } from './SortIcons';
 
 interface TableViewProps {
@@ -26,6 +25,36 @@ export const TableView: React.FC<TableViewProps> = ({
 }) => {
   const styles = useMemo(() => getTableStyles(isDark), [isDark]);
 
+  // Функция для подсветки поискового запроса с сохранением HTML
+  const highlightSearchInHTML = (html: string, query: string): string => {
+    if (!query) return html;
+    
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    
+    const highlightTextNode = (node: Node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent || '';
+        if (text.toLowerCase().includes(query.toLowerCase())) {
+          const regex = new RegExp(`(${query})`, 'gi');
+          const highlightedHTML = text.replace(
+            regex,
+            '<mark style="background-color: rgb(59, 130, 246); color: white; padding: 2px 4px; border-radius: 2px; font-weight: 600;">$1</mark>'
+          );
+          
+          const span = document.createElement('span');
+          span.innerHTML = highlightedHTML;
+          node.parentNode?.replaceChild(span, node);
+        }
+      } else if (node.nodeType === Node.ELEMENT_NODE && node.nodeName !== 'MARK') {
+        Array.from(node.childNodes).forEach(highlightTextNode);
+      }
+    };
+    
+    Array.from(tempDiv.childNodes).forEach(highlightTextNode);
+    return tempDiv.innerHTML;
+  };
+
   return (
     <div style={{ overflowX: 'auto', overflowY: 'visible', minHeight: '200px' }}>
       <table className="border-collapse text-sm" style={{ width: 'auto', minWidth: '100%' }}>
@@ -46,6 +75,7 @@ export const TableView: React.FC<TableViewProps> = ({
               rowIndex={rowIndex}
               visibleColumns={visibleColumns}
               searchQuery={searchQuery}
+              highlightSearchInHTML={highlightSearchInHTML}
             />
           ))}
         </tbody>
@@ -119,6 +149,7 @@ interface TableRowProps {
   rowIndex: number;
   visibleColumns: Set<number>;
   searchQuery: string;
+  highlightSearchInHTML: (html: string, query: string) => string;
 }
 
 const getRowBackgroundClass = (isEvenRow: boolean, isDark: boolean): string => {
@@ -139,6 +170,7 @@ const TableRow: React.FC<TableRowProps> = ({
   rowIndex,
   visibleColumns,
   searchQuery,
+  highlightSearchInHTML,
 }) => {
   const isEvenRow = rowIndex % 2 === 0;
   const backgroundClass = getRowBackgroundClass(isEvenRow, isDark);
@@ -159,9 +191,10 @@ const TableRow: React.FC<TableRowProps> = ({
             style={{
               whiteSpace: 'nowrap'
             }}
-          >
-            <HighlightText text={cell} query={searchQuery} />
-          </td>
+            dangerouslySetInnerHTML={{ 
+              __html: highlightSearchInHTML(cell, searchQuery) 
+            }}
+          />
         ) : null
       )}
     </tr>
@@ -177,20 +210,42 @@ function getTableStyles(isDark: boolean): string {
     }
     th, td {
       border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)'};
-      padding: 0.75rem;
+      padding: 0.75rem 1rem;
       text-align: left;
       color: ${isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgb(0, 0, 0)'};
       white-space: nowrap;
     }
     th {
-      background-color: ${isDark ? '#1a1a1a' : '#E8E7E3'};
       font-weight: 600;
-      color: ${isDark ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)'};
       position: sticky;
       top: 0;
-      z-index: 20;
+      z-index: 10;
+      background-color: ${isDark ? '#1a1a1a' : '#E8E7E3'};
     }
-    tr:nth-child(even) {
+    td code {
+      background-color: ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'};
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 0.85em;
+      font-family: ui-monospace, monospace;
+      white-space: pre-wrap;
+      word-break: break-word;
+      border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)'};
+    }
+    td strong {
+      font-weight: 600;
+    }
+    td em {
+      font-style: italic;
+    }
+    td a {
+      color: rgb(59 130 246);
+      text-decoration: underline;
+    }
+    td a:hover {
+      color: rgb(37 99 235);
+    }
+    tbody tr:nth-child(even) {
       background-color: ${isDark ? 'rgba(255, 255, 255, 0.03)' : '#f1f0ec'};
     }
   `;
