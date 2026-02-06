@@ -14,7 +14,7 @@ export const TableContext = createContext<{
 // Preprocessing для Alert кнопок и Accordion
 const preprocessMarkdown = (html: string): string => {
   // Обработка Accordion
-  html = html.replace(
+  html = html.replaceAll(
     /:::accordion\s+(.+?)\n([\s\S]*?):::/gm,
     (_, title, content) => {
       const sanitizedTitle = DOMPurify.sanitize(title.trim());
@@ -25,14 +25,14 @@ const preprocessMarkdown = (html: string): string => {
 
   // Обработка Alert кнопок
   const alertReplacements = [
-    { pattern: /\[✓\]([^\[]+?)(?=\[|$)/g, type: 'success' },
-    { pattern: /\[!\]([^\[]+?)(?=\[|$)/g, type: 'warning' },
-    { pattern: /\[✕\]([^\[]+?)(?=\[|$)/g, type: 'error' },
-    { pattern: /\[\?\]([^\[]+?)(?=\[|$)/g, type: 'info' },
+    { pattern: /\[✓\]([^[]+?)(?=\[|$)/g, type: 'success' },
+    { pattern: /\[!\]([^[]+?)(?=\[|$)/g, type: 'warning' },
+    { pattern: /\[✕\]([^[]+?)(?=\[|$)/g, type: 'error' },
+    { pattern: /\[\?\]([^[]+?)(?=\[|$)/g, type: 'info' },
   ];
 
   alertReplacements.forEach(({ pattern, type }) => {
-    html = html.replace(pattern, (_, text) => {
+    html = html.replaceAll(pattern, (_, text) => {
       const cleanText = text.trim();
       return `<span class="alert-button" data-type="${type}">${cleanText}</span>`;
     });
@@ -123,7 +123,7 @@ const processListElement = (element: Element, tagName: string, key: string, elem
 
 const processLinkElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   elements.push(
-    <a
+    
       key={key}
       href={element.getAttribute('href') || '#'}
       target="_blank"
@@ -176,19 +176,19 @@ const processBlockquoteElement = (element: Element, key: string, elements: React
         if (childElement.tagName.toLowerCase() === 'blockquote') {
           // Рекурсивно обрабатываем вложенные blockquote
           innerElements.push(
-            <blockquote key={`nested-${idx}`} className="border-l-4 pl-4 my-2">
+            <blockquote key={`nested-bq-${idx}`} className="border-l-4 pl-4 my-2">
               {processBlockquoteContent(childElement)}
             </blockquote>
           );
         } else {
           innerElements.push(
-            <div key={`child-${idx}`} dangerouslySetInnerHTML={{ __html: childElement.outerHTML }} />
+            <div key={`child-el-${idx}`} dangerouslySetInnerHTML={{ __html: childElement.outerHTML }} />
           );
         }
       } else if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent?.trim();
         if (text) {
-          innerElements.push(<span key={`text-${idx}`}>{text}</span>);
+          innerElements.push(<span key={`text-node-${idx}`}>{text}</span>);
         }
       }
     });
@@ -224,16 +224,16 @@ const processTableElement = (element: Element, key: string, elements: React.Reac
     const innerHTML = cell.innerHTML;
     
     // Обработка жирного текста
-    let processed = innerHTML.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    let processed = innerHTML.replaceAll(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     
     // Обработка курсива
-    processed = processed.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    processed = processed.replaceAll(/\*(.+?)\*/g, '<em>$1</em>');
     
     // Обработка inline code
-    processed = processed.replace(/`(.+?)`/g, '<code>$1</code>');
+    processed = processed.replaceAll(/`(.+?)`/g, '<code>$1</code>');
     
     // Обработка ссылок
-    processed = processed.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    processed = processed.replaceAll(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
     
     cell.innerHTML = processed;
   });
@@ -269,7 +269,7 @@ const processEmElement = (element: Element, key: string, elements: React.ReactNo
 };
 
 const processAccordionWrapper = (element: Element, key: string, elements: React.ReactNode[]) => {
-  const title = element.getAttribute('data-title') || '';
+  const title = element.dataset.title || '';
   const content = element.innerHTML;
   
   elements.push(
@@ -280,7 +280,7 @@ const processAccordionWrapper = (element: Element, key: string, elements: React.
 };
 
 const processAlertButton = (element: Element, key: string, elements: React.ReactNode[]) => {
-  const type = element.getAttribute('data-type') as 'success' | 'warning' | 'error' | 'info';
+  const type = element.dataset.type as 'success' | 'warning' | 'error' | 'info';
   const text = element.textContent || '';
   
   elements.push(
