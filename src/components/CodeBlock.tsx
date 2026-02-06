@@ -145,10 +145,11 @@ export function CodeBlock({ code }: Readonly<CodeBlockProps>) {
       {isLongCode && !isExpanded && (
         <button
           onClick={() => setIsExpanded(true)}
-          className={`w-full border-t py-3 text-sm ${border}`}
+          className={`w-full border-t py-3 text-sm flex items-center justify-center gap-2 ${border}`}
           style={{ background: bg, color: fg }}
         >
-          <ChevronDown size={16} /> Открыть полностью ({lines.length} строк)
+          <ChevronDown size={16} />
+          <span>Открыть полностью ({lines.length} строк)</span>
         </button>
       )}
     </div>
