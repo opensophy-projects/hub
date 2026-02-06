@@ -1,30 +1,59 @@
-# BlurText Component
-
-## Description
-Красивый компонент анимированного текста с эффектом размытия и появления. Текст плавно появляется со сверху или снизу, создавая впечатляющий визуальный эффект при прокрутке страницы.
-
-## Props
-- text: string - Текст для анимации (по умолчанию: '')
-- delay: number - Задержка между словами/буквами в миллисекундах (по умолчанию: 200)
-- className: string - CSS классы для стилизации
-- animateBy: 'words' | 'letters' - Анимировать по словам или буквам (по умолчанию: 'words')
-- direction: 'top' | 'bottom' - Направление появления (по умолчанию: 'top')
-- threshold: number - Процент видимости элемента для запуска анимации (по умолчанию: 0.1)
-- rootMargin: string - Отступ для области видимости (по умолчанию: '0px')
-- animationFrom: Record - Начальное состояние анимации
-- animationTo: Array - Промежуточные и конечные состояния анимации
-- easing: Easing - Функция эазинга для анимации
-- onAnimationComplete: () => void - Callback при завершении анимации
-- stepDuration: number - Продолжительность каждого шага анимации (по умолчанию: 0.35)
-
-## Features
-- Плавная анимация текста с размытием
-- Поддержка анимации по словам и буквам
-- IntersectionObserver для запуска при видимости
-- Customizable направление и эазинг
-- Callback при завершении анимации
-- Полная поддержка TypeScript
-
-## Files
-- BlurText.tsx
-- types.ts
+{
+  "id": "blur-text",
+  "name": "BlurText - Анимированный текст",
+  "description": "Красивый компонент анимированного текста с эффектом размытия",
+  "files": [
+    {
+      "name": "BlurText.tsx",
+      "path": "./BlurText.tsx",
+      "language": "tsx"
+    },
+    {
+      "name": "types.ts",
+      "path": "./types.ts",
+      "language": "typescript"
+    }
+  ],
+  "props": [
+    {
+      "name": "text",
+      "type": "string",
+      "default": "Добро пожаловать в будущее веб-дизайна",
+      "description": "Текст для анимации",
+      "control": "text"
+    },
+    {
+      "name": "className",
+      "type": "string",
+      "default": "text-4xl font-bold text-center",
+      "description": "CSS классы",
+      "control": "text"
+    },
+    {
+      "name": "delay",
+      "type": "number",
+      "default": 200,
+      "description": "Задержка между элементами (мс)",
+      "control": "number",
+      "min": 0,
+      "max": 1000,
+      "step": 50
+    },
+    {
+      "name": "animateBy",
+      "type": "string",
+      "default": "words",
+      "description": "Режим анимации",
+      "control": "select",
+      "options": ["words", "letters"]
+    },
+    {
+      "name": "direction",
+      "type": "string",
+      "default": "top",
+      "description": "Направление появления",
+      "control": "select",
+      "options": ["top", "bottom"]
+    }
+  ]
+}
