@@ -12,6 +12,7 @@ export function parseTableHtml(tableHtml: string): ParsedTable {
   const headers = Array.from(table.querySelectorAll('thead th')).map(
     (th) => th.textContent || ''
   );
+  
   const rows = Array.from(table.querySelectorAll('tbody tr'));
 
   return { headers, rows };
