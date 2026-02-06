@@ -1,6 +1,6 @@
 import React, { useState, useCallback, Suspense, useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
-import { X, Copy, Code2, Maximize2, RotateCcw, Settings } from 'lucide-react';
+import { X, Maximize2, RotateCcw, Settings } from 'lucide-react';
 import { loadComponent, getDefaultProps } from './loader';
 
 interface UIComponentViewerProps {
@@ -10,11 +10,10 @@ interface UIComponentViewerProps {
 const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) => {
   const { isDark } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
-  const [view, setView] = useState<'preview' | 'code' | 'props'>('preview');
+  const [view, setView] = useState<'preview' | 'props'>('preview');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [currentProps, setCurrentProps] = useState<Record<string, any>>({});
-  const [selectedFile, setSelectedFile] = useState<string>('');
   
   const [componentData, setComponentData] = useState<{
     config: any;
@@ -27,21 +26,9 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
       if (data) {
         setComponentData(data);
         setCurrentProps(getDefaultProps(data.config));
-        setSelectedFile(data.config.files[0]?.name || '');
       }
     });
   }, [componentId]);
-
-  const handleCopy = useCallback(() => {
-    if (!componentData) return;
-    const allCode = Object.entries(componentData.fileContents)
-      .map(([name, content]) => `// ${name}\n${content}`)
-      .join('\n\n');
-    
-    navigator.clipboard.writeText(allCode).then(() => {
-      showNotification('Код скопирован!', isDark);
-    });
-  }, [componentData, isDark]);
 
   const handleRefresh = useCallback(() => {
     setRefreshKey(prev => prev + 1);
@@ -71,7 +58,7 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
     );
   }
 
-  const { config, Component, fileContents } = componentData;
+  const { config, Component } = componentData;
 
   const containerClass = `rounded-lg border overflow-hidden my-6 ${
     isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-[#E8E7E3]'
@@ -124,22 +111,13 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
               >
                 <Settings size={18} />
               </button>
-              <button
-                onClick={() => { setView('code'); setIsOpen(true); }}
-                className={`${buttonBaseClass} ${getButtonClass()}`}
-                title="Посмотреть код"
-              >
-                <Code2 size={18} />
-              </button>
             </div>
           </div>
 
-          <div className="p-8 flex items-center justify-center min-h-[400px]">
-            <div className="text-7xl md:text-8xl lg:text-8xl">
-              <Suspense fallback={<div className={isDark ? 'text-white/50' : 'text-black/50'}>Загрузка...</div>}>
-                <Component key={refreshKey} {...currentProps} />
-              </Suspense>
-            </div>
+          <div className="p-8 flex items-center justify-center min-h-[400px]" style={{ transform: 'scale(2.5)', transformOrigin: 'center', marginBottom: '300px', marginTop: '100px' }}>
+            <Suspense fallback={<div className={isDark ? 'text-white/50' : 'text-black/50'}>Загрузка...</div>}>
+              <Component key={refreshKey} {...currentProps} />
+            </Suspense>
           </div>
         </div>
       ) : (
@@ -181,13 +159,6 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
                 Превью
               </button>
               <button
-                onClick={() => setView('code')}
-                className={`${buttonBaseClass} ${getButtonClass(view === 'code')}`}
-              >
-                <Code2 size={18} />
-                Код
-              </button>
-              <button
                 onClick={() => setView('props')}
                 className={`${buttonBaseClass} ${getButtonClass(view === 'props')}`}
               >
@@ -196,16 +167,6 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
               </button>
 
               <div className="flex-1" />
-
-              {view === 'code' && (
-                <button
-                  onClick={handleCopy}
-                  className={`${buttonBaseClass} ${getButtonClass()}`}
-                >
-                  <Copy size={18} />
-                  Копировать
-                </button>
-              )}
 
               <button
                 onClick={handleRefresh}
@@ -220,37 +181,10 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
               {view === 'preview' && (
                 <div className={`h-full overflow-auto p-8 flex items-center justify-center ${
                   isDark ? 'bg-black/20' : 'bg-gray-50'
-                }`}>
-                  <div className="text-7xl md:text-8xl lg:text-8xl">
-                    <Suspense fallback={<div>Загрузка...</div>}>
-                      <Component key={refreshKey} {...currentProps} />
-                    </Suspense>
-                  </div>
-                </div>
-              )}
-
-              {view === 'code' && (
-                <div className="h-full flex flex-col">
-                  <div className={`flex gap-2 px-4 py-2 border-b overflow-x-auto ${
-                    isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-black/5'
-                  }`}>
-                    {config.files.map((file: any) => (
-                      <button
-                        key={file.name}
-                        onClick={() => setSelectedFile(file.name)}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-                          selectedFile === file.name
-                            ? isDark ? 'bg-white/10 text-white border border-white/20' : 'bg-black/10 text-black border border-black/20'
-                            : isDark ? 'text-white/50 hover:text-white/70' : 'text-black/50 hover:text-black/70'
-                        }`}
-                      >
-                        {file.name}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex-1 overflow-auto">
-                    <CodeDisplay code={fileContents[selectedFile] || ''} isDark={isDark} />
-                  </div>
+                }`} style={{ transform: 'scale(2)', transformOrigin: 'center top', marginBottom: '200px', marginTop: '100px' }}>
+                  <Suspense fallback={<div>Загрузка...</div>}>
+                    <Component key={refreshKey} {...currentProps} />
+                  </Suspense>
                 </div>
               )}
 
@@ -289,42 +223,15 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
             >
               <X size={20} />
             </button>
-            <div className="p-12 flex items-center justify-center min-h-full">
-              <div className="text-7xl md:text-8xl lg:text-8xl">
-                <Suspense fallback={<div>Загрузка...</div>}>
-                  <Component key={refreshKey} {...currentProps} />
-                </Suspense>
-              </div>
+            <div className="p-12 flex items-center justify-center min-h-full" style={{ transform: 'scale(3)', transformOrigin: 'center' }}>
+              <Suspense fallback={<div>Загрузка...</div>}>
+                <Component key={refreshKey} {...currentProps} />
+              </Suspense>
             </div>
           </div>
         </div>
       )}
     </>
-  );
-};
-
-const CodeDisplay: React.FC<{ code: string; isDark: boolean }> = ({ code, isDark }) => {
-  const lines = code.split('\n');
-  const bg = isDark ? '#0a0a0a' : '#E8E7E3';
-  const fg = isDark ? '#ffffff' : '#000000';
-
-  return (
-    <pre
-      className="p-6 text-base font-mono leading-relaxed"
-      style={{ background: bg, color: fg }}
-    >
-      {lines.map((line, i) => (
-        <div key={`line-${i}`} className="whitespace-pre">
-          <span
-            className="inline-block w-12 mr-4 text-right select-none"
-            style={{ color: isDark ? '#888' : '#666' }}
-          >
-            {i + 1}
-          </span>
-          <span>{line}</span>
-        </div>
-      ))}
-    </pre>
   );
 };
 
@@ -423,16 +330,5 @@ const PropsEditor: React.FC<{
     </div>
   );
 };
-
-function showNotification(message: string, isDark: boolean) {
-  const notification = document.createElement('div');
-  const bgColor = isDark ? 'bg-green-500/20 text-green-300' : 'bg-green-500/10 text-green-700';
-  const borderColor = isDark ? 'border-green-500/30' : 'border-green-500/20';
-  
-  notification.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg ${bgColor} border ${borderColor} z-[100] font-medium`;
-  notification.textContent = message;
-  document.body.appendChild(notification);
-  setTimeout(() => notification.remove(), 2000);
-}
 
 export default UIComponentViewer;
