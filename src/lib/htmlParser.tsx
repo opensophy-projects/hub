@@ -185,14 +185,14 @@ const processAccordion = (
   let nextIndex = index + 1;
   while (nextIndex < nodeArray.length) {
     const nextNode = nodeArray[nextIndex];
-    const nextText = (nextNode as Element).textContent || '';
+    const nextText = nextNode.textContent || '';
     
     if (nextText.trim().startsWith(':::accordion')) {
       break;
     }
     
     accordionContent.push(
-      <div key={`acc-content-${nextIndex}`} dangerouslySetInnerHTML={{ __html: (nextNode as Element).innerHTML }} />
+      <div key={`acc-content-${nextIndex}`} dangerouslySetInnerHTML={{ __html: nextNode.innerHTML }} />
     );
     nextIndex++;
   }
