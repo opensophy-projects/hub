@@ -11,10 +11,10 @@ export const TableContext = createContext<{
   isDark: boolean;
 }>({ isDark: false });
 
-// Preprocessing для Alert кнопок и Accordion
 const preprocessMarkdown = (html: string): string => {
-  // Обработка Accordion
-  html = html.replaceAll(
+  let processed = html;
+
+  processed = processed.replace(
     /:::accordion\s+(.+?)\n([\s\S]*?):::/gm,
     (_, title, content) => {
       const sanitizedTitle = DOMPurify.sanitize(title.trim());
@@ -23,29 +23,31 @@ const preprocessMarkdown = (html: string): string => {
     }
   );
 
-  // Обработка Alert кнопок
   const alertReplacements = [
-    { pattern: /\[✓\]([^[]+?)(?=\[|$)/g, type: 'success' },
-    { pattern: /\[!\]([^[]+?)(?=\[|$)/g, type: 'warning' },
-    { pattern: /\[✕\]([^[]+?)(?=\[|$)/g, type: 'error' },
-    { pattern: /\[\?\]([^[]+?)(?=\[|$)/g, type: 'info' },
+    { pattern: /\[✓\]([^\[]+?)(?=\[|$)/g, type: 'success' },
+    { pattern: /\[!\]([^\[]+?)(?=\[|$)/g, type: 'warning' },
+    { pattern: /\[✕\]([^\[]+?)(?=\[|$)/g, type: 'error' },
+    { pattern: /\[\?\]([^\[]+?)(?=\[|$)/g, type: 'info' },
   ];
 
   alertReplacements.forEach(({ pattern, type }) => {
-    html = html.replaceAll(pattern, (_, text) => {
+    processed = processed.replace(pattern, (_, text) => {
       const cleanText = text.trim();
       return `<span class="alert-button" data-type="${type}">${cleanText}</span>`;
     });
   });
 
-  return html;
+  return processed;
 };
 
 const processTextNode = (node: Node, key: string, elements: React.ReactNode[]) => {
   const text = (node.textContent || '').trim();
   if (text) {
     elements.push(
-      <span key={key} dangerouslySetInnerHTML={{ __html: text }} />
+      React.createElement('span', {
+        key,
+        dangerouslySetInnerHTML: { __html: text },
+      })
     );
   }
 };
@@ -54,18 +56,18 @@ const processPreElement = (element: Element, key: string, elements: React.ReactN
   const codeElement = element.querySelector('code');
   if (codeElement) {
     const code = codeElement.textContent || '';
-    const language = 
-      element.dataset.lang || 
-      element.dataset.language || 
-      codeElement.className.replace('language-', '') || 
+    const language =
+      element.dataset.lang ||
+      element.dataset.language ||
+      codeElement.className.replace('language-', '') ||
       'bash';
-    
+
     elements.push(
-      <CodeBlock
-        key={key}
-        code={code.trim()}
-        language={language}
-      />
+      React.createElement(CodeBlock, {
+        key,
+        code: code.trim(),
+        language,
+      })
     );
   }
 };
@@ -73,24 +75,22 @@ const processPreElement = (element: Element, key: string, elements: React.ReactN
 const processCodeElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   if (element.parentElement?.tagName.toLowerCase() !== 'pre') {
     elements.push(
-      <code
-        key={key}
-        className="bg-slate-900 px-2 py-1 rounded text-slate-100 font-mono text-sm"
-      >
-        {element.textContent}
-      </code>
+      React.createElement('code', {
+        key,
+        className: 'bg-slate-900 px-2 py-1 rounded text-slate-100 font-mono text-sm',
+        children: element.textContent,
+      })
     );
   }
 };
 
 const processHeadingElement = (element: Element, tagName: string, key: string, elements: React.ReactNode[]) => {
-  const HeadingTag = tagName as keyof JSX.IntrinsicElements;
   elements.push(
-    <HeadingTag
-      key={key}
-      id={element.id}
-      dangerouslySetInnerHTML={{ __html: element.innerHTML }}
-    />
+    React.createElement(tagName as any, {
+      key,
+      id: element.id,
+      dangerouslySetInnerHTML: { __html: element.innerHTML },
+    })
   );
 };
 
@@ -102,34 +102,44 @@ const processParagraphElement = (element: Element, key: string, elements: React.
   if (match) {
     const componentId = match[1];
     elements.push(
-      <div key={key} className="my-6">
-        <NewUIComponentViewer componentId={componentId} />
-      </div>
+      React.createElement('div', {
+        key,
+        className: 'my-6',
+        children: React.createElement(NewUIComponentViewer, {
+          componentId,
+        }),
+      })
     );
     return;
   }
 
   elements.push(
-    <p key={key} dangerouslySetInnerHTML={{ __html: element.innerHTML }} />
+    React.createElement('p', {
+      key,
+      dangerouslySetInnerHTML: { __html: element.innerHTML },
+    })
   );
 };
 
 const processListElement = (element: Element, tagName: string, key: string, elements: React.ReactNode[]) => {
-  const ListTag = tagName as keyof JSX.IntrinsicElements;
   elements.push(
-    <ListTag key={key} dangerouslySetInnerHTML={{ __html: element.innerHTML }} />
+    React.createElement(tagName as any, {
+      key,
+      dangerouslySetInnerHTML: { __html: element.innerHTML },
+    })
   );
 };
 
 const processLinkElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  const href = element.getAttribute('href') || '#';
   elements.push(
-    
-      key={key}
-      href={element.getAttribute('href') || '#'}
-      target="_blank"
-      rel="noopener noreferrer"
-      dangerouslySetInnerHTML={{ __html: element.innerHTML }}
-    />
+    React.createElement('a', {
+      key,
+      href,
+      target: '_blank',
+      rel: 'noopener noreferrer',
+      dangerouslySetInnerHTML: { __html: element.innerHTML },
+    })
   );
 };
 
@@ -140,27 +150,34 @@ const processImageElement = (element: Element, key: string, elements: React.Reac
 
   if (title) {
     elements.push(
-      <figure key={key} className="my-6 w-full">
-        <img
-          src={src}
-          alt={alt}
-          loading="lazy"
-          className="rounded-lg shadow-md max-w-full h-auto w-full"
-        />
-        <figcaption className="mt-2 text-center text-xs text-slate-400 italic font-medium">
-          {title}
-        </figcaption>
-      </figure>
+      React.createElement('figure', {
+        key,
+        className: 'my-6 w-full',
+        children: [
+          React.createElement('img', {
+            key: `img-${key}`,
+            src,
+            alt,
+            loading: 'lazy',
+            className: 'rounded-lg shadow-md max-w-full h-auto w-full',
+          }),
+          React.createElement('figcaption', {
+            key: `caption-${key}`,
+            className: 'mt-2 text-center text-xs text-slate-400 italic font-medium',
+            children: title,
+          }),
+        ],
+      })
     );
   } else {
     elements.push(
-      <img
-        key={key}
-        src={src}
-        alt={alt}
-        loading="lazy"
-        className="rounded-lg shadow-md max-w-full h-auto my-4"
-      />
+      React.createElement('img', {
+        key,
+        src,
+        alt,
+        loading: 'lazy',
+        className: 'rounded-lg shadow-md max-w-full h-auto my-4',
+      })
     );
   }
 };
@@ -169,131 +186,139 @@ const processBlockquoteElement = (element: Element, key: string, elements: React
   const processBlockquoteContent = (el: Element): React.ReactNode[] => {
     const innerElements: React.ReactNode[] = [];
     const childNodes = Array.from(el.childNodes);
-    
+
     childNodes.forEach((node, idx) => {
       if (node.nodeType === Node.ELEMENT_NODE) {
         const childElement = node as Element;
         if (childElement.tagName.toLowerCase() === 'blockquote') {
-          // Рекурсивно обрабатываем вложенные blockquote
           innerElements.push(
-            <blockquote key={`nested-bq-${idx}`} className="border-l-4 pl-4 my-2">
-              {processBlockquoteContent(childElement)}
-            </blockquote>
+            React.createElement('blockquote', {
+              key: `nested-${idx}`,
+              className: 'border-l-4 pl-4 my-2',
+              children: processBlockquoteContent(childElement),
+            })
           );
         } else {
           innerElements.push(
-            <div key={`child-el-${idx}`} dangerouslySetInnerHTML={{ __html: childElement.outerHTML }} />
+            React.createElement('div', {
+              key: `child-${idx}`,
+              dangerouslySetInnerHTML: { __html: childElement.outerHTML },
+            })
           );
         }
       } else if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent?.trim();
         if (text) {
-          innerElements.push(<span key={`text-node-${idx}`}>{text}</span>);
+          innerElements.push(React.createElement('span', { key: `text-${idx}`, children: text }));
         }
       }
     });
-    
+
     return innerElements;
   };
 
   const content = processBlockquoteContent(element);
-  
+
   elements.push(
-    <blockquote key={key} className="border-l-4 pl-4 my-4">
-      {content}
-    </blockquote>
+    React.createElement('blockquote', {
+      key,
+      className: 'border-l-4 pl-4 my-4',
+      children: content,
+    })
   );
 };
 
-const TableRenderer: React.FC<{ 
-  tableHtml: string; 
-  onTableClick?: (html: string) => void; 
+const TableRenderer: React.FC<{
+  tableHtml: string;
+  onTableClick?: (html: string) => void;
   isDark: boolean;
-}> = ({ tableHtml, onTableClick, isDark }) => (
-  <TableWithControls
-    tableHtml={tableHtml}
-    isDark={isDark}
-    onFullscreen={(html) => onTableClick?.(html)}
-  />
-);
+}> = ({ tableHtml, onTableClick, isDark }) =>
+  React.createElement(TableWithControls, {
+    tableHtml,
+    isDark,
+    onFullscreen: (html) => onTableClick?.(html),
+  });
 
 const processTableElement = (element: Element, key: string, elements: React.ReactNode[]) => {
-  // Обработка форматирования внутри ячеек таблицы
   const cells = element.querySelectorAll('td, th');
-  cells.forEach(cell => {
-    const innerHTML = cell.innerHTML;
-    
-    // Обработка жирного текста
-    let processed = innerHTML.replaceAll(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    
-    // Обработка курсива
-    processed = processed.replaceAll(/\*(.+?)\*/g, '<em>$1</em>');
-    
-    // Обработка inline code
-    processed = processed.replaceAll(/`(.+?)`/g, '<code>$1</code>');
-    
-    // Обработка ссылок
-    processed = processed.replaceAll(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-    
-    cell.innerHTML = processed;
+  cells.forEach((cell) => {
+    let innerHTML = cell.innerHTML;
+
+    innerHTML = innerHTML.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    innerHTML = innerHTML.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    innerHTML = innerHTML.replace(/`(.+?)`/g, '<code>$1</code>');
+    innerHTML = innerHTML.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+    cell.innerHTML = innerHTML;
   });
 
   const tableHtml = element.outerHTML;
   elements.push(
-    <TableContext.Consumer key={key}>
-      {({ onTableClick, isDark }) => (
-        <TableRenderer 
-          tableHtml={tableHtml}
-          onTableClick={onTableClick}
-          isDark={isDark}
-        />
-      )}
-    </TableContext.Consumer>
+    React.createElement(TableContext.Consumer, {
+      key,
+      children: ({ onTableClick, isDark }) =>
+        React.createElement(TableRenderer, {
+          tableHtml,
+          onTableClick,
+          isDark,
+        }),
+    })
   );
 };
 
 const processHrElement = (key: string, elements: React.ReactNode[]) => {
-  elements.push(<hr key={key} />);
+  elements.push(React.createElement('hr', { key }));
 };
 
 const processStrongElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   elements.push(
-    <strong key={key} dangerouslySetInnerHTML={{ __html: element.innerHTML }} />
+    React.createElement('strong', {
+      key,
+      dangerouslySetInnerHTML: { __html: element.innerHTML },
+    })
   );
 };
 
 const processEmElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   elements.push(
-    <em key={key} dangerouslySetInnerHTML={{ __html: element.innerHTML }} />
+    React.createElement('em', {
+      key,
+      dangerouslySetInnerHTML: { __html: element.innerHTML },
+    })
   );
 };
 
 const processAccordionWrapper = (element: Element, key: string, elements: React.ReactNode[]) => {
-  const title = element.dataset.title || '';
+  const title = element.getAttribute('data-title') || '';
   const content = element.innerHTML;
-  
+
   elements.push(
-    <Accordion key={key} title={title}>
-      <div dangerouslySetInnerHTML={{ __html: content }} />
-    </Accordion>
+    React.createElement(Accordion, {
+      key,
+      title,
+      children: React.createElement('div', {
+        dangerouslySetInnerHTML: { __html: content },
+      }),
+    })
   );
 };
 
 const processAlertButton = (element: Element, key: string, elements: React.ReactNode[]) => {
-  const type = element.dataset.type as 'success' | 'warning' | 'error' | 'info';
+  const type = element.getAttribute('data-type') as 'success' | 'warning' | 'error' | 'info';
   const text = element.textContent || '';
-  
+
   elements.push(
-    <AlertButton key={key} type={type}>
-      {text}
-    </AlertButton>
+    React.createElement(AlertButton, {
+      key,
+      type,
+      children: text,
+    })
   );
 };
 
 export const parseHtmlToReact = (html: string): React.ReactNode[] => {
-  // Preprocessing для Alert и Accordion
   const preprocessed = preprocessMarkdown(html);
-  
+
   const sanitized = DOMPurify.sanitize(preprocessed, {
     ALLOWED_TAGS: [
       'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
@@ -326,45 +351,63 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       const element = node as Element;
       const tagName = element.tagName.toLowerCase();
 
-      // Проверка на accordion wrapper
       if (tagName === 'div' && element.classList.contains('accordion-wrapper')) {
         processAccordionWrapper(element, key, elements);
         return;
       }
 
-      // Проверка на alert button
       if (tagName === 'span' && element.classList.contains('alert-button')) {
         processAlertButton(element, key, elements);
         return;
       }
 
-      const handlers: Record<string, () => void> = {
-        'pre': () => processPreElement(element, key, elements),
-        'code': () => processCodeElement(element, key, elements),
-        'p': () => processParagraphElement(element, key, elements),
-        'ul': () => processListElement(element, tagName, key, elements),
-        'ol': () => processListElement(element, tagName, key, elements),
-        'a': () => processLinkElement(element, key, elements),
-        'img': () => processImageElement(element, key, elements),
-        'blockquote': () => processBlockquoteElement(element, key, elements),
-        'table': () => processTableElement(element, key, elements),
-        'hr': () => processHrElement(key, elements),
-        'strong': () => processStrongElement(element, key, elements),
-        'em': () => processEmElement(element, key, elements),
-      };
-
-      if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tagName)) {
-        processHeadingElement(element, tagName, key, elements);
-        return;
-      }
-
-      if (handlers[tagName]) {
-        handlers[tagName]();
-        return;
-      }
-
-      if (element.childNodes.length > 0) {
-        processNodes(element.childNodes, key);
+      switch (tagName) {
+        case 'pre':
+          processPreElement(element, key, elements);
+          break;
+        case 'code':
+          processCodeElement(element, key, elements);
+          break;
+        case 'p':
+          processParagraphElement(element, key, elements);
+          break;
+        case 'ul':
+        case 'ol':
+          processListElement(element, tagName, key, elements);
+          break;
+        case 'a':
+          processLinkElement(element, key, elements);
+          break;
+        case 'img':
+          processImageElement(element, key, elements);
+          break;
+        case 'blockquote':
+          processBlockquoteElement(element, key, elements);
+          break;
+        case 'table':
+          processTableElement(element, key, elements);
+          break;
+        case 'hr':
+          processHrElement(key, elements);
+          break;
+        case 'strong':
+          processStrongElement(element, key, elements);
+          break;
+        case 'em':
+          processEmElement(element, key, elements);
+          break;
+        case 'h1':
+        case 'h2':
+        case 'h3':
+        case 'h4':
+        case 'h5':
+        case 'h6':
+          processHeadingElement(element, tagName, key, elements);
+          break;
+        default:
+          if (element.childNodes.length > 0) {
+            processNodes(element.childNodes, key);
+          }
       }
     });
   };
