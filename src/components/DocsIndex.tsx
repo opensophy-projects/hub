@@ -39,7 +39,7 @@ const DocsIndexContent: React.FC = () => {
                   isDark ? 'text-white/70' : 'text-black/70'
                 }`}
               >
-                Обновленный центр знаний Opensophy
+                 центр знаний Opensophy
               </p>
             </div>
 
