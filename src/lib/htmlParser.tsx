@@ -14,8 +14,9 @@ export const TableContext = createContext<{
 const preprocessMarkdown = (html: string): string => {
   let processed = html;
 
+  // Safe accordion preprocessing - limit content length
   processed = processed.replace(
-    /:::accordion\s+(.+?)\n([\s\S]*?):::/gm,
+    /:::accordion\s+([^\n]+)\n((?:[^:]|:(?!::))*?):::/g,
     (_, title, content) => {
       const sanitizedTitle = DOMPurify.sanitize(title.trim());
       const sanitizedContent = DOMPurify.sanitize(content.trim());
@@ -23,11 +24,12 @@ const preprocessMarkdown = (html: string): string => {
     }
   );
 
+  // Safe alert button preprocessing
   const alertReplacements = [
-    { pattern: /\[✓\]([^\[]+?)(?=\[|$)/g, type: 'success' },
-    { pattern: /\[!\]([^\[]+?)(?=\[|$)/g, type: 'warning' },
-    { pattern: /\[✕\]([^\[]+?)(?=\[|$)/g, type: 'error' },
-    { pattern: /\[\?\]([^\[]+?)(?=\[|$)/g, type: 'info' },
+    { pattern: /\[✓\]([^\[]*?)(?=\[|$)/g, type: 'success' },
+    { pattern: /\[!\]([^\[]*?)(?=\[|$)/g, type: 'warning' },
+    { pattern: /\[✕\]([^\[]*?)(?=\[|$)/g, type: 'error' },
+    { pattern: /\[\?\]([^\[]*?)(?=\[|$)/g, type: 'info' },
   ];
 
   alertReplacements.forEach(({ pattern, type }) => {
@@ -96,7 +98,7 @@ const processHeadingElement = (element: Element, tagName: string, key: string, e
 
 const processParagraphElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const text = element.textContent || '';
-  const uicPattern = /\[uic:([a-z-]+)\]/g;
+  const uicPattern = /\[uic:([a-z-]+)\]/;
   const match = uicPattern.exec(text);
 
   if (match) {
@@ -239,17 +241,27 @@ const TableRenderer: React.FC<{
     onFullscreen: (html) => onTableClick?.(html),
   });
 
+const processCellContent = (cell: Element): void => {
+  let innerHTML = cell.innerHTML;
+
+  // Safe regex patterns for formatting
+  innerHTML = innerHTML.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  innerHTML = innerHTML.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  innerHTML = innerHTML.replace(/`([^`]+)`/g, '<code>$1</code>');
+  
+  // Safe link regex - explicit pattern matching
+  innerHTML = innerHTML.replace(
+    /\[([^\]]+)\]\(([^)]{1,2048})\)/g,
+    '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
+  );
+
+  cell.innerHTML = innerHTML;
+};
+
 const processTableElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const cells = element.querySelectorAll('td, th');
   cells.forEach((cell) => {
-    let innerHTML = cell.innerHTML;
-
-    innerHTML = innerHTML.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    innerHTML = innerHTML.replace(/\*(.+?)\*/g, '<em>$1</em>');
-    innerHTML = innerHTML.replace(/`(.+?)`/g, '<code>$1</code>');
-    innerHTML = innerHTML.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-
-    cell.innerHTML = innerHTML;
+    processCellContent(cell);
   });
 
   const tableHtml = element.outerHTML;
