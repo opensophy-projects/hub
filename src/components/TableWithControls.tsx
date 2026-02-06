@@ -38,7 +38,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({
 
   return (
     <div className="not-prose">
-      <div className={`rounded-lg border ${isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-[#E8E7E3]'}`}>
+      <div className={`rounded-lg border overflow-hidden flex flex-col min-h-[300px] ${isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-[#E8E7E3]'}`}>
         <TableControlsBar
           isDark={isDark}
           searchQuery={state.searchQuery}
@@ -71,16 +71,18 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({
           />
         )}
 
-        <TableView
-          isDark={isDark}
-          headers={headers}
-          rows={filteredAndSortedRows}
-          visibleColumns={state.visibleColumns}
-          searchQuery={state.searchQuery}
-          sortColumn={state.sortColumn}
-          sortDirection={state.sortDirection}
-          onSort={handleSort}
-        />
+        <div className="flex-1 overflow-hidden">
+          <TableView
+            isDark={isDark}
+            headers={headers}
+            rows={filteredAndSortedRows}
+            visibleColumns={state.visibleColumns}
+            searchQuery={state.searchQuery}
+            sortColumn={state.sortColumn}
+            sortDirection={state.sortDirection}
+            onSort={handleSort}
+          />
+        </div>
       </div>
     </div>
   );
