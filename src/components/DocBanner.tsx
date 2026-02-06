@@ -19,9 +19,10 @@ const DocBanner: React.FC<DocBannerProps> = ({ bannercolor, bannertext, isDark, 
         height: isCard ? undefined : 'clamp(200px, 30vh, 400px)',
         backgroundColor: bannercolor,
       }}
+      data-banner-content
     >
       <div className="absolute inset-0 flex items-center justify-center p-4">
-        <h2
+        <div
           style={{
             color: textColor,
             fontFamily: 'UnifixSP, sans-serif',
@@ -41,7 +42,7 @@ const DocBanner: React.FC<DocBannerProps> = ({ bannercolor, bannertext, isDark, 
           }}
         >
           {bannertext}
-        </h2>
+        </div>
       </div>
     </div>
   );
