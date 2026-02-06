@@ -2,6 +2,13 @@ import { useState, useMemo, useCallback } from 'react';
 import { TableControlsState } from '../types/table';
 import { filterAndSortRows } from '../lib/tableFiltering';
 
+// Утилита для удаления HTML тегов
+function stripHtmlTags(html: string): string {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return div.textContent || div.innerText || '';
+}
+
 export function useTableControls(rows: Element[], headers: string[]) {
   const [state, setState] = useState<TableControlsState>({
     searchQuery: '',
@@ -19,7 +26,8 @@ export function useTableControls(rows: Element[], headers: string[]) {
       new Set(
         rows.map((row) => {
           const cells = Array.from(row.querySelectorAll('td'));
-          return cells[colIndex]?.textContent?.trim() || '';
+          const cellHTML = cells[colIndex]?.innerHTML || '';
+          return stripHtmlTags(cellHTML).trim();
         })
       )
     )
