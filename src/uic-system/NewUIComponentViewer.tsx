@@ -92,18 +92,18 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
             </h3>
             <div className="flex gap-2">
               <button
+                onClick={handleRefresh}
+                className={`${buttonBaseClass} ${getButtonClass()}`}
+                title="Запустить анимацию заново"
+              >
+                <RotateCcw size={18} />
+              </button>
+              <button
                 onClick={() => setIsFullscreen(true)}
                 className={`${buttonBaseClass} ${getButtonClass()}`}
                 title="Открыть на весь экран"
               >
                 <Maximize2 size={18} />
-              </button>
-              <button
-                onClick={handleRefresh}
-                className={`${buttonBaseClass} ${getButtonClass()}`}
-                title="Повторить анимацию"
-              >
-                <RotateCcw size={18} />
               </button>
               <button
                 onClick={() => setIsOpen(true)}
@@ -166,6 +166,7 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
                   componentScale={componentScale}
                   onScaleChange={setComponentScale}
                   onChange={handlePropChange}
+                  onRefresh={handleRefresh}
                   onReset={handleResetProps}
                   isDark={isDark}
                 />
@@ -234,27 +235,39 @@ const PropsEditor: React.FC<{
   componentScale: number;
   onScaleChange: (scale: number) => void;
   onChange: (name: string, value: any) => void;
+  onRefresh: () => void;
   onReset: () => void;
   isDark: boolean;
-}> = ({ config, componentId, currentProps, componentScale, onScaleChange, onChange, onReset, isDark }) => {
+}> = ({ config, componentId, currentProps, componentScale, onScaleChange, onChange, onRefresh, onReset, isDark }) => {
   const allowedProps = FILTERED_PROPS[componentId] || config.props.map((p: any) => p.name);
   
   const visibleProps = config.props.filter((prop: any) => allowedProps.includes(prop.name));
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>
           Настройки компонента
         </h3>
-        <button
-          onClick={onReset}
-          className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-            isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-black/10 hover:bg-black/20 text-black'
-          }`}
-        >
-          Сбросить
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={onRefresh}
+            className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-black/10 hover:bg-black/20 text-black'
+            }`}
+            title="Запустить анимацию заново"
+          >
+            <RotateCcw size={16} />
+          </button>
+          <button
+            onClick={onReset}
+            className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-black/10 hover:bg-black/20 text-black'
+            }`}
+          >
+            Сбросить
+          </button>
+        </div>
       </div>
 
       <div className="space-y-8">
@@ -299,11 +312,11 @@ const PropsEditor: React.FC<{
               <div className="space-y-3">
                 <input
                   type="range"
-                  value={currentProps[prop.name] || prop.default || 0}
+                  value={currentProps[prop.name] ?? prop.default ?? 0}
                   onChange={(e) => onChange(prop.name, Number(e.target.value))}
-                  min={prop.min || 0}
-                  max={prop.max || 100}
-                  step={prop.step || 1}
+                  min={prop.min ?? 0}
+                  max={prop.max ?? 100}
+                  step={prop.step ?? 1}
                   className={`w-full h-3 rounded-lg appearance-none cursor-pointer ${
                     isDark 
                       ? 'bg-white/10 [&::-webkit-slider-thumb]:bg-white [&::-moz-range-thumb]:bg-white' 
@@ -311,7 +324,7 @@ const PropsEditor: React.FC<{
                   } [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0`}
                 />
                 <div className={`text-center text-lg font-semibold ${isDark ? 'text-white' : 'text-black'}`}>
-                  {currentProps[prop.name] || prop.default || 0}
+                  {currentProps[prop.name] ?? prop.default ?? 0}
                 </div>
               </div>
             )}
@@ -319,7 +332,7 @@ const PropsEditor: React.FC<{
             {prop.control === 'select' && (
               <div className="relative">
                 <select
-                  value={currentProps[prop.name] || prop.default || ''}
+                  value={currentProps[prop.name] ?? prop.default ?? ''}
                   onChange={(e) => onChange(prop.name, e.target.value)}
                   className={`w-full px-4 py-3 rounded-lg border appearance-none cursor-pointer text-base font-medium ${
                     isDark
