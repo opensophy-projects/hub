@@ -2,6 +2,8 @@ import React, { createContext } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
 import { CodeBlock } from '@/components/CodeBlock';
 import TableWithControls from '@/components/TableWithControls';
+import Accordion from '@/components/Accordion';
+import AlertButton from '@/components/AlertButton';
 
 export const TableContext = createContext<{
   onTableClick?: (tableHtml: string) => void;
@@ -10,11 +12,54 @@ export const TableContext = createContext<{
 
 // Вспомогательные функции для обработки разных типов элементов
 const processTextNode = (node: Node, key: string, elements: React.ReactNode[]) => {
-  const text = (node.textContent || '').trim();
-  if (text) {
-    elements.push(
-      <span key={key} dangerouslySetInnerHTML={{ __html: text }} />
-    );
+  let text = node.textContent || '';
+  
+  // Обработка alert buttons [✓], [!], [✕], [?]
+  const alertPatterns = [
+    { regex: /\[✓\](.*?)(?=\[|$)/g, type: 'success' as const },
+    { regex: /\[!\](.*?)(?=\[|$)/g, type: 'warning' as const },
+    { regex: /\[✕\](.*?)(?=\[|$)/g, type: 'error' as const },
+    { regex: /\[\?\](.*?)(?=\[|$)/g, type: 'info' as const },
+  ];
+
+  let hasAlerts = false;
+  const alertElements: React.ReactNode[] = [];
+  let lastIndex = 0;
+
+  for (const pattern of alertPatterns) {
+    const matches = [...text.matchAll(pattern)];
+    for (const match of matches) {
+      hasAlerts = true;
+      const beforeText = text.substring(lastIndex, match.index);
+      if (beforeText.trim()) {
+        alertElements.push(
+          <span key={`text-before-${key}-${match.index}`}>{beforeText}</span>
+        );
+      }
+      alertElements.push(
+        <AlertButton key={`alert-${key}-${match.index}`} type={pattern.type}>
+          {match[1].trim()}
+        </AlertButton>
+      );
+      lastIndex = (match.index || 0) + match[0].length;
+    }
+  }
+
+  if (hasAlerts) {
+    const remainingText = text.substring(lastIndex);
+    if (remainingText.trim()) {
+      alertElements.push(
+        <span key={`text-after-${key}`}>{remainingText}</span>
+      );
+    }
+    elements.push(...alertElements);
+  } else {
+    text = text.trim();
+    if (text) {
+      elements.push(
+        <span key={key} dangerouslySetInnerHTML={{ __html: text }} />
+      );
+    }
   }
 };
 
@@ -120,6 +165,30 @@ const processImageElement = (element: Element, key: string, elements: React.Reac
 };
 
 const processBlockquoteElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  // Проверка на accordion синтаксис: > **Заголовок**
+  const firstChild = element.firstChild;
+  if (firstChild && firstChild.nodeName === 'P') {
+    const pElement = firstChild as HTMLParagraphElement;
+    const strongElement = pElement.querySelector('strong');
+    
+    if (strongElement && pElement.childNodes.length === 1) {
+      // Это accordion
+      const title = strongElement.textContent || '';
+      const remainingContent = Array.from(element.childNodes)
+        .slice(1)
+        .map((node) => node.textContent)
+        .join('\n');
+      
+      elements.push(
+        <Accordion key={key} title={title}>
+          <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(remainingContent) }} />
+        </Accordion>
+      );
+      return;
+    }
+  }
+  
+  // Обычный blockquote
   elements.push(
     <blockquote key={key} dangerouslySetInnerHTML={{ __html: element.innerHTML }} />
   );
