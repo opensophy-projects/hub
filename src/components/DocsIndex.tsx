@@ -32,7 +32,7 @@ const DocsIndexContent: React.FC = () => {
                 className={`text-4xl md:text-5xl font-bold font-veilstack mb-6`}
                 style={{ color: '#7234ff' }}
               >
-                Добро пожаловать в Hub 2.0
+                Добро пожаловать в Hub
               </h1>
               <p
                 className={`text-lg md:text-xl mb-8 ${
