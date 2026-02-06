@@ -15,5 +15,3 @@ export interface ParsedTable {
   headers: string[];
   rows: Element[];
 }
-
-export { TableControlsState, ParsedRow, ParsedTable };
