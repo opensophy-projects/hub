@@ -1,8 +1,7 @@
 import React, { useState, useCallback, Suspense, useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { X, Copy, Code2, Eye, Maximize2, RotateCcw, Settings } from 'lucide-react';
-import { loadComponent, getDefaultProps } from '../loader';
-import type { ComponentConfig } from '../types';
+import { loadComponent, getDefaultProps } from './loader';
 
 interface UIComponentViewerProps {
   componentId: string;
