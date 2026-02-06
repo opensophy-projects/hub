@@ -74,13 +74,6 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({
     setIsOpen(false);
   }, []);
 
-  const handleBackdropKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      setIsOpen(false);
-    }
-  }, []);
-
   const triggerButtonClass = `px-4 py-2 rounded-lg font-medium transition-all my-6 flex items-center gap-2 ${
     isDark
       ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500/30'
@@ -127,12 +120,10 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({
       {/* Modal */}
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            role="button"
-            tabIndex={0}
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm cursor-default"
             onClick={handleBackdropClick}
-            onKeyDown={handleBackdropKeyDown}
             aria-label="Закрыть модальное окно"
           />
 
