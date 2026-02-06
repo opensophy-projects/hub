@@ -3,7 +3,6 @@ import DOMPurify from 'isomorphic-dompurify';
 import { CodeBlock } from '@/components/CodeBlock';
 import TableWithControls from '@/components/TableWithControls';
 import Accordion from '@/components/Accordion';
-import AlertButton from '@/components/AlertButton';
 import NewUIComponentViewer from '@/uic-system/NewUIComponentViewer';
 
 export const TableContext = createContext<{
@@ -12,53 +11,15 @@ export const TableContext = createContext<{
 }>({ isDark: false });
 
 const processTextNode = (node: Node, key: string, elements: React.ReactNode[]) => {
-  let text = node.textContent || '';
+  const text = node.textContent || '';
   
-  const alertPatterns = [
-    { regex: /\[✓\](.*?)(?=\[|$)/g, type: 'success' as const },
-    { regex: /\[!\](.*?)(?=\[|$)/g, type: 'warning' as const },
-    { regex: /\[✕\](.*?)(?=\[|$)/g, type: 'error' as const },
-    { regex: /\[\?\](.*?)(?=\[|$)/g, type: 'info' as const },
-  ];
-
-  let hasAlerts = false;
-  const alertElements: React.ReactNode[] = [];
-  let lastIndex = 0;
-
-  for (const pattern of alertPatterns) {
-    const matches = [...text.matchAll(pattern)];
-    for (const match of matches) {
-      hasAlerts = true;
-      const beforeText = text.substring(lastIndex, match.index);
-      if (beforeText.trim()) {
-        alertElements.push(
-          <span key={`text-before-${key}-${match.index}`}>{beforeText}</span>
-        );
-      }
-      alertElements.push(
-        <AlertButton key={`alert-${key}-${match.index}`} type={pattern.type}>
-          {match[1].trim()}
-        </AlertButton>
-      );
-      lastIndex = (match.index || 0) + match[0].length;
-    }
-  }
-
-  if (hasAlerts) {
-    const remainingText = text.substring(lastIndex);
-    if (remainingText.trim()) {
-      alertElements.push(
-        <span key={`text-after-${key}`}>{remainingText}</span>
-      );
-    }
-    elements.push(...alertElements);
-  } else {
-    text = text.trim();
-    if (text) {
-      elements.push(
-        <span key={key} dangerouslySetInnerHTML={{ __html: text }} />
-      );
-    }
+  // Удалена вся логика Alert кнопок
+  
+  const trimmedText = text.trim();
+  if (trimmedText) {
+    elements.push(
+      <span key={key} dangerouslySetInnerHTML={{ __html: text }} />
+    );
   }
 };
 
@@ -108,6 +69,19 @@ const processHeadingElement = (element: Element, tagName: string, key: string, e
 
 const processParagraphElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const text = element.textContent || '';
+  
+  // Проверка на :::accordion синтаксис
+  if (text.startsWith(':::accordion ')) {
+    const titleMatch = text.match(/^:::accordion\s+(.+)/);
+    if (titleMatch) {
+      const title = titleMatch[1].trim();
+      elements.push(
+        <p key={key} data-accordion-title={title} dangerouslySetInnerHTML={{ __html: element.innerHTML }} />
+      );
+      return;
+    }
+  }
+  
   const uicPattern = /\[uic:([a-z-]+)\]/g;
   const match = uicPattern.exec(text);
 
@@ -178,27 +152,8 @@ const processImageElement = (element: Element, key: string, elements: React.Reac
 };
 
 const processBlockquoteElement = (element: Element, key: string, elements: React.ReactNode[]) => {
-  const firstChild = element.firstChild;
-  if (firstChild && firstChild.nodeName === 'P') {
-    const pElement = firstChild as HTMLParagraphElement;
-    const strongElement = pElement.querySelector('strong');
-    
-    if (strongElement && pElement.childNodes.length === 1) {
-      const title = strongElement.textContent || '';
-      const remainingContent = Array.from(element.childNodes)
-        .slice(1)
-        .map((node) => node.textContent)
-        .join('\n');
-      
-      elements.push(
-        <Accordion key={key} title={title}>
-          <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(remainingContent) }} />
-        </Accordion>
-      );
-      return;
-    }
-  }
-  
+  // Проверка на :::accordion внутри blockquote больше не нужна
+  // Просто рендерим blockquote как есть с поддержкой вложенности
   elements.push(
     <blockquote key={key} dangerouslySetInnerHTML={{ __html: element.innerHTML }} />
   );
@@ -256,7 +211,7 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       'pre', 'img', 'table', 'tr', 'td', 'th',
       'thead', 'tbody', 'div', 'span', 'hr', 'figure', 'figcaption'
     ],
-    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'id', 'data-language', 'data-lang'],
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'id', 'data-language', 'data-lang', 'data-accordion-title'],
     ALLOW_DATA_ATTR: true,
   });
 
@@ -264,12 +219,22 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
   const doc = parser.parseFromString(sanitized, 'text/html');
   const elements: React.ReactNode[] = [];
 
-  const processNodes = (nodes: NodeListOf<ChildNode>, parentKey = '') => {
+  const processNodes = (nodes: NodeListOf<ChildNode>, parentKey = '', accordionContext: { title: string; content: React.ReactNode[] } | null = null) => {
     Array.from(nodes).forEach((node, index) => {
       const key = `${parentKey}-${index}`;
 
       if (node.nodeType === Node.TEXT_NODE) {
-        processTextNode(node, key, elements);
+        if (accordionContext) {
+          const text = node.textContent || '';
+          const trimmedText = text.trim();
+          if (trimmedText) {
+            accordionContext.content.push(
+              <span key={key} dangerouslySetInnerHTML={{ __html: text }} />
+            );
+          }
+        } else {
+          processTextNode(node, key, elements);
+        }
         return;
       }
 
@@ -279,6 +244,54 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
 
       const element = node as Element;
       const tagName = element.tagName.toLowerCase();
+
+      // Проверка на accordion параграф
+      if (tagName === 'p' && element.hasAttribute('data-accordion-title')) {
+        const title = element.getAttribute('data-accordion-title') || '';
+        const newAccordionContext = { title, content: [] };
+        
+        // Собираем следующие параграфы до следующего accordion или конца
+        let nextSibling = element.nextSibling;
+        const accordionContent: React.ReactNode[] = [];
+        
+        while (nextSibling) {
+          if (nextSibling.nodeType === Node.ELEMENT_NODE) {
+            const nextElement = nextSibling as Element;
+            const nextTag = nextElement.tagName.toLowerCase();
+            
+            // Прекращаем, если встретили новый accordion
+            if (nextTag === 'p' && nextElement.textContent?.startsWith(':::accordion ')) {
+              break;
+            }
+            
+            // Добавляем содержимое
+            if (nextTag === 'p' && !nextElement.hasAttribute('data-accordion-title')) {
+              accordionContent.push(
+                <p key={`accordion-content-${index}`} dangerouslySetInnerHTML={{ __html: nextElement.innerHTML }} />
+              );
+            }
+          }
+          
+          nextSibling = nextSibling.nextSibling;
+        }
+        
+        elements.push(
+          <Accordion key={key} title={title}>
+            <div>{accordionContent}</div>
+          </Accordion>
+        );
+        return;
+      }
+
+      if (accordionContext) {
+        // Внутри accordion контекста
+        if (tagName === 'p') {
+          accordionContext.content.push(
+            <p key={key} dangerouslySetInnerHTML={{ __html: element.innerHTML }} />
+          );
+          return;
+        }
+      }
 
       const handlers: Record<string, () => void> = {
         'pre': () => processPreElement(element, key, elements),
@@ -306,7 +319,7 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       }
 
       if (element.childNodes.length > 0) {
-        processNodes(element.childNodes, key);
+        processNodes(element.childNodes, key, accordionContext);
       }
     });
   };
