@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { marked } from 'marked';
 import DOMPurify from 'isomorphic-dompurify';
@@ -36,10 +36,9 @@ interface TableOfContentsItem {
 
 const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const { isDark } = useTheme();
-  const contentRef = useRef<HTMLDivElement>(null);
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
 
-  const toc = useTableOfContents(contentRef, doc);
+  const toc = useTableOfContents(doc);
   const scrollProgress = useScrollProgress();
 
   const handleTocClick = (id: string) => {
@@ -179,7 +178,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
               />
 
               <TableContext.Provider value={tableContextValue}>
-                <div ref={contentRef} className="prose max-w-none prose-invert w-full overflow-x-auto">
+                <div className="prose max-w-none prose-invert w-full overflow-x-auto">
                   {contentNodes}
                 </div>
               </TableContext.Provider>
