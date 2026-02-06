@@ -28,7 +28,7 @@ export const TableView: React.FC<TableViewProps> = ({
 
   return (
     <div style={{ overflowX: 'auto', overflowY: 'visible', minHeight: '200px' }}>
-      <table className="w-full border-collapse text-sm">
+      <table className="border-collapse text-sm" style={{ width: 'auto', minWidth: '100%' }}>
         <TableHead
           isDark={isDark}
           headers={headers}
@@ -94,8 +94,7 @@ const TableHead: React.FC<TableHeadProps> = ({
               onClick={() => onSort(colIndex)}
               style={{
                 backgroundColor: isDark ? '#1a1a1a' : '#E8E7E3',
-                minWidth: '150px',
-                flex: 1
+                whiteSpace: 'nowrap'
               }}
               title="Нажмите для сортировки"
             >
@@ -158,8 +157,7 @@ const TableRow: React.FC<TableRowProps> = ({
             key={`cell-${rowIndex}-${colIndex}`}
             className={`px-4 py-3 ${isDark ? 'text-white/90' : 'text-black'}`}
             style={{
-              minWidth: '150px',
-              flex: 1
+              whiteSpace: 'nowrap'
             }}
           >
             <HighlightText text={cell} query={searchQuery} />
@@ -174,20 +172,15 @@ function getTableStyles(isDark: boolean): string {
   return `
     table {
       border-collapse: collapse;
-      width: 100%;
-      table-layout: fixed;
+      width: auto;
+      min-width: 100%;
     }
     th, td {
       border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)'};
       padding: 0.75rem;
       text-align: left;
       color: ${isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgb(0, 0, 0)'};
-      word-break: break-word;
-      overflow-wrap: break-word;
-      white-space: normal;
-      hyphens: auto;
-      min-width: 150px;
-      flex: 1;
+      white-space: nowrap;
     }
     th {
       background-color: ${isDark ? '#1a1a1a' : '#E8E7E3'};
