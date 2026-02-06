@@ -14,9 +14,11 @@ export const TableContext = createContext<{
 const preprocessMarkdown = (html: string): string => {
   let processed = html;
 
-  // Safe accordion preprocessing - limit content length
+  // Fixed accordion preprocessing - removed catastrophic backtracking
+  // Old vulnerable pattern: :::accordion\s+([^\n]+)\n((?:[^:]|:(?!::))*?):::
+  // New safe pattern: uses negated character class and lazy quantifier with reasonable limits
   processed = processed.replace(
-    /:::accordion\s+([^\n]+)\n((?:[^:]|:(?!::))*?):::/g,
+    /:::accordion\s+([^\n]{1,200})\n([\s\S]{0,10000}?):::/g,
     (_, title, content) => {
       const sanitizedTitle = DOMPurify.sanitize(title.trim());
       const sanitizedContent = DOMPurify.sanitize(content.trim());
@@ -249,9 +251,10 @@ const processCellContent = (cell: Element): void => {
   innerHTML = innerHTML.replace(/\*([^*]+)\*/g, '<em>$1</em>');
   innerHTML = innerHTML.replace(/`([^`]+)`/g, '<code>$1</code>');
   
-  // Safe link regex - explicit pattern matching
+  // Improved safe link regex with stricter URL validation
+  // This is actually already safe (false positive), but making it even more explicit
   innerHTML = innerHTML.replace(
-    /\[([^\]]+)\]\(([^)]{1,2048})\)/g,
+    /\[([^\]]{1,500})\]\(([^\s)]{1,2048})\)/g,
     '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
   );
 
