@@ -243,12 +243,21 @@ const MobileNavbar: React.FC = () => {
 
   const handleTocClick = (id: string) => {
     const element = document.getElementById(id);
-    element?.scrollIntoView({ behavior: 'smooth' });
+    if (!element) return;
+
+    const headerOffset = 80;
+    const elementPosition = element.getBoundingClientRect().top;
+    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: 'smooth'
+    });
     setIsTocOpen(false);
   };
 
   const handleBackClick = () => {
-    globalThis.history.back();
+    globalThis.location.href = '/';
   };
 
   const handleScrollTop = () => {
