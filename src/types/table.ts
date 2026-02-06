@@ -8,7 +8,7 @@ export interface TableControlsState {
 
 export interface ParsedRow {
   element: Element;
-  cells: string[];
+  cells: string[]; // Теперь хранит HTML, а не только текст
 }
 
 export interface ParsedTable {
