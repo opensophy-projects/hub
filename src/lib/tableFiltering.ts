@@ -7,7 +7,7 @@ export function filterAndSortRows(
   let result = rows.map((row) => ({
     element: row,
     cells: Array.from(row.querySelectorAll('td')).map(
-      (td) => td.textContent?.trim() || ''
+      (td) => td.innerHTML || '' // Используем innerHTML вместо textContent
     ),
   }));
 
@@ -26,7 +26,9 @@ function applyFilters(
 
   return rows.filter((row) => {
     for (const [colIndex, values] of filters) {
-      if (values.size > 0 && !values.has(row.cells[colIndex])) {
+      // Для фильтрации используем текстовое содержимое
+      const cellText = stripHtmlTags(row.cells[colIndex]);
+      if (values.size > 0 && !values.has(cellText)) {
         return false;
       }
     }
@@ -39,7 +41,10 @@ function applySearch(rows: ParsedRow[], searchQuery: string): ParsedRow[] {
 
   const query = searchQuery.toLowerCase();
   return rows.filter((row) =>
-    row.cells.some((cell) => cell.toLowerCase().includes(query))
+    row.cells.some((cell) => {
+      const cellText = stripHtmlTags(cell);
+      return cellText.toLowerCase().includes(query);
+    })
   );
 }
 
@@ -51,9 +56,16 @@ function applySort(
   if (sortColumn === null || sortDirection === 'none') return rows;
 
   return [...rows].sort((a, b) => {
-    const aVal = a.cells[sortColumn] || '';
-    const bVal = b.cells[sortColumn] || '';
+    const aVal = stripHtmlTags(a.cells[sortColumn] || '');
+    const bVal = stripHtmlTags(b.cells[sortColumn] || '');
     const cmp = aVal.localeCompare(bVal, 'ru');
     return sortDirection === 'asc' ? cmp : -cmp;
   });
+}
+
+// Утилита для удаления HTML тегов для сравнения
+function stripHtmlTags(html: string): string {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return div.textContent || div.innerText || '';
 }
