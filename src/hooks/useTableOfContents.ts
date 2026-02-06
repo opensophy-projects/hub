@@ -16,7 +16,7 @@ export function useTableOfContents(
       const articleContent = document.querySelector('[data-article-content]');
       if (!articleContent) return;
 
-      const headings = articleContent.querySelectorAll('h2, h3, h4');
+      const headings = articleContent.querySelectorAll('h2:not([data-banner-content] h2), h3:not([data-banner-content] h3), h4:not([data-banner-content] h4)');
       const items: TableOfContentsItem[] = [];
 
       headings.forEach((heading, index) => {
