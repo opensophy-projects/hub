@@ -16,6 +16,20 @@
   ],
   "props": [
     {
+      "name": "text",
+      "type": "string",
+      "default": "Добро пожаловать в будущее веб-дизайна",
+      "description": "Текст для анимации",
+      "control": "text"
+    },
+    {
+      "name": "className",
+      "type": "string",
+      "default": "text-4xl font-bold text-center",
+      "description": "CSS классы",
+      "control": "text"
+    },
+    {
       "name": "delay",
       "type": "number",
       "default": 200,
