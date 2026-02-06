@@ -218,14 +218,15 @@ body {
 
 /* Убираем стандартные отступы у таблиц - они будут контролироваться контейнером */
 .prose table {
-  width: 100%;
+  width: auto;
+  min-width: 100%;
   border-collapse: collapse;
   margin-top: 0;
   margin-bottom: 0;
   font-size: 0.875rem;
   line-height: 1.7;
   overflow-x: auto;
-  display: block;
+  display: table;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -245,10 +246,7 @@ body {
   border: 1px solid #6b7280;
   padding: 0.75rem 1rem;
   text-align: left;
-  word-break: break-word;
-  overflow-wrap: break-word;
-  white-space: normal;
-  hyphens: auto;
+  white-space: nowrap;
 }
 
 .dark .prose th,
@@ -377,7 +375,6 @@ body {
   .prose th,
   .prose td {
     padding: 0.5rem 0.75rem;
-    min-width: 100px;
     white-space: nowrap;
   }
 
@@ -392,7 +389,6 @@ body {
   .prose td {
     padding: 0.6rem;
     font-size: 0.8rem;
-    min-width: 110px;
   }
 }
 
