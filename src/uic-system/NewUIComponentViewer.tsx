@@ -1,6 +1,6 @@
 import React, { useState, useCallback, Suspense, useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
-import { X, Copy, Code2, Eye, Maximize2, RotateCcw, Settings } from 'lucide-react';
+import { X, Copy, Code2, Maximize2, RotateCcw, Settings } from 'lucide-react';
 import { loadComponent, getDefaultProps } from './loader';
 
 interface UIComponentViewerProps {
@@ -77,17 +77,17 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
     isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-[#E8E7E3]'
   }`;
 
-  const headerClass = `flex items-center justify-between px-4 py-3 border-b ${
+  const headerClass = `flex items-center justify-between px-3 py-2 border-b ${
     isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-black/5'
   }`;
 
-  const buttonBaseClass = `px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2`;
+  const buttonBaseClass = `px-2 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5`;
 
   const getButtonClass = (isActive: boolean = false) => {
     if (isActive) {
       return isDark
-        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-        : 'bg-blue-500/20 text-blue-600 border border-blue-500/30';
+        ? 'bg-white/10 text-white border border-white/20'
+        : 'bg-black/10 text-black border border-black/20';
     }
     return isDark
       ? 'text-white/70 hover:text-white hover:bg-white/5 border border-transparent'
@@ -99,48 +99,47 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
       {!isOpen ? (
         <div className={containerClass}>
           <div className={headerClass}>
-            <div className="flex items-center gap-2">
-              <Eye size={16} className={isDark ? 'text-white/70' : 'text-black/70'} />
-              <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-black'}`}>
-                {config.name}
-              </h3>
-            </div>
-            <div className="flex gap-2">
+            <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-black'}`}>
+              {config.name}
+            </h3>
+            <div className="flex gap-1.5">
               <button
                 onClick={() => setIsFullscreen(true)}
                 className={`${buttonBaseClass} ${getButtonClass()}`}
                 title="Открыть на весь экран"
               >
-                <Maximize2 size={14} />
+                <Maximize2 size={12} />
               </button>
               <button
                 onClick={handleRefresh}
                 className={`${buttonBaseClass} ${getButtonClass()}`}
                 title="Повторить анимацию"
               >
-                <RotateCcw size={14} />
+                <RotateCcw size={12} />
               </button>
               <button
                 onClick={() => { setView('props'); setIsOpen(true); }}
                 className={`${buttonBaseClass} ${getButtonClass()}`}
                 title="Управление пропсами"
               >
-                <Settings size={14} />
+                <Settings size={12} />
               </button>
               <button
                 onClick={() => { setView('code'); setIsOpen(true); }}
                 className={`${buttonBaseClass} ${getButtonClass()}`}
                 title="Посмотреть код"
               >
-                <Code2 size={14} />
+                <Code2 size={12} />
               </button>
             </div>
           </div>
 
           <div className="p-8 flex items-center justify-center min-h-[300px]">
-            <Suspense fallback={<div className={isDark ? 'text-white/50' : 'text-black/50'}>Загрузка...</div>}>
-              <Component key={refreshKey} {...currentProps} />
-            </Suspense>
+            <div className="text-4xl md:text-5xl lg:text-6xl">
+              <Suspense fallback={<div className={isDark ? 'text-white/50' : 'text-black/50'}>Загрузка...</div>}>
+                <Component key={refreshKey} {...currentProps} />
+              </Suspense>
+            </div>
           </div>
         </div>
       ) : (
@@ -154,44 +153,45 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
           <div className={`relative w-full max-w-6xl h-[85vh] rounded-xl border shadow-2xl flex flex-col overflow-hidden ${
             isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-white'
           }`}>
-            <div className={headerClass}>
+            <div className={`flex items-center justify-between px-4 py-2.5 border-b ${
+              isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-black/5'
+            }`}>
               <div className="flex items-center gap-2">
-                <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>
+                <h2 className={`text-base font-bold ${isDark ? 'text-white' : 'text-black'}`}>
                   {config.name}
                 </h2>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                className={`p-2 rounded-lg transition-colors ${
+                className={`p-1.5 rounded-lg transition-colors ${
                   isDark ? 'hover:bg-white/10 text-white/70' : 'hover:bg-black/10 text-black/70'
                 }`}
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
-            <div className={`flex items-center gap-2 px-4 py-3 border-b ${
+            <div className={`flex items-center gap-2 px-4 py-2 border-b ${
               isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-black/5'
             }`}>
               <button
                 onClick={() => setView('preview')}
                 className={`${buttonBaseClass} ${getButtonClass(view === 'preview')}`}
               >
-                <Eye size={16} />
                 Превью
               </button>
               <button
                 onClick={() => setView('code')}
                 className={`${buttonBaseClass} ${getButtonClass(view === 'code')}`}
               >
-                <Code2 size={16} />
+                <Code2 size={12} />
                 Код
               </button>
               <button
                 onClick={() => setView('props')}
                 className={`${buttonBaseClass} ${getButtonClass(view === 'props')}`}
               >
-                <Settings size={16} />
+                <Settings size={12} />
                 Настройки
               </button>
 
@@ -202,7 +202,7 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
                   onClick={handleCopy}
                   className={`${buttonBaseClass} ${getButtonClass()}`}
                 >
-                  <Copy size={16} />
+                  <Copy size={12} />
                   Копировать
                 </button>
               )}
@@ -211,7 +211,7 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
                 onClick={handleRefresh}
                 className={`${buttonBaseClass} ${getButtonClass()}`}
               >
-                <RotateCcw size={16} />
+                <RotateCcw size={12} />
                 Обновить
               </button>
             </div>
@@ -221,24 +221,26 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
                 <div className={`h-full overflow-auto p-8 flex items-center justify-center ${
                   isDark ? 'bg-black/20' : 'bg-gray-50'
                 }`}>
-                  <Suspense fallback={<div>Загрузка...</div>}>
-                    <Component key={refreshKey} {...currentProps} />
-                  </Suspense>
+                  <div className="text-4xl md:text-5xl lg:text-6xl">
+                    <Suspense fallback={<div>Загрузка...</div>}>
+                      <Component key={refreshKey} {...currentProps} />
+                    </Suspense>
+                  </div>
                 </div>
               )}
 
               {view === 'code' && (
                 <div className="h-full flex flex-col">
-                  <div className={`flex gap-2 px-4 py-3 border-b overflow-x-auto ${
+                  <div className={`flex gap-2 px-4 py-2 border-b overflow-x-auto ${
                     isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-black/5'
                   }`}>
                     {config.files.map((file: any) => (
                       <button
                         key={file.name}
                         onClick={() => setSelectedFile(file.name)}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
                           selectedFile === file.name
-                            ? isDark ? 'bg-white/10 text-white' : 'bg-black/10 text-black'
+                            ? isDark ? 'bg-white/10 text-white border border-white/20' : 'bg-black/10 text-black border border-black/20'
                             : isDark ? 'text-white/50 hover:text-white/70' : 'text-black/50 hover:text-black/70'
                         }`}
                       >
@@ -287,9 +289,11 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
               <X size={20} />
             </button>
             <div className="p-12 flex items-center justify-center min-h-full">
-              <Suspense fallback={<div>Загрузка...</div>}>
-                <Component key={refreshKey} {...currentProps} />
-              </Suspense>
+              <div className="text-5xl md:text-6xl lg:text-7xl">
+                <Suspense fallback={<div>Загрузка...</div>}>
+                  <Component key={refreshKey} {...currentProps} />
+                </Suspense>
+              </div>
             </div>
           </div>
         </div>
@@ -346,9 +350,9 @@ const PropsEditor: React.FC<{
         </button>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         {config.props.map((prop: any) => (
-          <div key={prop.name} className="space-y-2">
+          <div key={prop.name} className="space-y-3">
             <label className={`block text-sm font-medium ${isDark ? 'text-white' : 'text-black'}`}>
               {prop.name}
               <span className={`ml-2 text-xs ${isDark ? 'text-white/50' : 'text-black/50'}`}>
@@ -359,49 +363,52 @@ const PropsEditor: React.FC<{
               {prop.description}
             </p>
             
-            {prop.control === 'text' && (
-              <input
-                type="text"
-                value={currentProps[prop.name] || ''}
-                onChange={(e) => onChange(prop.name, e.target.value)}
-                className={`w-full px-3 py-2 rounded-lg border ${
-                  isDark
-                    ? 'bg-white/5 border-white/10 text-white'
-                    : 'bg-white border-black/10 text-black'
-                }`}
-              />
-            )}
-
             {prop.control === 'number' && (
-              <input
-                type="number"
-                value={currentProps[prop.name] || 0}
-                onChange={(e) => onChange(prop.name, Number(e.target.value))}
-                min={prop.min}
-                max={prop.max}
-                step={prop.step}
-                className={`w-full px-3 py-2 rounded-lg border ${
-                  isDark
-                    ? 'bg-white/5 border-white/10 text-white'
-                    : 'bg-white border-black/10 text-black'
-                }`}
-              />
+              <div className="space-y-2">
+                <input
+                  type="range"
+                  value={currentProps[prop.name] || 0}
+                  onChange={(e) => onChange(prop.name, Number(e.target.value))}
+                  min={prop.min || 0}
+                  max={prop.max || 100}
+                  step={prop.step || 1}
+                  className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${
+                    isDark 
+                      ? 'bg-white/10 [&::-webkit-slider-thumb]:bg-white [&::-moz-range-thumb]:bg-white' 
+                      : 'bg-black/10 [&::-webkit-slider-thumb]:bg-black [&::-moz-range-thumb]:bg-black'
+                  } [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0`}
+                />
+                <div className={`text-center text-sm font-medium ${isDark ? 'text-white' : 'text-black'}`}>
+                  {currentProps[prop.name]}
+                </div>
+              </div>
             )}
 
             {prop.control === 'select' && (
-              <select
-                value={currentProps[prop.name] || ''}
-                onChange={(e) => onChange(prop.name, e.target.value)}
-                className={`w-full px-3 py-2 rounded-lg border ${
-                  isDark
-                    ? 'bg-white/5 border-white/10 text-white'
-                    : 'bg-white border-black/10 text-black'
-                }`}
-              >
-                {prop.options?.map((opt: string) => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={currentProps[prop.name] || ''}
+                  onChange={(e) => onChange(prop.name, e.target.value)}
+                  className={`w-full px-4 py-2.5 rounded-lg border appearance-none cursor-pointer text-sm ${
+                    isDark
+                      ? 'bg-white/5 border-white/10 text-white'
+                      : 'bg-white border-black/10 text-black'
+                  } focus:outline-none focus:ring-2 ${
+                    isDark ? 'focus:ring-white/20' : 'focus:ring-black/20'
+                  }`}
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='${isDark ? 'white' : 'black'}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 0.75rem center',
+                    backgroundSize: '1.25rem',
+                    paddingRight: '2.5rem'
+                  }}
+                >
+                  {prop.options?.map((opt: string) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              </div>
             )}
           </div>
         ))}
