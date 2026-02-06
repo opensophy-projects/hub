@@ -4,7 +4,7 @@ import { CodeBlock } from '@/components/CodeBlock';
 import TableWithControls from '@/components/TableWithControls';
 import Accordion from '@/components/Accordion';
 import AlertButton from '@/components/AlertButton';
-import NewUIComponentViewer from '@/uic-system/components/NewUIComponentViewer';
+import NewUIComponentViewer from '@/uic-system/NewUIComponentViewer';
 
 export const TableContext = createContext<{
   onTableClick?: (tableHtml: string) => void;
