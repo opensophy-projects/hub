@@ -81,7 +81,7 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
     isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-black/5'
   }`;
 
-  const buttonBaseClass = `px-2 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5`;
+  const buttonBaseClass = `px-3 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2`;
 
   const getButtonClass = (isActive: boolean = false) => {
     if (isActive) {
@@ -102,40 +102,40 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
             <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-black'}`}>
               {config.name}
             </h3>
-            <div className="flex gap-1.5">
+            <div className="flex gap-2">
               <button
                 onClick={() => setIsFullscreen(true)}
                 className={`${buttonBaseClass} ${getButtonClass()}`}
                 title="Открыть на весь экран"
               >
-                <Maximize2 size={12} />
+                <Maximize2 size={18} />
               </button>
               <button
                 onClick={handleRefresh}
                 className={`${buttonBaseClass} ${getButtonClass()}`}
                 title="Повторить анимацию"
               >
-                <RotateCcw size={12} />
+                <RotateCcw size={18} />
               </button>
               <button
                 onClick={() => { setView('props'); setIsOpen(true); }}
                 className={`${buttonBaseClass} ${getButtonClass()}`}
                 title="Управление пропсами"
               >
-                <Settings size={12} />
+                <Settings size={18} />
               </button>
               <button
                 onClick={() => { setView('code'); setIsOpen(true); }}
                 className={`${buttonBaseClass} ${getButtonClass()}`}
                 title="Посмотреть код"
               >
-                <Code2 size={12} />
+                <Code2 size={18} />
               </button>
             </div>
           </div>
 
-          <div className="p-8 flex items-center justify-center min-h-[300px]">
-            <div className="text-4xl md:text-5xl lg:text-6xl">
+          <div className="p-8 flex items-center justify-center min-h-[400px]">
+            <div className="text-7xl md:text-8xl lg:text-8xl">
               <Suspense fallback={<div className={isDark ? 'text-white/50' : 'text-black/50'}>Загрузка...</div>}>
                 <Component key={refreshKey} {...currentProps} />
               </Suspense>
@@ -153,21 +153,21 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
           <div className={`relative w-full max-w-6xl h-[85vh] rounded-xl border shadow-2xl flex flex-col overflow-hidden ${
             isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-white'
           }`}>
-            <div className={`flex items-center justify-between px-4 py-2.5 border-b ${
+            <div className={`flex items-center justify-between px-4 py-3 border-b ${
               isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-black/5'
             }`}>
               <div className="flex items-center gap-2">
-                <h2 className={`text-base font-bold ${isDark ? 'text-white' : 'text-black'}`}>
+                <h2 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-black'}`}>
                   {config.name}
                 </h2>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                className={`p-1.5 rounded-lg transition-colors ${
+                className={`p-2 rounded-lg transition-colors ${
                   isDark ? 'hover:bg-white/10 text-white/70' : 'hover:bg-black/10 text-black/70'
                 }`}
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
@@ -184,14 +184,14 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
                 onClick={() => setView('code')}
                 className={`${buttonBaseClass} ${getButtonClass(view === 'code')}`}
               >
-                <Code2 size={12} />
+                <Code2 size={18} />
                 Код
               </button>
               <button
                 onClick={() => setView('props')}
                 className={`${buttonBaseClass} ${getButtonClass(view === 'props')}`}
               >
-                <Settings size={12} />
+                <Settings size={18} />
                 Настройки
               </button>
 
@@ -202,7 +202,7 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
                   onClick={handleCopy}
                   className={`${buttonBaseClass} ${getButtonClass()}`}
                 >
-                  <Copy size={12} />
+                  <Copy size={18} />
                   Копировать
                 </button>
               )}
@@ -211,7 +211,7 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
                 onClick={handleRefresh}
                 className={`${buttonBaseClass} ${getButtonClass()}`}
               >
-                <RotateCcw size={12} />
+                <RotateCcw size={18} />
                 Обновить
               </button>
             </div>
@@ -221,7 +221,7 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
                 <div className={`h-full overflow-auto p-8 flex items-center justify-center ${
                   isDark ? 'bg-black/20' : 'bg-gray-50'
                 }`}>
-                  <div className="text-4xl md:text-5xl lg:text-6xl">
+                  <div className="text-7xl md:text-8xl lg:text-8xl">
                     <Suspense fallback={<div>Загрузка...</div>}>
                       <Component key={refreshKey} {...currentProps} />
                     </Suspense>
@@ -238,7 +238,7 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
                       <button
                         key={file.name}
                         onClick={() => setSelectedFile(file.name)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                           selectedFile === file.name
                             ? isDark ? 'bg-white/10 text-white border border-white/20' : 'bg-black/10 text-black border border-black/20'
                             : isDark ? 'text-white/50 hover:text-white/70' : 'text-black/50 hover:text-black/70'
@@ -258,6 +258,7 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
                 <div className="h-full overflow-auto p-6">
                   <PropsEditor
                     config={config}
+                    componentId={componentId}
                     currentProps={currentProps}
                     onChange={handlePropChange}
                     onReset={handleResetProps}
@@ -289,7 +290,7 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
               <X size={20} />
             </button>
             <div className="p-12 flex items-center justify-center min-h-full">
-              <div className="text-5xl md:text-6xl lg:text-7xl">
+              <div className="text-7xl md:text-8xl lg:text-8xl">
                 <Suspense fallback={<div>Загрузка...</div>}>
                   <Component key={refreshKey} {...currentProps} />
                 </Suspense>
@@ -309,13 +310,13 @@ const CodeDisplay: React.FC<{ code: string; isDark: boolean }> = ({ code, isDark
 
   return (
     <pre
-      className="p-4 text-sm font-mono"
+      className="p-6 text-base font-mono leading-relaxed"
       style={{ background: bg, color: fg }}
     >
       {lines.map((line, i) => (
         <div key={`line-${i}`} className="whitespace-pre">
           <span
-            className="inline-block w-8 mr-4 text-right select-none"
+            className="inline-block w-12 mr-4 text-right select-none"
             style={{ color: isDark ? '#888' : '#666' }}
           >
             {i + 1}
@@ -327,13 +328,22 @@ const CodeDisplay: React.FC<{ code: string; isDark: boolean }> = ({ code, isDark
   );
 };
 
+const FILTERED_PROPS: Record<string, string[]> = {
+  'blur-text': ['delay', 'animateBy', 'direction']
+};
+
 const PropsEditor: React.FC<{
   config: any;
+  componentId: string;
   currentProps: Record<string, any>;
   onChange: (name: string, value: any) => void;
   onReset: () => void;
   isDark: boolean;
-}> = ({ config, currentProps, onChange, onReset, isDark }) => {
+}> = ({ config, componentId, currentProps, onChange, onReset, isDark }) => {
+  const allowedProps = FILTERED_PROPS[componentId] || config.props.map((p: any) => p.name);
+  
+  const visibleProps = config.props.filter((prop: any) => allowedProps.includes(prop.name));
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -342,7 +352,7 @@ const PropsEditor: React.FC<{
         </h3>
         <button
           onClick={onReset}
-          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+          className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
             isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-black/10 hover:bg-black/20 text-black'
           }`}
         >
@@ -350,36 +360,33 @@ const PropsEditor: React.FC<{
         </button>
       </div>
 
-      <div className="space-y-6">
-        {config.props.map((prop: any) => (
+      <div className="space-y-8">
+        {visibleProps.map((prop: any) => (
           <div key={prop.name} className="space-y-3">
             <label className={`block text-sm font-medium ${isDark ? 'text-white' : 'text-black'}`}>
-              {prop.name}
+              {prop.description}
               <span className={`ml-2 text-xs ${isDark ? 'text-white/50' : 'text-black/50'}`}>
                 ({prop.type})
               </span>
             </label>
-            <p className={`text-xs ${isDark ? 'text-white/60' : 'text-black/60'}`}>
-              {prop.description}
-            </p>
             
             {prop.control === 'number' && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <input
                   type="range"
-                  value={currentProps[prop.name] || 0}
+                  value={currentProps[prop.name] || prop.default || 0}
                   onChange={(e) => onChange(prop.name, Number(e.target.value))}
                   min={prop.min || 0}
                   max={prop.max || 100}
                   step={prop.step || 1}
-                  className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${
+                  className={`w-full h-3 rounded-lg appearance-none cursor-pointer ${
                     isDark 
                       ? 'bg-white/10 [&::-webkit-slider-thumb]:bg-white [&::-moz-range-thumb]:bg-white' 
                       : 'bg-black/10 [&::-webkit-slider-thumb]:bg-black [&::-moz-range-thumb]:bg-black'
-                  } [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0`}
+                  } [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0`}
                 />
-                <div className={`text-center text-sm font-medium ${isDark ? 'text-white' : 'text-black'}`}>
-                  {currentProps[prop.name]}
+                <div className={`text-center text-lg font-semibold ${isDark ? 'text-white' : 'text-black'}`}>
+                  {currentProps[prop.name] || prop.default || 0}
                 </div>
               </div>
             )}
@@ -387,9 +394,9 @@ const PropsEditor: React.FC<{
             {prop.control === 'select' && (
               <div className="relative">
                 <select
-                  value={currentProps[prop.name] || ''}
+                  value={currentProps[prop.name] || prop.default || ''}
                   onChange={(e) => onChange(prop.name, e.target.value)}
-                  className={`w-full px-4 py-2.5 rounded-lg border appearance-none cursor-pointer text-sm ${
+                  className={`w-full px-4 py-3 rounded-lg border appearance-none cursor-pointer text-base font-medium ${
                     isDark
                       ? 'bg-white/5 border-white/10 text-white'
                       : 'bg-white border-black/10 text-black'
@@ -400,8 +407,8 @@ const PropsEditor: React.FC<{
                     backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='${isDark ? 'white' : 'black'}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
                     backgroundRepeat: 'no-repeat',
                     backgroundPosition: 'right 0.75rem center',
-                    backgroundSize: '1.25rem',
-                    paddingRight: '2.5rem'
+                    backgroundSize: '1.5rem',
+                    paddingRight: '2.75rem'
                   }}
                 >
                   {prop.options?.map((opt: string) => (
