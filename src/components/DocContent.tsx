@@ -10,6 +10,7 @@ import DocIcon from './DocIcon';
 import { parseHtmlToReact, TableContext } from '@/lib/htmlParser';
 import { useTableOfContents } from '@/hooks/useTableOfContents';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
+import { scrollToElement } from '@/lib/scrollUtils';
 
 interface DocContentProps {
   doc: {
@@ -40,20 +41,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
 
   const toc = useTableOfContents(doc);
   const scrollProgress = useScrollProgress();
-
-  const handleTocClick = (id: string) => {
-    const element = document.getElementById(id);
-    if (!element) return;
-
-    const headerOffset = 80;
-    const elementPosition = element.getBoundingClientRect().top;
-    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-
-    window.scrollTo({
-      top: offsetPosition,
-      behavior: 'smooth'
-    });
-  };
 
   const handleTableClick = (tableHtml: string) => {
     setFullscreenTableHtml(tableHtml);
@@ -194,7 +181,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
                 {toc.map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => handleTocClick(item.id)}
+                    onClick={() => scrollToElement(item.id)}
                     className={`w-full text-left px-4 py-2 rounded-lg transition-colors text-sm ${getTocButtonClass(isDark)}`}
                     style={{ paddingLeft: `${12 + (item.level - 2) * 16}px` }}
                   >
