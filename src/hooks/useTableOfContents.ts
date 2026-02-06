@@ -1,4 +1,4 @@
-import { useState, useEffect, RefObject } from 'react';
+import { useState, useEffect } from 'react';
 
 interface TableOfContentsItem {
   id: string;
@@ -7,16 +7,16 @@ interface TableOfContentsItem {
 }
 
 export function useTableOfContents(
-  contentRef: RefObject<HTMLDivElement>,
   dependency: any
 ): TableOfContentsItem[] {
   const [toc, setToc] = useState<TableOfContentsItem[]>([]);
 
   useEffect(() => {
     const generateTOC = () => {
-      if (!contentRef.current) return;
+      const articleContent = document.querySelector('[data-article-content]');
+      if (!articleContent) return;
 
-      const headings = contentRef.current.querySelectorAll('h2, h3, h4');
+      const headings = articleContent.querySelectorAll('h2, h3, h4');
       const items: TableOfContentsItem[] = [];
 
       headings.forEach((heading, index) => {
@@ -34,7 +34,7 @@ export function useTableOfContents(
 
     const timer = setTimeout(generateTOC, 100);
     return () => clearTimeout(timer);
-  }, [contentRef, dependency]);
+  }, [dependency]);
 
   return toc;
 }
