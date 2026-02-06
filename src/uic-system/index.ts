@@ -1,2 +1,2 @@
-export { default as UIComponentViewer } from './components/UIComponentViewer';
-export { registerComponent, getComponent } from './lib/componentRegistry';
+export { default as BlurText } from './BlurText';
+export * from './types';
