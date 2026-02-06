@@ -1,4 +1,4 @@
-import { Easing } from 'motion/react';
+import type { Easing } from 'framer-motion';
 
 export type BlurTextProps = {
   text?: string;
