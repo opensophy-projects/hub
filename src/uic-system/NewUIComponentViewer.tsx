@@ -483,10 +483,10 @@ const PropControl: React.FC<PropControlProps> = ({ prop, value, onChange, isDark
             id={inputId}
             value={value ?? prop.default ?? ''}
             onChange={(e) => onChange(prop.name, e.target.value)}
-            className={`w-full px-4 py-3 rounded-lg border appearance-none cursor-pointer text-base font-medium ${
+            className={`w-full px-4 py-3 rounded-lg border appearance-none cursor-pointer text-base font-medium transition-all ${
               isDark
-                ? 'bg-white/5 border-white/10 text-white'
-                : 'bg-white border-black/10 text-black'
+                ? 'bg-white/5 border-white/10 text-white hover:bg-white/10 focus:bg-white/10'
+                : 'bg-white border-black/10 text-black hover:bg-black/5 focus:bg-white'
             } focus:outline-none focus:ring-2 ${
               isDark ? 'focus:ring-white/20' : 'focus:ring-black/20'
             }`}
@@ -499,7 +499,13 @@ const PropControl: React.FC<PropControlProps> = ({ prop, value, onChange, isDark
             }}
           >
             {prop.options?.map((opt: string) => (
-              <option key={opt} value={opt}>{opt}</option>
+              <option 
+                key={opt} 
+                value={opt}
+                className={isDark ? 'bg-[#0a0a0a] text-white' : 'bg-white text-black'}
+              >
+                {opt}
+              </option>
             ))}
           </select>
         </div>
