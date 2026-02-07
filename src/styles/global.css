@@ -164,15 +164,6 @@ body {
   overflow-x: auto;
   border-radius: 0.5rem;
   padding: 1rem;
-  background-color: rgba(0, 0, 0, 0.05);
-  border: none;
-  border-left: none;
-}
-
-.dark .prose pre {
-  background-color: rgba(255, 255, 255, 0.05);
-  border: none;
-  border-left: none;
 }
 
 .prose pre code {
@@ -418,6 +409,7 @@ body {
   border-radius: 4px;
 }
 
+::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.3);
 }
 
