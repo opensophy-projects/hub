@@ -321,17 +321,13 @@ ___
 
 1. **Установка зависимостей**
 
-   ```
-   npm install framer-motion
-   ```
+   `npm install framer-motion`
 
    Подробнее: [Документация Framer Motion](https://www.framer.com/motion/)
 
 2. **Импорт компонента**
 
-   ```
-   import { Component } from '@/components';
-   ```
+   `import { Component } from '@/components';`
 
 3. **Использование**
    - Простой вариант
@@ -341,17 +337,13 @@ ___
 ````
 1. **Установка зависимостей**
 
-   ```
-   npm install framer-motion
-   ```
+   `npm install framer-motion`
 
    Подробнее: [Документация Framer Motion](https://www.framer.com/motion/)
 
 2. **Импорт компонента**
 
-   ```
-   import { Component } from '@/components';
-   ```
+   `import { Component } from '@/components';`
 
 3. **Использование**
    - Простой вариант
@@ -447,10 +439,8 @@ ___
 
 2. **Клонирование репозитория**
 
-   ```
-   git clone https://github.com/opensophy-projects/hub.git
-   cd hub
-   ```
+   `git clone https://github.com/opensophy-projects/hub.git
+   cd hub`
 
 3. **Установка зависимостей**
 
@@ -498,9 +488,7 @@ ___
 >
 > При использовании компонента убедитесь, что установлена библиотека:
 >
-> ```
-> npm install framer-motion
-> ```
+> `npm install framer-motion`
 
 Как такое написать?
 ````
@@ -508,9 +496,7 @@ ___
 >
 > При использовании компонента убедитесь, что установлена библиотека:
 >
-> ```
-> npm install framer-motion
-> ```
+> `npm install framer-motion`
 ````
 
 ---
