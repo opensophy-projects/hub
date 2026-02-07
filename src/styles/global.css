@@ -144,23 +144,19 @@ body {
   font-weight: 700;
 }
 
-/* INLINE CODE - объединенные стили */
 .prose code {
   border-radius: 0.25rem;
   padding: 0.25rem 0.5rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
   font-size: 0.75rem;
   line-height: 1rem;
-  border: 1px solid;
   background-color: rgba(0, 0, 0, 0.05);
-  border-color: rgba(0, 0, 0, 0.1);
-  color: #c7254e;
+  color: inherit;
 }
 
 .dark .prose code {
   background-color: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
-  color: #ff91d1;
+  color: inherit;
 }
 
 .prose pre {
@@ -182,7 +178,6 @@ body {
   color: inherit;
 }
 
-/* BLOCKQUOTE - объединенные стили */
 .prose blockquote {
   margin-top: 1rem;
   margin-bottom: 1rem;
@@ -216,7 +211,6 @@ body {
   font-style: italic;
 }
 
-/* Убираем стандартные отступы у таблиц - они будут контролироваться контейнером */
 .prose table {
   width: auto;
   min-width: 100%;
@@ -230,13 +224,11 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Контейнер таблицы (not-prose) контролирует отступы */
 .prose .not-prose {
   margin-top: 1.5rem;
   margin-bottom: 1.5rem;
 }
 
-/* Убираем двойные отступы между соседними таблицами */
 .prose .not-prose + .not-prose {
   margin-top: 1rem;
 }
