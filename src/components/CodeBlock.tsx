@@ -163,11 +163,37 @@ export function CodeBlock({ code }: Readonly<CodeBlockProps>) {
           style={{ background: bg }}
         >
           <div
-            className={`border-b px-6 py-4 flex justify-between ${border}`}
+            className={`border-b px-6 py-4 flex items-center justify-between gap-4 ${border}`}
             style={{ background: bg }}
           >
             {SearchBox}
-            <button onClick={() => setIsFullscreen(false)}>✕</button>
+            
+            <div className="flex items-center gap-4 flex-shrink-0">
+              <span className="text-sm opacity-60 whitespace-nowrap">
+                Всего строк: {lines.length}
+              </span>
+              
+              <button 
+                onClick={handleCopy}
+                className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${
+                  isDark ? 'hover:bg-white/10' : 'hover:bg-black/10'
+                }`}
+                title={isCopied ? 'Скопировано!' : 'Копировать'}
+              >
+                <Copy size={14} />
+                <span className="text-sm">{isCopied ? 'Скопировано!' : 'Копировать'}</span>
+              </button>
+              
+              <button 
+                onClick={() => setIsFullscreen(false)}
+                className={`p-2 rounded transition-colors ${
+                  isDark ? 'hover:bg-white/10' : 'hover:bg-black/10'
+                }`}
+                title="Закрыть"
+              >
+                <X size={20} />
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-auto not-prose">
@@ -179,16 +205,6 @@ export function CodeBlock({ code }: Readonly<CodeBlockProps>) {
               bg={bg}
               isDark={isDark}
             />
-          </div>
-
-          <div
-            className={`border-t px-6 py-3 flex justify-between ${border}`}
-            style={{ background: bg, color: fg }}
-          >
-            <span className="opacity-60">Всего строк: {lines.length}</span>
-            <button onClick={handleCopy}>
-              <Copy size={14} /> {isCopied ? 'Скопировано!' : 'Копировать'}
-            </button>
           </div>
         </div>
       </div>
