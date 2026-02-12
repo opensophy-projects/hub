@@ -8,7 +8,7 @@
 
 [![SonarCloud](https://sonarcloud.io/images/project_badges/sonarcloud-white.svg)](https://sonarcloud.io/project/overview?id=opensophy-projects_hub)
 
-[Демо](https://hub.opensophy.com) • [Документация](https://hub.opensophy.com/docs/markdown-guide) • [Opensophy](https://opensophy.com)
+[Обзор](https://hub.opensophy.com) • [Документация](https://hub.opensophy.com/docs/markdown-guide) • [Opensophy](https://opensophy.com)
 
 </div>
 
