@@ -14,12 +14,12 @@ const processPreElement = (element: Element, key: string, elements: React.ReactN
   const codeElement = element.querySelector('code');
   if (codeElement) {
     const code = codeElement.textContent || '';
-    const language = 
-      element.dataset.lang || 
-      element.dataset.language || 
-      codeElement.className.replace('language-', '') || 
+    const language =
+      element.dataset.lang ||
+      element.dataset.language ||
+      codeElement.className.replace('language-', '') ||
       'bash';
-    
+
     elements.push(
       <CodeBlock
         key={key}
@@ -129,9 +129,9 @@ const processBlockquoteElement = (element: Element, key: string, elements: React
   );
 };
 
-const TableRenderer: React.FC<{ 
-  tableHtml: string; 
-  onTableClick?: (html: string) => void; 
+const TableRenderer: React.FC<{
+  tableHtml: string;
+  onTableClick?: (html: string) => void;
   isDark: boolean;
 }> = ({ tableHtml, onTableClick, isDark }) => {
   const sanitizedTableHtml = sanitizeInnerHTML(tableHtml);
@@ -149,7 +149,7 @@ const processTableElement = (element: Element, key: string, elements: React.Reac
   elements.push(
     <TableContext.Consumer key={key}>
       {({ onTableClick, isDark }) => (
-        <TableRenderer 
+        <TableRenderer
           tableHtml={tableHtml}
           onTableClick={onTableClick}
           isDark={isDark}
@@ -188,8 +188,8 @@ const processTextNode = (node: ChildNode, key: string, elements: React.ReactNode
 };
 
 const processAccordion = (
-  element: Element, 
-  key: string, 
+  element: Element,
+  key: string,
   textContent: string,
   nodeArray: Element[],
   index: number,
@@ -197,30 +197,30 @@ const processAccordion = (
 ): number => {
   const accordionRegex = /^:::accordion\s+(.+)/;
   const titleMatch = accordionRegex.exec(textContent);
-  
+
   if (!titleMatch) {
     return index;
   }
 
   const title = titleMatch[1].trim();
   const accordionContent: React.ReactNode[] = [];
-  
+
   let nextIndex = index + 1;
   while (nextIndex < nodeArray.length) {
     const nextNode = nodeArray[nextIndex];
     const nextText = nextNode.textContent || '';
-    
+
     if (nextText.trim().startsWith(':::accordion')) {
       break;
     }
-    
+
     const sanitizedHTML = sanitizeInnerHTML(nextNode.innerHTML);
     accordionContent.push(
       <div key={`acc-content-${nextIndex}`} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />
     );
     nextIndex++;
   }
-  
+
   elements.push(
     <Accordion key={key} title={title}>
       <div>{accordionContent}</div>
