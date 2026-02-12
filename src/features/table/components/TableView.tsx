@@ -122,15 +122,85 @@ interface TableRowProps {
 }
 
 const getRowBackgroundClass = (isEvenRow: boolean, isDark: boolean): string => {
-  if (isDark) {
-    return '';
+  if (isDark) return '';
+  return isEvenRow ? 'bg-[#E8E7E3]' : 'bg-[#f1f0ec]';
+};
+
+// Разбивает текст на части: { text, isMatch }
+interface TextPart {
+  text: string;
+  isMatch: boolean;
+}
+
+const splitTextByQuery = (text: string, lowerQuery: string): TextPart[] => {
+  const lowerText = text.toLowerCase();
+  const queryLen = lowerQuery.length;
+  const parts: TextPart[] = [];
+  let currentIndex = 0;
+  let searchIndex = lowerText.indexOf(lowerQuery);
+
+  while (searchIndex !== -1) {
+    if (searchIndex > currentIndex) {
+      parts.push({ text: text.substring(currentIndex, searchIndex), isMatch: false });
+    }
+    parts.push({ text: text.substring(searchIndex, searchIndex + queryLen), isMatch: true });
+    currentIndex = searchIndex + queryLen;
+    searchIndex = lowerText.indexOf(lowerQuery, currentIndex);
   }
-  
-  if (isEvenRow) {
-    return 'bg-[#E8E7E3]';
+
+  if (currentIndex < text.length) {
+    parts.push({ text: text.substring(currentIndex), isMatch: false });
   }
-  
-  return 'bg-[#f1f0ec]';
+
+  return parts;
+};
+
+// Создаёт DOM-фрагмент из частей с подсветкой
+const buildHighlightFragment = (parts: TextPart[]): DocumentFragment => {
+  const fragment = document.createDocumentFragment();
+
+  for (const { text, isMatch } of parts) {
+    if (!text) continue;
+    if (isMatch) {
+      const mark = document.createElement('mark');
+      mark.textContent = text;
+      mark.style.cssText = 'background-color: rgb(59, 130, 246); color: white; padding: 2px 4px; border-radius: 2px; font-weight: 600;';
+      fragment.appendChild(mark);
+    } else {
+      fragment.appendChild(document.createTextNode(text));
+    }
+  }
+
+  return fragment;
+};
+
+// Подсвечивает один текстовый узел
+const highlightTextNode = (node: Node, lowerQuery: string): void => {
+  const text = node.textContent || '';
+  const lowerText = text.toLowerCase();
+
+  if (!lowerText.includes(lowerQuery)) return;
+
+  const parts = splitTextByQuery(text, lowerQuery);
+  const fragment = buildHighlightFragment(parts);
+  node.parentNode?.replaceChild(fragment, node);
+};
+
+// Рекурсивно обходит элемент и подсвечивает совпадения
+const highlightInElement = (element: HTMLElement, query: string): void => {
+  const lowerQuery = query.toLowerCase();
+
+  const walk = (node: Node): void => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      highlightTextNode(node, lowerQuery);
+      return;
+    }
+    if (node.nodeType === Node.ELEMENT_NODE && node.nodeName !== 'MARK') {
+      Array.from(node.childNodes).forEach(walk);
+    }
+  };
+
+  Array.from(element.childNodes).forEach(walk);
 };
 
 // Компонент для рендеринга содержимого ячейки с подсветкой поиска
@@ -140,91 +210,25 @@ const CellContent: React.FC<{ html: string; searchQuery: string }> = ({ html, se
   React.useEffect(() => {
     if (!contentRef.current) return;
 
-    // Санитизация входного HTML
     const sanitizedHtml = DOMPurify.sanitize(html, {
       ALLOWED_TAGS: ['strong', 'em', 'code', 'a', 'br'],
-      ALLOWED_ATTR: ['href', 'target', 'rel']
+      ALLOWED_ATTR: ['href', 'target', 'rel'],
     });
 
-    // Безопасная установка санитизированного HTML через DOMParser
     const parser = new DOMParser();
     const doc = parser.parseFromString(sanitizedHtml, 'text/html');
 
-    // Очищаем контейнер
     contentRef.current.innerHTML = '';
-
-    // Переносим содержимое в контейнер
     while (doc.body.firstChild) {
       contentRef.current.appendChild(doc.body.firstChild);
     }
 
-    // Применяем подсветку поиска, если есть запрос
     if (searchQuery && contentRef.current) {
       highlightInElement(contentRef.current, searchQuery);
     }
   }, [html, searchQuery]);
 
   return <div ref={contentRef} />;
-};
-
-// Функция для подсветки текста в элементе
-const highlightInElement = (element: HTMLElement, query: string) => {
-  const lowerQuery = query.toLowerCase();
-
-  const highlightTextNode = (node: Node) => {
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent || '';
-      const lowerText = text.toLowerCase();
-
-      if (lowerText.includes(lowerQuery)) {
-        const parts: string[] = [];
-        let currentIndex = 0;
-        let searchIndex = lowerText.indexOf(lowerQuery);
-
-        while (searchIndex !== -1) {
-          if (searchIndex > currentIndex) {
-            parts.push(text.substring(currentIndex, searchIndex));
-            parts.push('');
-          }
-
-          parts.push(text.substring(searchIndex, searchIndex + query.length));
-          parts.push('match');
-
-          currentIndex = searchIndex + query.length;
-          searchIndex = lowerText.indexOf(lowerQuery, currentIndex);
-        }
-
-        if (currentIndex < text.length) {
-          parts.push(text.substring(currentIndex));
-          parts.push('');
-        }
-
-        const fragment = document.createDocumentFragment();
-
-        for (let i = 0; i < parts.length; i += 2) {
-          const part = parts[i];
-          const marker = parts[i + 1];
-
-          if (part) {
-            if (marker === 'match') {
-              const mark = document.createElement('mark');
-              mark.textContent = part;
-              mark.style.cssText = 'background-color: rgb(59, 130, 246); color: white; padding: 2px 4px; border-radius: 2px; font-weight: 600;';
-              fragment.appendChild(mark);
-            } else {
-              fragment.appendChild(document.createTextNode(part));
-            }
-          }
-        }
-
-        node.parentNode?.replaceChild(fragment, node);
-      }
-    } else if (node.nodeType === Node.ELEMENT_NODE && node.nodeName !== 'MARK') {
-      Array.from(node.childNodes).forEach(highlightTextNode);
-    }
-  };
-
-  Array.from(element.childNodes).forEach(highlightTextNode);
 };
 
 const TableRow: React.FC<TableRowProps> = ({
@@ -250,9 +254,7 @@ const TableRow: React.FC<TableRowProps> = ({
           <td
             key={`cell-${rowIndex}-${colIndex}`}
             className={`px-4 py-3 ${isDark ? 'text-white/90' : 'text-black'}`}
-            style={{
-              whiteSpace: 'nowrap'
-            }}
+            style={{ whiteSpace: 'nowrap' }}
           >
             <CellContent html={cell} searchQuery={searchQuery} />
           </td>
@@ -293,19 +295,13 @@ function getTableStyles(isDark: boolean): string {
       word-break: break-word;
       border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)'};
     }
-    td strong {
-      font-weight: 600;
-    }
-    td em {
-      font-style: italic;
-    }
+    td strong { font-weight: 600; }
+    td em { font-style: italic; }
     td a {
       color: rgb(59 130 246);
       text-decoration: underline;
     }
-    td a:hover {
-      color: rgb(37 99 235);
-    }
+    td a:hover { color: rgb(37 99 235); }
     tbody tr:nth-child(even) {
       background-color: ${isDark ? 'rgba(255, 255, 255, 0.03)' : '#f1f0ec'};
     }
