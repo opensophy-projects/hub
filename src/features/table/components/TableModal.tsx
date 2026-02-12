@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { FilterSection } from './FilterSection';
 import { ModalTableContent } from './ModalTableContent';
 import { parseTableFromHTML, filterRows, getUniqueValuesForColumn } from '../utils/tableModalUtils';
@@ -15,13 +15,22 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
   const [showColumns, setShowColumns] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Map<string, Set<string>>>(new Map());
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set());
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
   const parsedTable = useMemo(() => parseTableFromHTML(tableHtml), [tableHtml]);
 
   useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
     if (isOpen) {
+      dialog.showModal();
       document.body.style.overflow = 'hidden';
+    } else {
+      dialog.close();
+      document.body.style.overflow = 'unset';
     }
+
     return () => {
       document.body.style.overflow = 'unset';
     };
@@ -96,23 +105,19 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
-
   const backdropClass = isDark ? 'bg-black/80' : 'bg-white/80';
 
   return (
-    <div className={`fixed inset-0 z-[100] flex items-center justify-center ${backdropClass}`}>
-      <button
-        type="button"
-        className="absolute inset-0 cursor-default"
-        onClick={onClose}
-        aria-label="Закрыть модальное окно"
-      />
+    <dialog
+      ref={dialogRef}
+      aria-label="Модальное окно таблицы"
+      className={`fixed inset-0 z-[100] flex items-center justify-center w-full h-full max-w-none max-h-none p-0 border-0 ${backdropClass}`}
+      onClick={(e) => {
+        if (e.target === dialogRef.current) onClose();
+      }}
+    >
       <div
         className={`relative w-full max-w-[95vw] max-h-[95vh] rounded-lg shadow-2xl flex flex-col overflow-hidden ${isDark ? 'bg-[#1a1a1a]' : 'bg-[#E8E7E3]'}`}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Модальное окно таблицы"
       >
         <FilterSection
           isDark={isDark}
@@ -141,7 +146,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
           />
         </div>
       </div>
-    </div>
+    </dialog>
   );
 };
 
