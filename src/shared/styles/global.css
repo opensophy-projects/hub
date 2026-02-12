@@ -1,0 +1,427 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@font-face {
+  font-family: 'UnifixSP';
+  src: url('/UnifixSP.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'VeilStack';
+  src: url('/UnifixSP.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+}
+
+.font-veilstack {
+  font-family: 'VeilStack', 'UnifixSP', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.prose {
+  max-width: none;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}
+
+.prose h1 {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}
+
+.prose h2 {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}
+
+.prose h3 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}
+
+.prose h4 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  line-height: 1.5rem;
+  font-weight: 700;
+}
+
+.prose h5 {
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 700;
+}
+
+.prose h6 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.prose p {
+  margin-bottom: 1rem;
+  line-height: 1.625;
+  font-size: 0.875rem;
+}
+
+.prose ul,
+.prose ol {
+  margin-bottom: 1rem;
+  margin-left: 1.5rem;
+  padding-left: 0;
+}
+
+.prose ul {
+  list-style-type: disc;
+}
+
+.prose ol {
+  list-style-type: decimal;
+}
+
+.prose ul ul,
+.prose ol ul {
+  list-style-type: circle;
+  margin-left: 1.5rem;
+}
+
+.prose ul ol,
+.prose ol ol {
+  list-style-type: lower-alpha;
+  margin-left: 1.5rem;
+}
+
+.prose li {
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  display: list-item;
+  margin-left: 1.5rem;
+}
+
+.prose li::marker {
+  color: inherit;
+  font-weight: 700;
+}
+
+.prose code {
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  background-color: rgba(0, 0, 0, 0.05);
+  color: inherit;
+}
+
+.dark .prose code {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: inherit;
+}
+
+.prose pre {
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.prose pre code {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border-radius: 0;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  border: none;
+  background-color: transparent;
+  color: inherit;
+}
+
+.prose blockquote {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  border-left-width: 4px;
+  padding-left: 1rem;
+  font-style: italic;
+  font-size: 0.875rem;
+  border-left-color: rgba(0, 0, 0, 0.2);
+  color: rgba(0, 0, 0, 0.8);
+}
+
+.dark .prose blockquote {
+  border-left-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.prose a {
+  color: rgb(59 130 246);
+  word-spacing: 0;
+}
+
+.prose a:hover {
+  text-decoration-line: underline;
+}
+
+.prose strong {
+  font-weight: 700;
+}
+
+.prose em {
+  font-style: italic;
+}
+
+.prose table {
+  width: auto;
+  min-width: 100%;
+  border-collapse: collapse;
+  margin-top: 0;
+  margin-bottom: 0;
+  font-size: 0.875rem;
+  line-height: 1.7;
+  overflow-x: auto;
+  display: table;
+  -webkit-overflow-scrolling: touch;
+}
+
+.prose .not-prose {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.prose .not-prose + .not-prose {
+  margin-top: 1rem;
+}
+
+.prose th,
+.prose td {
+  border: 1px solid #6b7280;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.dark .prose th,
+.dark .prose td {
+  border-color: #6b7280;
+}
+
+.prose th {
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+.dark .prose th {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.prose th code,
+.prose td code {
+  background-color: transparent;
+  padding: 0;
+  font-size: 0.9em;
+  font-family: ui-monospace, monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.prose tbody tr:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.dark .prose tbody tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+@media (min-width: 768px) {
+  .prose h1 {
+    font-size: 2.25rem;
+    line-height: 2.5rem;
+  }
+
+  .prose h2 {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
+
+  .prose h3 {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+
+  .prose h4 {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+
+  .prose h5 {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
+  .prose h6 {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  .prose p {
+    font-size: 1rem;
+  }
+
+  .prose li {
+    font-size: 1rem;
+  }
+
+  .prose code {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  .prose pre code {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  .prose blockquote {
+    font-size: 1rem;
+  }
+
+  .prose table {
+    font-size: 0.875rem;
+  }
+
+  .prose th,
+  .prose td {
+    padding: 0.75rem 1rem;
+  }
+}
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 16px 0;
+  display: block;
+}
+
+.dark .prose img {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.prose img:not(.dark) {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .prose table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    font-size: 0.75rem;
+  }
+
+  .prose th,
+  .prose td {
+    padding: 0.5rem 0.75rem;
+    white-space: nowrap;
+  }
+
+  .prose img {
+    max-width: 100%;
+    margin: 12px 0;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .prose th,
+  .prose td {
+    padding: 0.6rem;
+    font-size: 0.8rem;
+  }
+}
+
+.prose hr {
+  margin: 2rem 0;
+  border: 0;
+  border-top: 1px solid #6b7280;
+  opacity: 0.5;
+}
+
+.dark .prose hr {
+  border-top-color: #6b7280;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+::selection {
+  background-color: rgb(37 99 235);
+  color: rgb(255 255 255);
+}

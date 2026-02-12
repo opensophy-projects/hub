@@ -1,0 +1,49 @@
+{
+  "name": "opensophy-hub",
+  "private": true,
+  "version": "3.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "npm run generate:docs && npm run generate:sitemap && astro dev",
+    "build": "npm run generate:docs && npm run generate:sitemap && astro build",
+    "preview": "astro preview",
+    "lint": "eslint .",
+    "generate:docs": "node scripts/generateDocs.mjs",
+    "generate:sitemap": "node scripts/generateSitemap.mjs",
+    "generate": "npm run generate:docs && npm run generate:sitemap"
+  },
+  "dependencies": {
+    "astro": "^5.17.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.24.7",
+    "isomorphic-dompurify": "^2.16.0",
+    "lucide-react": "^0.562.0",
+    "marked": "^16.4.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^3.4.0"
+  },
+  "devDependencies": {
+    "@astrojs/react": "^3.6.3",
+    "@astrojs/tailwind": "^5.1.0",
+    "@eslint/js": "^9.9.1",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.18",
+    "eslint": "^9.9.1",
+    "eslint-plugin-react-hooks": "^5.1.0-rc.0",
+    "eslint-plugin-react-refresh": "^0.4.11",
+    "globals": "^15.9.0",
+    "postcss": "^8.4.35",
+    "sharp": "^0.32.6",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.5.3",
+    "typescript-eslint": "^8.3.0"
+  },
+  "overrides": {
+    "esbuild": "^0.25.0",
+    "h3": ">=1.15.5",
+    "devalue": ">=5.6.2",
+    "diff": ">=8.0.3"
+  }
+}

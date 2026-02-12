@@ -1,0 +1,64 @@
+{
+  "id": "blur-text",
+  "name": "Блюрный Текст",
+  "description": "Красивый компонент анимированного текста с эффектом размытия",
+  "files": [
+    {
+      "name": "BlurText.tsx",
+      "path": "./BlurText.tsx",
+      "language": "tsx"
+    },
+    {
+      "name": "types.ts",
+      "path": "./types.ts",
+      "language": "typescript"
+    }
+  ],
+  "props": [
+    {
+      "name": "text",
+      "type": "string",
+      "default": "Добро пожаловать в будущее веб-дизайна",
+      "description": "Текст для анимации",
+      "control": "text"
+    },
+    {
+      "name": "className",
+      "type": "string",
+      "default": "text-4xl font-bold text-center",
+      "description": "CSS классы",
+      "control": "text"
+    },
+    {
+      "name": "delay",
+      "type": "number",
+      "default": 200,
+      "description": "Задержка между элементами (мс)",
+      "control": "number",
+      "min": 0,
+      "max": 1000,
+      "step": 10
+    },
+    {
+      "name": "animateBy",
+      "type": "string",
+      "default": "words",
+      "description": "Режим анимации",
+      "control": "select",
+      "options": ["words", "letters"]
+    },
+    {
+      "name": "direction",
+      "type": "string",
+      "default": "top",
+      "description": "Направление появления",
+      "control": "select",
+      "options": ["top", "bottom"]
+    }
+  ],
+  "specificProps": ["delay", "animateBy", "direction"],
+  "category": "text",
+  "tags": ["animation", "blur", "text", "motion"],
+  "author": "reactbits",
+  "version": "1.0.0"
+}

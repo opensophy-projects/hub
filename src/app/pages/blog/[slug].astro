@@ -1,0 +1,49 @@
+---
+import Layout from '@/app/layouts/Layout.astro';
+import DocContent from '@/features/docs/components/DocContent';
+import fs from 'node:fs';
+import path from 'node:path';
+
+export async function getStaticPaths() {
+  const manifestPath = path.join(process.cwd(), 'public/data/docs/manifest.json');
+  
+  if (!fs.existsSync(manifestPath)) {
+    console.warn('manifest.json not found, returning empty paths');
+    return [];
+  }
+  
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+  const docsByType = manifest.filter((d: any) => d.type === 'blog');
+  
+  return docsByType.map((doc: any) => {
+    const docPath = path.join(process.cwd(), `public/data/docs/${doc.slug}.json`);
+    const fullDoc = JSON.parse(fs.readFileSync(docPath, 'utf-8'));
+    
+    return {
+      params: { slug: doc.slug },
+      props: { doc: fullDoc },
+    };
+  });
+}
+
+const { slug } = Astro.params;
+const { doc } = Astro.props as { doc: any };
+
+if (!doc) {
+  return Astro.redirect('/404');
+}
+---
+
+<Layout
+  title={doc.title}
+  description={doc.description}
+  image={doc.image}
+  url={`/blog/${doc.slug}`}
+  type="article"
+  author={doc.author}
+  date={doc.date}
+  keywords={doc.keywords}
+  robots={doc.robots}
+>
+  <DocContent client:only="react" doc={doc} />
+</Layout>

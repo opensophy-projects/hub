@@ -1,0 +1,19 @@
+---
+import Layout from '@/app/layouts/Layout.astro';
+import DocsIndex from '@/features/docs/components/DocsIndex';
+
+const title = 'Hub - Opensophy';
+const description = 'Hub проекта Opensophy. Новости, блоги, документация и статьи по искусственному интеллекту, кибербезопасности, уязвимостям и технологиям.';
+const keywords = 'Opensophy, документация, искусственный интеллект, кибербезопасность, ИИ, AI, security, статьи, блог, новости';
+---
+
+<Layout
+  title={title}
+  description={description}
+  url="/"
+  type="website"
+  keywords={keywords}
+  robots="index, follow"
+>
+  <DocsIndex client:only="react" />
+</Layout>
