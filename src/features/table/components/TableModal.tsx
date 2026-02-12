@@ -16,6 +16,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
   const [activeFilters, setActiveFilters] = useState<Map<string, Set<string>>>(new Map());
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set());
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
 
   const parsedTable = useMemo(() => parseTableFromHTML(tableHtml), [tableHtml]);
 
@@ -89,6 +90,18 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
     setVisibleColumns(newVisible);
   };
 
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === backdropRef.current) {
+      onClose();
+    }
+  };
+
+  const handleBackdropKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape') {
+      onClose();
+    }
+  };
+
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
@@ -111,39 +124,49 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
     <dialog
       ref={dialogRef}
       aria-label="Модальное окно таблицы"
-      className={`fixed inset-0 z-[100] flex items-center justify-center w-full h-full max-w-none max-h-none p-0 border-0 ${backdropClass}`}
-      onClick={(e) => {
-        if (e.target === dialogRef.current) onClose();
-      }}
+      className="fixed inset-0 z-[100] w-full h-full max-w-none max-h-none p-0 border-0 bg-transparent"
     >
       <div
-        className={`relative w-full max-w-[95vw] max-h-[95vh] rounded-lg shadow-2xl flex flex-col overflow-hidden ${isDark ? 'bg-[#1a1a1a]' : 'bg-[#E8E7E3]'}`}
+        ref={backdropRef}
+        role="button"
+        tabIndex={0}
+        aria-label="Закрыть модальное окно"
+        className={`flex items-center justify-center w-full h-full ${backdropClass}`}
+        onClick={handleBackdropClick}
+        onKeyDown={handleBackdropKeyDown}
       >
-        <FilterSection
-          isDark={isDark}
-          showFilters={false}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          headers={parsedTable.headers}
-          activeFilters={activeFilters}
-          uniqueValues={uniqueValues}
-          onFilterChange={handleFilterChange}
-          onResetFilters={handleResetFilters}
-          isFullscreen={true}
-          onClose={onClose}
-          showColumns={showColumns}
-          onToggleColumns={() => setShowColumns(!showColumns)}
-          visibleColumns={visibleColumns}
-          onColumnToggle={handleColumnToggle}
-        />
-
-        <div className="flex flex-1 overflow-hidden">
-          <ModalTableContent
+        <div
+          className={`relative w-full max-w-[95vw] max-h-[95vh] rounded-lg shadow-2xl flex flex-col overflow-hidden ${isDark ? 'bg-[#1a1a1a]' : 'bg-[#E8E7E3]'}`}
+          onClick={(e) => e.stopPropagation()}
+          role="dialog"
+          aria-modal="true"
+        >
+          <FilterSection
             isDark={isDark}
+            showFilters={false}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
             headers={parsedTable.headers}
-            filteredRows={filteredRows}
+            activeFilters={activeFilters}
+            uniqueValues={uniqueValues}
+            onFilterChange={handleFilterChange}
+            onResetFilters={handleResetFilters}
+            isFullscreen={true}
+            onClose={onClose}
+            showColumns={showColumns}
+            onToggleColumns={() => setShowColumns(!showColumns)}
             visibleColumns={visibleColumns}
+            onColumnToggle={handleColumnToggle}
           />
+
+          <div className="flex flex-1 overflow-hidden">
+            <ModalTableContent
+              isDark={isDark}
+              headers={parsedTable.headers}
+              filteredRows={filteredRows}
+              visibleColumns={visibleColumns}
+            />
+          </div>
         </div>
       </div>
     </dialog>
