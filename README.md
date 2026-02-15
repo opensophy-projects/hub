@@ -241,7 +241,7 @@ hub/
 Этот проект был создан с помощью:
 
 - **[Claude Code](https://claude.ai/code)** — AI-ассистент для разработки от Anthropic.
-- **[@4erfoxx](https://github.com/4erfoxx)** — за отличные примеры и критику.
+- **[@4erfox](https://github.com/4erfox)** — за отличные примеры и критику.
 
 ---
 
