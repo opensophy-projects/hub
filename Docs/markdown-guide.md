@@ -551,6 +551,30 @@ export const ExampleComponent: React.FC<ComponentProps> = ({
 };
 ```
 
+---
+
+## Чек-листы
+
+### Для существующей категории (text, button, card):
+- [x] Создана папка компонента: `src/uic-system/my-component/`
+- [ ] Создан файл компонента: `MyComponent.tsx`
+
+или
+
+[x] Создана папка компонента: `src/uic-system/my-component/`
+[ ] Создан файл компонента: `MyComponent.tsx`
+
+Как такое написать?
+```
+- [x] Создана папка компонента: `src/uic-system/my-component/`
+- [ ] Создан файл компонента: `MyComponent.tsx`
+
+или
+
+[x] Создана папка компонента: `src/uic-system/my-component/`
+[ ] Создан файл компонента: `MyComponent.tsx`
+```
+
 ## Заключение
 
 Это руководство охватывает все основные возможности форматирования Markdown в проекте Hub. Используйте эти примеры как справочник при создании новых статей и документации.
