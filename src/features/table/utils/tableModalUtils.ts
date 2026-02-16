@@ -22,7 +22,8 @@ export function parseTableFromHTML(html: string): ParsedTable {
     Array.from(tr.querySelectorAll('td')).forEach((td, index) => {
       const header = headers[index];
       if (header) {
-        record[header.text] = td.textContent?.trim() || '';
+        // ИСПРАВЛЕНО: используем innerHTML вместо textContent для сохранения форматирования
+        record[header.text] = td.innerHTML?.trim() || '';
       }
     });
     return record;
@@ -32,7 +33,13 @@ export function parseTableFromHTML(html: string): ParsedTable {
 }
 
 export function getUniqueValuesForColumn(rows: Array<Record<string, string>>, columnName: string): string[] {
-  const values = rows.map((row) => row[columnName]).filter(Boolean);
+  const values = rows.map((row) => {
+    // ИСПРАВЛЕНО: убираем HTML теги для получения текстового значения при фильтрации
+    const html = row[columnName] || '';
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    return div.textContent || div.innerText || '';
+  }).filter(Boolean);
   return Array.from(new Set(values)).sort();
 }
 
@@ -43,15 +50,25 @@ export function filterRows(
   visibleColumns: Set<string>,
 ): Array<Record<string, string>> {
   return rows.filter((row) => {
+    // ИСПРАВЛЕНО: для поиска убираем HTML теги
     const matchesSearch =
       searchQuery === '' ||
-      Array.from(visibleColumns).some(
-        (col) => row[col]?.toLowerCase().includes(searchQuery.toLowerCase()),
-      );
+      Array.from(visibleColumns).some((col) => {
+        const html = row[col] || '';
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        const text = div.textContent || div.innerText || '';
+        return text.toLowerCase().includes(searchQuery.toLowerCase());
+      });
 
     const matchesFilters = Array.from(activeFilters.entries()).every(([col, values]) => {
       if (values.size === 0) return true;
-      return values.has(row[col]);
+      // ИСПРАВЛЕНО: для фильтров также убираем HTML теги
+      const html = row[col] || '';
+      const div = document.createElement('div');
+      div.innerHTML = html;
+      const text = div.textContent || div.innerText || '';
+      return values.has(text);
     });
 
     return matchesSearch && matchesFilters;
