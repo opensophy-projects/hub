@@ -34,7 +34,8 @@ export function parseTableHtml(tableHtml: string): ParsedTable {
   }
 
   const headerElements = Array.from(table.querySelectorAll('thead th'));
-  const headers = headerElements.map((th) => th.textContent || '');
+  // ИСПРАВЛЕНО: используем innerHTML вместо textContent для сохранения форматирования
+  const headers = headerElements.map((th) => th.innerHTML || '');
   const headerAlignments = headerElements.map(getAlignment);
   
   const rows = Array.from(table.querySelectorAll('tbody tr'));
