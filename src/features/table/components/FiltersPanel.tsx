@@ -46,7 +46,6 @@ interface FilterColumnProps {
   onToggleFilter: (colIndex: number, value: string) => void;
 }
 
-// Helper функции для определения классов
 const getFilterCheckboxClassName = (isChecked: boolean, isDark: boolean): string => {
   if (isChecked) {
     return isDark
