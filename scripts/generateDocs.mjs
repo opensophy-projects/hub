@@ -15,20 +15,20 @@ marked.setOptions({
   gfm: true,
 });
 
-const defaultBlockquoteRenderer = marked.defaults.renderer.blockquote;
-
 marked.use({
   renderer: {
     blockquote(token) {
       const content = this.parser.parse(token.tokens);
       
-      const alertMatch = content.match(/^<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]<\/p>\n([\s\S]*)/);
+      // Проверяем, является ли это GitHub Alert
+      const alertMatch = content.match(/^<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]<\/p>\s*([\s\S]*)/);
       if (alertMatch) {
-        const alertType = alertMatch[1];
+        const alertType = alertMatch[1].toLowerCase();
         const alertContent = alertMatch[2];
-        return `<div class="github-alert github-alert-${alertType.toLowerCase()}">${alertContent}</div>`;
+        return `<div class="github-alert" data-alert-type="${alertType}">${alertContent}</div>\n`;
       }
       
+      // Обычная цитата
       return `<blockquote>\n${content}</blockquote>\n`;
     },
   },
@@ -70,6 +70,48 @@ marked.use({
       },
       renderer(token) {
         return `<u>${token.text}</u>`;
+      }
+    },
+    {
+      name: 'inlineMath',
+      level: 'inline',
+      start(src) {
+        const match = src.match(/\$/);
+        return match?.index;
+      },
+      tokenizer(src) {
+        const match = src.match(/^\$([^\$\n]+?)\$/);
+        if (match) {
+          return {
+            type: 'inlineMath',
+            raw: match[0],
+            text: match[1],
+          };
+        }
+      },
+      renderer(token) {
+        return `<span class="math-inline" data-math="${token.text}"></span>`;
+      }
+    },
+    {
+      name: 'blockMath',
+      level: 'block',
+      start(src) {
+        const match = src.match(/\$\$/);
+        return match?.index;
+      },
+      tokenizer(src) {
+        const match = src.match(/^\$\$([\s\S]+?)\$\$/);
+        if (match) {
+          return {
+            type: 'blockMath',
+            raw: match[0],
+            text: match[1].trim(),
+          };
+        }
+      },
+      renderer(token) {
+        return `<div class="math-block" data-math="${token.text}"></div>`;
       }
     }
   ]
