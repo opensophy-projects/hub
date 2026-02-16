@@ -15,27 +15,23 @@ marked.setOptions({
   gfm: true,
 });
 
-// Кастомный renderer для blockquote
-const renderer = {
-  blockquote(quote) {
-    // Проверяем, является ли это GitHub Alert
-    const alertPattern = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s+([\s\S]*)/;
-    const match = quote.text.match(alertPattern);
-    
-    if (match) {
-      const alertType = match[1].toLowerCase();
-      const content = match[2].trim();
-      return `<div class="github-alert" data-alert-type="${alertType}">${this.parser.parseInline(content)}</div>\n`;
-    }
-    
-    // Обычная цитата
-    return `<blockquote>\n${quote.text}\n</blockquote>\n`;
-  },
-};
-
-marked.use({ renderer });
-
 marked.use({
+  renderer: {
+    blockquote(token) {
+      const content = this.parser.parse(token.tokens);
+      
+      // Более точная проверка для GitHub Alert
+      const alertMatch = content.match(/^<p>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*<\/p>\s*([\s\S]*)/i);
+      if (alertMatch) {
+        const alertType = alertMatch[1].toLowerCase();
+        const alertContent = alertMatch[2];
+        return `<div class="github-alert" data-alert-type="${alertType}">${alertContent}</div>\n`;
+      }
+      
+      // Обычная цитата
+      return `<blockquote>\n${content}</blockquote>\n`;
+    },
+  },
   extensions: [
     {
       name: 'strikethrough',
