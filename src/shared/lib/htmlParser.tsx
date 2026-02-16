@@ -236,27 +236,35 @@ const processSupElement = (element: Element, key: string, elements: React.ReactN
   );
 };
 
-const processDetailsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+const processDetailsElement = (
+  element: Element,
+  key: string,
+  elements: React.ReactNode[],
+  processNodes: (nodes: NodeListOf<ChildNode>, parentKey: string) => void
+) => {
   const isOpen = element.hasAttribute('open');
   const summary = element.querySelector('summary');
   const summaryText = summary?.textContent || 'Подробности';
   
-  // Клонируем элемент для безопасной обработки
-  const clone = element.cloneNode(true) as Element;
-  const cloneSummary = clone.querySelector('summary');
+  const detailsChildren: React.ReactNode[] = [];
   
-  // Удаляем summary из клона, чтобы получить только контент
-  if (cloneSummary) {
-    cloneSummary.remove();
+  const childNodes = Array.from(element.childNodes).filter(node => {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      return (node as Element).tagName.toLowerCase() !== 'summary';
+    }
+    return node.nodeType === Node.TEXT_NODE && (node.textContent?.trim() || '');
+  });
+  
+  if (childNodes.length > 0) {
+    processNodes(childNodes as unknown as NodeListOf<ChildNode>, `${key}-content`);
   }
-  
-  // Берём весь innerHTML из клона (без summary)
-  const contentHTML = clone.innerHTML;
 
   elements.push(
     <details key={key} open={isOpen} className="my-4">
       <summary className="cursor-pointer font-semibold">{summaryText}</summary>
-      <div className="mt-2 pl-4" dangerouslySetInnerHTML={{ __html: sanitizeInnerHTML(contentHTML) }} />
+      <div className="mt-2 pl-4">
+        {detailsChildren}
+      </div>
     </details>
   );
 };
@@ -340,7 +348,7 @@ const processElement = (
     'del': () => processDeleteElement(element, key, elements),
     'sub': () => processSubElement(element, key, elements),
     'sup': () => processSupElement(element, key, elements),
-    'details': () => processDetailsElement(element, key, elements),
+    'details': () => processDetailsElement(element, key, elements, processNodes),
   };
 
   if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tagName)) {
