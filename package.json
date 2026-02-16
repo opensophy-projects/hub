@@ -16,6 +16,7 @@
     "astro": "^5.17.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.24.7",
+    "highlight.js": "^11.9.0",
     "isomorphic-dompurify": "^2.16.0",
     "lucide-react": "^0.562.0",
     "marked": "^16.4.1",
