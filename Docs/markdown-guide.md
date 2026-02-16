@@ -572,20 +572,11 @@ export const ExampleComponent: React.FC<ComponentProps> = ({
 - [x] Создана папка компонента: `src/uic-system/my-component/`
 - [ ] Создан файл компонента: `MyComponent.tsx`
 
-или
-
-[x] Создана папка компонента: `src/uic-system/my-component/`
-[ ] Создан файл компонента: `MyComponent.tsx`
-
 Как такое написать?
 ```
 - [x] Создана папка компонента: `src/uic-system/my-component/`
 - [ ] Создан файл компонента: `MyComponent.tsx`
 
-или
-
-[x] Создана папка компонента: `src/uic-system/my-component/`
-[ ] Создан файл компонента: `MyComponent.tsx`
 ```
 
 ## Заключение
