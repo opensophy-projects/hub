@@ -13,6 +13,13 @@ export const TableContext = createContext<{
   isDark: boolean;
 }>({ isDark: false });
 
+// Глобальный счётчик для генерации уникальных ключей
+let globalKeyCounter = 0;
+
+const generateUniqueKey = (prefix: string): string => {
+  return `${prefix}-${globalKeyCounter++}`;
+};
+
 const processPreElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const codeElement = element.querySelector('code');
   if (codeElement) {
@@ -101,7 +108,7 @@ const processListElement = (element: Element, tagName: string, key: string, elem
 const processLinkElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
   elements.push(
-    <a
+    
       key={key}
       href={element.getAttribute('href') || '#'}
       target="_blank"
@@ -241,22 +248,24 @@ const processDetailsElement = (element: Element, key: string, elements: React.Re
   const summary = element.querySelector('summary');
   const summaryText = summary?.textContent || 'Подробности';
   
-  // Клонируем элемент для безопасной обработки
-  const clone = element.cloneNode(true) as Element;
-  const cloneSummary = clone.querySelector('summary');
-  
-  // Удаляем summary из клона, чтобы получить только контент
-  if (cloneSummary) {
-    cloneSummary.remove();
-  }
-  
-  // Берём весь innerHTML из клона (без summary)
-  const contentHTML = clone.innerHTML;
+  // ИСПРАВЛЕНО: создаём копию HTML-содержимого, а не работаем с DOM напрямую
+  const contentHTML: string[] = [];
+  Array.from(element.children).forEach(child => {
+    if (child.tagName.toLowerCase() !== 'summary') {
+      contentHTML.push(child.outerHTML);
+    }
+  });
+
+  // Объединяем весь контент в одну строку и санитизируем
+  const fullContentHTML = sanitizeInnerHTML(contentHTML.join(''));
 
   elements.push(
     <details key={key} open={isOpen} className="my-4">
       <summary className="cursor-pointer font-semibold">{summaryText}</summary>
-      <div className="mt-2 pl-4" dangerouslySetInnerHTML={{ __html: sanitizeInnerHTML(contentHTML) }} />
+      <div 
+        className="mt-2 pl-4"
+        dangerouslySetInnerHTML={{ __html: fullContentHTML }}
+      />
     </details>
   );
 };
@@ -382,7 +391,8 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
 
   const processNodes = (nodes: NodeListOf<ChildNode>, parentKey = '') => {
     Array.from(nodes).forEach((node, index) => {
-      const key = `${parentKey}-${index}`;
+      // ИСПРАВЛЕНО: используем глобальный счётчик для гарантированно уникальных ключей
+      const key = generateUniqueKey(`${parentKey}-node`);
 
       if (node.nodeType === Node.TEXT_NODE) {
         processTextNode(node, key, elements);
