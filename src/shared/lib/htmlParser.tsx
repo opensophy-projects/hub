@@ -241,10 +241,10 @@ const processDetailsElement = (element: Element, key: string, elements: React.Re
   const summary = element.querySelector('summary');
   const summaryText = summary?.textContent || 'Подробности';
   
-  const contentElements: Element[] = [];
+  const contentElements: string[] = [];
   Array.from(element.children).forEach(child => {
     if (child.tagName.toLowerCase() !== 'summary') {
-      contentElements.push(child);
+      contentElements.push(child.innerHTML);
     }
   });
 
@@ -252,8 +252,8 @@ const processDetailsElement = (element: Element, key: string, elements: React.Re
     <details key={key} open={isOpen} className="my-4">
       <summary className="cursor-pointer font-semibold">{summaryText}</summary>
       <div className="mt-2 pl-4">
-        {contentElements.map((el, i) => {
-          const sanitizedHTML = sanitizeInnerHTML(el.outerHTML);
+        {contentElements.map((html, i) => {
+          const sanitizedHTML = sanitizeInnerHTML(html);
           return <div key={`details-content-${i}`} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />;
         })}
       </div>
@@ -381,9 +381,7 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
   const elements: React.ReactNode[] = [];
 
   const processNodes = (nodes: NodeListOf<ChildNode>, parentKey = '') => {
-    const nodeArray = Array.from(nodes) as ChildNode[];
-
-    nodeArray.forEach((node, index) => {
+    Array.from(nodes).forEach((node, index) => {
       const key = `${parentKey}-${index}`;
 
       if (node.nodeType === Node.TEXT_NODE) {
