@@ -20,8 +20,6 @@ interface TableControlsBarProps {
   onSearchChange: (query: string) => void;
   showFilters: boolean;
   onToggleFilters: () => void;
-  showColumns: boolean;
-  onToggleColumns: () => void;
   activeFilterCount: number;
   onResetFilters: () => void;
   onFullscreen: () => void;
@@ -33,8 +31,6 @@ export const TableControlsBar: React.FC<TableControlsBarProps> = ({
   onSearchChange,
   showFilters,
   onToggleFilters,
-  showColumns,
-  onToggleColumns,
   activeFilterCount,
   onResetFilters,
   onFullscreen,
@@ -64,21 +60,9 @@ export const TableControlsBar: React.FC<TableControlsBarProps> = ({
             ? 'bg-white/10 hover:bg-white/20 text-white'
             : 'bg-[#E8E7E3] hover:bg-[#ddd8cd] text-black border border-black/20'
         }`}
-        title="Фильтрация"
+        title="Фильтрация и колонки"
       >
-        Фильтр {activeFilterCount > 0 && `(${activeFilterCount})`}
-      </button>
-
-      <button
-        onClick={onToggleColumns}
-        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-          isDark
-            ? 'bg-white/10 hover:bg-white/20 text-white'
-            : 'bg-[#E8E7E3] hover:bg-[#ddd8cd] text-black border border-black/20'
-        }`}
-        title="Видимость колонок"
-      >
-        Колонки
+        Фильтрация {activeFilterCount > 0 && `(${activeFilterCount})`}
       </button>
 
       {activeFilterCount > 0 && (
