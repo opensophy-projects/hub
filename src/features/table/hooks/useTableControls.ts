@@ -25,6 +25,7 @@ export function useTableControls(rows: Element[], headers: string[]) {
       new Set(
         rows.map((row) => {
           const cells = Array.from(row.querySelectorAll('td'));
+          // ИСПРАВЛЕНО: получаем innerHTML, но для уникальных значений используем текст без тегов
           const cellHTML = cells[colIndex]?.innerHTML || '';
           return stripHtmlTags(cellHTML).trim();
         })
