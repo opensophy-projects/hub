@@ -79,48 +79,6 @@ marked.use({
       renderer(token) {
         return `<div class="github-alert" data-alert-type="${token.alertType.toLowerCase()}">${token.content}</div>`;
       }
-    },
-    {
-      name: 'inlineMath',
-      level: 'inline',
-      start(src) {
-        const match = src.match(/\$/);
-        return match?.index;
-      },
-      tokenizer(src) {
-        const match = src.match(/^\$([^\$\n]+?)\$/);
-        if (match) {
-          return {
-            type: 'inlineMath',
-            raw: match[0],
-            text: match[1],
-          };
-        }
-      },
-      renderer(token) {
-        return `<span class="math-inline" data-math="${token.text}"></span>`;
-      }
-    },
-    {
-      name: 'blockMath',
-      level: 'block',
-      start(src) {
-        const match = src.match(/\$\$/);
-        return match?.index;
-      },
-      tokenizer(src) {
-        const match = src.match(/^\$\$([\s\S]+?)\$\$/);
-        if (match) {
-          return {
-            type: 'blockMath',
-            raw: match[0],
-            text: match[1].trim(),
-          };
-        }
-      },
-      renderer(token) {
-        return `<div class="math-block" data-math="${token.text}"></div>`;
-      }
     }
   ]
 });
