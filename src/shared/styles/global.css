@@ -211,6 +211,37 @@ body {
   font-style: italic;
 }
 
+.prose u {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.prose del {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.prose input[type="checkbox"] {
+  margin-right: 0.5rem;
+  cursor: pointer;
+  width: 1rem;
+  height: 1rem;
+  accent-color: rgb(59 130 246);
+}
+
+.prose .task-list-item {
+  list-style-type: none;
+  margin-left: 0;
+  padding-left: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.prose .task-list-item input[type="checkbox"] {
+  margin-left: -1.5rem;
+}
+
 .prose table {
   width: auto;
   min-width: 100%;
@@ -345,6 +376,12 @@ body {
   border-radius: 8px;
   margin: 16px 0;
   display: block;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.prose img:hover {
+  opacity: 0.9;
 }
 
 .dark .prose img {
