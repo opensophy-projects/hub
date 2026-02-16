@@ -239,31 +239,30 @@ const processSupElement = (element: Element, key: string, elements: React.ReactN
 const processDetailsElement = (
   element: Element,
   key: string,
-  elements: React.ReactNode[],
-  processNodes: (nodes: NodeListOf<ChildNode>, parentKey: string) => void
+  elements: React.ReactNode[]
 ) => {
   const isOpen = element.hasAttribute('open');
   const summary = element.querySelector('summary');
   const summaryText = summary?.textContent || 'Подробности';
   
-  const detailsChildren: React.ReactNode[] = [];
+  // Получаем весь innerHTML элемента details
+  let contentHTML = element.innerHTML;
   
-  const childNodes = Array.from(element.childNodes).filter(node => {
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      return (node as Element).tagName.toLowerCase() !== 'summary';
-    }
-    return node.nodeType === Node.TEXT_NODE && (node.textContent?.trim() || '');
-  });
-  
-  if (childNodes.length > 0) {
-    processNodes(childNodes as unknown as NodeListOf<ChildNode>, `${key}-content`);
+  // Удаляем summary из HTML
+  if (summary) {
+    const summaryHTML = summary.outerHTML;
+    contentHTML = contentHTML.replace(summaryHTML, '');
   }
+  
+  // Санитизируем и парсим содержимое как новый HTML
+  const sanitizedContent = sanitizeInnerHTML(contentHTML);
+  const contentElements = parseHtmlToReact(sanitizedContent);
 
   elements.push(
     <details key={key} open={isOpen} className="my-4">
       <summary className="cursor-pointer font-semibold">{summaryText}</summary>
       <div className="mt-2 pl-4">
-        {detailsChildren}
+        {contentElements}
       </div>
     </details>
   );
@@ -348,7 +347,7 @@ const processElement = (
     'del': () => processDeleteElement(element, key, elements),
     'sub': () => processSubElement(element, key, elements),
     'sup': () => processSupElement(element, key, elements),
-    'details': () => processDetailsElement(element, key, elements, processNodes),
+    'details': () => processDetailsElement(element, key, elements),
   };
 
   if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tagName)) {
