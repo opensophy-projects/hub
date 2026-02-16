@@ -1,5 +1,29 @@
 [
   {
+    "id": "markdown-guide",
+    "title": "Полное руководство по форматированию Markdown в Hub",
+    "slug": "markdown-guide",
+    "description": "Справочник по всем доступным вариантам форматирования текста, кода, таблиц и компонентов в документации Hub. Включает примеры синтаксиса и демонстрацию результатов.",
+    "type": "docs",
+    "category": "hub",
+    "bannercolor": "#1e3a8a",
+    "bannertext": "Markdown Guide",
+    "author": "veilosophy",
+    "date": "2026-02-16",
+    "tags": [
+      "Markdown",
+      "форматирование",
+      "руководство",
+      "синтаксис",
+      "документация",
+      "UI компоненты"
+    ],
+    "keywords": "Markdown руководство, форматирование текста, синтаксис Markdown, документация Hub, примеры форматирования",
+    "canonical": "null",
+    "robots": "index, follow",
+    "lang": "ru"
+  },
+  {
     "id": "component-guide",
     "title": "Руководство по добавлению новых UI компонентов",
     "slug": "component-guide",
@@ -19,30 +43,6 @@
       "UI компоненты"
     ],
     "keywords": "Markdown руководство, форматирование текста, документация Hub, примеры форматирования",
-    "canonical": "null",
-    "robots": "index, follow",
-    "lang": "ru"
-  },
-  {
-    "id": "markdown-guide",
-    "title": "Полное руководство по форматированию Markdown в Hub",
-    "slug": "markdown-guide",
-    "description": "Справочник по всем доступным вариантам форматирования текста, кода, таблиц и компонентов в документации Hub. Включает примеры синтаксиса и демонстрацию результатов.",
-    "type": "docs",
-    "category": "hub",
-    "bannercolor": "#1e3a8a",
-    "bannertext": "Markdown Guide",
-    "author": "veilosophy",
-    "date": "2026-02-06",
-    "tags": [
-      "Markdown",
-      "форматирование",
-      "руководство",
-      "синтаксис",
-      "документация",
-      "UI компоненты"
-    ],
-    "keywords": "Markdown руководство, форматирование текста, синтаксис Markdown, документация Hub, примеры форматирования",
     "canonical": "null",
     "robots": "index, follow",
     "lang": "ru"
