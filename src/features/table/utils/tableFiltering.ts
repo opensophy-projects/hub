@@ -4,12 +4,32 @@ export function filterAndSortRows(
   rows: Element[],
   state: TableControlsState
 ): ParsedRow[] {
-  let result = rows.map((row) => ({
-    element: row,
-    cells: Array.from(row.querySelectorAll('td')).map(
-      (td) => td.textContent?.trim() || ''
-    ),
-  }));
+  let result = rows.map((row) => {
+    const cellElements = Array.from(row.querySelectorAll('td'));
+    return {
+      element: row,
+      cells: cellElements.map((td) => td.textContent?.trim() || ''),
+      alignments: cellElements.map((td) => {
+        const alignAttr = td.getAttribute('align');
+        if (alignAttr === 'left' || alignAttr === 'center' || alignAttr === 'right') {
+          return alignAttr;
+        }
+        const style = td.getAttribute('style');
+        if (style) {
+          if (style.includes('text-align: left') || style.includes('text-align:left')) {
+            return 'left';
+          }
+          if (style.includes('text-align: center') || style.includes('text-align:center')) {
+            return 'center';
+          }
+          if (style.includes('text-align: right') || style.includes('text-align:right')) {
+            return 'right';
+          }
+        }
+        return null;
+      }),
+    };
+  });
 
   result = applyFilters(result, state.filters);
   result = applySearch(result, state.searchQuery);
