@@ -9,9 +9,11 @@ export type TableControlsState = {
 export type ParsedRow = {
   element: Element;
   cells: string[];
+  alignments: Array<'left' | 'center' | 'right' | null>;
 };
 
 export type ParsedTable = {
   headers: string[];
   rows: Element[];
+  headerAlignments: Array<'left' | 'center' | 'right' | null>;
 };
