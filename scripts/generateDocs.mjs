@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { marked } from 'marked';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -8,6 +9,36 @@ const __dirname = path.dirname(__filename);
 const docsDir = path.join(__dirname, '../Docs');
 const outputDir = path.join(__dirname, '../public/data/docs');
 const manifestFile = path.join(outputDir, 'manifest.json');
+
+// Настройка marked с расширениями
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+});
+
+// Добавляем расширения для strikethrough и task lists
+marked.use({
+  extensions: [
+    {
+      name: 'strikethrough',
+      level: 'inline',
+      start(src) { return src.match(/~~/)?.index; },
+      tokenizer(src) {
+        const match = src.match(/^~~([^~]+)~~/);
+        if (match) {
+          return {
+            type: 'strikethrough',
+            raw: match[0],
+            text: match[1],
+          };
+        }
+      },
+      renderer(token) {
+        return `<del>${token.text}</del>`;
+      }
+    }
+  ]
+});
 
 function extractFrontMatter(content) {
   const frontMatterRegex = /^---\n([\s\S]*?)\n---\n/;
@@ -127,11 +158,9 @@ function scanDocs(dir) {
           content: processedContent,
         };
 
-        // Сохранение отдельного JSON файла для документа
         const docFilePath = path.join(outputDir, `${slug}.json`);
         fs.writeFileSync(docFilePath, JSON.stringify(docData, null, 2));
 
-        // Добавление метаданных в манифест (без контента)
         manifest.push({
           id: slug,
           title,
@@ -165,17 +194,14 @@ function generateDocs() {
     return;
   }
 
-  // Создание директории для JSON файлов
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
   const manifest = scanDocs(docsDir);
 
-  // Сортировка по дате
   manifest.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  // Сохранение манифеста
   fs.writeFileSync(manifestFile, JSON.stringify(manifest, null, 2));
   
   console.log(`✅ Generated ${manifest.length} individual doc files`);
