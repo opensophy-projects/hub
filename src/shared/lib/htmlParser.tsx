@@ -1,9 +1,10 @@
-import React, { createContext } from 'react';
+import React, { createContext, useState } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
 import { CodeBlock } from '../components/CodeBlock';
 import TableWithControls from '@/features/table/components/TableWithControls';
 import Accordion from '../components/Accordion';
 import NewUIComponentViewer from '@/features/ui-components/NewUIComponentViewer';
+import ImageModal from '../components/ImageModal';
 
 export const TableContext = createContext<{
   onTableClick?: (tableHtml: string) => void;
@@ -18,7 +19,7 @@ const processPreElement = (element: Element, key: string, elements: React.ReactN
       element.dataset.lang ||
       element.dataset.language ||
       codeElement.className.replace('language-', '') ||
-      'bash';
+      '';
 
     elements.push(
       <CodeBlock
@@ -50,9 +51,10 @@ const sanitizeInnerHTML = (html: string): string => {
       'p', 'br', 'strong', 'em', 'u', 'a',
       'ul', 'ol', 'li', 'blockquote', 'code',
       'pre', 'img', 'table', 'tr', 'td', 'th',
-      'thead', 'tbody', 'div', 'span', 'hr', 'figure', 'figcaption'
+      'thead', 'tbody', 'div', 'span', 'hr', 'figure', 'figcaption',
+      'del', 'input'
     ],
-    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'id', 'data-language', 'data-lang'],
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'id', 'data-language', 'data-lang', 'type', 'checked', 'disabled'],
     ALLOW_DATA_ATTR: false,
   });
 };
@@ -72,8 +74,15 @@ const processHeadingElement = (element: Element, tagName: string, key: string, e
 const processListElement = (element: Element, tagName: string, key: string, elements: React.ReactNode[]) => {
   const ListTag = tagName as keyof JSX.IntrinsicElements;
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
+  
+  const hasTaskList = element.querySelector('input[type="checkbox"]');
+  
   elements.push(
-    <ListTag key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />
+    <ListTag 
+      key={key} 
+      dangerouslySetInnerHTML={{ __html: sanitizedHTML }}
+      className={hasTaskList ? 'task-list' : undefined}
+    />
   );
 };
 
@@ -90,36 +99,46 @@ const processLinkElement = (element: Element, key: string, elements: React.React
   );
 };
 
+const ImageWithModal: React.FC<{ src: string; alt: string; title?: string }> = ({ src, alt, title }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      {title ? (
+        <figure className="my-6 w-full">
+          <img
+            src={src}
+            alt={alt}
+            loading="lazy"
+            onClick={() => setIsOpen(true)}
+            className="rounded-lg shadow-md max-w-full h-auto w-full cursor-pointer hover:opacity-90 transition-opacity"
+          />
+          <figcaption className="mt-2 text-center text-xs text-slate-400 italic font-medium">
+            {title}
+          </figcaption>
+        </figure>
+      ) : (
+        <img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          onClick={() => setIsOpen(true)}
+          className="rounded-lg shadow-md max-w-full h-auto my-4 cursor-pointer hover:opacity-90 transition-opacity"
+        />
+      )}
+      {isOpen && <ImageModal src={src} alt={alt} onClose={() => setIsOpen(false)} />}
+    </>
+  );
+};
+
 const processImageElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const src = element.getAttribute('src') || '';
   const alt = element.getAttribute('alt') || 'Image';
   const title = element.getAttribute('title') || '';
 
-  if (title) {
-    elements.push(
-      <figure key={key} className="my-6 w-full">
-        <img
-          src={src}
-          alt={alt}
-          loading="lazy"
-          className="rounded-lg shadow-md max-w-full h-auto w-full"
-        />
-        <figcaption className="mt-2 text-center text-xs text-slate-400 italic font-medium">
-          {title}
-        </figcaption>
-      </figure>
-    );
-  } else {
-    elements.push(
-      <img
-        key={key}
-        src={src}
-        alt={alt}
-        loading="lazy"
-        className="rounded-lg shadow-md max-w-full h-auto my-4"
-      />
-    );
-  }
+  elements.push(
+    <ImageWithModal key={key} src={src} alt={alt} title={title || undefined} />
+  );
 };
 
 const processBlockquoteElement = (element: Element, key: string, elements: React.ReactNode[]) => {
@@ -174,6 +193,20 @@ const processEmElement = (element: Element, key: string, elements: React.ReactNo
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
   elements.push(
     <em key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />
+  );
+};
+
+const processUnderlineElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
+  elements.push(
+    <u key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />
+  );
+};
+
+const processDeleteElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
+  elements.push(
+    <del key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />
   );
 };
 
@@ -272,6 +305,8 @@ const processElement = (
     'hr': () => processHrElement(key, elements),
     'strong': () => processStrongElement(element, key, elements),
     'em': () => processEmElement(element, key, elements),
+    'u': () => processUnderlineElement(element, key, elements),
+    'del': () => processDeleteElement(element, key, elements),
   };
 
   if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tagName)) {
@@ -296,9 +331,10 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       'p', 'br', 'strong', 'em', 'u', 'a',
       'ul', 'ol', 'li', 'blockquote', 'code',
       'pre', 'img', 'table', 'tr', 'td', 'th',
-      'thead', 'tbody', 'div', 'span', 'hr', 'figure', 'figcaption'
+      'thead', 'tbody', 'div', 'span', 'hr', 'figure', 'figcaption',
+      'del', 'input'
     ],
-    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'id', 'data-language', 'data-lang'],
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'id', 'data-language', 'data-lang', 'type', 'checked', 'disabled'],
     ALLOW_DATA_ATTR: true,
   });
 
