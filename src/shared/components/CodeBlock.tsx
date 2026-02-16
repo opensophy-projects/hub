@@ -1,9 +1,11 @@
-import React, { useState, useRef, useContext } from 'react';
+import React, { useState, useRef, useContext, useEffect } from 'react';
 import { Copy, Maximize2, ChevronDown, Search, X } from 'lucide-react';
 import { TableContext } from '../lib/htmlParser';
+import hljs from 'highlight.js';
 
 interface CodeBlockProps {
   code: string;
+  language?: string;
 }
 
 const CodeBody: React.FC<{
@@ -13,36 +15,63 @@ const CodeBody: React.FC<{
   fg: string;
   bg: string;
   isDark: boolean;
-}> = ({ lines, matchedLines, highlightMatch, fg, bg, isDark }) => (
+  highlightedHtml?: string;
+}> = ({ lines, matchedLines, highlightMatch, fg, bg, isDark, highlightedHtml }) => (
   <pre
     className="p-4 text-sm font-mono not-prose"
     style={{ background: bg, color: fg }}
   >
-    {lines.map((l, i) => (
-      <div key={`line-${i}-${l.slice(0, 10)}`} className="whitespace-pre" style={{ color: fg }}>
-        <span
-          className="inline-block w-8 mr-4 text-right select-none"
-          style={{ color: isDark ? '#888' : '#666' }}
-        >
-          {i + 1}
-        </span>
-        {matchedLines.has(i) ? highlightMatch(l) : <span>{l}</span>}
-      </div>
-    ))}
+    {highlightedHtml ? (
+      <code
+        dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+        className="language-code"
+        style={{ color: fg }}
+      />
+    ) : (
+      lines.map((l, i) => (
+        <div key={`line-${i}-${l.slice(0, 10)}`} className="whitespace-pre" style={{ color: fg }}>
+          <span
+            className="inline-block w-8 mr-4 text-right select-none"
+            style={{ color: isDark ? '#888' : '#666' }}
+          >
+            {i + 1}
+          </span>
+          {matchedLines.has(i) ? highlightMatch(l) : <span>{l}</span>}
+        </div>
+      ))
+    )}
   </pre>
 );
 
-export function CodeBlock({ code }: Readonly<CodeBlockProps>) {
+export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
   const { isDark } = useContext(TableContext);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [highlightedHtml, setHighlightedHtml] = useState<string>('');
   const codeRef = useRef<HTMLDivElement>(null);
 
   const lines = code.split('\n');
   const isLongCode = lines.length > 15;
   const displayedLines = isExpanded ? lines : lines.slice(0, 15);
+
+  useEffect(() => {
+    if (language && language.trim() !== '') {
+      try {
+        const highlighted = hljs.highlight(code, { language: language.toLowerCase() });
+        const linesWithNumbers = highlighted.value.split('\n').map((line, i) => {
+          return `<span class="line-number" style="color: ${isDark ? '#888' : '#666'}; display: inline-block; width: 32px; margin-right: 16px; text-align: right; user-select: none;">${i + 1}</span>${line}`;
+        }).join('\n');
+        setHighlightedHtml(linesWithNumbers);
+      } catch (error) {
+        console.warn(`Failed to highlight code for language: ${language}`, error);
+        setHighlightedHtml('');
+      }
+    } else {
+      setHighlightedHtml('');
+    }
+  }, [code, language, isDark]);
 
   const matchedLines = new Set(
     searchQuery
@@ -52,7 +81,6 @@ export function CodeBlock({ code }: Readonly<CodeBlockProps>) {
       : []
   );
 
-  // Подсветка совпадений без RegExp — разбиваем строку вручную по вхождениям
   const highlightMatch = (text: string): JSX.Element => {
     if (!searchQuery) return <>{text}</>;
 
@@ -147,6 +175,7 @@ export function CodeBlock({ code }: Readonly<CodeBlockProps>) {
           fg={fg}
           bg={bg}
           isDark={isDark}
+          highlightedHtml={isExpanded || !isLongCode ? highlightedHtml : ''}
         />
       </div>
 
@@ -212,6 +241,7 @@ export function CodeBlock({ code }: Readonly<CodeBlockProps>) {
               fg={fg}
               bg={bg}
               isDark={isDark}
+              highlightedHtml={highlightedHtml}
             />
           </div>
         </div>
