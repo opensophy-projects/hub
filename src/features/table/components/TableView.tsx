@@ -12,6 +12,7 @@ interface TableViewProps {
   sortColumn: number | null;
   sortDirection: 'asc' | 'desc' | 'none';
   onSort: (colIndex: number) => void;
+  headerAlignments?: Array<'left' | 'center' | 'right' | null>;
 }
 
 export const TableView: React.FC<TableViewProps> = ({
@@ -23,6 +24,7 @@ export const TableView: React.FC<TableViewProps> = ({
   sortColumn,
   sortDirection,
   onSort,
+  headerAlignments = [],
 }) => {
   const styles = useMemo(() => getTableStyles(isDark), [isDark]);
 
@@ -36,6 +38,7 @@ export const TableView: React.FC<TableViewProps> = ({
           sortColumn={sortColumn}
           sortDirection={sortDirection}
           onSort={onSort}
+          headerAlignments={headerAlignments}
         />
         <tbody>
           {rows.map((row, rowIndex) => (
@@ -69,6 +72,7 @@ interface TableHeadProps {
   sortColumn: number | null;
   sortDirection: 'asc' | 'desc' | 'none';
   onSort: (colIndex: number) => void;
+  headerAlignments: Array<'left' | 'center' | 'right' | null>;
 }
 
 const TableHead: React.FC<TableHeadProps> = ({
@@ -78,6 +82,7 @@ const TableHead: React.FC<TableHeadProps> = ({
   sortColumn,
   sortDirection,
   onSort,
+  headerAlignments,
 }) => {
   return (
     <thead className="sticky top-0 z-20">
@@ -94,11 +99,12 @@ const TableHead: React.FC<TableHeadProps> = ({
               onClick={() => onSort(colIndex)}
               style={{
                 backgroundColor: isDark ? '#1a1a1a' : '#E8E7E3',
-                whiteSpace: 'nowrap'
+                whiteSpace: 'nowrap',
+                textAlign: headerAlignments[colIndex] || 'left'
               }}
               title="Нажмите для сортировки"
             >
-              <div className="flex items-center gap-2 whitespace-nowrap">
+              <div className="flex items-center gap-2 whitespace-nowrap" style={{ justifyContent: getJustifyContent(headerAlignments[colIndex]) }}>
                 <span>{header}</span>
                 <SortIcon
                   direction={sortColumn === colIndex ? sortDirection : 'none'}
@@ -113,6 +119,12 @@ const TableHead: React.FC<TableHeadProps> = ({
   );
 };
 
+function getJustifyContent(alignment: 'left' | 'center' | 'right' | null): string {
+  if (alignment === 'center') return 'center';
+  if (alignment === 'right') return 'flex-end';
+  return 'flex-start';
+}
+
 interface TableRowProps {
   isDark: boolean;
   row: ParsedRow;
@@ -126,7 +138,6 @@ const getRowBackgroundClass = (isEvenRow: boolean, isDark: boolean): string => {
   return isEvenRow ? 'bg-[#E8E7E3]' : 'bg-[#f1f0ec]';
 };
 
-// Разбивает текст на части: { text, isMatch }
 interface TextPart {
   text: string;
   isMatch: boolean;
@@ -155,7 +166,6 @@ const splitTextByQuery = (text: string, lowerQuery: string): TextPart[] => {
   return parts;
 };
 
-// Создаёт DOM-фрагмент из частей с подсветкой
 const buildHighlightFragment = (parts: TextPart[]): DocumentFragment => {
   const fragment = document.createDocumentFragment();
 
@@ -174,7 +184,6 @@ const buildHighlightFragment = (parts: TextPart[]): DocumentFragment => {
   return fragment;
 };
 
-// Подсвечивает один текстовый узел
 const highlightTextNode = (node: Node, lowerQuery: string): void => {
   const text = node.textContent || '';
   const lowerText = text.toLowerCase();
@@ -186,7 +195,6 @@ const highlightTextNode = (node: Node, lowerQuery: string): void => {
   node.parentNode?.replaceChild(fragment, node);
 };
 
-// Рекурсивно обходит элемент и подсвечивает совпадения
 const highlightInElement = (element: HTMLElement, query: string): void => {
   const lowerQuery = query.toLowerCase();
 
@@ -203,7 +211,6 @@ const highlightInElement = (element: HTMLElement, query: string): void => {
   Array.from(element.childNodes).forEach(walk);
 };
 
-// Компонент для рендеринга содержимого ячейки с подсветкой поиска
 const CellContent: React.FC<{ html: string; searchQuery: string }> = ({ html, searchQuery }) => {
   const contentRef = React.useRef<HTMLDivElement>(null);
 
@@ -254,7 +261,10 @@ const TableRow: React.FC<TableRowProps> = ({
           <td
             key={`cell-${rowIndex}-${colIndex}`}
             className={`px-4 py-3 ${isDark ? 'text-white/90' : 'text-black'}`}
-            style={{ whiteSpace: 'nowrap' }}
+            style={{ 
+              whiteSpace: 'nowrap',
+              textAlign: row.alignments[colIndex] || 'left'
+            }}
           >
             <CellContent html={cell} searchQuery={searchQuery} />
           </td>
@@ -274,7 +284,6 @@ function getTableStyles(isDark: boolean): string {
     th, td {
       border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)'};
       padding: 0.75rem 1rem;
-      text-align: left;
       color: ${isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgb(0, 0, 0)'};
       white-space: nowrap;
     }
