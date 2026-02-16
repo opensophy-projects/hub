@@ -64,10 +64,17 @@ marked.use({
         return match?.index;
       },
       tokenizer(src) {
-        const match = src.match(/^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\n((?:>.*\n?)*)/);
+        // ИСПРАВЛЕНО: улучшенная регулярка для захвата всего контента GitHub Alert
+        const match = src.match(/^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*\n((?:>.*(?:\n|$))*)/);
         if (match) {
           const alertType = match[1];
-          const content = match[2].replace(/^>\s?/gm, '').trim();
+          // Убираем все '>' в начале строк и лишние пробелы
+          const content = match[2]
+            .split('\n')
+            .map(line => line.replace(/^>\s?/, ''))
+            .join('\n')
+            .trim();
+          
           return {
             type: 'githubAlert',
             raw: match[0],
