@@ -17,7 +17,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({
   isDark, 
   onFullscreen 
 }) => {
-  const { headers, rows } = parseTableHtml(tableHtml);
+  const { headers, rows, headerAlignments } = parseTableHtml(tableHtml);
   const {
     state,
     setState,
@@ -78,6 +78,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({
             sortColumn={state.sortColumn}
             sortDirection={state.sortDirection}
             onSort={handleSort}
+            headerAlignments={headerAlignments}
           />
         </div>
       </div>
