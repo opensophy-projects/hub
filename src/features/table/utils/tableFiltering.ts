@@ -8,7 +8,8 @@ export function filterAndSortRows(
     const cellElements = Array.from(row.querySelectorAll('td'));
     return {
       element: row,
-      cells: cellElements.map((td) => td.textContent?.trim() || ''),
+      // ИСПРАВЛЕНО: используем innerHTML для сохранения форматирования
+      cells: cellElements.map((td) => td.innerHTML?.trim() || ''),
       alignments: cellElements.map((td) => {
         const alignAttr = td.getAttribute('align');
         if (alignAttr === 'left' || alignAttr === 'center' || alignAttr === 'right') {
@@ -46,7 +47,9 @@ function applyFilters(
 
   return rows.filter((row) => {
     for (const [colIndex, values] of filters) {
-      const cellText = row.cells[colIndex] ?? '';
+      // ИСПРАВЛЕНО: для фильтрации убираем HTML теги, сравниваем только текст
+      const cellHTML = row.cells[colIndex] ?? '';
+      const cellText = stripHtmlTags(cellHTML);
       if (values.size > 0 && !values.has(cellText)) {
         return false;
       }
@@ -59,7 +62,8 @@ function applySearch(rows: ParsedRow[], searchQuery: string): ParsedRow[] {
   if (!searchQuery) return rows;
   const query = searchQuery.toLowerCase();
   return rows.filter((row) =>
-    row.cells.some((cell) => cell.toLowerCase().includes(query))
+    // ИСПРАВЛЕНО: для поиска убираем HTML теги, ищем только по тексту
+    row.cells.some((cellHTML) => stripHtmlTags(cellHTML).toLowerCase().includes(query))
   );
 }
 
@@ -71,9 +75,17 @@ function applySort(
   if (sortColumn === null || sortDirection === 'none') return rows;
 
   return [...rows].sort((a, b) => {
-    const aVal = a.cells[sortColumn] ?? '';
-    const bVal = b.cells[sortColumn] ?? '';
+    // ИСПРАВЛЕНО: для сортировки убираем HTML теги, сортируем по тексту
+    const aVal = stripHtmlTags(a.cells[sortColumn] ?? '');
+    const bVal = stripHtmlTags(b.cells[sortColumn] ?? '');
     const cmp = aVal.localeCompare(bVal, 'ru');
     return sortDirection === 'asc' ? cmp : -cmp;
   });
+}
+
+// Вспомогательная функция для удаления HTML тегов при сравнении/поиске
+function stripHtmlTags(html: string): string {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return div.textContent || div.innerText || '';
 }
