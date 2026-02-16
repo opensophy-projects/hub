@@ -18,7 +18,7 @@ const CodeBody: React.FC<{
   highlightedHtml?: string;
 }> = ({ lines, matchedLines, highlightMatch, fg, bg, isDark, highlightedHtml }) => (
   <pre
-    className="p-4 text-sm font-mono not-prose"
+    className="p-4 text-sm font-mono not-prose hljs"
     style={{ background: bg, color: fg }}
   >
     {highlightedHtml ? (
@@ -175,7 +175,7 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
           fg={fg}
           bg={bg}
           isDark={isDark}
-          highlightedHtml={isExpanded || !isLongCode ? highlightedHtml : ''}
+          highlightedHtml={highlightedHtml}
         />
       </div>
 
