@@ -14,6 +14,9 @@ const buildKeyframes = (
   return keyframes;
 };
 
+// Генерируем уникальный ID для компонента при первом рендере
+let componentIdCounter = 0;
+
 const BlurText: React.FC<BlurTextProps> = ({
   text = '',
   delay = 200,
@@ -31,6 +34,12 @@ const BlurText: React.FC<BlurTextProps> = ({
   const elements = animateBy === 'words' ? text.split(' ') : text.split('');
   const [inView, setInView] = useState(false);
   const ref = useRef<HTMLParagraphElement>(null);
+  
+  // Создаем стабильный ID для компонента при первом рендере
+  const componentId = useRef<number>();
+  if (componentId.current === undefined) {
+    componentId.current = componentIdCounter++;
+  }
 
   useEffect(() => {
     if (!ref.current) return;
@@ -82,8 +91,9 @@ const BlurText: React.FC<BlurTextProps> = ({
           ease: easing as any,
         };
 
-        // Стабильный ключ: контент + позиция, не просто index
-        const stableKey = `${segment}-${index}`;
+        // ИСПРАВЛЕНО: используем стабильный уникальный ключ
+        // который не меняется между рендерами
+        const stableKey = `blur-text-${componentId.current}-${index}`;
 
         return (
           <motion.span
