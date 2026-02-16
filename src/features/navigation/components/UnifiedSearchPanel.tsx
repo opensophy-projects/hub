@@ -22,7 +22,7 @@ interface SearchResult {
   tags?: string[];
 }
 
-type SortOption = 'relevance' | 'date-desc' | 'date-asc';
+type SortOption = 'date-desc' | 'date-asc';
 
 const getTypePrefix = (type: string): string => {
   if (type === 'blog') return '/blog';
@@ -108,7 +108,7 @@ const TypeFilters: React.FC<{
   );
 };
 
-const CategoryFilters: React.FC<{
+const CategoryFiltersSelect: React.FC<{
   categories: string[];
   selectedCategories: Set<string>;
   onToggle: (category: string) => void;
@@ -116,69 +116,125 @@ const CategoryFilters: React.FC<{
 }> = ({ categories, selectedCategories, onToggle, isDark }) => {
   if (categories.length === 0) return null;
 
+  const [searchCat, setSearchCat] = useState('');
+  const filteredCategories = categories.filter(cat => 
+    cat.toLowerCase().includes(searchCat.toLowerCase())
+  );
+
   return (
     <div>
       <h4 className={`text-xs font-semibold mb-2 ${getTextClasses(isDark, '70')}`}>
-        Категории
+        Категории ({selectedCategories.size} выбрано)
       </h4>
-      <div className="flex flex-wrap gap-2">
-        {categories.map(cat => (
-          <button
-            key={cat}
-            onClick={() => onToggle(cat)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              getFilterButtonClasses(selectedCategories.has(cat), isDark)
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
+      
+      {categories.length > 5 && (
+        <input
+          type="text"
+          placeholder="Поиск по категориям..."
+          value={searchCat}
+          onChange={(e) => setSearchCat(e.target.value)}
+          className={`w-full px-3 py-2 mb-2 rounded-lg text-xs border transition-colors outline-none ${getInputClasses(isDark)}`}
+        />
+      )}
+
+      <div className="max-h-40 overflow-y-auto space-y-1 border rounded-lg p-2" style={{
+        borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+      }}>
+        {filteredCategories.length > 0 ? (
+          filteredCategories.map(cat => (
+            <label 
+              key={cat}
+              className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${
+                selectedCategories.has(cat)
+                  ? isDark ? 'bg-blue-600/20' : 'bg-blue-100'
+                  : isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={selectedCategories.has(cat)}
+                onChange={() => onToggle(cat)}
+                className="rounded"
+              />
+              <span className={`text-xs ${
+                selectedCategories.has(cat)
+                  ? isDark ? 'text-blue-400 font-semibold' : 'text-blue-700 font-semibold'
+                  : isDark ? 'text-white/70' : 'text-black/70'
+              }`}>
+                {cat}
+              </span>
+            </label>
+          ))
+        ) : (
+          <p className={`text-xs text-center py-2 ${getTextClasses(isDark, '50')}`}>
+            Категории не найдены
+          </p>
+        )}
       </div>
     </div>
   );
 };
 
-const TagFilters: React.FC<{
+const TagFiltersSelect: React.FC<{
   allTags: string[];
   selectedTags: Set<string>;
-  showAll: boolean;
   onToggleTag: (tag: string) => void;
-  onToggleShowAll: () => void;
   isDark: boolean;
-}> = ({ allTags, selectedTags, showAll, onToggleTag, onToggleShowAll, isDark }) => {
+}> = ({ allTags, selectedTags, onToggleTag, isDark }) => {
   if (allTags.length === 0) return null;
 
-  const tagsToDisplay = showAll ? allTags : allTags.slice(0, 12);
+  const [searchTag, setSearchTag] = useState('');
+  const filteredTags = allTags.filter(tag => 
+    tag.toLowerCase().includes(searchTag.toLowerCase())
+  );
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
-        <h4 className={`text-xs font-semibold ${getTextClasses(isDark, '70')}`}>
-          Теги ({tagsToDisplay.length} из {allTags.length})
-        </h4>
-        {allTags.length > 12 && (
-          <button
-            onClick={onToggleShowAll}
-            className={`text-xs font-medium px-2 py-1 rounded transition-colors ${
-              isDark ? 'text-white/60 hover:text-white hover:bg-white/5' : 'text-black/60 hover:text-black hover:bg-black/5'
-            }`}
-          >
-            {showAll ? 'Скрыть' : 'Все теги'}
-          </button>
+      <h4 className={`text-xs font-semibold mb-2 ${getTextClasses(isDark, '70')}`}>
+        Теги ({selectedTags.size} выбрано)
+      </h4>
+      
+      <input
+        type="text"
+        placeholder="Поиск по тегам..."
+        value={searchTag}
+        onChange={(e) => setSearchTag(e.target.value)}
+        className={`w-full px-3 py-2 mb-2 rounded-lg text-xs border transition-colors outline-none ${getInputClasses(isDark)}`}
+      />
+
+      <div className="max-h-40 overflow-y-auto space-y-1 border rounded-lg p-2" style={{
+        borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+      }}>
+        {filteredTags.length > 0 ? (
+          filteredTags.map(tag => (
+            <label 
+              key={tag}
+              className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${
+                selectedTags.has(tag)
+                  ? isDark ? 'bg-blue-600/20' : 'bg-blue-100'
+                  : isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={selectedTags.has(tag)}
+                onChange={() => onToggleTag(tag)}
+                className="rounded"
+              />
+              <span className={`text-xs ${
+                selectedTags.has(tag)
+                  ? isDark ? 'text-blue-400 font-semibold' : 'text-blue-700 font-semibold'
+                  : isDark ? 'text-white/70' : 'text-black/70'
+              }`}>
+                #{tag}
+              </span>
+            </label>
+          ))
+        ) : (
+          <p className={`text-xs text-center py-2 ${getTextClasses(isDark, '50')}`}>
+            Теги не найдены
+          </p>
         )}
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {tagsToDisplay.map(tag => (
-          <button
-            key={tag}
-            onClick={() => onToggleTag(tag)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              getFilterButtonClasses(selectedTags.has(tag), isDark)
-            }`}
-          >
-            {tag}
-          </button>
-        ))}
       </div>
     </div>
   );
@@ -190,7 +246,6 @@ const SortFilters: React.FC<{
   isDark: boolean;
 }> = ({ sortBy, onSortChange, isDark }) => {
   const sorts: Array<{ id: SortOption; label: string }> = [
-    { id: 'relevance', label: 'По релевантности' },
     { id: 'date-desc', label: 'Сначала новые' },
     { id: 'date-asc', label: 'Сначала старые' }
   ];
@@ -267,9 +322,8 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
-  const [sortBy, setSortBy] = useState<SortOption>('relevance');
+  const [sortBy, setSortBy] = useState<SortOption>('date-desc');
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [showAllTags, setShowAllTags] = useState(false);
 
   const categories = useMemo(() => {
     const cats = new Set<string>();
@@ -351,7 +405,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     setSelectedType('all');
     setSelectedCategories(new Set());
     setSelectedTags(new Set());
-    setSortBy('relevance');
+    setSortBy('date-desc');
   };
 
   const handleResultClick = (doc: SearchResult) => {
@@ -405,19 +459,17 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
 
           {showAdvanced && (
             <div className={`p-4 space-y-4 ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}>
-              <CategoryFilters
+              <CategoryFiltersSelect
                 categories={categories}
                 selectedCategories={selectedCategories}
                 onToggle={handleCategoryToggle}
                 isDark={isDark}
               />
 
-              <TagFilters
+              <TagFiltersSelect
                 allTags={allTags}
                 selectedTags={selectedTags}
-                showAll={showAllTags}
                 onToggleTag={handleTagToggle}
-                onToggleShowAll={() => setShowAllTags(!showAllTags)}
                 isDark={isDark}
               />
 
