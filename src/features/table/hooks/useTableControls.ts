@@ -2,7 +2,6 @@ import { useState, useMemo, useCallback } from 'react';
 import type { TableControlsState } from '../types/table';
 import { filterAndSortRows } from '../utils/tableFiltering';
 
-// Утилита для удаления HTML тегов
 function stripHtmlTags(html: string): string {
   const div = document.createElement('div');
   div.innerHTML = html;
