@@ -40,9 +40,14 @@ marked.use({
     {
       name: 'underline',
       level: 'inline',
-      start(src) { return src.match(/__/)?.index; },
+      start(src) { 
+        const match = src.match(/__/);
+        return match?.index; 
+      },
       tokenizer(src) {
-        const match = src.match(/^__([^_]+)__/);
+        // Ищем паттерн __текст__ (подчеркивание)
+        // Важно: не должно быть пробелов сразу после открывающего __ и перед закрывающим __
+        const match = src.match(/^__([^\s_](?:.*?[^\s_])?)__(?!_)/);
         if (match) {
           return {
             type: 'underline',
