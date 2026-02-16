@@ -45,30 +45,27 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({
           onSearchChange={(query) => setState(prev => ({ ...prev, searchQuery: query }))}
           showFilters={showFilters}
           onToggleFilters={() => setShowFilters(!showFilters)}
-          showColumns={showColumns}
-          onToggleColumns={() => setShowColumns(!showColumns)}
           activeFilterCount={activeFilterCount}
           onResetFilters={resetFilters}
           onFullscreen={() => onFullscreen(tableHtml)}
         />
 
         {showFilters && (
-          <FiltersPanel
-            isDark={isDark}
-            headers={headers}
-            filters={state.filters}
-            onToggleFilter={toggleFilter}
-            getUniqueValuesForColumn={getUniqueValuesForColumn}
-          />
-        )}
-
-        {showColumns && (
-          <ColumnsPanel
-            isDark={isDark}
-            headers={headers}
-            visibleColumns={state.visibleColumns}
-            onToggleColumn={toggleColumnVisibility}
-          />
+          <>
+            <FiltersPanel
+              isDark={isDark}
+              headers={headers}
+              filters={state.filters}
+              onToggleFilter={toggleFilter}
+              getUniqueValuesForColumn={getUniqueValuesForColumn}
+            />
+            <ColumnsPanel
+              isDark={isDark}
+              headers={headers}
+              visibleColumns={state.visibleColumns}
+              onToggleColumn={toggleColumnVisibility}
+            />
+          </>
         )}
 
         <div className="flex-1 overflow-hidden">
