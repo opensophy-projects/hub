@@ -2,9 +2,11 @@ import React, { createContext, useState } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
 import { CodeBlock } from '../components/CodeBlock';
 import TableWithControls from '@/features/table/components/TableWithControls';
-import Accordion from '../components/Accordion';
-import NewUIComponentViewer from '@/features/ui-components/NewUIComponentViewer';
 import ImageModal from '../components/ImageModal';
+import MermaidDiagram from '../components/MermaidDiagram';
+import Alert from '../components/Alert';
+import MathFormula from '../components/MathFormula';
+import NewUIComponentViewer from '@/features/ui-components/NewUIComponentViewer';
 
 export const TableContext = createContext<{
   onTableClick?: (tableHtml: string) => void;
@@ -21,13 +23,19 @@ const processPreElement = (element: Element, key: string, elements: React.ReactN
       codeElement.className.replace('language-', '') ||
       '';
 
-    elements.push(
-      <CodeBlock
-        key={key}
-        code={code.trim()}
-        language={language}
-      />
-    );
+    if (language === 'mermaid') {
+      elements.push(
+        <MermaidDiagram key={key} code={code.trim()} />
+      );
+    } else {
+      elements.push(
+        <CodeBlock
+          key={key}
+          code={code.trim()}
+          language={language}
+        />
+      );
+    }
   }
 };
 
@@ -52,10 +60,14 @@ const sanitizeInnerHTML = (html: string): string => {
       'ul', 'ol', 'li', 'blockquote', 'code',
       'pre', 'img', 'table', 'tr', 'td', 'th',
       'thead', 'tbody', 'div', 'span', 'hr', 'figure', 'figcaption',
-      'del', 'input'
+      'del', 'input', 'sub', 'sup', 'details', 'summary', 'mark'
     ],
-    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'id', 'data-language', 'data-lang', 'type', 'checked', 'disabled'],
-    ALLOW_DATA_ATTR: false,
+    ALLOWED_ATTR: [
+      'href', 'src', 'alt', 'title', 'class', 'id', 
+      'data-language', 'data-lang', 'data-alert-type', 'data-math',
+      'type', 'checked', 'disabled', 'open', 'style', 'align'
+    ],
+    ALLOW_DATA_ATTR: true,
   });
 };
 
@@ -210,6 +222,68 @@ const processDeleteElement = (element: Element, key: string, elements: React.Rea
   );
 };
 
+const processSubElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
+  elements.push(
+    <sub key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />
+  );
+};
+
+const processSupElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
+  elements.push(
+    <sup key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />
+  );
+};
+
+const processDetailsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  const isOpen = element.hasAttribute('open');
+  const summary = element.querySelector('summary');
+  const summaryText = summary?.textContent || 'Подробности';
+  
+  const contentElements: Element[] = [];
+  Array.from(element.children).forEach(child => {
+    if (child.tagName.toLowerCase() !== 'summary') {
+      contentElements.push(child);
+    }
+  });
+
+  elements.push(
+    <details key={key} open={isOpen} className="my-4">
+      <summary className="cursor-pointer font-semibold">{summaryText}</summary>
+      <div className="mt-2 pl-4">
+        {contentElements.map((el, i) => {
+          const sanitizedHTML = sanitizeInnerHTML(el.outerHTML);
+          return <div key={`details-content-${i}`} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />;
+        })}
+      </div>
+    </details>
+  );
+};
+
+const processAlertElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  const alertType = element.getAttribute('data-alert-type') as 'note' | 'tip' | 'important' | 'warning' | 'caution';
+  const content = element.textContent || '';
+
+  if (alertType) {
+    elements.push(
+      <Alert key={key} type={alertType}>
+        {content}
+      </Alert>
+    );
+  }
+};
+
+const processMathElement = (element: Element, key: string, elements: React.ReactNode[], isBlock: boolean) => {
+  const formula = element.getAttribute('data-math') || '';
+
+  if (formula) {
+    elements.push(
+      <MathFormula key={key} formula={formula} displayMode={isBlock} />
+    );
+  }
+};
+
 const processTextNode = (node: ChildNode, key: string, elements: React.ReactNode[]) => {
   const text = node.textContent || '';
   const trimmedText = text.trim();
@@ -218,49 +292,6 @@ const processTextNode = (node: ChildNode, key: string, elements: React.ReactNode
       <span key={key}>{text}</span>
     );
   }
-};
-
-const processAccordion = (
-  element: Element,
-  key: string,
-  textContent: string,
-  nodeArray: Element[],
-  index: number,
-  elements: React.ReactNode[]
-): number => {
-  const accordionRegex = /^:::accordion\s+(.+)/;
-  const titleMatch = accordionRegex.exec(textContent);
-
-  if (!titleMatch) {
-    return index;
-  }
-
-  const title = titleMatch[1].trim();
-  const accordionContent: React.ReactNode[] = [];
-
-  let nextIndex = index + 1;
-  while (nextIndex < nodeArray.length) {
-    const nextNode = nodeArray[nextIndex];
-    const nextText = nextNode.textContent || '';
-
-    if (nextText.trim().startsWith(':::accordion')) {
-      break;
-    }
-
-    const sanitizedHTML = sanitizeInnerHTML(nextNode.innerHTML);
-    accordionContent.push(
-      <div key={`acc-content-${nextIndex}`} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />
-    );
-    nextIndex++;
-  }
-
-  elements.push(
-    <Accordion key={key} title={title}>
-      <div>{accordionContent}</div>
-    </Accordion>
-  );
-
-  return nextIndex - 1;
 };
 
 const processUIComponent = (
@@ -307,6 +338,9 @@ const processElement = (
     'em': () => processEmElement(element, key, elements),
     'u': () => processUnderlineElement(element, key, elements),
     'del': () => processDeleteElement(element, key, elements),
+    'sub': () => processSubElement(element, key, elements),
+    'sup': () => processSupElement(element, key, elements),
+    'details': () => processDetailsElement(element, key, elements),
   };
 
   if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tagName)) {
@@ -332,9 +366,13 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       'ul', 'ol', 'li', 'blockquote', 'code',
       'pre', 'img', 'table', 'tr', 'td', 'th',
       'thead', 'tbody', 'div', 'span', 'hr', 'figure', 'figcaption',
-      'del', 'input'
+      'del', 'input', 'sub', 'sup', 'details', 'summary', 'mark'
     ],
-    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'id', 'data-language', 'data-lang', 'type', 'checked', 'disabled'],
+    ALLOWED_ATTR: [
+      'href', 'src', 'alt', 'title', 'class', 'id', 
+      'data-language', 'data-lang', 'data-alert-type', 'data-math',
+      'type', 'checked', 'disabled', 'open', 'style', 'align'
+    ],
     ALLOW_DATA_ATTR: true,
   });
 
@@ -344,13 +382,8 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
 
   const processNodes = (nodes: NodeListOf<ChildNode>, parentKey = '') => {
     const nodeArray = Array.from(nodes) as ChildNode[];
-    let skipUntilIndex = -1;
 
     nodeArray.forEach((node, index) => {
-      if (skipUntilIndex >= index) {
-        return;
-      }
-
       const key = `${parentKey}-${index}`;
 
       if (node.nodeType === Node.TEXT_NODE) {
@@ -366,12 +399,22 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       const tagName = element.tagName.toLowerCase();
       const textContent = element.textContent || '';
 
-      if (tagName === 'p') {
-        if (textContent.trim().startsWith(':::accordion')) {
-          skipUntilIndex = processAccordion(element, key, textContent, nodeArray as Element[], index, elements);
-          return;
-        }
+      if (tagName === 'div' && element.classList.contains('github-alert')) {
+        processAlertElement(element, key, elements);
+        return;
+      }
 
+      if (tagName === 'span' && element.classList.contains('math-inline')) {
+        processMathElement(element, key, elements, false);
+        return;
+      }
+
+      if (tagName === 'div' && element.classList.contains('math-block')) {
+        processMathElement(element, key, elements, true);
+        return;
+      }
+
+      if (tagName === 'p') {
         if (processUIComponent(element, key, textContent, elements)) {
           return;
         }
