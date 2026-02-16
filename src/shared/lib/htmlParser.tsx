@@ -241,22 +241,22 @@ const processDetailsElement = (element: Element, key: string, elements: React.Re
   const summary = element.querySelector('summary');
   const summaryText = summary?.textContent || 'Подробности';
   
-  const contentElements: string[] = [];
-  Array.from(element.children).forEach(child => {
-    if (child.tagName.toLowerCase() !== 'summary') {
-      contentElements.push(child.innerHTML);
-    }
-  });
+  // Клонируем элемент для безопасной обработки
+  const clone = element.cloneNode(true) as Element;
+  const cloneSummary = clone.querySelector('summary');
+  
+  // Удаляем summary из клона, чтобы получить только контент
+  if (cloneSummary) {
+    cloneSummary.remove();
+  }
+  
+  // Берём весь innerHTML из клона (без summary)
+  const contentHTML = clone.innerHTML;
 
   elements.push(
     <details key={key} open={isOpen} className="my-4">
       <summary className="cursor-pointer font-semibold">{summaryText}</summary>
-      <div className="mt-2 pl-4">
-        {contentElements.map((html, i) => {
-          const sanitizedHTML = sanitizeInnerHTML(html);
-          return <div key={`details-content-${i}`} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />;
-        })}
-      </div>
+      <div className="mt-2 pl-4" dangerouslySetInnerHTML={{ __html: sanitizeInnerHTML(contentHTML) }} />
     </details>
   );
 };
