@@ -450,7 +450,11 @@ console.log("Hello from accordion!");
 ````
 
 </details>
+
+Как такое написать?
+
 ````markdown
+
 <details>
 <summary>Нажмите, чтобы развернуть</summary>
 
@@ -464,8 +468,8 @@ console.log("Hello from accordion!");
 ```javascript
 console.log("Hello from accordion!");
 ```
-
 </details>
+
 ````
 
 ## Горизонтальная линия
