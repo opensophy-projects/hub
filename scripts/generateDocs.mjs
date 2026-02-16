@@ -15,7 +15,23 @@ marked.setOptions({
   gfm: true,
 });
 
+const defaultBlockquoteRenderer = marked.defaults.renderer.blockquote;
+
 marked.use({
+  renderer: {
+    blockquote(token) {
+      const content = this.parser.parse(token.tokens);
+      
+      const alertMatch = content.match(/^<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]<\/p>\n([\s\S]*)/);
+      if (alertMatch) {
+        const alertType = alertMatch[1];
+        const alertContent = alertMatch[2];
+        return `<div class="github-alert github-alert-${alertType.toLowerCase()}">${alertContent}</div>`;
+      }
+      
+      return `<blockquote>\n${content}</blockquote>\n`;
+    },
+  },
   extensions: [
     {
       name: 'strikethrough',
@@ -54,37 +70,6 @@ marked.use({
       },
       renderer(token) {
         return `<u>${token.text}</u>`;
-      }
-    },
-    {
-      name: 'githubAlert',
-      level: 'block',
-      start(src) {
-        const match = src.match(/^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/m);
-        return match?.index;
-      },
-      tokenizer(src) {
-        // ИСПРАВЛЕНО: улучшенная регулярка для захвата всего контента GitHub Alert
-        const match = src.match(/^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*\n((?:>.*(?:\n|$))*)/);
-        if (match) {
-          const alertType = match[1];
-          // Убираем все '>' в начале строк и лишние пробелы
-          const content = match[2]
-            .split('\n')
-            .map(line => line.replace(/^>\s?/, ''))
-            .join('\n')
-            .trim();
-          
-          return {
-            type: 'githubAlert',
-            raw: match[0],
-            alertType,
-            content,
-          };
-        }
-      },
-      renderer(token) {
-        return `<div class="github-alert" data-alert-type="${token.alertType.toLowerCase()}">${token.content}</div>`;
       }
     }
   ]
