@@ -10,13 +10,11 @@ const docsDir = path.join(__dirname, '../Docs');
 const outputDir = path.join(__dirname, '../public/data/docs');
 const manifestFile = path.join(outputDir, 'manifest.json');
 
-// Настройка marked с расширениями
 marked.setOptions({
   breaks: true,
   gfm: true,
 });
 
-// Добавляем расширения для strikethrough, task lists и underline
 marked.use({
   extensions: [
     {
@@ -45,7 +43,6 @@ marked.use({
         return match?.index; 
       },
       tokenizer(src) {
-        // Ищем паттерн ==текст== (подчеркивание)
         const match = src.match(/^==([^\s=](?:.*?[^\s=])?)===*$/);
         if (match) {
           return {
@@ -57,6 +54,72 @@ marked.use({
       },
       renderer(token) {
         return `<u>${token.text}</u>`;
+      }
+    },
+    {
+      name: 'githubAlert',
+      level: 'block',
+      start(src) {
+        const match = src.match(/^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/m);
+        return match?.index;
+      },
+      tokenizer(src) {
+        const match = src.match(/^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\n((?:>.*\n?)*)/);
+        if (match) {
+          const alertType = match[1];
+          const content = match[2].replace(/^>\s?/gm, '').trim();
+          return {
+            type: 'githubAlert',
+            raw: match[0],
+            alertType,
+            content,
+          };
+        }
+      },
+      renderer(token) {
+        return `<div class="github-alert" data-alert-type="${token.alertType.toLowerCase()}">${token.content}</div>`;
+      }
+    },
+    {
+      name: 'inlineMath',
+      level: 'inline',
+      start(src) {
+        const match = src.match(/\$/);
+        return match?.index;
+      },
+      tokenizer(src) {
+        const match = src.match(/^\$([^\$\n]+?)\$/);
+        if (match) {
+          return {
+            type: 'inlineMath',
+            raw: match[0],
+            text: match[1],
+          };
+        }
+      },
+      renderer(token) {
+        return `<span class="math-inline" data-math="${token.text}"></span>`;
+      }
+    },
+    {
+      name: 'blockMath',
+      level: 'block',
+      start(src) {
+        const match = src.match(/\$\$/);
+        return match?.index;
+      },
+      tokenizer(src) {
+        const match = src.match(/^\$\$([\s\S]+?)\$\$/);
+        if (match) {
+          return {
+            type: 'blockMath',
+            raw: match[0],
+            text: match[1].trim(),
+          };
+        }
+      },
+      renderer(token) {
+        return `<div class="math-block" data-math="${token.text}"></div>`;
       }
     }
   ]
