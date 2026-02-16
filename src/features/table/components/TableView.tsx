@@ -218,8 +218,13 @@ const CellContent: React.FC<{ html: string; searchQuery: string }> = ({ html, se
     if (!contentRef.current) return;
 
     const sanitizedHtml = DOMPurify.sanitize(html, {
-      ALLOWED_TAGS: ['strong', 'em', 'code', 'a', 'br'],
-      ALLOWED_ATTR: ['href', 'target', 'rel'],
+      ALLOWED_TAGS: [
+        'strong', 'b', 'em', 'i', 'code', 'a', 'br', 
+        'u', 'del', 's', 'strike', 'sub', 'sup', 'mark',
+        'span', 'div', 'p'
+      ],
+      ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style'],
+      ALLOW_DATA_ATTR: false,
     });
 
     const parser = new DOMParser();
@@ -304,13 +309,43 @@ function getTableStyles(isDark: boolean): string {
       word-break: break-word;
       border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)'};
     }
-    td strong { font-weight: 600; }
-    td em { font-style: italic; }
+    td strong, td b { 
+      font-weight: 700;
+      color: ${isDark ? 'rgba(255, 255, 255, 1)' : 'rgb(0, 0, 0)'};
+    }
+    td em, td i { 
+      font-style: italic; 
+    }
+    td u {
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    td del, td s, td strike {
+      text-decoration: line-through;
+      opacity: 0.7;
+    }
+    td sub {
+      vertical-align: sub;
+      font-size: 0.75em;
+    }
+    td sup {
+      vertical-align: super;
+      font-size: 0.75em;
+    }
+    td mark {
+      background-color: ${isDark ? 'rgb(202, 138, 4)' : 'rgb(253, 224, 71)'};
+      color: ${isDark ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)'};
+      padding: 2px 4px;
+      border-radius: 2px;
+    }
     td a {
       color: rgb(59 130 246);
       text-decoration: underline;
+      word-break: break-word;
     }
-    td a:hover { color: rgb(37 99 235); }
+    td a:hover { 
+      color: rgb(37 99 235); 
+    }
     tbody tr:nth-child(even) {
       background-color: ${isDark ? 'rgba(255, 255, 255, 0.03)' : '#f1f0ec'};
     }
