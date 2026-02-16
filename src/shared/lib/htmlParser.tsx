@@ -3,9 +3,7 @@ import DOMPurify from 'isomorphic-dompurify';
 import { CodeBlock } from '../components/CodeBlock';
 import TableWithControls from '@/features/table/components/TableWithControls';
 import ImageModal from '../components/ImageModal';
-import MermaidDiagram from '../components/MermaidDiagram';
 import Alert from '../components/Alert';
-import MathFormula from '../components/MathFormula';
 import NewUIComponentViewer from '@/features/ui-components/NewUIComponentViewer';
 
 export const TableContext = createContext<{
@@ -23,19 +21,13 @@ const processPreElement = (element: Element, key: string, elements: React.ReactN
       codeElement.className.replace('language-', '') ||
       '';
 
-    if (language === 'mermaid') {
-      elements.push(
-        <MermaidDiagram key={key} code={code.trim()} />
-      );
-    } else {
-      elements.push(
-        <CodeBlock
-          key={key}
-          code={code.trim()}
-          language={language}
-        />
-      );
-    }
+    elements.push(
+      <CodeBlock
+        key={key}
+        code={code.trim()}
+        language={language}
+      />
+    );
   }
 };
 
@@ -64,7 +56,7 @@ const sanitizeInnerHTML = (html: string): string => {
     ],
     ALLOWED_ATTR: [
       'href', 'src', 'alt', 'title', 'class', 'id', 
-      'data-language', 'data-lang', 'data-alert-type', 'data-math',
+      'data-language', 'data-lang', 'data-alert-type',
       'type', 'checked', 'disabled', 'open', 'style', 'align'
     ],
     ALLOW_DATA_ATTR: true,
@@ -245,16 +237,13 @@ const processDetailsElement = (
   const summary = element.querySelector('summary');
   const summaryText = summary?.textContent || 'Подробности';
   
-  // Получаем весь innerHTML элемента details
   let contentHTML = element.innerHTML;
   
-  // Удаляем summary из HTML
   if (summary) {
     const summaryHTML = summary.outerHTML;
     contentHTML = contentHTML.replace(summaryHTML, '');
   }
   
-  // Санитизируем и парсим содержимое как новый HTML
   const sanitizedContent = sanitizeInnerHTML(contentHTML);
   const contentElements = parseHtmlToReact(sanitizedContent);
 
@@ -277,16 +266,6 @@ const processAlertElement = (element: Element, key: string, elements: React.Reac
       <Alert key={key} type={alertType}>
         {content}
       </Alert>
-    );
-  }
-};
-
-const processMathElement = (element: Element, key: string, elements: React.ReactNode[], isBlock: boolean) => {
-  const formula = element.getAttribute('data-math') || '';
-
-  if (formula) {
-    elements.push(
-      <MathFormula key={key} formula={formula} displayMode={isBlock} />
     );
   }
 };
@@ -377,7 +356,7 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
     ],
     ALLOWED_ATTR: [
       'href', 'src', 'alt', 'title', 'class', 'id', 
-      'data-language', 'data-lang', 'data-alert-type', 'data-math',
+      'data-language', 'data-lang', 'data-alert-type',
       'type', 'checked', 'disabled', 'open', 'style', 'align'
     ],
     ALLOW_DATA_ATTR: true,
@@ -406,16 +385,6 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
 
       if (tagName === 'div' && element.classList.contains('github-alert')) {
         processAlertElement(element, key, elements);
-        return;
-      }
-
-      if (tagName === 'span' && element.classList.contains('math-inline')) {
-        processMathElement(element, key, elements, false);
-        return;
-      }
-
-      if (tagName === 'div' && element.classList.contains('math-block')) {
-        processMathElement(element, key, elements, true);
         return;
       }
 
