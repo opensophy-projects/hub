@@ -445,14 +445,12 @@ npm run build
 - Списки
 - **Жирный текст**
 - `Код`
-
-```javascript
+````javascript
 console.log("Hello from accordion!");
-```
+````
 
 </details>
-
-```markdown
+````markdown
 <details>
 <summary>Нажмите, чтобы развернуть</summary>
 
@@ -463,13 +461,12 @@ console.log("Hello from accordion!");
 - Списки
 - **Жирный текст**
 - `Код`
-
 ```javascript
 console.log("Hello from accordion!");
 ```
 
 </details>
-```
+````
 
 ## Горизонтальная линия
 
