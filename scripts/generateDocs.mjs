@@ -16,7 +16,7 @@ marked.setOptions({
   gfm: true,
 });
 
-// Добавляем расширения для strikethrough и task lists
+// Добавляем расширения для strikethrough, task lists и underline
 marked.use({
   extensions: [
     {
@@ -35,6 +35,24 @@ marked.use({
       },
       renderer(token) {
         return `<del>${token.text}</del>`;
+      }
+    },
+    {
+      name: 'underline',
+      level: 'inline',
+      start(src) { return src.match(/__/)?.index; },
+      tokenizer(src) {
+        const match = src.match(/^__([^_]+)__/);
+        if (match) {
+          return {
+            type: 'underline',
+            raw: match[0],
+            text: match[1],
+          };
+        }
+      },
+      renderer(token) {
+        return `<u>${token.text}</u>`;
       }
     }
   ]
