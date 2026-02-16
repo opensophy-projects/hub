@@ -509,7 +509,7 @@ ___
 - Полноэкранный режим
 - Поиск по коду
 
-```
+```typescript
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
