@@ -15,6 +15,9 @@ export async function getStaticPaths() {
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
   
   return manifest.map((doc: any) => {
+    // welcome рендерится через index.astro на /, пропускаем
+    if (doc.slug === 'welcome') return null;
+
     const docPath = path.join(process.cwd(), `public/data/docs/${doc.slug}.json`);
     
     if (!fs.existsSync(docPath)) {
@@ -24,7 +27,6 @@ export async function getStaticPaths() {
     
     const fullDoc = JSON.parse(fs.readFileSync(docPath, 'utf-8'));
     
-    // Генерируем путь в зависимости от наличия type
     let slugValue: string;
     if (doc.type && doc.type.trim() !== '') {
       slugValue = `${doc.type}/${doc.slug}`;
