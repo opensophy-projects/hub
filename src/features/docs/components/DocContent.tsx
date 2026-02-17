@@ -73,7 +73,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
     [isDark]
   );
 
-  // Функция для обработки author
   const getAuthorDisplay = () => {
     if (!doc.author || doc.author.trim() === '') {
       return null;
@@ -170,7 +169,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
         {toc.length > 0 && (
           <>
-            {/* Мобильная панель оглавления */}
             <div className="md:hidden fixed bottom-8 right-4 z-30">
               <button
                 onClick={() => setTocExpanded(!tocExpanded)}
@@ -225,7 +223,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
               )}
             </div>
 
-            {/* Десктопная панель оглавления */}
             <aside className={`hidden md:block fixed right-4 top-24 w-80 max-h-[calc(100vh-160px)] overflow-y-auto rounded-lg border ${isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'}`}>
               <div className="p-4 pb-2 sticky top-0" style={{
                 backgroundColor: isDark ? 'rgba(10,10,10,0.95)' : 'rgba(232,231,227,0.95)',
