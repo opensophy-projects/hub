@@ -3,7 +3,7 @@ import '@/shared/styles/global.css';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import ErrorBoundary from '@/shared/components/ErrorBoundary';
 import TopNavbar from '@/features/navigation/components/MobileNavbar';
-import SearchPanel from '@/features/navigation/components/UnifiedSearchPanel';
+import SearchWrapper from '@/features/navigation/components/SearchWrapper';
 
 interface Props {
   title: string;
@@ -68,7 +68,6 @@ const imageUrl = image
     
     <link rel="canonical" href={fullUrl} />
     <link rel="icon" href="/favicon.png" />
-    <link rel="manifest" href="/site.webmanifest" />
     
     <style is:global>
       @font-face {
@@ -105,12 +104,11 @@ const imageUrl = image
       <ThemeProvider>
         <TopNavbar client:only="react" />
         <slot />
-        <SearchPanel client:only="react" onClose={() => {}} />
+        <SearchWrapper client:only="react" />
       </ThemeProvider>
     </ErrorBoundary>
 
     <script>
-      // Prevent flash of unstyled content
       const theme = localStorage.getItem('theme') || 'dark';
       if (theme === 'light') {
         document.documentElement.style.colorScheme = 'light';
