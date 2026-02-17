@@ -42,47 +42,69 @@ const CheckboxList: React.FC<{
   onToggle: (item: string) => void;
   isDark: boolean;
   prefix?: string;
-}> = ({ items, selected, onToggle, isDark, prefix = '' }) => (
-  <div className="space-y-1 max-h-40 overflow-y-auto border rounded-lg p-2" style={{
-    borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-  }}>
-    {items.length === 0 ? (
-      <p className={`text-xs text-center py-2 ${getTextClasses(isDark, '50')}`}>Не найдено</p>
-    ) : items.map(item => (
-      <label
-        key={item}
-        className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${
-          selected.has(item)
-            ? isDark ? 'bg-blue-600/20' : 'bg-blue-100'
-            : isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'
-        }`}
-      >
-        <input type="checkbox" checked={selected.has(item)} onChange={() => onToggle(item)} className="rounded" />
-        <span className={`text-xs ${
-          selected.has(item)
-            ? isDark ? 'text-blue-400 font-semibold' : 'text-blue-700 font-semibold'
-            : isDark ? 'text-white/70' : 'text-black/70'
-        }`}>
-          {prefix}{item}
-        </span>
-      </label>
-    ))}
-  </div>
-);
+}> = ({ items, selected, onToggle, isDark, prefix = '' }) => {
+  const borderColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+  const emptyTextClass = getTextClasses(isDark, '50');
+  
+  return (
+    <div 
+      className="space-y-1 max-h-40 overflow-y-auto border rounded-lg p-2" 
+      style={{ borderColor }}
+    >
+      {items.length === 0 ? (
+        <p className={`text-xs text-center py-2 ${emptyTextClass}`}>
+          Не найдено
+        </p>
+      ) : (
+        items.map(item => {
+          const isSelected = selected.has(item);
+          const itemBgClass = isSelected
+            ? (isDark ? 'bg-blue-600/20' : 'bg-blue-100')
+            : (isDark ? 'hover:bg-white/5' : 'hover:bg-black/5');
+          const itemTextClass = isSelected
+            ? (isDark ? 'text-blue-400 font-semibold' : 'text-blue-700 font-semibold')
+            : (isDark ? 'text-white/70' : 'text-black/70');
+          
+          return (
+            <label
+              key={item}
+              className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${itemBgClass}`}
+            >
+              <input 
+                type="checkbox" 
+                checked={isSelected} 
+                onChange={() => onToggle(item)} 
+                className="rounded" 
+              />
+              <span className={`text-xs ${itemTextClass}`}>
+                {prefix}{item}
+              </span>
+            </label>
+          );
+        })
+      )}
+    </div>
+  );
+};
 
 const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const { isDark } = useTheme();
   const { manifest: docs } = useDocuments();
+  
+  // Все хуки вызываются безусловно на верхнем уровне
   const [searchQuery, setSearchQuery] = useState('');
-  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [selectedTypenames, setSelectedTypenames] = useState<Set<string>>(new Set());
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<SortOption>('date-desc');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [tagSearch, setTagSearch] = useState('');
+  
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handleEscape = (e: KeyboardEvent) => { 
+      if (e.key === 'Escape') onClose(); 
+    };
     document.addEventListener('keydown', handleEscape);
     document.body.style.overflow = 'hidden';
     return () => {
@@ -94,14 +116,20 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   // Уникальные typename из манифеста
   const allTypenames = useMemo(() => {
     const typenames = new Set<string>();
-    docs.forEach(doc => { if ((doc as any).typename?.trim()) typenames.add((doc as any).typename); });
+    docs.forEach(doc => { 
+      if ((doc as any).typename?.trim()) {
+        typenames.add((doc as any).typename);
+      }
+    });
     return Array.from(typenames).sort();
   }, [docs]);
 
   // Уникальные теги
   const allTags = useMemo(() => {
     const tags = new Set<string>();
-    docs.forEach(doc => { doc.tags?.forEach(tag => tags.add(tag)); });
+    docs.forEach(doc => { 
+      doc.tags?.forEach(tag => tags.add(tag)); 
+    });
     return Array.from(tags).sort();
   }, [docs]);
 
@@ -111,6 +139,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     if (selectedTypenames.size > 0) {
       results = results.filter(doc => doc.typename && selectedTypenames.has(doc.typename));
     }
+    
     if (selectedTags.size > 0) {
       results = results.filter(doc => doc.tags?.some(tag => selectedTags.has(tag)));
     }
@@ -128,7 +157,9 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     }
 
     results.sort((a, b) => {
-      const diff = new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime();
+      const dateA = new Date(a.date || 0).getTime();
+      const dateB = new Date(b.date || 0).getTime();
+      const diff = dateB - dateA;
       return sortBy === 'date-desc' ? diff : -diff;
     });
 
@@ -138,7 +169,11 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const toggleSet = (setFn: React.Dispatch<React.SetStateAction<Set<string>>>, item: string) => {
     setFn(prev => {
       const next = new Set(prev);
-      next.has(item) ? next.delete(item) : next.add(item);
+      if (next.has(item)) {
+        next.delete(item);
+      } else {
+        next.add(item);
+      }
       return next;
     });
   };
@@ -162,24 +197,39 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const activeFiltersCount = selectedTypenames.size + selectedTags.size;
   const bg = isDark ? '#0a0a0a' : '#E8E7E3';
   const border = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+  
+  // Предвычисленные классы для оптимизации
+  const searchIconClass = `w-5 h-5 flex-shrink-0 ${getTextClasses(isDark, '40')}`;
+  const inputClass = `flex-1 bg-transparent outline-none text-base ${
+    isDark ? 'text-white placeholder-white/40' : 'text-black placeholder-black/40'
+  }`;
+  const closeButtonClass = `flex-shrink-0 p-1.5 rounded-lg transition-colors ${
+    isDark ? 'text-white hover:bg-white/10' : 'text-black hover:bg-black/10'
+  }`;
+  const advancedButtonClass = `w-full px-4 py-3 flex items-center justify-between transition-colors ${
+    isDark ? 'text-white hover:bg-white/5' : 'text-black hover:bg-black/5'
+  }`;
+  const chevronClass = `transition-transform duration-200 ${
+    showAdvanced ? 'rotate-180' : ''
+  } ${getTextClasses(isDark, '70')}`;
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col" style={{ backgroundColor: bg }}>
 
       {/* Шапка с поиском */}
       <div className="flex-shrink-0 flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: border }}>
-        <SearchIcon className={`w-5 h-5 flex-shrink-0 ${getTextClasses(isDark, '40')}`} />
+        <SearchIcon className={searchIconClass} />
         <input
           type="text"
           placeholder="Поиск по заголовку, описанию, тегам..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           autoFocus
-          className={`flex-1 bg-transparent outline-none text-base ${isDark ? 'text-white placeholder-white/40' : 'text-black placeholder-black/40'}`}
+          className={inputClass}
         />
         <button
           onClick={onClose}
-          className={`flex-shrink-0 p-1.5 rounded-lg transition-colors ${isDark ? 'text-white hover:bg-white/10' : 'text-black hover:bg-black/10'}`}
+          className={closeButtonClass}
         >
           <X size={20} />
         </button>
@@ -192,7 +242,9 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
             <button
               key={t}
               onClick={() => toggleSet(setSelectedTypenames, t)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${getFilterButtonClasses(selectedTypenames.has(t), isDark)}`}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                getFilterButtonClasses(selectedTypenames.has(t), isDark)
+              }`}
             >
               {t}
             </button>
@@ -204,17 +256,12 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
       <div className="flex-shrink-0 border-b" style={{ borderColor: border }}>
         <button
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className={`w-full px-4 py-3 flex items-center justify-between transition-colors ${
-            isDark ? 'text-white hover:bg-white/5' : 'text-black hover:bg-black/5'
-          }`}
+          className={advancedButtonClass}
         >
           <span className="text-sm font-medium">
             Расширенные фильтры {activeFiltersCount > 0 && `(${activeFiltersCount})`}
           </span>
-          <ChevronDown
-            size={18}
-            className={`transition-transform duration-200 ${showAdvanced ? 'rotate-180' : ''} ${getTextClasses(isDark, '70')}`}
-          />
+          <ChevronDown size={18} className={chevronClass} />
         </button>
 
         {showAdvanced && (
@@ -245,17 +292,26 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
 
             {/* Сортировка */}
             <div>
-              <h4 className={`text-xs font-semibold mb-2 ${getTextClasses(isDark, '70')}`}>Сортировка</h4>
+              <h4 className={`text-xs font-semibold mb-2 ${getTextClasses(isDark, '70')}`}>
+                Сортировка
+              </h4>
               <div className="flex gap-2 flex-wrap">
-                {(['date-desc', 'date-asc'] as SortOption[]).map(id => (
-                  <button
-                    key={id}
-                    onClick={() => setSortBy(id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${getFilterButtonClasses(sortBy === id, isDark)}`}
-                  >
-                    {id === 'date-desc' ? 'Сначала новые' : 'Сначала старые'}
-                  </button>
-                ))}
+                <button
+                  onClick={() => setSortBy('date-desc')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    getFilterButtonClasses(sortBy === 'date-desc', isDark)
+                  }`}
+                >
+                  Сначала новые
+                </button>
+                <button
+                  onClick={() => setSortBy('date-asc')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    getFilterButtonClasses(sortBy === 'date-asc', isDark)
+                  }`}
+                >
+                  Сначала старые
+                </button>
               </div>
             </div>
 
