@@ -15,24 +15,30 @@ marked.setOptions({
   gfm: true,
 });
 
+// Расширение для Alert блоков с синтаксисом :::type
 marked.use({
-  renderer: {
-    blockquote(token) {
-      const content = this.parser.parse(token.tokens);
-      
-      // Более точная проверка для GitHub Alert
-      const alertMatch = content.match(/^<p>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*<\/p>\s*([\s\S]*)/i);
-      if (alertMatch) {
-        const alertType = alertMatch[1].toLowerCase();
-        const alertContent = alertMatch[2];
-        return `<div class="github-alert" data-alert-type="${alertType}">${alertContent}</div>\n`;
-      }
-      
-      // Обычная цитата
-      return `<blockquote>\n${content}</blockquote>\n`;
-    },
-  },
   extensions: [
+    {
+      name: 'alert',
+      level: 'block',
+      start(src) {
+        return src.match(/^:::/)?.index;
+      },
+      tokenizer(src) {
+        const match = src.match(/^:::(note|tip|important|warning|caution)\n([\s\S]*?)\n:::/i);
+        if (match) {
+          return {
+            type: 'alert',
+            raw: match[0],
+            alertType: match[1].toLowerCase(),
+            text: match[2].trim(),
+          };
+        }
+      },
+      renderer(token) {
+        return `<div class="custom-alert" data-alert-type="${token.alertType}">${marked.parse(token.text)}</div>\n`;
+      }
+    },
     {
       name: 'strikethrough',
       level: 'inline',
