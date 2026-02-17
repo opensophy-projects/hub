@@ -256,7 +256,7 @@ const MobileNavbar: React.FC = () => {
       </AnimatePresence>
 
       <AnimatePresence>
-        {isTocOpen && toc.length > 0 && (
+        {isTocOpen && (
           <TocPanel
             toc={toc}
             onTocClick={handleTocClick}
