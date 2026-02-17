@@ -106,42 +106,39 @@ const processLinkElement = (element: Element, key: string, elements: React.React
 const ImageWithModal: React.FC<{ src: string; alt: string; title?: string }> = ({ src, alt, title }) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      setIsOpen(true);
-    }
-  };
-
   return (
     <>
       {title ? (
         <figure className="my-6 w-full">
-          <img
-            src={src}
-            alt={alt}
-            loading="lazy"
+          <button
+            type="button"
             onClick={() => setIsOpen(true)}
-            onKeyDown={handleKeyDown}
-            role="button"
-            tabIndex={0}
-            className="rounded-lg shadow-md max-w-full h-auto w-full cursor-pointer hover:opacity-90 transition-opacity"
-          />
+            className="w-full border-0 p-0 bg-transparent cursor-pointer"
+          >
+            <img
+              src={src}
+              alt={alt}
+              loading="lazy"
+              className="rounded-lg shadow-md max-w-full h-auto w-full hover:opacity-90 transition-opacity"
+            />
+          </button>
           <figcaption className="mt-2 text-center text-xs text-slate-400 italic font-medium">
             {title}
           </figcaption>
         </figure>
       ) : (
-        <img
-          src={src}
-          alt={alt}
-          loading="lazy"
+        <button
+          type="button"
           onClick={() => setIsOpen(true)}
-          onKeyDown={handleKeyDown}
-          role="button"
-          tabIndex={0}
-          className="rounded-lg shadow-md max-w-full h-auto my-4 cursor-pointer hover:opacity-90 transition-opacity"
-        />
+          className="border-0 p-0 bg-transparent cursor-pointer my-4 block"
+        >
+          <img
+            src={src}
+            alt={alt}
+            loading="lazy"
+            className="rounded-lg shadow-md max-w-full h-auto hover:opacity-90 transition-opacity"
+          />
+        </button>
       )}
       {isOpen && <ImageModal src={src} alt={alt} onClose={() => setIsOpen(false)} />}
     </>
