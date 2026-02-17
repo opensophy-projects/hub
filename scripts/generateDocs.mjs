@@ -15,116 +15,14 @@ marked.setOptions({
   gfm: true,
 });
 
-// Расширение для Alert блоков с синтаксисом :::type
-marked.use({
-  extensions: [
-    {
-      name: 'alert',
-      level: 'block',
-      start(src) {
-        const match = src.match(/^:::/);
-        return match ? match.index : undefined;
-      },
-      tokenizer(src) {
-        const rule = /^:::(note|tip|important|warning|caution)\n([\s\S]*?)^:::$/m;
-        const match = rule.exec(src);
-        if (match) {
-          return {
-            type: 'alert',
-            raw: match[0],
-            alertType: match[1].toLowerCase(),
-            text: match[2].trim(),
-          };
-        }
-      },
-      renderer(token) {
-        const parsedContent = marked.parse(token.text);
-        return `<div class="custom-alert" data-alert-type="${token.alertType}">${parsedContent}</div>\n`;
-      }
-    },
-    {
-      name: 'strikethrough',
-      level: 'inline',
-      start(src) { return src.match(/~~/)?.index; },
-      tokenizer(src) {
-        const match = src.match(/^~~([^~]+)~~/);
-        if (match) {
-          return {
-            type: 'strikethrough',
-            raw: match[0],
-            text: match[1],
-          };
-        }
-      },
-      renderer(token) {
-        return `<del>${token.text}</del>`;
-      }
-    },
-    {
-      name: 'underline',
-      level: 'inline',
-      start(src) { 
-        const match = src.match(/==/);
-        return match?.index; 
-      },
-      tokenizer(src) {
-        const match = src.match(/^==([^\s=](?:.*?[^\s=])?)===*$/);
-        if (match) {
-          return {
-            type: 'underline',
-            raw: match[0],
-            text: match[1],
-          };
-        }
-      },
-      renderer(token) {
-        return `<u>${token.text}</u>`;
-      }
-    },
-    {
-      name: 'inlineMath',
-      level: 'inline',
-      start(src) {
-        const match = src.match(/\$/);
-        return match?.index;
-      },
-      tokenizer(src) {
-        const match = src.match(/^\$([^\$\n]+?)\$/);
-        if (match) {
-          return {
-            type: 'inlineMath',
-            raw: match[0],
-            text: match[1],
-          };
-        }
-      },
-      renderer(token) {
-        return `<span class="math-inline" data-math="${token.text}"></span>`;
-      }
-    },
-    {
-      name: 'blockMath',
-      level: 'block',
-      start(src) {
-        const match = src.match(/\$\$/);
-        return match?.index;
-      },
-      tokenizer(src) {
-        const match = src.match(/^\$\$([\s\S]+?)\$\$/);
-        if (match) {
-          return {
-            type: 'blockMath',
-            raw: match[0],
-            text: match[1].trim(),
-          };
-        }
-      },
-      renderer(token) {
-        return `<div class="math-block" data-math="${token.text}"></div>`;
-      }
-    }
-  ]
-});
+function preprocessAlerts(content) {
+  const alertPattern = /^:::(note|tip|important|warning|caution)\n([\s\S]*?)^:::$/gm;
+  
+  return content.replace(alertPattern, (match, type, alertContent) => {
+    const cleanContent = alertContent.trim();
+    return `<div class="custom-alert" data-alert-type="${type}">\n${cleanContent}\n</div>`;
+  });
+}
 
 function extractFrontMatter(content) {
   const frontMatterRegex = /^---\n([\s\S]*?)\n---\n/;
@@ -157,7 +55,7 @@ function getFirstParagraph(content) {
   const lines = content.split('\n');
   for (const line of lines) {
     const trimmed = line.trim();
-    if (trimmed && !trimmed.startsWith('#') && !trimmed.startsWith('*') && !trimmed.startsWith('!')) {
+    if (trimmed && !trimmed.startsWith('#') && !trimmed.startsWith('*') && !trimmed.startsWith('!') && !trimmed.startsWith(':')) {
       return trimmed.substring(0, 160);
     }
   }
@@ -207,6 +105,8 @@ function scanDocs(dir) {
         const { metadata, content: cleanContent } = extractFrontMatter(content);
 
         const processedContent = processImageSyntax(cleanContent);
+        const preprocessedContent = preprocessAlerts(processedContent);
+        const htmlContent = marked(preprocessedContent);
 
         const fileName = path.basename(fullPath, '.md');
         const slug = generateSlug(fileName);
@@ -241,7 +141,7 @@ function scanDocs(dir) {
           canonical,
           robots,
           lang,
-          content: processedContent,
+          content: htmlContent,
         };
 
         const docFilePath = path.join(outputDir, `${slug}.json`);
