@@ -8,8 +8,6 @@ author: veilosophy
 date: 2026-02-16
 tags: Markdown, форматирование, руководство, синтаксис, документация, UI компоненты
 keywords: Markdown руководство, форматирование текста, синтаксис Markdown, документация Hub, примеры форматирования
-bannercolor: #1e3a8a
-bannertext: Markdown Guide
 canonical: null
 robots: index, follow
 lang: ru
