@@ -261,7 +261,6 @@ const processAlertElement = (element: Element, key: string, elements: React.Reac
   const alertType = element.getAttribute('data-alert-type') as 'note' | 'tip' | 'important' | 'warning' | 'caution';
   
   if (alertType) {
-    // Получаем HTML содержимое и парсим его в React элементы
     const contentHTML = element.innerHTML;
     const sanitizedContent = sanitizeInnerHTML(contentHTML);
     const contentElements = parseHtmlToReact(sanitizedContent);
@@ -387,8 +386,8 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       const tagName = element.tagName.toLowerCase();
       const textContent = element.textContent || '';
 
-      // КРИТИЧНО: Проверяем GitHub Alert ПЕРВЫМ делом
-      if (tagName === 'div' && element.classList.contains('github-alert')) {
+      // КРИТИЧНО: Проверяем Alert ПЕРВЫМ делом
+      if (tagName === 'div' && element.classList.contains('custom-alert')) {
         processAlertElement(element, key, elements);
         return;
       }
