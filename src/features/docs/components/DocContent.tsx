@@ -10,7 +10,6 @@ import { useTableOfContents } from '../hooks/useTableOfContents';
 import { useScrollProgress } from '../hooks/useScrollProgress';
 import { scrollToElement } from '../utils/scrollUtils';
 import { useDocuments } from '../hooks/useDocuments';
-import { ChevronDown } from 'lucide-react';
 
 const LazyTableModal = lazy(() => import('@/features/table/components/TableModal'));
 
@@ -35,7 +34,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
   const [doc, setDoc] = useState(initialDoc);
   const [loading, setLoading] = useState(!initialDoc.content);
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
-  const [tocExpanded, setTocExpanded] = useState(false);
 
   useEffect(() => {
     if (!initialDoc.content) {
@@ -76,10 +74,10 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
   const getAuthorDisplay = () => {
     if (!doc.author || doc.author.trim() === '') return null;
-    
+
     const authors = doc.author.split(',').map(a => a.trim()).filter(a => a);
     if (authors.length === 0) return null;
-    
+
     return (
       <span className={`text-sm ${getTextColorClass('60')}`}>
         {authors.length === 1 ? 'Автор' : 'Авторы'}:{' '}
@@ -106,6 +104,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
   return (
     <div style={{ minHeight: '100vh' }}>
+      {/* Прогресс-бар */}
       <div
         className={`fixed top-0 left-0 h-1 z-50 ${isDark ? 'bg-white' : 'bg-black'}`}
         style={{ width: `${scrollProgress}%` }}
@@ -115,7 +114,8 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
       <Sidebar />
 
       <main className={`min-h-screen ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}>
-        <article className="flex-1 pt-20 pb-24 px-4 md:pr-96 w-full">
+        {/* На десктопе отступ справа под панель TOC */}
+        <article className={`flex-1 pt-20 pb-24 px-4 w-full ${toc.length > 0 ? 'md:pr-96' : ''}`}>
           <div className="container mx-auto max-w-3xl w-full overflow-x-hidden">
             <div className="mb-8">
               {doc.typename && doc.typename.trim() !== '' && (
@@ -125,19 +125,18 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
                   </span>
                 </div>
               )}
-              
+
               <h1
                 className={`text-4xl md:text-5xl font-bold mb-4 ${isDark ? 'text-white' : 'text-black'}`}
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 {doc.title}
               </h1>
-              
+
               <p className={`text-lg ${getTextColorClass()}`}>{doc.description}</p>
-              
+
               <div className={`flex items-center gap-4 mt-6 pt-4 border-t flex-wrap ${isDark ? 'border-white/10' : 'border-black/10'}`}>
                 {getAuthorDisplay()}
-                
                 {doc.date && (
                   <span className={`text-sm ${getTextColorClass('60')}`}>
                     {new Date(doc.date).toLocaleDateString('ru-RU', {
@@ -151,90 +150,50 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
             </div>
 
             <TableContext.Provider value={tableContextValue}>
-              <div className={`prose max-w-none w-full overflow-x-auto ${isDark ? 'text-white' : 'text-black'}`}>
+              {/* data-article-content нужен для генерации TOC */}
+              <div
+                data-article-content
+                className={`prose max-w-none w-full overflow-x-auto ${isDark ? 'text-white' : 'text-black'}`}
+              >
                 {contentNodes}
               </div>
             </TableContext.Provider>
           </div>
         </article>
 
+        {/* Десктопная панель TOC справа */}
         {toc.length > 0 && (
-          <>
-            <div className="md:hidden fixed bottom-24 right-4 z-30">
-              <button
-                onClick={() => setTocExpanded(!tocExpanded)}
-                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg ${
-                  isDark
-                    ? 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
-                    : 'bg-black/10 hover:bg-black/20 text-black border border-black/20'
-                }`}
-                aria-label="Оглавление"
-                title="Оглавление"
-              >
-                <ChevronDown
-                  size={20}
-                  style={{
-                    transform: tocExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                    transition: 'transform 0.3s ease'
-                  }}
-                />
-              </button>
-
-              {tocExpanded && (
-                <div
-                  className={`absolute bottom-16 right-0 w-72 max-h-96 overflow-y-auto rounded-lg border shadow-2xl p-4 ${
-                    isDark
-                      ? 'bg-[#0a0a0a] border-white/20'
-                      : 'bg-[#E8E7E3] border-black/20'
-                  }`}
-                >
-                  <h3 className={`text-sm font-bold mb-3 ${isDark ? 'text-white' : 'text-black'}`}>
-                    На этой странице
-                  </h3>
-                  <div className="space-y-1">
-                    {toc.map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => {
-                          scrollToElement(item.id);
-                          setTocExpanded(false);
-                        }}
-                        className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${
-                          isDark
-                            ? 'text-white/60 hover:bg-white/5 hover:text-white'
-                            : 'text-black/60 hover:bg-black/5 hover:text-black'
-                        }`}
-                        style={{ paddingLeft: `${8 + (item.level - 2) * 12}px` }}
-                      >
-                        {item.text}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <aside className={`hidden md:block fixed right-4 top-24 w-80 max-h-[calc(100vh-160px)] overflow-y-auto rounded-lg border ${isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'}`}>
-              <div className="p-4 pb-2 sticky top-0" style={{
+          <aside className={`hidden md:block fixed right-4 top-24 w-80 max-h-[calc(100vh-160px)] overflow-y-auto rounded-lg border ${
+            isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
+          }`}>
+            <div
+              className="p-4 pb-2 sticky top-0"
+              style={{
                 backgroundColor: isDark ? 'rgba(10,10,10,0.95)' : 'rgba(232,231,227,0.95)',
-                backdropFilter: 'blur(10px)'
-              }}>
-                <h2 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-black'}`}>На этой странице</h2>
-              </div>
-              <div className="px-4 pb-4 space-y-1">
-                {toc.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => scrollToElement(item.id)}
-                    className={`w-full text-left px-3 py-1.5 rounded text-xs transition-colors ${isDark ? 'text-white/60 hover:bg-white/5 hover:text-white' : 'text-black/60 hover:bg-black/5 hover:text-black'}`}
-                    style={{ paddingLeft: `${12 + (item.level - 2) * 12}px` }}
-                  >
-                    {item.text}
-                  </button>
-                ))}
-              </div>
-            </aside>
-          </>
+                backdropFilter: 'blur(10px)',
+              }}
+            >
+              <h2 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-black'}`}>
+                На этой странице
+              </h2>
+            </div>
+            <div className="px-4 pb-4 space-y-1">
+              {toc.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => scrollToElement(item.id)}
+                  className={`w-full text-left px-3 py-1.5 rounded text-xs transition-colors ${
+                    isDark
+                      ? 'text-white/60 hover:bg-white/5 hover:text-white'
+                      : 'text-black/60 hover:bg-black/5 hover:text-black'
+                  }`}
+                  style={{ paddingLeft: `${12 + (item.level - 2) * 12}px` }}
+                >
+                  {item.text}
+                </button>
+              ))}
+            </div>
+          </aside>
         )}
 
         <div className="h-20" />
