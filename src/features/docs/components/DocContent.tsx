@@ -11,6 +11,7 @@ import { useTableOfContents } from '../hooks/useTableOfContents';
 import { useScrollProgress } from '../hooks/useScrollProgress';
 import { scrollToElement } from '../utils/scrollUtils';
 import { useDocuments } from '../hooks/useDocuments';
+import { ChevronDown } from 'lucide-react';
 
 interface DocContentProps {
   doc: {
@@ -33,6 +34,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
   const [doc, setDoc] = useState(initialDoc);
   const [loading, setLoading] = useState(!initialDoc.content);
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
+  const [tocExpanded, setTocExpanded] = useState(false);
 
   useEffect(() => {
     if (!initialDoc.content) {
@@ -123,7 +125,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
       <Sidebar />
 
       <main className={`min-h-screen ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}>
-        <article className="flex-1 pt-24 pb-24 px-4 md:pr-80 w-full" data-article-content>
+        <article className="flex-1 pt-24 pb-24 px-4 md:pr-96 w-full" data-article-content>
           <div className="container mx-auto max-w-3xl w-full overflow-x-hidden">
             <div className="mb-8">
               {doc.typename && doc.typename.trim() !== '' && (
@@ -167,23 +169,84 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
         </article>
 
         {toc.length > 0 && (
-          <aside className={`hidden md:block fixed right-8 top-24 w-64 max-h-[calc(100vh-160px)] overflow-y-auto rounded-lg border ${isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'}`}>
-            <div className="p-6 pb-2">
-              <h2 className={`text-lg font-bold mb-4 ${isDark ? 'text-white' : 'text-black'}`}>На этой странице</h2>
-            </div>
-            <div className="px-6 pb-6 space-y-1">
-              {toc.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => scrollToElement(item.id)}
-                  className={`w-full text-left px-4 py-2 rounded-lg transition-colors text-sm ${isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black'}`}
-                  style={{ paddingLeft: `${12 + (item.level - 2) * 16}px` }}
+          <>
+            {/* Мобильная панель оглавления */}
+            <div className="md:hidden fixed bottom-8 right-4 z-30">
+              <button
+                onClick={() => setTocExpanded(!tocExpanded)}
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg ${
+                  isDark
+                    ? 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+                    : 'bg-black/10 hover:bg-black/20 text-black border border-black/20'
+                }`}
+                aria-label="Оглавление"
+                title="Оглавление"
+              >
+                <ChevronDown
+                  size={20}
+                  style={{
+                    transform: tocExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.3s ease'
+                  }}
+                />
+              </button>
+
+              {tocExpanded && (
+                <div
+                  className={`absolute bottom-16 right-0 w-72 max-h-96 overflow-y-auto rounded-lg border shadow-2xl p-4 ${
+                    isDark
+                      ? 'bg-[#0a0a0a] border-white/20'
+                      : 'bg-[#E8E7E3] border-black/20'
+                  }`}
                 >
-                  {item.text}
-                </button>
-              ))}
+                  <h3 className={`text-sm font-bold mb-3 ${isDark ? 'text-white' : 'text-black'}`}>
+                    На этой странице
+                  </h3>
+                  <div className="space-y-1">
+                    {toc.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          scrollToElement(item.id);
+                          setTocExpanded(false);
+                        }}
+                        className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${
+                          isDark
+                            ? 'text-white/60 hover:bg-white/5 hover:text-white'
+                            : 'text-black/60 hover:bg-black/5 hover:text-black'
+                        }`}
+                        style={{ paddingLeft: `${8 + (item.level - 2) * 12}px` }}
+                      >
+                        {item.text}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          </aside>
+
+            {/* Десктопная панель оглавления */}
+            <aside className={`hidden md:block fixed right-4 top-24 w-80 max-h-[calc(100vh-160px)] overflow-y-auto rounded-lg border ${isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'}`}>
+              <div className="p-4 pb-2 sticky top-0" style={{
+                backgroundColor: isDark ? 'rgba(10,10,10,0.95)' : 'rgba(232,231,227,0.95)',
+                backdropFilter: 'blur(10px)'
+              }}>
+                <h2 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-black'}`}>На этой странице</h2>
+              </div>
+              <div className="px-4 pb-4 space-y-1">
+                {toc.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => scrollToElement(item.id)}
+                    className={`w-full text-left px-3 py-1.5 rounded text-xs transition-colors ${isDark ? 'text-white/60 hover:bg-white/5 hover:text-white' : 'text-black/60 hover:bg-black/5 hover:text-black'}`}
+                    style={{ paddingLeft: `${12 + (item.level - 2) * 12}px` }}
+                  >
+                    {item.text}
+                  </button>
+                ))}
+              </div>
+            </aside>
+          </>
         )}
 
         <div className="h-20" />
