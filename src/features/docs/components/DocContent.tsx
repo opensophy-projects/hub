@@ -1,17 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { marked } from 'marked';
 import DOMPurify from 'isomorphic-dompurify';
 import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
 import TopNavbar from '@/features/navigation/components/MobileNavbar';
 import Sidebar from '@/features/navigation/components/Sidebar';
-import TableModal from '@/features/table/components/TableModal';
 import { parseHtmlToReact, TableContext } from '@/shared/lib/htmlParser';
 import { useTableOfContents } from '../hooks/useTableOfContents';
 import { useScrollProgress } from '../hooks/useScrollProgress';
 import { scrollToElement } from '../utils/scrollUtils';
 import { useDocuments } from '../hooks/useDocuments';
 import { ChevronDown } from 'lucide-react';
+
+const LazyTableModal = lazy(() => import('@/features/table/components/TableModal'));
 
 interface DocContentProps {
   doc: {
@@ -64,7 +65,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
     return parseHtmlToReact(htmlContent);
   }, [htmlContent]);
 
-  const getTextColorClass = (isDark: boolean, opacity = '70'): string => {
+  const getTextColorClass = (opacity = '70'): string => {
     return isDark ? `text-white/${opacity}` : `text-black/${opacity}`;
   };
 
@@ -74,27 +75,17 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
   );
 
   const getAuthorDisplay = () => {
-    if (!doc.author || doc.author.trim() === '') {
-      return null;
-    }
+    if (!doc.author || doc.author.trim() === '') return null;
     
     const authors = doc.author.split(',').map(a => a.trim()).filter(a => a);
-    
-    if (authors.length === 0) {
-      return null;
-    }
-    
-    if (authors.length === 1) {
-      return (
-        <span className={`text-sm ${getTextColorClass(isDark, '60')}`}>
-          Автор: <strong className={isDark ? 'text-white' : 'text-black'}>{authors[0]}</strong>
-        </span>
-      );
-    }
+    if (authors.length === 0) return null;
     
     return (
-      <span className={`text-sm ${getTextColorClass(isDark, '60')}`}>
-        Авторы: <strong className={isDark ? 'text-white' : 'text-black'}>{authors.join(', ')}</strong>
+      <span className={`text-sm ${getTextColorClass('60')}`}>
+        {authors.length === 1 ? 'Автор' : 'Авторы'}:{' '}
+        <strong className={isDark ? 'text-white' : 'text-black'}>
+          {authors.join(', ')}
+        </strong>
       </span>
     );
   };
@@ -124,12 +115,12 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
       <Sidebar />
 
       <main className={`min-h-screen ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}>
-        <article className="flex-1 pt-24 pb-24 px-4 md:pr-96 w-full" data-article-content>
+        <article className="flex-1 pt-20 pb-24 px-4 md:pr-96 w-full">
           <div className="container mx-auto max-w-3xl w-full overflow-x-hidden">
             <div className="mb-8">
               {doc.typename && doc.typename.trim() !== '' && (
                 <div className="flex items-center gap-3 mb-4">
-                  <span className={`text-sm font-semibold ${getTextColorClass(isDark)}`}>
+                  <span className={`text-sm font-semibold ${getTextColorClass()}`}>
                     {doc.typename}
                   </span>
                 </div>
@@ -142,13 +133,13 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
                 {doc.title}
               </h1>
               
-              <p className={`text-lg ${getTextColorClass(isDark)}`}>{doc.description}</p>
+              <p className={`text-lg ${getTextColorClass()}`}>{doc.description}</p>
               
               <div className={`flex items-center gap-4 mt-6 pt-4 border-t flex-wrap ${isDark ? 'border-white/10' : 'border-black/10'}`}>
                 {getAuthorDisplay()}
                 
                 {doc.date && (
-                  <span className={`text-sm ${getTextColorClass(isDark, '60')}`}>
+                  <span className={`text-sm ${getTextColorClass('60')}`}>
                     {new Date(doc.date).toLocaleDateString('ru-RU', {
                       year: 'numeric',
                       month: 'long',
@@ -169,7 +160,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
         {toc.length > 0 && (
           <>
-            <div className="md:hidden fixed bottom-8 right-4 z-30">
+            <div className="md:hidden fixed bottom-24 right-4 z-30">
               <button
                 onClick={() => setTocExpanded(!tocExpanded)}
                 className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg ${
@@ -251,12 +242,14 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
       <AnimatePresence>
         {fullscreenTableHtml && (
-          <TableModal
-            isOpen={!!fullscreenTableHtml}
-            tableHtml={fullscreenTableHtml}
-            isDark={isDark}
-            onClose={() => setFullscreenTableHtml(null)}
-          />
+          <Suspense fallback={null}>
+            <LazyTableModal
+              isOpen={!!fullscreenTableHtml}
+              tableHtml={fullscreenTableHtml}
+              isDark={isDark}
+              onClose={() => setFullscreenTableHtml(null)}
+            />
+          </Suspense>
         )}
       </AnimatePresence>
     </div>
