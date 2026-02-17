@@ -36,7 +36,6 @@ const MobileNavbar: React.FC = () => {
       } backdrop-blur-sm`}
     >
       <div className="flex items-center justify-between px-4 py-3 md:px-6">
-        {/* Меню слева */}
         <button
           onClick={handleMenuClick}
           className={`p-2 rounded-lg transition-colors ${
@@ -48,7 +47,6 @@ const MobileNavbar: React.FC = () => {
           <Menu size={24} className={isDark ? 'text-white' : 'text-black'} />
         </button>
 
-        {/* Лого в центре */}
         <a
           href="/"
           className={`text-lg md:text-xl font-bold font-veilstack flex-1 text-center mx-4`}
@@ -58,7 +56,6 @@ const MobileNavbar: React.FC = () => {
           hub
         </a>
 
-        {/* Действия справа */}
         <div className="flex items-center gap-2">
           <button
             onClick={handleSearchClick}
