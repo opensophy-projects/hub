@@ -15,6 +15,12 @@
   
   <!-- Documentation articles -->
   <url>
+    <loc>https://hub.opensophy.com/welcome</loc>
+    <lastmod>2026-02-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
     <loc>https://hub.opensophy.com/docs/markdown-guide</loc>
     <lastmod>2026-02-16</lastmod>
     <changefreq>monthly</changefreq>
