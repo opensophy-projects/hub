@@ -16,25 +16,33 @@ export async function getStaticPaths() {
   
   return manifest.map((doc: any) => {
     const docPath = path.join(process.cwd(), `public/data/docs/${doc.slug}.json`);
+    
+    if (!fs.existsSync(docPath)) {
+      console.warn(`Missing doc file: ${docPath}`);
+      return null;
+    }
+    
     const fullDoc = JSON.parse(fs.readFileSync(docPath, 'utf-8'));
     
     // Генерируем путь в зависимости от наличия type
-    let pathSegment = doc.slug;
+    let pathSegments: string[];
     if (doc.type && doc.type.trim() !== '') {
-      pathSegment = `${doc.type}/${doc.slug}`;
+      pathSegments = [doc.type, doc.slug];
+    } else {
+      pathSegments = [doc.slug];
     }
     
     return {
-      params: { slug: pathSegment },
+      params: { slug: pathSegments },
       props: { doc: fullDoc },
     };
-  });
+  }).filter(Boolean);
 }
 
 const { slug } = Astro.params;
 const { doc } = Astro.props as { doc: any };
 
-if (!doc) {
+if (!doc || !slug) {
   return Astro.redirect('/404');
 }
 ---
@@ -43,7 +51,7 @@ if (!doc) {
   title={doc.title}
   description={doc.description}
   image={doc.image}
-  url={doc.type && doc.type.trim() !== '' ? `/${doc.type}/${doc.slug}` : `/${doc.slug}`}
+  url={`/${slug.join('/')}`}
   type="article"
   author={doc.author}
   date={doc.date}
