@@ -25,15 +25,15 @@ export async function getStaticPaths() {
     const fullDoc = JSON.parse(fs.readFileSync(docPath, 'utf-8'));
     
     // Генерируем путь в зависимости от наличия type
-    let pathSegments: string[];
+    let slugValue: string;
     if (doc.type && doc.type.trim() !== '') {
-      pathSegments = [doc.type, doc.slug];
+      slugValue = `${doc.type}/${doc.slug}`;
     } else {
-      pathSegments = [doc.slug];
+      slugValue = doc.slug;
     }
     
     return {
-      params: { slug: pathSegments },
+      params: { slug: slugValue },
       props: { doc: fullDoc },
     };
   }).filter(Boolean);
@@ -51,7 +51,7 @@ if (!doc || !slug) {
   title={doc.title}
   description={doc.description}
   image={doc.image}
-  url={`/${slug.join('/')}`}
+  url={`/${slug}`}
   type="article"
   author={doc.author}
   date={doc.date}
