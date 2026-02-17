@@ -5,9 +5,7 @@ import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
 import TopNavbar from '@/features/navigation/components/MobileNavbar';
 import Sidebar from '@/features/navigation/components/Sidebar';
-import DocBanner from './DocBanner';
 import TableModal from '@/features/table/components/TableModal';
-import DocIcon from './DocIcon';
 import { parseHtmlToReact, TableContext } from '@/shared/lib/htmlParser';
 import { useTableOfContents } from '../hooks/useTableOfContents';
 import { useScrollProgress } from '../hooks/useScrollProgress';
@@ -20,21 +18,13 @@ interface DocContentProps {
     title: string;
     slug: string;
     description: string;
-    type: 'docs' | 'blog' | 'news';
-    category?: string;
+    type?: string;
+    typename?: string;
     content?: string;
-    bannercolor?: string;
-    bannertext?: string;
     author?: string;
     date?: string;
     tags?: string[];
   };
-}
-
-interface TableOfContentsItem {
-  id: string;
-  text: string;
-  level: number;
 }
 
 const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
@@ -72,15 +62,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
     return parseHtmlToReact(htmlContent);
   }, [htmlContent]);
 
-  const getTypeLabel = (type: string): string => {
-    const labels: Record<string, string> = {
-      docs: 'Документация',
-      blog: 'Блог',
-      news: 'Новости',
-    };
-    return labels[type] || 'Контент';
-  };
-
   const getTextColorClass = (isDark: boolean, opacity = '70'): string => {
     return isDark ? `text-white/${opacity}` : `text-black/${opacity}`;
   };
@@ -89,6 +70,33 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
     () => ({ onTableClick: handleTableClick, isDark }),
     [isDark]
   );
+
+  // Функция для обработки author
+  const getAuthorDisplay = () => {
+    if (!doc.author || doc.author.trim() === '') {
+      return null;
+    }
+    
+    const authors = doc.author.split(',').map(a => a.trim()).filter(a => a);
+    
+    if (authors.length === 0) {
+      return null;
+    }
+    
+    if (authors.length === 1) {
+      return (
+        <span className={`text-sm ${getTextColorClass(isDark, '60')}`}>
+          Автор: <strong className={isDark ? 'text-white' : 'text-black'}>{authors[0]}</strong>
+        </span>
+      );
+    }
+    
+    return (
+      <span className={`text-sm ${getTextColorClass(isDark, '60')}`}>
+        Авторы: <strong className={isDark ? 'text-white' : 'text-black'}>{authors.join(', ')}</strong>
+      </span>
+    );
+  };
 
   if (loading) {
     return (
@@ -118,23 +126,26 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
         <article className="flex-1 pt-24 pb-24 px-4 md:pr-80 w-full" data-article-content>
           <div className="container mx-auto max-w-3xl w-full overflow-x-hidden">
             <div className="mb-8">
-              <div className="flex items-center gap-3 mb-4">
-                <DocIcon type={doc.type} />
-                <span className={`text-sm font-semibold ${getTextColorClass(isDark)}`}>{getTypeLabel(doc.type)}</span>
-              </div>
+              {doc.typename && doc.typename.trim() !== '' && (
+                <div className="flex items-center gap-3 mb-4">
+                  <span className={`text-sm font-semibold ${getTextColorClass(isDark)}`}>
+                    {doc.typename}
+                  </span>
+                </div>
+              )}
+              
               <h1
                 className={`text-4xl md:text-5xl font-bold mb-4 ${isDark ? 'text-white' : 'text-black'}`}
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 {doc.title}
               </h1>
+              
               <p className={`text-lg ${getTextColorClass(isDark)}`}>{doc.description}</p>
+              
               <div className={`flex items-center gap-4 mt-6 pt-4 border-t flex-wrap ${isDark ? 'border-white/10' : 'border-black/10'}`}>
-                {doc.author && (
-                  <span className={`text-sm ${getTextColorClass(isDark, '60')}`}>
-                    Автор: <strong className={isDark ? 'text-white' : 'text-black'}>{doc.author}</strong>
-                  </span>
-                )}
+                {getAuthorDisplay()}
+                
                 {doc.date && (
                   <span className={`text-sm ${getTextColorClass(isDark, '60')}`}>
                     {new Date(doc.date).toLocaleDateString('ru-RU', {
@@ -144,21 +155,8 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
                     })}
                   </span>
                 )}
-                {doc.category && (
-                  <span className={`text-sm ${getTextColorClass(isDark, '60')}`}>
-                    Категория: <strong className={isDark ? 'text-white' : 'text-black'}>{doc.category}</strong>
-                  </span>
-                )}
               </div>
             </div>
-
-            <DocBanner
-              bannercolor={doc.bannercolor || '#3b82f6'}
-              bannertext={doc.bannertext || doc.title}
-              isDark={isDark}
-              className="mb-8 rounded-lg overflow-hidden border"
-              isCard={false}
-            />
 
             <TableContext.Provider value={tableContextValue}>
               <div className="prose max-w-none prose-invert w-full overflow-x-auto">
