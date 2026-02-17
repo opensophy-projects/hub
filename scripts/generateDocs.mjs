@@ -16,18 +16,15 @@ marked.setOptions({
 });
 
 function preprocessAlerts(content) {
-  // Шаг 1: Защищаем code blocks от обработки
   const codeBlocks = [];
   const codeBlockPattern = /```[\s\S]*?```/g;
   
-  // Заменяем code blocks на плейсхолдеры и сохраняем их
   let protectedContent = content.replace(codeBlockPattern, (match) => {
     const index = codeBlocks.length;
     codeBlocks.push(match);
     return `___CODE_BLOCK_${index}___`;
   });
   
-  // Шаг 2: Обрабатываем alerts в защищенном контенте
   const alertPattern = /^:::(note|tip|important|warning|caution)\n([\s\S]*?)^:::$/gm;
   
   protectedContent = protectedContent.replace(alertPattern, (match, type, alertContent) => {
@@ -35,7 +32,6 @@ function preprocessAlerts(content) {
     return `<div class="custom-alert" data-alert-type="${type}">\n${cleanContent}\n</div>`;
   });
   
-  // Шаг 3: Возвращаем code blocks на место
   protectedContent = protectedContent.replace(/___CODE_BLOCK_(\d+)___/g, (match, index) => {
     return codeBlocks[parseInt(index, 10)];
   });
@@ -81,7 +77,11 @@ function getFirstParagraph(content) {
   return '';
 }
 
-function generateSlug(fileName) {
+function generateSlug(fileName, canonical) {
+  if (canonical && canonical !== 'null') {
+    return canonical.replace(/^\/+/, '');
+  }
+  
   let slug = fileName
     .replace('.md', '')
     .toLowerCase();
@@ -105,7 +105,7 @@ function generateSlug(fileName) {
 function scanDocs(dir) {
   const manifest = [];
   
-  function scan(currentPath, currentCategory = null) {
+  function scan(currentPath) {
     if (!fs.existsSync(currentPath)) {
       console.warn(`Directory not found: ${currentPath}`);
       return;
@@ -118,7 +118,7 @@ function scanDocs(dir) {
       const stat = fs.statSync(fullPath);
       
       if (stat.isDirectory()) {
-        scan(fullPath, item);
+        scan(fullPath);
       } else if (item.endsWith('.md') && item !== 'README.md') {
         const content = fs.readFileSync(fullPath, 'utf-8');
         const { metadata, content: cleanContent } = extractFrontMatter(content);
@@ -128,15 +128,13 @@ function scanDocs(dir) {
         const htmlContent = marked(preprocessedContent);
 
         const fileName = path.basename(fullPath, '.md');
-        const slug = generateSlug(fileName);
+        const slug = generateSlug(fileName, metadata.canonical);
         
         const title = metadata.title || fileName;
         const description = metadata.description || getFirstParagraph(processedContent);
-        const type = metadata.type || 'docs';
-        const category = metadata.category || currentCategory || 'Прочие';
-        const bannercolor = metadata.bannercolor || '#3b82f6';
-        const bannertext = metadata.bannertext || title;
-        const author = metadata.author || 'VeilStack';
+        const type = metadata.type || '';
+        const typename = metadata.typename || '';
+        const author = metadata.author || '';
         const date = metadata.date || new Date().toISOString().split('T')[0];
         const tags = metadata.tags ? metadata.tags.split(',').map(t => t.trim()) : [];
         const keywords = metadata.keywords || tags.join(', ');
@@ -150,9 +148,7 @@ function scanDocs(dir) {
           slug,
           description,
           type,
-          category,
-          bannercolor,
-          bannertext,
+          typename,
           author,
           date,
           tags,
@@ -172,9 +168,7 @@ function scanDocs(dir) {
           slug,
           description,
           type,
-          category,
-          bannercolor,
-          bannertext,
+          typename,
           author,
           date,
           tags,
@@ -213,7 +207,7 @@ function generateDocs() {
   console.log(`✅ Generated manifest.json`);
   
   manifest.forEach(doc => {
-    console.log(`  - ${doc.title} (${doc.type}) - slug: ${doc.slug}`);
+    console.log(`  - ${doc.title} (${doc.type || 'no-category'}) - slug: ${doc.slug}`);
   });
 }
 
