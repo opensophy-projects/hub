@@ -110,7 +110,7 @@ const SidebarSearch: React.FC<{
 );
 
 const DocLink: React.FC<{ doc: Doc; onClose: () => void; isDark: boolean }> = ({ doc, onClose, isDark }) => {
-  const url = doc.type?.trim() ? `/${doc.type}/${doc.slug}` : `/${doc.slug}`;
+  const url = doc.slug === 'welcome' ? '/' : doc.type?.trim() ? `/${doc.type}/${doc.slug}` : `/${doc.slug}`;
   return (
     <a
       href={url}
