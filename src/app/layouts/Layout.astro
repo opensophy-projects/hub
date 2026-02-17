@@ -1,205 +1,122 @@
 ---
 import '@/shared/styles/global.css';
+import { ThemeProvider } from '@/shared/contexts/ThemeContext';
+import ErrorBoundary from '@/shared/components/ErrorBoundary';
+import TopNavbar from '@/features/navigation/components/MobileNavbar';
+import SearchPanel from '@/features/navigation/components/UnifiedSearchPanel';
 
 interface Props {
   title: string;
-  description: string;
+  description?: string;
   image?: string;
-  url: string;
-  type?: 'article' | 'website';
+  url?: string;
+  type?: 'website' | 'article';
   author?: string;
   date?: string;
   keywords?: string;
-  canonical?: string;
   robots?: string;
-  lang?: string;
 }
 
 const {
   title,
-  description,
+  description = 'Hub - Opensophy',
   image,
-  url,
-  type = 'article',
+  url = '/',
+  type = 'website',
   author,
   date,
-  keywords,
-  canonical,
+  keywords = 'opensophy, hub, documentation',
   robots = 'index, follow',
-  lang = 'ru',
-} = Astro.props as Props;
+} = Astro.props;
 
-const siteUrl = 'https://hub.opensophy.com';
-const fullUrl = new URL(url, siteUrl).toString();
-const ogImage = image || `${siteUrl}/banner.png`;
-
-const jsonLd =
-  type === 'article'
-    ? {
-        '@context': 'https://schema.org',
-        '@type': 'Article',
-        headline: title,
-        description: description,
-        image: ogImage,
-        author: {
-          '@type': 'Person',
-          name: author,
-        },
-        datePublished: date,
-        dateModified: date,
-      }
-    : {
-        '@context': 'https://schema.org',
-        '@type': 'WebPage',
-        name: title,
-        description: description,
-        url: fullUrl,
-      };
+const fullUrl = new URL(url, 'https://hub.opensophy.com').href;
+const imageUrl = image
+  ? new URL(image, 'https://hub.opensophy.com').href
+  : 'https://hub.opensophy.com/og-image.png';
 ---
 
 <!doctype html>
-<html {lang}>
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
-
-    <!-- ✅ SECURITY: CSP Policy - balanced for static sites -->
-    <meta 
-      http-equiv="Content-Security-Policy" 
-      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
-    >
-    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="referrer" content="strict-origin-when-cross-origin" />
-
-    <link rel="icon" type="image/png" href="/favicon.png?v=1" />
-    <link rel="icon" type="image/x-icon" href="/favicon.png?v=1" />
-    <link rel="shortcut icon" href="/favicon.png?v=1" />
-    <link rel="apple-touch-icon" href="/favicon.png?v=1" sizes="180x180" />
-    <link rel="apple-touch-icon-precomposed" href="/favicon.png?v=1" sizes="180x180" />
-    <meta name="mobile-web-app-capable" content="yes" />
-
-    <script is:inline>
-      (function() {
-        const theme = localStorage.getItem('theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const isDark = theme ? theme === 'dark' : prefersDark;
-        
-        const html = document.documentElement;
-        
-        if (isDark) {
-          html.classList.add('dark');
-          html.setAttribute('data-theme', 'dark');
-          html.style.backgroundColor = '#0a0a0a';
-          html.style.color = '#ffffff';
-          html.style.colorScheme = 'dark';
-        } else {
-          html.classList.remove('dark');
-          html.setAttribute('data-theme', 'light');
-          html.style.backgroundColor = '#E8E7E3';
-          html.style.color = '#000000';
-          html.style.colorScheme = 'light';
-        }
-      })();
-    </script>
-
-    <style is:inline>
-      html[data-theme="dark"] {
-        background-color: #0a0a0a;
-        color: #ffffff;
-        color-scheme: dark;
-      }
-      
-      html[data-theme="light"] {
-        background-color: #E8E7E3;
-        color: #000000;
-        color-scheme: light;
-      }
-      
-      body {
-        margin: 0;
-        padding: 0;
-      }
-      
-      html[data-theme="dark"] body {
-        background-color: #0a0a0a;
-        color: #ffffff;
-      }
-      
-      html[data-theme="light"] body {
-        background-color: #E8E7E3;
-        color: #000000;
-      }
-    </style>
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
-    {keywords && <meta name="keywords" content={keywords} />}
-    {robots && <meta name="robots" content={robots} />}
-    {canonical && <link rel="canonical" href={canonical} />}
-
-    <meta name="theme-color" content="#0a0a0a" />
-    <meta name="msapplication-TileColor" content="#0a0a0a" />
-    <meta name="msapplication-TileImage" content="/favicon.png?v=1" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="format-detection" content="telephone=no" />
-
+    <meta name="keywords" content={keywords} />
+    <meta name="robots" content={robots} />
+    
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:image" content={ogImage} />
-    <meta property="og:url" content={fullUrl} />
     <meta property="og:type" content={type} />
-    <meta property="og:locale" content="ru_RU" />
-
+    <meta property="og:url" content={fullUrl} />
+    <meta property="og:image" content={imageUrl} />
+    
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content={ogImage} />
-
-    {author && <meta name="author" content={author} />}
-    {date && <meta property="article:published_time" content={date} />}
-
-    <link rel="sitemap" href="/sitemap.xml" type="application/xml" />
-
-    <title>{title} | Opensophy</title>
-
-    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
-  </head>
-  <body>
-    <div id="theme-provider-root">
-      <slot />
-    </div>
-    <script>
-      function applyTheme(isDark: boolean) {
-        const html = document.documentElement;
-        html.setAttribute('data-theme', isDark ? 'dark' : 'light');
-        
-        if (isDark) {
-          html.classList.add('dark');
-          html.style.backgroundColor = '#0a0a0a';
-          html.style.color = '#ffffff';
-          html.style.colorScheme = 'dark';
-        } else {
-          html.classList.remove('dark');
-          html.style.backgroundColor = '#E8E7E3';
-          html.style.color = '#000000';
-          html.style.colorScheme = 'light';
-        }
+    <meta name="twitter:image" content={imageUrl} />
+    
+    {type === 'article' && author && (
+      <meta name="author" content={author} />
+    )}
+    
+    {type === 'article' && date && (
+      <>
+        <meta property="article:published_time" content={new Date(date).toISOString()} />
+        <meta property="article:modified_time" content={new Date(date).toISOString()} />
+      </>
+    )}
+    
+    <link rel="canonical" href={fullUrl} />
+    <link rel="icon" href="/favicon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    
+    <style is:global>
+      @font-face {
+        font-family: 'Unifix SP';
+        src: url('/UnifixSP.woff2') format('woff2');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
       }
 
-      window.addEventListener('storage', (e) => {
-        if (e.key === 'theme') {
-          const isDark = e.newValue === 'dark';
-          applyTheme(isDark);
-        }
-      });
+      :root {
+        --font-sans: system-ui, -apple-system, sans-serif;
+        --font-mono: ui-monospace, monospace;
+      }
 
-      window.addEventListener('themechange', () => {
-        const theme = localStorage.getItem('theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const isDark = theme ? theme === 'dark' : prefersDark;
-        applyTheme(isDark);
-      });
+      html {
+        font-family: var(--font-sans);
+        scroll-behavior: smooth;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+      }
+    </style>
+
+    <title>{title}</title>
+  </head>
+  <body>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <TopNavbar client:only="react" />
+        <slot />
+        <SearchPanel client:only="react" onClose={() => {}} />
+      </ThemeProvider>
+    </ErrorBoundary>
+
+    <script>
+      // Prevent flash of unstyled content
+      const theme = localStorage.getItem('theme') || 'dark';
+      if (theme === 'light') {
+        document.documentElement.style.colorScheme = 'light';
+      } else {
+        document.documentElement.style.colorScheme = 'dark';
+      }
     </script>
   </body>
 </html>
