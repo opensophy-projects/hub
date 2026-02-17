@@ -186,7 +186,6 @@ body {
   font-style: italic;
   font-size: 0.875rem;
   border-left-color: rgba(0, 0, 0, 0.2);
-  color: rgba(0, 0, 0, 0.8);
 }
 
 .dark .prose blockquote {
