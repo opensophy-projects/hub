@@ -4,9 +4,7 @@
   "slug": "markdown-guide",
   "description": "Справочник по всем доступным вариантам форматирования текста, кода, таблиц и компонентов в документации Hub. Включает примеры синтаксиса и демонстрацию результатов.",
   "type": "docs",
-  "category": "hub",
-  "bannercolor": "#1e3a8a",
-  "bannertext": "Markdown Guide",
+  "typename": "Документация",
   "author": "veilosophy",
   "date": "2026-02-16",
   "tags": [

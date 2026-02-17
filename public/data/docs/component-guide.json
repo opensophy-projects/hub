@@ -4,9 +4,7 @@
   "slug": "component-guide",
   "description": "Полное руководство по структуре проекта, добавлению компонентов в существующие и новые категории, конфигурациям и примерам кода",
   "type": "docs",
-  "category": "hub",
-  "bannercolor": "#bf548f",
-  "bannertext": "UI Components Guide",
+  "typename": "Документация",
   "author": "veilosophy",
   "date": "2026-02-12",
   "tags": [

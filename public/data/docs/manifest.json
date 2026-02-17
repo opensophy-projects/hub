@@ -1,13 +1,30 @@
 [
   {
+    "id": "welcome",
+    "title": "Добро пожаловать в Hub",
+    "slug": "welcome",
+    "description": "Hub проекта Opensophy - центр знаний, документации и статей по искусственному интеллекту, кибербезопасности и современным технологиям",
+    "type": "",
+    "typename": "",
+    "author": "",
+    "date": "2026-02-17",
+    "tags": [
+      "welcome",
+      "hub",
+      "opensophy"
+    ],
+    "keywords": "Opensophy, Hub, документация, знания, AI, security",
+    "canonical": "null",
+    "robots": "index, follow",
+    "lang": "ru"
+  },
+  {
     "id": "markdown-guide",
     "title": "Полное руководство по форматированию Markdown в Hub",
     "slug": "markdown-guide",
     "description": "Справочник по всем доступным вариантам форматирования текста, кода, таблиц и компонентов в документации Hub. Включает примеры синтаксиса и демонстрацию результатов.",
     "type": "docs",
-    "category": "hub",
-    "bannercolor": "#1e3a8a",
-    "bannertext": "Markdown Guide",
+    "typename": "Документация",
     "author": "veilosophy",
     "date": "2026-02-16",
     "tags": [
@@ -29,9 +46,7 @@
     "slug": "component-guide",
     "description": "Полное руководство по структуре проекта, добавлению компонентов в существующие и новые категории, конфигурациям и примерам кода",
     "type": "docs",
-    "category": "hub",
-    "bannercolor": "#bf548f",
-    "bannertext": "UI Components Guide",
+    "typename": "Документация",
     "author": "veilosophy",
     "date": "2026-02-12",
     "tags": [
