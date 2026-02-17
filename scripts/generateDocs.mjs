@@ -22,10 +22,12 @@ marked.use({
       name: 'alert',
       level: 'block',
       start(src) {
-        return src.match(/^:::/)?.index;
+        const match = src.match(/^:::/);
+        return match ? match.index : undefined;
       },
       tokenizer(src) {
-        const match = src.match(/^:::(note|tip|important|warning|caution)\n([\s\S]*?)\n:::/i);
+        const rule = /^:::(note|tip|important|warning|caution)\n([\s\S]*?)^:::$/m;
+        const match = rule.exec(src);
         if (match) {
           return {
             type: 'alert',
@@ -36,7 +38,8 @@ marked.use({
         }
       },
       renderer(token) {
-        return `<div class="custom-alert" data-alert-type="${token.alertType}">${marked.parse(token.text)}</div>\n`;
+        const parsedContent = marked.parse(token.text);
+        return `<div class="custom-alert" data-alert-type="${token.alertType}">${parsedContent}</div>\n`;
       }
     },
     {
