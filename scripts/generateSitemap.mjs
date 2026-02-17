@@ -8,17 +8,6 @@ const __dirname = path.dirname(__filename);
 const manifestPath = path.join(__dirname, '../public/data/docs/manifest.json');
 const sitemapPath = path.join(__dirname, '../public/sitemap.xml');
 
-function getTypePrefix(type) {
-  switch (type) {
-    case 'blog':
-      return 'blog';
-    case 'news':
-      return 'news';
-    default:
-      return 'docs';
-  }
-}
-
 function generateSitemap() {
   console.log('🔄 Generating sitemap...');
 
@@ -51,7 +40,6 @@ function generateSitemap() {
 `;
 
   docs.forEach(doc => {
-    const typePrefix = getTypePrefix(doc.type);
     let cleanSlug = doc.slug;
     while (cleanSlug.startsWith('-')) {
       cleanSlug = cleanSlug.slice(1);
@@ -60,8 +48,12 @@ function generateSitemap() {
       cleanSlug = cleanSlug.slice(0, -1);
     }
     
+    const url = doc.type && doc.type.trim() !== '' 
+      ? `${baseUrl}/${doc.type}/${cleanSlug}`
+      : `${baseUrl}/${cleanSlug}`;
+    
     sitemap += `  <url>
-    <loc>${baseUrl}/${typePrefix}/${cleanSlug}</loc>
+    <loc>${url}</loc>
     <lastmod>${doc.date}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
