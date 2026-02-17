@@ -16,12 +16,31 @@ marked.setOptions({
 });
 
 function preprocessAlerts(content) {
+  // Шаг 1: Защищаем code blocks от обработки
+  const codeBlocks = [];
+  const codeBlockPattern = /```[\s\S]*?```/g;
+  
+  // Заменяем code blocks на плейсхолдеры и сохраняем их
+  let protectedContent = content.replace(codeBlockPattern, (match) => {
+    const index = codeBlocks.length;
+    codeBlocks.push(match);
+    return `___CODE_BLOCK_${index}___`;
+  });
+  
+  // Шаг 2: Обрабатываем alerts в защищенном контенте
   const alertPattern = /^:::(note|tip|important|warning|caution)\n([\s\S]*?)^:::$/gm;
   
-  return content.replace(alertPattern, (match, type, alertContent) => {
+  protectedContent = protectedContent.replace(alertPattern, (match, type, alertContent) => {
     const cleanContent = alertContent.trim();
     return `<div class="custom-alert" data-alert-type="${type}">\n${cleanContent}\n</div>`;
   });
+  
+  // Шаг 3: Возвращаем code blocks на место
+  protectedContent = protectedContent.replace(/___CODE_BLOCK_(\d+)___/g, (match, index) => {
+    return codeBlocks[parseInt(index, 10)];
+  });
+  
+  return protectedContent;
 }
 
 function extractFrontMatter(content) {
