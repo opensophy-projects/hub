@@ -95,13 +95,19 @@ const MobileNavbar: React.FC = () => {
   const [toc, setToc] = useState<TocItem[]>([]);
 
   useEffect(() => {
-    const generateTOC = () => {
-      const articleContent = document.querySelector('[data-article-content]');
-      if (!articleContent) return;
+    const generateTOC = (): boolean => {
+      // Ищем контейнер: сначала по атрибуту, потом article, потом main
+      const container =
+        document.querySelector('[data-article-content]') ||
+        document.querySelector('article') ||
+        document.querySelector('main');
 
-      const headings = articleContent.querySelectorAll('h2, h3, h4');
+      if (!container) return false;
+
+      const headings = container.querySelectorAll('h2, h3, h4');
+      if (headings.length === 0) return false;
+
       const items: TocItem[] = [];
-
       headings.forEach((heading, index) => {
         const id = heading.id || `heading-${index}`;
         if (!heading.id) heading.id = id;
@@ -113,10 +119,29 @@ const MobileNavbar: React.FC = () => {
       });
 
       setToc(items);
+      return true;
     };
 
-    const timer = setTimeout(generateTOC, 100);
-    return () => clearTimeout(timer);
+    // Первая попытка сразу
+    if (generateTOC()) return;
+
+    // Ждём появления контента через MutationObserver
+    const observer = new MutationObserver(() => {
+      if (generateTOC()) observer.disconnect();
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // Страховочный таймаут 3с
+    const fallback = setTimeout(() => {
+      generateTOC();
+      observer.disconnect();
+    }, 3000);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(fallback);
+    };
   }, []);
 
   const handleTocClick = (id: string) => {
@@ -174,7 +199,34 @@ const MobileNavbar: React.FC = () => {
           <NavButton
             icon={<ListIcon />}
             label="Оглавление"
-            onClick={() => setIsTocOpen(!isTocOpen)}
+            onClick={() => {
+              // Если TOC пустой — попробуем сгенерировать прямо сейчас
+              if (toc.length === 0) {
+                const container =
+                  document.querySelector('[data-article-content]') ||
+                  document.querySelector('article') ||
+                  document.querySelector('main');
+                if (container) {
+                  const headings = container.querySelectorAll('h2, h3, h4');
+                  const items: TocItem[] = [];
+                  headings.forEach((heading, index) => {
+                    const id = heading.id || `heading-${index}`;
+                    if (!heading.id) heading.id = id;
+                    items.push({
+                      id,
+                      text: heading.textContent || '',
+                      level: Number.parseInt(heading.tagName[1], 10),
+                    });
+                  });
+                  if (items.length > 0) {
+                    setToc(items);
+                    setIsTocOpen(true);
+                    return;
+                  }
+                }
+              }
+              setIsTocOpen(!isTocOpen);
+            }}
             isActive={isTocOpen}
           />
 
