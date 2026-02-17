@@ -75,12 +75,10 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const { manifest: docs } = useDocuments();
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
-  const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set());
   const [selectedTypenames, setSelectedTypenames] = useState<Set<string>>(new Set());
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<SortOption>('date-desc');
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [typenameSearch, setTypenameSearch] = useState('');
   const [tagSearch, setTagSearch] = useState('');
 
   useEffect(() => {
@@ -92,13 +90,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
       document.body.style.overflow = '';
     };
   }, [onClose]);
-
-  // Уникальные type из манифеста
-  const allTypes = useMemo(() => {
-    const types = new Set<string>();
-    docs.forEach(doc => { if (doc.type?.trim()) types.add(doc.type); });
-    return Array.from(types).sort();
-  }, [docs]);
 
   // Уникальные typename из манифеста
   const allTypenames = useMemo(() => {
@@ -117,9 +108,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const filteredResults = useMemo(() => {
     let results = [...docs] as SearchResult[];
 
-    if (selectedTypes.size > 0) {
-      results = results.filter(doc => selectedTypes.has(doc.type));
-    }
     if (selectedTypenames.size > 0) {
       results = results.filter(doc => doc.typename && selectedTypenames.has(doc.typename));
     }
@@ -145,7 +133,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     });
 
     return results.slice(0, 20);
-  }, [docs, selectedTypes, selectedTypenames, selectedTags, debouncedSearchQuery, sortBy]);
+  }, [docs, selectedTypenames, selectedTags, debouncedSearchQuery, sortBy]);
 
   const toggleSet = (setFn: React.Dispatch<React.SetStateAction<Set<string>>>, item: string) => {
     setFn(prev => {
@@ -157,7 +145,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
 
   const handleReset = () => {
     setSearchQuery('');
-    setSelectedTypes(new Set());
     setSelectedTypenames(new Set());
     setSelectedTags(new Set());
     setSortBy('date-desc');
@@ -167,7 +154,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     globalThis.location.href = doc.type?.trim() ? `/${doc.type}/${doc.slug}` : `/${doc.slug}`;
   };
 
-  const activeFiltersCount = selectedTypes.size + selectedTypenames.size + selectedTags.size;
+  const activeFiltersCount = selectedTypenames.size + selectedTags.size;
   const bg = isDark ? '#0a0a0a' : '#E8E7E3';
   const border = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
 
@@ -193,14 +180,14 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
         </button>
       </div>
 
-      {/* Быстрый фильтр по type */}
-      {allTypes.length > 0 && (
+      {/* Быстрый фильтр по typename */}
+      {allTypenames.length > 0 && (
         <div className="flex-shrink-0 px-4 py-3 border-b flex gap-2 flex-wrap" style={{ borderColor: border }}>
-          {allTypes.map(t => (
+          {allTypenames.map(t => (
             <button
               key={t}
-              onClick={() => toggleSet(setSelectedTypes, t)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${getFilterButtonClasses(selectedTypes.has(t), isDark)}`}
+              onClick={() => toggleSet(setSelectedTypenames, t)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${getFilterButtonClasses(selectedTypenames.has(t), isDark)}`}
             >
               {t}
             </button>
@@ -227,30 +214,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
 
         {showAdvanced && (
           <div className="px-4 pb-4 space-y-4" style={{ backgroundColor: bg }}>
-
-            {/* Typename */}
-            {allTypenames.length > 0 && (
-              <div>
-                <h4 className={`text-xs font-semibold mb-2 ${getTextClasses(isDark, '70')}`}>
-                  Тип документа {selectedTypenames.size > 0 && `(${selectedTypenames.size})`}
-                </h4>
-                {allTypenames.length > 5 && (
-                  <input
-                    type="text"
-                    placeholder="Поиск..."
-                    value={typenameSearch}
-                    onChange={(e) => setTypenameSearch(e.target.value)}
-                    className={`w-full px-3 py-2 mb-2 rounded-lg text-xs border outline-none ${getInputClasses(isDark)}`}
-                  />
-                )}
-                <CheckboxList
-                  items={allTypenames.filter(t => t.toLowerCase().includes(typenameSearch.toLowerCase()))}
-                  selected={selectedTypenames}
-                  onToggle={(item) => toggleSet(setSelectedTypenames, item)}
-                  isDark={isDark}
-                />
-              </div>
-            )}
 
             {/* Теги */}
             {allTags.length > 0 && (
