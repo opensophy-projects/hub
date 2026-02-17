@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTheme } from '@/shared/contexts/ThemeContext';
 import { useDebounce } from '@/shared/hooks/useDebounce';
 import { getInputClasses, getCardClasses, getTextClasses, getBadgeClasses } from '@/shared/lib/classUtils';
@@ -59,7 +59,6 @@ const CheckboxList: React.FC<{
         items.map(item => {
           const isSelected = selected.has(item);
           
-          // Вычисляем классы отдельно для читаемости
           let itemBgClass: string;
           if (isSelected) {
             itemBgClass = isDark ? 'bg-blue-600/20' : 'bg-blue-100';
@@ -96,11 +95,35 @@ const CheckboxList: React.FC<{
   );
 };
 
+// Вспомогательная функция для проверки совпадения в поисковой строке
+const matchesSearchQuery = (doc: SearchResult, query: string): boolean => {
+  const lowerQuery = query.toLowerCase();
+  
+  if (doc.title.toLowerCase().includes(lowerQuery)) return true;
+  if (doc.description.toLowerCase().includes(lowerQuery)) return true;
+  if (doc.author?.toLowerCase().includes(lowerQuery)) return true;
+  if (doc.typename?.toLowerCase().includes(lowerQuery)) return true;
+  if (doc.type?.toLowerCase().includes(lowerQuery)) return true;
+  if (doc.tags?.some(tag => tag.toLowerCase().includes(lowerQuery))) return true;
+  
+  return false;
+};
+
+// Вспомогательная функция для формирования URL документа
+const buildDocUrl = (doc: SearchResult): string => {
+  if (doc.slug === 'welcome') return '/';
+  return doc.type?.trim() ? `/${doc.type}/${doc.slug}` : `/${doc.slug}`;
+};
+
+// Вспомогательная функция для навигации
+const navigateToUrl = (url: string): void => {
+  window.location.href = url;
+};
+
 const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const { isDark } = useTheme();
   const { manifest: docs } = useDocuments();
   
-  // Все хуки вызываются безусловно на верхнем уровне
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTypenames, setSelectedTypenames] = useState<Set<string>>(new Set());
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
@@ -122,7 +145,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     };
   }, [onClose]);
 
-  // Уникальные typename из манифеста
   const allTypenames = useMemo(() => {
     const typenames = new Set<string>();
     docs.forEach(doc => {
@@ -134,7 +156,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     return Array.from(typenames).sort();
   }, [docs]);
 
-  // Уникальные теги
   const allTags = useMemo(() => {
     const tags = new Set<string>();
     docs.forEach(doc => { 
@@ -147,29 +168,15 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     let results = [...docs] as SearchResult[];
 
     if (selectedTypenames.size > 0) {
-      results = results.filter(doc => {
-        return doc.typename && selectedTypenames.has(doc.typename);
-      });
+      results = results.filter(doc => doc.typename && selectedTypenames.has(doc.typename));
     }
     
     if (selectedTags.size > 0) {
-      results = results.filter(doc => {
-        return doc.tags?.some(tag => selectedTags.has(tag));
-      });
+      results = results.filter(doc => doc.tags?.some(tag => selectedTags.has(tag)));
     }
 
     if (debouncedSearchQuery.trim()) {
-      const query = debouncedSearchQuery.toLowerCase();
-      results = results.filter(doc => {
-        const titleMatch = doc.title.toLowerCase().includes(query);
-        const descriptionMatch = doc.description.toLowerCase().includes(query);
-        const authorMatch = doc.author?.toLowerCase().includes(query) ?? false;
-        const tagMatch = doc.tags?.some(tag => tag.toLowerCase().includes(query)) ?? false;
-        const typenameMatch = doc.typename?.toLowerCase().includes(query) ?? false;
-        const typeMatch = doc.type?.toLowerCase().includes(query) ?? false;
-        
-        return titleMatch || descriptionMatch || authorMatch || tagMatch || typenameMatch || typeMatch;
-      });
+      results = results.filter(doc => matchesSearchQuery(doc, debouncedSearchQuery));
     }
 
     results.sort((a, b) => {
@@ -182,7 +189,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     return results.slice(0, 20);
   }, [docs, selectedTypenames, selectedTags, debouncedSearchQuery, sortBy]);
 
-  const toggleSet = (setFn: React.Dispatch<React.SetStateAction<Set<string>>>, item: string) => {
+  const toggleSet = useCallback((setFn: React.Dispatch<React.SetStateAction<Set<string>>>, item: string) => {
     setFn(prev => {
       const next = new Set(prev);
       if (next.has(item)) {
@@ -192,29 +199,24 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
       }
       return next;
     });
-  };
+  }, []);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setSearchQuery('');
     setSelectedTypenames(new Set());
     setSelectedTags(new Set());
     setSortBy('date-desc');
-  };
+  }, []);
 
-  const getDocUrl = (doc: SearchResult): string => {
-    if (doc.slug === 'welcome') return '/';
-    return doc.type?.trim() ? `/${doc.type}/${doc.slug}` : `/${doc.slug}`;
-  };
-
-  const handleResultClick = (doc: SearchResult) => {
-    globalThis.location.href = getDocUrl(doc);
-  };
+  const handleResultClick = useCallback((doc: SearchResult) => {
+    const url = buildDocUrl(doc);
+    navigateToUrl(url);
+  }, []);
 
   const activeFiltersCount = selectedTypenames.size + selectedTags.size;
   const bg = isDark ? '#0a0a0a' : '#E8E7E3';
   const border = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
   
-  // Предвычисленные классы для оптимизации
   const searchIconClass = `w-5 h-5 flex-shrink-0 ${getTextClasses(isDark, '40')}`;
   const inputClass = `flex-1 bg-transparent outline-none text-base ${
     isDark ? 'text-white placeholder-white/40' : 'text-black placeholder-black/40'
