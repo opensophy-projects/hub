@@ -151,7 +151,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
             </div>
 
             <TableContext.Provider value={tableContextValue}>
-              <div className="prose max-w-none prose-invert w-full overflow-x-auto">
+              <div className={`prose max-w-none w-full overflow-x-auto ${isDark ? 'prose-invert' : ''}`}>
                 {contentNodes}
               </div>
             </TableContext.Provider>
