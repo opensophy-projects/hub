@@ -8,29 +8,14 @@ interface Doc {
   slug: string;
   title: string;
   description: string;
-  type: 'docs' | 'blog' | 'news';
-  category?: string;
+  type: string;
+  typename: string;
   author?: string;
   date?: string;
   tags?: string[];
 }
 
-type GroupedDocs = Record<string, Record<string, Doc[]>>;
-
-const getTypeLabel = (type: string): string => {
-  const labels: Record<string, string> = {
-    docs: 'Документация',
-    blog: 'Блог',
-    news: 'Новости'
-  };
-  return labels[type] || type;
-};
-
-const getTypePrefix = (type: string): string => {
-  if (type === 'blog') return '/blog';
-  if (type === 'news') return '/news';
-  return '/docs';
-};
+type GroupedDocs = Record<string, Doc[]>;
 
 const createCloseKeyHandler = (onClose: () => void) => (e: React.KeyboardEvent) => {
   if (e.key === 'Enter' || e.key === ' ') {
@@ -148,94 +133,43 @@ const SidebarSearch: React.FC<{
 
 const DocLink: React.FC<{
   doc: Doc;
-  type: string;
   onClose: () => void;
   isDark: boolean;
-}> = ({ doc, type, onClose, isDark }) => (
-  <a
-    href={`${getTypePrefix(type)}/${doc.slug}`}
-    onClick={onClose}
-    className={`block px-3 py-1 rounded-lg text-xs md:text-sm transition-colors ${
-      isDark
-        ? 'text-white/60 hover:text-white hover:bg-white/5'
-        : 'text-black/60 hover:text-black hover:bg-black/5'
-    }`}
-  >
-    {doc.title}
-  </a>
-);
+}> = ({ doc, onClose, isDark }) => {
+  const getDocUrl = () => {
+    if (doc.type && doc.type.trim() !== '') {
+      return `/${doc.type}/${doc.slug}`;
+    }
+    return `/${doc.slug}`;
+  };
 
-const CategoryItem: React.FC<{
-  category: string;
-  categoryKey: string;
-  docsList: Doc[];
-  type: string;
+  return (
+    <a
+      href={getDocUrl()}
+      onClick={onClose}
+      className={`block px-3 py-1 rounded-lg text-xs md:text-sm transition-colors ${
+        isDark
+          ? 'text-white/60 hover:text-white hover:bg-white/5'
+          : 'text-black/60 hover:text-black hover:bg-black/5'
+      }`}
+    >
+      {doc.title}
+    </a>
+  );
+};
+
+const TypeSection: React.FC<{
+  typename: string;
+  docs: Doc[];
   isExpanded: boolean;
   onToggle: () => void;
   onDocClick: () => void;
   isDark: boolean;
-}> = ({ category, categoryKey, docsList, type, isExpanded, onToggle, onDocClick, isDark }) => (
-  <div>
-    <button
-      onClick={onToggle}
-      className={`w-full flex items-center justify-between px-3 py-1 rounded-lg text-xs md:text-sm transition-colors ${
-        isDark
-          ? 'text-white/80 hover:bg-white/5'
-          : 'text-black/80 hover:bg-black/5'
-      }`}
-    >
-      <div className="flex items-center gap-2">
-        {isExpanded ? (
-          <ChevronDown size={14} />
-        ) : (
-          <ChevronRight size={14} />
-        )}
-        <span>{category}</span>
-      </div>
-      <span
-        className={`text-xs ${
-          isDark ? 'text-white/50' : 'text-black/50'
-        }`}
-      >
-        {docsList.length}
-      </span>
-    </button>
-
-    {isExpanded && (
-      <div className="ml-6 mt-0.5 space-y-0.5">
-        {docsList
-          .sort((a, b) => a.title.localeCompare(b.title))
-          .map((doc) => (
-            <DocLink
-              key={doc.id}
-              doc={doc}
-              type={type}
-              onClose={onDocClick}
-              isDark={isDark}
-            />
-          ))}
-      </div>
-    )}
-  </div>
-);
-
-const TypeSection: React.FC<{
-  type: string;
-  categories: Record<string, Doc[]>;
-  isExpanded: boolean;
-  expandedCategories: Set<string>;
-  onToggleType: () => void;
-  onToggleCategory: (key: string) => void;
-  onDocClick: () => void;
-  isDark: boolean;
-}> = ({ type, categories, isExpanded, expandedCategories, onToggleType, onToggleCategory, onDocClick, isDark }) => {
-  const typeCount = Object.values(categories).reduce((sum, categoryDocs) => sum + categoryDocs.length, 0);
-  const hasCategories = Object.keys(categories).length > 0;
-
+}> = ({ typename, docs, isExpanded, onToggle, onDocClick, isDark }) => {
   return (
     <div>
       <button
-        onClick={onToggleType}
+        onClick={onToggle}
         className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition-colors ${
           isDark
             ? 'text-white hover:bg-white/5'
@@ -248,37 +182,29 @@ const TypeSection: React.FC<{
           ) : (
             <ChevronRight size={16} />
           )}
-          <span>{getTypeLabel(type)}</span>
+          <span>{typename}</span>
         </div>
         <span
           className={`text-xs px-2 py-0.5 rounded ${
             isDark ? 'bg-white/10 text-white/70' : 'bg-black/10 text-black/70'
           }`}
         >
-          {typeCount}
+          {docs.length}
         </span>
       </button>
 
-      {isExpanded && hasCategories && (
+      {isExpanded && docs.length > 0 && (
         <div className="ml-4 mt-1 space-y-1">
-          {Object.entries(categories)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([category, docsList]) => {
-              const categoryKey = `${type}-${category}`;
-              return (
-                <CategoryItem
-                  key={categoryKey}
-                  category={category}
-                  categoryKey={categoryKey}
-                  docsList={docsList}
-                  type={type}
-                  isExpanded={expandedCategories.has(categoryKey)}
-                  onToggle={() => onToggleCategory(categoryKey)}
-                  onDocClick={onDocClick}
-                  isDark={isDark}
-                />
-              );
-            })}
+          {docs
+            .sort((a, b) => a.title.localeCompare(b.title))
+            .map((doc) => (
+              <DocLink
+                key={doc.id}
+                doc={doc}
+                onClose={onDocClick}
+                isDark={isDark}
+              />
+            ))}
         </div>
       )}
     </div>
@@ -384,28 +310,11 @@ const filterDocsByQuery = (docsList: Doc[], query: string): Doc[] => {
   return docsList.filter(doc => doc.title.toLowerCase().includes(query));
 };
 
-const processCategoriesForType = (
-  categories: Record<string, Doc[]>,
-  query: string
-): Record<string, Doc[]> => {
-  const result: Record<string, Doc[]> = {};
-
-  Object.entries(categories).forEach(([category, docsList]) => {
-    const matchedDocs = filterDocsByQuery(docsList, query);
-    if (matchedDocs.length > 0) {
-      result[category] = matchedDocs;
-    }
-  });
-
-  return result;
-};
-
 const Sidebar: React.FC = () => {
   const { isDark, toggleTheme, isSidebarOpen, setSidebarOpen } = useTheme();
   const { manifest: docs } = useDocuments();
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set(['docs', 'blog', 'news']));
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set());
   const [showContacts, setShowContacts] = useState(false);
 
   useEffect(() => {
@@ -420,18 +329,22 @@ const Sidebar: React.FC = () => {
   }, [isSidebarOpen]);
 
   const groupedDocs = useMemo((): GroupedDocs => {
-    const grouped: GroupedDocs = {
-      docs: {},
-      blog: {},
-      news: {}
-    };
-
+    const grouped: GroupedDocs = {};
+    
     docs.forEach((doc: any) => {
-      const category = doc.category || 'Прочие';
-      if (!grouped[doc.type][category]) {
-        grouped[doc.type][category] = [];
+      // Если есть typename - группируем по нему
+      if (doc.typename && doc.typename.trim() !== '') {
+        if (!grouped[doc.typename]) {
+          grouped[doc.typename] = [];
+        }
+        grouped[doc.typename].push(doc as Doc);
+      } else {
+        // Документы без категории идут в отдельную группу "Без категории"
+        if (!grouped['Без категории']) {
+          grouped['Без категории'] = [];
+        }
+        grouped['Без категории'].push(doc as Doc);
       }
-      grouped[doc.type][category].push(doc as Doc);
     });
 
     return grouped;
@@ -441,37 +354,26 @@ const Sidebar: React.FC = () => {
     if (!searchQuery.trim()) return groupedDocs;
 
     const query = searchQuery.toLowerCase();
-    const filtered: GroupedDocs = {
-      docs: {},
-      blog: {},
-      news: {}
-    };
+    const filtered: GroupedDocs = {};
 
-    Object.entries(groupedDocs).forEach(([type, categories]) => {
-      filtered[type] = processCategoriesForType(categories, query);
+    Object.entries(groupedDocs).forEach(([typename, docsList]) => {
+      const matchedDocs = filterDocsByQuery(docsList, query);
+      if (matchedDocs.length > 0) {
+        filtered[typename] = matchedDocs;
+      }
     });
 
     return filtered;
   }, [groupedDocs, searchQuery]);
 
-  const toggleType = (type: string) => {
+  const toggleType = (typename: string) => {
     const newExpanded = new Set(expandedTypes);
-    if (newExpanded.has(type)) {
-      newExpanded.delete(type);
+    if (newExpanded.has(typename)) {
+      newExpanded.delete(typename);
     } else {
-      newExpanded.add(type);
+      newExpanded.add(typename);
     }
     setExpandedTypes(newExpanded);
-  };
-
-  const toggleCategory = (categoryKey: string) => {
-    const newExpanded = new Set(expandedCategories);
-    if (newExpanded.has(categoryKey)) {
-      newExpanded.delete(categoryKey);
-    } else {
-      newExpanded.add(categoryKey);
-    }
-    setExpandedCategories(newExpanded);
   };
 
   if (!isSidebarOpen) return null;
@@ -501,19 +403,19 @@ const Sidebar: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto p-3 md:p-4">
           <nav className="space-y-1 md:space-y-2">
-            {(['docs', 'blog', 'news'] as const).map((type) => (
-              <TypeSection
-                key={type}
-                type={type}
-                categories={filteredDocs[type] || {}}
-                isExpanded={expandedTypes.has(type)}
-                expandedCategories={expandedCategories}
-                onToggleType={() => toggleType(type)}
-                onToggleCategory={toggleCategory}
-                onDocClick={() => setSidebarOpen(false)}
-                isDark={isDark}
-              />
-            ))}
+            {Object.entries(filteredDocs)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([typename, docsList]) => (
+                <TypeSection
+                  key={typename}
+                  typename={typename}
+                  docs={docsList}
+                  isExpanded={expandedTypes.has(typename)}
+                  onToggle={() => toggleType(typename)}
+                  onDocClick={() => setSidebarOpen(false)}
+                  isDark={isDark}
+                />
+              ))}
           </nav>
         </div>
       </aside>
