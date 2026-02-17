@@ -16,25 +16,13 @@ interface SearchResult {
   title: string;
   description: string;
   type: string;
-  category?: string;
+  typename: string;
   author?: string;
   date?: string;
   tags?: string[];
 }
 
 type SortOption = 'date-desc' | 'date-asc';
-
-const getTypePrefix = (type: string): string => {
-  if (type === 'blog') return '/blog';
-  if (type === 'news') return '/news';
-  return '/docs';
-};
-
-const getTypeDisplayName = (type: string): string => {
-  if (type === 'docs') return 'Документация';
-  if (type === 'blog') return 'Блог';
-  return 'Новости';
-};
 
 const getFilterButtonClasses = (isActive: boolean, isDark: boolean): string => {
   if (isActive) {
@@ -74,17 +62,13 @@ const SearchInput: React.FC<{
   );
 };
 
-const TypeFilters: React.FC<{
-  selectedType: string;
-  onTypeChange: (type: string) => void;
+const TypenameFilters: React.FC<{
+  typenames: string[];
+  selectedTypenames: Set<string>;
+  onToggle: (typename: string) => void;
   isDark: boolean;
-}> = ({ selectedType, onTypeChange, isDark }) => {
-  const types = [
-    { id: 'all', label: 'Все' },
-    { id: 'docs', label: 'Документация' },
-    { id: 'blog', label: 'Блог' },
-    { id: 'news', label: 'Новости' }
-  ];
+}> = ({ typenames, selectedTypenames, onToggle, isDark }) => {
+  if (typenames.length === 0) return null;
 
   return (
     <div className="p-4 flex-shrink-0 border-b sticky top-[88px] z-10" style={{
@@ -92,149 +76,17 @@ const TypeFilters: React.FC<{
       backgroundColor: isDark ? '#0a0a0a' : '#E8E7E3'
     }}>
       <div className="flex gap-2 flex-wrap">
-        {types.map(type => (
+        {typenames.map(typename => (
           <button
-            key={type.id}
-            onClick={() => onTypeChange(type.id)}
+            key={typename}
+            onClick={() => onToggle(typename)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              getFilterButtonClasses(selectedType === type.id, isDark)
+              getFilterButtonClasses(selectedTypenames.has(typename), isDark)
             }`}
           >
-            {type.label}
+            {typename}
           </button>
         ))}
-      </div>
-    </div>
-  );
-};
-
-const CategoryFiltersSelect: React.FC<{
-  categories: string[];
-  selectedCategories: Set<string>;
-  onToggle: (category: string) => void;
-  isDark: boolean;
-}> = ({ categories, selectedCategories, onToggle, isDark }) => {
-  if (categories.length === 0) return null;
-
-  const [searchCat, setSearchCat] = useState('');
-  const filteredCategories = categories.filter(cat => 
-    cat.toLowerCase().includes(searchCat.toLowerCase())
-  );
-
-  return (
-    <div>
-      <h4 className={`text-xs font-semibold mb-2 ${getTextClasses(isDark, '70')}`}>
-        Категории ({selectedCategories.size} выбрано)
-      </h4>
-      
-      {categories.length > 5 && (
-        <input
-          type="text"
-          placeholder="Поиск по категориям..."
-          value={searchCat}
-          onChange={(e) => setSearchCat(e.target.value)}
-          className={`w-full px-3 py-2 mb-2 rounded-lg text-xs border transition-colors outline-none ${getInputClasses(isDark)}`}
-        />
-      )}
-
-      <div className="max-h-40 overflow-y-auto space-y-1 border rounded-lg p-2" style={{
-        borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-      }}>
-        {filteredCategories.length > 0 ? (
-          filteredCategories.map(cat => (
-            <label 
-              key={cat}
-              className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${
-                selectedCategories.has(cat)
-                  ? isDark ? 'bg-blue-600/20' : 'bg-blue-100'
-                  : isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={selectedCategories.has(cat)}
-                onChange={() => onToggle(cat)}
-                className="rounded"
-              />
-              <span className={`text-xs ${
-                selectedCategories.has(cat)
-                  ? isDark ? 'text-blue-400 font-semibold' : 'text-blue-700 font-semibold'
-                  : isDark ? 'text-white/70' : 'text-black/70'
-              }`}>
-                {cat}
-              </span>
-            </label>
-          ))
-        ) : (
-          <p className={`text-xs text-center py-2 ${getTextClasses(isDark, '50')}`}>
-            Категории не найдены
-          </p>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const TagFiltersSelect: React.FC<{
-  allTags: string[];
-  selectedTags: Set<string>;
-  onToggleTag: (tag: string) => void;
-  isDark: boolean;
-}> = ({ allTags, selectedTags, onToggleTag, isDark }) => {
-  if (allTags.length === 0) return null;
-
-  const [searchTag, setSearchTag] = useState('');
-  const filteredTags = allTags.filter(tag => 
-    tag.toLowerCase().includes(searchTag.toLowerCase())
-  );
-
-  return (
-    <div>
-      <h4 className={`text-xs font-semibold mb-2 ${getTextClasses(isDark, '70')}`}>
-        Теги ({selectedTags.size} выбрано)
-      </h4>
-      
-      <input
-        type="text"
-        placeholder="Поиск по тегам..."
-        value={searchTag}
-        onChange={(e) => setSearchTag(e.target.value)}
-        className={`w-full px-3 py-2 mb-2 rounded-lg text-xs border transition-colors outline-none ${getInputClasses(isDark)}`}
-      />
-
-      <div className="max-h-40 overflow-y-auto space-y-1 border rounded-lg p-2" style={{
-        borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-      }}>
-        {filteredTags.length > 0 ? (
-          filteredTags.map(tag => (
-            <label 
-              key={tag}
-              className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${
-                selectedTags.has(tag)
-                  ? isDark ? 'bg-blue-600/20' : 'bg-blue-100'
-                  : isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={selectedTags.has(tag)}
-                onChange={() => onToggleTag(tag)}
-                className="rounded"
-              />
-              <span className={`text-xs ${
-                selectedTags.has(tag)
-                  ? isDark ? 'text-blue-400 font-semibold' : 'text-blue-700 font-semibold'
-                  : isDark ? 'text-white/70' : 'text-black/70'
-              }`}>
-                #{tag}
-              </span>
-            </label>
-          ))
-        ) : (
-          <p className={`text-xs text-center py-2 ${getTextClasses(isDark, '50')}`}>
-            Теги не найдены
-          </p>
-        )}
       </div>
     </div>
   );
@@ -282,16 +134,13 @@ const SearchResultItem: React.FC<{
       onClick={() => onClick(result)}
       className={`w-full text-left p-3 rounded-lg transition-colors border ${getCardClasses(isDark)}`}
     >
-      <div className="flex items-start gap-2 mb-1">
-        <span className={`text-xs px-2 py-0.5 rounded flex-shrink-0 ${getBadgeClasses(isDark, 'default')}`}>
-          {getTypeDisplayName(result.type)}
-        </span>
-        {result.category && (
-          <span className={`text-xs px-2 py-0.5 rounded flex-shrink-0 ${getBadgeClasses(isDark, 'light')}`}>
-            {result.category}
+      {result.typename && result.typename.trim() !== '' && (
+        <div className="flex items-start gap-2 mb-1">
+          <span className={`text-xs px-2 py-0.5 rounded flex-shrink-0 ${getBadgeClasses(isDark, 'default')}`}>
+            {result.typename}
           </span>
-        )}
-      </div>
+        </div>
+      )}
       <h4 className={`font-semibold text-sm mb-1 ${isDark ? 'text-white' : 'text-black'}`}>
         {result.title}
       </h4>
@@ -319,44 +168,25 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const { manifest: docs } = useDocuments();
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
-  const [selectedType, setSelectedType] = useState<string>('all');
-  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
-  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+  const [selectedTypenames, setSelectedTypenames] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<SortOption>('date-desc');
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const categories = useMemo(() => {
-    const cats = new Set<string>();
+  const allTypenames = useMemo(() => {
+    const typenames = new Set<string>();
     docs.forEach(doc => {
-      if (doc.category) cats.add(doc.category);
+      if (doc.typename && doc.typename.trim() !== '') {
+        typenames.add(doc.typename);
+      }
     });
-    return Array.from(cats).sort();
-  }, [docs]);
-
-  const allTags = useMemo(() => {
-    const tags = new Set<string>();
-    docs.forEach(doc => {
-      doc.tags?.forEach(tag => tags.add(tag));
-    });
-    return Array.from(tags).sort();
+    return Array.from(typenames).sort();
   }, [docs]);
 
   const filteredResults = useMemo(() => {
     let results = [...docs] as SearchResult[];
 
-    if (selectedType !== 'all') {
-      results = results.filter(doc => doc.type === selectedType);
-    }
-
-    if (selectedCategories.size > 0) {
+    if (selectedTypenames.size > 0) {
       results = results.filter(doc => 
-        doc.category && selectedCategories.has(doc.category)
-      );
-    }
-
-    if (selectedTags.size > 0) {
-      results = results.filter(doc =>
-        doc.tags?.some(tag => selectedTags.has(tag))
+        doc.typename && selectedTypenames.has(doc.typename)
       );
     }
 
@@ -367,7 +197,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
         doc.description.toLowerCase().includes(query) ||
         (doc.author?.toLowerCase().includes(query) ?? false) ||
         (doc.tags?.some(tag => tag.toLowerCase().includes(query)) ?? false) ||
-        (doc.category?.toLowerCase().includes(query) ?? false)
+        (doc.typename?.toLowerCase().includes(query) ?? false)
       );
     }
 
@@ -378,45 +208,33 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     }
 
     return results.slice(0, 20);
-  }, [docs, selectedType, selectedCategories, selectedTags, debouncedSearchQuery, sortBy]);
+  }, [docs, selectedTypenames, debouncedSearchQuery, sortBy]);
 
-  const handleCategoryToggle = (category: string) => {
-    const newCategories = new Set(selectedCategories);
-    if (newCategories.has(category)) {
-      newCategories.delete(category);
+  const handleTypenameToggle = (typename: string) => {
+    const newTypenames = new Set(selectedTypenames);
+    if (newTypenames.has(typename)) {
+      newTypenames.delete(typename);
     } else {
-      newCategories.add(category);
+      newTypenames.add(typename);
     }
-    setSelectedCategories(newCategories);
-  };
-
-  const handleTagToggle = (tag: string) => {
-    const newTags = new Set(selectedTags);
-    if (newTags.has(tag)) {
-      newTags.delete(tag);
-    } else {
-      newTags.add(tag);
-    }
-    setSelectedTags(newTags);
+    setSelectedTypenames(newTypenames);
   };
 
   const handleReset = () => {
     setSearchQuery('');
-    setSelectedType('all');
-    setSelectedCategories(new Set());
-    setSelectedTags(new Set());
+    setSelectedTypenames(new Set());
     setSortBy('date-desc');
   };
 
   const handleResultClick = (doc: SearchResult) => {
-    const typePrefix = getTypePrefix(doc.type);
-    globalThis.location.href = `${typePrefix}/${doc.slug}`;
+    if (doc.type && doc.type.trim() !== '') {
+      globalThis.location.href = `/${doc.type}/${doc.slug}`;
+    } else {
+      globalThis.location.href = `/${doc.slug}`;
+    }
   };
 
-  const activeFiltersCount = 
-    (selectedType === 'all' ? 0 : 1) +
-    selectedCategories.size +
-    selectedTags.size;
+  const activeFiltersCount = selectedTypenames.size;
 
   return (
     <BottomSheet title="Поиск и фильтры" onClose={onClose}>
@@ -427,71 +245,34 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
           isDark={isDark}
         />
 
-        <TypeFilters
-          selectedType={selectedType}
-          onTypeChange={setSelectedType}
+        <TypenameFilters
+          typenames={allTypenames}
+          selectedTypenames={selectedTypenames}
+          onToggle={handleTypenameToggle}
           isDark={isDark}
         />
 
-        <div className="flex-shrink-0 border-b sticky top-[176px] z-10" style={{
+        <div className="flex-shrink-0 border-b p-4" style={{
           borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
           backgroundColor: isDark ? '#0a0a0a' : '#E8E7E3'
         }}>
-          <button
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className={`w-full px-4 py-3 flex items-center justify-between transition-colors ${
-              isDark ? 'text-white/70 hover:text-white hover:bg-white/5' : 'text-black/70 hover:text-black hover:bg-black/5'
-            }`}
-          >
-            <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-black'}`}>
-              Расширенные фильтры {activeFiltersCount > 0 && `(${activeFiltersCount})`}
-            </span>
-            <svg
-              className={`w-5 h-5 transition-transform ${showAdvanced ? 'rotate-180' : ''} ${getTextClasses(isDark, '70')}`}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
+          <SortFilters
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            isDark={isDark}
+          />
+
+          {activeFiltersCount > 0 && (
+            <button
+              onClick={handleReset}
+              className={`w-full mt-3 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDark
+                  ? 'bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500'
+                  : 'bg-red-100 hover:bg-red-200 text-red-700 border border-red-600'
+              }`}
             >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </button>
-
-          {showAdvanced && (
-            <div className={`p-4 space-y-4 ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}>
-              <CategoryFiltersSelect
-                categories={categories}
-                selectedCategories={selectedCategories}
-                onToggle={handleCategoryToggle}
-                isDark={isDark}
-              />
-
-              <TagFiltersSelect
-                allTags={allTags}
-                selectedTags={selectedTags}
-                onToggleTag={handleTagToggle}
-                isDark={isDark}
-              />
-
-              <SortFilters
-                sortBy={sortBy}
-                onSortChange={setSortBy}
-                isDark={isDark}
-              />
-
-              {activeFiltersCount > 0 && (
-                <button
-                  onClick={handleReset}
-                  className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isDark
-                      ? 'bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500'
-                      : 'bg-red-100 hover:bg-red-200 text-red-700 border border-red-600'
-                  }`}
-                >
-                  Сбросить все фильтры
-                </button>
-              )}
-            </div>
+              Сбросить все фильтры
+            </button>
           )}
         </div>
 
