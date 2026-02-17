@@ -208,7 +208,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
 
   const handleResultClick = (doc: SearchResult) => {
     const url = getDocUrl(doc);
-    location.href = url;
+    window.location.assign(url);
   };
 
   const activeFiltersCount = selectedTypenames.size + selectedTags.size;
