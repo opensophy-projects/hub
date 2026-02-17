@@ -150,8 +150,13 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     setSortBy('date-desc');
   };
 
+  const getDocUrl = (doc: SearchResult): string => {
+    if (doc.slug === 'welcome') return '/';
+    return doc.type?.trim() ? `/${doc.type}/${doc.slug}` : `/${doc.slug}`;
+  };
+
   const handleResultClick = (doc: SearchResult) => {
-    globalThis.location.href = doc.type?.trim() ? `/${doc.type}/${doc.slug}` : `/${doc.slug}`;
+    globalThis.location.href = getDocUrl(doc);
   };
 
   const activeFiltersCount = selectedTypenames.size + selectedTags.size;
