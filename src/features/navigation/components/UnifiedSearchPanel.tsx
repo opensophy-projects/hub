@@ -58,12 +58,21 @@ const CheckboxList: React.FC<{
       ) : (
         items.map(item => {
           const isSelected = selected.has(item);
-          const itemBgClass = isSelected
-            ? (isDark ? 'bg-blue-600/20' : 'bg-blue-100')
-            : (isDark ? 'hover:bg-white/5' : 'hover:bg-black/5');
-          const itemTextClass = isSelected
-            ? (isDark ? 'text-blue-400 font-semibold' : 'text-blue-700 font-semibold')
-            : (isDark ? 'text-white/70' : 'text-black/70');
+          
+          // Вычисляем классы отдельно для читаемости
+          let itemBgClass: string;
+          if (isSelected) {
+            itemBgClass = isDark ? 'bg-blue-600/20' : 'bg-blue-100';
+          } else {
+            itemBgClass = isDark ? 'hover:bg-white/5' : 'hover:bg-black/5';
+          }
+          
+          let itemTextClass: string;
+          if (isSelected) {
+            itemTextClass = isDark ? 'text-blue-400 font-semibold' : 'text-blue-700 font-semibold';
+          } else {
+            itemTextClass = isDark ? 'text-white/70' : 'text-black/70';
+          }
           
           return (
             <label
@@ -116,9 +125,10 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   // Уникальные typename из манифеста
   const allTypenames = useMemo(() => {
     const typenames = new Set<string>();
-    docs.forEach(doc => { 
-      if ((doc as any).typename?.trim()) {
-        typenames.add((doc as any).typename);
+    docs.forEach(doc => {
+      const typename = doc.typename?.trim();
+      if (typename) {
+        typenames.add(typename);
       }
     });
     return Array.from(typenames).sort();
@@ -137,23 +147,29 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     let results = [...docs] as SearchResult[];
 
     if (selectedTypenames.size > 0) {
-      results = results.filter(doc => doc.typename && selectedTypenames.has(doc.typename));
+      results = results.filter(doc => {
+        return doc.typename && selectedTypenames.has(doc.typename);
+      });
     }
     
     if (selectedTags.size > 0) {
-      results = results.filter(doc => doc.tags?.some(tag => selectedTags.has(tag)));
+      results = results.filter(doc => {
+        return doc.tags?.some(tag => selectedTags.has(tag));
+      });
     }
 
     if (debouncedSearchQuery.trim()) {
       const query = debouncedSearchQuery.toLowerCase();
-      results = results.filter(doc =>
-        doc.title.toLowerCase().includes(query) ||
-        doc.description.toLowerCase().includes(query) ||
-        (doc.author?.toLowerCase().includes(query) ?? false) ||
-        (doc.tags?.some(tag => tag.toLowerCase().includes(query)) ?? false) ||
-        (doc.typename?.toLowerCase().includes(query) ?? false) ||
-        (doc.type?.toLowerCase().includes(query) ?? false)
-      );
+      results = results.filter(doc => {
+        const titleMatch = doc.title.toLowerCase().includes(query);
+        const descriptionMatch = doc.description.toLowerCase().includes(query);
+        const authorMatch = doc.author?.toLowerCase().includes(query) ?? false;
+        const tagMatch = doc.tags?.some(tag => tag.toLowerCase().includes(query)) ?? false;
+        const typenameMatch = doc.typename?.toLowerCase().includes(query) ?? false;
+        const typeMatch = doc.type?.toLowerCase().includes(query) ?? false;
+        
+        return titleMatch || descriptionMatch || authorMatch || tagMatch || typenameMatch || typeMatch;
+      });
     }
 
     results.sort((a, b) => {
