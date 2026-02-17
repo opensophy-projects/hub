@@ -93,7 +93,7 @@ const processListElement = (element: Element, tagName: string, key: string, elem
 const processLinkElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
   elements.push(
-    
+    <a
       key={key}
       href={element.getAttribute('href') || '#'}
       target="_blank"
