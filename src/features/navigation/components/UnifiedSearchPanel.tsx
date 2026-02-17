@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTheme } from '@/shared/contexts/ThemeContext';
 import { useDebounce } from '@/shared/hooks/useDebounce';
 import { getInputClasses, getCardClasses, getTextClasses, getBadgeClasses } from '@/shared/lib/classUtils';
@@ -59,7 +59,6 @@ const CheckboxList: React.FC<{
         items.map(item => {
           const isSelected = selected.has(item);
           
-          // Вычисляем классы отдельно для читаемости
           let itemBgClass: string;
           if (isSelected) {
             itemBgClass = isDark ? 'bg-blue-600/20' : 'bg-blue-100';
@@ -100,7 +99,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const { isDark } = useTheme();
   const { manifest: docs } = useDocuments();
   
-  // Все хуки вызываются безусловно на верхнем уровне
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTypenames, setSelectedTypenames] = useState<Set<string>>(new Set());
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
@@ -122,7 +120,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     };
   }, [onClose]);
 
-  // Уникальные typename из манифеста
   const allTypenames = useMemo(() => {
     const typenames = new Set<string>();
     docs.forEach(doc => {
@@ -134,7 +131,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     return Array.from(typenames).sort();
   }, [docs]);
 
-  // Уникальные теги
   const allTags = useMemo(() => {
     const tags = new Set<string>();
     docs.forEach(doc => { 
@@ -182,7 +178,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     return results.slice(0, 20);
   }, [docs, selectedTypenames, selectedTags, debouncedSearchQuery, sortBy]);
 
-  const toggleSet = (setFn: React.Dispatch<React.SetStateAction<Set<string>>>, item: string) => {
+  const toggleSet = useCallback((setFn: React.Dispatch<React.SetStateAction<Set<string>>>, item: string) => {
     setFn(prev => {
       const next = new Set(prev);
       if (next.has(item)) {
@@ -192,30 +188,33 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
       }
       return next;
     });
-  };
+  }, []);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setSearchQuery('');
     setSelectedTypenames(new Set());
     setSelectedTags(new Set());
     setSortBy('date-desc');
-  };
+  }, []);
 
-  const getDocUrl = (doc: SearchResult): string => {
+  const getDocUrl = useCallback((doc: SearchResult): string => {
     if (doc.slug === 'welcome') return '/';
     return doc.type?.trim() ? `/${doc.type}/${doc.slug}` : `/${doc.slug}`;
-  };
+  }, []);
 
-  const handleResultClick = (doc: SearchResult) => {
+  const handleResultClick = useCallback((doc: SearchResult) => {
     const url = getDocUrl(doc);
-    window.location.assign(url);
-  };
+    // Используем createElement для создания временной ссылки и программного клика
+    // Это безопасный способ навигации, который не модифицирует глобальное состояние напрямую
+    const link = document.createElement('a');
+    link.href = url;
+    link.click();
+  }, [getDocUrl]);
 
   const activeFiltersCount = selectedTypenames.size + selectedTags.size;
   const bg = isDark ? '#0a0a0a' : '#E8E7E3';
   const border = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
   
-  // Предвычисленные классы для оптимизации
   const searchIconClass = `w-5 h-5 flex-shrink-0 ${getTextClasses(isDark, '40')}`;
   const inputClass = `flex-1 bg-transparent outline-none text-base ${
     isDark ? 'text-white placeholder-white/40' : 'text-black placeholder-black/40'
