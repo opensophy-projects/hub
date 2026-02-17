@@ -321,18 +321,11 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
                   onClick={() => handleResultClick(result)}
                   className={`w-full text-left p-3 rounded-lg transition-colors border ${getCardClasses(isDark)}`}
                 >
-                  {(result.typename || result.type) && (
-                    <div className="flex gap-1 flex-wrap mb-1">
-                      {result.typename?.trim() && (
-                        <span className={`text-xs px-2 py-0.5 rounded ${getBadgeClasses(isDark, 'default')}`}>
-                          {result.typename}
-                        </span>
-                      )}
-                      {result.type?.trim() && (
-                        <span className={`text-xs px-2 py-0.5 rounded ${getBadgeClasses(isDark, 'light')}`}>
-                          {result.type}
-                        </span>
-                      )}
+                  {result.typename?.trim() && (
+                    <div className="mb-1">
+                      <span className={`text-xs px-2 py-0.5 rounded ${getBadgeClasses(isDark, 'default')}`}>
+                        {result.typename}
+                      </span>
                     </div>
                   )}
                   <h4 className={`font-semibold text-sm mb-1 ${isDark ? 'text-white' : 'text-black'}`}>
