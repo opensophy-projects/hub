@@ -1,10 +1,19 @@
 ---
 import Layout from '@/app/layouts/Layout.astro';
-import DocsIndex from '@/features/docs/components/DocsIndex';
+import DocContent from '@/features/docs/components/DocContent';
+import fs from 'node:fs';
+import path from 'node:path';
 
-const title = 'Hub - Opensophy';
-const description = 'Hub проекта Opensophy. Новости, блоги, документация и статьи по искусственному интеллекту, кибербезопасности, уязвимостям и технологиям.';
-const keywords = 'Opensophy, документация, искусственный интеллект, кибербезопасность, ИИ, AI, security, статьи, блог, новости';
+const welcomeDocPath = path.join(process.cwd(), 'public/data/docs/welcome.json');
+
+let welcomeDoc = null;
+if (fs.existsSync(welcomeDocPath)) {
+  welcomeDoc = JSON.parse(fs.readFileSync(welcomeDocPath, 'utf-8'));
+}
+
+const title = welcomeDoc?.title || 'Hub - Opensophy';
+const description = welcomeDoc?.description || 'Hub проекта Opensophy. Новости, блоги, документация и статьи по искусственному интеллекту, кибербезопасности, уязвимостям и технологиям.';
+const keywords = welcomeDoc?.keywords || 'Opensophy, документация, искусственный интеллект, кибербезопасность, ИИ, AI, security, статьи, блог, новости';
 ---
 
 <Layout
@@ -15,5 +24,11 @@ const keywords = 'Opensophy, документация, искусственны�
   keywords={keywords}
   robots="index, follow"
 >
-  <DocsIndex client:only="react" />
+  {welcomeDoc ? (
+    <DocContent client:only="react" doc={welcomeDoc} />
+  ) : (
+    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+      <p>Загрузка...</p>
+    </div>
+  )}
 </Layout>
