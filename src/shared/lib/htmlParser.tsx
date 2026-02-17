@@ -93,7 +93,7 @@ const processListElement = (element: Element, tagName: string, key: string, elem
 const processLinkElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
   elements.push(
-    <a
+    
       key={key}
       href={element.getAttribute('href') || '#'}
       target="_blank"
@@ -106,6 +106,13 @@ const processLinkElement = (element: Element, key: string, elements: React.React
 const ImageWithModal: React.FC<{ src: string; alt: string; title?: string }> = ({ src, alt, title }) => {
   const [isOpen, setIsOpen] = useState(false);
 
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      setIsOpen(true);
+    }
+  };
+
   return (
     <>
       {title ? (
@@ -115,6 +122,9 @@ const ImageWithModal: React.FC<{ src: string; alt: string; title?: string }> = (
             alt={alt}
             loading="lazy"
             onClick={() => setIsOpen(true)}
+            onKeyDown={handleKeyDown}
+            role="button"
+            tabIndex={0}
             className="rounded-lg shadow-md max-w-full h-auto w-full cursor-pointer hover:opacity-90 transition-opacity"
           />
           <figcaption className="mt-2 text-center text-xs text-slate-400 italic font-medium">
@@ -127,6 +137,9 @@ const ImageWithModal: React.FC<{ src: string; alt: string; title?: string }> = (
           alt={alt}
           loading="lazy"
           onClick={() => setIsOpen(true)}
+          onKeyDown={handleKeyDown}
+          role="button"
+          tabIndex={0}
           className="rounded-lg shadow-md max-w-full h-auto my-4 cursor-pointer hover:opacity-90 transition-opacity"
         />
       )}
@@ -258,7 +271,7 @@ const processDetailsElement = (
 };
 
 const processAlertElement = (element: Element, key: string, elements: React.ReactNode[]) => {
-  const alertType = element.getAttribute('data-alert-type') as 'note' | 'tip' | 'important' | 'warning' | 'caution';
+  const alertType = element.dataset.alertType as 'note' | 'tip' | 'important' | 'warning' | 'caution';
   
   if (alertType) {
     const contentHTML = element.innerHTML;
@@ -386,7 +399,6 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       const tagName = element.tagName.toLowerCase();
       const textContent = element.textContent || '';
 
-      // КРИТИЧНО: Проверяем Alert ПЕРВЫМ делом
       if (tagName === 'div' && element.classList.contains('custom-alert')) {
         processAlertElement(element, key, elements);
         return;
