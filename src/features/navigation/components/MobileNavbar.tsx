@@ -88,7 +88,7 @@ const NavButton: React.FC<{
 };
 
 const MobileNavbar: React.FC = () => {
-  const { isDark, toggleSidebar } = useTheme();
+  const { isDark, setSidebarOpen } = useTheme();
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isTocOpen, setIsTocOpen] = useState(false);
@@ -152,7 +152,7 @@ const MobileNavbar: React.FC = () => {
           <NavButton
             icon={<PanelLeft size={20} />}
             label="Меню"
-            onClick={toggleSidebar}
+            onClick={() => setSidebarOpen(true)}
           />
 
           {/* Поиск */}
