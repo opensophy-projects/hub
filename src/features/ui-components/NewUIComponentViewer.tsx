@@ -3,7 +3,7 @@ import { useTheme } from '@/shared/contexts/ThemeContext';
 import { X, Maximize2, RotateCcw, Settings, Sliders } from 'lucide-react';
 import { loadComponent, getDefaultProps } from './loader';
 import { ComponentWrapper } from './ComponentWrapper';
-import type { UniversalProps, ComponentConfig } from './types';
+import type { UniversalProps, ComponentConfig, PropDefinition } from './types';
 
 interface UIComponentViewerProps {
   componentId: string;
@@ -15,7 +15,7 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   
-  const [componentProps, setComponentProps] = useState<Record<string, any>>({});
+  const [componentProps, setComponentProps] = useState<Record<string, unknown>>({});
   
   const [universalProps, setUniversalProps] = useState<UniversalProps>({
     enableUniversalProps: true,
@@ -38,7 +38,7 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
   
   const [componentData, setComponentData] = useState<{
     config: ComponentConfig;
-    Component: React.ComponentType<any>;
+    Component: React.ComponentType<Record<string, unknown>>;
     fileContents: Record<string, string>;
   } | null>(null);
 
@@ -55,11 +55,11 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
     setRefreshKey(prev => prev + 1);
   }, []);
 
-  const handlePropChange = (propName: string, value: any) => {
+  const handlePropChange = (propName: string, value: unknown) => {
     setComponentProps(prev => ({ ...prev, [propName]: value }));
   };
 
-  const handleUniversalPropChange = (propName: keyof UniversalProps, value: any) => {
+  const handleUniversalPropChange = (propName: keyof UniversalProps, value: unknown) => {
     setUniversalProps(prev => ({ ...prev, [propName]: value }));
   };
 
@@ -149,8 +149,8 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
 
 interface PreviewModeProps {
   config: ComponentConfig;
-  Component: React.ComponentType<any>;
-  componentProps: Record<string, any>;
+  Component: React.ComponentType<Record<string, unknown>>;
+  componentProps: Record<string, unknown>;
   universalProps: UniversalProps;
   refreshKey: number;
   isDark: boolean;
@@ -230,14 +230,14 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
 
 interface SettingsModalProps {
   config: ComponentConfig;
-  Component: React.ComponentType<any>;
-  componentProps: Record<string, any>;
+  Component: React.ComponentType<Record<string, unknown>>;
+  componentProps: Record<string, unknown>;
   universalProps: UniversalProps;
   refreshKey: number;
   isDark: boolean;
   onClose: () => void;
-  onPropChange: (name: string, value: any) => void;
-  onUniversalPropChange: (name: keyof UniversalProps, value: any) => void;
+  onPropChange: (name: string, value: unknown) => void;
+  onUniversalPropChange: (name: keyof UniversalProps, value: unknown) => void;
   onRefresh: () => void;
   onReset: () => void;
 }
@@ -449,8 +449,8 @@ const TabButtons: React.FC<TabButtonsProps> = ({ activeTab, isDark, onTabChange 
 };
 
 interface ComponentPreviewProps {
-  Component: React.ComponentType<any>;
-  componentProps: Record<string, any>;
+  Component: React.ComponentType<Record<string, unknown>>;
+  componentProps: Record<string, unknown>;
   universalProps: UniversalProps;
   refreshKey: number;
   isDark: boolean;
@@ -477,8 +477,8 @@ const ComponentPreview: React.FC<ComponentPreviewProps> = ({
 };
 
 interface FullscreenModalProps {
-  Component: React.ComponentType<any>;
-  componentProps: Record<string, any>;
+  Component: React.ComponentType<Record<string, unknown>>;
+  componentProps: Record<string, unknown>;
   universalProps: UniversalProps;
   refreshKey: number;
   isDark: boolean;
@@ -526,7 +526,7 @@ const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
 interface UniversalPropsEditorProps {
   universalProps: UniversalProps;
-  onChange: (name: keyof UniversalProps, value: any) => void;
+  onChange: (name: keyof UniversalProps, value: unknown) => void;
   isDark: boolean;
 }
 
@@ -664,8 +664,8 @@ const UniversalPropsEditor: React.FC<UniversalPropsEditorProps> = ({
 
 interface ComponentPropsEditorProps {
   config: ComponentConfig;
-  componentProps: Record<string, any>;
-  onChange: (name: string, value: any) => void;
+  componentProps: Record<string, unknown>;
+  onChange: (name: string, value: unknown) => void;
   isDark: boolean;
 }
 
@@ -677,7 +677,7 @@ const ComponentPropsEditor: React.FC<ComponentPropsEditorProps> = ({
 }) => {
   const visibleProps = useMemo(() => {
     if (config.specificProps && config.specificProps.length > 0) {
-      return config.props.filter((prop: any) => config.specificProps!.includes(prop.name));
+      return config.props.filter((prop: PropDefinition) => config.specificProps!.includes(prop.name));
     }
     return config.props;
   }, [config]);
@@ -689,7 +689,7 @@ const ComponentPropsEditor: React.FC<ComponentPropsEditorProps> = ({
       </h3>
 
       {visibleProps.length > 0 ? (
-        visibleProps.map((prop: any) => (
+        visibleProps.map((prop: PropDefinition) => (
           <PropControl
             key={prop.name}
             prop={prop}
@@ -752,9 +752,9 @@ const SliderControl: React.FC<SliderControlProps> = ({
 };
 
 interface PropControlProps {
-  prop: any;
-  value: any;
-  onChange: (name: string, value: any) => void;
+  prop: PropDefinition;
+  value: unknown;
+  onChange: (name: string, value: unknown) => void;
   isDark: boolean;
 }
 
@@ -796,9 +796,9 @@ const PropControl: React.FC<PropControlProps> = ({ prop, value, onChange, isDark
 
 interface NumberControlProps {
   inputId: string;
-  prop: any;
-  value: any;
-  onChange: (name: string, value: any) => void;
+  prop: PropDefinition;
+  value: unknown;
+  onChange: (name: string, value: unknown) => void;
   isDark: boolean;
 }
 
@@ -807,12 +807,14 @@ const NumberControl: React.FC<NumberControlProps> = ({ inputId, prop, value, onC
     ? 'bg-white/10 [&::-webkit-slider-thumb]:bg-white [&::-moz-range-thumb]:bg-white' 
     : 'bg-black/10 [&::-webkit-slider-thumb]:bg-black [&::-moz-range-thumb]:bg-black';
 
+  const numericValue = typeof value === 'number' ? value : (prop.default ?? 0);
+
   return (
     <div className="space-y-3">
       <input
         id={inputId}
         type="range"
-        value={value ?? prop.default ?? 0}
+        value={numericValue}
         onChange={(e) => onChange(prop.name, Number(e.target.value))}
         min={prop.min ?? 0}
         max={prop.max ?? 100}
@@ -820,7 +822,7 @@ const NumberControl: React.FC<NumberControlProps> = ({ inputId, prop, value, onC
         className={`w-full h-3 rounded-lg appearance-none cursor-pointer ${sliderThumbClass} [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0`}
       />
       <div className={`text-center text-lg font-semibold ${isDark ? 'text-white' : 'text-black'}`}>
-        {value ?? prop.default ?? 0}
+        {numericValue}
       </div>
     </div>
   );
@@ -828,9 +830,9 @@ const NumberControl: React.FC<NumberControlProps> = ({ inputId, prop, value, onC
 
 interface SelectControlProps {
   inputId: string;
-  prop: any;
-  value: any;
-  onChange: (name: string, value: any) => void;
+  prop: PropDefinition;
+  value: unknown;
+  onChange: (name: string, value: unknown) => void;
   isDark: boolean;
 }
 
@@ -839,10 +841,12 @@ const SelectControl: React.FC<SelectControlProps> = ({ inputId, prop, value, onC
     ? 'bg-white/5 border-white/10 text-white'
     : 'bg-white border-black/10 text-black';
 
+  const stringValue = typeof value === 'string' ? value : (prop.default ?? '');
+
   return (
     <select
       id={inputId}
-      value={value ?? prop.default ?? ''}
+      value={stringValue}
       onChange={(e) => onChange(prop.name, e.target.value)}
       className={`w-full px-3 md:px-4 py-2.5 md:py-3 rounded-lg border text-xs md:text-sm ${selectClass}`}
     >
