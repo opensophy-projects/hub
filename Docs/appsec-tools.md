@@ -2,13 +2,13 @@
 title: "Введение в DAST, SAST, SCA, IAST и RASP: Гид по инструментам безопасности"
 description: Разбор основных методологий тестирования безопасности приложений (AppSec) с примерами бесплатных инструментов для интеграции в SDLC.
 type: docs
+typename: Документация
 category: Подборка
-author: veilosophy 
+author: veilosophy
 date: 2026-01-24
 tags: AppSec, DAST, SAST, SCA, IAST, RASP, OpenSource
 keywords: безопасность приложений, сканирование уязвимостей, DevSecOps, бесплатные инструменты ИБ
-bannercolor: #a3152b
-bannertext: Безопасность приложений
+canonical: null
 robots: index, follow
 lang: ru
 ---
