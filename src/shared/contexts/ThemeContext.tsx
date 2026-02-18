@@ -13,7 +13,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const getInitialTheme = (): boolean => {
-  if (typeof globalThis.window === 'undefined') return true;
+  if (globalThis.window === undefined) return true;
   return globalThis.localStorage.getItem('theme') !== 'light';
 };
 
