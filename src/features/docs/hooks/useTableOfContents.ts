@@ -6,9 +6,7 @@ interface TableOfContentsItem {
   level: number;
 }
 
-export function useTableOfContents(
-  dependency: any
-): TableOfContentsItem[] {
+export function useTableOfContents<T>(dependency: T): TableOfContentsItem[] {
   const [toc, setToc] = useState<TableOfContentsItem[]>([]);
 
   useEffect(() => {
@@ -16,9 +14,11 @@ export function useTableOfContents(
       const articleContent = document.querySelector('[data-article-content]');
       if (!articleContent) return;
 
-      const headings = articleContent.querySelectorAll('h2:not([data-banner-content] h2), h3:not([data-banner-content] h3), h4:not([data-banner-content] h4)');
-      const items: TableOfContentsItem[] = [];
+      const headings = articleContent.querySelectorAll(
+        'h2:not([data-banner-content] h2), h3:not([data-banner-content] h3), h4:not([data-banner-content] h4)'
+      );
 
+      const items: TableOfContentsItem[] = [];
       headings.forEach((heading, index) => {
         const id = `heading-${index}`;
         heading.id = id;
