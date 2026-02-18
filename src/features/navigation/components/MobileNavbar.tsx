@@ -1,6 +1,6 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { useTheme } from '@/shared/contexts/ThemeContext';
+import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
 import TocPanel from './TocPanel';
 import { PanelLeft } from 'lucide-react';
 
@@ -13,45 +13,21 @@ interface TocItem {
 }
 
 const SearchIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="11" cy="11" r="8" />
     <path d="m21 21-4.35-4.35" />
   </svg>
 );
 
 const ArrowUpIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="12" y1="19" x2="12" y2="5" />
     <polyline points="5 12 12 5 19 12" />
   </svg>
 );
 
 const ListIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="8" y1="6" x2="21" y2="6" />
     <line x1="8" y1="12" x2="21" y2="12" />
     <line x1="8" y1="18" x2="21" y2="18" />
@@ -70,9 +46,7 @@ const NavButton: React.FC<{
   const { isDark } = useTheme();
 
   const getTextColor = () => {
-    if (isActive) {
-      return isDark ? 'text-white' : 'text-black';
-    }
+    if (isActive) return isDark ? 'text-white' : 'text-black';
     return isDark ? 'text-white/60 hover:text-white' : 'text-black/60 hover:text-black';
   };
 
@@ -87,16 +61,14 @@ const NavButton: React.FC<{
   );
 };
 
-const MobileNavbar: React.FC = () => {
+const MobileNavbarInner: React.FC = () => {
   const { isDark, setSidebarOpen } = useTheme();
-
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isTocOpen, setIsTocOpen] = useState(false);
   const [toc, setToc] = useState<TocItem[]>([]);
 
   useEffect(() => {
     const generateTOC = (): boolean => {
-      // Ищем контейнер: сначала по атрибуту, потом article, потом main
       const container =
         document.querySelector('[data-article-content]') ||
         document.querySelector('article') ||
@@ -122,17 +94,14 @@ const MobileNavbar: React.FC = () => {
       return true;
     };
 
-    // Первая попытка сразу
     if (generateTOC()) return;
 
-    // Ждём появления контента через MutationObserver
     const observer = new MutationObserver(() => {
       if (generateTOC()) observer.disconnect();
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
 
-    // Страховочный таймаут 3с
     const fallback = setTimeout(() => {
       generateTOC();
       observer.disconnect();
@@ -144,19 +113,33 @@ const MobileNavbar: React.FC = () => {
     };
   }, []);
 
-  const handleTocClick = (id: string) => {
-    const element = document.getElementById(id);
-    if (!element) return;
+  const handleTocOpen = () => {
+    if (toc.length === 0) {
+      const container =
+        document.querySelector('[data-article-content]') ||
+        document.querySelector('article') ||
+        document.querySelector('main');
 
-    const headerOffset = 80;
-    const elementPosition = element.getBoundingClientRect().top;
-    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-
-    window.scrollTo({
-      top: offsetPosition,
-      behavior: 'smooth',
-    });
-    setIsTocOpen(false);
+      if (container) {
+        const headings = container.querySelectorAll('h2, h3, h4');
+        const items: TocItem[] = [];
+        headings.forEach((heading, index) => {
+          const id = heading.id || `heading-${index}`;
+          if (!heading.id) heading.id = id;
+          items.push({
+            id,
+            text: heading.textContent || '',
+            level: Number.parseInt(heading.tagName[1], 10),
+          });
+        });
+        if (items.length > 0) {
+          setToc(items);
+          setIsTocOpen(true);
+          return;
+        }
+      }
+    }
+    setIsTocOpen((v) => !v);
   };
 
   const handleScrollTop = () => {
@@ -173,69 +156,15 @@ const MobileNavbar: React.FC = () => {
         }`}
       >
         <div className="flex items-center justify-around px-2 py-1">
-          {/* Меню */}
-          <NavButton
-            icon={<PanelLeft size={20} />}
-            label="Меню"
-            onClick={() => setSidebarOpen(true)}
-          />
+          <NavButton icon={<PanelLeft size={20} />} label="Меню" onClick={() => setSidebarOpen(true)} />
+          <NavButton icon={<SearchIcon />} label="Поиск" onClick={() => setIsSearchOpen(true)} />
 
-          {/* Поиск */}
-          <NavButton
-            icon={<SearchIcon />}
-            label="Поиск"
-            onClick={() => setIsSearchOpen(true)}
-          />
-
-          {/* Лого */}
-          <a
-            href="/"
-            className="flex flex-col items-center justify-center gap-1 px-2 py-2"
-          >
+          <a href="/" className="flex flex-col items-center justify-center gap-1 px-2 py-2">
             <img src="/favicon.png" alt="Opensophy" className="w-10 h-10 object-contain" />
           </a>
 
-          {/* Оглавление */}
-          <NavButton
-            icon={<ListIcon />}
-            label="Оглавление"
-            onClick={() => {
-              // Если TOC пустой — попробуем сгенерировать прямо сейчас
-              if (toc.length === 0) {
-                const container =
-                  document.querySelector('[data-article-content]') ||
-                  document.querySelector('article') ||
-                  document.querySelector('main');
-                if (container) {
-                  const headings = container.querySelectorAll('h2, h3, h4');
-                  const items: TocItem[] = [];
-                  headings.forEach((heading, index) => {
-                    const id = heading.id || `heading-${index}`;
-                    if (!heading.id) heading.id = id;
-                    items.push({
-                      id,
-                      text: heading.textContent || '',
-                      level: Number.parseInt(heading.tagName[1], 10),
-                    });
-                  });
-                  if (items.length > 0) {
-                    setToc(items);
-                    setIsTocOpen(true);
-                    return;
-                  }
-                }
-              }
-              setIsTocOpen(!isTocOpen);
-            }}
-            isActive={isTocOpen}
-          />
-
-          {/* Наверх */}
-          <NavButton
-            icon={<ArrowUpIcon />}
-            label="Наверх"
-            onClick={handleScrollTop}
-          />
+          <NavButton icon={<ListIcon />} label="Оглавление" onClick={handleTocOpen} isActive={isTocOpen} />
+          <NavButton icon={<ArrowUpIcon />} label="Наверх" onClick={handleScrollTop} />
         </div>
       </nav>
 
@@ -257,15 +186,17 @@ const MobileNavbar: React.FC = () => {
 
       <AnimatePresence>
         {isTocOpen && (
-          <TocPanel
-            toc={toc}
-            onTocClick={handleTocClick}
-            onClose={() => setIsTocOpen(false)}
-          />
+          <TocPanel toc={toc} onClose={() => setIsTocOpen(false)} />
         )}
       </AnimatePresence>
     </>
   );
 };
+
+const MobileNavbar: React.FC = () => (
+  <ThemeProvider>
+    <MobileNavbarInner />
+  </ThemeProvider>
+);
 
 export default MobileNavbar;
