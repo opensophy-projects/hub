@@ -74,27 +74,38 @@ function getFirstParagraph(content) {
   return '';
 }
 
+/**
+ * Обрезает дефисы с начала и конца строки без regex,
+ * чтобы избежать S5852 (ReDoS hotspot).
+ */
+function trimDashes(str) {
+  let start = 0;
+  let end = str.length;
+  while (start < end && str[start] === '-') start++;
+  while (end > start && str[end - 1] === '-') end--;
+  return str.slice(start, end);
+}
+
 function generateSlug(fileName, canonical) {
   if (canonical && canonical !== 'null') {
     return canonical.replace(/^\/+/, '');
   }
 
-  return fileName
+  const cleaned = fileName
     .replace('.md', '')
     .toLowerCase()
     .replaceAll(/[^\w\s-]/g, '')
     .replaceAll(/\s+/g, '-')
-    .replaceAll(/(^-+|-+$)/g, '')   // сгруппировано —fix S5850
     .replaceAll(/-+/g, '-');
+
+  return trimDashes(cleaned);
 }
 
 // ─── Scanner ──────────────────────────────────────────────────────────────────
 
 /**
- * Возвращает два объекта:
- * - meta: данные для манифеста (без content)
- * - content: скомпилированный HTML
- * Разделение позволяет избежать деструктуризации с неиспользуемой переменной.
+ * Возвращает { meta, content } раздельно,
+ * чтобы не создавать неиспользуемых переменных при деструктуризации.
  */
 function buildDoc(fullPath) {
   const raw = fs.readFileSync(fullPath, 'utf-8');
@@ -145,13 +156,11 @@ function scanDocs(dir) {
 
       const { meta, content } = buildDoc(fullPath);
 
-      // Записываем файл с полным содержимым
       fs.writeFileSync(
         path.join(outputDir, `${meta.slug}.json`),
         JSON.stringify({ ...meta, content }, null, 2)
       );
 
-      // В манифест идут только мета-данные
       manifest.push(meta);
     }
   }
