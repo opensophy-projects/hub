@@ -42,46 +42,37 @@ export const ComponentWrapper: React.FC<ComponentWrapperProps> = ({
   contrast = 1,
   saturate = 1,
 }) => {
-  const containerStyle = useMemo<CSSProperties>(() => {
-    return {
+  const containerStyle = useMemo<CSSProperties>(
+    () => ({
       display: 'flex',
       justifyContent,
       alignItems,
       width: width || '100%',
       height: height || '100%',
       perspective: perspective ? `${perspective}px` : undefined,
-    };
-  }, [
-    justifyContent,
-    alignItems,
-    width,
-    height,
-    perspective,
-  ]);
+    }),
+    [justifyContent, alignItems, width, height, perspective]
+  );
 
   const contentStyle = useMemo<CSSProperties>(() => {
-    if (!enableUniversalProps) {
-      return {};
-    }
+    if (!enableUniversalProps) return {};
 
-    // Вычисляем transform только один раз
     const transformParts = [
-      scale === 1 ? '' : `scale(${scale})`,
-      rotateX === 0 ? '' : `rotateX(${rotateX}deg)`,
-      rotateY === 0 ? '' : `rotateY(${rotateY}deg)`,
-      rotateZ === 0 ? '' : `rotateZ(${rotateZ}deg)`,
+      scale !== 1 && `scale(${scale})`,
+      rotateX !== 0 && `rotateX(${rotateX}deg)`,
+      rotateY !== 0 && `rotateY(${rotateY}deg)`,
+      rotateZ !== 0 && `rotateZ(${rotateZ}deg)`,
     ].filter(Boolean);
 
-    // Вычисляем filters только один раз
     const filterParts = [
-      blur === 0 ? '' : `blur(${blur}px)`,
-      brightness === 1 ? '' : `brightness(${brightness})`,
-      contrast === 1 ? '' : `contrast(${contrast})`,
-      saturate === 1 ? '' : `saturate(${saturate})`,
+      blur !== 0 && `blur(${blur}px)`,
+      brightness !== 1 && `brightness(${brightness})`,
+      contrast !== 1 && `contrast(${contrast})`,
+      saturate !== 1 && `saturate(${saturate})`,
     ].filter(Boolean);
 
-    // Применение цвета
-    let colorStyle: CSSProperties = {};
+    // Fix S3533: use const — colorStyle is never reassigned, only properties are set
+    const colorStyle: CSSProperties = {};
     if (colorMode === 'solid' && color) {
       colorStyle.color = color;
     } else if (colorMode === 'gradient' && gradientFrom && gradientTo) {
@@ -96,7 +87,7 @@ export const ComponentWrapper: React.FC<ComponentWrapperProps> = ({
       filter: filterParts.length > 0 ? filterParts.join(' ') : undefined,
       opacity,
       transition: 'all 0.3s ease-out',
-      // @ts-ignore - CSS переменная для управления скоростью анимации
+      // @ts-expect-error - CSS переменная для управления скоростью анимации
       '--animation-speed-multiplier': animationSpeed,
       ...colorStyle,
     };
