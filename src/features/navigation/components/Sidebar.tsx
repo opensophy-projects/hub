@@ -24,11 +24,15 @@ const createCloseKeyHandler = (onClose: () => void) => (e: React.KeyboardEvent) 
   }
 };
 
+const iconBtn = (isDark: boolean) =>
+  `p-2 rounded-lg transition-colors ${isDark ? 'text-white hover:bg-white/10' : 'text-black hover:bg-black/10'}`;
+
+const borderColor = (isDark: boolean) => ({ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' });
+
+// — Overlay —
 const SidebarOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
+    const handleEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [onClose]);
@@ -44,13 +48,7 @@ const SidebarOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   );
 };
 
-const iconBtn = (isDark: boolean) =>
-  `p-2 rounded-lg transition-colors ${
-    isDark
-      ? 'text-white hover:bg-white/10'
-      : 'text-black hover:bg-black/10'
-  }`;
-
+// — Header —
 const SidebarHeader: React.FC<{
   onClose: () => void;
   isDark: boolean;
@@ -59,7 +57,7 @@ const SidebarHeader: React.FC<{
 }> = ({ onClose, isDark, onToggleTheme, onToggleContacts }) => (
   <div
     className="flex-shrink-0 p-4 md:p-6 border-b flex items-center justify-between"
-    style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}
+    style={borderColor(isDark)}
   >
     <a href="/" className="block">
       <h1 className="text-xl md:text-2xl font-bold font-veilstack" style={{ color: '#7234ff' }}>
@@ -80,15 +78,13 @@ const SidebarHeader: React.FC<{
   </div>
 );
 
+// — Search —
 const SidebarSearch: React.FC<{
   value: string;
   onChange: (value: string) => void;
   isDark: boolean;
 }> = ({ value, onChange, isDark }) => (
-  <div
-    className="flex-shrink-0 p-3 md:p-4 border-b"
-    style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}
-  >
+  <div className="flex-shrink-0 p-3 md:p-4 border-b" style={borderColor(isDark)}>
     <div className="relative">
       <Search
         size={18}
@@ -109,10 +105,19 @@ const SidebarSearch: React.FC<{
   </div>
 );
 
+// — Doc link —
 const DocLink: React.FC<{ doc: Doc; onClose: () => void; isDark: boolean }> = ({ doc, onClose, isDark }) => {
-  const url = doc.slug === 'welcome' ? '/' : doc.type?.trim() ? `/${doc.type}/${doc.slug}` : `/${doc.slug}`;
+  let url: string;
+  if (doc.slug === 'welcome') {
+    url = '/';
+  } else if (doc.type?.trim()) {
+    url = `/${doc.type}/${doc.slug}`;
+  } else {
+    url = `/${doc.slug}`;
+  }
+
   return (
-    <a
+    
       href={url}
       onClick={onClose}
       className={`block px-3 py-1 rounded-lg text-xs md:text-sm transition-colors ${
@@ -126,6 +131,7 @@ const DocLink: React.FC<{ doc: Doc; onClose: () => void; isDark: boolean }> = ({
   );
 };
 
+// — Type section —
 const TypeSection: React.FC<{
   typename: string;
   docs: Doc[];
@@ -161,6 +167,7 @@ const TypeSection: React.FC<{
   </div>
 );
 
+// — Contact link —
 const ContactLink: React.FC<{
   href: string;
   title: string;
@@ -168,7 +175,7 @@ const ContactLink: React.FC<{
   external?: boolean;
   isDark: boolean;
 }> = ({ href, title, subtitle, external = false, isDark }) => (
-  <a
+  
     href={href}
     {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
     className={`block px-2 py-1.5 rounded-lg text-xs transition-colors ${
@@ -182,20 +189,21 @@ const ContactLink: React.FC<{
   </a>
 );
 
+const CONTACTS = [
+  { href: 'https://opensophy.com/', title: 'Сайт', subtitle: 'opensophy.com', external: true },
+  { href: 'mailto:opensophy@gmail.com', title: 'Email', subtitle: 'opensophy@gmail.com' },
+  { href: 'https://t.me/veilosophy', title: 'Telegram', subtitle: '@veilosophy', external: true },
+  { href: 'https://github.com/opensophy-projects', title: 'GitHub', subtitle: 'opensophy', external: true },
+  { href: 'https://habr.com/ru/users/opensophy/', title: 'Habr', subtitle: 'opensophy', external: true },
+];
+
+// — Contacts section —
 const ContactsSection: React.FC<{ isDark: boolean; isOpen: boolean; onClose: () => void }> = ({
   isDark,
   isOpen,
   onClose,
 }) => {
   if (!isOpen) return null;
-
-  const contacts = [
-    { href: 'https://opensophy.com/', title: 'Сайт', subtitle: 'opensophy.com', external: true },
-    { href: 'mailto:opensophy@gmail.com', title: 'Email', subtitle: 'opensophy@gmail.com' },
-    { href: 'https://t.me/veilosophy', title: 'Telegram', subtitle: '@veilosophy', external: true },
-    { href: 'https://github.com/opensophy-projects', title: 'GitHub', subtitle: 'opensophy', external: true },
-    { href: 'https://habr.com/ru/users/opensophy/', title: 'Habr', subtitle: 'opensophy', external: true },
-  ];
 
   return (
     <>
@@ -211,17 +219,14 @@ const ContactsSection: React.FC<{ isDark: boolean; isOpen: boolean; onClose: () 
           isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
         }`}
       >
-        <div
-          className="flex items-center justify-between p-4 md:p-6 border-b"
-          style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}
-        >
+        <div className="flex items-center justify-between p-4 md:p-6 border-b" style={borderColor(isDark)}>
           <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>Контакты</h2>
           <button onClick={onClose} className={iconBtn(isDark)} aria-label="Закрыть контакты">
             <X size={20} />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {contacts.map((c) => (
+          {CONTACTS.map((c) => (
             <ContactLink key={c.href} {...c} isDark={isDark} />
           ))}
         </div>
@@ -230,6 +235,7 @@ const ContactsSection: React.FC<{ isDark: boolean; isOpen: boolean; onClose: () 
   );
 };
 
+// — Main Sidebar —
 const Sidebar: React.FC = () => {
   const { isDark, toggleTheme, isSidebarOpen, setSidebarOpen } = useTheme();
   const { manifest: docs } = useDocuments();
@@ -244,10 +250,10 @@ const Sidebar: React.FC = () => {
 
   const groupedDocs = useMemo((): GroupedDocs => {
     const grouped: GroupedDocs = {};
-    docs.forEach((doc: any) => {
+    (docs as Doc[]).forEach((doc) => {
       const key = doc.typename?.trim() || 'Без категории';
       if (!grouped[key]) grouped[key] = [];
-      grouped[key].push(doc as Doc);
+      grouped[key].push(doc);
     });
     return grouped;
   }, [docs]);
@@ -266,7 +272,11 @@ const Sidebar: React.FC = () => {
   const toggleType = (typename: string) => {
     setExpandedTypes((prev) => {
       const next = new Set(prev);
-      next.has(typename) ? next.delete(typename) : next.add(typename);
+      if (next.has(typename)) {
+        next.delete(typename);
+      } else {
+        next.add(typename);
+      }
       return next;
     });
   };
