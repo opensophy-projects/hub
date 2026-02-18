@@ -12,19 +12,13 @@ interface TableWithControlsProps {
   onFullscreen: (html: string) => void;
 }
 
-const TableWithControls: React.FC<TableWithControlsProps> = ({ 
-  tableHtml, 
-  isDark, 
-  onFullscreen 
-}) => {
+const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark, onFullscreen }) => {
   const { headers, rows, headerAlignments } = parseTableHtml(tableHtml);
   const {
     state,
     setState,
     showFilters,
     setShowFilters,
-    showColumns,
-    setShowColumns,
     filteredAndSortedRows,
     getUniqueValuesForColumn,
     toggleColumnVisibility,
@@ -38,11 +32,13 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({
 
   return (
     <div className="not-prose">
-      <div className={`rounded-lg border overflow-hidden flex flex-col min-h-[300px] ${isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-[#E8E7E3]'}`}>
+      <div className={`rounded-lg border overflow-hidden flex flex-col min-h-[300px] ${
+        isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-[#E8E7E3]'
+      }`}>
         <TableControlsBar
           isDark={isDark}
           searchQuery={state.searchQuery}
-          onSearchChange={(query) => setState(prev => ({ ...prev, searchQuery: query }))}
+          onSearchChange={(query) => setState((prev) => ({ ...prev, searchQuery: query }))}
           showFilters={showFilters}
           onToggleFilters={() => setShowFilters(!showFilters)}
           activeFilterCount={activeFilterCount}
