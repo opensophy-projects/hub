@@ -24,9 +24,10 @@ function preprocessAlerts(content) {
     return `___CODE_BLOCK_${codeBlocks.length - 1}___`;
   });
 
-  const protected2 = protected1.replaceAll(alertPattern, (_match, type, alertContent) =>
-    `<div class="custom-alert" data-alert-type="${type}">\n${alertContent.trim()}\n</div>`
-  );
+  const protected2 = protected1.replaceAll(alertPattern, (_match, type, alertContent) => {
+    const parsedContent = marked.parse(alertContent.trim());
+    return `<div class="custom-alert" data-alert-type="${type}">\n${parsedContent}\n</div>`;
+  });
 
   return protected2.replaceAll(/___CODE_BLOCK_(\d+)___/g, (_match, index) =>
     codeBlocks[Number.parseInt(index, 10)]
