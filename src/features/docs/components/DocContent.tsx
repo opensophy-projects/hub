@@ -37,7 +37,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
   useEffect(() => {
     if (!initialDoc.content) {
-      loadDocument(initialDoc.slug).then(fullDoc => {
+      loadDocument(initialDoc.slug).then((fullDoc) => {
         if (fullDoc) {
           setDoc(fullDoc);
           setLoading(false);
@@ -63,9 +63,8 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
     return parseHtmlToReact(htmlContent);
   }, [htmlContent]);
 
-  const getTextColorClass = (opacity = '70'): string => {
-    return isDark ? `text-white/${opacity}` : `text-black/${opacity}`;
-  };
+  const getTextColorClass = (opacity = '70'): string =>
+    isDark ? `text-white/${opacity}` : `text-black/${opacity}`;
 
   const tableContextValue = useMemo(
     () => ({ onTableClick: handleTableClick, isDark }),
@@ -75,7 +74,8 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
   const getAuthorDisplay = () => {
     if (!doc.author || doc.author.trim() === '') return null;
 
-    const authors = doc.author.split(',').map(a => a.trim()).filter(a => a);
+    // Fix S7770: use Boolean directly instead of arrow function wrapper
+    const authors = doc.author.split(',').map((a) => a.trim()).filter(Boolean);
     if (authors.length === 0) return null;
 
     return (
@@ -93,7 +93,11 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
       <div style={{ minHeight: '100vh' }}>
         <TopNavbar />
         <Sidebar />
-        <main className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}>
+        <main
+          className={`min-h-screen flex items-center justify-center ${
+            isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'
+          }`}
+        >
           <p className={`text-lg ${isDark ? 'text-white/60' : 'text-black/60'}`}>
             Загрузка документа...
           </p>
@@ -115,7 +119,9 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
       <main className={`min-h-screen ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}>
         {/* На десктопе отступ справа под панель TOC */}
-        <article className={`flex-1 pt-20 pb-24 px-4 w-full ${toc.length > 0 ? 'md:pr-96' : ''}`}>
+        <article
+          className={`flex-1 pt-20 pb-24 px-4 w-full ${toc.length > 0 ? 'md:pr-96' : ''}`}
+        >
           <div className="container mx-auto max-w-3xl w-full overflow-x-hidden">
             <div className="mb-8">
               {doc.typename && doc.typename.trim() !== '' && (
@@ -127,7 +133,9 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
               )}
 
               <h1
-                className={`text-4xl md:text-5xl font-bold mb-4 ${isDark ? 'text-white' : 'text-black'}`}
+                className={`text-4xl md:text-5xl font-bold mb-4 ${
+                  isDark ? 'text-white' : 'text-black'
+                }`}
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 {doc.title}
@@ -135,7 +143,11 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
               <p className={`text-lg ${getTextColorClass()}`}>{doc.description}</p>
 
-              <div className={`flex items-center gap-4 mt-6 pt-4 border-t flex-wrap ${isDark ? 'border-white/10' : 'border-black/10'}`}>
+              <div
+                className={`flex items-center gap-4 mt-6 pt-4 border-t flex-wrap ${
+                  isDark ? 'border-white/10' : 'border-black/10'
+                }`}
+              >
                 {getAuthorDisplay()}
                 {doc.date && (
                   <span className={`text-sm ${getTextColorClass('60')}`}>
@@ -153,7 +165,9 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
               {/* data-article-content нужен для генерации TOC */}
               <div
                 data-article-content
-                className={`prose max-w-none w-full overflow-x-auto ${isDark ? 'text-white' : 'text-black'}`}
+                className={`prose max-w-none w-full overflow-x-auto ${
+                  isDark ? 'text-white' : 'text-black'
+                }`}
               >
                 {contentNodes}
               </div>
@@ -163,13 +177,19 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
         {/* Десктопная панель TOC справа */}
         {toc.length > 0 && (
-          <aside className={`hidden md:block fixed right-4 top-24 w-80 max-h-[calc(100vh-160px)] overflow-y-auto rounded-lg border ${
-            isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
-          }`}>
+          <aside
+            className={`hidden md:block fixed right-4 top-24 w-80 max-h-[calc(100vh-160px)] overflow-y-auto rounded-lg border ${
+              isDark
+                ? 'bg-[#0a0a0a] border-white/10'
+                : 'bg-[#E8E7E3] border-black/10'
+            }`}
+          >
             <div
               className="p-4 pb-2 sticky top-0"
               style={{
-                backgroundColor: isDark ? 'rgba(10,10,10,0.95)' : 'rgba(232,231,227,0.95)',
+                backgroundColor: isDark
+                  ? 'rgba(10,10,10,0.95)'
+                  : 'rgba(232,231,227,0.95)',
                 backdropFilter: 'blur(10px)',
               }}
             >
@@ -215,12 +235,10 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
   );
 };
 
-const DocContent: React.FC<DocContentProps> = ({ doc }) => {
-  return (
-    <ThemeProvider>
-      <DocContentMain doc={doc} />
-    </ThemeProvider>
-  );
-};
+const DocContent: React.FC<DocContentProps> = ({ doc }) => (
+  <ThemeProvider>
+    <DocContentMain doc={doc} />
+  </ThemeProvider>
+);
 
 export default DocContent;
