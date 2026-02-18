@@ -1,13 +1,10 @@
 import React from 'react';
 import type { ComponentConfig } from '../types';
 import { textRegistry, type TextComponentId } from './text';
-// import { buttonRegistry, type ButtonComponentId } from './buttons';
-// import { cardRegistry, type CardComponentId } from './cards';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type ComponentId = TextComponentId;
-
 type AnyComponent = React.ComponentType<Record<string, unknown>>;
 type ComponentLoader = () => Promise<Record<string, AnyComponent>>;
 
@@ -15,14 +12,10 @@ type ComponentLoader = () => Promise<Record<string, AnyComponent>>;
 
 const allLoaders = {
   ...textRegistry.loaders,
-  // ...buttonRegistry.loaders,
-  // ...cardRegistry.loaders,
 } as const;
 
 const allConfigs = {
   ...textRegistry.configs,
-  // ...buttonRegistry.configs,
-  // ...cardRegistry.configs,
 } as const;
 
 type LoaderKeys = keyof typeof allLoaders;
@@ -40,15 +33,12 @@ export const registry = {
 
   async loadComponent(id: ComponentId): Promise<AnyComponent | null> {
     const loader = allLoaders[id as LoaderKeys] as ComponentLoader | undefined;
-
     if (!loader) {
       console.warn(`Component ${id} not found in registry`);
       return null;
     }
-
     try {
       const module = await loader();
-      // Берём default-экспорт, либо первый экспортированный компонент
       return module.default ?? Object.values(module)[0] ?? null;
     } catch (error) {
       console.error(`Failed to load component ${id}:`, error);
