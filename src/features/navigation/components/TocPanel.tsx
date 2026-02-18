@@ -11,11 +11,10 @@ interface ToContentsItem {
 
 interface TocPanelProps {
   toc: ToContentsItem[];
-  onTocClick: (id: string) => void;
   onClose: () => void;
 }
 
-const TocPanel: React.FC<TocPanelProps> = ({ toc, onTocClick, onClose }) => {
+const TocPanel: React.FC<TocPanelProps> = ({ toc, onClose }) => {
   const { isDark } = useTheme();
 
   const handleClick = (id: string) => {
