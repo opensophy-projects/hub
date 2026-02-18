@@ -1,3 +1,12 @@
+import type React from 'react';
+
+// ─── Shared primitive ─────────────────────────────────────────────────────────
+
+/** Возможные значения пропсов компонента */
+export type PropValue = string | number | boolean | string[] | undefined;
+
+// ─── Component Config ─────────────────────────────────────────────────────────
+
 export interface ComponentConfig {
   id: string;
   name: string;
@@ -7,24 +16,20 @@ export interface ComponentConfig {
     path: string;
     language: string;
   }>;
-  props: Array<PropConfig>;
-  // Новое поле: какие пропсы показывать в "Специфические настройки"
-  // Если не указано - показываем все пропсы из props[]
+  props: PropDefinition[];
+  /** Какие пропсы показывать в «Специфические настройки».
+   *  Если не указано — показываем все из props[]. */
   specificProps?: string[];
-  // Категория компонента
   category?: 'text' | 'button' | 'card' | 'background' | 'animation' | 'other';
-  // Теги для поиска
   tags?: string[];
-  // Автор
   author?: string;
-  // Версия
   version?: string;
 }
 
-export interface PropConfig {
+export interface PropDefinition {
   name: string;
   type: string;
-  default: any;
+  default: PropValue;
   description: string;
   control: 'text' | 'number' | 'select' | 'checkbox' | 'color';
   options?: string[];
@@ -33,60 +38,60 @@ export interface PropConfig {
   step?: number;
 }
 
+// PropConfig — алиас для обратной совместимости
+export type PropConfig = PropDefinition;
+
+// ─── Loaded Component ─────────────────────────────────────────────────────────
+
 export interface LoadedComponent {
   config: ComponentConfig;
-  Component: React.ComponentType<any>;
+  Component: React.ComponentType<Record<string, PropValue>>;
   fileContents: Record<string, string>;
 }
 
-// ============= ТИПЫ ДЛЯ ОБЩИХ ПРОПСОВ =============
+// ─── Universal Props ──────────────────────────────────────────────────────────
 
 /**
- * Общие пропсы для всех компонентов
- * Применяются через ComponentWrapper
+ * Общие пропсы для всех компонентов.
+ * Применяются через ComponentWrapper.
  */
 export interface UniversalProps {
-  // === Цвет ===
+  // Цвет
   color?: string;
   colorMode?: 'solid' | 'gradient' | 'original';
   gradientFrom?: string;
   gradientTo?: string;
   gradientAngle?: number;
-
-  // === Размер ===
+  // Размер
   scale?: number;
   width?: string;
   height?: string;
-
-  // === Вращение (3D) ===
+  // Вращение (3D)
   rotateX?: number;
   rotateY?: number;
   rotateZ?: number;
   perspective?: number;
-
-  // === Позиционирование ===
+  // Позиционирование
   justifyContent?: 'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around';
   alignItems?: 'flex-start' | 'center' | 'flex-end' | 'stretch';
-
-  // === Скорость анимации ===
+  // Анимация
   animationSpeed?: number;
-
-  // === Прозрачность ===
+  // Прозрачность
   opacity?: number;
-
-  // === Фильтры ===
+  // Фильтры
   blur?: number;
   brightness?: number;
   contrast?: number;
   saturate?: number;
-
-  // === Включение/выключение кастомизации ===
+  // Включение/выключение кастомизации
   enableUniversalProps?: boolean;
 }
 
 /**
- * Комбинированные пропсы: универсальные + специфические
+ * Комбинированные пропсы: универсальные + специфические.
+ * T ограничен object, чтобы избежать any.
  */
-export interface ComponentWithUniversalProps<T = any> extends UniversalProps {
+export interface ComponentWithUniversalProps<T extends object = Record<string, PropValue>>
+  extends UniversalProps {
   componentProps?: T;
 }
