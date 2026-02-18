@@ -1,7 +1,54 @@
 import React, { useState, useRef, useContext, useMemo } from 'react';
 import { Copy, Maximize2, ChevronDown, Search, X } from 'lucide-react';
 import { TableContext } from '../lib/htmlParser';
-import hljs from 'highlight.js';
+import hljs from 'highlight.js/lib/core';
+
+// Импортируем только нужные языки
+import javascript from 'highlight.js/lib/languages/javascript';
+import typescript from 'highlight.js/lib/languages/typescript';
+import python from 'highlight.js/lib/languages/python';
+import bash from 'highlight.js/lib/languages/bash';
+import sql from 'highlight.js/lib/languages/sql';
+import json from 'highlight.js/lib/languages/json';
+import xml from 'highlight.js/lib/languages/xml'; // для HTML
+import css from 'highlight.js/lib/languages/css';
+import yaml from 'highlight.js/lib/languages/yaml';
+import dockerfile from 'highlight.js/lib/languages/dockerfile';
+import markdown from 'highlight.js/lib/languages/markdown';
+import go from 'highlight.js/lib/languages/go';
+import rust from 'highlight.js/lib/languages/rust';
+import php from 'highlight.js/lib/languages/php';
+import cpp from 'highlight.js/lib/languages/cpp';
+import csharp from 'highlight.js/lib/languages/csharp';
+import java from 'highlight.js/lib/languages/java';
+
+// Регистрируем языки
+hljs.registerLanguage('javascript', javascript);
+hljs.registerLanguage('typescript', typescript);
+hljs.registerLanguage('jsx', javascript); // JSX использует JavaScript
+hljs.registerLanguage('tsx', typescript); // TSX использует TypeScript
+hljs.registerLanguage('python', python);
+hljs.registerLanguage('bash', bash);
+hljs.registerLanguage('shell', bash); // алиас для bash
+hljs.registerLanguage('sh', bash); // алиас для bash
+hljs.registerLanguage('sql', sql);
+hljs.registerLanguage('json', json);
+hljs.registerLanguage('html', xml);
+hljs.registerLanguage('xml', xml);
+hljs.registerLanguage('css', css);
+hljs.registerLanguage('yaml', yaml);
+hljs.registerLanguage('yml', yaml); // алиас для yaml
+hljs.registerLanguage('dockerfile', dockerfile);
+hljs.registerLanguage('markdown', markdown);
+hljs.registerLanguage('md', markdown); // алиас для markdown
+hljs.registerLanguage('go', go);
+hljs.registerLanguage('rust', rust);
+hljs.registerLanguage('php', php);
+hljs.registerLanguage('cpp', cpp);
+hljs.registerLanguage('c++', cpp); // алиас для cpp
+hljs.registerLanguage('csharp', csharp);
+hljs.registerLanguage('cs', csharp); // алиас для csharp
+hljs.registerLanguage('java', java);
 
 interface CodeBlockProps {
   code: string;
@@ -55,11 +102,11 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
   const isLongCode = lines.length > 15;
   const displayedLines = isExpanded ? lines : lines.slice(0, 15);
 
-  // Fix: replace useState + useEffect with useMemo — no setState inside effect
   const highlightedHtml = useMemo(() => {
     if (!language || language.trim() === '') return '';
     try {
-      const highlighted = hljs.highlight(code, { language: language.toLowerCase() });
+      const normalizedLang = language.toLowerCase().trim();
+      const highlighted = hljs.highlight(code, { language: normalizedLang });
       return highlighted.value
         .split('\n')
         .map(
