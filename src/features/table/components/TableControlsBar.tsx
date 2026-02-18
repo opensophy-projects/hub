@@ -18,7 +18,6 @@ interface TableControlsBarProps {
   isDark: boolean;
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  showFilters: boolean;
   onToggleFilters: () => void;
   activeFilterCount: number;
   onResetFilters: () => void;
@@ -29,12 +28,17 @@ export const TableControlsBar: React.FC<TableControlsBarProps> = ({
   isDark,
   searchQuery,
   onSearchChange,
-  showFilters,
   onToggleFilters,
   activeFilterCount,
   onResetFilters,
   onFullscreen,
 }) => {
+  const btnClass = `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+    isDark
+      ? 'bg-white/10 hover:bg-white/20 text-white'
+      : 'bg-[#E8E7E3] hover:bg-[#ddd8cd] text-black border border-black/20'
+  }`;
+
   return (
     <div
       className={`flex flex-wrap items-center gap-2 p-3 border-b ${
@@ -46,45 +50,23 @@ export const TableControlsBar: React.FC<TableControlsBarProps> = ({
         placeholder="Поиск в таблице..."
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
-        className={`flex-1 min-w-[200px] px-3 py-2 rounded-lg text-sm transition-colors ${
+        className={`flex-1 min-w-[200px] px-3 py-2 rounded-lg text-sm transition-colors focus:outline-none ${
           isDark
             ? 'bg-white/10 border border-white/20 text-white placeholder-white/50 focus:bg-white/15 focus:border-white/40'
             : 'bg-[#E8E7E3] border border-black/20 text-black placeholder-black/50 focus:bg-[#E8E7E3] focus:border-black/40'
-        } focus:outline-none`}
-      />
-
-      <button
-        onClick={onToggleFilters}
-        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-          isDark
-            ? 'bg-white/10 hover:bg-white/20 text-white'
-            : 'bg-[#E8E7E3] hover:bg-[#ddd8cd] text-black border border-black/20'
         }`}
-        title="Фильтрация и колонки"
-      >
+      />
+      <button onClick={onToggleFilters} className={btnClass} title="Фильтрация и колонки">
         Фильтрация {activeFilterCount > 0 && `(${activeFilterCount})`}
       </button>
-
       {activeFilterCount > 0 && (
-        <button
-          onClick={onResetFilters}
-          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-            isDark
-              ? 'bg-white/10 hover:bg-white/20 text-white'
-              : 'bg-[#E8E7E3] hover:bg-[#ddd8cd] text-black border border-black/20'
-          }`}
-        >
+        <button onClick={onResetFilters} className={btnClass}>
           Сбросить
         </button>
       )}
-
       <button
         onClick={onFullscreen}
-        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-          isDark
-            ? 'bg-white/10 hover:bg-white/20 text-white'
-            : 'bg-[#E8E7E3] hover:bg-[#ddd8cd] text-black border border-black/20'
-        }`}
+        className={`${btnClass} flex items-center gap-2`}
         title="Открыть в полном размере"
       >
         <ExpandIcon />
