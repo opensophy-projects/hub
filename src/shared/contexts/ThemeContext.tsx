@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 
 interface ThemeContextType {
   isDark: boolean;
@@ -12,12 +12,19 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+const getInitialTheme = (): boolean => {
+  if (typeof window === 'undefined') return true;
+  return localStorage.getItem('theme') !== 'light';
+};
+
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isDark, setIsDark] = useState<boolean>(
-    () => localStorage.getItem('theme') !== 'light'
-  );
+  const [isDark, setIsDark] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  useEffect(() => {
+    setIsDark(getInitialTheme());
+  }, []);
 
   const toggleTheme = () => {
     setIsDark((prev) => {
