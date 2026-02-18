@@ -3,6 +3,11 @@ import DOMPurify from 'isomorphic-dompurify';
 import type { ParsedRow } from '../types/table';
 import { SortIcon } from './SortIcons';
 
+// Type alias — fixes S4323 "Replace this union type with a type alias"
+export type ColumnAlignment = 'left' | 'center' | 'right' | null;
+
+type SortDirection = 'asc' | 'desc' | 'none';
+
 interface TableViewProps {
   isDark: boolean;
   headers: string[];
@@ -10,9 +15,9 @@ interface TableViewProps {
   visibleColumns: Set<number>;
   searchQuery: string;
   sortColumn: number | null;
-  sortDirection: 'asc' | 'desc' | 'none';
+  sortDirection: SortDirection;
   onSort: (colIndex: number) => void;
-  headerAlignments?: Array<'left' | 'center' | 'right' | null>;
+  headerAlignments?: ColumnAlignment[];
 }
 
 export const TableView: React.FC<TableViewProps> = ({
@@ -70,9 +75,15 @@ interface TableHeadProps {
   headers: string[];
   visibleColumns: Set<number>;
   sortColumn: number | null;
-  sortDirection: 'asc' | 'desc' | 'none';
+  sortDirection: SortDirection;
   onSort: (colIndex: number) => void;
-  headerAlignments: Array<'left' | 'center' | 'right' | null>;
+  headerAlignments: ColumnAlignment[];
+}
+
+function getJustifyContent(alignment: ColumnAlignment): string {
+  if (alignment === 'center') return 'center';
+  if (alignment === 'right') return 'flex-end';
+  return 'flex-start';
 }
 
 const TableHead: React.FC<TableHeadProps> = ({
@@ -83,47 +94,40 @@ const TableHead: React.FC<TableHeadProps> = ({
   sortDirection,
   onSort,
   headerAlignments,
-}) => {
-  return (
-    <thead className="sticky top-0 z-20">
-      <tr className={`${isDark ? 'border-white/10' : 'border-black/10'} border-b`}>
-        {headers.map((header, colIndex) =>
-          visibleColumns.has(colIndex) ? (
-            <th
-              key={header}
-              className={`px-4 py-3 text-left font-semibold cursor-pointer transition-colors select-none ${
-                isDark
-                  ? 'text-white hover:bg-white/20'
-                  : 'text-black hover:bg-[#ddd8cd]'
-              }`}
-              onClick={() => onSort(colIndex)}
-              style={{
-                backgroundColor: isDark ? '#1a1a1a' : '#E8E7E3',
-                whiteSpace: 'nowrap',
-                textAlign: headerAlignments[colIndex] || 'left'
-              }}
-              title="Нажмите для сортировки"
+}) => (
+  <thead className="sticky top-0 z-20">
+    <tr className={`${isDark ? 'border-white/10' : 'border-black/10'} border-b`}>
+      {headers.map((header, colIndex) =>
+        visibleColumns.has(colIndex) ? (
+          <th
+            key={header}
+            className={`px-4 py-3 text-left font-semibold cursor-pointer transition-colors select-none ${
+              isDark ? 'text-white hover:bg-white/20' : 'text-black hover:bg-[#ddd8cd]'
+            }`}
+            onClick={() => onSort(colIndex)}
+            style={{
+              backgroundColor: isDark ? '#1a1a1a' : '#E8E7E3',
+              whiteSpace: 'nowrap',
+              textAlign: headerAlignments[colIndex] || 'left',
+            }}
+            title="Нажмите для сортировки"
+          >
+            <div
+              className="flex items-center gap-2 whitespace-nowrap"
+              style={{ justifyContent: getJustifyContent(headerAlignments[colIndex]) }}
             >
-              <div className="flex items-center gap-2 whitespace-nowrap" style={{ justifyContent: getJustifyContent(headerAlignments[colIndex]) }}>
-                <span>{header}</span>
-                <SortIcon
-                  direction={sortColumn === colIndex ? sortDirection : 'none'}
-                  isDark={isDark}
-                />
-              </div>
-            </th>
-          ) : null
-        )}
-      </tr>
-    </thead>
-  );
-};
-
-function getJustifyContent(alignment: 'left' | 'center' | 'right' | null): string {
-  if (alignment === 'center') return 'center';
-  if (alignment === 'right') return 'flex-end';
-  return 'flex-start';
-}
+              <span>{header}</span>
+              <SortIcon
+                direction={sortColumn === colIndex ? sortDirection : 'none'}
+                isDark={isDark}
+              />
+            </div>
+          </th>
+        ) : null
+      )}
+    </tr>
+  </thead>
+);
 
 interface TableRowProps {
   isDark: boolean;
@@ -174,7 +178,8 @@ const buildHighlightFragment = (parts: TextPart[]): DocumentFragment => {
     if (isMatch) {
       const mark = document.createElement('mark');
       mark.textContent = text;
-      mark.style.cssText = 'background-color: rgb(59, 130, 246); color: white; padding: 2px 4px; border-radius: 2px; font-weight: 600;';
+      mark.style.cssText =
+        'background-color: rgb(59, 130, 246); color: white; padding: 2px 4px; border-radius: 2px; font-weight: 600;';
       fragment.appendChild(mark);
     } else {
       fragment.appendChild(document.createTextNode(text));
@@ -186,9 +191,7 @@ const buildHighlightFragment = (parts: TextPart[]): DocumentFragment => {
 
 const highlightTextNode = (node: Node, lowerQuery: string): void => {
   const text = node.textContent || '';
-  const lowerText = text.toLowerCase();
-
-  if (!lowerText.includes(lowerQuery)) return;
+  if (!text.toLowerCase().includes(lowerQuery)) return;
 
   const parts = splitTextByQuery(text, lowerQuery);
   const fragment = buildHighlightFragment(parts);
@@ -211,6 +214,14 @@ const highlightInElement = (element: HTMLElement, query: string): void => {
   Array.from(element.childNodes).forEach(walk);
 };
 
+const ALLOWED_TAGS = [
+  'strong', 'b', 'em', 'i', 'code', 'a', 'br',
+  'u', 'del', 's', 'strike', 'sub', 'sup', 'mark',
+  'span', 'div', 'p',
+];
+
+const ALLOWED_ATTR = ['href', 'target', 'rel', 'class', 'style'];
+
 const CellContent: React.FC<{ html: string; searchQuery: string }> = ({ html, searchQuery }) => {
   const contentRef = React.useRef<HTMLDivElement>(null);
 
@@ -218,12 +229,8 @@ const CellContent: React.FC<{ html: string; searchQuery: string }> = ({ html, se
     if (!contentRef.current) return;
 
     const sanitizedHtml = DOMPurify.sanitize(html, {
-      ALLOWED_TAGS: [
-        'strong', 'b', 'em', 'i', 'code', 'a', 'br', 
-        'u', 'del', 's', 'strike', 'sub', 'sup', 'mark',
-        'span', 'div', 'p'
-      ],
-      ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style'],
+      ALLOWED_TAGS,
+      ALLOWED_ATTR,
       ALLOW_DATA_ATTR: false,
     });
 
@@ -266,9 +273,9 @@ const TableRow: React.FC<TableRowProps> = ({
           <td
             key={`cell-${rowIndex}-${colIndex}`}
             className={`px-4 py-3 ${isDark ? 'text-white/90' : 'text-black'}`}
-            style={{ 
+            style={{
               whiteSpace: 'nowrap',
-              textAlign: row.alignments[colIndex] || 'left'
+              textAlign: row.alignments[colIndex] || 'left',
             }}
           >
             <CellContent html={cell} searchQuery={searchQuery} />
@@ -279,17 +286,24 @@ const TableRow: React.FC<TableRowProps> = ({
   );
 };
 
-function getTableStyles(isDark: boolean): string {
+// Exported so ModalTableContent can import and reuse — fixes Duplicate Code issue
+export function getTableStyles(isDark: boolean): string {
+  const border = isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)';
+  const color = isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgb(0, 0, 0)';
+  const codeBg = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+  const codeBorder = isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)';
+  const strongColor = isDark ? 'rgba(255, 255, 255, 1)' : 'rgb(0, 0, 0)';
+  const thBg = isDark ? '#1a1a1a' : '#E8E7E3';
+  const markBg = isDark ? 'rgb(202, 138, 4)' : 'rgb(253, 224, 71)';
+  const markColor = isDark ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)';
+  const evenRowBg = isDark ? 'rgba(255, 255, 255, 0.03)' : '#f1f0ec';
+
   return `
-    table {
-      border-collapse: collapse;
-      width: auto;
-      min-width: 100%;
-    }
+    table { border-collapse: collapse; width: auto; min-width: 100%; }
     th, td {
-      border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)'};
+      border: 1px solid ${border};
       padding: 0.75rem 1rem;
-      color: ${isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgb(0, 0, 0)'};
+      color: ${color};
       white-space: nowrap;
     }
     th {
@@ -297,57 +311,32 @@ function getTableStyles(isDark: boolean): string {
       position: sticky;
       top: 0;
       z-index: 10;
-      background-color: ${isDark ? '#1a1a1a' : '#E8E7E3'};
+      background-color: ${thBg};
     }
     td code {
-      background-color: ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'};
+      background-color: ${codeBg};
       padding: 2px 6px;
       border-radius: 3px;
       font-size: 0.85em;
       font-family: ui-monospace, monospace;
       white-space: pre-wrap;
       word-break: break-word;
-      border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)'};
+      border: 1px solid ${codeBorder};
     }
-    td strong, td b { 
-      font-weight: 700;
-      color: ${isDark ? 'rgba(255, 255, 255, 1)' : 'rgb(0, 0, 0)'};
-    }
-    td em, td i { 
-      font-style: italic; 
-    }
-    td u {
-      text-decoration: underline;
-      text-underline-offset: 2px;
-    }
-    td del, td s, td strike {
-      text-decoration: line-through;
-      opacity: 0.7;
-    }
-    td sub {
-      vertical-align: sub;
-      font-size: 0.75em;
-    }
-    td sup {
-      vertical-align: super;
-      font-size: 0.75em;
-    }
+    td strong, td b { font-weight: 700; color: ${strongColor}; }
+    td em, td i { font-style: italic; }
+    td u { text-decoration: underline; text-underline-offset: 2px; }
+    td del, td s, td strike { text-decoration: line-through; opacity: 0.7; }
+    td sub { vertical-align: sub; font-size: 0.75em; }
+    td sup { vertical-align: super; font-size: 0.75em; }
     td mark {
-      background-color: ${isDark ? 'rgb(202, 138, 4)' : 'rgb(253, 224, 71)'};
-      color: ${isDark ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)'};
+      background-color: ${markBg};
+      color: ${markColor};
       padding: 2px 4px;
       border-radius: 2px;
     }
-    td a {
-      color: rgb(59 130 246);
-      text-decoration: underline;
-      word-break: break-word;
-    }
-    td a:hover { 
-      color: rgb(37 99 235); 
-    }
-    tbody tr:nth-child(even) {
-      background-color: ${isDark ? 'rgba(255, 255, 255, 0.03)' : '#f1f0ec'};
-    }
+    td a { color: rgb(59 130 246); text-decoration: underline; word-break: break-word; }
+    td a:hover { color: rgb(37 99 235); }
+    tbody tr:nth-child(even) { background-color: ${evenRowBg}; }
   `;
 }
