@@ -1,4 +1,4 @@
-import { motion, type Transition } from 'framer-motion';
+import { motion, type Transition, type EasingFunction } from 'framer-motion';
 import { useEffect, useRef, useState, useMemo } from 'react';
 import type { BlurTextProps } from './types';
 
@@ -6,15 +6,14 @@ const buildKeyframes = (
   from: Record<string, string | number>,
   steps: Array<Record<string, string | number>>
 ): Record<string, Array<string | number>> => {
-  const keys = new Set<string>([...Object.keys(from), ...steps.flatMap(s => Object.keys(s))]);
+  const keys = new Set<string>([...Object.keys(from), ...steps.flatMap((s) => Object.keys(s))]);
   const keyframes: Record<string, Array<string | number>> = {};
-  keys.forEach(k => {
-    keyframes[k] = [from[k], ...steps.map(s => s[k])];
+  keys.forEach((k) => {
+    keyframes[k] = [from[k], ...steps.map((s) => s[k])];
   });
   return keyframes;
 };
 
-// Генерируем уникальный ID для компонента при первом рендере
 let componentIdCounter = 0;
 
 const BlurText: React.FC<BlurTextProps> = ({
@@ -34,8 +33,7 @@ const BlurText: React.FC<BlurTextProps> = ({
   const elements = animateBy === 'words' ? text.split(' ') : text.split('');
   const [inView, setInView] = useState(false);
   const ref = useRef<HTMLParagraphElement>(null);
-  
-  // Создаем стабильный ID для компонента при первом рендере
+
   const componentId = useRef<number>();
   if (componentId.current === undefined) {
     componentId.current = componentIdCounter++;
@@ -88,24 +86,19 @@ const BlurText: React.FC<BlurTextProps> = ({
           duration: totalDuration,
           times,
           delay: (index * delay) / 1000,
-          ease: easing as any,
+          ease: easing as EasingFunction,
         };
-
-        // ИСПРАВЛЕНО: используем стабильный уникальный ключ
-        // который не меняется между рендерами
         const stableKey = `blur-text-${componentId.current}-${index}`;
-
         return (
           <motion.span
             key={stableKey}
             initial={fromSnapshot}
             animate={inView ? animateKeyframes : fromSnapshot}
             transition={spanTransition}
-            onAnimationComplete={index === elements.length - 1 ? onAnimationComplete : undefined}
-            style={{
-              display: 'inline-block',
-              willChange: 'transform, filter, opacity',
-            }}
+            onAnimationComplete={
+              index === elements.length - 1 ? onAnimationComplete : undefined
+            }
+            style={{ display: 'inline-block', willChange: 'transform, filter, opacity' }}
           >
             {segment === ' ' ? '\u00A0' : segment}
             {animateBy === 'words' && index < elements.length - 1 && '\u00A0'}
