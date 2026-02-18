@@ -1,11 +1,17 @@
+import React from 'react';
 import type { ComponentConfig } from '../types';
 import { textRegistry, type TextComponentId } from './text';
-
 // import { buttonRegistry, type ButtonComponentId } from './buttons';
 // import { cardRegistry, type CardComponentId } from './cards';
-// Пока используем только text, так как buttons и cards пусты
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 export type ComponentId = TextComponentId;
+
+type AnyComponent = React.ComponentType<Record<string, unknown>>;
+type ComponentLoader = () => Promise<Record<string, AnyComponent>>;
+
+// ─── Aggregated registries ────────────────────────────────────────────────────
 
 const allLoaders = {
   ...textRegistry.loaders,
@@ -19,8 +25,9 @@ const allConfigs = {
   // ...cardRegistry.configs,
 } as const;
 
-// Создаем тип на основе ключей реального объекта
 type LoaderKeys = keyof typeof allLoaders;
+
+// ─── Registry ─────────────────────────────────────────────────────────────────
 
 export const registry = {
   getAllIds(): ComponentId[] {
@@ -28,19 +35,21 @@ export const registry = {
   },
 
   getConfig(id: ComponentId): ComponentConfig | null {
-    return allConfigs[id as LoaderKeys] || null;
+    return allConfigs[id as LoaderKeys] ?? null;
   },
 
-  async loadComponent(id: ComponentId): Promise<React.ComponentType<any> | null> {
-    const loader = allLoaders[id as LoaderKeys];
-    
+  async loadComponent(id: ComponentId): Promise<AnyComponent | null> {
+    const loader = allLoaders[id as LoaderKeys] as ComponentLoader | undefined;
+
     if (!loader) {
       console.warn(`Component ${id} not found in registry`);
       return null;
     }
 
     try {
-      return await (loader as () => Promise<{ [key: string]: React.ComponentType<any> }>)();
+      const module = await loader();
+      // Берём default-экспорт, либо первый экспортированный компонент
+      return module.default ?? Object.values(module)[0] ?? null;
     } catch (error) {
       console.error(`Failed to load component ${id}:`, error);
       return null;
@@ -48,13 +57,15 @@ export const registry = {
   },
 
   preloadComponent(id: ComponentId): void {
-    const loader = allLoaders[id as LoaderKeys];
+    const loader = allLoaders[id as LoaderKeys] as ComponentLoader | undefined;
     if (loader) {
-      (loader as () => Promise<any>)();
+      loader().catch((error) => {
+        console.warn(`Failed to preload component ${id}:`, error);
+      });
     }
   },
 
   hasComponent(id: ComponentId): boolean {
     return id in allLoaders;
-  }
+  },
 };
