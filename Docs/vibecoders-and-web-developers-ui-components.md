@@ -1,14 +1,13 @@
 ---
-title: "Вайбкодерам и Веб-разработчикам на заметку! Список сайтов с готовыми UI-Компонентами."
-description: Подборка сайтов и open-source ресурсов с готовыми UI-компонентами для веб-дизайна и frontend-разработки
-type: blog
-category: Подборка
+title: "Вайбкодерам и веб-разработчикам: список сайтов с готовыми UI-компонентами"
+description: Практическая подборка сайтов и open-source ресурсов с готовыми UI-компонентами для веб-дизайна и frontend-разработки.
+type: docs
+typename: Разработка
+category: Разработка
 author: veilosophy
 date: 2026-01-07
-tags: UI, UI-компоненты, frontend, веб-разработка, дизайн интерфейсов, React, Tailwind, open-source
-keywords: UI компоненты, готовые UI компоненты, frontend, веб-дизайн, React UI, Tailwind UI, open-source UI библиотеки
-bannercolor: #489141
-bannertext: UI Components
+tags: UI, UI-компоненты, Frontend, Веб-разработка, Дизайн интерфейсов, React, Tailwind, Open-source
+keywords: UI компоненты, готовые UI компоненты, frontend разработка, React UI библиотеки, Tailwind UI, open-source UI, дизайн интерфейсов
 canonical: null
 robots: index, follow
 lang: ru
