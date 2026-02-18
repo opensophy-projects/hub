@@ -1,4 +1,4 @@
-import React, { useState, useRef, useContext, useEffect } from 'react';
+import React, { useState, useRef, useContext, useMemo } from 'react';
 import { Copy, Maximize2, ChevronDown, Search, X } from 'lucide-react';
 import { TableContext } from '../lib/htmlParser';
 import hljs from 'highlight.js';
@@ -49,36 +49,44 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
   const [isCopied, setIsCopied] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [highlightedHtml, setHighlightedHtml] = useState<string>('');
   const codeRef = useRef<HTMLDivElement>(null);
 
   const lines = code.split('\n');
   const isLongCode = lines.length > 15;
   const displayedLines = isExpanded ? lines : lines.slice(0, 15);
 
-  useEffect(() => {
-    if (language && language.trim() !== '') {
-      try {
-        const highlighted = hljs.highlight(code, { language: language.toLowerCase() });
-        const linesWithNumbers = highlighted.value.split('\n').map((line, i) => {
-          return `<span class="line-number" style="color: ${isDark ? '#888' : '#666'}; display: inline-block; width: 32px; margin-right: 16px; text-align: right; user-select: none;">${i + 1}</span>${line}`;
-        }).join('\n');
-        setHighlightedHtml(linesWithNumbers);
-      } catch (error) {
-        console.warn(`Failed to highlight code for language: ${language}`, error);
-        setHighlightedHtml('');
-      }
-    } else {
-      setHighlightedHtml('');
+  // Fix: replace useState + useEffect with useMemo — no setState inside effect
+  const highlightedHtml = useMemo(() => {
+    if (!language || language.trim() === '') return '';
+    try {
+      const highlighted = hljs.highlight(code, { language: language.toLowerCase() });
+      return highlighted.value
+        .split('\n')
+        .map(
+          (line, i) =>
+            `<span class="line-number" style="color: ${
+              isDark ? '#888' : '#666'
+            }; display: inline-block; width: 32px; margin-right: 16px; text-align: right; user-select: none;">${
+              i + 1
+            }</span>${line}`
+        )
+        .join('\n');
+    } catch (error) {
+      console.warn(`Failed to highlight code for language: ${language}`, error);
+      return '';
     }
   }, [code, language, isDark]);
 
-  const matchedLines = new Set(
-    searchQuery
-      ? lines
-          .map((l, i) => (l.toLowerCase().includes(searchQuery.toLowerCase()) ? i : -1))
-          .filter(i => i !== -1)
-      : []
+  const matchedLines = useMemo(
+    () =>
+      new Set(
+        searchQuery
+          ? lines
+              .map((l, i) => (l.toLowerCase().includes(searchQuery.toLowerCase()) ? i : -1))
+              .filter((i) => i !== -1)
+          : []
+      ),
+    [lines, searchQuery]
   );
 
   const highlightMatch = (text: string): JSX.Element => {
@@ -122,6 +130,7 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
   const bg = isDark ? '#0a0a0a' : '#E8E7E3';
   const fg = isDark ? '#ffffff' : '#000000';
   const border = isDark ? 'border-white/10' : 'border-black/10';
+  const btnHover = isDark ? 'hover:bg-white/10' : 'hover:bg-black/10';
 
   const SearchBox = (
     <div
@@ -131,7 +140,7 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
       <Search size={16} opacity={0.6} />
       <input
         value={searchQuery}
-        onChange={e => setSearchQuery(e.target.value)}
+        onChange={(e) => setSearchQuery(e.target.value)}
         placeholder="Поиск..."
         style={{ color: fg }}
         className="flex-1 bg-transparent outline-none text-sm"
@@ -204,28 +213,21 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
             style={{ background: bg }}
           >
             {SearchBox}
-
             <div className="flex items-center gap-4 flex-shrink-0">
               <span className="text-sm opacity-60 whitespace-nowrap">
                 Всего строк: {lines.length}
               </span>
-
               <button
                 onClick={handleCopy}
-                className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${
-                  isDark ? 'hover:bg-white/10' : 'hover:bg-black/10'
-                }`}
+                className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${btnHover}`}
                 title={isCopied ? 'Скопировано!' : 'Копировать'}
               >
                 <Copy size={14} />
                 <span className="text-sm">{isCopied ? 'Скопировано!' : 'Копировать'}</span>
               </button>
-
               <button
                 onClick={() => setIsFullscreen(false)}
-                className={`p-2 rounded transition-colors ${
-                  isDark ? 'hover:bg-white/10' : 'hover:bg-black/10'
-                }`}
+                className={`p-2 rounded transition-colors ${btnHover}`}
                 title="Закрыть"
               >
                 <X size={20} />
@@ -252,11 +254,7 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
   return (
     <div className="my-4 not-prose">
       {NormalView}
-      {isCopied && (
-        <div className="mt-2 text-sm text-green-500">
-          ✓ Код скопирован
-        </div>
-      )}
+      {isCopied && <div className="mt-2 text-sm text-green-500">✓ Код скопирован</div>}
     </div>
   );
 }
