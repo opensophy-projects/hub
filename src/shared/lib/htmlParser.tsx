@@ -1,8 +1,7 @@
-import React, { createContext, useState } from 'react';
+import React, { createContext } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
 import { CodeBlock } from '../components/CodeBlock';
 import TableWithControls from '@/features/table/components/TableWithControls';
-import ImageModal from '../components/ImageModal';
 import Alert from '../components/Alert';
 import NewUIComponentViewer from '@/features/ui-components/NewUIComponentViewer';
 
@@ -103,44 +102,29 @@ const processLinkElement = (element: Element, key: string, elements: React.React
   );
 };
 
-const ImageWithModal: React.FC<{ src: string; alt: string; title?: string }> = ({ src, alt, title }) => {
-  const [isOpen, setIsOpen] = useState(false);
-
+const ImageComponent: React.FC<{ src: string; alt: string; title?: string }> = ({ src, alt, title }) => {
   return (
     <>
       {title ? (
         <figure className="my-6 w-full">
-          <button
-            type="button"
-            onClick={() => setIsOpen(true)}
-            className="w-full border-0 p-0 bg-transparent cursor-pointer"
-          >
-            <img
-              src={src}
-              alt={alt}
-              loading="lazy"
-              className="rounded-lg shadow-md max-w-full h-auto w-full hover:opacity-90 transition-opacity"
-            />
-          </button>
+          <img
+            src={src}
+            alt={alt}
+            loading="lazy"
+            className="rounded-lg shadow-md max-w-full h-auto w-full"
+          />
           <figcaption className="mt-2 text-center text-xs text-slate-400 italic font-medium">
             {title}
           </figcaption>
         </figure>
       ) : (
-        <button
-          type="button"
-          onClick={() => setIsOpen(true)}
-          className="border-0 p-0 bg-transparent cursor-pointer my-4 block"
-        >
-          <img
-            src={src}
-            alt={alt}
-            loading="lazy"
-            className="rounded-lg shadow-md max-w-full h-auto hover:opacity-90 transition-opacity"
-          />
-        </button>
+        <img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          className="rounded-lg shadow-md max-w-full h-auto my-4 block"
+        />
       )}
-      {isOpen && <ImageModal src={src} alt={alt} onClose={() => setIsOpen(false)} />}
     </>
   );
 };
@@ -151,7 +135,7 @@ const processImageElement = (element: Element, key: string, elements: React.Reac
   const title = element.getAttribute('title') || '';
 
   elements.push(
-    <ImageWithModal key={key} src={src} alt={alt} title={title || undefined} />
+    <ImageComponent key={key} src={src} alt={alt} title={title || undefined} />
   );
 };
 
