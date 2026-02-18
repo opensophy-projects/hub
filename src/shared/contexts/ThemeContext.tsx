@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useMemo } from 'react';
 
 interface ThemeContextType {
   isDark: boolean;
@@ -13,14 +13,11 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState<boolean>(
+    () => localStorage.getItem('theme') !== 'light'
+  );
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    setIsDark(savedTheme !== 'light');
-  }, []);
 
   const toggleTheme = () => {
     setIsDark((prev) => {
@@ -30,17 +27,20 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   };
 
+  const value = useMemo<ThemeContextType>(
+    () => ({
+      isDark,
+      toggleTheme,
+      isSidebarOpen,
+      setSidebarOpen: setIsSidebarOpen,
+      isSearchOpen,
+      setSearchOpen: setIsSearchOpen,
+    }),
+    [isDark, isSidebarOpen, isSearchOpen]
+  );
+
   return (
-    <ThemeContext.Provider
-      value={{
-        isDark,
-        toggleTheme,
-        isSidebarOpen,
-        setSidebarOpen: setIsSidebarOpen,
-        isSearchOpen,
-        setSearchOpen: setIsSearchOpen,
-      }}
-    >
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );
