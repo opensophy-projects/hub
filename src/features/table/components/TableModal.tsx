@@ -12,12 +12,22 @@ interface TableModalProps {
 
 const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [showColumns, setShowColumns] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Map<string, Set<string>>>(new Map());
-  const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set());
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   const parsedTable = useMemo(() => parseTableFromHTML(tableHtml), [tableHtml]);
+
+  // Fix: initialize visibleColumns via useMemo instead of setState in useEffect
+  const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
+    () => new Set(parsedTable.headers.map((h) => h.text))
+  );
+
+  // Sync visibleColumns when parsedTable changes (e.g. tableHtml prop changes)
+  const headersKey = parsedTable.headers.map((h) => h.text).join(',');
+  useEffect(() => {
+    setVisibleColumns(new Set(parsedTable.headers.map((h) => h.text)));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [headersKey]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -36,12 +46,6 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
     };
   }, [isOpen]);
 
-  useEffect(() => {
-    if (parsedTable.headers.length > 0) {
-      setVisibleColumns(new Set(parsedTable.headers.map((h) => h.text)));
-    }
-  }, [parsedTable]);
-
   const uniqueValues = useMemo(() => {
     const map = new Map<string, string[]>();
     parsedTable.headers.forEach((header) => {
@@ -52,7 +56,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
 
   const filteredRows = useMemo(
     () => filterRows(parsedTable.rows, searchQuery, activeFilters, visibleColumns),
-    [parsedTable.rows, searchQuery, activeFilters, visibleColumns],
+    [parsedTable.rows, searchQuery, activeFilters, visibleColumns]
   );
 
   const handleFilterChange = (column: string, value: string, checked: boolean) => {
@@ -90,16 +94,17 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
   };
 
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
+      if (e.key === 'Escape') onClose();
     };
 
-    const handleBackdropClick = (e: MouseEvent) => {
-      const dialog = dialogRef.current;
-      if (!dialog) return;
+    // Fix: capture ref value at effect time, not in cleanup
+    const dialog = dialogRef.current;
 
+    const handleBackdropClick = (e: MouseEvent) => {
+      if (!dialog) return;
       const rect = dialog.getBoundingClientRect();
       const isInDialog =
         rect.top <= e.clientY &&
@@ -107,29 +112,17 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
         rect.left <= e.clientX &&
         e.clientX <= rect.left + rect.width;
 
-      if (!isInDialog) {
-        onClose();
-      }
+      if (!isInDialog) onClose();
     };
 
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-      const dialog = dialogRef.current;
-      if (dialog) {
-        dialog.addEventListener('click', handleBackdropClick);
-      }
-    }
+    document.addEventListener('keydown', handleEscape);
+    dialog?.addEventListener('click', handleBackdropClick);
 
     return () => {
       document.removeEventListener('keydown', handleEscape);
-      const dialog = dialogRef.current;
-      if (dialog) {
-        dialog.removeEventListener('click', handleBackdropClick);
-      }
+      dialog?.removeEventListener('click', handleBackdropClick);
     };
   }, [isOpen, onClose]);
-
-  const backdropClass = isDark ? 'bg-black/80' : 'bg-white/80';
 
   if (!isOpen) return null;
 
@@ -138,14 +131,17 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
       ref={dialogRef}
       aria-label="Модальное окно таблицы"
       aria-modal="true"
-      className={`fixed inset-0 z-[100] flex items-center justify-center w-full h-full max-w-none max-h-none p-0 border-0 ${backdropClass}`}
+      className={`fixed inset-0 z-[100] flex items-center justify-center w-full h-full max-w-none max-h-none p-0 border-0 ${
+        isDark ? 'bg-black/80' : 'bg-white/80'
+      }`}
     >
       <div
-        className={`relative w-full max-w-[95vw] max-h-[95vh] rounded-lg shadow-2xl flex flex-col overflow-hidden ${isDark ? 'bg-[#1a1a1a]' : 'bg-[#E8E7E3]'}`}
+        className={`relative w-full max-w-[95vw] max-h-[95vh] rounded-lg shadow-2xl flex flex-col overflow-hidden ${
+          isDark ? 'bg-[#1a1a1a]' : 'bg-[#E8E7E3]'
+        }`}
       >
         <FilterSection
           isDark={isDark}
-          showFilters={false}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           headers={parsedTable.headers}
@@ -155,8 +151,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
           onResetFilters={handleResetFilters}
           isFullscreen={true}
           onClose={onClose}
-          showColumns={showColumns}
-          onToggleColumns={() => setShowColumns(!showColumns)}
+          onToggleColumns={() => setVisibleColumns(new Set(parsedTable.headers.map((h) => h.text)))}
           visibleColumns={visibleColumns}
           onColumnToggle={handleColumnToggle}
         />
