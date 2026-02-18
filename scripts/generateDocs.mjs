@@ -4,10 +4,10 @@ import { fileURLToPath } from 'node:url';
 import { marked } from 'marked';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname  = path.dirname(__filename);
 
-const docsDir    = path.join(__dirname, '../Docs');
-const outputDir  = path.join(__dirname, '../public/data/docs');
+const docsDir      = path.join(__dirname, '../Docs');
+const outputDir    = path.join(__dirname, '../public/data/docs');
 const manifestFile = path.join(outputDir, 'manifest.json');
 
 marked.setOptions({ breaks: true, gfm: true });
@@ -19,7 +19,6 @@ function preprocessAlerts(content) {
   const codeBlockPattern = /```[\s\S]*?```/g;
   const alertPattern = /^:::(note|tip|important|warning|caution)\n([\s\S]*?)^:::$/gm;
 
-  // Protect code blocks from alert processing
   const protected1 = content.replaceAll(codeBlockPattern, (match) => {
     codeBlocks.push(match);
     return `___CODE_BLOCK_${codeBlocks.length - 1}___`;
@@ -29,7 +28,6 @@ function preprocessAlerts(content) {
     `<div class="custom-alert" data-alert-type="${type}">\n${alertContent.trim()}\n</div>`
   );
 
-  // Restore code blocks
   return protected2.replaceAll(/___CODE_BLOCK_(\d+)___/g, (_match, index) =>
     codeBlocks[Number.parseInt(index, 10)]
   );
@@ -63,7 +61,13 @@ function processImageSyntax(content) {
 function getFirstParagraph(content) {
   for (const line of content.split('\n')) {
     const trimmed = line.trim();
-    if (trimmed && !trimmed.startsWith('#') && !trimmed.startsWith('*') && !trimmed.startsWith('!') && !trimmed.startsWith(':')) {
+    if (
+      trimmed &&
+      !trimmed.startsWith('#') &&
+      !trimmed.startsWith('*') &&
+      !trimmed.startsWith('!') &&
+      !trimmed.startsWith(':')
+    ) {
       return trimmed.substring(0, 160);
     }
   }
@@ -80,22 +84,28 @@ function generateSlug(fileName, canonical) {
     .toLowerCase()
     .replaceAll(/[^\w\s-]/g, '')
     .replaceAll(/\s+/g, '-')
-    .replaceAll(/^-+|-+$/g, '')
+    .replaceAll(/(^-+|-+$)/g, '')   // сгруппировано —fix S5850
     .replaceAll(/-+/g, '-');
 }
 
 // ─── Scanner ──────────────────────────────────────────────────────────────────
 
-function buildDocMeta(fullPath) {
-  const content = fs.readFileSync(fullPath, 'utf-8');
-  const { metadata, content: cleanContent } = extractFrontMatter(content);
+/**
+ * Возвращает два объекта:
+ * - meta: данные для манифеста (без content)
+ * - content: скомпилированный HTML
+ * Разделение позволяет избежать деструктуризации с неиспользуемой переменной.
+ */
+function buildDoc(fullPath) {
+  const raw = fs.readFileSync(fullPath, 'utf-8');
+  const { metadata, content: cleanContent } = extractFrontMatter(raw);
 
-  const processedContent  = processImageSyntax(cleanContent);
-  const htmlContent       = marked(preprocessAlerts(processedContent));
-  const fileName          = path.basename(fullPath, '.md');
-  const slug              = generateSlug(fileName, metadata.canonical);
+  const processedContent = processImageSyntax(cleanContent);
+  const htmlContent      = marked(preprocessAlerts(processedContent));
+  const fileName         = path.basename(fullPath, '.md');
+  const slug             = generateSlug(fileName, metadata.canonical);
 
-  return {
+  const meta = {
     id:          slug,
     title:       metadata.title       || fileName,
     slug,
@@ -109,8 +119,9 @@ function buildDocMeta(fullPath) {
     canonical:   metadata.canonical   || null,
     robots:      metadata.robots      || 'index, follow',
     lang:        metadata.lang        || 'ru',
-    content:     htmlContent,
   };
+
+  return { meta, content: htmlContent };
 }
 
 function scanDocs(dir) {
@@ -132,13 +143,15 @@ function scanDocs(dir) {
 
       if (!item.endsWith('.md') || item === 'README.md') continue;
 
-      const doc = buildDocMeta(fullPath);
+      const { meta, content } = buildDoc(fullPath);
 
-      // Write individual doc file
-      fs.writeFileSync(path.join(outputDir, `${doc.slug}.json`), JSON.stringify(doc, null, 2));
+      // Записываем файл с полным содержимым
+      fs.writeFileSync(
+        path.join(outputDir, `${meta.slug}.json`),
+        JSON.stringify({ ...meta, content }, null, 2)
+      );
 
-      // Add to manifest (without full content)
-      const { content: _content, ...meta } = doc;
+      // В манифест идут только мета-данные
       manifest.push(meta);
     }
   }
@@ -169,7 +182,9 @@ function generateDocs() {
 
   console.log(`✅ Generated ${manifest.length} individual doc files`);
   console.log('✅ Generated manifest.json');
-  manifest.forEach((doc) => console.log(`  - ${doc.title} (${doc.type || 'no-category'}) - slug: ${doc.slug}`));
+  manifest.forEach((doc) =>
+    console.log(`  - ${doc.title} (${doc.type || 'no-category'}) - slug: ${doc.slug}`)
+  );
 }
 
 generateDocs();
