@@ -13,7 +13,7 @@ robots: index, follow
 lang: ru
 ---
 
-**Авторы:** Veilosophy, глава проекта Opensophy, и Аносов Роман[https://t.me/anosof_roman], директор по маркетингу.
+**Авторы:** Veilosophy, глава проекта Opensophy, и [Аносов Роман](https://t.me/anosof_roman), директор по маркетингу.
 
 ---
 
