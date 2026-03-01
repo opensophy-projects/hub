@@ -143,7 +143,7 @@ Equal selection даёт 50% женщин в шортлисте — но к фи
 - **Пиши результаты, а не обязанности.** Не «занимался аналитикой» — а «вырастил конверсию на 23% за квартал». ATS пропускает, человек читает.
 - **Резюме джуна и резюме мидла — разные документы.** «Прошёл стажировку и написал диплом» — это не мидл. Мидл — это проекты, результаты, реальный вклад. Алгоритм не угадывает потенциал — он сопоставляет паттерны.
 
-(Подробнее как оптимизировать резюме под ATS рассказал Роман в своем блоге!)[https://anosovroman.ru/blog/kak-napisat-luchshee-rezyume-dlya-ustroystva-na-rabotu-i-byt-samym-zhelannym-kandidatom-oboydya-ii-i-ats-v-2026]
+[Подробнее как оптимизировать резюме под ATS рассказал Роман в своем блоге!](https://anosovroman.ru/blog/kak-napisat-luchshee-rezyume-dlya-ustroystva-na-rabotu-i-byt-samym-zhelannym-kandidatom-oboydya-ii-i-ats-v-2026)
 
 ---
 
