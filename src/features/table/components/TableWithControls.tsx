@@ -33,7 +33,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
   return (
     <div className="not-prose">
       <div
-        className={`rounded-lg border overflow-hidden flex flex-col min-h-[300px] ${
+        className={`rounded-lg border overflow-hidden flex flex-col ${
           isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-[#E8E7E3]'
         }`}
       >
@@ -66,8 +66,13 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
           </>
         )}
 
-        {/* Обёртка с фиксированной высотой для вертикальной прокрутки */}
-        <div style={{ flex: 1, overflow: 'hidden', maxHeight: '480px' }}>
+        {/*
+          Фиксированная высота — обязательное условие для sticky thead.
+          Без ограничения высоты контейнер растягивается под контент
+          и thead не «залипает», т.к. скролл происходит на уровне страницы,
+          а не внутри div'а.
+        */}
+        <div style={{ height: '460px', overflow: 'hidden' }}>
           <TableView
             isDark={isDark}
             headers={headers}
