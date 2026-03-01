@@ -1,5 +1,49 @@
 [
   {
+    "id": "ats-hr",
+    "title": "ATS в HR: почему люди получают автоотказы",
+    "slug": "ats-hr",
+    "description": "Разбор того, как работают ATS-фильтры, почему они ломают найм - и что с этим делать. На основе двух академических исследований 2025 года.",
+    "type": "blog",
+    "typename": "Блог",
+    "author": "veilosophy, Аносов Роман",
+    "date": "2026-03-01",
+    "tags": [
+      "ATS",
+      "HR",
+      "найм",
+      "алгоритмы",
+      "карьера",
+      "резюме"
+    ],
+    "keywords": "ATS фильтры, автоотказ, найм, резюме, алгоритмический найм, bias в HR",
+    "canonical": "null",
+    "robots": "index, follow",
+    "lang": "ru"
+  },
+  {
+    "id": "linux-filesystem",
+    "title": "Учим Linux: Файлы, навигация и поиск",
+    "slug": "linux-filesystem",
+    "description": "Первая часть серии о Linux для DevOps и DevSecOps - разбираем структуру файловой системы, навигацию, работу с файлами, просмотр содержимого и поиск внутри файлов.",
+    "type": "docs",
+    "typename": "Документация",
+    "author": "veilosophy",
+    "date": "2026-02-25",
+    "tags": [
+      "Linux",
+      "файловая система",
+      "bash",
+      "DevOps",
+      "DevSecOps",
+      "командная строка"
+    ],
+    "keywords": "Linux файловая система, команды Linux, навигация Linux, grep awk sed, bash команды",
+    "canonical": "null",
+    "robots": "index, follow",
+    "lang": "ru"
+  },
+  {
     "id": "welcome",
     "title": "Добро пожаловать в Hub",
     "slug": "welcome",
@@ -140,7 +184,7 @@
     "title": "Вайбкодерам и веб-разработчикам: список сайтов с готовыми UI-компонентами",
     "slug": "vibecoders-and-web-developers-ui-components",
     "description": "Практическая подборка сайтов и open-source ресурсов с готовыми UI-компонентами для веб-дизайна и frontend-разработки.",
-    "type": "docs",
+    "type": "blog",
     "typename": "Разработка",
     "author": "veilosophy",
     "date": "2026-01-07",
@@ -164,8 +208,8 @@
     "title": "Как начать путь в кибербезопасности: от первых шагов до осознанной карьеры",
     "slug": "career-tutorial",
     "description": "Практическое руководство по входу в кибербезопасность — от выбора специализации до первой работы. Реальные методы, без мифов и волшебных курсов.",
-    "type": "docs",
-    "typename": "Документация",
+    "type": "blog",
+    "typename": "Блог",
     "author": "veilosophy",
     "date": "2025-12-31",
     "tags": [
