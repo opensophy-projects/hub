@@ -34,44 +34,59 @@ export const TableView: React.FC<TableViewProps> = ({
   const scrollbarStyles = useMemo(() => getScrollbarStyles(isDark), [isDark]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  // Флаг: началось ли реальное перетаскивание (порог 5px)
+  const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
+  const [isDraggingState, setIsDraggingState] = useState(false);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     const el = scrollRef.current;
     if (!el) return;
+    // Не перехватываем клики по th (сортировка)
     if ((e.target as HTMLElement).closest('th')) return;
-    setIsDragging(true);
+    // Запоминаем стартовую точку, но drag ещё не начался
+    isDragging.current = false;
     dragStart.current = {
       x: e.clientX,
       y: e.clientY,
       scrollLeft: el.scrollLeft,
       scrollTop: el.scrollTop,
     };
-    el.style.cursor = 'grabbing';
-    el.style.userSelect = 'none';
   }, []);
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (!isDragging) return;
-      const el = scrollRef.current;
-      if (!el) return;
-      e.preventDefault();
-      const dx = e.clientX - dragStart.current.x;
-      const dy = e.clientY - dragStart.current.y;
-      el.scrollLeft = dragStart.current.scrollLeft - dx;
-      el.scrollTop = dragStart.current.scrollTop - dy;
-    },
-    [isDragging],
-  );
-
-  const stopDrag = useCallback(() => {
-    setIsDragging(false);
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
     const el = scrollRef.current;
     if (!el) return;
-    el.style.cursor = 'grab';
-    el.style.userSelect = '';
+    // Проверяем, зажата ли левая кнопка (buttons === 1)
+    if (e.buttons !== 1) return;
+
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    // Порог 5px — до него считается обычным кликом/выделением
+    if (!isDragging.current && dist < 5) return;
+
+    // Порог превышен — активируем режим перетаскивания
+    if (!isDragging.current) {
+      isDragging.current = true;
+      setIsDraggingState(true);
+      el.style.cursor = 'grabbing';
+      // Снимаем выделение текста только когда точно тащим
+      window.getSelection()?.removeAllRanges();
+    }
+
+    e.preventDefault();
+    el.scrollLeft = dragStart.current.scrollLeft - dx;
+    el.scrollTop = dragStart.current.scrollTop - dy;
+  }, []);
+
+  const stopDrag = useCallback(() => {
+    isDragging.current = false;
+    setIsDraggingState(false);
+    const el = scrollRef.current;
+    if (!el) return;
+    el.style.cursor = '';
   }, []);
 
   return (
@@ -82,10 +97,12 @@ export const TableView: React.FC<TableViewProps> = ({
         style={{
           overflowX: 'auto',
           overflowY: 'auto',
-          // maxHeight — таблица адаптируется под контент, скроллится только если строк много
           maxHeight: '480px',
-          cursor: 'grab',
+          // cursor grab только когда не тащим — при drag меняется на grabbing
+          cursor: isDraggingState ? 'grabbing' : 'default',
           position: 'relative',
+          // userSelect блокируем только во время drag
+          userSelect: isDraggingState ? 'none' : 'text',
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -333,9 +350,6 @@ const TableRow: React.FC<TableRowProps> = ({
 
   return (
     <tr
-      // Не используем Tailwind hover-классы для тёмной темы — они конфликтуют
-      // с инлайн background-color на td и вызывают "пропадание" границ.
-      // Вместо этого управляем фоном через state onMouseEnter/Leave.
       className={`border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}
       style={{
         backgroundColor: bgColor,
@@ -352,8 +366,6 @@ const TableRow: React.FC<TableRowProps> = ({
             style={{
               whiteSpace: 'nowrap',
               textAlign: row.alignments[colIndex] || 'left',
-              // td явно наследует фон — без этого ячейки могут
-              // оставаться прозрачными и "просвечивать" старый цвет
               backgroundColor: bgColor,
               transition: 'background-color 0.12s ease',
             }}
@@ -369,7 +381,7 @@ const TableRow: React.FC<TableRowProps> = ({
 function getScrollbarStyles(isDark: boolean): string {
   const thumb = isDark ? 'rgba(150, 150, 150, 0.6)' : 'rgba(0, 0, 0, 0.2)';
   const thumbHover = isDark ? 'rgba(190, 190, 190, 0.85)' : 'rgba(0, 0, 0, 0.35)';
-  const track = isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.04)';
+  const track = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
 
   return `
     .table-scroll-container::-webkit-scrollbar {
