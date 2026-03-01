@@ -3,7 +3,6 @@ import DOMPurify from 'isomorphic-dompurify';
 import type { ParsedRow } from '../types/table';
 import { SortIcon } from './SortIcons';
 
-// Type alias — fixes S4323 "Replace this union type with a type alias"
 export type ColumnAlignment = 'left' | 'center' | 'right' | null;
 
 type SortDirection = 'asc' | 'desc' | 'none';
@@ -41,7 +40,6 @@ export const TableView: React.FC<TableViewProps> = ({
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     const el = scrollRef.current;
     if (!el) return;
-    // Не активировать drag если кликнули на th (сортировка)
     if ((e.target as HTMLElement).closest('th')) return;
     setIsDragging(true);
     dragStart.current = {
@@ -84,10 +82,9 @@ export const TableView: React.FC<TableViewProps> = ({
         style={{
           overflowX: 'auto',
           overflowY: 'auto',
-          height: '100%',
-          minHeight: '200px',
+          // maxHeight — таблица адаптируется под контент, скроллится только если строк много
+          maxHeight: '480px',
           cursor: 'grab',
-          // Важно: position relative, чтобы sticky thead работал внутри
           position: 'relative',
         }}
         onMouseDown={handleMouseDown}
@@ -157,7 +154,6 @@ const TableHead: React.FC<TableHeadProps> = ({
   onSort,
   headerAlignments,
 }) => (
-  // sticky top-0 + z-20 — шапка залипает при вертикальной прокрутке внутри контейнера
   <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
     <tr className={`${isDark ? 'border-white/10' : 'border-black/10'} border-b`}>
       {headers.map((header, colIndex) =>
@@ -172,7 +168,6 @@ const TableHead: React.FC<TableHeadProps> = ({
               backgroundColor: isDark ? '#1a1a1a' : '#E8E7E3',
               whiteSpace: 'nowrap',
               textAlign: headerAlignments[colIndex] || 'left',
-              // Каждая th тоже sticky top:0 (уже задано на thead, но явно для надёжности)
               position: 'sticky',
               top: 0,
               zIndex: 20,
@@ -204,9 +199,14 @@ interface TableRowProps {
   searchQuery: string;
 }
 
-const getRowBg = (isEvenRow: boolean, isDark: boolean): string => {
+const getRowBgColor = (isEvenRow: boolean, isDark: boolean): string => {
   if (isDark) return isEvenRow ? '#1e1e1e' : '#141414';
   return isEvenRow ? '#E8E7E3' : '#f1f0ec';
+};
+
+const getRowHoverBgColor = (isEvenRow: boolean, isDark: boolean): string => {
+  if (isDark) return isEvenRow ? '#2a2a2a' : '#202020';
+  return '#ddd8cd';
 };
 
 interface TextPart {
@@ -325,14 +325,24 @@ const TableRow: React.FC<TableRowProps> = ({
   searchQuery,
 }) => {
   const isEvenRow = rowIndex % 2 === 0;
-  const rowBg = getRowBg(isEvenRow, isDark);
+  const [isHovered, setIsHovered] = useState(false);
+
+  const bgColor = isHovered
+    ? getRowHoverBgColor(isEvenRow, isDark)
+    : getRowBgColor(isEvenRow, isDark);
 
   return (
     <tr
-      className={`border-b transition-colors ${
-        isDark ? 'border-white/10 hover:brightness-125' : 'border-black/10 hover:bg-[#ddd8cd]'
-      }`}
-      style={{ backgroundColor: rowBg }}
+      // Не используем Tailwind hover-классы для тёмной темы — они конфликтуют
+      // с инлайн background-color на td и вызывают "пропадание" границ.
+      // Вместо этого управляем фоном через state onMouseEnter/Leave.
+      className={`border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}
+      style={{
+        backgroundColor: bgColor,
+        transition: 'background-color 0.12s ease',
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       {row.cells.map((cell, colIndex) =>
         visibleColumns.has(colIndex) ? (
@@ -342,7 +352,10 @@ const TableRow: React.FC<TableRowProps> = ({
             style={{
               whiteSpace: 'nowrap',
               textAlign: row.alignments[colIndex] || 'left',
-              backgroundColor: rowBg,
+              // td явно наследует фон — без этого ячейки могут
+              // оставаться прозрачными и "просвечивать" старый цвет
+              backgroundColor: bgColor,
+              transition: 'background-color 0.12s ease',
             }}
           >
             <CellContent html={cell} searchQuery={searchQuery} />
@@ -353,10 +366,9 @@ const TableRow: React.FC<TableRowProps> = ({
   );
 };
 
-// Scrollbar styles — в тёмной теме ползунок серый и заметный
 function getScrollbarStyles(isDark: boolean): string {
   const thumb = isDark ? 'rgba(150, 150, 150, 0.6)' : 'rgba(0, 0, 0, 0.2)';
-  const thumbHover = isDark ? 'rgba(180, 180, 180, 0.85)' : 'rgba(0, 0, 0, 0.35)';
+  const thumbHover = isDark ? 'rgba(190, 190, 190, 0.85)' : 'rgba(0, 0, 0, 0.35)';
   const track = isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.04)';
 
   return `
@@ -387,7 +399,7 @@ function getScrollbarStyles(isDark: boolean): string {
 
 // Exported so ModalTableContent can import and reuse — fixes Duplicate Code issue
 export function getTableStyles(isDark: boolean): string {
-  const border = isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)';
+  const border = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.2)';
   const color = isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgb(0, 0, 0)';
   const codeBg = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
   const codeBorder = isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)';
