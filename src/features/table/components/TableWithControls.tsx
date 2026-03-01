@@ -67,24 +67,21 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
         )}
 
         {/*
-          Фиксированная высота — обязательное условие для sticky thead.
-          Без ограничения высоты контейнер растягивается под контент
-          и thead не «залипает», т.к. скролл происходит на уровне страницы,
-          а не внутри div'а.
+          Без фиксированной высоты — контейнер адаптируется под контент.
+          maxHeight внутри TableView ограничивает рост при большом числе строк
+          и включает внутренний скролл + sticky thead.
         */}
-        <div style={{ height: '460px', overflow: 'hidden' }}>
-          <TableView
-            isDark={isDark}
-            headers={headers}
-            rows={filteredAndSortedRows}
-            visibleColumns={state.visibleColumns}
-            searchQuery={state.searchQuery}
-            sortColumn={state.sortColumn}
-            sortDirection={state.sortDirection}
-            onSort={handleSort}
-            headerAlignments={headerAlignments}
-          />
-        </div>
+        <TableView
+          isDark={isDark}
+          headers={headers}
+          rows={filteredAndSortedRows}
+          visibleColumns={state.visibleColumns}
+          searchQuery={state.searchQuery}
+          sortColumn={state.sortColumn}
+          sortDirection={state.sortDirection}
+          onSort={handleSort}
+          headerAlignments={headerAlignments}
+        />
       </div>
     </div>
   );
