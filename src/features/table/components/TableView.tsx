@@ -1,9 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useState, useCallback } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
 import type { ParsedRow } from '../types/table';
 import { SortIcon } from './SortIcons';
 
-// Type alias — fixes S4323 "Replace this union type with a type alias"
 export type ColumnAlignment = 'left' | 'center' | 'right' | null;
 
 type SortDirection = 'asc' | 'desc' | 'none';
@@ -32,41 +31,107 @@ export const TableView: React.FC<TableViewProps> = ({
   headerAlignments = [],
 }) => {
   const styles = useMemo(() => getTableStyles(isDark), [isDark]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [startY, setStartY] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [scrollTop, setScrollTop] = useState(0);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setIsDragging(true);
+    setStartX(e.pageX - el.offsetLeft);
+    setStartY(e.pageY - el.offsetTop);
+    setScrollLeft(el.scrollLeft);
+    setScrollTop(el.scrollTop);
+    el.style.cursor = 'grabbing';
+    el.style.userSelect = 'none';
+  }, []);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    e.preventDefault();
+    const x = e.pageX - el.offsetLeft;
+    const y = e.pageY - el.offsetTop;
+    const walkX = (x - startX) * 1.2;
+    const walkY = (y - startY) * 1.2;
+    el.scrollLeft = scrollLeft - walkX;
+    el.scrollTop = scrollTop - walkY;
+  }, [isDragging, startX, startY, scrollLeft, scrollTop]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+    const el = scrollRef.current;
+    if (!el) return;
+    el.style.cursor = 'grab';
+    el.style.userSelect = '';
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    if (isDragging) {
+      setIsDragging(false);
+      const el = scrollRef.current;
+      if (!el) return;
+      el.style.cursor = 'grab';
+      el.style.userSelect = '';
+    }
+  }, [isDragging]);
 
   return (
-    <div style={{ overflowX: 'auto', overflowY: 'auto', height: '100%', minHeight: '200px' }}>
-      <table className="border-collapse text-sm" style={{ width: 'auto', minWidth: '100%' }}>
-        <TableHead
-          isDark={isDark}
-          headers={headers}
-          visibleColumns={visibleColumns}
-          sortColumn={sortColumn}
-          sortDirection={sortDirection}
-          onSort={onSort}
-          headerAlignments={headerAlignments}
-        />
-        <tbody>
-          {rows.map((row, rowIndex) => (
-            <TableRow
-              key={`row-${rowIndex}-${row.cells.join('-')}`}
-              isDark={isDark}
-              row={row}
-              rowIndex={rowIndex}
-              visibleColumns={visibleColumns}
-              searchQuery={searchQuery}
-            />
-          ))}
-        </tbody>
-      </table>
+    <>
+      <div
+        ref={scrollRef}
+        className="table-scroll-container"
+        style={{
+          overflowX: 'auto',
+          overflowY: 'auto',
+          height: '100%',
+          minHeight: '200px',
+          cursor: 'grab',
+        }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+      >
+        <table className="border-collapse text-sm" style={{ width: 'auto', minWidth: '100%' }}>
+          <TableHead
+            isDark={isDark}
+            headers={headers}
+            visibleColumns={visibleColumns}
+            sortColumn={sortColumn}
+            sortDirection={sortDirection}
+            onSort={onSort}
+            headerAlignments={headerAlignments}
+          />
+          <tbody>
+            {rows.map((row, rowIndex) => (
+              <TableRow
+                key={`row-${rowIndex}-${row.cells.join('-')}`}
+                isDark={isDark}
+                row={row}
+                rowIndex={rowIndex}
+                visibleColumns={visibleColumns}
+                searchQuery={searchQuery}
+              />
+            ))}
+          </tbody>
+        </table>
 
-      {rows.length === 0 && (
-        <div className={`p-6 text-center ${isDark ? 'text-white/50' : 'text-black/50'}`}>
-          Нет результатов
-        </div>
-      )}
+        {rows.length === 0 && (
+          <div className={`p-6 text-center ${isDark ? 'text-white/50' : 'text-black/50'}`}>
+            Нет результатов
+          </div>
+        )}
+      </div>
 
       <style>{styles}</style>
-    </div>
+      <style>{getScrollbarStyles(isDark)}</style>
+    </>
   );
 };
 
@@ -94,40 +159,57 @@ const TableHead: React.FC<TableHeadProps> = ({
   sortDirection,
   onSort,
   headerAlignments,
-}) => (
-  <thead className="sticky top-0 z-20">
-    <tr className={`${isDark ? 'border-white/10' : 'border-black/10'} border-b`}>
-      {headers.map((header, colIndex) =>
-        visibleColumns.has(colIndex) ? (
-          <th
-            key={header}
-            className={`px-4 py-3 text-left font-semibold cursor-pointer transition-colors select-none ${
-              isDark ? 'text-white hover:bg-white/20' : 'text-black hover:bg-[#ddd8cd]'
-            }`}
-            onClick={() => onSort(colIndex)}
-            style={{
-              backgroundColor: isDark ? '#1a1a1a' : '#E8E7E3',
-              whiteSpace: 'nowrap',
-              textAlign: headerAlignments[colIndex] || 'left',
-            }}
-            title="Нажмите для сортировки"
-          >
-            <div
-              className="flex items-center gap-2 whitespace-nowrap"
-              style={{ justifyContent: getJustifyContent(headerAlignments[colIndex]) }}
+}) => {
+  const visibleIndices = headers
+    .map((_, i) => i)
+    .filter((i) => visibleColumns.has(i));
+  const firstVisibleIndex = visibleIndices[0] ?? -1;
+
+  return (
+    <thead className="sticky top-0 z-20">
+      <tr className={`${isDark ? 'border-white/10' : 'border-black/10'} border-b`}>
+        {headers.map((header, colIndex) =>
+          visibleColumns.has(colIndex) ? (
+            <th
+              key={header}
+              className={`px-4 py-3 text-left font-semibold cursor-pointer transition-colors select-none ${
+                isDark ? 'text-white hover:bg-white/20' : 'text-black hover:bg-[#ddd8cd]'
+              }`}
+              onClick={() => onSort(colIndex)}
+              style={{
+                backgroundColor: isDark ? '#1a1a1a' : '#E8E7E3',
+                whiteSpace: 'nowrap',
+                textAlign: headerAlignments[colIndex] || 'left',
+                ...(colIndex === firstVisibleIndex
+                  ? {
+                      position: 'sticky',
+                      left: 0,
+                      zIndex: 30,
+                      boxShadow: isDark
+                        ? '2px 0 4px rgba(0,0,0,0.5)'
+                        : '2px 0 4px rgba(0,0,0,0.1)',
+                    }
+                  : {}),
+              }}
+              title="Нажмите для сортировки"
             >
-              <span>{header}</span>
-              <SortIcon
-                direction={sortColumn === colIndex ? sortDirection : 'none'}
-                isDark={isDark}
-              />
-            </div>
-          </th>
-        ) : null
-      )}
-    </tr>
-  </thead>
-);
+              <div
+                className="flex items-center gap-2 whitespace-nowrap"
+                style={{ justifyContent: getJustifyContent(headerAlignments[colIndex]) }}
+              >
+                <span>{header}</span>
+                <SortIcon
+                  direction={sortColumn === colIndex ? sortDirection : 'none'}
+                  isDark={isDark}
+                />
+              </div>
+            </th>
+          ) : null
+        )}
+      </tr>
+    </thead>
+  );
+};
 
 interface TableRowProps {
   isDark: boolean;
@@ -138,7 +220,7 @@ interface TableRowProps {
 }
 
 const getRowBackgroundClass = (isEvenRow: boolean, isDark: boolean): string => {
-  if (isDark) return '';
+  if (isDark) return isEvenRow ? 'row-even-dark' : 'row-odd-dark';
   return isEvenRow ? 'bg-[#E8E7E3]' : 'bg-[#f1f0ec]';
 };
 
@@ -258,15 +340,25 @@ const TableRow: React.FC<TableRowProps> = ({
   searchQuery,
 }) => {
   const isEvenRow = rowIndex % 2 === 0;
-  const backgroundClass = getRowBackgroundClass(isEvenRow, isDark);
+  const bgClass = getRowBackgroundClass(isEvenRow, isDark);
+
+  const visibleIndices = Array.from(visibleColumns).sort((a, b) => a - b);
+  const firstVisibleIndex = visibleIndices[0] ?? -1;
+
+  const rowBgColor = isDark
+    ? isEvenRow
+      ? '#1e1e1e'
+      : '#161616'
+    : undefined;
 
   return (
     <tr
       className={`border-b transition-colors ${
         isDark
           ? 'border-white/10 hover:bg-white/5'
-          : 'border-black/10 hover:bg-[#ddd8cd]'
-      } ${backgroundClass}`}
+          : `border-black/10 hover:bg-[#ddd8cd] ${bgClass}`
+      }`}
+      style={isDark ? { backgroundColor: rowBgColor } : undefined}
     >
       {row.cells.map((cell, colIndex) =>
         visibleColumns.has(colIndex) ? (
@@ -276,6 +368,23 @@ const TableRow: React.FC<TableRowProps> = ({
             style={{
               whiteSpace: 'nowrap',
               textAlign: row.alignments[colIndex] || 'left',
+              ...(colIndex === firstVisibleIndex
+                ? {
+                    position: 'sticky',
+                    left: 0,
+                    zIndex: 10,
+                    backgroundColor: isDark
+                      ? isEvenRow
+                        ? '#1e1e1e'
+                        : '#161616'
+                      : isEvenRow
+                      ? '#E8E7E3'
+                      : '#f1f0ec',
+                    boxShadow: isDark
+                      ? '2px 0 4px rgba(0,0,0,0.5)'
+                      : '2px 0 4px rgba(0,0,0,0.1)',
+                  }
+                : {}),
             }}
           >
             <CellContent html={cell} searchQuery={searchQuery} />
@@ -286,7 +395,33 @@ const TableRow: React.FC<TableRowProps> = ({
   );
 };
 
-// Exported so ModalTableContent can import and reuse — fixes Duplicate Code issue
+function getScrollbarStyles(isDark: boolean): string {
+  const thumbColor = isDark ? 'rgba(160,160,160,0.5)' : 'rgba(0,0,0,0.2)';
+  const thumbHover = isDark ? 'rgba(160,160,160,0.8)' : 'rgba(0,0,0,0.35)';
+  const trackColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+
+  return `
+    .table-scroll-container::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    .table-scroll-container::-webkit-scrollbar-track {
+      background: ${trackColor};
+      border-radius: 4px;
+    }
+    .table-scroll-container::-webkit-scrollbar-thumb {
+      background: ${thumbColor};
+      border-radius: 4px;
+    }
+    .table-scroll-container::-webkit-scrollbar-thumb:hover {
+      background: ${thumbHover};
+    }
+    .table-scroll-container::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+  `;
+}
+
 export function getTableStyles(isDark: boolean): string {
   const border = isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)';
   const color = isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgb(0, 0, 0)';
@@ -296,7 +431,8 @@ export function getTableStyles(isDark: boolean): string {
   const thBg = isDark ? '#1a1a1a' : '#E8E7E3';
   const markBg = isDark ? 'rgb(202, 138, 4)' : 'rgb(253, 224, 71)';
   const markColor = isDark ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)';
-  const evenRowBg = isDark ? 'rgba(255, 255, 255, 0.03)' : '#f1f0ec';
+  const evenRowBg = isDark ? '#1e1e1e' : '#f1f0ec';
+  const oddRowBg = isDark ? '#161616' : '#E8E7E3';
 
   return `
     table { border-collapse: collapse; width: auto; min-width: 100%; }
@@ -338,5 +474,6 @@ export function getTableStyles(isDark: boolean): string {
     td a { color: rgb(59 130 246); text-decoration: underline; word-break: break-word; }
     td a:hover { color: rgb(37 99 235); }
     tbody tr:nth-child(even) { background-color: ${evenRowBg}; }
+    tbody tr:nth-child(odd) { background-color: ${oddRowBg}; }
   `;
 }
