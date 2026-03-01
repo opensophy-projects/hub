@@ -32,9 +32,11 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
 
   return (
     <div className="not-prose">
-      <div className={`rounded-lg border overflow-hidden flex flex-col min-h-[300px] ${
-        isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-[#E8E7E3]'
-      }`}>
+      <div
+        className={`rounded-lg border overflow-hidden flex flex-col min-h-[300px] ${
+          isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-[#E8E7E3]'
+        }`}
+      >
         <TableControlsBar
           isDark={isDark}
           searchQuery={state.searchQuery}
@@ -64,7 +66,8 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
           </>
         )}
 
-        <div className="flex-1 overflow-hidden">
+        {/* Обёртка с фиксированной высотой для вертикальной прокрутки */}
+        <div style={{ flex: 1, overflow: 'hidden', maxHeight: '480px' }}>
           <TableView
             isDark={isDark}
             headers={headers}
