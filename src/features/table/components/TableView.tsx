@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
 import type { ParsedRow } from '../types/table';
 import { SortIcon } from './SortIcons';
@@ -32,92 +32,10 @@ export const TableView: React.FC<TableViewProps> = ({
   headerAlignments = [],
 }) => {
   const styles = useMemo(() => getTableStyles(isDark), [isDark]);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Drag-scroll functionality
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    let isDown = false;
-    let startX = 0;
-    let startY = 0;
-    let scrollLeft = 0;
-    let scrollTop = 0;
-
-    const handleMouseDown = (e: MouseEvent) => {
-      isDown = true;
-      container.style.cursor = 'grabbing';
-      container.style.userSelect = 'none';
-      startX = e.pageX - container.offsetLeft;
-      startY = e.pageY - container.offsetTop;
-      scrollLeft = container.scrollLeft;
-      scrollTop = container.scrollTop;
-    };
-
-    const handleMouseLeave = () => {
-      isDown = false;
-      container.style.cursor = 'grab';
-      container.style.userSelect = 'auto';
-    };
-
-    const handleMouseUp = () => {
-      isDown = false;
-      container.style.cursor = 'grab';
-      container.style.userSelect = 'auto';
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDown) return;
-      e.preventDefault();
-      const x = e.pageX - container.offsetLeft;
-      const y = e.pageY - container.offsetTop;
-      const walkX = (x - startX) * 1.5;
-      const walkY = (y - startY) * 1.5;
-      container.scrollLeft = scrollLeft - walkX;
-      container.scrollTop = scrollTop - walkY;
-    };
-
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      // Горизонтальная прокрутка через Shift + колесо или через deltaX
-      if (e.shiftKey || Math.abs(e.deltaX) > 0) {
-        container.scrollLeft += e.deltaX || e.deltaY;
-      } else {
-        // Вертикальная прокрутка
-        container.scrollTop += e.deltaY;
-      }
-    };
-
-    container.addEventListener('mousedown', handleMouseDown);
-    container.addEventListener('mouseleave', handleMouseLeave);
-    container.addEventListener('mouseup', handleMouseUp);
-    container.addEventListener('mousemove', handleMouseMove);
-    container.addEventListener('wheel', handleWheel, { passive: false });
-
-    container.style.cursor = 'grab';
-
-    return () => {
-      container.removeEventListener('mousedown', handleMouseDown);
-      container.removeEventListener('mouseleave', handleMouseLeave);
-      container.removeEventListener('mouseup', handleMouseUp);
-      container.removeEventListener('mousemove', handleMouseMove);
-      container.removeEventListener('wheel', handleWheel);
-    };
-  }, []);
 
   return (
-    <div 
-      ref={containerRef}
-      style={{ 
-        overflowX: 'auto', 
-        overflowY: 'auto', 
-        height: '100%', 
-        minHeight: '200px',
-        position: 'relative'
-      }}
-    >
-      <table className="border-collapse text-sm table-with-sticky-first-col" style={{ width: 'auto', minWidth: '100%' }}>
+    <div style={{ overflowX: 'auto', overflowY: 'auto', height: '100%', minHeight: '200px' }}>
+      <table className="border-collapse text-sm" style={{ width: 'auto', minWidth: '100%' }}>
         <TableHead
           isDark={isDark}
           headers={headers}
@@ -176,44 +94,40 @@ const TableHead: React.FC<TableHeadProps> = ({
   sortDirection,
   onSort,
   headerAlignments,
-}) => {
-  const visibleHeaderIndices = Array.from(visibleColumns).sort((a, b) => a - b);
-  
-  return (
-    <thead className="sticky top-0 z-20">
-      <tr className={`${isDark ? 'border-white/10' : 'border-black/10'} border-b`}>
-        {headers.map((header, colIndex) =>
-          visibleColumns.has(colIndex) ? (
-            <th
-              key={header}
-              className={`px-4 py-3 text-left font-semibold cursor-pointer transition-colors select-none ${
-                isDark ? 'text-white hover:bg-white/20' : 'text-black hover:bg-[#ddd8cd]'
-              } ${visibleHeaderIndices[0] === colIndex ? 'sticky-first-col-header' : ''}`}
-              onClick={() => onSort(colIndex)}
-              style={{
-                backgroundColor: isDark ? '#1a1a1a' : '#E8E7E3',
-                whiteSpace: 'nowrap',
-                textAlign: headerAlignments[colIndex] || 'left',
-              }}
-              title="Нажмите для сортировки"
+}) => (
+  <thead className="sticky top-0 z-20">
+    <tr className={`${isDark ? 'border-white/10' : 'border-black/10'} border-b`}>
+      {headers.map((header, colIndex) =>
+        visibleColumns.has(colIndex) ? (
+          <th
+            key={header}
+            className={`px-4 py-3 text-left font-semibold cursor-pointer transition-colors select-none ${
+              isDark ? 'text-white hover:bg-white/20' : 'text-black hover:bg-[#ddd8cd]'
+            }`}
+            onClick={() => onSort(colIndex)}
+            style={{
+              backgroundColor: isDark ? '#1a1a1a' : '#E8E7E3',
+              whiteSpace: 'nowrap',
+              textAlign: headerAlignments[colIndex] || 'left',
+            }}
+            title="Нажмите для сортировки"
+          >
+            <div
+              className="flex items-center gap-2 whitespace-nowrap"
+              style={{ justifyContent: getJustifyContent(headerAlignments[colIndex]) }}
             >
-              <div
-                className="flex items-center gap-2 whitespace-nowrap"
-                style={{ justifyContent: getJustifyContent(headerAlignments[colIndex]) }}
-              >
-                <span>{header}</span>
-                <SortIcon
-                  direction={sortColumn === colIndex ? sortDirection : 'none'}
-                  isDark={isDark}
-                />
-              </div>
-            </th>
-          ) : null
-        )}
-      </tr>
-    </thead>
-  );
-};
+              <span>{header}</span>
+              <SortIcon
+                direction={sortColumn === colIndex ? sortDirection : 'none'}
+                isDark={isDark}
+              />
+            </div>
+          </th>
+        ) : null
+      )}
+    </tr>
+  </thead>
+);
 
 interface TableRowProps {
   isDark: boolean;
@@ -224,9 +138,7 @@ interface TableRowProps {
 }
 
 const getRowBackgroundClass = (isEvenRow: boolean, isDark: boolean): string => {
-  if (isDark) {
-    return isEvenRow ? '' : 'bg-white/3';
-  }
+  if (isDark) return '';
   return isEvenRow ? 'bg-[#E8E7E3]' : 'bg-[#f1f0ec]';
 };
 
@@ -347,7 +259,6 @@ const TableRow: React.FC<TableRowProps> = ({
 }) => {
   const isEvenRow = rowIndex % 2 === 0;
   const backgroundClass = getRowBackgroundClass(isEvenRow, isDark);
-  const visibleColumnIndices = Array.from(visibleColumns).sort((a, b) => a - b);
 
   return (
     <tr
@@ -361,9 +272,7 @@ const TableRow: React.FC<TableRowProps> = ({
         visibleColumns.has(colIndex) ? (
           <td
             key={`cell-${rowIndex}-${colIndex}`}
-            className={`px-4 py-3 ${isDark ? 'text-white/90' : 'text-black'} ${
-              visibleColumnIndices[0] === colIndex ? 'sticky-first-col' : ''
-            }`}
+            className={`px-4 py-3 ${isDark ? 'text-white/90' : 'text-black'}`}
             style={{
               whiteSpace: 'nowrap',
               textAlign: row.alignments[colIndex] || 'left',
@@ -388,8 +297,6 @@ export function getTableStyles(isDark: boolean): string {
   const markBg = isDark ? 'rgb(202, 138, 4)' : 'rgb(253, 224, 71)';
   const markColor = isDark ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)';
   const evenRowBg = isDark ? 'rgba(255, 255, 255, 0.03)' : '#f1f0ec';
-  const oddRowBg = isDark ? 'transparent' : '#E8E7E3';
-  const firstColBg = isDark ? '#1a1a1a' : '#E8E7E3';
 
   return `
     table { border-collapse: collapse; width: auto; min-width: 100%; }
@@ -406,32 +313,6 @@ export function getTableStyles(isDark: boolean): string {
       z-index: 10;
       background-color: ${thBg};
     }
-    
-    /* Sticky first column styles */
-    .sticky-first-col-header {
-      position: sticky;
-      left: 0;
-      z-index: 30 !important;
-      background-color: ${thBg} !important;
-    }
-    
-    .sticky-first-col {
-      position: sticky;
-      left: 0;
-      z-index: 5;
-      background-color: ${firstColBg};
-    }
-    
-    /* Добавляем зебра-полосы в темной теме для неполноэкранных таблиц */
-    ${isDark ? `
-    .table-with-sticky-first-col tbody tr:nth-child(even) .sticky-first-col {
-      background-color: ${evenRowBg};
-    }
-    .table-with-sticky-first-col tbody tr:nth-child(odd) .sticky-first-col {
-      background-color: ${oddRowBg};
-    }
-    ` : ''}
-    
     td code {
       background-color: ${codeBg};
       padding: 2px 6px;
@@ -457,6 +338,5 @@ export function getTableStyles(isDark: boolean): string {
     td a { color: rgb(59 130 246); text-decoration: underline; word-break: break-word; }
     td a:hover { color: rgb(37 99 235); }
     tbody tr:nth-child(even) { background-color: ${evenRowBg}; }
-    tbody tr:nth-child(odd) { background-color: ${oddRowBg}; }
   `;
 }
