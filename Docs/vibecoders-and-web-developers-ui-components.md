@@ -1,7 +1,7 @@
 ---
 title: "Вайбкодерам и веб-разработчикам: список сайтов с готовыми UI-компонентами"
 description: Практическая подборка сайтов и open-source ресурсов с готовыми UI-компонентами для веб-дизайна и frontend-разработки.
-type: docs
+type: blog
 typename: Разработка
 category: Разработка
 author: veilosophy
