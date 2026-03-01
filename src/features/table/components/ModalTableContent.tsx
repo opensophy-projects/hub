@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
+import { useDragScroll } from '../hooks/useDragScroll';
 
 interface ModalTableContentProps {
   isDark: boolean;
@@ -8,15 +9,14 @@ interface ModalTableContentProps {
   visibleColumns: Set<string>;
 }
 
-const getRowClassName = (rowIndex: number, isDark: boolean): string => {
-  const isEvenRow = rowIndex % 2 === 0;
-  const baseClass = 'border-t';
+const getRowBgColor = (isEvenRow: boolean, isDark: boolean): string => {
+  if (isDark) return isEvenRow ? '#1e1e1e' : '#141414';
+  return isEvenRow ? '#ffffff' : '#f9f9f9';
+};
 
-  if (isEvenRow) {
-    return `${baseClass} ${isDark ? 'bg-[#1e1e1e]' : 'bg-white'}`;
-  }
-
-  return `${baseClass} ${isDark ? 'bg-[#141414]' : 'bg-gray-50'}`;
+const getRowHoverBgColor = (isEvenRow: boolean, isDark: boolean): string => {
+  if (isDark) return isEvenRow ? '#2a2a2a' : '#202020';
+  return '#f0f0f0';
 };
 
 const generateRowKey = (
@@ -28,7 +28,11 @@ const generateRowKey = (
   return `row-${index}-${rowContent.substring(0, 50)}`;
 };
 
-const CellContent: React.FC<{ html: string }> = ({ html }) => {
+const CellContent: React.FC<{ html: string; isDark: boolean; bgColor: string }> = ({
+  html,
+  isDark,
+  bgColor,
+}) => {
   const contentRef = React.useRef<HTMLTableCellElement>(null);
 
   React.useEffect(() => {
@@ -47,7 +51,47 @@ const CellContent: React.FC<{ html: string }> = ({ html }) => {
     contentRef.current.innerHTML = sanitizedHtml;
   }, [html]);
 
-  return <td ref={contentRef} className="border p-2" />;
+  return (
+    <td
+      ref={contentRef}
+      className={`border p-2 ${isDark ? 'border-white/10 text-white/90' : 'border-black/10 text-black'}`}
+      style={{
+        backgroundColor: bgColor,
+        transition: 'background-color 0.12s ease',
+      }}
+    />
+  );
+};
+
+const ModalTableRow: React.FC<{
+  row: Record<string, string>;
+  rowIndex: number;
+  visibleHeaders: Array<{ text: string; colIndex: number }>;
+  isDark: boolean;
+}> = ({ row, rowIndex, visibleHeaders, isDark }) => {
+  const isEvenRow = rowIndex % 2 === 0;
+  const [isHovered, setIsHovered] = useState(false);
+
+  const bgColor = isHovered
+    ? getRowHoverBgColor(isEvenRow, isDark)
+    : getRowBgColor(isEvenRow, isDark);
+
+  return (
+    <tr
+      style={{ backgroundColor: bgColor, transition: 'background-color 0.12s ease' }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {visibleHeaders.map((header) => (
+        <CellContent
+          key={`cell-${rowIndex}-${header.colIndex}`}
+          html={row[header.text] || '-'}
+          isDark={isDark}
+          bgColor={bgColor}
+        />
+      ))}
+    </tr>
+  );
 };
 
 export const ModalTableContent: React.FC<ModalTableContentProps> = ({
@@ -57,27 +101,49 @@ export const ModalTableContent: React.FC<ModalTableContentProps> = ({
   visibleColumns,
 }) => {
   const visibleHeaders = headers.filter((h) => visibleColumns.has(h.text));
+  const { scrollRef, dragStyle, dragHandlers } = useDragScroll();
 
   const thumb = isDark ? 'rgba(150, 150, 150, 0.6)' : 'rgba(0, 0, 0, 0.2)';
   const thumbHover = isDark ? 'rgba(190, 190, 190, 0.85)' : 'rgba(0, 0, 0, 0.35)';
   const track = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
 
+  const thBg = isDark ? '#252525' : '#ffffff';
+  const thBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+
   return (
     <div
+      ref={scrollRef}
       className="modal-table-scroll overflow-x-auto overflow-y-auto flex-1"
       style={{
-        // Firefox
         scrollbarColor: `${thumb} ${track}`,
         scrollbarWidth: 'thin',
+        ...dragStyle,
       }}
+      {...dragHandlers}
     >
-      <table className={`w-full border-collapse text-sm ${isDark ? 'text-white' : 'text-black'}`}>
-        <thead className={`sticky top-0 z-10 ${isDark ? 'bg-[#252525]' : 'bg-white'}`}>
+      <table
+        className={`w-full border-collapse text-sm ${isDark ? 'text-white' : 'text-black'}`}
+      >
+        <thead
+          style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
+            backgroundColor: thBg,
+          }}
+        >
           <tr>
             {visibleHeaders.map((header) => (
               <th
                 key={header.colIndex}
-                className={`border p-2 font-semibold text-left ${isDark ? 'border-white/10' : 'border-black/10'}`}
+                className="p-2 font-semibold text-left"
+                style={{
+                  border: `1px solid ${thBorder}`,
+                  backgroundColor: thBg,
+                  position: 'sticky',
+                  top: 0,
+                  zIndex: 10,
+                }}
               >
                 {header.text}
               </th>
@@ -87,23 +153,22 @@ export const ModalTableContent: React.FC<ModalTableContentProps> = ({
         <tbody>
           {filteredRows.length === 0 ? (
             <tr>
-              <td colSpan={visibleHeaders.length} className="text-center p-4 italic">
+              <td
+                colSpan={visibleHeaders.length}
+                className={`text-center p-4 italic ${isDark ? 'text-white/50' : 'text-black/50'}`}
+              >
                 Нет результатов
               </td>
             </tr>
           ) : (
             filteredRows.map((row, idx) => (
-              <tr
+              <ModalTableRow
                 key={generateRowKey(row, idx, visibleHeaders)}
-                className={getRowClassName(idx, isDark)}
-              >
-                {visibleHeaders.map((header) => (
-                  <CellContent
-                    key={`cell-${idx}-${header.colIndex}`}
-                    html={row[header.text] || '-'}
-                  />
-                ))}
-              </tr>
+                row={row}
+                rowIndex={idx}
+                visibleHeaders={visibleHeaders}
+                isDark={isDark}
+              />
             ))
           )}
         </tbody>
@@ -128,35 +193,6 @@ export const ModalTableContent: React.FC<ModalTableContentProps> = ({
         .modal-table-scroll::-webkit-scrollbar-corner {
           background: transparent;
         }
-
-        td.border {
-          border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'};
-        }
-        td code {
-          background-color: ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'};
-          padding: 2px 6px;
-          border-radius: 3px;
-          font-size: 0.85em;
-          font-family: ui-monospace, monospace;
-          border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)'};
-        }
-        td strong, td b {
-          font-weight: 700;
-          color: ${isDark ? 'rgba(255, 255, 255, 1)' : 'rgb(0, 0, 0)'};
-        }
-        td em, td i { font-style: italic; }
-        td u { text-decoration: underline; text-underline-offset: 2px; }
-        td del, td s, td strike { text-decoration: line-through; opacity: 0.7; }
-        td sub { vertical-align: sub; font-size: 0.75em; }
-        td sup { vertical-align: super; font-size: 0.75em; }
-        td mark {
-          background-color: ${isDark ? 'rgb(202, 138, 4)' : 'rgb(253, 224, 71)'};
-          color: ${isDark ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)'};
-          padding: 2px 4px;
-          border-radius: 2px;
-        }
-        td a { color: rgb(59 130 246); text-decoration: underline; word-break: break-word; }
-        td a:hover { color: rgb(37 99 235); }
       `}</style>
     </div>
   );
