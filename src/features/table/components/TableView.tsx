@@ -3,6 +3,7 @@ import DOMPurify from 'isomorphic-dompurify';
 import type { ParsedRow } from '../types/table';
 import { SortIcon } from './SortIcons';
 
+// Type alias — fixes S4323 "Replace this union type with a type alias"
 export type ColumnAlignment = 'left' | 'center' | 'right' | null;
 
 type SortDirection = 'asc' | 'desc' | 'none';
@@ -31,55 +32,49 @@ export const TableView: React.FC<TableViewProps> = ({
   headerAlignments = [],
 }) => {
   const styles = useMemo(() => getTableStyles(isDark), [isDark]);
+  const scrollbarStyles = useMemo(() => getScrollbarStyles(isDark), [isDark]);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [startY, setStartY] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
-  const [scrollTop, setScrollTop] = useState(0);
+  const dragStart = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     const el = scrollRef.current;
     if (!el) return;
+    // Не активировать drag если кликнули на th (сортировка)
+    if ((e.target as HTMLElement).closest('th')) return;
     setIsDragging(true);
-    setStartX(e.pageX - el.offsetLeft);
-    setStartY(e.pageY - el.offsetTop);
-    setScrollLeft(el.scrollLeft);
-    setScrollTop(el.scrollTop);
+    dragStart.current = {
+      x: e.clientX,
+      y: e.clientY,
+      scrollLeft: el.scrollLeft,
+      scrollTop: el.scrollTop,
+    };
     el.style.cursor = 'grabbing';
     el.style.userSelect = 'none';
   }, []);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDragging) return;
-    const el = scrollRef.current;
-    if (!el) return;
-    e.preventDefault();
-    const x = e.pageX - el.offsetLeft;
-    const y = e.pageY - el.offsetTop;
-    const walkX = (x - startX) * 1.2;
-    const walkY = (y - startY) * 1.2;
-    el.scrollLeft = scrollLeft - walkX;
-    el.scrollTop = scrollTop - walkY;
-  }, [isDragging, startX, startY, scrollLeft, scrollTop]);
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isDragging) return;
+      const el = scrollRef.current;
+      if (!el) return;
+      e.preventDefault();
+      const dx = e.clientX - dragStart.current.x;
+      const dy = e.clientY - dragStart.current.y;
+      el.scrollLeft = dragStart.current.scrollLeft - dx;
+      el.scrollTop = dragStart.current.scrollTop - dy;
+    },
+    [isDragging],
+  );
 
-  const handleMouseUp = useCallback(() => {
+  const stopDrag = useCallback(() => {
     setIsDragging(false);
     const el = scrollRef.current;
     if (!el) return;
     el.style.cursor = 'grab';
     el.style.userSelect = '';
   }, []);
-
-  const handleMouseLeave = useCallback(() => {
-    if (isDragging) {
-      setIsDragging(false);
-      const el = scrollRef.current;
-      if (!el) return;
-      el.style.cursor = 'grab';
-      el.style.userSelect = '';
-    }
-  }, [isDragging]);
 
   return (
     <>
@@ -92,11 +87,13 @@ export const TableView: React.FC<TableViewProps> = ({
           height: '100%',
           minHeight: '200px',
           cursor: 'grab',
+          // Важно: position relative, чтобы sticky thead работал внутри
+          position: 'relative',
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
+        onMouseUp={stopDrag}
+        onMouseLeave={stopDrag}
       >
         <table className="border-collapse text-sm" style={{ width: 'auto', minWidth: '100%' }}>
           <TableHead
@@ -130,7 +127,7 @@ export const TableView: React.FC<TableViewProps> = ({
       </div>
 
       <style>{styles}</style>
-      <style>{getScrollbarStyles(isDark)}</style>
+      <style>{scrollbarStyles}</style>
     </>
   );
 };
@@ -159,57 +156,45 @@ const TableHead: React.FC<TableHeadProps> = ({
   sortDirection,
   onSort,
   headerAlignments,
-}) => {
-  const visibleIndices = headers
-    .map((_, i) => i)
-    .filter((i) => visibleColumns.has(i));
-  const firstVisibleIndex = visibleIndices[0] ?? -1;
-
-  return (
-    <thead className="sticky top-0 z-20">
-      <tr className={`${isDark ? 'border-white/10' : 'border-black/10'} border-b`}>
-        {headers.map((header, colIndex) =>
-          visibleColumns.has(colIndex) ? (
-            <th
-              key={header}
-              className={`px-4 py-3 text-left font-semibold cursor-pointer transition-colors select-none ${
-                isDark ? 'text-white hover:bg-white/20' : 'text-black hover:bg-[#ddd8cd]'
-              }`}
-              onClick={() => onSort(colIndex)}
-              style={{
-                backgroundColor: isDark ? '#1a1a1a' : '#E8E7E3',
-                whiteSpace: 'nowrap',
-                textAlign: headerAlignments[colIndex] || 'left',
-                ...(colIndex === firstVisibleIndex
-                  ? {
-                      position: 'sticky',
-                      left: 0,
-                      zIndex: 30,
-                      boxShadow: isDark
-                        ? '2px 0 4px rgba(0,0,0,0.5)'
-                        : '2px 0 4px rgba(0,0,0,0.1)',
-                    }
-                  : {}),
-              }}
-              title="Нажмите для сортировки"
+}) => (
+  // sticky top-0 + z-20 — шапка залипает при вертикальной прокрутке внутри контейнера
+  <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
+    <tr className={`${isDark ? 'border-white/10' : 'border-black/10'} border-b`}>
+      {headers.map((header, colIndex) =>
+        visibleColumns.has(colIndex) ? (
+          <th
+            key={header}
+            className={`px-4 py-3 text-left font-semibold cursor-pointer transition-colors select-none ${
+              isDark ? 'text-white hover:bg-white/20' : 'text-black hover:bg-[#ddd8cd]'
+            }`}
+            onClick={() => onSort(colIndex)}
+            style={{
+              backgroundColor: isDark ? '#1a1a1a' : '#E8E7E3',
+              whiteSpace: 'nowrap',
+              textAlign: headerAlignments[colIndex] || 'left',
+              // Каждая th тоже sticky top:0 (уже задано на thead, но явно для надёжности)
+              position: 'sticky',
+              top: 0,
+              zIndex: 20,
+            }}
+            title="Нажмите для сортировки"
+          >
+            <div
+              className="flex items-center gap-2 whitespace-nowrap"
+              style={{ justifyContent: getJustifyContent(headerAlignments[colIndex]) }}
             >
-              <div
-                className="flex items-center gap-2 whitespace-nowrap"
-                style={{ justifyContent: getJustifyContent(headerAlignments[colIndex]) }}
-              >
-                <span>{header}</span>
-                <SortIcon
-                  direction={sortColumn === colIndex ? sortDirection : 'none'}
-                  isDark={isDark}
-                />
-              </div>
-            </th>
-          ) : null
-        )}
-      </tr>
-    </thead>
-  );
-};
+              <span>{header}</span>
+              <SortIcon
+                direction={sortColumn === colIndex ? sortDirection : 'none'}
+                isDark={isDark}
+              />
+            </div>
+          </th>
+        ) : null,
+      )}
+    </tr>
+  </thead>
+);
 
 interface TableRowProps {
   isDark: boolean;
@@ -219,9 +204,9 @@ interface TableRowProps {
   searchQuery: string;
 }
 
-const getRowBackgroundClass = (isEvenRow: boolean, isDark: boolean): string => {
-  if (isDark) return isEvenRow ? 'row-even-dark' : 'row-odd-dark';
-  return isEvenRow ? 'bg-[#E8E7E3]' : 'bg-[#f1f0ec]';
+const getRowBg = (isEvenRow: boolean, isDark: boolean): string => {
+  if (isDark) return isEvenRow ? '#1e1e1e' : '#141414';
+  return isEvenRow ? '#E8E7E3' : '#f1f0ec';
 };
 
 interface TextPart {
@@ -340,25 +325,14 @@ const TableRow: React.FC<TableRowProps> = ({
   searchQuery,
 }) => {
   const isEvenRow = rowIndex % 2 === 0;
-  const bgClass = getRowBackgroundClass(isEvenRow, isDark);
-
-  const visibleIndices = Array.from(visibleColumns).sort((a, b) => a - b);
-  const firstVisibleIndex = visibleIndices[0] ?? -1;
-
-  const rowBgColor = isDark
-    ? isEvenRow
-      ? '#1e1e1e'
-      : '#161616'
-    : undefined;
+  const rowBg = getRowBg(isEvenRow, isDark);
 
   return (
     <tr
       className={`border-b transition-colors ${
-        isDark
-          ? 'border-white/10 hover:bg-white/5'
-          : `border-black/10 hover:bg-[#ddd8cd] ${bgClass}`
+        isDark ? 'border-white/10 hover:brightness-125' : 'border-black/10 hover:bg-[#ddd8cd]'
       }`}
-      style={isDark ? { backgroundColor: rowBgColor } : undefined}
+      style={{ backgroundColor: rowBg }}
     >
       {row.cells.map((cell, colIndex) =>
         visibleColumns.has(colIndex) ? (
@@ -368,37 +342,22 @@ const TableRow: React.FC<TableRowProps> = ({
             style={{
               whiteSpace: 'nowrap',
               textAlign: row.alignments[colIndex] || 'left',
-              ...(colIndex === firstVisibleIndex
-                ? {
-                    position: 'sticky',
-                    left: 0,
-                    zIndex: 10,
-                    backgroundColor: isDark
-                      ? isEvenRow
-                        ? '#1e1e1e'
-                        : '#161616'
-                      : isEvenRow
-                      ? '#E8E7E3'
-                      : '#f1f0ec',
-                    boxShadow: isDark
-                      ? '2px 0 4px rgba(0,0,0,0.5)'
-                      : '2px 0 4px rgba(0,0,0,0.1)',
-                  }
-                : {}),
+              backgroundColor: rowBg,
             }}
           >
             <CellContent html={cell} searchQuery={searchQuery} />
           </td>
-        ) : null
+        ) : null,
       )}
     </tr>
   );
 };
 
+// Scrollbar styles — в тёмной теме ползунок серый и заметный
 function getScrollbarStyles(isDark: boolean): string {
-  const thumbColor = isDark ? 'rgba(160,160,160,0.5)' : 'rgba(0,0,0,0.2)';
-  const thumbHover = isDark ? 'rgba(160,160,160,0.8)' : 'rgba(0,0,0,0.35)';
-  const trackColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+  const thumb = isDark ? 'rgba(150, 150, 150, 0.6)' : 'rgba(0, 0, 0, 0.2)';
+  const thumbHover = isDark ? 'rgba(180, 180, 180, 0.85)' : 'rgba(0, 0, 0, 0.35)';
+  const track = isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.04)';
 
   return `
     .table-scroll-container::-webkit-scrollbar {
@@ -406,11 +365,11 @@ function getScrollbarStyles(isDark: boolean): string {
       height: 8px;
     }
     .table-scroll-container::-webkit-scrollbar-track {
-      background: ${trackColor};
+      background: ${track};
       border-radius: 4px;
     }
     .table-scroll-container::-webkit-scrollbar-thumb {
-      background: ${thumbColor};
+      background: ${thumb};
       border-radius: 4px;
     }
     .table-scroll-container::-webkit-scrollbar-thumb:hover {
@@ -419,9 +378,14 @@ function getScrollbarStyles(isDark: boolean): string {
     .table-scroll-container::-webkit-scrollbar-corner {
       background: transparent;
     }
+    .table-scroll-container {
+      scrollbar-color: ${thumb} ${track};
+      scrollbar-width: thin;
+    }
   `;
 }
 
+// Exported so ModalTableContent can import and reuse — fixes Duplicate Code issue
 export function getTableStyles(isDark: boolean): string {
   const border = isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)';
   const color = isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgb(0, 0, 0)';
@@ -431,8 +395,6 @@ export function getTableStyles(isDark: boolean): string {
   const thBg = isDark ? '#1a1a1a' : '#E8E7E3';
   const markBg = isDark ? 'rgb(202, 138, 4)' : 'rgb(253, 224, 71)';
   const markColor = isDark ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)';
-  const evenRowBg = isDark ? '#1e1e1e' : '#f1f0ec';
-  const oddRowBg = isDark ? '#161616' : '#E8E7E3';
 
   return `
     table { border-collapse: collapse; width: auto; min-width: 100%; }
@@ -444,9 +406,6 @@ export function getTableStyles(isDark: boolean): string {
     }
     th {
       font-weight: 600;
-      position: sticky;
-      top: 0;
-      z-index: 10;
       background-color: ${thBg};
     }
     td code {
@@ -473,7 +432,5 @@ export function getTableStyles(isDark: boolean): string {
     }
     td a { color: rgb(59 130 246); text-decoration: underline; word-break: break-word; }
     td a:hover { color: rgb(37 99 235); }
-    tbody tr:nth-child(even) { background-color: ${evenRowBg}; }
-    tbody tr:nth-child(odd) { background-color: ${oddRowBg}; }
   `;
 }
