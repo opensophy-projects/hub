@@ -1,7 +1,8 @@
-import React, { useMemo, useRef, useState, useCallback } from 'react';
+import React, { useMemo, useState } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
 import type { ParsedRow } from '../types/table';
 import { SortIcon } from './SortIcons';
+import { useDragScroll } from '../hooks/useDragScroll';
 
 export type ColumnAlignment = 'left' | 'center' | 'right' | null;
 
@@ -32,62 +33,7 @@ export const TableView: React.FC<TableViewProps> = ({
 }) => {
   const styles = useMemo(() => getTableStyles(isDark), [isDark]);
   const scrollbarStyles = useMemo(() => getScrollbarStyles(isDark), [isDark]);
-
-  const scrollRef = useRef<HTMLDivElement>(null);
-  // Флаг: началось ли реальное перетаскивание (порог 5px)
-  const isDragging = useRef(false);
-  const dragStart = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
-  const [isDraggingState, setIsDraggingState] = useState(false);
-
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    // Не перехватываем клики по th (сортировка)
-    if ((e.target as HTMLElement).closest('th')) return;
-    // Запоминаем стартовую точку, но drag ещё не начался
-    isDragging.current = false;
-    dragStart.current = {
-      x: e.clientX,
-      y: e.clientY,
-      scrollLeft: el.scrollLeft,
-      scrollTop: el.scrollTop,
-    };
-  }, []);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    // Проверяем, зажата ли левая кнопка (buttons === 1)
-    if (e.buttons !== 1) return;
-
-    const dx = e.clientX - dragStart.current.x;
-    const dy = e.clientY - dragStart.current.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-
-    // Порог 5px — до него считается обычным кликом/выделением
-    if (!isDragging.current && dist < 5) return;
-
-    // Порог превышен — активируем режим перетаскивания
-    if (!isDragging.current) {
-      isDragging.current = true;
-      setIsDraggingState(true);
-      el.style.cursor = 'grabbing';
-      // Снимаем выделение текста только когда точно тащим
-      window.getSelection()?.removeAllRanges();
-    }
-
-    e.preventDefault();
-    el.scrollLeft = dragStart.current.scrollLeft - dx;
-    el.scrollTop = dragStart.current.scrollTop - dy;
-  }, []);
-
-  const stopDrag = useCallback(() => {
-    isDragging.current = false;
-    setIsDraggingState(false);
-    const el = scrollRef.current;
-    if (!el) return;
-    el.style.cursor = '';
-  }, []);
+  const { scrollRef, dragStyle, dragHandlers } = useDragScroll();
 
   return (
     <>
@@ -98,16 +44,10 @@ export const TableView: React.FC<TableViewProps> = ({
           overflowX: 'auto',
           overflowY: 'auto',
           maxHeight: '480px',
-          // cursor grab только когда не тащим — при drag меняется на grabbing
-          cursor: isDraggingState ? 'grabbing' : 'default',
           position: 'relative',
-          // userSelect блокируем только во время drag
-          userSelect: isDraggingState ? 'none' : 'text',
+          ...dragStyle,
         }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={stopDrag}
-        onMouseLeave={stopDrag}
+        {...dragHandlers}
       >
         <table className="border-collapse text-sm" style={{ width: 'auto', minWidth: '100%' }}>
           <TableHead
@@ -409,7 +349,6 @@ function getScrollbarStyles(isDark: boolean): string {
   `;
 }
 
-// Exported so ModalTableContent can import and reuse — fixes Duplicate Code issue
 export function getTableStyles(isDark: boolean): string {
   const border = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.2)';
   const color = isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgb(0, 0, 0)';
