@@ -125,22 +125,19 @@ const MobileNavbarInner: React.FC = () => {
     <>
       {/* Десктопный навбар — сверху */}
       <nav
-        className={`hidden md:flex fixed top-0 left-0 right-0 z-50 border-b items-center justify-between px-6 h-16 ${
+        className={`hidden md:flex fixed top-0 left-0 right-0 z-50 border-b items-center justify-center px-6 h-16 ${
           isDark
             ? 'bg-[#0a0a0a]/95 border-white/10 backdrop-blur-sm'
             : 'bg-[#E8E7E3]/95 border-black/10 backdrop-blur-sm'
         }`}
       >
         <div className="flex items-center gap-6">
-          <NavButton icon={<PanelLeft size={20} />} label="Меню" onClick={() => setSidebarOpen(true)} />
           <NavButton icon={<Search size={20} />} label="Поиск" onClick={() => setIsSearchOpen(true)} />
-        </div>
+          
+          <a href="/" className="flex items-center gap-2 mx-4">
+            <img src="/favicon.png" alt="Opensophy" className="w-10 h-10 object-contain" />
+          </a>
 
-        <a href="/" className="flex items-center gap-2">
-          <img src="/favicon.png" alt="Opensophy" className="w-10 h-10 object-contain" />
-        </a>
-
-        <div className="flex items-center gap-6">
           <NavButton icon={<List size={20} />} label="Оглавление" onClick={handleTocOpen} isActive={isTocOpen} />
           <NavButton icon={<ArrowUp size={20} />} label="Наверх" onClick={handleScrollTop} />
         </div>
