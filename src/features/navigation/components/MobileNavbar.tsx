@@ -2,7 +2,7 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
 import TocPanel from './TocPanel';
-import { PanelLeft, Search, List, ArrowUp } from 'lucide-react';
+import { PanelLeft, Search, ArrowUp } from 'lucide-react';
 
 const LazyUnifiedSearchPanel = lazy(() => import('./UnifiedSearchPanel'));
 
@@ -138,7 +138,6 @@ const MobileNavbarInner: React.FC = () => {
             <img src="/favicon.png" alt="Opensophy" className="w-10 h-10 object-contain" />
           </a>
 
-          <NavButton icon={<List size={20} />} label="Оглавление" onClick={handleTocOpen} isActive={isTocOpen} />
           <NavButton icon={<ArrowUp size={20} />} label="Наверх" onClick={handleScrollTop} />
         </div>
       </nav>
@@ -159,7 +158,6 @@ const MobileNavbarInner: React.FC = () => {
             <img src="/favicon.png" alt="Opensophy" className="w-10 h-10 object-contain" />
           </a>
 
-          <NavButton icon={<List size={20} />} label="Оглавление" onClick={handleTocOpen} isActive={isTocOpen} />
           <NavButton icon={<ArrowUp size={20} />} label="Наверх" onClick={handleScrollTop} />
         </div>
       </nav>
