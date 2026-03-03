@@ -96,7 +96,8 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
-  const sidebarVisible = isDesktop && isSidebarOpen;
+  // На десктопе sidebar всегда виден — всегда применяем отступ
+  const sidebarVisible = isDesktop;
   // TOC sidebar width on desktop
   const TOC_WIDTH = toc.length > 0 ? '18rem' : '0';
 
