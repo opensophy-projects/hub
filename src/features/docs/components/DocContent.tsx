@@ -29,7 +29,7 @@ interface DocContentProps {
 }
 
 const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
-  const { isDark } = useTheme();
+  const { isDark, isSidebarOpen } = useTheme();
   const { loadDocument } = useDocuments();
   const [doc, setDoc] = useState(initialDoc);
   const [loading, setLoading] = useState(!initialDoc.content);
@@ -74,7 +74,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
   const getAuthorDisplay = () => {
     if (!doc.author || doc.author.trim() === '') return null;
 
-    // Fix S7770: use Boolean directly instead of arrow function wrapper
     const authors = doc.author.split(',').map((a) => a.trim()).filter(Boolean);
     if (authors.length === 0) return null;
 
@@ -88,6 +87,9 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
     );
   };
 
+  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+  const sidebarVisible = isDesktop && isSidebarOpen;
+
   if (loading) {
     return (
       <div style={{ minHeight: '100vh' }}>
@@ -97,6 +99,11 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
           className={`min-h-screen flex items-center justify-center ${
             isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'
           }`}
+          style={{
+            marginLeft: sidebarVisible ? '20rem' : '0',
+            marginTop: isDesktop ? '4rem' : '0',
+            marginBottom: isDesktop ? '0' : '3.5rem',
+          }}
         >
           <p className={`text-lg ${isDark ? 'text-white/60' : 'text-black/60'}`}>
             Загрузка документа...
@@ -108,21 +115,27 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
   return (
     <div style={{ minHeight: '100vh' }}>
-      {/* Прогресс-бар */}
       <div
-        className={`fixed top-0 left-0 h-1 z-50 ${isDark ? 'bg-white' : 'bg-black'}`}
+        className={`fixed ${isDesktop ? 'top-0' : 'top-0'} left-0 h-1 z-50 ${isDark ? 'bg-white' : 'bg-black'}`}
         style={{ width: `${scrollProgress}%` }}
       />
 
       <TopNavbar />
       <Sidebar />
 
-      <main className={`min-h-screen ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}>
-        {/* На десктопе отступ справа под панель TOC */}
+      <main
+        className={`min-h-screen ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}
+        style={{
+          marginLeft: sidebarVisible ? '20rem' : '0',
+          marginTop: isDesktop ? '4rem' : '0',
+          marginBottom: isDesktop ? '0' : '3.5rem',
+          transition: 'margin-left 0.3s ease',
+        }}
+      >
         <article
-          className={`flex-1 pt-20 pb-24 px-4 w-full ${toc.length > 0 ? 'md:pr-96' : ''}`}
+          className={`flex-1 pt-8 pb-12 px-4 w-full ${toc.length > 0 ? 'md:pr-80' : ''}`}
         >
-          <div className="container mx-auto max-w-3xl w-full overflow-x-hidden">
+          <div className="container mx-auto max-w-4xl w-full overflow-x-hidden">
             <div className="mb-8">
               {doc.typename && doc.typename.trim() !== '' && (
                 <div className="flex items-center gap-3 mb-4">
@@ -162,7 +175,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
             </div>
 
             <TableContext.Provider value={tableContextValue}>
-              {/* data-article-content нужен для генерации TOC */}
               <div
                 data-article-content
                 className={`prose max-w-none w-full overflow-x-auto ${
@@ -175,13 +187,12 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
           </div>
         </article>
 
-        {/* Десктопная панель TOC справа */}
         {toc.length > 0 && (
           <aside
-            className={`hidden md:block fixed right-4 top-24 w-80 max-h-[calc(100vh-160px)] overflow-y-auto rounded-lg border ${
+            className={`hidden md:block fixed right-4 top-24 w-72 max-h-[calc(100vh-160px)] overflow-y-auto rounded-xl border shadow-lg ${
               isDark
                 ? 'bg-[#0a0a0a] border-white/10'
-                : 'bg-[#E8E7E3] border-black/10'
+                : 'bg-white border-black/10'
             }`}
           >
             <div
@@ -189,11 +200,11 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
               style={{
                 backgroundColor: isDark
                   ? 'rgba(10,10,10,0.95)'
-                  : 'rgba(232,231,227,0.95)',
+                  : 'rgba(255,255,255,0.95)',
                 backdropFilter: 'blur(10px)',
               }}
             >
-              <h2 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-black'}`}>
+              <h2 className={`text-base font-bold ${isDark ? 'text-white' : 'text-black'}`}>
                 На этой странице
               </h2>
             </div>
@@ -202,10 +213,10 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
                 <button
                   key={item.id}
                   onClick={() => scrollToElement(item.id)}
-                  className={`w-full text-left px-3 py-1.5 rounded text-xs transition-colors ${
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                     isDark
-                      ? 'text-white/60 hover:bg-white/5 hover:text-white'
-                      : 'text-black/60 hover:bg-black/5 hover:text-black'
+                      ? 'text-white/70 hover:bg-white/5 hover:text-white'
+                      : 'text-black/70 hover:bg-black/5 hover:text-black'
                   }`}
                   style={{ paddingLeft: `${12 + (item.level - 2) * 12}px` }}
                 >
@@ -215,8 +226,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
             </div>
           </aside>
         )}
-
-        <div className="h-20" />
       </main>
 
       <AnimatePresence>
