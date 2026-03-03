@@ -48,6 +48,30 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
   const toc = useTableOfContents(doc);
   const scrollProgress = useScrollProgress();
+  const [activeId, setActiveId] = useState<string>('');
+
+  // Track which heading is currently in view
+  useEffect(() => {
+    if (toc.length === 0) return;
+    const headingEls = toc
+      .map(({ id }) => document.getElementById(id))
+      .filter(Boolean) as HTMLElement[];
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Find the topmost visible heading
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible.length > 0) {
+          setActiveId(visible[0].target.id);
+        }
+      },
+      { rootMargin: '-10% 0px -70% 0px', threshold: 0 }
+    );
+    headingEls.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [toc]);
 
   const handleTableClick = (tableHtml: string) => {
     setFullscreenTableHtml(tableHtml);
@@ -165,21 +189,60 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
           {/* TOC Items */}
           <div className="flex-1 overflow-y-auto py-3">
-            <nav className="px-2 space-y-0.5">
-              {toc.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => scrollToElement(item.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors leading-snug ${
-                    isDark
-                      ? 'text-white/60 hover:bg-white/5 hover:text-white'
-                      : 'text-black/60 hover:bg-black/5 hover:text-black'
-                  }`}
-                  style={{ paddingLeft: `${12 + (item.level - 2) * 14}px` }}
-                >
-                  {item.text}
-                </button>
-              ))}
+            <nav className="space-y-0.5">
+              {toc.map((item, index) => {
+                const activeIndex = toc.findIndex((t) => t.id === activeId);
+                const distance = index - activeIndex;
+                const isActive = distance === 0 && activeId !== '';
+
+                // Opacity: active=1, above fades by distance, below slightly dim
+                let opacity: number;
+                let glowOpacity: number;
+                if (activeId === '') {
+                  opacity = 0.5;
+                  glowOpacity = 0;
+                } else if (isActive) {
+                  opacity = 1;
+                  glowOpacity = 1;
+                } else if (distance < 0) {
+                  // Already read — fade out further up
+                  opacity = Math.max(0.15, 0.55 + distance * 0.15);
+                  glowOpacity = Math.max(0, 0.4 + distance * 0.15);
+                } else {
+                  // Not yet read — slightly dim
+                  opacity = Math.max(0.25, 0.5 - distance * 0.08);
+                  glowOpacity = 0;
+                }
+
+                const accentColor = isDark ? '#a78bfa' : '#7c3aed';
+
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => scrollToElement(item.id)}
+                    className="w-full text-left py-2 pr-3 text-sm leading-snug relative"
+                    style={{
+                      paddingLeft: `${14 + (item.level - 2) * 14}px`,
+                      color: isDark ? `rgba(255,255,255,${opacity})` : `rgba(0,0,0,${opacity})`,
+                      transition: 'color 0.4s ease, opacity 0.4s ease',
+                      borderLeft: `2px solid transparent`,
+                      borderLeftColor: glowOpacity > 0
+                        ? `rgba(167,139,250,${glowOpacity})`
+                        : 'transparent',
+                      boxShadow: isActive
+                        ? `inset 2px 0 8px -2px ${accentColor}99, inset 2px 0 0 0 ${accentColor}`
+                        : glowOpacity > 0
+                        ? `inset 2px 0 6px -2px rgba(167,139,250,${glowOpacity * 0.5})`
+                        : 'none',
+                      textShadow: isActive
+                        ? `0 0 12px ${accentColor}80`
+                        : 'none',
+                    }}
+                  >
+                    {item.text}
+                  </button>
+                );
+              })}
             </nav>
           </div>
         </aside>
