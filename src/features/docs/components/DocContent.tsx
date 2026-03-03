@@ -183,12 +183,12 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
           marginRight: toc.length > 0 && isDesktop ? TOC_WIDTH : '0',
           marginTop: isDesktop ? '4rem' : '0',
           marginBottom: isDesktop ? '0' : '3.5rem',
-          transition: 'margin-left 0.3s ease, margin-right 0.3s ease',
+          transition: 'margin-left 0.3s ease',
         }}
       >
-        <article className="flex-1 pt-8 pb-12 px-4 w-full">
+        <article className="flex-1 pt-8 pb-12 px-6 w-full">
           {/* Контейнер контента — максимально широкий, без ограничений по max-w */}
-          <div className="mx-auto w-full overflow-x-hidden" style={{ maxWidth: '860px' }}>
+          <div className="w-full overflow-x-hidden">
             <div className="mb-8">
               {doc.typename && doc.typename.trim() !== '' && (
                 <div className="flex items-center gap-3 mb-4">
