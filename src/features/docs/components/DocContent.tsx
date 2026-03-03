@@ -87,7 +87,15 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
     );
   };
 
-  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+  const [isDesktop, setIsDesktop] = useState(
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : true
+  );
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth >= 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
   const sidebarVisible = isDesktop && isSidebarOpen;
   // TOC sidebar width on desktop
   const TOC_WIDTH = toc.length > 0 ? '18rem' : '0';
