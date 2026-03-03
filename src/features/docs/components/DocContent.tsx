@@ -50,7 +50,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
   const scrollProgress = useScrollProgress();
   const [activeId, setActiveId] = useState<string>('');
 
-  // Track which heading is currently in view
   useEffect(() => {
     if (toc.length === 0) return;
     const headingEls = toc
@@ -59,7 +58,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
     const observer = new IntersectionObserver(
       (entries) => {
-        // Find the topmost visible heading
         const visible = entries
           .filter((e) => e.isIntersecting)
           .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
@@ -97,10 +95,8 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
   const getAuthorDisplay = () => {
     if (!doc.author || doc.author.trim() === '') return null;
-
     const authors = doc.author.split(',').map((a) => a.trim()).filter(Boolean);
     if (authors.length === 0) return null;
-
     return (
       <span className={`text-sm ${getTextColorClass('60')}`}>
         {authors.length === 1 ? 'Автор' : 'Авторы'}:{' '}
@@ -120,9 +116,8 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
-  // На десктопе sidebar всегда виден — всегда применяем отступ
+
   const sidebarVisible = isDesktop;
-  // TOC sidebar width on desktop
   const TOC_WIDTH = toc.length > 0 ? '18rem' : '0';
 
   if (loading) {
@@ -151,7 +146,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
   return (
     <div style={{ minHeight: '100vh' }}>
-      {/* Scroll progress bar */}
       <div
         className={`fixed top-0 left-0 h-1 z-50 ${isDark ? 'bg-white' : 'bg-black'}`}
         style={{ width: `${scrollProgress}%` }}
@@ -160,82 +154,70 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
       <TopNavbar />
       <Sidebar />
 
-      {/* Desktop TOC — full sidebar on the right */}
       {toc.length > 0 && isDesktop && (
         <aside
           className={`hidden md:flex flex-col fixed right-0 z-40 border-l overflow-hidden ${
-            isDark
-              ? 'bg-[#0a0a0a] border-white/10'
-              : 'bg-[#E8E7E3] border-black/10'
+            isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
           }`}
-          style={{
-            top: '4rem',
-            width: TOC_WIDTH,
-            height: 'calc(100vh - 4rem)',
-          }}
+          style={{ top: '4rem', width: TOC_WIDTH, height: 'calc(100vh - 4rem)' }}
         >
-          {/* TOC Header */}
-          <div
-            className={`flex-shrink-0 px-4 py-4 border-b ${
-              isDark ? 'border-white/10' : 'border-black/10'
-            }`}
-          >
-            <h2 className={`text-sm font-bold uppercase tracking-widest ${
-              isDark ? 'text-white/50' : 'text-black/50'
-            }`}>
+          <div className={`flex-shrink-0 px-4 py-4 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
+            <h2 className={`text-sm font-bold uppercase tracking-widest ${isDark ? 'text-white/50' : 'text-black/50'}`}>
               На этой странице
             </h2>
           </div>
 
-          {/* TOC Items */}
           <div className="flex-1 overflow-y-auto py-3">
             <nav className="space-y-0.5">
               {toc.map((item, index) => {
                 const activeIndex = toc.findIndex((t) => t.id === activeId);
-                const distance = index - activeIndex;
+                const distance = index - activeIndex; // negative = above/read, positive = below/unread
                 const isActive = distance === 0 && activeId !== '';
+                const absDist = Math.abs(distance);
+                const accentColor = isDark ? '#ffffff' : '#000000';
 
-                // Opacity: active=1, above fades by distance, below slightly dim
                 let opacity: number;
                 let glowOpacity: number;
+
                 if (activeId === '') {
-                  opacity = 0.5;
+                  opacity = 0.4;
                   glowOpacity = 0;
                 } else if (isActive) {
                   opacity = 1;
                   glowOpacity = 1;
-                } else if (distance < 0) {
-                  // Already read — fade out further up
-                  opacity = Math.max(0.15, 0.55 + distance * 0.15);
-                  glowOpacity = Math.max(0, 0.4 + distance * 0.15);
                 } else {
-                  // Not yet read — slightly dim
-                  opacity = Math.max(0.25, 0.5 - distance * 0.08);
-                  glowOpacity = 0;
+                  // Symmetric fade in both directions from active
+                  opacity = Math.max(0.1, 0.7 - absDist * 0.2);
+                  // Glow in both directions, fading by distance
+                  glowOpacity = Math.max(0, 0.55 - absDist * 0.18);
                 }
-
-                const accentColor = isDark ? '#a78bfa' : '#7c3aed';
 
                 return (
                   <button
                     key={item.id}
                     onClick={() => scrollToElement(item.id)}
-                    className="w-full text-left py-2 pr-3 text-sm leading-snug relative"
+                    className="w-full text-left py-2 pr-3 text-sm leading-snug"
                     style={{
                       paddingLeft: `${14 + (item.level - 2) * 14}px`,
-                      color: isDark ? `rgba(255,255,255,${opacity})` : `rgba(0,0,0,${opacity})`,
-                      transition: 'color 0.4s ease, opacity 0.4s ease',
-                      borderLeft: `2px solid transparent`,
-                      borderLeftColor: glowOpacity > 0
-                        ? `rgba(167,139,250,${glowOpacity})`
-                        : 'transparent',
-                      boxShadow: isActive
-                        ? `inset 2px 0 8px -2px ${accentColor}99, inset 2px 0 0 0 ${accentColor}`
+                      color: isActive
+                        ? (isDark ? '#ffffff' : '#000000')
+                        : isDark
+                          ? `rgba(255,255,255,${opacity})`
+                          : `rgba(0,0,0,${opacity})`,
+                      transition: 'color 0.5s ease, box-shadow 0.5s ease, border-color 0.5s ease, text-shadow 0.5s ease',
+                      borderLeft: '2px solid',
+                      borderLeftColor: isActive
+                        ? accentColor
                         : glowOpacity > 0
-                        ? `inset 2px 0 6px -2px rgba(167,139,250,${glowOpacity * 0.5})`
-                        : 'none',
+                          ? `${isDark ? `rgba(255,255,255,${glowOpacity})` : `rgba(0,0,0,${glowOpacity})`}`
+                          : 'transparent',
+                      boxShadow: isActive
+                        ? `inset 3px 0 14px -2px ${accentColor}bb`
+                        : glowOpacity > 0
+                          ? `inset 3px 0 10px -3px ${isDark ? `rgba(255,255,255,${glowOpacity * 0.55})` : `rgba(0,0,0,${glowOpacity * 0.55})`}`
+                          : 'none',
                       textShadow: isActive
-                        ? `0 0 12px ${accentColor}80`
+                        ? `0 0 18px ${accentColor}99`
                         : 'none',
                     }}
                   >
@@ -258,8 +240,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
           transition: 'margin-left 0.3s ease',
         }}
       >
-        <article className="flex-1 pt-8 pb-12 w-full" style={{ paddingLeft: "2rem", paddingRight: "2rem" }}>
-          {/* Контейнер контента — максимально широкий, без ограничений по max-w */}
+        <article className="flex-1 pt-8 pb-12 w-full" style={{ paddingLeft: '2rem', paddingRight: '2rem' }}>
           <div className="w-full">
             <div className="mb-8">
               {doc.typename && doc.typename.trim() !== '' && (
@@ -271,9 +252,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
               )}
 
               <h1
-                className={`text-4xl md:text-5xl font-bold mb-4 ${
-                  isDark ? 'text-white' : 'text-black'
-                }`}
+                className={`text-4xl md:text-5xl font-bold mb-4 ${isDark ? 'text-white' : 'text-black'}`}
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 {doc.title}
@@ -281,11 +260,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
               <p className={`text-lg ${getTextColorClass()}`}>{doc.description}</p>
 
-              <div
-                className={`flex items-center gap-4 mt-6 pt-4 border-t flex-wrap ${
-                  isDark ? 'border-white/10' : 'border-black/10'
-                }`}
-              >
+              <div className={`flex items-center gap-4 mt-6 pt-4 border-t flex-wrap ${isDark ? 'border-white/10' : 'border-black/10'}`}>
                 {getAuthorDisplay()}
                 {doc.date && (
                   <span className={`text-sm ${getTextColorClass('60')}`}>
@@ -302,9 +277,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
             <TableContext.Provider value={tableContextValue}>
               <div
                 data-article-content
-                className={`prose max-w-none w-full overflow-x-auto ${
-                  isDark ? 'text-white' : 'text-black'
-                }`}
+                className={`prose max-w-none w-full overflow-x-auto ${isDark ? 'text-white' : 'text-black'}`}
               >
                 {contentNodes}
               </div>
