@@ -1,210 +1,266 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
+import { marked } from 'marked';
+import DOMPurify from 'isomorphic-dompurify';
 import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
-import TocPanel from './TocPanel';
-import { PanelLeft, Search, ArrowUp, List } from 'lucide-react';
+import TopNavbar from '@/features/navigation/components/MobileNavbar';
+import Sidebar from '@/features/navigation/components/Sidebar';
+import { parseHtmlToReact, TableContext } from '@/shared/lib/htmlParser';
+import { useTableOfContents } from '../hooks/useTableOfContents';
+import { useScrollProgress } from '../hooks/useScrollProgress';
+import { scrollToElement } from '../utils/scrollUtils';
+import { useDocuments } from '../hooks/useDocuments';
 
-const LazyUnifiedSearchPanel = lazy(() => import('./UnifiedSearchPanel'));
+const LazyTableModal = lazy(() => import('@/features/table/components/TableModal'));
 
-interface TocItem {
-  id: string;
-  text: string;
-  level: number;
+interface DocContentProps {
+  doc: {
+    id: string;
+    title: string;
+    slug: string;
+    description: string;
+    type?: string;
+    typename?: string;
+    content?: string;
+    author?: string;
+    date?: string;
+    tags?: string[];
+  };
 }
 
-const NavButton: React.FC<{
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-  isActive?: boolean;
-}> = ({ icon, label, onClick, isActive = false }) => {
-  const { isDark } = useTheme();
-
-  const getTextColor = () => {
-    if (isActive) return isDark ? 'text-white' : 'text-black';
-    return isDark ? 'text-white/60 hover:text-white' : 'text-black/60 hover:text-black';
-  };
-
-  return (
-    <button
-      onClick={onClick}
-      className={`flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-2 md:px-4 py-2 md:py-0 transition-colors ${getTextColor()}`}
-    >
-      <div className="w-5 h-5 md:w-4 md:h-4 flex items-center justify-center">{icon}</div>
-      <span className="text-[10px] md:text-sm font-medium">{label}</span>
-    </button>
-  );
-};
-
-const MobileNavbarInner: React.FC = () => {
-  const { isDark, setSidebarOpen } = useTheme();
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isTocOpen, setIsTocOpen] = useState(false);
-  const [toc, setToc] = useState<TocItem[]>([]);
+const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
+  const { isDark, isSidebarOpen } = useTheme();
+  const { loadDocument } = useDocuments();
+  const [doc, setDoc] = useState(initialDoc);
+  const [loading, setLoading] = useState(!initialDoc.content);
+  const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
 
   useEffect(() => {
-    const generateTOC = (): boolean => {
-      const container =
-        document.querySelector('[data-article-content]') ||
-        document.querySelector('article') ||
-        document.querySelector('main');
-
-      if (!container) return false;
-
-      const headings = container.querySelectorAll('h2, h3, h4');
-      if (headings.length === 0) return false;
-
-      const items: TocItem[] = [];
-      headings.forEach((heading, index) => {
-        const id = heading.id || `heading-${index}`;
-        if (!heading.id) heading.id = id;
-        items.push({
-          id,
-          text: heading.textContent || '',
-          level: Number.parseInt(heading.tagName[1], 10),
-        });
-      });
-
-      setToc(items);
-      return true;
-    };
-
-    if (generateTOC()) return;
-
-    const observer = new MutationObserver(() => {
-      if (generateTOC()) observer.disconnect();
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    const fallback = setTimeout(() => {
-      generateTOC();
-      observer.disconnect();
-    }, 3000);
-
-    return () => {
-      observer.disconnect();
-      clearTimeout(fallback);
-    };
-  }, []);
-
-  const handleTocOpen = () => {
-    if (toc.length === 0) {
-      const container =
-        document.querySelector('[data-article-content]') ||
-        document.querySelector('article') ||
-        document.querySelector('main');
-
-      if (container) {
-        const headings = container.querySelectorAll('h2, h3, h4');
-        const items: TocItem[] = [];
-        headings.forEach((heading, index) => {
-          const id = heading.id || `heading-${index}`;
-          if (!heading.id) heading.id = id;
-          items.push({
-            id,
-            text: heading.textContent || '',
-            level: Number.parseInt(heading.tagName[1], 10),
-          });
-        });
-        if (items.length > 0) {
-          setToc(items);
-          setIsTocOpen(true);
-          return;
+    if (!initialDoc.content) {
+      loadDocument(initialDoc.slug).then((fullDoc) => {
+        if (fullDoc) {
+          setDoc(fullDoc);
+          setLoading(false);
         }
-      }
+      });
     }
-    setIsTocOpen((v) => !v);
+  }, [initialDoc.slug, initialDoc.content, loadDocument]);
+
+  const toc = useTableOfContents(doc);
+  const scrollProgress = useScrollProgress();
+
+  const handleTableClick = (tableHtml: string) => {
+    setFullscreenTableHtml(tableHtml);
   };
 
-  const handleScrollTop = () => {
-    globalThis.scrollTo({ top: 0, behavior: 'smooth' });
+  const htmlContent = useMemo(() => {
+    if (!doc.content) return '';
+    return DOMPurify.sanitize(marked(doc.content));
+  }, [doc.content]);
+
+  const contentNodes = useMemo(() => {
+    if (!htmlContent) return [];
+    return parseHtmlToReact(htmlContent);
+  }, [htmlContent]);
+
+  const getTextColorClass = (opacity = '70'): string =>
+    isDark ? `text-white/${opacity}` : `text-black/${opacity}`;
+
+  const tableContextValue = useMemo(
+    () => ({ onTableClick: handleTableClick, isDark }),
+    [isDark]
+  );
+
+  const getAuthorDisplay = () => {
+    if (!doc.author || doc.author.trim() === '') return null;
+
+    const authors = doc.author.split(',').map((a) => a.trim()).filter(Boolean);
+    if (authors.length === 0) return null;
+
+    return (
+      <span className={`text-sm ${getTextColorClass('60')}`}>
+        {authors.length === 1 ? 'Автор' : 'Авторы'}:{' '}
+        <strong className={isDark ? 'text-white' : 'text-black'}>
+          {authors.join(', ')}
+        </strong>
+      </span>
+    );
   };
+
+  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+  const sidebarVisible = isDesktop && isSidebarOpen;
+  // TOC sidebar width on desktop
+  const TOC_WIDTH = toc.length > 0 ? '18rem' : '0';
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh' }}>
+        <TopNavbar />
+        <Sidebar />
+        <main
+          className={`min-h-screen flex items-center justify-center ${
+            isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'
+          }`}
+          style={{
+            marginLeft: sidebarVisible ? '20rem' : '0',
+            marginRight: toc.length > 0 && isDesktop ? TOC_WIDTH : '0',
+            marginTop: isDesktop ? '4rem' : '0',
+            marginBottom: isDesktop ? '0' : '3.5rem',
+          }}
+        >
+          <p className={`text-lg ${isDark ? 'text-white/60' : 'text-black/60'}`}>
+            Загрузка документа...
+          </p>
+        </main>
+      </div>
+    );
+  }
 
   return (
-    <>
-      {/* Десктопный навбар — сверху, лого по центру */}
-      <nav
-        className={`hidden md:flex fixed top-0 left-0 right-0 z-50 border-b items-center h-16 ${
-          isDark
-            ? 'bg-[#0a0a0a]/95 border-white/10 backdrop-blur-sm'
-            : 'bg-[#E8E7E3]/95 border-black/10 backdrop-blur-sm'
-        }`}
+    <div style={{ minHeight: '100vh' }}>
+      {/* Scroll progress bar */}
+      <div
+        className={`fixed top-0 left-0 h-1 z-50 ${isDark ? 'bg-white' : 'bg-black'}`}
+        style={{ width: `${scrollProgress}%` }}
+      />
+
+      <TopNavbar />
+      <Sidebar />
+
+      {/* Desktop TOC — full sidebar on the right */}
+      {toc.length > 0 && isDesktop && (
+        <aside
+          className={`hidden md:flex flex-col fixed right-0 z-40 border-l overflow-hidden ${
+            isDark
+              ? 'bg-[#0a0a0a] border-white/10'
+              : 'bg-[#E8E7E3] border-black/10'
+          }`}
+          style={{
+            top: '4rem',
+            width: TOC_WIDTH,
+            height: 'calc(100vh - 4rem)',
+          }}
+        >
+          {/* TOC Header */}
+          <div
+            className={`flex-shrink-0 px-4 py-4 border-b ${
+              isDark ? 'border-white/10' : 'border-black/10'
+            }`}
+          >
+            <h2 className={`text-sm font-bold uppercase tracking-widest ${
+              isDark ? 'text-white/50' : 'text-black/50'
+            }`}>
+              На этой странице
+            </h2>
+          </div>
+
+          {/* TOC Items */}
+          <div className="flex-1 overflow-y-auto py-3">
+            <nav className="px-2 space-y-0.5">
+              {toc.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => scrollToElement(item.id)}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors leading-snug ${
+                    isDark
+                      ? 'text-white/60 hover:bg-white/5 hover:text-white'
+                      : 'text-black/60 hover:bg-black/5 hover:text-black'
+                  }`}
+                  style={{ paddingLeft: `${12 + (item.level - 2) * 14}px` }}
+                >
+                  {item.text}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </aside>
+      )}
+
+      <main
+        className={`min-h-screen ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}
+        style={{
+          marginLeft: sidebarVisible ? '20rem' : '0',
+          marginRight: toc.length > 0 && isDesktop ? TOC_WIDTH : '0',
+          marginTop: isDesktop ? '4rem' : '0',
+          marginBottom: isDesktop ? '0' : '3.5rem',
+          transition: 'margin-left 0.3s ease, margin-right 0.3s ease',
+        }}
       >
-        {/* Левая часть */}
-        <div className="flex items-center pl-4 w-64 flex-shrink-0">
-          <NavButton icon={<Search size={18} />} label="Поиск" onClick={() => setIsSearchOpen(true)} />
-        </div>
+        <article className="flex-1 pt-8 pb-12 px-4 w-full">
+          {/* Контейнер контента — максимально широкий, без ограничений по max-w */}
+          <div className="mx-auto w-full overflow-x-hidden" style={{ maxWidth: '860px' }}>
+            <div className="mb-8">
+              {doc.typename && doc.typename.trim() !== '' && (
+                <div className="flex items-center gap-3 mb-4">
+                  <span className={`text-sm font-semibold ${getTextColorClass()}`}>
+                    {doc.typename}
+                  </span>
+                </div>
+              )}
 
-        {/* Центр — лого */}
-        <div className="flex-1 flex items-center justify-center">
-          <a href="/" className="flex items-center gap-2">
-            <img src="/favicon.png" alt="Opensophy" className="w-10 h-10 object-contain" />
-          </a>
-        </div>
+              <h1
+                className={`text-4xl md:text-5xl font-bold mb-4 ${
+                  isDark ? 'text-white' : 'text-black'
+                }`}
+                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+              >
+                {doc.title}
+              </h1>
 
-        {/* Правая часть */}
-        <div className="flex items-center pr-4 w-64 flex-shrink-0 justify-end">
-          <NavButton icon={<ArrowUp size={18} />} label="Наверх" onClick={handleScrollTop} />
-        </div>
-      </nav>
+              <p className={`text-lg ${getTextColorClass()}`}>{doc.description}</p>
 
-      {/* Мобильный навбар — снизу (с кнопкой Оглавление) */}
-      <nav
-        className={`md:hidden fixed bottom-0 left-0 right-0 z-50 border-t ${
-          isDark
-            ? 'bg-[#0a0a0a]/95 border-white/10 backdrop-blur-sm'
-            : 'bg-[#E8E7E3]/95 border-black/10 backdrop-blur-sm'
-        }`}
-      >
-        <div className="flex items-center justify-around px-2 py-1">
-          <NavButton icon={<PanelLeft size={20} />} label="Меню" onClick={() => setSidebarOpen(true)} />
-          <NavButton icon={<Search size={20} />} label="Поиск" onClick={() => setIsSearchOpen(true)} />
+              <div
+                className={`flex items-center gap-4 mt-6 pt-4 border-t flex-wrap ${
+                  isDark ? 'border-white/10' : 'border-black/10'
+                }`}
+              >
+                {getAuthorDisplay()}
+                {doc.date && (
+                  <span className={`text-sm ${getTextColorClass('60')}`}>
+                    {new Date(doc.date).toLocaleDateString('ru-RU', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </span>
+                )}
+              </div>
+            </div>
 
-          <a href="/" className="flex flex-col items-center justify-center gap-1 px-2 py-2">
-            <img src="/favicon.png" alt="Opensophy" className="w-10 h-10 object-contain" />
-          </a>
-
-          <NavButton
-            icon={<List size={20} />}
-            label="Оглавление"
-            onClick={handleTocOpen}
-            isActive={isTocOpen}
-          />
-          <NavButton icon={<ArrowUp size={20} />} label="Наверх" onClick={handleScrollTop} />
-        </div>
-      </nav>
+            <TableContext.Provider value={tableContextValue}>
+              <div
+                data-article-content
+                className={`prose max-w-none w-full overflow-x-auto ${
+                  isDark ? 'text-white' : 'text-black'
+                }`}
+              >
+                {contentNodes}
+              </div>
+            </TableContext.Provider>
+          </div>
+        </article>
+      </main>
 
       <AnimatePresence>
-        {isSearchOpen && (
-          <Suspense
-            fallback={
-              <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50">
-                <div className={`text-sm ${isDark ? 'text-white' : 'text-black'}`}>
-                  Загрузка поиска...
-                </div>
-              </div>
-            }
-          >
-            <LazyUnifiedSearchPanel onClose={() => setIsSearchOpen(false)} />
+        {fullscreenTableHtml && (
+          <Suspense fallback={null}>
+            <LazyTableModal
+              isOpen={!!fullscreenTableHtml}
+              tableHtml={fullscreenTableHtml}
+              isDark={isDark}
+              onClose={() => setFullscreenTableHtml(null)}
+            />
           </Suspense>
         )}
       </AnimatePresence>
-
-      {/* TOC Panel — только для мобильных */}
-      <AnimatePresence>
-        {isTocOpen && (
-          <TocPanel toc={toc} onClose={() => setIsTocOpen(false)} />
-        )}
-      </AnimatePresence>
-    </>
+    </div>
   );
 };
 
-const MobileNavbar: React.FC = () => (
+const DocContent: React.FC<DocContentProps> = ({ doc }) => (
   <ThemeProvider>
-    <MobileNavbarInner />
+    <DocContentMain doc={doc} />
   </ThemeProvider>
 );
 
-export default MobileNavbar;
+export default DocContent;
