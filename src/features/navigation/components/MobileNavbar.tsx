@@ -2,7 +2,7 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
 import TocPanel from './TocPanel';
-import { PanelLeft } from 'lucide-react';
+import { PanelLeft, Search, ArrowUp } from 'lucide-react';
 
 const LazyUnifiedSearchPanel = lazy(() => import('./UnifiedSearchPanel'));
 
@@ -11,31 +11,6 @@ interface TocItem {
   text: string;
   level: number;
 }
-
-const SearchIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="11" cy="11" r="8" />
-    <path d="m21 21-4.35-4.35" />
-  </svg>
-);
-
-const ArrowUpIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="12" y1="19" x2="12" y2="5" />
-    <polyline points="5 12 12 5 19 12" />
-  </svg>
-);
-
-const ListIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="8" y1="6" x2="21" y2="6" />
-    <line x1="8" y1="12" x2="21" y2="12" />
-    <line x1="8" y1="18" x2="21" y2="18" />
-    <line x1="3" y1="6" x2="3.01" y2="6" />
-    <line x1="3" y1="12" x2="3.01" y2="12" />
-    <line x1="3" y1="18" x2="3.01" y2="18" />
-  </svg>
-);
 
 const NavButton: React.FC<{
   icon: React.ReactNode;
@@ -53,10 +28,10 @@ const NavButton: React.FC<{
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center justify-center gap-1 px-2 py-2 transition-colors ${getTextColor()}`}
+      className={`flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-2 md:px-4 py-2 md:py-0 transition-colors ${getTextColor()}`}
     >
-      <div className="w-6 h-6 flex items-center justify-center">{icon}</div>
-      <span className="text-[10px] font-medium">{label}</span>
+      <div className="w-5 h-5 md:w-4 md:h-4 flex items-center justify-center">{icon}</div>
+      <span className="text-[10px] md:text-sm font-medium">{label}</span>
     </button>
   );
 };
@@ -148,8 +123,28 @@ const MobileNavbarInner: React.FC = () => {
 
   return (
     <>
+      {/* Десктопный навбар — сверху */}
       <nav
-        className={`fixed bottom-0 left-0 right-0 z-50 border-t ${
+        className={`hidden md:flex fixed top-0 left-0 right-0 z-50 border-b items-center justify-center px-6 h-16 ${
+          isDark
+            ? 'bg-[#0a0a0a]/95 border-white/10 backdrop-blur-sm'
+            : 'bg-[#E8E7E3]/95 border-black/10 backdrop-blur-sm'
+        }`}
+      >
+        <div className="flex items-center gap-6">
+          <NavButton icon={<Search size={20} />} label="Поиск" onClick={() => setIsSearchOpen(true)} />
+          
+          <a href="/" className="flex items-center gap-2 mx-4">
+            <img src="/favicon.png" alt="Opensophy" className="w-10 h-10 object-contain" />
+          </a>
+
+          <NavButton icon={<ArrowUp size={20} />} label="Наверх" onClick={handleScrollTop} />
+        </div>
+      </nav>
+
+      {/* Мобильный навбар — снизу */}
+      <nav
+        className={`md:hidden fixed bottom-0 left-0 right-0 z-50 border-t ${
           isDark
             ? 'bg-[#0a0a0a]/95 border-white/10 backdrop-blur-sm'
             : 'bg-[#E8E7E3]/95 border-black/10 backdrop-blur-sm'
@@ -157,14 +152,13 @@ const MobileNavbarInner: React.FC = () => {
       >
         <div className="flex items-center justify-around px-2 py-1">
           <NavButton icon={<PanelLeft size={20} />} label="Меню" onClick={() => setSidebarOpen(true)} />
-          <NavButton icon={<SearchIcon />} label="Поиск" onClick={() => setIsSearchOpen(true)} />
+          <NavButton icon={<Search size={20} />} label="Поиск" onClick={() => setIsSearchOpen(true)} />
 
           <a href="/" className="flex flex-col items-center justify-center gap-1 px-2 py-2">
             <img src="/favicon.png" alt="Opensophy" className="w-10 h-10 object-contain" />
           </a>
 
-          <NavButton icon={<ListIcon />} label="Оглавление" onClick={handleTocOpen} isActive={isTocOpen} />
-          <NavButton icon={<ArrowUpIcon />} label="Наверх" onClick={handleScrollTop} />
+          <NavButton icon={<ArrowUp size={20} />} label="Наверх" onClick={handleScrollTop} />
         </div>
       </nav>
 
