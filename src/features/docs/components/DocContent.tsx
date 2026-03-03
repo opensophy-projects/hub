@@ -186,9 +186,9 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
           transition: 'margin-left 0.3s ease',
         }}
       >
-        <article className="flex-1 pt-8 pb-12 px-6 w-full">
+        <article className="flex-1 pt-8 pb-12 w-full" style={{ paddingLeft: "2rem", paddingRight: "2rem" }}>
           {/* Контейнер контента — максимально широкий, без ограничений по max-w */}
-          <div className="w-full overflow-x-hidden">
+          <div className="w-full">
             <div className="mb-8">
               {doc.typename && doc.typename.trim() !== '' && (
                 <div className="flex items-center gap-3 mb-4">
