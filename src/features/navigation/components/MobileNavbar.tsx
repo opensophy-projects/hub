@@ -2,7 +2,7 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
 import TocPanel from './TocPanel';
-import { PanelLeft, Search, ArrowUp } from 'lucide-react';
+import { PanelLeft, Search, ArrowUp, List } from 'lucide-react';
 
 const LazyUnifiedSearchPanel = lazy(() => import('./UnifiedSearchPanel'));
 
@@ -123,26 +123,33 @@ const MobileNavbarInner: React.FC = () => {
 
   return (
     <>
-      {/* Десктопный навбар — сверху */}
+      {/* Десктопный навбар — сверху, лого по центру */}
       <nav
-        className={`hidden md:flex fixed top-0 left-0 right-0 z-50 border-b items-center justify-center px-6 h-16 ${
+        className={`hidden md:flex fixed top-0 left-0 right-0 z-50 border-b items-center h-16 ${
           isDark
             ? 'bg-[#0a0a0a]/95 border-white/10 backdrop-blur-sm'
             : 'bg-[#E8E7E3]/95 border-black/10 backdrop-blur-sm'
         }`}
       >
-        <div className="flex items-center gap-6">
-          <NavButton icon={<Search size={20} />} label="Поиск" onClick={() => setIsSearchOpen(true)} />
-          
-          <a href="/" className="flex items-center gap-2 mx-4">
+        {/* Левая часть */}
+        <div className="flex items-center pl-4 w-64 flex-shrink-0">
+          <NavButton icon={<Search size={18} />} label="Поиск" onClick={() => setIsSearchOpen(true)} />
+        </div>
+
+        {/* Центр — лого */}
+        <div className="flex-1 flex items-center justify-center">
+          <a href="/" className="flex items-center gap-2">
             <img src="/favicon.png" alt="Opensophy" className="w-10 h-10 object-contain" />
           </a>
+        </div>
 
-          <NavButton icon={<ArrowUp size={20} />} label="Наверх" onClick={handleScrollTop} />
+        {/* Правая часть */}
+        <div className="flex items-center pr-4 w-64 flex-shrink-0 justify-end">
+          <NavButton icon={<ArrowUp size={18} />} label="Наверх" onClick={handleScrollTop} />
         </div>
       </nav>
 
-      {/* Мобильный навбар — снизу */}
+      {/* Мобильный навбар — снизу (с кнопкой Оглавление) */}
       <nav
         className={`md:hidden fixed bottom-0 left-0 right-0 z-50 border-t ${
           isDark
@@ -158,6 +165,12 @@ const MobileNavbarInner: React.FC = () => {
             <img src="/favicon.png" alt="Opensophy" className="w-10 h-10 object-contain" />
           </a>
 
+          <NavButton
+            icon={<List size={20} />}
+            label="Оглавление"
+            onClick={handleTocOpen}
+            isActive={isTocOpen}
+          />
           <NavButton icon={<ArrowUp size={20} />} label="Наверх" onClick={handleScrollTop} />
         </div>
       </nav>
@@ -178,6 +191,7 @@ const MobileNavbarInner: React.FC = () => {
         )}
       </AnimatePresence>
 
+      {/* TOC Panel — только для мобильных */}
       <AnimatePresence>
         {isTocOpen && (
           <TocPanel toc={toc} onClose={() => setIsTocOpen(false)} />
