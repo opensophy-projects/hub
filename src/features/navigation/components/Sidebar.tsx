@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useTheme } from '@/shared/contexts/ThemeContext';
 import { useDocuments } from '@/features/docs/hooks/useDocuments';
-import { Search, Sun, Moon, ChevronDown, ChevronRight, Mail, X, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { Search, Sun, Moon, ChevronDown, ChevronRight, Mail, X } from 'lucide-react';
 
 interface Doc {
   id: string;
@@ -82,9 +82,11 @@ const SidebarHeader: React.FC<{
       <button onClick={onToggleContacts} className={iconBtn(isDark)} title="Контакты">
         <Mail size={18} />
       </button>
-      <button onClick={onClose} className={iconBtn(isDark)} aria-label="Закрыть меню">
-        {isDesktop ? <PanelLeftClose size={18} /> : <X size={18} />}
-      </button>
+      {!isDesktop && (
+        <button onClick={onClose} className={iconBtn(isDark)} aria-label="Закрыть меню">
+          <X size={18} />
+        </button>
+      )}
     </div>
   </div>
 );
@@ -233,7 +235,7 @@ const ContactsSection: React.FC<{
     <>
       <button
         type="button"
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 cursor-default"
+        className="fixed inset-0 bg-black/50 z-40 cursor-default"
         onClick={onClose}
         onKeyDown={createCloseKeyHandler(onClose)}
         aria-label="Закрыть контакты"
@@ -243,10 +245,7 @@ const ContactsSection: React.FC<{
           isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
         }`}
       >
-        <div
-          className="flex items-center justify-between p-4 border-b"
-          style={borderStyle(isDark)}
-        >
+        <div className="flex items-center justify-between p-4">
           <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>Контакты</h2>
           <button onClick={onClose} className={iconBtn(isDark)} aria-label="Закрыть контакты">
             <X size={20} />
@@ -275,10 +274,10 @@ const Sidebar: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set());
   const [showContacts, setShowContacts] = useState(false);
-  const [isDesktopHidden, setIsDesktopHidden] = useState(false);
+
+  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
 
   useEffect(() => {
-    const isDesktop = window.innerWidth >= 768;
     if (!isDesktop && isSidebarOpen) {
       document.body.style.overflow = 'hidden';
     } else {
@@ -287,7 +286,7 @@ const Sidebar: React.FC = () => {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isSidebarOpen]);
+  }, [isSidebarOpen, isDesktop]);
 
   const { categorized, uncategorized } = useMemo(() => {
     const categorized: GroupedDocs = {};
@@ -338,36 +337,14 @@ const Sidebar: React.FC = () => {
   };
 
   const handleClose = () => {
-    const isDesktop = window.innerWidth >= 768;
-    if (isDesktop) {
-      setIsDesktopHidden(true);
-    } else {
-      setSidebarOpen(false);
-    }
+    setSidebarOpen(false);
   };
 
-  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
-  const shouldShow = isDesktop ? (isSidebarOpen && !isDesktopHidden) : isSidebarOpen;
-
-  if (!shouldShow) {
-    return isDesktop && isDesktopHidden ? (
-      <button
-        onClick={() => setIsDesktopHidden(false)}
-        className={`hidden md:block fixed left-4 top-20 z-40 p-3 rounded-lg border shadow-lg transition-colors ${
-          isDark
-            ? 'bg-[#0a0a0a] border-white/10 text-white hover:bg-white/5'
-            : 'bg-[#E8E7E3] border-black/10 text-black hover:bg-black/5'
-        }`}
-        title="Открыть меню"
-      >
-        <PanelLeft size={20} />
-      </button>
-    ) : null;
-  }
+  if (!isSidebarOpen && !isDesktop) return null;
 
   return (
     <>
-      {!isDesktop && <SidebarOverlay onClose={() => setSidebarOpen(false)} />}
+      {!isDesktop && <SidebarOverlay onClose={handleClose} />}
       <aside
         className={`fixed left-0 top-0 h-screen w-full md:w-80 border-r flex flex-col z-50 ${
           isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
