@@ -111,8 +111,8 @@ const SidebarSearch: React.FC<{
         onChange={(e) => onChange(e.target.value)}
         className={`w-full pl-9 pr-3 py-2 rounded-lg text-sm border transition-colors outline-none ${
           isDark
-            ? 'bg-white/5 border-white/10 text-white placeholder-white/40 focus:bg-white/10 focus:border-white/20'
-            : 'bg-[#ddd8cd] border-black/10 text-black placeholder-black/40 focus:border-black/20'
+            ? 'bg-[#0a0a0a] border-white/10 text-white placeholder-white/40 focus:bg-[#0a0a0a] focus:border-white/20'
+            : 'bg-[#E8E7E3] border-black/10 text-black placeholder-black/40 focus:border-black/20'
         }`}
       />
     </div>
