@@ -10,6 +10,7 @@ import { useTableOfContents } from '../hooks/useTableOfContents';
 import { useScrollProgress } from '../hooks/useScrollProgress';
 import { scrollToElement } from '../utils/scrollUtils';
 import { useDocuments } from '../hooks/useDocuments';
+import { Clock, CalendarDays, Tag } from 'lucide-react';
 
 const LazyTableModal = lazy(() => import('@/features/table/components/TableModal'));
 
@@ -27,6 +28,217 @@ interface DocContentProps {
     tags?: string[];
   };
 }
+
+// ─── Read time estimation ─────────────────────────────────────────────────────
+
+function estimateReadTime(content: string): number {
+  if (!content) return 1;
+  // Strip HTML tags
+  const text = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  const words = text.split(' ').filter(Boolean).length;
+  // Average reading speed: 200 words/min (Russian text slightly slower)
+  return Math.max(1, Math.round(words / 200));
+}
+
+// ─── Hero Section ─────────────────────────────────────────────────────────────
+
+const DocHero: React.FC<{
+  doc: DocContentProps['doc'];
+  isDark: boolean;
+  readTime: number;
+}> = ({ doc, isDark, readTime }) => {
+  const authors = doc.author
+    ? doc.author.split(',').map((a) => a.trim()).filter(Boolean)
+    : [];
+
+  const formattedDate = doc.date
+    ? new Date(doc.date).toLocaleDateString('ru-RU', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : null;
+
+  // Dot pattern + radial gradient — как на референсе
+  const heroBg = isDark
+    ? {
+        background: '#0a0a0a',
+        backgroundImage: `
+          radial-gradient(ellipse 80% 60% at 50% 0%, rgba(80, 60, 140, 0.18) 0%, transparent 70%),
+          radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)
+        `,
+        backgroundSize: 'cover, 24px 24px',
+      }
+    : {
+        background: '#E8E7E3',
+        backgroundImage: `
+          radial-gradient(ellipse 80% 60% at 50% 0%, rgba(100, 80, 200, 0.08) 0%, transparent 70%),
+          radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px)
+        `,
+        backgroundSize: 'cover, 24px 24px',
+      };
+
+  const borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+  const metaTextColor = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)';
+  const metaBadgeBg = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
+  const metaBadgeBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+
+  return (
+    <div
+      style={{
+        ...heroBg,
+        borderBottom: `1px solid ${borderColor}`,
+        paddingBottom: '2.5rem',
+        paddingTop: '3rem',
+        paddingLeft: '2rem',
+        paddingRight: '2rem',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Верхняя мета-строка: дата + тема */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.625rem',
+          marginBottom: '1.25rem',
+          flexWrap: 'wrap',
+        }}
+      >
+        {formattedDate && (
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              fontSize: '0.75rem',
+              color: metaTextColor,
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            <CalendarDays size={13} style={{ opacity: 0.7 }} />
+            {formattedDate}
+          </span>
+        )}
+
+        {doc.typename && doc.typename.trim() !== '' && (
+          <>
+            {formattedDate && (
+              <span style={{ color: metaTextColor, fontSize: '0.7rem' }}>·</span>
+            )}
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.3rem',
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                color: metaTextColor,
+                background: metaBadgeBg,
+                border: `1px solid ${metaBadgeBorder}`,
+                borderRadius: '6px',
+                padding: '2px 8px',
+              }}
+            >
+              <Tag size={10} style={{ opacity: 0.7 }} />
+              {doc.typename}
+            </span>
+          </>
+        )}
+      </div>
+
+      {/* Заголовок */}
+      <h1
+        style={{
+          fontSize: 'clamp(1.6rem, 4vw, 2.8rem)',
+          fontWeight: 700,
+          lineHeight: 1.15,
+          letterSpacing: '-0.02em',
+          color: isDark ? '#ffffff' : '#0a0a0a',
+          margin: '0 0 1rem 0',
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          maxWidth: '820px',
+        }}
+      >
+        {doc.title}
+      </h1>
+
+      {/* Описание */}
+      {doc.description && (
+        <p
+          style={{
+            fontSize: 'clamp(0.9rem, 1.5vw, 1.05rem)',
+            lineHeight: 1.65,
+            color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)',
+            margin: '0 0 1.75rem 0',
+            maxWidth: '680px',
+          }}
+        >
+          {doc.description}
+        </p>
+      )}
+
+      {/* Нижняя мета-строка: время чтения + авторы */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1rem',
+          flexWrap: 'wrap',
+          paddingTop: '1rem',
+          borderTop: `1px solid ${borderColor}`,
+        }}
+      >
+        {/* Время чтения */}
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            fontSize: '0.8rem',
+            color: metaTextColor,
+          }}
+        >
+          <Clock size={13} style={{ opacity: 0.7 }} />
+          {readTime} мин чтения
+        </span>
+
+        {/* Авторы */}
+        {authors.length > 0 && (
+          <>
+            <span style={{ color: metaTextColor, fontSize: '0.75rem' }}>·</span>
+            <span
+              style={{
+                fontSize: '0.8rem',
+                color: metaTextColor,
+              }}
+            >
+              {authors.length === 1 ? 'Автор' : 'Авторы'}:{' '}
+              {authors.map((author, i) => (
+                <React.Fragment key={author}>
+                  <strong
+                    style={{
+                      color: isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.8)',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {author}
+                  </strong>
+                  {i < authors.length - 1 && ', '}
+                </React.Fragment>
+              ))}
+            </span>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
   const { isDark, isSidebarOpen } = useTheme();
@@ -85,27 +297,12 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
     return parseHtmlToReact(htmlContent);
   }, [htmlContent]);
 
-  const getTextColorClass = (opacity = '70'): string =>
-    isDark ? `text-white/${opacity}` : `text-black/${opacity}`;
+  const readTime = useMemo(() => estimateReadTime(doc.content || htmlContent), [doc.content, htmlContent]);
 
   const tableContextValue = useMemo(
     () => ({ onTableClick: handleTableClick, isDark }),
     [isDark]
   );
-
-  const getAuthorDisplay = () => {
-    if (!doc.author || doc.author.trim() === '') return null;
-    const authors = doc.author.split(',').map((a) => a.trim()).filter(Boolean);
-    if (authors.length === 0) return null;
-    return (
-      <span className={`text-sm ${getTextColorClass('60')}`}>
-        {authors.length === 1 ? 'Автор' : 'Авторы'}:{' '}
-        <strong className={isDark ? 'text-white' : 'text-black'}>
-          {authors.join(', ')}
-        </strong>
-      </span>
-    );
-  };
 
   const [isDesktop, setIsDesktop] = useState(
     typeof window !== 'undefined' ? window.innerWidth >= 768 : true
@@ -117,7 +314,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  const sidebarVisible = isDesktop;
   const TOC_WIDTH = toc.length > 0 ? '18rem' : '0';
 
   if (loading) {
@@ -130,7 +326,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
             isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'
           }`}
           style={{
-            marginLeft: sidebarVisible ? '20rem' : '0',
+            marginLeft: isDesktop ? '20rem' : '0',
             marginRight: toc.length > 0 && isDesktop ? TOC_WIDTH : '0',
             marginTop: isDesktop ? '4rem' : '0',
             marginBottom: isDesktop ? '0' : '3.5rem',
@@ -146,6 +342,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
   return (
     <div style={{ minHeight: '100vh' }}>
+      {/* Прогресс-бар */}
       <div
         className={`fixed top-0 left-0 h-1 z-50 ${isDark ? 'bg-white' : 'bg-black'}`}
         style={{ width: `${scrollProgress}%` }}
@@ -154,6 +351,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
       <TopNavbar />
       <Sidebar />
 
+      {/* TOC справа */}
       {toc.length > 0 && isDesktop && (
         <aside
           className={`hidden md:flex flex-col fixed right-0 z-40 border-l overflow-hidden ${
@@ -231,47 +429,22 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
       <main
         className={`min-h-screen ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}
         style={{
-          marginLeft: sidebarVisible ? '20rem' : '0',
+          marginLeft: isDesktop ? '20rem' : '0',
           marginRight: toc.length > 0 && isDesktop ? TOC_WIDTH : '0',
           marginTop: isDesktop ? '4rem' : '0',
           marginBottom: isDesktop ? '0' : '3.5rem',
           transition: 'margin-left 0.3s ease',
         }}
       >
-        <article className="flex-1 pt-8 pb-12 w-full" style={{ paddingLeft: '2rem', paddingRight: '2rem' }}>
+        {/* Hero секция */}
+        <DocHero doc={doc} isDark={isDark} readTime={readTime} />
+
+        {/* Контент */}
+        <article
+          className="flex-1 pb-12 w-full"
+          style={{ paddingLeft: '2rem', paddingRight: '2rem', paddingTop: '2rem' }}
+        >
           <div className="w-full">
-            <div className="mb-8">
-              {doc.typename && doc.typename.trim() !== '' && (
-                <div className="flex items-center gap-3 mb-4">
-                  <span className={`text-sm font-semibold ${getTextColorClass()}`}>
-                    {doc.typename}
-                  </span>
-                </div>
-              )}
-
-              <h1
-                className={`text-4xl md:text-5xl font-bold mb-4 ${isDark ? 'text-white' : 'text-black'}`}
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
-              >
-                {doc.title}
-              </h1>
-
-              <p className={`text-lg ${getTextColorClass()}`}>{doc.description}</p>
-
-              <div className={`flex items-center gap-4 mt-6 pt-4 border-t flex-wrap ${isDark ? 'border-white/10' : 'border-black/10'}`}>
-                {getAuthorDisplay()}
-                {doc.date && (
-                  <span className={`text-sm ${getTextColorClass('60')}`}>
-                    {new Date(doc.date).toLocaleDateString('ru-RU', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                  </span>
-                )}
-              </div>
-            </div>
-
             <TableContext.Provider value={tableContextValue}>
               <div
                 data-article-content
