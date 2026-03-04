@@ -4,7 +4,6 @@ import { fileURLToPath } from 'node:url';
 import {
   scanDocsDirectoryRecursive,
   buildDocFromPath,
-  generateSlugFromPath,
 } from './docUtils.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -32,7 +31,7 @@ function generateDocs() {
   for (const mdPath of allMdFiles) {
     const doc = buildDocFromPath(mdPath, docsDir);
     // manifest — только метаданные, без content
-    const { content: _content, ...meta } = doc;
+    const { content: _content, keywords: _kw, robots: _rb, ...meta } = doc;
     manifest.push(meta);
   }
 
