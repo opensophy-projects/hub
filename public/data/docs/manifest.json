@@ -12,7 +12,9 @@
       "hub",
       "opensophy"
     ],
-    "lang": "ru"
+    "lang": "ru",
+    "keywords": "Opensophy, Hub, документация, знания, AI, security",
+    "robots": "index, follow"
   },
   {
     "id": "docs-hub/markdown-guide",
@@ -30,7 +32,9 @@
       "документация",
       "UI компоненты"
     ],
-    "lang": "ru"
+    "lang": "ru",
+    "keywords": "Markdown руководство, форматирование текста, синтаксис Markdown, документация Hub, примеры форматирования",
+    "robots": "index, follow"
   },
   {
     "id": "master-table-of-network-models-and-protocols",
@@ -48,6 +52,8 @@
       "модели",
       "технологии"
     ],
-    "lang": "ru"
+    "lang": "ru",
+    "keywords": "сетевые модели, OSI, TCP/IP, протоколы, сетевые технологии, networking",
+    "robots": "index, follow"
   }
 ]
