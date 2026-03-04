@@ -5,6 +5,30 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { marked } from 'marked';
 
+function scanDocsDirectoryRecursive(baseDir) {
+  const results = [];
+  
+  function scan(currentDir) {
+    if (!fs.existsSync(currentDir)) return;
+    
+    const items = fs.readdirSync(currentDir);
+    
+    for (const item of items) {
+      const fullPath = path.join(currentDir, item);
+      const stat = fs.statSync(fullPath);
+      
+      if (stat.isDirectory()) {
+        scan(fullPath);
+      } else if (item.endsWith('.md') && item !== 'README.md') {
+        results.push(fullPath);
+      }
+    }
+  }
+  
+  scan(baseDir);
+  return results;
+}
+
 function slugify(str) {
   return str
     .toLowerCase()
@@ -111,30 +135,6 @@ function generateSlugFromPath(fullPath, docsDir) {
 
   const filePart = slugify(fileName);
   return [...slugParts, filePart].join('/');
-}
-
-function scanDocsDirectoryRecursive(baseDir) {
-  const results = [];
-  
-  function scan(currentDir) {
-    if (!fs.existsSync(currentDir)) return;
-    
-    const items = fs.readdirSync(currentDir);
-    
-    for (const item of items) {
-      const fullPath = path.join(currentDir, item);
-      const stat = fs.statSync(fullPath);
-      
-      if (stat.isDirectory()) {
-        scan(fullPath);
-      } else if (item.endsWith('.md') && item !== 'README.md') {
-        results.push(fullPath);
-      }
-    }
-  }
-  
-  scan(baseDir);
-  return results;
 }
 
 export async function getStaticPaths() {
