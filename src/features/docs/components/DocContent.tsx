@@ -171,7 +171,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
             <nav className="space-y-0.5">
               {toc.map((item, index) => {
                 const activeIndex = toc.findIndex((t) => t.id === activeId);
-                const distance = index - activeIndex; // negative = above/read, positive = below/unread
+                const distance = index - activeIndex;
                 const isActive = distance === 0 && activeId !== '';
                 const absDist = Math.abs(distance);
                 const accentColor = isDark ? '#ffffff' : '#000000';
@@ -180,15 +180,13 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
                 let glowOpacity: number;
 
                 if (activeId === '') {
-                  opacity = 0.4;
+                  opacity = 0.6;
                   glowOpacity = 0;
                 } else if (isActive) {
                   opacity = 1;
                   glowOpacity = 1;
                 } else {
-                  // Symmetric fade in both directions from active
-                  opacity = Math.max(0.1, 0.7 - absDist * 0.2);
-                  // Glow in both directions, fading by distance
+                  opacity = Math.max(0.35, 0.8 - absDist * 0.2);
                   glowOpacity = Math.max(0, 0.55 - absDist * 0.18);
                 }
 
