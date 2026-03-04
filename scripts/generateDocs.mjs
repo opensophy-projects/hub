@@ -75,10 +75,6 @@ function getFirstParagraph(content) {
   return '';
 }
 
-/**
- * Обрезает дефисы с начала и конца строки без regex,
- * чтобы избежать S5852 (ReDoS hotspot).
- */
 function trimDashes(str) {
   let start = 0;
   let end = str.length;
@@ -87,42 +83,48 @@ function trimDashes(str) {
   return str.slice(start, end);
 }
 
-function generateSlug(fileName, canonical) {
-  if (canonical && canonical !== 'null') {
-    return canonical.replace(/^\/+/, '');
-  }
-
-  const cleaned = fileName
-    .replace('.md', '')
+function slugify(str) {
+  return str
     .toLowerCase()
     .replaceAll(/[^\w\s-]/g, '')
     .replaceAll(/\s+/g, '-')
     .replaceAll(/-+/g, '-');
+}
 
-  return trimDashes(cleaned);
+function generateSlugFromPath(fullPath, relativeToDocsDir) {
+  // Получаем путь относительно папки Docs
+  const relativePath = path.relative(docsDir, fullPath);
+  const dir = path.dirname(relativePath);
+  const fileName = path.basename(fullPath, '.md');
+
+  // Если файл находится в Docs/ напрямую (dir === '.')
+  if (dir === '.' || dir === '') {
+    return slugify(fileName);
+  }
+
+  // Если файл в подпапке, slug = папка/файл
+  const folderPart = slugify(dir);
+  const filePart = slugify(fileName);
+  return `${folderPart}/${filePart}`;
 }
 
 // ─── Scanner ──────────────────────────────────────────────────────────────────
 
-/**
- * Возвращает { meta, content } раздельно,
- * чтобы не создавать неиспользуемых переменных при деструктуризации.
- */
-function buildDoc(fullPath) {
+function buildDoc(fullPath, typeName) {
   const raw = fs.readFileSync(fullPath, 'utf-8');
   const { metadata, content: cleanContent } = extractFrontMatter(raw);
 
   const processedContent = processImageSyntax(cleanContent);
   const htmlContent      = marked(preprocessAlerts(processedContent));
   const fileName         = path.basename(fullPath, '.md');
-  const slug             = generateSlug(fileName, metadata.canonical);
+  const slug             = generateSlugFromPath(fullPath);
 
   const meta = {
     id:          slug,
     title:       metadata.title       || fileName,
     slug,
     description: metadata.description || getFirstParagraph(processedContent),
-    type:        metadata.type        || '',
+    type:        typeName             || '',
     typename:    metadata.typename    || '',
     author:      metadata.author      || '',
     date:        metadata.date        || new Date().toISOString().split('T')[0],
@@ -139,7 +141,7 @@ function buildDoc(fullPath) {
 function scanDocs(dir) {
   const manifest = [];
 
-  function scan(currentPath) {
+  function scan(currentPath, basePath = dir) {
     if (!fs.existsSync(currentPath)) {
       console.warn(`Directory not found: ${currentPath}`);
       return;
@@ -147,9 +149,10 @@ function scanDocs(dir) {
 
     for (const item of fs.readdirSync(currentPath)) {
       const fullPath = path.join(currentPath, item);
+      const stat = fs.statSync(fullPath);
 
-      if (fs.statSync(fullPath).isDirectory()) {
-        scan(fullPath);
+      if (stat.isDirectory()) {
+        scan(fullPath, basePath);
         continue;
       }
 
