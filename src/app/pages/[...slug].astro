@@ -3,184 +3,28 @@ import Layout from '@/app/layouts/Layout.astro';
 import DocContent from '@/features/docs/components/DocContent';
 import fs from 'node:fs';
 import path from 'node:path';
-import { marked } from 'marked';
-
-// ─── All helper functions defined FIRST ───────────────────────────────────────
-
-function scanDocsDirectoryRecursive(baseDir) {
-  const results = [];
-  
-  function scan(currentDir) {
-    if (!fs.existsSync(currentDir)) return;
-    
-    const items = fs.readdirSync(currentDir);
-    
-    for (const item of items) {
-      const fullPath = path.join(currentDir, item);
-      const stat = fs.statSync(fullPath);
-      
-      if (stat.isDirectory()) {
-        scan(fullPath);
-      } else if (item.endsWith('.md') && item !== 'README.md') {
-        results.push(fullPath);
-      }
-    }
-  }
-  
-  scan(baseDir);
-  return results;
-}
-
-function slugify(str) {
-  return str
-    .toLowerCase()
-    .replaceAll(/[^\w\s-]/g, '')
-    .replaceAll(/\s+/g, '-')
-    .replaceAll(/-+/g, '-');
-}
-
-function parseCategoryName(folderName) {
-  const match = folderName.match(/^(.+?)\{([^}]+)\}$/);
-  if (match) {
-    return { title: match[1].trim(), slug: match[2].trim() };
-  }
-  return { title: folderName, slug: slugify(folderName) };
-}
-
-function extractFrontMatter(content) {
-  const frontMatterRegex = /^---\n([\s\S]*?)\n---\n/;
-  const match = content.match(frontMatterRegex);
-
-  if (!match) return { metadata: {}, content };
-
-  const metadata = {};
-  for (const line of match[1].split('\n')) {
-    const [key, ...valueParts] = line.split(':');
-    if (key && valueParts.length > 0) {
-      metadata[key.trim()] = valueParts.join(':').trim().replace(/^['"]/, '').replace(/['"]$/, '');
-    }
-  }
-
-  return { metadata, content: content.replace(frontMatterRegex, '') };
-}
-
-function preprocessAlerts(content) {
-  const codeBlocks = [];
-  const codeBlockPattern = /```[\s\S]*?```/g;
-  const alertPattern = /^:::(note|tip|important|warning|caution)\n([\s\S]*?)^:::$/gm;
-
-  const protected1 = content.replaceAll(codeBlockPattern, (match) => {
-    codeBlocks.push(match);
-    return `___CODE_BLOCK_${codeBlocks.length - 1}___`;
-  });
-
-  const protected2 = protected1.replaceAll(alertPattern, (_match, type, alertContent) => {
-    const parsedContent = marked.parse(alertContent.trim());
-    return `<div class="custom-alert" data-alert-type="${type}">\n${parsedContent}\n</div>`;
-  });
-
-  return protected2.replaceAll(/___CODE_BLOCK_(\d+)___/g, (_match, index) =>
-    codeBlocks[Number.parseInt(index, 10)]
-  );
-}
-
-function getCategoryInfo(fullPath) {
-  const docsDir = path.join(process.cwd(), 'Docs');
-  const relativePath = path.relative(docsDir, fullPath);
-  const dir = path.dirname(relativePath);
-
-  if (dir === '.' || dir === '') {
-    return { typename: '' };
-  }
-
-  const parts = dir.split(path.sep);
-  const lastPart = parts[parts.length - 1];
-  const { title } = parseCategoryName(lastPart);
-
-  return { typename: title };
-}
-
-function getFirstParagraph(content) {
-  for (const line of content.split('\n')) {
-    const trimmed = line.trim();
-    if (
-      trimmed &&
-      !trimmed.startsWith('#') &&
-      !trimmed.startsWith('*') &&
-      !trimmed.startsWith('!') &&
-      !trimmed.startsWith(':')
-    ) {
-      return trimmed.substring(0, 160);
-    }
-  }
-  return '';
-}
-
-function generateSlugFromPath(fullPath, docsDir) {
-  const relativePath = path.relative(docsDir, fullPath);
-  const dir = path.dirname(relativePath);
-  const fileName = path.basename(fullPath, '.md');
-
-  if (dir === '.' && fileName === 'welcome') {
-    return null;
-  }
-
-  if (dir === '.' || dir === '') {
-    return slugify(fileName);
-  }
-
-  const parts = dir.split(path.sep);
-  const slugParts = parts.map((part) => {
-    const { slug } = parseCategoryName(part);
-    return slug;
-  });
-
-  const filePart = slugify(fileName);
-  return [...slugParts, filePart].join('/');
-}
-
-// ─── getStaticPaths ───────────────────────────────────────────────────────────
+import { scanDocsDirectoryRecursive, generateSlugFromPath, buildDocFromPath } from '../../../scripts/docUtils.mjs';
 
 export async function getStaticPaths() {
   const docsDir = path.join(process.cwd(), 'Docs');
-  
+
   if (!fs.existsSync(docsDir)) {
     console.warn('Docs directory not found');
     return [];
   }
-  
+
   const allMdFiles = scanDocsDirectoryRecursive(docsDir);
-  
+
   return allMdFiles
     .map((mdPath) => {
       const slug = generateSlugFromPath(mdPath, docsDir);
-      
       if (!slug) return null;
 
-      const rawContent = fs.readFileSync(mdPath, 'utf-8');
-      const { metadata, content: cleanContent } = extractFrontMatter(rawContent);
-
-      const htmlContent = marked(preprocessAlerts(cleanContent));
-      const { typename } = getCategoryInfo(mdPath);
-
-      const fullDoc = {
-        id: slug,
-        title: metadata.title || path.basename(mdPath, '.md'),
-        slug: slug,
-        description: metadata.description || getFirstParagraph(cleanContent),
-        content: htmlContent,
-        typename: metadata.typename || typename,
-        author: metadata.author || '',
-        date: metadata.date || new Date().toISOString().split('T')[0],
-        tags: metadata.tags ? metadata.tags.split(',').map((t) => t.trim()) : [],
-        lang: metadata.lang || 'ru',
-        keywords: metadata.keywords || '',
-        robots: metadata.robots || 'index, follow',
-      };
+      const doc = buildDocFromPath(mdPath, docsDir);
 
       return {
-        params: { slug: slug },
-        props: { doc: fullDoc },
+        params: { slug },
+        props: { doc },
       };
     })
     .filter(Boolean);
@@ -197,7 +41,6 @@ if (!doc || !slug) {
 <Layout
   title={doc.title}
   description={doc.description}
-  image={doc.image}
   url={`/${slug}`}
   type="article"
   author={doc.author}
