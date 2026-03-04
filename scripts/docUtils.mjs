@@ -4,9 +4,44 @@ import { marked } from 'marked';
 
 marked.setOptions({ breaks: true, gfm: true });
 
+// ─── Nav-popover folder parser ─────────────────────────────────────────────────
+// Синтаксис: [book]Документация{docs}
+// → { navIcon: 'book', navTitle: 'Документация', navSlug: 'docs' }
+
+export function parseNavPopoverFolder(folderName) {
+  const match = folderName.match(/^\[([^\]]+)\](.+?)\{([^}]+)\}$/);
+  if (match) {
+    return {
+      navIcon: match[1].trim(),
+      navTitle: match[2].trim(),
+      navSlug: match[3].trim(),
+    };
+  }
+  return null;
+}
+
+// ─── Category folder parser ────────────────────────────────────────────────────
+// Синтаксис: НазваниеКатегории{slug} или просто НазваниеКатегории
+export function parseCategoryName(folderName) {
+  const nav = parseNavPopoverFolder(folderName);
+  if (nav) return { title: nav.navTitle, slug: nav.navSlug };
+  const match = folderName.match(/^(.+?)\{([^}]+)\}$/);
+  if (match) return { title: match[1].trim(), slug: match[2].trim() };
+  return { title: folderName, slug: slugify(folderName) };
+}
+
+// ─── Core utils ────────────────────────────────────────────────────────────────
+
+export function slugify(str) {
+  return str
+    .toLowerCase()
+    .replaceAll(/[^\w\s-]/g, '')
+    .replaceAll(/\s+/g, '-')
+    .replaceAll(/-+/g, '-');
+}
+
 export function scanDocsDirectoryRecursive(baseDir) {
   const results = [];
-
   function scan(currentDir) {
     if (!fs.existsSync(currentDir)) return;
     for (const item of fs.readdirSync(currentDir)) {
@@ -18,30 +53,14 @@ export function scanDocsDirectoryRecursive(baseDir) {
       }
     }
   }
-
   scan(baseDir);
   return results;
-}
-
-export function slugify(str) {
-  return str
-    .toLowerCase()
-    .replaceAll(/[^\w\s-]/g, '')
-    .replaceAll(/\s+/g, '-')
-    .replaceAll(/-+/g, '-');
-}
-
-export function parseCategoryName(folderName) {
-  const match = folderName.match(/^(.+?)\{([^}]+)\}$/);
-  if (match) return { title: match[1].trim(), slug: match[2].trim() };
-  return { title: folderName, slug: slugify(folderName) };
 }
 
 export function extractFrontMatter(content) {
   const frontMatterRegex = /^---\n([\s\S]*?)\n---\n/;
   const match = content.match(frontMatterRegex);
   if (!match) return { metadata: {}, content };
-
   const metadata = {};
   for (const line of match[1].split('\n')) {
     const [key, ...valueParts] = line.split(':');
@@ -73,7 +92,10 @@ export function preprocessAlerts(content) {
 }
 
 export function processImageSyntax(content) {
-  return content.replaceAll(/\[([^\]]{1,500}\.(?:png|jpg|jpeg|gif|webp|svg))\]/gi, '![](/assets/$1)');
+  return content.replaceAll(
+    /\[([^\]]{1,500}\.(?:png|jpg|jpeg|gif|webp|svg))\]/gi,
+    '![](/assets/$1)'
+  );
 }
 
 export function getFirstParagraph(content) {
@@ -86,26 +108,62 @@ export function getFirstParagraph(content) {
   return '';
 }
 
-export function getCategoryInfo(fullPath, docsDir) {
+/**
+ * Генерирует slug и nav-popover информацию для файла.
+ *
+ * Примеры:
+ *   Docs/welcome.md                              → slug: '', navSlug: ''
+ *   Docs/master-table.md                         → slug: 'master-table', navSlug: ''
+ *   Docs/[book]Документация{docs}/guide.md       → slug: 'docs/guide', navSlug: 'docs'
+ *   Docs/[book]Документация{docs}/design/d1.md   → slug: 'docs/design/d1', navSlug: 'docs'
+ */
+export function getDocInfo(fullPath, docsDir) {
   const relativePath = path.relative(docsDir, fullPath);
-  const dir = path.dirname(relativePath);
-  if (dir === '.' || dir === '') return { typename: '' };
-  const parts = dir.split(path.sep);
-  const { title } = parseCategoryName(parts[parts.length - 1]);
-  return { typename: title };
-}
-
-export function generateSlugFromPath(fullPath, docsDir) {
-  const relativePath = path.relative(docsDir, fullPath);
-  const dir = path.dirname(relativePath);
+  const parts = relativePath.split(path.sep);
   const fileName = path.basename(fullPath, '.md');
+  const dirs = parts.slice(0, -1); // без имени файла
 
-  if (dir === '.' && fileName === 'welcome') return null;
-  if (dir === '.' || dir === '') return slugify(fileName);
+  // Корневой файл
+  if (dirs.length === 0) {
+    const isWelcome = fileName === 'welcome';
+    return {
+      slug: isWelcome ? '' : slugify(fileName),
+      navSlug: '',
+      navTitle: '',
+      navIcon: '',
+      typename: '',
+    };
+  }
 
-  const parts = dir.split(path.sep);
-  const slugParts = parts.map((part) => parseCategoryName(part).slug);
-  return [...slugParts, slugify(fileName)].join('/');
+  const firstDir = dirs[0];
+  const navDef = parseNavPopoverFolder(firstDir);
+
+  if (navDef) {
+    // Файл внутри nav-popover папки
+    const subDirs = dirs.slice(1); // категории внутри навпоповера
+    const slugParts = [navDef.navSlug, ...subDirs.map((d) => parseCategoryName(d).slug), slugify(fileName)];
+    const typename = subDirs.length > 0 ? parseCategoryName(subDirs[subDirs.length - 1]).title : '';
+
+    return {
+      slug: slugParts.join('/'),
+      navSlug: navDef.navSlug,
+      navTitle: navDef.navTitle,
+      navIcon: navDef.navIcon,
+      typename,
+    };
+  }
+
+  // Обычная папка (без nav-popover)
+  const slugParts = [...dirs.map((d) => parseCategoryName(d).slug), slugify(fileName)];
+  const typename = parseCategoryName(dirs[dirs.length - 1]).title;
+
+  return {
+    slug: slugParts.join('/'),
+    navSlug: '',
+    navTitle: '',
+    navIcon: '',
+    typename,
+  };
 }
 
 export function buildDocFromPath(mdPath, docsDir) {
@@ -113,17 +171,19 @@ export function buildDocFromPath(mdPath, docsDir) {
   const { metadata, content: cleanContent } = extractFrontMatter(rawContent);
   const processed = processImageSyntax(cleanContent);
   const htmlContent = marked(preprocessAlerts(processed));
-  const slug = generateSlugFromPath(mdPath, docsDir);
-  const { typename } = getCategoryInfo(mdPath, docsDir);
+  const info = getDocInfo(mdPath, docsDir);
   const fileName = path.basename(mdPath, '.md');
 
   return {
-    id: slug || 'welcome',
+    id: info.slug || 'welcome',
     title: metadata.title || fileName,
-    slug: slug || '',
+    slug: info.slug,
     description: metadata.description || getFirstParagraph(processed),
     content: htmlContent,
-    typename: metadata.typename || typename,
+    typename: metadata.typename || info.typename,
+    navSlug: info.navSlug,
+    navTitle: info.navTitle,
+    navIcon: info.navIcon,
     author: metadata.author || '',
     date: metadata.date || new Date().toISOString().split('T')[0],
     tags: metadata.tags ? metadata.tags.split(',').map((t) => t.trim()) : [],
