@@ -27,12 +27,8 @@ export async function getStaticPaths() {
     
     const fullDoc = JSON.parse(fs.readFileSync(docPath, 'utf-8'));
     
-    let slugValue: string;
-    if (doc.type && doc.type.trim() !== '') {
-      slugValue = `${doc.type}/${doc.slug}`;
-    } else {
-      slugValue = doc.slug;
-    }
+    // slug теперь уже содержит полный путь: папка/файл или просто файл
+    const slugValue = doc.slug;
     
     return {
       params: { slug: slugValue },
