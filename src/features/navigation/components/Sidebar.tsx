@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useTheme } from '@/shared/contexts/ThemeContext';
 import { useDocuments } from '@/features/docs/hooks/useDocuments';
-import { Search, Sun, Moon, ChevronDown, ChevronRight, Mail, X } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
+import { Search, Sun, Moon, ChevronDown, ChevronRight, Mail, X, type LucideProps } from 'lucide-react';
+import * as icons from 'lucide-react';
 
 interface Doc {
   id: string;
@@ -27,9 +27,18 @@ interface NavNode {
 
 // ─── Dynamic lucide icon resolver ─────────────────────────────────────────────
 
+// Нормализует "book" -> "Book", "book-open" -> "BookOpen"
+function toIconName(raw: string): string {
+  return raw
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('');
+}
+
 const DocIcon: React.FC<{ name: string; isDark: boolean }> = ({ name, isDark }) => {
   if (!name) return null;
-  const Icon = (LucideIcons as Record<string, any>)[name];
+  const iconName = toIconName(name);
+  const Icon = (icons as unknown as Record<string, React.FC<LucideProps>>)[iconName];
   if (!Icon) return null;
   return (
     <Icon
