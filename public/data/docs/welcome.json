@@ -3,7 +3,6 @@
   "title": "Добро пожаловать в Hub",
   "slug": "welcome",
   "description": "Hub проекта Opensophy - центр знаний",
-  "type": "",
   "typename": "",
   "author": "",
   "date": "2026-02-17",
@@ -12,9 +11,6 @@
     "hub",
     "opensophy"
   ],
-  "keywords": "Opensophy, Hub, документация, знания, AI, security",
-  "canonical": "null",
-  "robots": "index, follow",
   "lang": "ru",
   "content": "<h2>Кто мы?</h2>\n<p><strong>Opensophy</strong> — коллекция open-source решений для IT-специалистов. Проекты, инструменты, гайды и образовательные материалы о безопасности, инфраструктуре и современной разработке.</p>\n<p>В <strong>Hub</strong>е собраны документация, статьи, гайды и новости по ключевым темам, которые написаны автором Opensophy — veilosophy и соавторами. Платформа построена на открытом стеке технологий и доступна как самостоятельное open-source решение для публикации контента.</p>\n<p><a href=\"https://hub.opensophy.com/docs/markdown-guide/\">Демонстрация форматирования</a> — <a href=\"https://github.com/opensophy-projects/hub\">GitHub репозиторий</a></p>\n<p>Используйте <strong>Меню</strong> чтобы менять тему сайта и просматривать статьи, или <strong>Поиск</strong> для быстрого поиска нужного материала.</p>\n<hr>\n<h2>Наш подход</h2>\n<p>6 ключевых принципов, которыми мы руководствуемся в работе.</p>\n<table>\n<thead>\n<tr>\n<th>Принцип</th>\n<th>Описание</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>🔓 <strong>Открытость</strong></td>\n<td>Фокус на open-source решениях и свободных инструментах</td>\n</tr>\n<tr>\n<td>⚡ <strong>Практичность</strong></td>\n<td>Гайды и ресурсы, которые можно применить сразу</td>\n</tr>\n<tr>\n<td>🛡️ <strong>Безопасность</strong></td>\n<td>Best practices и фокус на защиту данных</td>\n</tr>\n<tr>\n<td>🔄 <strong>Актуальность</strong></td>\n<td>Современные инструменты и свежая информация</td>\n</tr>\n<tr>\n<td>📦 <strong>Готовые решения</strong></td>\n<td>Подборки компонентов и шаблонов для быстрого старта</td>\n</tr>\n<tr>\n<td>📚 <strong>Образовательный контент</strong></td>\n<td>Статьи, гайды и практические примеры</td>\n</tr>\n</tbody></table>\n<hr>\n<h2>Создай свой Hub!</h2>\n<p>Вы можете создать такой же Hub! Проект полностью open-source — берите, адаптируйте, публикуйте свой контент.</p>\n<p>Перед использованием ознакомьтесь с README и лицензией: <a href=\"https://github.com/opensophy-projects/hub\">github.com/opensophy-projects/hub</a></p>\n"
 }
