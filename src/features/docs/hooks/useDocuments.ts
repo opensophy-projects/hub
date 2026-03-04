@@ -5,10 +5,9 @@ interface DocMetadata {
   title: string;
   slug: string;
   description: string;
-  type: string;
+  type?: string;
+  typename?: string;
   category?: string;
-  bannercolor?: string;
-  bannertext?: string;
   author?: string;
   date?: string;
   tags?: string[];
@@ -16,6 +15,7 @@ interface DocMetadata {
   canonical?: string;
   robots?: string;
   lang?: string;
+  icon?: string;
 }
 
 interface DocWithContent extends DocMetadata {
@@ -30,9 +30,7 @@ export function useDocuments() {
   useEffect(() => {
     fetch('/data/docs/manifest.json')
       .then(res => {
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         return res.json();
       })
       .then(data => {
@@ -49,9 +47,7 @@ export function useDocuments() {
   const loadDocument = useCallback(async (slug: string): Promise<DocWithContent | null> => {
     try {
       const response = await fetch(`/data/docs/${slug}.json`);
-      if (!response.ok) {
-        throw new Error(`Document not found: ${slug}`);
-      }
+      if (!response.ok) throw new Error(`Document not found: ${slug}`);
       return await response.json();
     } catch (err) {
       console.error(`Failed to load document ${slug}:`, err);
@@ -59,10 +55,5 @@ export function useDocuments() {
     }
   }, []);
 
-  return {
-    manifest,
-    loading,
-    error,
-    loadDocument,
-  };
+  return { manifest, loading, error, loadDocument };
 }
