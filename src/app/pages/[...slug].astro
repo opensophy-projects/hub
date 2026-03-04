@@ -5,6 +5,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { marked } from 'marked';
 
+// ─── All helper functions defined FIRST ───────────────────────────────────────
+
 function scanDocsDirectoryRecursive(baseDir) {
   const results = [];
   
@@ -136,6 +138,8 @@ function generateSlugFromPath(fullPath, docsDir) {
   const filePart = slugify(fileName);
   return [...slugParts, filePart].join('/');
 }
+
+// ─── getStaticPaths ───────────────────────────────────────────────────────────
 
 export async function getStaticPaths() {
   const docsDir = path.join(process.cwd(), 'Docs');
