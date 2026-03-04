@@ -1,61 +1,48 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, lazy, Suspense, memo } from 'react';
 import { useTheme } from '@/shared/contexts/ThemeContext';
 import { useDocuments } from '@/features/docs/hooks/useDocuments';
 import {
   Search, Sun, Moon, ChevronDown, ChevronRight,
-  Mail, X, Home, type LucideProps,
+  Mail, X, Home,
 } from 'lucide-react';
-import * as icons from 'lucide-react';
+
+// ─── Типы ─────────────────────────────────────────────────────────────────────
 
 interface Doc {
-  id: string;
-  slug: string;
-  title: string;
-  description: string;
-  type: string;
-  typename: string;
-  icon?: string;
-  author?: string;
-  date?: string;
-  tags?: string[];
-  navSlug?: string;
-  navTitle?: string;
-  navIcon?: string;
+  id: string; slug: string; title: string; description: string;
+  type: string; typename: string; icon?: string; author?: string;
+  date?: string; tags?: string[]; navSlug?: string; navTitle?: string; navIcon?: string;
 }
+interface NavNode { title: string; slug: string; docs: Doc[]; children: Record<string, NavNode>; isCategory: boolean; }
+interface NavSection { navSlug: string; navTitle: string; navIcon: string; }
 
-interface NavNode {
-  title: string;
-  slug: string;
-  docs: Doc[];
-  children: Record<string, NavNode>;
-  isCategory: boolean;
-}
+// ─── Динамическая загрузка иконки по имени ────────────────────────────────────
+// Вместо import * as icons (весь lucide = ~800 кб) — lazy import только нужной
 
-interface NavSection {
-  navSlug: string;
-  navTitle: string;
-  navIcon: string;
-}
+const iconCache = new Map<string, React.FC<{ size?: number; className?: string }>>();
 
-function toIconName(raw: string): string {
-  return raw
-    .split('-')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join('');
-}
+const LucideIcon: React.FC<{ name: string; size?: number; className?: string }> = memo(({ name, size = 16, className }) => {
+  const [Icon, setIcon] = useState<React.FC<{ size?: number; className?: string }> | null>(
+    () => iconCache.get(name) ?? null
+  );
 
-const LucideIcon: React.FC<{ name: string; size?: number; className?: string }> = ({
-  name, size = 16, className,
-}) => {
-  if (!name) return null;
-  const Icon = (icons as unknown as Record<string, React.FC<LucideProps>>)[toIconName(name)];
-  if (!Icon) return null;
+  useEffect(() => {
+    if (!name || iconCache.has(name)) return;
+    const pascal = name.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('');
+    import('lucide-react').then((mod) => {
+      const ic = (mod as Record<string, unknown>)[pascal] as React.FC<{ size?: number; className?: string }> | undefined;
+      if (ic) {
+        iconCache.set(name, ic);
+        setIcon(() => ic);
+      }
+    });
+  }, [name]);
+
+  if (!Icon) return <span style={{ width: size, height: size, display: 'inline-block' }} />;
   return <Icon size={size} className={className} />;
-};
+});
 
-const createCloseKeyHandler = (onClose: () => void) => (e: React.KeyboardEvent) => {
-  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); }
-};
+// ─── Хелперы стилей ───────────────────────────────────────────────────────────
 
 const iconBtn = (isDark: boolean) =>
   `p-2 rounded-lg transition-colors ${isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black'}`;
@@ -64,12 +51,16 @@ const borderStyle = (isDark: boolean) => ({
   borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
 });
 
+const createCloseKeyHandler = (onClose: () => void) => (e: React.KeyboardEvent) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); }
+};
+
+// ─── NavPopoverSwitcher ───────────────────────────────────────────────────────
+
 const NavPopoverSwitcher: React.FC<{
-  sections: NavSection[];
-  activeSlug: string;
-  onSelect: (slug: string) => void;
-  isDark: boolean;
-}> = ({ sections, activeSlug, onSelect, isDark }) => {
+  sections: NavSection[]; activeSlug: string;
+  onSelect: (slug: string) => void; isDark: boolean;
+}> = memo(({ sections, activeSlug, onSelect, isDark }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -83,7 +74,6 @@ const NavPopoverSwitcher: React.FC<{
   }, [open]);
 
   const active = sections.find((s) => s.navSlug === activeSlug) ?? sections[0];
-
   const bg = isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]';
   const border = isDark ? 'border-white/10' : 'border-black/10';
   const hoverItem = isDark ? 'hover:bg-white/5 text-white/80' : 'hover:bg-black/5 text-black/80';
@@ -99,11 +89,10 @@ const NavPopoverSwitcher: React.FC<{
         style={borderStyle(isDark)}
       >
         <div className="flex items-center gap-2 min-w-0">
-          {active.navSlug === '' ? (
-            <Home size={15} className={isDark ? 'text-white/50' : 'text-black/50'} />
-          ) : (
-            <LucideIcon name={active.navIcon} size={15} className={isDark ? 'text-white/50' : 'text-black/50'} />
-          )}
+          {active.navSlug === ''
+            ? <Home size={15} className={isDark ? 'text-white/50' : 'text-black/50'} />
+            : <LucideIcon name={active.navIcon} size={15} className={isDark ? 'text-white/50' : 'text-black/50'} />
+          }
           <span className="truncate">{active.navTitle}</span>
         </div>
         <ChevronDown
@@ -125,11 +114,10 @@ const NavPopoverSwitcher: React.FC<{
                 section.navSlug === activeSlug ? activeItem : hoverItem
               }`}
             >
-              {section.navSlug === '' ? (
-                <Home size={15} className={isDark ? 'text-white/50' : 'text-black/50'} />
-              ) : (
-                <LucideIcon name={section.navIcon} size={15} className={isDark ? 'text-white/50' : 'text-black/50'} />
-              )}
+              {section.navSlug === ''
+                ? <Home size={15} className={isDark ? 'text-white/50' : 'text-black/50'} />
+                : <LucideIcon name={section.navIcon} size={15} className={isDark ? 'text-white/50' : 'text-black/50'} />
+              }
               <span>{section.navTitle}</span>
             </button>
           ))}
@@ -137,7 +125,9 @@ const NavPopoverSwitcher: React.FC<{
       )}
     </div>
   );
-};
+});
+
+// ─── SidebarOverlay ───────────────────────────────────────────────────────────
 
 const SidebarOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   useEffect(() => {
@@ -157,13 +147,12 @@ const SidebarOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   );
 };
 
+// ─── SidebarHeader ────────────────────────────────────────────────────────────
+
 const SidebarHeader: React.FC<{
-  onClose: () => void;
-  isDark: boolean;
-  onToggleTheme: () => void;
-  onToggleContacts: () => void;
-  isDesktop: boolean;
-}> = ({ onClose, isDark, onToggleTheme, onToggleContacts, isDesktop }) => (
+  onClose: () => void; isDark: boolean;
+  onToggleTheme: () => void; onToggleContacts: () => void; isDesktop: boolean;
+}> = memo(({ onClose, isDark, onToggleTheme, onToggleContacts, isDesktop }) => (
   <div
     className="flex-shrink-0 p-4 border-b flex items-center justify-between sticky top-0 z-20"
     style={{
@@ -172,9 +161,7 @@ const SidebarHeader: React.FC<{
       backdropFilter: 'blur(10px)',
     }}
   >
-    <a href="/" className="block">
-      <h1 className="text-xl font-bold font-veilstack" style={{ color: '#7234ff' }}>hub</h1>
-    </a>
+    <a href="/"><h1 className="text-xl font-bold font-veilstack" style={{ color: '#7234ff' }}>hub</h1></a>
     <div className="flex items-center gap-1">
       <button onClick={onToggleTheme} className={iconBtn(isDark)} title={isDark ? 'Светлая тема' : 'Тёмная тема'}>
         {isDark ? <Sun size={18} /> : <Moon size={18} />}
@@ -189,13 +176,13 @@ const SidebarHeader: React.FC<{
       )}
     </div>
   </div>
-);
+));
+
+// ─── SidebarSearch ────────────────────────────────────────────────────────────
 
 const SidebarSearch: React.FC<{
-  value: string;
-  onChange: (value: string) => void;
-  isDark: boolean;
-}> = ({ value, onChange, isDark }) => (
+  value: string; onChange: (value: string) => void; isDark: boolean;
+}> = memo(({ value, onChange, isDark }) => (
   <div className="flex-shrink-0 p-3 border-b" style={borderStyle(isDark)}>
     <div className="relative">
       <Search size={16} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-white/40' : 'text-black/40'}`} />
@@ -206,15 +193,17 @@ const SidebarSearch: React.FC<{
         onChange={(e) => onChange(e.target.value)}
         className={`w-full pl-9 pr-3 py-2 rounded-lg text-sm border transition-colors outline-none ${
           isDark
-            ? 'bg-[#0a0a0a] border-white/10 text-white placeholder-white/40 focus:bg-[#0a0a0a] focus:border-white/20'
+            ? 'bg-[#0a0a0a] border-white/10 text-white placeholder-white/40 focus:border-white/20'
             : 'bg-[#E8E7E3] border-black/10 text-black placeholder-black/40 focus:border-black/20'
         }`}
       />
     </div>
   </div>
-);
+));
 
-const DocLink: React.FC<{ doc: Doc; onClose: () => void; isDark: boolean }> = ({ doc, onClose, isDark }) => (
+// ─── DocLink ──────────────────────────────────────────────────────────────────
+
+const DocLink: React.FC<{ doc: Doc; onClose: () => void; isDark: boolean }> = memo(({ doc, onClose, isDark }) => (
   <a
     href={`/${doc.slug}`}
     onClick={onClose}
@@ -225,16 +214,20 @@ const DocLink: React.FC<{ doc: Doc; onClose: () => void; isDark: boolean }> = ({
     {doc.icon && <LucideIcon name={doc.icon} size={20} className={isDark ? 'text-white/60' : 'text-black/60'} />}
     <span>{doc.title}</span>
   </a>
-);
+));
+
+// ─── CategoryNode ─────────────────────────────────────────────────────────────
+
+function countDocsInNode(node: NavNode): number {
+  let count = node.docs.length;
+  Object.values(node.children).forEach((child) => { count += countDocsInNode(child); });
+  return count;
+}
 
 const CategoryNode: React.FC<{
-  node: NavNode;
-  path: string;
-  expandedPaths: Set<string>;
-  onToggle: (path: string) => void;
-  onDocClick: () => void;
-  isDark: boolean;
-}> = ({ node, path, expandedPaths, onToggle, onDocClick, isDark }) => {
+  node: NavNode; path: string; expandedPaths: Set<string>;
+  onToggle: (path: string) => void; onDocClick: () => void; isDark: boolean;
+}> = memo(({ node, path, expandedPaths, onToggle, onDocClick, isDark }) => {
   const isExpanded = expandedPaths.has(path);
   const hasChildren = Object.keys(node.children).length > 0;
   const totalDocs = countDocsInNode(node);
@@ -271,26 +264,18 @@ const CategoryNode: React.FC<{
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([key, child]) => (
               <CategoryNode
-                key={key}
-                node={child}
-                path={`${path}/${key}`}
-                expandedPaths={expandedPaths}
-                onToggle={onToggle}
-                onDocClick={onDocClick}
-                isDark={isDark}
+                key={key} node={child} path={`${path}/${key}`}
+                expandedPaths={expandedPaths} onToggle={onToggle}
+                onDocClick={onDocClick} isDark={isDark}
               />
             ))}
         </div>
       )}
     </div>
   );
-};
+});
 
-function countDocsInNode(node: NavNode): number {
-  let count = node.docs.length;
-  Object.values(node.children).forEach((child) => { count += countDocsInNode(child); });
-  return count;
-}
+// ─── buildNavigationTree ──────────────────────────────────────────────────────
 
 function buildNavigationTree(docs: Doc[], searchQuery: string, activeNavSlug: string): NavNode {
   const root: NavNode = { title: 'Root', slug: '', docs: [], children: {}, isCategory: false };
@@ -304,17 +289,14 @@ function buildNavigationTree(docs: Doc[], searchQuery: string, activeNavSlug: st
 
   filtered.forEach((doc) => {
     let slugForTree = doc.slug;
-
     if (activeNavSlug !== '') {
-      const withoutNav = doc.slug.startsWith(activeNavSlug + '/')
+      slugForTree = doc.slug.startsWith(activeNavSlug + '/')
         ? doc.slug.slice(activeNavSlug.length + 1)
         : doc.slug;
-      slugForTree = withoutNav;
     }
 
     const parts = slugForTree.split('/');
     let current = root;
-
     for (let i = 0; i < parts.length - 1; i++) {
       const part = parts[i];
       if (!current.children[part]) {
@@ -323,12 +305,21 @@ function buildNavigationTree(docs: Doc[], searchQuery: string, activeNavSlug: st
       }
       current = current.children[part];
     }
-
     current.docs.push(doc);
   });
 
   return root;
 }
+
+// ─── ContactsSection ──────────────────────────────────────────────────────────
+
+const CONTACTS = [
+  { href: 'https://opensophy.com/',               title: 'Сайт',     subtitle: 'opensophy.com',        external: true  },
+  { href: 'mailto:opensophy@gmail.com',           title: 'Email',    subtitle: 'opensophy@gmail.com',   external: false },
+  { href: 'https://t.me/veilosophy',              title: 'Telegram', subtitle: '@veilosophy',           external: true  },
+  { href: 'https://github.com/opensophy-projects', title: 'GitHub',  subtitle: 'opensophy',             external: true  },
+  { href: 'https://habr.com/ru/users/opensophy/', title: 'Habr',     subtitle: 'opensophy',             external: true  },
+];
 
 const ContactLink: React.FC<{
   href: string; title: string; subtitle: string; external: boolean; isDark: boolean;
@@ -346,15 +337,7 @@ const ContactLink: React.FC<{
   </a>
 );
 
-const CONTACTS = [
-  { href: 'https://opensophy.com/', title: 'Сайт', subtitle: 'opensophy.com', external: true },
-  { href: 'mailto:opensophy@gmail.com', title: 'Email', subtitle: 'opensophy@gmail.com', external: false },
-  { href: 'https://t.me/veilosophy', title: 'Telegram', subtitle: '@veilosophy', external: true },
-  { href: 'https://github.com/opensophy-projects', title: 'GitHub', subtitle: 'opensophy', external: true },
-  { href: 'https://habr.com/ru/users/opensophy/', title: 'Habr', subtitle: 'opensophy', external: true },
-];
-
-const ContactsSection: React.FC<{ isDark: boolean; isOpen: boolean; onClose: () => void }> = ({
+const ContactsSection: React.FC<{ isDark: boolean; isOpen: boolean; onClose: () => void }> = memo(({
   isDark, isOpen, onClose,
 }) => {
   if (!isOpen) return null;
@@ -376,13 +359,15 @@ const ContactsSection: React.FC<{ isDark: boolean; isOpen: boolean; onClose: () 
         </div>
         <div className="flex-1 overflow-y-auto p-3 space-y-1">
           {CONTACTS.map((c) => (
-            <ContactLink key={c.href} href={c.href} title={c.title} subtitle={c.subtitle} external={c.external} isDark={isDark} />
+            <ContactLink key={c.href} {...c} isDark={isDark} />
           ))}
         </div>
       </div>
     </>
   );
-};
+});
+
+// ─── Sidebar (main) ───────────────────────────────────────────────────────────
 
 const Sidebar: React.FC = () => {
   const { isDark, toggleTheme, isSidebarOpen, setSidebarOpen } = useTheme();
@@ -405,37 +390,26 @@ const Sidebar: React.FC = () => {
 
   const sections = useMemo<NavSection[]>(() => {
     const map = new Map<string, NavSection>();
-
     map.set('', { navSlug: '', navTitle: 'Главная', navIcon: 'home' });
-
     for (const doc of docs as Doc[]) {
       const slug = doc.navSlug ?? '';
       if (slug && !map.has(slug)) {
-        map.set(slug, {
-          navSlug: slug,
-          navTitle: doc.navTitle ?? slug,
-          navIcon: doc.navIcon ?? '',
-        });
+        map.set(slug, { navSlug: slug, navTitle: doc.navTitle ?? slug, navIcon: doc.navIcon ?? '' });
       }
     }
-
     return Array.from(map.values());
   }, [docs]);
 
   useEffect(() => {
     if (sections.length === 0) return;
     const pathname = window.location.pathname.replace(/^\//, '');
-
     const matched = sections
       .filter(s => s.navSlug !== '')
       .find(s => pathname === s.navSlug || pathname.startsWith(s.navSlug + '/'));
-
     const detected = matched ? matched.navSlug : '';
     setActiveNavSlug(detected);
     try { localStorage.setItem('hub:activeNavSlug', detected); } catch {}
   }, [sections]);
-
-  const hasMultipleSections = sections.length > 1;
 
   const navTree = useMemo(
     () => buildNavigationTree(docs as Doc[], searchQuery, activeNavSlug),
@@ -445,7 +419,7 @@ const Sidebar: React.FC = () => {
   const togglePath = (path: string) => {
     setExpandedPaths((prev) => {
       const next = new Set(prev);
-      if (next.has(path)) { next.delete(path); } else { next.add(path); }
+      next.has(path) ? next.delete(path) : next.add(path);
       return next;
     });
   };
@@ -464,23 +438,22 @@ const Sidebar: React.FC = () => {
         style={{ height: isDesktop ? 'calc(100vh - 4rem)' : '100vh' }}
       >
         <SidebarHeader
-          onClose={handleClose}
-          isDark={isDark}
+          onClose={handleClose} isDark={isDark}
           onToggleTheme={toggleTheme}
           onToggleContacts={() => setShowContacts(!showContacts)}
           isDesktop={isDesktop}
         />
         <SidebarSearch value={searchQuery} onChange={setSearchQuery} isDark={isDark} />
 
-        {hasMultipleSections && (
+        {sections.length > 1 && (
           <NavPopoverSwitcher
             sections={sections}
             activeSlug={activeNavSlug}
             onSelect={(slug) => {
-                try { localStorage.setItem('hub:activeNavSlug', slug); } catch {}
-                setActiveNavSlug(slug);
-                setExpandedPaths(new Set());
-              }}
+              try { localStorage.setItem('hub:activeNavSlug', slug); } catch {}
+              setActiveNavSlug(slug);
+              setExpandedPaths(new Set());
+            }}
             isDark={isDark}
           />
         )}
@@ -498,13 +471,9 @@ const Sidebar: React.FC = () => {
               .sort(([a], [b]) => a.localeCompare(b))
               .map(([key, node]) => (
                 <CategoryNode
-                  key={key}
-                  node={node}
-                  path={key}
-                  expandedPaths={expandedPaths}
-                  onToggle={togglePath}
-                  onDocClick={handleClose}
-                  isDark={isDark}
+                  key={key} node={node} path={key}
+                  expandedPaths={expandedPaths} onToggle={togglePath}
+                  onDocClick={handleClose} isDark={isDark}
                 />
               ))}
           </nav>
