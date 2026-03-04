@@ -412,9 +412,7 @@ const Sidebar: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [showContacts, setShowContacts] = useState(false);
-  const [activeNavSlug, setActiveNavSlug] = useState<string>(() => {
-    try { return localStorage.getItem('hub:activeNavSlug') ?? ''; } catch { return ''; }
-  });
+  const [activeNavSlug, setActiveNavSlug] = useState<string>('');
 
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
 
@@ -448,12 +446,19 @@ const Sidebar: React.FC = () => {
     return Array.from(map.values());
   }, [docs]);
 
-  // Если сохранённый slug больше не существует в манифесте — сбрасываем на Главную
+  // Определяем активную секцию по текущему URL
   useEffect(() => {
-    if (sections.length > 0 && !sections.find(s => s.navSlug === activeNavSlug)) {
-      setActiveNavSlug('');
-      try { localStorage.setItem('hub:activeNavSlug', ''); } catch {}
-    }
+    if (sections.length === 0) return;
+    const pathname = window.location.pathname.replace(/^\//, ''); // убираем ведущий /
+
+    // Ищем секцию, чей navSlug является префиксом текущего пути
+    const matched = sections
+      .filter(s => s.navSlug !== '') // сначала ищем среди не-главных
+      .find(s => pathname === s.navSlug || pathname.startsWith(s.navSlug + '/'));
+
+    const detected = matched ? matched.navSlug : '';
+    setActiveNavSlug(detected);
+    try { localStorage.setItem('hub:activeNavSlug', detected); } catch {}
   }, [sections]);
 
   // Показываем NavPopoverSwitcher только если есть хоть одна не-главная секция
