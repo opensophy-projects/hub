@@ -17,6 +17,7 @@ interface Doc {
 
 interface NavNode {
   title: string;
+  slug: string;
   docs: Doc[];
   children: Record<string, NavNode>;
   isCategory: boolean;
@@ -129,7 +130,6 @@ const DocLink: React.FC<{ doc: Doc; onClose: () => void; isDark: boolean }> = ({
   onClose,
   isDark,
 }) => {
-  // slug уже содержит полный путь: папка/файл или просто файл
   const url = `/${doc.slug}`;
 
   return (
@@ -226,6 +226,7 @@ function countDocsInNode(node: NavNode): number {
 function buildNavigationTree(docs: Doc[], searchQuery: string): NavNode {
   const root: NavNode = {
     title: 'Root',
+    slug: '',
     docs: [],
     children: {},
     isCategory: false,
@@ -246,8 +247,11 @@ function buildNavigationTree(docs: Doc[], searchQuery: string): NavNode {
     for (let i = 0; i < parts.length - 1; i++) {
       const part = parts[i];
       if (!current.children[part]) {
+        // Использую doc.typename для названия категории, если это первая подпапка
+        const displayTitle = i === parts.length - 2 && doc.typename ? doc.typename : part;
         current.children[part] = {
-          title: part.charAt(0).toUpperCase() + part.slice(1),
+          title: displayTitle,
+          slug: part,
           docs: [],
           children: {},
           isCategory: true,
