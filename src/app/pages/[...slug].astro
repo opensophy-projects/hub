@@ -90,28 +90,6 @@ function getFirstParagraph(content) {
   return '';
 }
 
-function scanDocsDirectory(baseDir) {
-  const results = [];
-  
-  function scan(currentDir) {
-    const items = fs.readdirSync(currentDir);
-    
-    for (const item of items) {
-      const fullPath = path.join(currentDir, item);
-      const stat = fs.statSync(fullPath);
-      
-      if (stat.isDirectory()) {
-        scan(fullPath);
-      } else if (item.endsWith('.md') && item !== 'README.md') {
-        results.push(fullPath);
-      }
-    }
-  }
-  
-  scan(baseDir);
-  return results;
-}
-
 function generateSlugFromPath(fullPath, docsDir) {
   const relativePath = path.relative(docsDir, fullPath);
   const dir = path.dirname(relativePath);
@@ -135,6 +113,30 @@ function generateSlugFromPath(fullPath, docsDir) {
   return [...slugParts, filePart].join('/');
 }
 
+function scanDocsDirectoryRecursive(baseDir) {
+  const results = [];
+  
+  function scan(currentDir) {
+    if (!fs.existsSync(currentDir)) return;
+    
+    const items = fs.readdirSync(currentDir);
+    
+    for (const item of items) {
+      const fullPath = path.join(currentDir, item);
+      const stat = fs.statSync(fullPath);
+      
+      if (stat.isDirectory()) {
+        scan(fullPath);
+      } else if (item.endsWith('.md') && item !== 'README.md') {
+        results.push(fullPath);
+      }
+    }
+  }
+  
+  scan(baseDir);
+  return results;
+}
+
 export async function getStaticPaths() {
   const docsDir = path.join(process.cwd(), 'Docs');
   
@@ -143,7 +145,7 @@ export async function getStaticPaths() {
     return [];
   }
   
-  const allMdFiles = scanDocsDirectory(docsDir);
+  const allMdFiles = scanDocsDirectoryRecursive(docsDir);
   
   return allMdFiles
     .map((mdPath) => {
