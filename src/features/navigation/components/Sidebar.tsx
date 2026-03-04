@@ -15,7 +15,12 @@ interface Doc {
   tags?: string[];
 }
 
-type GroupedDocs = Record<string, Doc[]>;
+interface NavNode {
+  title: string;
+  docs: Doc[];
+  children: Record<string, NavNode>;
+  isCategory: boolean;
+}
 
 const createCloseKeyHandler = (onClose: () => void) => (e: React.KeyboardEvent) => {
   if (e.key === 'Enter' || e.key === ' ') {
@@ -124,14 +129,8 @@ const DocLink: React.FC<{ doc: Doc; onClose: () => void; isDark: boolean }> = ({
   onClose,
   isDark,
 }) => {
-  let url: string;
-  if (doc.slug === 'welcome') {
-    url = '/';
-  } else if (doc.type?.trim()) {
-    url = `/${doc.type}/${doc.slug}`;
-  } else {
-    url = `/${doc.slug}`;
-  }
+  // slug уже содержит полный путь: папка/файл или просто файл
+  const url = `/${doc.slug}`;
 
   return (
     <a
@@ -148,44 +147,121 @@ const DocLink: React.FC<{ doc: Doc; onClose: () => void; isDark: boolean }> = ({
   );
 };
 
-const TypeSection: React.FC<{
-  typename: string;
-  docs: Doc[];
-  isExpanded: boolean;
-  onToggle: () => void;
+const CategoryNode: React.FC<{
+  node: NavNode;
+  path: string;
+  expandedPaths: Set<string>;
+  onToggle: (path: string) => void;
   onDocClick: () => void;
   isDark: boolean;
-}> = ({ typename, docs, isExpanded, onToggle, onDocClick, isDark }) => (
-  <div>
-    <button
-      onClick={onToggle}
-      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
-        isDark ? 'text-white/90 hover:bg-white/5' : 'text-black/90 hover:bg-black/5'
-      }`}
-    >
-      <div className="flex items-center gap-2">
-        {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-        <span>{typename}</span>
-      </div>
-      <span
-        className={`text-xs px-2 py-0.5 rounded ${
-          isDark ? 'bg-white/10 text-white/70' : 'bg-black/10 text-black/70'
+}> = ({ node, path, expandedPaths, onToggle, onDocClick, isDark }) => {
+  const isExpanded = expandedPaths.has(path);
+  const hasChildren = Object.keys(node.children).length > 0;
+  const totalDocs = countDocsInNode(node);
+
+  return (
+    <div>
+      <button
+        onClick={() => onToggle(path)}
+        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+          isDark ? 'text-white/90 hover:bg-white/5' : 'text-black/90 hover:bg-black/5'
         }`}
       >
-        {docs.length}
-      </span>
-    </button>
-    {isExpanded && docs.length > 0 && (
-      <div className="ml-6 mt-1 space-y-1">
-        {[...docs]
-          .sort((a, b) => a.title.localeCompare(b.title))
-          .map((doc) => (
-            <DocLink key={doc.id} doc={doc} onClose={onDocClick} isDark={isDark} />
-          ))}
-      </div>
-    )}
-  </div>
-);
+        <div className="flex items-center gap-2">
+          {hasChildren && (
+            isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />
+          )}
+          <span>{node.title}</span>
+        </div>
+        {totalDocs > 0 && (
+          <span
+            className={`text-xs px-2 py-0.5 rounded ${
+              isDark ? 'bg-white/10 text-white/70' : 'bg-black/10 text-black/70'
+            }`}
+          >
+            {totalDocs}
+          </span>
+        )}
+      </button>
+
+      {isExpanded && (
+        <div className="ml-4 mt-1 space-y-1">
+          {node.docs.length > 0 && (
+            <div className="space-y-1">
+              {[...node.docs]
+                .sort((a, b) => a.title.localeCompare(b.title))
+                .map((doc) => (
+                  <DocLink key={doc.id} doc={doc} onClose={onDocClick} isDark={isDark} />
+                ))}
+            </div>
+          )}
+
+          {Object.entries(node.children)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([key, child]) => (
+              <CategoryNode
+                key={key}
+                node={child}
+                path={`${path}/${key}`}
+                expandedPaths={expandedPaths}
+                onToggle={onToggle}
+                onDocClick={onDocClick}
+                isDark={isDark}
+              />
+            ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+function countDocsInNode(node: NavNode): number {
+  let count = node.docs.length;
+  Object.values(node.children).forEach((child) => {
+    count += countDocsInNode(child);
+  });
+  return count;
+}
+
+function buildNavigationTree(docs: Doc[], searchQuery: string): NavNode {
+  const root: NavNode = {
+    title: 'Root',
+    docs: [],
+    children: {},
+    isCategory: false,
+  };
+
+  const query = searchQuery.toLowerCase();
+
+  docs.forEach((doc) => {
+    // Фильтруем по поиску
+    if (query && !doc.title.toLowerCase().includes(query)) {
+      return;
+    }
+
+    const parts = doc.slug.split('/');
+    let current = root;
+
+    // Проходим по всем частям пути кроме последней
+    for (let i = 0; i < parts.length - 1; i++) {
+      const part = parts[i];
+      if (!current.children[part]) {
+        current.children[part] = {
+          title: part.charAt(0).toUpperCase() + part.slice(1),
+          docs: [],
+          children: {},
+          isCategory: true,
+        };
+      }
+      current = current.children[part];
+    }
+
+    // Добавляем документ в листовую категорию
+    current.docs.push(doc);
+  });
+
+  return root;
+}
 
 const ContactLink: React.FC<{
   href: string;
@@ -272,7 +348,7 @@ const Sidebar: React.FC = () => {
   const { isDark, toggleTheme, isSidebarOpen, setSidebarOpen } = useTheme();
   const { manifest: docs } = useDocuments();
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set());
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [showContacts, setShowContacts] = useState(false);
 
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
@@ -288,49 +364,18 @@ const Sidebar: React.FC = () => {
     };
   }, [isSidebarOpen, isDesktop]);
 
-  const { categorized, uncategorized } = useMemo(() => {
-    const categorized: GroupedDocs = {};
-    const uncategorized: Doc[] = [];
+  const navTree = useMemo(
+    () => buildNavigationTree(docs as Doc[], searchQuery),
+    [docs, searchQuery]
+  );
 
-    (docs as Doc[]).forEach((doc) => {
-      const typename = doc.typename?.trim();
-      if (!typename) {
-        uncategorized.push(doc);
-      } else {
-        if (!categorized[typename]) categorized[typename] = [];
-        categorized[typename].push(doc);
-      }
-    });
-
-    return { categorized, uncategorized };
-  }, [docs]);
-
-  const filteredCategorized = useMemo((): GroupedDocs => {
-    if (!searchQuery.trim()) return categorized;
-    const query = searchQuery.toLowerCase();
-    const filtered: GroupedDocs = {};
-    Object.entries(categorized).forEach(([typename, docsList]) => {
-      const matched = docsList.filter((doc) =>
-        doc.title.toLowerCase().includes(query)
-      );
-      if (matched.length > 0) filtered[typename] = matched;
-    });
-    return filtered;
-  }, [categorized, searchQuery]);
-
-  const filteredUncategorized = useMemo(() => {
-    if (!searchQuery.trim()) return uncategorized;
-    const query = searchQuery.toLowerCase();
-    return uncategorized.filter((doc) => doc.title.toLowerCase().includes(query));
-  }, [uncategorized, searchQuery]);
-
-  const toggleType = (typename: string) => {
-    setExpandedTypes((prev) => {
+  const togglePath = (path: string) => {
+    setExpandedPaths((prev) => {
       const next = new Set(prev);
-      if (next.has(typename)) {
-        next.delete(typename);
+      if (next.has(path)) {
+        next.delete(path);
       } else {
-        next.add(typename);
+        next.add(path);
       }
       return next;
     });
@@ -361,9 +406,9 @@ const Sidebar: React.FC = () => {
         <SidebarSearch value={searchQuery} onChange={setSearchQuery} isDark={isDark} />
         <div className="flex-1 overflow-y-auto p-3">
           <nav className="space-y-2">
-            {filteredUncategorized.length > 0 && (
+            {navTree.docs.length > 0 && (
               <div className="space-y-1 mb-4">
-                {filteredUncategorized
+                {[...navTree.docs]
                   .sort((a, b) => a.title.localeCompare(b.title))
                   .map((doc) => (
                     <DocLink key={doc.id} doc={doc} onClose={handleClose} isDark={isDark} />
@@ -371,15 +416,15 @@ const Sidebar: React.FC = () => {
               </div>
             )}
 
-            {Object.entries(filteredCategorized)
+            {Object.entries(navTree.children)
               .sort(([a], [b]) => a.localeCompare(b))
-              .map(([typename, docsList]) => (
-                <TypeSection
-                  key={typename}
-                  typename={typename}
-                  docs={docsList}
-                  isExpanded={expandedTypes.has(typename)}
-                  onToggle={() => toggleType(typename)}
+              .map(([key, node]) => (
+                <CategoryNode
+                  key={key}
+                  node={node}
+                  path={key}
+                  expandedPaths={expandedPaths}
+                  onToggle={togglePath}
                   onDocClick={handleClose}
                   isDark={isDark}
                 />
