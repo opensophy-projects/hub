@@ -412,7 +412,9 @@ const Sidebar: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [showContacts, setShowContacts] = useState(false);
-  const [activeNavSlug, setActiveNavSlug] = useState('');
+  const [activeNavSlug, setActiveNavSlug] = useState<string>(() => {
+    try { return localStorage.getItem('hub:activeNavSlug') ?? ''; } catch { return ''; }
+  });
 
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
 
@@ -445,6 +447,14 @@ const Sidebar: React.FC = () => {
 
     return Array.from(map.values());
   }, [docs]);
+
+  // Если сохранённый slug больше не существует в манифесте — сбрасываем на Главную
+  useEffect(() => {
+    if (sections.length > 0 && !sections.find(s => s.navSlug === activeNavSlug)) {
+      setActiveNavSlug('');
+      try { localStorage.setItem('hub:activeNavSlug', ''); } catch {}
+    }
+  }, [sections]);
 
   // Показываем NavPopoverSwitcher только если есть хоть одна не-главная секция
   const hasMultipleSections = sections.length > 1;
@@ -489,7 +499,11 @@ const Sidebar: React.FC = () => {
           <NavPopoverSwitcher
             sections={sections}
             activeSlug={activeNavSlug}
-            onSelect={(slug) => { setActiveNavSlug(slug); setExpandedPaths(new Set()); }}
+            onSelect={(slug) => {
+                try { localStorage.setItem('hub:activeNavSlug', slug); } catch {}
+                setActiveNavSlug(slug);
+                setExpandedPaths(new Set());
+              }}
             isDark={isDark}
           />
         )}
