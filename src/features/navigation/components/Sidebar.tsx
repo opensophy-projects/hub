@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useTheme } from '@/shared/contexts/ThemeContext';
 import { useDocuments } from '@/features/docs/hooks/useDocuments';
 import { Search, Sun, Moon, ChevronDown, ChevronRight, Mail, X } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 
 interface Doc {
   id: string;
@@ -10,6 +11,7 @@ interface Doc {
   description: string;
   type: string;
   typename: string;
+  icon?: string;
   author?: string;
   date?: string;
   tags?: string[];
@@ -22,6 +24,22 @@ interface NavNode {
   children: Record<string, NavNode>;
   isCategory: boolean;
 }
+
+// ─── Dynamic lucide icon resolver ─────────────────────────────────────────────
+
+const DocIcon: React.FC<{ name: string; isDark: boolean }> = ({ name, isDark }) => {
+  if (!name) return null;
+  const Icon = (LucideIcons as Record<string, any>)[name];
+  if (!Icon) return null;
+  return (
+    <Icon
+      size={15}
+      className={`flex-shrink-0 ${isDark ? 'text-white/40' : 'text-black/40'}`}
+    />
+  );
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const createCloseKeyHandler = (onClose: () => void) => (e: React.KeyboardEvent) => {
   if (e.key === 'Enter' || e.key === ' ') {
@@ -36,6 +54,8 @@ const iconBtn = (isDark: boolean) =>
 const borderStyle = (isDark: boolean) => ({
   borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
 });
+
+// ─── Subcomponents ────────────────────────────────────────────────────────────
 
 const SidebarOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   useEffect(() => {
@@ -136,13 +156,14 @@ const DocLink: React.FC<{ doc: Doc; onClose: () => void; isDark: boolean }> = ({
     <a
       href={url}
       onClick={onClose}
-      className={`block px-3 py-1.5 rounded-lg text-sm transition-colors ${
+      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
         isDark
           ? 'text-white/70 hover:text-white hover:bg-white/5'
           : 'text-black/70 hover:text-black hover:bg-black/5'
       }`}
     >
-      {doc.title}
+      {doc.icon && <DocIcon name={doc.icon} isDark={isDark} />}
+      <span>{doc.title}</span>
     </a>
   );
 };
@@ -235,19 +256,14 @@ function buildNavigationTree(docs: Doc[], searchQuery: string): NavNode {
   const query = searchQuery.toLowerCase();
 
   docs.forEach((doc) => {
-    // Фильтруем по поиску
-    if (query && !doc.title.toLowerCase().includes(query)) {
-      return;
-    }
+    if (query && !doc.title.toLowerCase().includes(query)) return;
 
     const parts = doc.slug.split('/');
     let current = root;
 
-    // Проходим по всем частям пути кроме последней
     for (let i = 0; i < parts.length - 1; i++) {
       const part = parts[i];
       if (!current.children[part]) {
-        // Использую doc.typename для названия категории, если это первая подпапка
         const displayTitle = i === parts.length - 2 && doc.typename ? doc.typename : part;
         current.children[part] = {
           title: displayTitle,
@@ -260,12 +276,13 @@ function buildNavigationTree(docs: Doc[], searchQuery: string): NavNode {
       current = current.children[part];
     }
 
-    // Добавляем документ в листовую категорию
     current.docs.push(doc);
   });
 
   return root;
 }
+
+// ─── Contacts ─────────────────────────────────────────────────────────────────
 
 const ContactLink: React.FC<{
   href: string;
@@ -347,6 +364,8 @@ const ContactsSection: React.FC<{
     </>
   );
 };
+
+// ─── Main Sidebar ─────────────────────────────────────────────────────────────
 
 const Sidebar: React.FC = () => {
   const { isDark, toggleTheme, isSidebarOpen, setSidebarOpen } = useTheme();
