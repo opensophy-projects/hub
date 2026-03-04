@@ -90,7 +90,6 @@ function getFirstParagraph(content) {
   return '';
 }
 
-// Рекурсивное сканирование директории Docs для поиска всех .md файлов
 function scanDocsDirectory(baseDir) {
   const results = [];
   
@@ -113,13 +112,11 @@ function scanDocsDirectory(baseDir) {
   return results;
 }
 
-// Генерация slug из пути к файлу
 function generateSlugFromPath(fullPath, docsDir) {
   const relativePath = path.relative(docsDir, fullPath);
   const dir = path.dirname(relativePath);
   const fileName = path.basename(fullPath, '.md');
 
-  // Специальный случай для welcome.md - пропускаем его
   if (dir === '.' && fileName === 'welcome') {
     return null;
   }
@@ -152,7 +149,6 @@ export async function getStaticPaths() {
     .map((mdPath) => {
       const slug = generateSlugFromPath(mdPath, docsDir);
       
-      // Пропускаем welcome.md
       if (!slug) return null;
 
       const rawContent = fs.readFileSync(mdPath, 'utf-8');
