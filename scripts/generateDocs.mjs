@@ -75,14 +75,6 @@ function getFirstParagraph(content) {
   return '';
 }
 
-function trimDashes(str) {
-  let start = 0;
-  let end = str.length;
-  while (start < end && str[start] === '-') start++;
-  while (end > start && str[end - 1] === '-') end--;
-  return str.slice(start, end);
-}
-
 function slugify(str) {
   return str
     .toLowerCase()
@@ -91,8 +83,17 @@ function slugify(str) {
     .replaceAll(/-+/g, '-');
 }
 
-function generateSlugFromPath(fullPath, relativeToDocsDir) {
-  // Получаем путь относительно папки Docs
+// Парсит синтаксис "НазваниеКатегории{slug}" и возвращает { title, slug }
+function parseCategoryName(folderName) {
+  const match = folderName.match(/^(.+?)\{([^}]+)\}$/);
+  if (match) {
+    return { title: match[1].trim(), slug: match[2].trim() };
+  }
+  // Если синтаксис не соответствует, используем папку как есть
+  return { title: folderName, slug: slugify(folderName) };
+}
+
+function generateSlugFromPath(fullPath) {
   const relativePath = path.relative(docsDir, fullPath);
   const dir = path.dirname(relativePath);
   const fileName = path.basename(fullPath, '.md');
@@ -102,15 +103,36 @@ function generateSlugFromPath(fullPath, relativeToDocsDir) {
     return slugify(fileName);
   }
 
-  // Если файл в подпапке, slug = папка/файл
-  const folderPart = slugify(dir);
+  // Если файл в подпапке, обрабатываем каждую папку
+  const parts = dir.split(path.sep);
+  const slugParts = parts.map((part) => {
+    const { slug } = parseCategoryName(part);
+    return slug;
+  });
+
   const filePart = slugify(fileName);
-  return `${folderPart}/${filePart}`;
+  return [...slugParts, filePart].join('/');
+}
+
+// Получает информацию о категории по пути (для typename)
+function getCategoryInfo(fullPath) {
+  const relativePath = path.relative(docsDir, fullPath);
+  const dir = path.dirname(relativePath);
+
+  if (dir === '.' || dir === '') {
+    return { typename: '', categoryTitle: '' };
+  }
+
+  const parts = dir.split(path.sep);
+  const lastPart = parts[parts.length - 1];
+  const { title, slug } = parseCategoryName(lastPart);
+
+  return { typename: title, categoryTitle: title };
 }
 
 // ─── Scanner ──────────────────────────────────────────────────────────────────
 
-function buildDoc(fullPath, typeName) {
+function buildDoc(fullPath) {
   const raw = fs.readFileSync(fullPath, 'utf-8');
   const { metadata, content: cleanContent } = extractFrontMatter(raw);
 
@@ -118,14 +140,15 @@ function buildDoc(fullPath, typeName) {
   const htmlContent      = marked(preprocessAlerts(processedContent));
   const fileName         = path.basename(fullPath, '.md');
   const slug             = generateSlugFromPath(fullPath);
+  const { typename }     = getCategoryInfo(fullPath);
 
   const meta = {
     id:          slug,
     title:       metadata.title       || fileName,
     slug,
     description: metadata.description || getFirstParagraph(processedContent),
-    type:        typeName             || '',
-    typename:    metadata.typename    || '',
+    type:        '',
+    typename:    metadata.typename    || typename,
     author:      metadata.author      || '',
     date:        metadata.date        || new Date().toISOString().split('T')[0],
     tags:        metadata.tags ? metadata.tags.split(',').map((t) => t.trim()) : [],
@@ -141,7 +164,7 @@ function buildDoc(fullPath, typeName) {
 function scanDocs(dir) {
   const manifest = [];
 
-  function scan(currentPath, basePath = dir) {
+  function scan(currentPath) {
     if (!fs.existsSync(currentPath)) {
       console.warn(`Directory not found: ${currentPath}`);
       return;
@@ -152,7 +175,7 @@ function scanDocs(dir) {
       const stat = fs.statSync(fullPath);
 
       if (stat.isDirectory()) {
-        scan(fullPath, basePath);
+        scan(fullPath);
         continue;
       }
 
@@ -196,7 +219,7 @@ function generateDocs() {
   console.log(`✅ Generated ${manifest.length} individual doc files`);
   console.log('✅ Generated manifest.json');
   manifest.forEach((doc) =>
-    console.log(`  - ${doc.title} (${doc.type || 'no-category'}) - slug: ${doc.slug}`)
+    console.log(`  - ${doc.title} (${doc.typename || 'no-category'}) - slug: ${doc.slug}`)
   );
 }
 
