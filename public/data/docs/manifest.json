@@ -13,8 +13,6 @@
       "opensophy"
     ],
     "lang": "ru",
-    "keywords": "Opensophy, Hub, документация, знания, AI, security",
-    "robots": "index, follow",
     "icon": ""
   },
   {
@@ -34,8 +32,6 @@
       "UI компоненты"
     ],
     "lang": "ru",
-    "keywords": "Markdown руководство, форматирование текста, синтаксис Markdown, документация Hub, примеры форматирования",
-    "robots": "index, follow",
     "icon": "book"
   },
   {
@@ -55,8 +51,6 @@
       "технологии"
     ],
     "lang": "ru",
-    "keywords": "сетевые модели, OSI, TCP/IP, протоколы, сетевые технологии, networking",
-    "robots": "index, follow",
     "icon": "sheet"
   }
 ]
