@@ -32,12 +32,10 @@ interface NavNode {
 }
 
 interface NavSection {
-  navSlug: string;   // '' = Главная
+  navSlug: string;
   navTitle: string;
   navIcon: string;
 }
-
-// ─── Dynamic lucide icon resolver ─────────────────────────────────────────────
 
 function toIconName(raw: string): string {
   return raw
@@ -55,8 +53,6 @@ const LucideIcon: React.FC<{ name: string; size?: number; className?: string }> 
   return <Icon size={size} className={className} />;
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 const createCloseKeyHandler = (onClose: () => void) => (e: React.KeyboardEvent) => {
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); }
 };
@@ -68,8 +64,6 @@ const borderStyle = (isDark: boolean) => ({
   borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
 });
 
-// ─── NavPopover Switcher ───────────────────────────────────────────────────────
-
 const NavPopoverSwitcher: React.FC<{
   sections: NavSection[];
   activeSlug: string;
@@ -79,7 +73,6 @@ const NavPopoverSwitcher: React.FC<{
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Закрываем при клике вне
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
@@ -98,7 +91,6 @@ const NavPopoverSwitcher: React.FC<{
 
   return (
     <div className={`flex-shrink-0 px-3 py-2 border-b ${border}`} style={borderStyle(isDark)} ref={ref}>
-      {/* Кнопка-триггер */}
       <button
         onClick={() => setOpen((v) => !v)}
         className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm border transition-colors ${border} ${
@@ -120,7 +112,6 @@ const NavPopoverSwitcher: React.FC<{
         />
       </button>
 
-      {/* Выпадающее меню */}
       {open && (
         <div
           className={`absolute left-3 right-3 mt-1 rounded-xl border shadow-xl z-50 overflow-hidden ${bg} ${border}`}
@@ -147,8 +138,6 @@ const NavPopoverSwitcher: React.FC<{
     </div>
   );
 };
-
-// ─── Subcomponents ────────────────────────────────────────────────────────────
 
 const SidebarOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   useEffect(() => {
@@ -233,7 +222,7 @@ const DocLink: React.FC<{ doc: Doc; onClose: () => void; isDark: boolean }> = ({
       isDark ? 'text-white/70 hover:text-white hover:bg-white/5' : 'text-black/70 hover:text-black hover:bg-black/5'
     }`}
   >
-    {doc.icon && <LucideIcon name={doc.icon} size={15} className={isDark ? 'text-white/40' : 'text-black/40'} />}
+    {doc.icon && <LucideIcon name={doc.icon} size={20} className={isDark ? 'text-white/60' : 'text-black/60'} />}
     <span>{doc.title}</span>
   </a>
 );
@@ -303,12 +292,6 @@ function countDocsInNode(node: NavNode): number {
   return count;
 }
 
-/**
- * Строит дерево навигации только для документов активной секции.
- * Для Главной (navSlug='') — корневые + папки без navSlug.
- * Для остальных — только документы с совпадающим navSlug, но slug уже содержит navSlug как первый сегмент —
- * его нужно убрать при построении дерева чтобы не создавать лишний уровень.
- */
 function buildNavigationTree(docs: Doc[], searchQuery: string, activeNavSlug: string): NavNode {
   const root: NavNode = { title: 'Root', slug: '', docs: [], children: {}, isCategory: false };
   const query = searchQuery.toLowerCase();
@@ -322,7 +305,6 @@ function buildNavigationTree(docs: Doc[], searchQuery: string, activeNavSlug: st
   filtered.forEach((doc) => {
     let slugForTree = doc.slug;
 
-    // Для не-главных секций убираем первый сегмент (navSlug) из slug при построении дерева
     if (activeNavSlug !== '') {
       const withoutNav = doc.slug.startsWith(activeNavSlug + '/')
         ? doc.slug.slice(activeNavSlug.length + 1)
@@ -347,8 +329,6 @@ function buildNavigationTree(docs: Doc[], searchQuery: string, activeNavSlug: st
 
   return root;
 }
-
-// ─── Contacts ─────────────────────────────────────────────────────────────────
 
 const ContactLink: React.FC<{
   href: string; title: string; subtitle: string; external: boolean; isDark: boolean;
@@ -404,8 +384,6 @@ const ContactsSection: React.FC<{ isDark: boolean; isOpen: boolean; onClose: () 
   );
 };
 
-// ─── Main Sidebar ─────────────────────────────────────────────────────────────
-
 const Sidebar: React.FC = () => {
   const { isDark, toggleTheme, isSidebarOpen, setSidebarOpen } = useTheme();
   const { manifest: docs } = useDocuments();
@@ -425,11 +403,9 @@ const Sidebar: React.FC = () => {
     return () => { document.body.style.overflow = ''; };
   }, [isSidebarOpen, isDesktop]);
 
-  // Собираем уникальные секции из манифеста
   const sections = useMemo<NavSection[]>(() => {
     const map = new Map<string, NavSection>();
 
-    // Всегда первая — Главная
     map.set('', { navSlug: '', navTitle: 'Главная', navIcon: 'home' });
 
     for (const doc of docs as Doc[]) {
@@ -446,14 +422,12 @@ const Sidebar: React.FC = () => {
     return Array.from(map.values());
   }, [docs]);
 
-  // Определяем активную секцию по текущему URL
   useEffect(() => {
     if (sections.length === 0) return;
-    const pathname = window.location.pathname.replace(/^\//, ''); // убираем ведущий /
+    const pathname = window.location.pathname.replace(/^\//, '');
 
-    // Ищем секцию, чей navSlug является префиксом текущего пути
     const matched = sections
-      .filter(s => s.navSlug !== '') // сначала ищем среди не-главных
+      .filter(s => s.navSlug !== '')
       .find(s => pathname === s.navSlug || pathname.startsWith(s.navSlug + '/'));
 
     const detected = matched ? matched.navSlug : '';
@@ -461,7 +435,6 @@ const Sidebar: React.FC = () => {
     try { localStorage.setItem('hub:activeNavSlug', detected); } catch {}
   }, [sections]);
 
-  // Показываем NavPopoverSwitcher только если есть хоть одна не-главная секция
   const hasMultipleSections = sections.length > 1;
 
   const navTree = useMemo(
@@ -499,7 +472,6 @@ const Sidebar: React.FC = () => {
         />
         <SidebarSearch value={searchQuery} onChange={setSearchQuery} isDark={isDark} />
 
-        {/* Nav-popover switcher — только если есть несколько секций */}
         {hasMultipleSections && (
           <NavPopoverSwitcher
             sections={sections}
