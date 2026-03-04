@@ -48,6 +48,28 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
   const toc = useTableOfContents(doc);
   const scrollProgress = useScrollProgress();
+  const [activeId, setActiveId] = useState<string>('');
+
+  useEffect(() => {
+    if (toc.length === 0) return;
+    const headingEls = toc
+      .map(({ id }) => document.getElementById(id))
+      .filter(Boolean) as HTMLElement[];
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible.length > 0) {
+          setActiveId(visible[0].target.id);
+        }
+      },
+      { rootMargin: '-10% 0px -70% 0px', threshold: 0 }
+    );
+    headingEls.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [toc]);
 
   const handleTableClick = (tableHtml: string) => {
     setFullscreenTableHtml(tableHtml);
@@ -73,10 +95,8 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
   const getAuthorDisplay = () => {
     if (!doc.author || doc.author.trim() === '') return null;
-
     const authors = doc.author.split(',').map((a) => a.trim()).filter(Boolean);
     if (authors.length === 0) return null;
-
     return (
       <span className={`text-sm ${getTextColorClass('60')}`}>
         {authors.length === 1 ? 'Автор' : 'Авторы'}:{' '}
@@ -87,8 +107,18 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
     );
   };
 
-  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
-  const sidebarVisible = isDesktop && isSidebarOpen;
+  const [isDesktop, setIsDesktop] = useState(
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : true
+  );
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth >= 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  const sidebarVisible = isDesktop;
+  const TOC_WIDTH = toc.length > 0 ? '18rem' : '0';
 
   if (loading) {
     return (
@@ -101,8 +131,9 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
           }`}
           style={{
             marginLeft: sidebarVisible ? '20rem' : '0',
+            marginRight: toc.length > 0 && isDesktop ? TOC_WIDTH : '0',
             marginTop: isDesktop ? '4rem' : '0',
-            marginBottom: isDesktop ? '0' : '5rem',
+            marginBottom: isDesktop ? '0' : '3.5rem',
           }}
         >
           <p className={`text-lg ${isDark ? 'text-white/60' : 'text-black/60'}`}>
@@ -116,26 +147,101 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
   return (
     <div style={{ minHeight: '100vh' }}>
       <div
-        className={`fixed ${isDesktop ? 'top-0' : 'top-0'} left-0 h-1 z-50 ${isDark ? 'bg-white' : 'bg-black'}`}
+        className={`fixed top-0 left-0 h-1 z-50 ${isDark ? 'bg-white' : 'bg-black'}`}
         style={{ width: `${scrollProgress}%` }}
       />
 
       <TopNavbar />
       <Sidebar />
 
+      {toc.length > 0 && isDesktop && (
+        <aside
+          className={`hidden md:flex flex-col fixed right-0 z-40 border-l overflow-hidden ${
+            isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
+          }`}
+          style={{ top: '4rem', width: TOC_WIDTH, height: 'calc(100vh - 4rem)' }}
+        >
+          <div className={`flex-shrink-0 px-4 py-4 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
+            <h2 className={`text-sm font-bold uppercase tracking-widest ${isDark ? 'text-white/50' : 'text-black/50'}`}>
+              На этой странице
+            </h2>
+          </div>
+
+          <div className="flex-1 overflow-y-auto py-3">
+            <nav className="space-y-0.5">
+              {toc.map((item, index) => {
+                const activeIndex = toc.findIndex((t) => t.id === activeId);
+                const distance = index - activeIndex; // negative = above/read, positive = below/unread
+                const isActive = distance === 0 && activeId !== '';
+                const absDist = Math.abs(distance);
+                const accentColor = isDark ? '#ffffff' : '#000000';
+
+                let opacity: number;
+                let glowOpacity: number;
+
+                if (activeId === '') {
+                  opacity = 0.4;
+                  glowOpacity = 0;
+                } else if (isActive) {
+                  opacity = 1;
+                  glowOpacity = 1;
+                } else {
+                  // Symmetric fade in both directions from active
+                  opacity = Math.max(0.1, 0.7 - absDist * 0.2);
+                  // Glow in both directions, fading by distance
+                  glowOpacity = Math.max(0, 0.55 - absDist * 0.18);
+                }
+
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => scrollToElement(item.id)}
+                    className="w-full text-left py-2 pr-3 text-sm leading-snug"
+                    style={{
+                      paddingLeft: `${14 + (item.level - 2) * 14}px`,
+                      color: isActive
+                        ? (isDark ? '#ffffff' : '#000000')
+                        : isDark
+                          ? `rgba(255,255,255,${opacity})`
+                          : `rgba(0,0,0,${opacity})`,
+                      transition: 'color 0.5s ease, box-shadow 0.5s ease, border-color 0.5s ease, text-shadow 0.5s ease',
+                      borderLeft: '2px solid',
+                      borderLeftColor: isActive
+                        ? accentColor
+                        : glowOpacity > 0
+                          ? `${isDark ? `rgba(255,255,255,${glowOpacity})` : `rgba(0,0,0,${glowOpacity})`}`
+                          : 'transparent',
+                      boxShadow: isActive
+                        ? `inset 3px 0 14px -2px ${accentColor}bb`
+                        : glowOpacity > 0
+                          ? `inset 3px 0 10px -3px ${isDark ? `rgba(255,255,255,${glowOpacity * 0.55})` : `rgba(0,0,0,${glowOpacity * 0.55})`}`
+                          : 'none',
+                      textShadow: isActive
+                        ? `0 0 18px ${accentColor}99`
+                        : 'none',
+                    }}
+                  >
+                    {item.text}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        </aside>
+      )}
+
       <main
         className={`min-h-screen ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}
         style={{
           marginLeft: sidebarVisible ? '20rem' : '0',
+          marginRight: toc.length > 0 && isDesktop ? TOC_WIDTH : '0',
           marginTop: isDesktop ? '4rem' : '0',
-          marginBottom: isDesktop ? '0' : '5rem',
+          marginBottom: isDesktop ? '0' : '3.5rem',
           transition: 'margin-left 0.3s ease',
         }}
       >
-        <article
-          className={`flex-1 pt-8 pb-24 px-4 w-full ${toc.length > 0 ? 'md:pr-96' : ''}`}
-        >
-          <div className="container mx-auto max-w-3xl w-full overflow-x-hidden">
+        <article className="flex-1 pt-8 pb-12 w-full" style={{ paddingLeft: '2rem', paddingRight: '2rem' }}>
+          <div className="w-full">
             <div className="mb-8">
               {doc.typename && doc.typename.trim() !== '' && (
                 <div className="flex items-center gap-3 mb-4">
@@ -146,9 +252,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
               )}
 
               <h1
-                className={`text-4xl md:text-5xl font-bold mb-4 ${
-                  isDark ? 'text-white' : 'text-black'
-                }`}
+                className={`text-4xl md:text-5xl font-bold mb-4 ${isDark ? 'text-white' : 'text-black'}`}
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 {doc.title}
@@ -156,11 +260,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
               <p className={`text-lg ${getTextColorClass()}`}>{doc.description}</p>
 
-              <div
-                className={`flex items-center gap-4 mt-6 pt-4 border-t flex-wrap ${
-                  isDark ? 'border-white/10' : 'border-black/10'
-                }`}
-              >
+              <div className={`flex items-center gap-4 mt-6 pt-4 border-t flex-wrap ${isDark ? 'border-white/10' : 'border-black/10'}`}>
                 {getAuthorDisplay()}
                 {doc.date && (
                   <span className={`text-sm ${getTextColorClass('60')}`}>
@@ -177,57 +277,13 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
             <TableContext.Provider value={tableContextValue}>
               <div
                 data-article-content
-                className={`prose max-w-none w-full overflow-x-auto ${
-                  isDark ? 'text-white' : 'text-black'
-                }`}
+                className={`prose max-w-none w-full overflow-x-auto ${isDark ? 'text-white' : 'text-black'}`}
               >
                 {contentNodes}
               </div>
             </TableContext.Provider>
           </div>
         </article>
-
-        {toc.length > 0 && (
-          <aside
-            className={`hidden md:block fixed right-4 top-24 w-80 max-h-[calc(100vh-160px)] overflow-y-auto rounded-lg border ${
-              isDark
-                ? 'bg-[#0a0a0a]/98 border-white/10'
-                : 'bg-[#E8E7E3]/98 border-black/10'
-            }`}
-          >
-            <div
-              className="p-4 pb-2 sticky top-0"
-              style={{
-                backgroundColor: isDark
-                  ? 'rgba(10,10,10,0.98)'
-                  : 'rgba(232,231,227,0.98)',
-                backdropFilter: 'blur(10px)',
-              }}
-            >
-              <h2 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-black'}`}>
-                На этой странице
-              </h2>
-            </div>
-            <div className="px-4 pb-4 space-y-1">
-              {toc.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => scrollToElement(item.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                    isDark
-                      ? 'text-white/85 hover:bg-white/10 hover:text-white'
-                      : 'text-black/85 hover:bg-black/10 hover:text-black'
-                  }`}
-                  style={{ paddingLeft: `${12 + (item.level - 2) * 12}px` }}
-                >
-                  {item.text}
-                </button>
-              ))}
-            </div>
-          </aside>
-        )}
-
-        <div className="h-20" />
       </main>
 
       <AnimatePresence>
