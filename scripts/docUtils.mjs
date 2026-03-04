@@ -130,5 +130,6 @@ export function buildDocFromPath(mdPath, docsDir) {
     lang: metadata.lang || 'ru',
     keywords: metadata.keywords || '',
     robots: metadata.robots || 'index, follow',
+    icon: metadata.icon || '',
   };
 }
