@@ -90,51 +90,70 @@ function getFirstParagraph(content) {
   return '';
 }
 
-function findMarkdownFile(docsDir, slugParts, fileName) {
-  if (slugParts.length === 1) {
-    return path.join(docsDir, `${fileName}.md`);
-  }
-
-  let searchDir = docsDir;
-  for (const item of fs.readdirSync(docsDir)) {
-    const itemPath = path.join(docsDir, item);
-    const stat = fs.statSync(itemPath);
-
-    if (stat.isDirectory()) {
-      const { slug: categorySlug } = parseCategoryName(item);
-      if (categorySlug === slugParts[0]) {
-        searchDir = itemPath;
-        break;
+// Рекурсивное сканирование директории Docs для поиска всех .md файлов
+function scanDocsDirectory(baseDir) {
+  const results = [];
+  
+  function scan(currentDir) {
+    const items = fs.readdirSync(currentDir);
+    
+    for (const item of items) {
+      const fullPath = path.join(currentDir, item);
+      const stat = fs.statSync(fullPath);
+      
+      if (stat.isDirectory()) {
+        scan(fullPath);
+      } else if (item.endsWith('.md') && item !== 'README.md') {
+        results.push(fullPath);
       }
     }
   }
+  
+  scan(baseDir);
+  return results;
+}
 
-  return path.join(searchDir, `${fileName}.md`);
+// Генерация slug из пути к файлу
+function generateSlugFromPath(fullPath, docsDir) {
+  const relativePath = path.relative(docsDir, fullPath);
+  const dir = path.dirname(relativePath);
+  const fileName = path.basename(fullPath, '.md');
+
+  // Специальный случай для welcome.md - пропускаем его
+  if (dir === '.' && fileName === 'welcome') {
+    return null;
+  }
+
+  if (dir === '.' || dir === '') {
+    return slugify(fileName);
+  }
+
+  const parts = dir.split(path.sep);
+  const slugParts = parts.map((part) => {
+    const { slug } = parseCategoryName(part);
+    return slug;
+  });
+
+  const filePart = slugify(fileName);
+  return [...slugParts, filePart].join('/');
 }
 
 export async function getStaticPaths() {
-  const manifestPath = path.join(process.cwd(), 'public/data/docs/manifest.json');
+  const docsDir = path.join(process.cwd(), 'Docs');
   
-  if (!fs.existsSync(manifestPath)) {
-    console.warn('manifest.json not found, returning empty paths');
+  if (!fs.existsSync(docsDir)) {
+    console.warn('Docs directory not found');
     return [];
   }
   
-  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+  const allMdFiles = scanDocsDirectory(docsDir);
   
-  return manifest
-    .filter(doc => doc.slug && doc.slug !== '')
-    .map((doc) => {
-      const docsDir = path.join(process.cwd(), 'Docs');
-      const slugParts = doc.slug.split('/');
-      const fileName = slugParts[slugParts.length - 1];
-
-      const mdPath = findMarkdownFile(docsDir, slugParts, fileName);
-
-      if (!fs.existsSync(mdPath)) {
-        console.warn(`Missing doc file: ${mdPath}`);
-        return null;
-      }
+  return allMdFiles
+    .map((mdPath) => {
+      const slug = generateSlugFromPath(mdPath, docsDir);
+      
+      // Пропускаем welcome.md
+      if (!slug) return null;
 
       const rawContent = fs.readFileSync(mdPath, 'utf-8');
       const { metadata, content: cleanContent } = extractFrontMatter(rawContent);
@@ -143,9 +162,9 @@ export async function getStaticPaths() {
       const { typename } = getCategoryInfo(mdPath);
 
       const fullDoc = {
-        id: doc.slug,
-        title: metadata.title || fileName,
-        slug: doc.slug,
+        id: slug,
+        title: metadata.title || path.basename(mdPath, '.md'),
+        slug: slug,
         description: metadata.description || getFirstParagraph(cleanContent),
         content: htmlContent,
         typename: metadata.typename || typename,
@@ -158,7 +177,7 @@ export async function getStaticPaths() {
       };
 
       return {
-        params: { slug: doc.slug },
+        params: { slug: slug },
         props: { doc: fullDoc },
       };
     })
