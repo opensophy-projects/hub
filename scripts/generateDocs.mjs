@@ -146,7 +146,7 @@ function buildDoc(fullPath) {
   const meta = {
     id:          slug || 'welcome',
     title:       metadata.title || fileName,
-    slug:        slug || 'welcome',
+    slug:        slug || '',
     description: metadata.description || getFirstParagraph(processedContent),
     typename:    metadata.typename || typename,
     author:      metadata.author || '',
@@ -155,11 +155,12 @@ function buildDoc(fullPath) {
     lang:        metadata.lang || 'ru',
   };
 
-  return { meta, content: htmlContent };
+  return { meta, content: htmlContent, rawContent: raw };
 }
 
 function scanDocs(dir) {
   const manifest = [];
+  const docFiles = new Map();
 
   function scan(currentPath) {
     if (!fs.existsSync(currentPath)) {
@@ -178,33 +179,21 @@ function scanDocs(dir) {
 
       if (!item.endsWith('.md') || item === 'README.md') continue;
 
-      const { meta, content } = buildDoc(fullPath);
-
-      // Создаем директорию для файла, если её нет
-      const outputFilePath = path.join(outputDir, `${meta.slug}.json`);
-      const outputFileDir = path.dirname(outputFilePath);
-      
-      if (!fs.existsSync(outputFileDir)) {
-        fs.mkdirSync(outputFileDir, { recursive: true });
-      }
-
-      fs.writeFileSync(
-        outputFilePath,
-        JSON.stringify({ ...meta, content }, null, 2)
-      );
+      const { meta, rawContent } = buildDoc(fullPath);
 
       manifest.push(meta);
+      docFiles.set(meta.slug || 'welcome', rawContent);
     }
   }
 
   scan(dir);
-  return manifest;
+  return { manifest, docFiles };
 }
 
 // ─── Entry point ──────────────────────────────────────────────────────────────
 
 function generateDocs() {
-  console.log('🔄 Generating individual doc files...');
+  console.log('🔄 Generating docs manifest...');
 
   if (!fs.existsSync(docsDir)) {
     console.error(`❌ Docs directory not found: ${docsDir}`);
@@ -215,17 +204,22 @@ function generateDocs() {
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
-  const manifest = scanDocs(docsDir).sort(
+  const { manifest, docFiles } = scanDocs(docsDir);
+
+  // Сортируем по дате (новые сверху)
+  const sortedManifest = manifest.sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
-  fs.writeFileSync(manifestFile, JSON.stringify(manifest, null, 2));
+  // Пишем только manifest.json
+  fs.writeFileSync(manifestFile, JSON.stringify(sortedManifest, null, 2));
 
-  console.log(`✅ Generated ${manifest.length} individual doc files`);
-  console.log('✅ Generated manifest.json');
-  manifest.forEach((doc) =>
-    console.log(`  - ${doc.title} (${doc.typename || 'no-category'}) - slug: ${doc.slug || '/'}`)
-  );
+  console.log(`✅ Generated manifest.json with ${manifest.length} documents`);
+  sortedManifest.forEach((doc) =>
+    console.log(`  - ${doc.title} (${doc.typename || 'no-category'}) - slug: ${doc.slug || '/'}`
+  ));
+
+  console.log('✅ No individual JSON files generated - using raw markdown files');
 }
 
 generateDocs();
