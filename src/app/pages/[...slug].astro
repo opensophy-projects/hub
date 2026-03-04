@@ -58,29 +58,6 @@ function parseCategoryName(folderName) {
   return { title: folderName, slug: slugify(folderName) };
 }
 
-function generateSlugFromPath(fullPath) {
-  const docsDir = path.join(process.cwd(), 'Docs');
-  const relativePath = path.relative(docsDir, fullPath);
-  const dir = path.dirname(relativePath);
-  const fileName = path.basename(fullPath, '.md');
-
-  if (dir === '.' || dir === '') {
-    if (fileName === 'welcome') {
-      return '';
-    }
-    return slugify(fileName);
-  }
-
-  const parts = dir.split(path.sep);
-  const slugParts = parts.map((part) => {
-    const { slug } = parseCategoryName(part);
-    return slug;
-  });
-
-  const filePart = slugify(fileName);
-  return [...slugParts, filePart].join('/');
-}
-
 function getCategoryInfo(fullPath) {
   const docsDir = path.join(process.cwd(), 'Docs');
   const relativePath = path.relative(docsDir, fullPath);
@@ -124,24 +101,19 @@ export async function getStaticPaths() {
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
   
   return manifest.map((doc) => {
-    // welcome рендерится через index.astro на /, пропускаем
     if (!doc.slug || doc.slug === '') {
       return null;
     }
 
-    // Ищем MD файл в Docs директории
     const docsDir = path.join(process.cwd(), 'Docs');
     
-    // Преобразуем slug обратно в путь к файлу
     let mdPath;
     const slugParts = doc.slug.split('/');
     const fileName = slugParts[slugParts.length - 1];
     
     if (slugParts.length === 1) {
-      // Корневой файл
       mdPath = path.join(docsDir, `${fileName}.md`);
     } else {
-      // Файл в подпапке - нужно найти папку по typename
       let searchDir = docsDir;
       
       for (const item of fs.readdirSync(docsDir)) {
