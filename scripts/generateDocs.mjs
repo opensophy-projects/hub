@@ -98,6 +98,10 @@ function generateSlugFromPath(fullPath) {
   const fileName = path.basename(fullPath, '.md');
 
   if (dir === '.' || dir === '') {
+    // Специальный случай для welcome.md - возвращаем пустую строку вместо 'welcome'
+    if (fileName === 'welcome') {
+      return '';
+    }
     return slugify(fileName);
   }
 
@@ -140,9 +144,9 @@ function buildDoc(fullPath) {
   const { typename }     = getCategoryInfo(fullPath);
 
   const meta = {
-    id:          slug,
+    id:          slug || 'welcome',
     title:       metadata.title || fileName,
-    slug,
+    slug:        slug || 'welcome',
     description: metadata.description || getFirstParagraph(processedContent),
     typename:    metadata.typename || typename,
     author:      metadata.author || '',
@@ -220,7 +224,7 @@ function generateDocs() {
   console.log(`✅ Generated ${manifest.length} individual doc files`);
   console.log('✅ Generated manifest.json');
   manifest.forEach((doc) =>
-    console.log(`  - ${doc.title} (${doc.typename || 'no-category'}) - slug: ${doc.slug}`)
+    console.log(`  - ${doc.title} (${doc.typename || 'no-category'}) - slug: ${doc.slug || '/'}`)
   );
 }
 
