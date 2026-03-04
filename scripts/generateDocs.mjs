@@ -89,7 +89,6 @@ function parseCategoryName(folderName) {
   if (match) {
     return { title: match[1].trim(), slug: match[2].trim() };
   }
-  // Если синтаксис не соответствует, используем папку как есть
   return { title: folderName, slug: slugify(folderName) };
 }
 
@@ -98,12 +97,10 @@ function generateSlugFromPath(fullPath) {
   const dir = path.dirname(relativePath);
   const fileName = path.basename(fullPath, '.md');
 
-  // Если файл находится в Docs/ напрямую (dir === '.')
   if (dir === '.' || dir === '') {
     return slugify(fileName);
   }
 
-  // Если файл в подпапке, обрабатываем каждую папку
   const parts = dir.split(path.sep);
   const slugParts = parts.map((part) => {
     const { slug } = parseCategoryName(part);
@@ -120,14 +117,14 @@ function getCategoryInfo(fullPath) {
   const dir = path.dirname(relativePath);
 
   if (dir === '.' || dir === '') {
-    return { typename: '', categoryTitle: '' };
+    return { typename: '' };
   }
 
   const parts = dir.split(path.sep);
   const lastPart = parts[parts.length - 1];
-  const { title, slug } = parseCategoryName(lastPart);
+  const { title } = parseCategoryName(lastPart);
 
-  return { typename: title, categoryTitle: title };
+  return { typename: title };
 }
 
 // ─── Scanner ──────────────────────────────────────────────────────────────────
@@ -144,18 +141,14 @@ function buildDoc(fullPath) {
 
   const meta = {
     id:          slug,
-    title:       metadata.title       || fileName,
+    title:       metadata.title || fileName,
     slug,
     description: metadata.description || getFirstParagraph(processedContent),
-    type:        '',
-    typename:    metadata.typename    || typename,
-    author:      metadata.author      || '',
-    date:        metadata.date        || new Date().toISOString().split('T')[0],
+    typename:    metadata.typename || typename,
+    author:      metadata.author || '',
+    date:        metadata.date || new Date().toISOString().split('T')[0],
     tags:        metadata.tags ? metadata.tags.split(',').map((t) => t.trim()) : [],
-    keywords:    metadata.keywords    || (metadata.tags ?? ''),
-    canonical:   metadata.canonical   || null,
-    robots:      metadata.robots      || 'index, follow',
-    lang:        metadata.lang        || 'ru',
+    lang:        metadata.lang || 'ru',
   };
 
   return { meta, content: htmlContent };
@@ -183,8 +176,16 @@ function scanDocs(dir) {
 
       const { meta, content } = buildDoc(fullPath);
 
+      // Создаем директорию для файла, если её нет
+      const outputFilePath = path.join(outputDir, `${meta.slug}.json`);
+      const outputFileDir = path.dirname(outputFilePath);
+      
+      if (!fs.existsSync(outputFileDir)) {
+        fs.mkdirSync(outputFileDir, { recursive: true });
+      }
+
       fs.writeFileSync(
-        path.join(outputDir, `${meta.slug}.json`),
+        outputFilePath,
         JSON.stringify({ ...meta, content }, null, 2)
       );
 
