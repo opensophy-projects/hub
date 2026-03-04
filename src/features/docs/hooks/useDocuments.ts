@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 
-interface DocMetadata {
+export interface DocMetadata {
   id: string;
   title: string;
   slug: string;
@@ -16,9 +16,13 @@ interface DocMetadata {
   robots?: string;
   lang?: string;
   icon?: string;
+  // Nav-popover fields
+  navSlug?: string;
+  navTitle?: string;
+  navIcon?: string;
 }
 
-interface DocWithContent extends DocMetadata {
+export interface DocWithContent extends DocMetadata {
   content: string;
 }
 
