@@ -90,6 +90,28 @@ function getFirstParagraph(content) {
   return '';
 }
 
+function findMarkdownFile(docsDir, slugParts, fileName) {
+  if (slugParts.length === 1) {
+    return path.join(docsDir, `${fileName}.md`);
+  }
+
+  let searchDir = docsDir;
+  for (const item of fs.readdirSync(docsDir)) {
+    const itemPath = path.join(docsDir, item);
+    const stat = fs.statSync(itemPath);
+
+    if (stat.isDirectory()) {
+      const { slug: categorySlug } = parseCategoryName(item);
+      if (categorySlug === slugParts[0]) {
+        searchDir = itemPath;
+        break;
+      }
+    }
+  }
+
+  return path.join(searchDir, `${fileName}.md`);
+}
+
 export async function getStaticPaths() {
   const manifestPath = path.join(process.cwd(), 'public/data/docs/manifest.json');
   
@@ -100,69 +122,47 @@ export async function getStaticPaths() {
   
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
   
-  return manifest.map((doc) => {
-    if (!doc.slug || doc.slug === '') {
-      return null;
-    }
+  return manifest
+    .filter(doc => doc.slug && doc.slug !== '')
+    .map((doc) => {
+      const docsDir = path.join(process.cwd(), 'Docs');
+      const slugParts = doc.slug.split('/');
+      const fileName = slugParts[slugParts.length - 1];
 
-    const docsDir = path.join(process.cwd(), 'Docs');
-    
-    let mdPath;
-    const slugParts = doc.slug.split('/');
-    const fileName = slugParts[slugParts.length - 1];
-    
-    if (slugParts.length === 1) {
-      mdPath = path.join(docsDir, `${fileName}.md`);
-    } else {
-      let searchDir = docsDir;
-      
-      for (const item of fs.readdirSync(docsDir)) {
-        const itemPath = path.join(docsDir, item);
-        const stat = fs.statSync(itemPath);
-        
-        if (stat.isDirectory()) {
-          const { slug: categorySlug } = parseCategoryName(item);
-          if (categorySlug === slugParts[0]) {
-            searchDir = itemPath;
-            break;
-          }
-        }
+      const mdPath = findMarkdownFile(docsDir, slugParts, fileName);
+
+      if (!fs.existsSync(mdPath)) {
+        console.warn(`Missing doc file: ${mdPath}`);
+        return null;
       }
-      
-      mdPath = path.join(searchDir, `${fileName}.md`);
-    }
-    
-    if (!fs.existsSync(mdPath)) {
-      console.warn(`Missing doc file: ${mdPath}`);
-      return null;
-    }
-    
-    const rawContent = fs.readFileSync(mdPath, 'utf-8');
-    const { metadata, content: cleanContent } = extractFrontMatter(rawContent);
-    
-    const htmlContent = marked(preprocessAlerts(cleanContent));
-    const { typename } = getCategoryInfo(mdPath);
-    
-    const fullDoc = {
-      id: doc.slug,
-      title: metadata.title || fileName,
-      slug: doc.slug,
-      description: metadata.description || getFirstParagraph(cleanContent),
-      content: htmlContent,
-      typename: metadata.typename || typename,
-      author: metadata.author || '',
-      date: metadata.date || new Date().toISOString().split('T')[0],
-      tags: metadata.tags ? metadata.tags.split(',').map((t) => t.trim()) : [],
-      lang: metadata.lang || 'ru',
-      keywords: metadata.keywords || '',
-      robots: metadata.robots || 'index, follow',
-    };
-    
-    return {
-      params: { slug: doc.slug },
-      props: { doc: fullDoc },
-    };
-  }).filter(Boolean);
+
+      const rawContent = fs.readFileSync(mdPath, 'utf-8');
+      const { metadata, content: cleanContent } = extractFrontMatter(rawContent);
+
+      const htmlContent = marked(preprocessAlerts(cleanContent));
+      const { typename } = getCategoryInfo(mdPath);
+
+      const fullDoc = {
+        id: doc.slug,
+        title: metadata.title || fileName,
+        slug: doc.slug,
+        description: metadata.description || getFirstParagraph(cleanContent),
+        content: htmlContent,
+        typename: metadata.typename || typename,
+        author: metadata.author || '',
+        date: metadata.date || new Date().toISOString().split('T')[0],
+        tags: metadata.tags ? metadata.tags.split(',').map((t) => t.trim()) : [],
+        lang: metadata.lang || 'ru',
+        keywords: metadata.keywords || '',
+        robots: metadata.robots || 'index, follow',
+      };
+
+      return {
+        params: { slug: doc.slug },
+        props: { doc: fullDoc },
+      };
+    })
+    .filter(Boolean);
 }
 
 const { slug } = Astro.params;
