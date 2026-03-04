@@ -3,7 +3,11 @@ import Layout from '@/app/layouts/Layout.astro';
 import DocContent from '@/features/docs/components/DocContent';
 import fs from 'node:fs';
 import path from 'node:path';
-import { scanDocsDirectoryRecursive, generateSlugFromPath, buildDocFromPath } from '../../../scripts/docUtils.mjs';
+import {
+  scanDocsDirectoryRecursive,
+  buildDocFromPath,
+  getDocInfo,
+} from '../../scripts/docUtils.mjs';
 
 export async function getStaticPaths() {
   const docsDir = path.join(process.cwd(), 'Docs');
@@ -17,13 +21,15 @@ export async function getStaticPaths() {
 
   return allMdFiles
     .map((mdPath) => {
-      const slug = generateSlugFromPath(mdPath, docsDir);
-      if (!slug) return null;
+      const info = getDocInfo(mdPath, docsDir);
+
+      // welcome.md → slug '' → рендерится index.astro, пропускаем
+      if (info.slug === '') return null;
 
       const doc = buildDocFromPath(mdPath, docsDir);
 
       return {
-        params: { slug },
+        params: { slug: doc.slug },
         props: { doc },
       };
     })
@@ -41,6 +47,7 @@ if (!doc || !slug) {
 <Layout
   title={doc.title}
   description={doc.description}
+  image={doc.image}
   url={`/${slug}`}
   type="article"
   author={doc.author}
