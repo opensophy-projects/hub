@@ -3,6 +3,115 @@ import Layout from '@/app/layouts/Layout.astro';
 import DocContent from '@/features/docs/components/DocContent';
 import fs from 'node:fs';
 import path from 'node:path';
+import { marked } from 'marked';
+
+function extractFrontMatter(content) {
+  const frontMatterRegex = /^---\n([\s\S]*?)\n---\n/;
+  const match = content.match(frontMatterRegex);
+
+  if (!match) return { metadata: {}, content };
+
+  const metadata = {};
+  for (const line of match[1].split('\n')) {
+    const [key, ...valueParts] = line.split(':');
+    if (key && valueParts.length > 0) {
+      metadata[key.trim()] = valueParts.join(':').trim().replace(/^['"]/, '').replace(/['"]$/, '');
+    }
+  }
+
+  return { metadata, content: content.replace(frontMatterRegex, '') };
+}
+
+function preprocessAlerts(content) {
+  const codeBlocks = [];
+  const codeBlockPattern = /```[\s\S]*?```/g;
+  const alertPattern = /^:::(note|tip|important|warning|caution)\n([\s\S]*?)^:::$/gm;
+
+  const protected1 = content.replaceAll(codeBlockPattern, (match) => {
+    codeBlocks.push(match);
+    return `___CODE_BLOCK_${codeBlocks.length - 1}___`;
+  });
+
+  const protected2 = protected1.replaceAll(alertPattern, (_match, type, alertContent) => {
+    const parsedContent = marked.parse(alertContent.trim());
+    return `<div class="custom-alert" data-alert-type="${type}">\n${parsedContent}\n</div>`;
+  });
+
+  return protected2.replaceAll(/___CODE_BLOCK_(\d+)___/g, (_match, index) =>
+    codeBlocks[Number.parseInt(index, 10)]
+  );
+}
+
+function slugify(str) {
+  return str
+    .toLowerCase()
+    .replaceAll(/[^\w\s-]/g, '')
+    .replaceAll(/\s+/g, '-')
+    .replaceAll(/-+/g, '-');
+}
+
+function parseCategoryName(folderName) {
+  const match = folderName.match(/^(.+?)\{([^}]+)\}$/);
+  if (match) {
+    return { title: match[1].trim(), slug: match[2].trim() };
+  }
+  return { title: folderName, slug: slugify(folderName) };
+}
+
+function generateSlugFromPath(fullPath) {
+  const docsDir = path.join(process.cwd(), 'Docs');
+  const relativePath = path.relative(docsDir, fullPath);
+  const dir = path.dirname(relativePath);
+  const fileName = path.basename(fullPath, '.md');
+
+  if (dir === '.' || dir === '') {
+    if (fileName === 'welcome') {
+      return '';
+    }
+    return slugify(fileName);
+  }
+
+  const parts = dir.split(path.sep);
+  const slugParts = parts.map((part) => {
+    const { slug } = parseCategoryName(part);
+    return slug;
+  });
+
+  const filePart = slugify(fileName);
+  return [...slugParts, filePart].join('/');
+}
+
+function getCategoryInfo(fullPath) {
+  const docsDir = path.join(process.cwd(), 'Docs');
+  const relativePath = path.relative(docsDir, fullPath);
+  const dir = path.dirname(relativePath);
+
+  if (dir === '.' || dir === '') {
+    return { typename: '' };
+  }
+
+  const parts = dir.split(path.sep);
+  const lastPart = parts[parts.length - 1];
+  const { title } = parseCategoryName(lastPart);
+
+  return { typename: title };
+}
+
+function getFirstParagraph(content) {
+  for (const line of content.split('\n')) {
+    const trimmed = line.trim();
+    if (
+      trimmed &&
+      !trimmed.startsWith('#') &&
+      !trimmed.startsWith('*') &&
+      !trimmed.startsWith('!') &&
+      !trimmed.startsWith(':')
+    ) {
+      return trimmed.substring(0, 160);
+    }
+  }
+  return '';
+}
 
 export async function getStaticPaths() {
   const manifestPath = path.join(process.cwd(), 'public/data/docs/manifest.json');
@@ -14,24 +123,71 @@ export async function getStaticPaths() {
   
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
   
-  return manifest.map((doc: any) => {
+  return manifest.map((doc) => {
     // welcome рендерится через index.astro на /, пропускаем
-    if (doc.slug === 'welcome') return null;
+    if (!doc.slug || doc.slug === '') {
+      return null;
+    }
 
-    const docPath = path.join(process.cwd(), `public/data/docs/${doc.slug}.json`);
+    // Ищем MD файл в Docs директории
+    const docsDir = path.join(process.cwd(), 'Docs');
     
-    if (!fs.existsSync(docPath)) {
-      console.warn(`Missing doc file: ${docPath}`);
+    // Преобразуем slug обратно в путь к файлу
+    let mdPath;
+    const slugParts = doc.slug.split('/');
+    const fileName = slugParts[slugParts.length - 1];
+    
+    if (slugParts.length === 1) {
+      // Корневой файл
+      mdPath = path.join(docsDir, `${fileName}.md`);
+    } else {
+      // Файл в подпапке - нужно найти папку по typename
+      let searchDir = docsDir;
+      
+      for (const item of fs.readdirSync(docsDir)) {
+        const itemPath = path.join(docsDir, item);
+        const stat = fs.statSync(itemPath);
+        
+        if (stat.isDirectory()) {
+          const { slug: categorySlug } = parseCategoryName(item);
+          if (categorySlug === slugParts[0]) {
+            searchDir = itemPath;
+            break;
+          }
+        }
+      }
+      
+      mdPath = path.join(searchDir, `${fileName}.md`);
+    }
+    
+    if (!fs.existsSync(mdPath)) {
+      console.warn(`Missing doc file: ${mdPath}`);
       return null;
     }
     
-    const fullDoc = JSON.parse(fs.readFileSync(docPath, 'utf-8'));
+    const rawContent = fs.readFileSync(mdPath, 'utf-8');
+    const { metadata, content: cleanContent } = extractFrontMatter(rawContent);
     
-    // slug теперь уже содержит полный путь: папка/файл или просто файл
-    const slugValue = doc.slug;
+    const htmlContent = marked(preprocessAlerts(cleanContent));
+    const { typename } = getCategoryInfo(mdPath);
+    
+    const fullDoc = {
+      id: doc.slug,
+      title: metadata.title || fileName,
+      slug: doc.slug,
+      description: metadata.description || getFirstParagraph(cleanContent),
+      content: htmlContent,
+      typename: metadata.typename || typename,
+      author: metadata.author || '',
+      date: metadata.date || new Date().toISOString().split('T')[0],
+      tags: metadata.tags ? metadata.tags.split(',').map((t) => t.trim()) : [],
+      lang: metadata.lang || 'ru',
+      keywords: metadata.keywords || '',
+      robots: metadata.robots || 'index, follow',
+    };
     
     return {
-      params: { slug: slugValue },
+      params: { slug: doc.slug },
       props: { doc: fullDoc },
     };
   }).filter(Boolean);
