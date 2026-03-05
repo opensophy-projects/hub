@@ -5,7 +5,6 @@ import TableWithControls from '@/features/table/components/TableWithControls';
 import Alert from '../components/Alert';
 import NewUIComponentViewer from '@/features/ui-components/NewUIComponentViewer';
 import ImageCard from '../components/ImageCard';
-import HeadingAnchor from '../components/HeadingAnchor';
 import { CardWithContext, CardGridWithContext } from '../components/Card';
 import { ColumnsWithContext } from '../components/Columns';
 import { StepperWithContext } from '../components/Stepper';
@@ -15,8 +14,6 @@ export const TableContext = createContext<{
   onTableClick?: (tableHtml: string) => void;
   isDark: boolean;
 }>({ isDark: false });
-
-// ─── Sanitize ──────────────────────────────────────────────────────────────────
 
 const ALLOWED_TAGS = [
   'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
@@ -43,8 +40,6 @@ const sanitizeInnerHTML = (html: string): string => {
   });
 };
 
-// ─── Heading slug (must match TOC logic) ──────────────────────────────────────
-
 function slugifyHeading(text: string): string {
   return text
     .toLowerCase()
@@ -54,7 +49,14 @@ function slugifyHeading(text: string): string {
     .replace(/^-|-$/g, '');
 }
 
-// ─── Processors ───────────────────────────────────────────────────────────────
+const TAG_STYLES: Record<number, React.CSSProperties> = {
+  1: { fontSize: 'clamp(1.4rem,3vw,2.25rem)', fontWeight: 700, marginTop: '2rem', marginBottom: '1rem', lineHeight: 1.2, scrollMarginTop: '5rem' },
+  2: { fontSize: 'clamp(1.2rem,2.5vw,1.875rem)', fontWeight: 700, marginTop: '2rem', marginBottom: '1rem', lineHeight: 1.25, scrollMarginTop: '5rem' },
+  3: { fontSize: 'clamp(1.05rem,2vw,1.5rem)', fontWeight: 700, marginTop: '1.5rem', marginBottom: '0.75rem', lineHeight: 1.3, scrollMarginTop: '5rem' },
+  4: { fontSize: 'clamp(1rem,1.8vw,1.25rem)', fontWeight: 700, marginTop: '1.5rem', marginBottom: '0.75rem', scrollMarginTop: '5rem' },
+  5: { fontSize: '1rem', fontWeight: 700, marginTop: '1.25rem', marginBottom: '0.5rem', scrollMarginTop: '5rem' },
+  6: { fontSize: '0.875rem', fontWeight: 700, marginTop: '1rem', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em', scrollMarginTop: '5rem' },
+};
 
 const processPreElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const codeElement = element.querySelector('code');
@@ -86,8 +88,15 @@ const processHeadingElement = (element: Element, tagName: string, key: string, e
   const id = element.id || slugifyHeading(text);
   const level = parseInt(tagName[1], 10);
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
+  
+  const Tag = tagName as keyof JSX.IntrinsicElements;
   elements.push(
-    React.createElement(HeadingAnchor, { key, id, level, html: sanitizedHTML })
+    React.createElement(Tag, {
+      key,
+      id,
+      style: TAG_STYLES[level],
+      dangerouslySetInnerHTML: { __html: sanitizedHTML },
+    })
   );
 };
 
@@ -161,18 +170,23 @@ const processHrElement = (key: string, elements: React.ReactNode[]) => {
 const processStrongElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   elements.push(React.createElement('strong', { key, dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(element.innerHTML) } }));
 };
+
 const processEmElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   elements.push(React.createElement('em', { key, dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(element.innerHTML) } }));
 };
+
 const processUnderlineElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   elements.push(React.createElement('u', { key, dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(element.innerHTML) } }));
 };
+
 const processDeleteElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   elements.push(React.createElement('del', { key, dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(element.innerHTML) } }));
 };
+
 const processSubElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   elements.push(React.createElement('sub', { key, dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(element.innerHTML) } }));
 };
+
 const processSupElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   elements.push(React.createElement('sup', { key, dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(element.innerHTML) } }));
 };
@@ -201,8 +215,6 @@ const processAlertElement = (element: Element, key: string, elements: React.Reac
     elements.push(React.createElement(Alert, { key, type: alertType }, ...contentElements));
   }
 };
-
-// ─── Card processors ──────────────────────────────────────────────────────────
 
 const processCardElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const color = element.dataset.color || undefined;
@@ -233,8 +245,6 @@ const processCardGridElement = (element: Element, key: string, elements: React.R
   );
 };
 
-// ─── Columns processor ────────────────────────────────────────────────────────
-
 const processColumnsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const layout = (element.dataset.layout || 'equal') as any;
   const colElements: React.ReactNode[] = [];
@@ -250,8 +260,6 @@ const processColumnsElement = (element: Element, key: string, elements: React.Re
     React.createElement(ColumnsWithContext, { key, layout }, ...colElements)
   );
 };
-
-// ─── Steps processor ──────────────────────────────────────────────────────────
 
 const processStepsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const steps: StepData[] = [];
@@ -271,8 +279,6 @@ const processStepsElement = (element: Element, key: string, elements: React.Reac
 
   elements.push(React.createElement(StepperWithContext, { key, steps }));
 };
-
-// ─── UIComponent processor ────────────────────────────────────────────────────
 
 const processUIComponent = (
   element: Element,
@@ -294,8 +300,6 @@ const processTextNode = (node: ChildNode, key: string, elements: React.ReactNode
   const text = node.textContent || '';
   if (text.trim()) elements.push(React.createElement('span', { key }, text));
 };
-
-// ─── Generic element dispatcher ───────────────────────────────────────────────
 
 const processElement = (
   element: Element,
@@ -338,8 +342,6 @@ const processElement = (
   }
 };
 
-// ─── Main parser ──────────────────────────────────────────────────────────────
-
 export const parseHtmlToReact = (html: string): React.ReactNode[] => {
   const sanitized = DOMPurify.sanitize(html, {
     ALLOWED_TAGS: [...ALLOWED_TAGS],
@@ -364,7 +366,6 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       const element = node as Element;
       const tagName = element.tagName.toLowerCase();
 
-      // ── Custom blocks ──
       if (tagName === 'div') {
         if (element.classList.contains('custom-alert')) {
           processAlertElement(element, key, elements);
@@ -388,7 +389,6 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
         }
       }
 
-      // ── Paragraph ──
       if (tagName === 'p') {
         const children = Array.from(element.childNodes).filter(
           (n) => !(n.nodeType === Node.TEXT_NODE && !n.textContent?.trim())
