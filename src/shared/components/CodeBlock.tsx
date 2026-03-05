@@ -3,8 +3,6 @@ import { Copy, Maximize2, ChevronDown, Search, X } from 'lucide-react';
 import { TableContext } from '../lib/htmlParser';
 import hljs from 'highlight.js/lib/core';
 
-// ─── Маппинг алиасов языков ───────────────────────────────────────────────────
-
 const LANG_ALIASES: Record<string, string> = {
   'jsx': 'javascript',
   'tsx': 'typescript',
@@ -16,17 +14,12 @@ const LANG_ALIASES: Record<string, string> = {
   'cs': 'csharp',
 };
 
-// ─── Динамический загрузчик языков ───────────────────────────────────────────
-
 const loadedLanguages = new Set<string>();
 const pendingLanguages = new Map<string, Promise<void>>();
 
 async function loadLanguage(lang: string): Promise<void> {
   const normalized = LANG_ALIASES[lang] ?? lang;
-
   if (loadedLanguages.has(normalized)) return;
-
-  // Дедупликация — не грузим одно и то же дважды
   const existing = pendingLanguages.get(normalized);
   if (existing) return existing;
 
@@ -57,27 +50,23 @@ async function loadLanguage(lang: string): Promise<void> {
           normalized !== 'xml' && hljs.registerLanguage('html', (module as any).default);
           break;
         default:
-          // Неизвестный язык — просто пропускаем
           loadedLanguages.add(normalized);
           return;
       }
 
       if (module) {
         hljs.registerLanguage(normalized, (module as any).default);
-
-        // Регистрируем алиасы обратно
         for (const [alias, target] of Object.entries(LANG_ALIASES)) {
           if (target === normalized && !loadedLanguages.has(alias)) {
             hljs.registerLanguage(alias, (module as any).default);
             loadedLanguages.add(alias);
           }
         }
-
         loadedLanguages.add(normalized);
       }
     } catch (e) {
       console.warn(`Failed to load highlight.js language: ${normalized}`, e);
-      loadedLanguages.add(normalized); // Помечаем чтобы не пытаться снова
+      loadedLanguages.add(normalized);
     } finally {
       pendingLanguages.delete(normalized);
     }
@@ -87,14 +76,10 @@ async function loadLanguage(lang: string): Promise<void> {
   return promise;
 }
 
-// ─── Типы ─────────────────────────────────────────────────────────────────────
-
 interface CodeBlockProps {
   code: string;
   language?: string;
 }
-
-// ─── Вспомогательные компоненты ───────────────────────────────────────────────
 
 const CodeBody: React.FC<{
   lines: string[];
@@ -131,8 +116,6 @@ const CodeBody: React.FC<{
   </pre>
 );
 
-// ─── Основной компонент ───────────────────────────────────────────────────────
-
 export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
   const { isDark } = useContext(TableContext);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -141,12 +124,36 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
   const [searchQuery, setSearchQuery] = useState('');
   const [highlightedHtml, setHighlightedHtml] = useState('');
   const codeRef = useRef<HTMLDivElement>(null);
+  const scrollPosRef = useRef(0);
 
   const lines = code.split('\n');
   const isLongCode = lines.length > 15;
   const displayedLines = isExpanded ? lines : lines.slice(0, 15);
 
-  // ─── Динамическая подсветка ───────────────────────────────────────────────
+  // КРИТИЧНЫЙ ФИКС: сохраняем позицию скролла при открытии fullscreen
+  useEffect(() => {
+    if (isFullscreen) {
+      scrollPosRef.current = window.scrollY;
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollPosRef.current}px`;
+      document.body.style.width = '100%';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      window.scrollTo(0, scrollPosRef.current);
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+    };
+  }, [isFullscreen]);
+
   useEffect(() => {
     if (!language || !language.trim()) {
       setHighlightedHtml('');
@@ -177,7 +184,6 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
     return () => { cancelled = true; };
   }, [code, language, isDark]);
 
-  // ─── Поиск ────────────────────────────────────────────────────────────────
   const matchedLines = useMemo(
     () =>
       new Set(
@@ -304,7 +310,10 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
 
   if (isFullscreen) {
     return (
-      <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+      <div 
+        className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+      >
         <div
           className={`w-full max-w-4xl max-h-screen flex flex-col rounded-lg border ${border} not-prose`}
           style={{ background: bg }}
