@@ -6,7 +6,6 @@ interface TableOfContentsItem {
   level: number;
 }
 
-// ИСПРАВЛЕНО: функция идентична HeadingAnchor и docUtils
 function slugifyHeading(text: string): string {
   return text
     .toLowerCase()
@@ -31,17 +30,12 @@ export function useTableOfContents<T>(dependency: T): TableOfContentsItem[] {
       const usedIds = new Map<string, number>();
 
       headings.forEach((heading) => {
-        // Используем data-heading-text если есть (установлен HeadingAnchor)
-        const text =
-          (heading as HTMLElement).dataset.headingText ||
-          heading.textContent?.replace(/#\s*$/, '').trim() ||
-          '';
+        const text = heading.textContent?.trim() || '';
 
-        if (!text) return; // Пропускаем пустые заголовки
+        if (!text) return;
 
         let id = slugifyHeading(text);
 
-        // Дедупликация id
         if (usedIds.has(id)) {
           const count = usedIds.get(id)! + 1;
           usedIds.set(id, count);
@@ -50,7 +44,6 @@ export function useTableOfContents<T>(dependency: T): TableOfContentsItem[] {
           usedIds.set(id, 0);
         }
 
-        // Устанавливаем id на элементе если его нет
         if (!heading.id || heading.id !== id) {
           heading.id = id;
         }
