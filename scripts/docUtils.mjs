@@ -64,8 +64,8 @@ export function extractFrontMatter(content) {
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
-function escapeHtml(str) {
-  return str
+function escapeAttr(str) {
+  return String(str)
     .replace(/&/g, '&amp;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
@@ -73,56 +73,10 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;');
 }
 
-// ─── Block extractor: splits content into nested :::tag blocks ──────────────
-// Returns array of { tag, params, body } for top-level blocks
-function extractBlocks(content, tag) {
-  const results = [];
-  const openPattern = new RegExp(`^:::${tag}(?:\\[([^\\]]*?)\\])?(?:\\s+(.+?))?\\s*$`, 'm');
-  let remaining = content;
-
-  while (true) {
-    const startMatch = openPattern.exec(remaining);
-    if (!startMatch) break;
-
-    const startIndex = startMatch.index;
-    const afterOpen = startMatch.index + startMatch[0].length + 1; // +1 for newline
-    const params = startMatch[1] || '';
-    const inlineTitle = startMatch[2] || '';
-
-    // Find matching closing ::: by counting nesting
-    let depth = 1;
-    let pos = afterOpen;
-    while (pos < remaining.length && depth > 0) {
-      const nextOpen = remaining.indexOf('\n:::', pos);
-      if (nextOpen === -1) break;
-      const lineStart = nextOpen + 1;
-      const lineEnd = remaining.indexOf('\n', lineStart);
-      const line = remaining.slice(lineStart, lineEnd === -1 ? undefined : lineEnd).trim();
-      if (line === ':::') {
-        depth--;
-        if (depth === 0) {
-          const body = remaining.slice(afterOpen, lineStart - 1);
-          results.push({ params, inlineTitle, body, startIndex, endIndex: lineEnd === -1 ? remaining.length : lineEnd + 1 });
-          remaining = remaining.slice(0, startIndex) + `\x00BLOCK${results.length - 1}\x00` + remaining.slice(lineEnd === -1 ? remaining.length : lineEnd + 1);
-          break;
-        }
-      } else if (/^:::/.test(line)) {
-        depth++;
-      }
-      pos = lineStart + 1;
-    }
-
-    if (depth > 0) break; // malformed block, stop
-  }
-
-  return { results, remaining };
-}
-
-// ─── Parse params string: "key=value key2=value2" ─────────────────────────────
 function parseParams(paramStr) {
   const params = {};
   if (!paramStr) return params;
-  const regex = /([a-zA-Z_-]+)=([^\s,]+)/g;
+  const regex = /([a-zA-Z_-]+)=([^\s,\]]+)/g;
   let m;
   while ((m = regex.exec(paramStr)) !== null) {
     params[m[1]] = m[2];
@@ -130,196 +84,210 @@ function parseParams(paramStr) {
   return params;
 }
 
-// ─── preprocessCards ──────────────────────────────────────────────────────────
-// Handles both standalone :::card and :::cards[cols=N] wrappers
+// ─── collectBlockBody ─────────────────────────────────────────────────────────
+// Starting from line index `startAfterIndex`, collects lines until the matching
+// closing `:::` is found (depth-aware). Returns body string and the line index
+// of the closing `:::`.
 
-function preprocessCards(content) {
-  // First handle :::cards[cols=N] wrappers
-  const { results: grids, remaining: afterGrids } = extractBlocks(content, 'cards');
+function collectBlockBody(lines, startAfterIndex) {
+  const bodyLines = [];
+  let depth = 1;
+  let i = startAfterIndex;
 
-  let result = afterGrids;
-
-  for (let gi = 0; gi < grids.length; gi++) {
-    const grid = grids[gi];
-    const gridParams = parseParams(grid.params);
-    const cols = Math.min(3, Math.max(1, parseInt(gridParams.cols || '2', 10)));
-
-    // Parse individual :::card blocks inside the grid body
-    const cardHtmls = [];
-    let bodyRemaining = grid.body;
-
-    const cardOpenPattern = /^:::card(?:\[([^\]]*?)\])?\s*$/m;
-    while (true) {
-      const cardMatch = cardOpenPattern.exec(bodyRemaining);
-      if (!cardMatch) break;
-
-      const cardParams = parseParams(cardMatch[1] || '');
-      const afterCardOpen = cardMatch.index + cardMatch[0].length + 1;
-
-      // Find closing :::
-      const closeIndex = bodyRemaining.indexOf('\n:::', afterCardOpen);
-      if (closeIndex === -1) break;
-
-      const cardBody = bodyRemaining.slice(afterCardOpen, closeIndex);
-      const endIndex = closeIndex + 4; // past \n:::
-
-      cardHtmls.push(buildCardHtml(cardParams, cardBody));
-
-      bodyRemaining = bodyRemaining.slice(0, cardMatch.index) + bodyRemaining.slice(endIndex);
+  while (i < lines.length && depth > 0) {
+    const trimmed = lines[i].trim();
+    if (/^:::/.test(trimmed)) {
+      if (trimmed === ':::') {
+        depth--;
+        if (depth === 0) {
+          return { body: bodyLines.join('\n'), endIndex: i };
+        }
+        // Still inside — keep as body (nested closer that belongs to an inner block)
+        bodyLines.push(lines[i]);
+      } else {
+        // Opening of a nested block — increase depth
+        depth++;
+        bodyLines.push(lines[i]);
+      }
+    } else {
+      bodyLines.push(lines[i]);
     }
-
-    const gridHtml = `<div class="custom-cardgrid" data-cols="${cols}">${cardHtmls.join('')}</div>`;
-    result = result.replace(`\x00BLOCK${gi}\x00`, gridHtml);
+    i++;
   }
 
-  // Now handle standalone :::card blocks
-  const { results: cards, remaining: afterCards } = extractBlocks(result, 'card');
-  result = afterCards;
-
-  for (let ci = 0; ci < cards.length; ci++) {
-    const card = cards[ci];
-    const cardParams = parseParams(card.params);
-    const cardHtml = buildCardHtml(cardParams, card.body);
-    result = result.replace(`\x00BLOCK${ci}\x00`, cardHtml);
-  }
-
-  return result;
+  return { body: bodyLines.join('\n'), endIndex: i - 1 };
 }
 
-function buildCardHtml(params, body) {
-  const color = params.color ? escapeHtml(params.color) : '';
+// ─── parseInnerBlocks ────────────────────────────────────────────────────────
+// Parses flat (non-nested) inner blocks like :::card, :::col, :::step.
+// Each block ends with its own `:::`.
 
-  // Extract [title] and [icon] from body
-  let title = '';
-  let icon = '';
+function parseInnerBlocks(bodyStr, innerTag) {
+  const lines = bodyStr.split('\n');
+  const results = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const openMatch = lines[i].trim().match(
+      new RegExp(`^:::${innerTag}(?:\\[([^\\]]*?)\\])?(?:\\s+(.+?))?\\s*$`)
+    );
+
+    if (!openMatch) {
+      i++;
+      continue;
+    }
+
+    const params = parseParams(openMatch[1] || '');
+    const inlineText = openMatch[2] || '';
+    i++;
+
+    const bodyLines = [];
+    while (i < lines.length) {
+      if (lines[i].trim() === ':::') {
+        i++;
+        break;
+      }
+      bodyLines.push(lines[i]);
+      i++;
+    }
+
+    results.push({ params, inlineText, body: bodyLines.join('\n') });
+  }
+
+  return results;
+}
+
+// ─── buildCardHtml ────────────────────────────────────────────────────────────
+
+function buildCardHtml(params, body) {
+  const color = params.color ? escapeAttr(params.color) : '';
+
   let remaining = body;
 
   const titleMatch = remaining.match(/^\[title\](.+)$/m);
-  if (titleMatch) {
-    title = escapeHtml(titleMatch[1].trim());
-    remaining = remaining.replace(titleMatch[0], '').trim();
-  }
+  const title = titleMatch ? escapeAttr(titleMatch[1].trim()) : '';
+  if (titleMatch) remaining = remaining.replace(titleMatch[0], '');
 
   const iconMatch = remaining.match(/^\[icon\](.+)$/m);
-  if (iconMatch) {
-    icon = escapeHtml(iconMatch[1].trim());
-    remaining = remaining.replace(iconMatch[0], '').trim();
-  }
+  const icon = iconMatch ? escapeAttr(iconMatch[1].trim()) : '';
+  if (iconMatch) remaining = remaining.replace(iconMatch[0], '');
 
   const contentHtml = marked(remaining.trim());
-
   return `<div class="custom-card" data-color="${color}" data-title="${title}" data-icon="${icon}">${contentHtml}</div>`;
 }
 
-// ─── preprocessColumns ────────────────────────────────────────────────────────
+// ─── preprocessCustomBlocks ───────────────────────────────────────────────────
+// Line-by-line processor. Replaces :::cards, :::card, :::columns, :::steps
+// with HTML div placeholders that the React parser picks up.
 
-function preprocessColumns(content) {
-  const { results: colGroups, remaining: afterColGroups } = extractBlocks(content, 'columns');
-  let result = afterColGroups;
+function preprocessCustomBlocks(content) {
+  const lines = content.split('\n');
+  const output = [];
+  let i = 0;
 
-  for (let gi = 0; gi < colGroups.length; gi++) {
-    const group = colGroups[gi];
-    const groupParams = parseParams(group.params);
-    const layout = groupParams.layout || 'equal';
+  while (i < lines.length) {
+    const trimmed = lines[i].trim();
 
-    // Parse :::col blocks inside
-    const colHtmls = [];
-    let bodyRemaining = group.body;
+    // ── :::cards[cols=N] ──────────────────────────────────────────────────────
+    const cardsMatch = trimmed.match(/^:::cards(?:\[([^\]]*?)\])?\s*$/);
+    if (cardsMatch) {
+      const gridParams = parseParams(cardsMatch[1] || '');
+      const cols = Math.min(3, Math.max(1, parseInt(gridParams.cols || '2', 10)));
 
-    const colOpenPattern = /^:::col\s*$/m;
-    while (true) {
-      const colMatch = colOpenPattern.exec(bodyRemaining);
-      if (!colMatch) break;
+      const { body, endIndex } = collectBlockBody(lines, i + 1);
+      i = endIndex + 1;
 
-      const afterColOpen = colMatch.index + colMatch[0].length + 1;
-      const closeIndex = bodyRemaining.indexOf('\n:::', afterColOpen);
-      if (closeIndex === -1) break;
-
-      const colBody = bodyRemaining.slice(afterColOpen, closeIndex);
-      const endIndex = closeIndex + 4;
-
-      const colContentHtml = marked(colBody.trim());
-      colHtmls.push(`<div class="custom-col">${colContentHtml}</div>`);
-
-      bodyRemaining = bodyRemaining.slice(0, colMatch.index) + bodyRemaining.slice(endIndex);
+      const cards = parseInnerBlocks(body, 'card');
+      let html = `<div class="custom-cardgrid" data-cols="${cols}">`;
+      for (const card of cards) {
+        html += buildCardHtml(card.params, card.body);
+      }
+      html += '</div>';
+      output.push(html);
+      continue;
     }
 
-    const columnsHtml = `<div class="custom-columns" data-layout="${escapeHtml(layout)}">${colHtmls.join('')}</div>`;
-    result = result.replace(`\x00BLOCK${gi}\x00`, columnsHtml);
-  }
+    // ── :::card[color=...] standalone ────────────────────────────────────────
+    const cardMatch = trimmed.match(/^:::card(?:\[([^\]]*?)\])?\s*$/);
+    if (cardMatch) {
+      const cardParams = parseParams(cardMatch[1] || '');
 
-  return result;
-}
+      const { body, endIndex } = collectBlockBody(lines, i + 1);
+      i = endIndex + 1;
 
-// ─── preprocessSteps ──────────────────────────────────────────────────────────
-
-function preprocessSteps(content) {
-  const { results: stepGroups, remaining: afterStepGroups } = extractBlocks(content, 'steps');
-  let result = afterStepGroups;
-
-  for (let gi = 0; gi < stepGroups.length; gi++) {
-    const group = stepGroups[gi];
-
-    // Parse :::step blocks inside
-    const stepHtmls = [];
-    let bodyRemaining = group.body;
-
-    // :::step[status=done] Title text  OR  :::step Title text
-    const stepOpenPattern = /^:::step(?:\[([^\]]*?)\])?\s+(.+?)\s*$/m;
-    while (true) {
-      const stepMatch = stepOpenPattern.exec(bodyRemaining);
-      if (!stepMatch) break;
-
-      const stepParams = parseParams(stepMatch[1] || '');
-      const stepTitle = escapeHtml(stepMatch[2] || '');
-      const status = stepParams.status || 'default';
-
-      const afterStepOpen = stepMatch.index + stepMatch[0].length + 1;
-      const closeIndex = bodyRemaining.indexOf('\n:::', afterStepOpen);
-      if (closeIndex === -1) break;
-
-      const stepBody = bodyRemaining.slice(afterStepOpen, closeIndex);
-      const endIndex = closeIndex + 4;
-
-      const stepContentHtml = marked(stepBody.trim());
-      stepHtmls.push(`<div class="custom-step" data-status="${escapeHtml(status)}" data-title="${stepTitle}">${stepContentHtml}</div>`);
-
-      bodyRemaining = bodyRemaining.slice(0, stepMatch.index) + bodyRemaining.slice(endIndex);
+      output.push(buildCardHtml(cardParams, body));
+      continue;
     }
 
-    const stepsHtml = `<div class="custom-steps">${stepHtmls.join('')}</div>`;
-    result = result.replace(`\x00BLOCK${gi}\x00`, stepsHtml);
+    // ── :::columns[layout=...] ────────────────────────────────────────────────
+    const columnsMatch = trimmed.match(/^:::columns(?:\[([^\]]*?)\])?\s*$/);
+    if (columnsMatch) {
+      const colsParams = parseParams(columnsMatch[1] || '');
+      const layout = escapeAttr(colsParams.layout || 'equal');
+
+      const { body, endIndex } = collectBlockBody(lines, i + 1);
+      i = endIndex + 1;
+
+      const cols = parseInnerBlocks(body, 'col');
+      let html = `<div class="custom-columns" data-layout="${layout}">`;
+      for (const col of cols) {
+        html += `<div class="custom-col">${marked(col.body.trim())}</div>`;
+      }
+      html += '</div>';
+      output.push(html);
+      continue;
+    }
+
+    // ── :::steps ──────────────────────────────────────────────────────────────
+    const stepsMatch = trimmed.match(/^:::steps\s*$/);
+    if (stepsMatch) {
+      const { body, endIndex } = collectBlockBody(lines, i + 1);
+      i = endIndex + 1;
+
+      const steps = parseInnerBlocks(body, 'step');
+      let html = '<div class="custom-steps">';
+      for (const step of steps) {
+        const status = escapeAttr(step.params.status || 'default');
+        const title = escapeAttr(step.inlineText || '');
+        const contentHtml = marked(step.body.trim());
+        html += `<div class="custom-step" data-status="${status}" data-title="${title}">${contentHtml}</div>`;
+      }
+      html += '</div>';
+      output.push(html);
+      continue;
+    }
+
+    output.push(lines[i]);
+    i++;
   }
 
-  return result;
+  return output.join('\n');
 }
 
-// ─── preprocessAlerts (original + new blocks) ─────────────────────────────────
+// ─── preprocessAlerts ─────────────────────────────────────────────────────────
 
 export function preprocessAlerts(content) {
   const codeBlocks = [];
   const codeBlockPattern = /```[\s\S]*?```/g;
   const alertPattern = /^:::(note|tip|important|warning|caution)\n([\s\S]*?)^:::$/gm;
 
-  // Protect code blocks
+  // Protect code blocks from being touched by block parsers
   const protected1 = content.replaceAll(codeBlockPattern, (match) => {
     codeBlocks.push(match);
     return `___CODE_BLOCK_${codeBlocks.length - 1}___`;
   });
 
-  // Process alerts
+  // Process GitHub-style alerts (note/tip/important/warning/caution)
   const protected2 = protected1.replaceAll(alertPattern, (_match, type, alertContent) => {
     const parsedContent = marked.parse(alertContent.trim());
     return `<div class="custom-alert" data-alert-type="${type}">\n${parsedContent}\n</div>`;
   });
 
-  // Process new custom blocks
-  const protected3 = preprocessCards(protected2);
-  const protected4 = preprocessColumns(protected3);
-  const protected5 = preprocessSteps(protected4);
+  // Process custom blocks: cards, columns, steps
+  const protected3 = preprocessCustomBlocks(protected2);
 
   // Restore code blocks
-  return protected5.replaceAll(/___CODE_BLOCK_(\d+)___/g, (_match, index) =>
+  return protected3.replaceAll(/___CODE_BLOCK_(\d+)___/g, (_match, index) =>
     codeBlocks[Number.parseInt(index, 10)]
   );
 }
