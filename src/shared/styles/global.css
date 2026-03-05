@@ -178,31 +178,19 @@ body {
   color: inherit;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   FIX 9. ЦИТАТЫ — видимая белая полоска в тёмной теме
-   Было: rgba(255,255,255,0.3) — почти невидимо на тёмном фоне
-   Стало: rgba(255,255,255,0.65) — чёткая контрастная линия
-   ═══════════════════════════════════════════════════════════════ */
 .prose blockquote {
   margin-top: 1rem;
   margin-bottom: 1rem;
-  border-left: 4px solid rgba(0, 0, 0, 0.25);
+  border-left-width: 4px;
   padding-left: 1rem;
   font-style: italic;
   font-size: 0.875rem;
+  border-left-color: rgba(0, 0, 0, 0.2);
 }
 
 .dark .prose blockquote {
-  border-left-color: rgba(255, 255, 255, 0.65) !important;
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.prose blockquote blockquote {
-  border-left-color: rgba(0, 0, 0, 0.15);
-}
-
-.dark .prose blockquote blockquote {
-  border-left-color: rgba(255, 255, 255, 0.4) !important;
+  border-left-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .prose a {
@@ -319,42 +307,66 @@ body {
 }
 
 @media (min-width: 768px) {
-  .prose h1 { font-size: 2.25rem; line-height: 2.5rem; }
-  .prose h2 { font-size: 1.875rem; line-height: 2.25rem; }
-  .prose h3 { font-size: 1.5rem; line-height: 2rem; }
-  .prose h4 { font-size: 1.25rem; line-height: 1.75rem; }
-  .prose h5 { font-size: 1rem; line-height: 1.5rem; }
-  .prose h6 { font-size: 0.875rem; line-height: 1.25rem; }
-  .prose p { font-size: 1rem; }
-  .prose li { font-size: 1rem; }
-  .prose code { font-size: 0.875rem; line-height: 1.25rem; }
-  .prose pre code { font-size: 0.875rem; line-height: 1.25rem; }
-  .prose blockquote { font-size: 1rem; }
-  .prose table { font-size: 0.875rem; }
-  .prose th, .prose td { padding: 0.75rem 1rem; }
-}
+  .prose h1 {
+    font-size: 2.25rem;
+    line-height: 2.5rem;
+  }
 
-/* ═══════════════════════════════════════════════════════════════
-   FIX 3. ИЗОБРАЖЕНИЯ — figcaption
-   ImageComponent в htmlParser.tsx рендерит <figure>/<figcaption>
-   CSS обеспечивает правильный вид в обеих темах
-   ═══════════════════════════════════════════════════════════════ */
-.prose figure {
-  margin: 1.5rem 0;
-  width: 100%;
-}
+  .prose h2 {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
 
-.prose figcaption {
-  margin-top: 0.5rem;
-  text-align: center;
-  font-size: 0.8rem;
-  font-style: italic;
-  line-height: 1.4;
-  color: rgba(0, 0, 0, 0.55);
-}
+  .prose h3 {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
 
-.dark .prose figcaption {
-  color: rgba(255, 255, 255, 0.55);
+  .prose h4 {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+
+  .prose h5 {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
+  .prose h6 {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  .prose p {
+    font-size: 1rem;
+  }
+
+  .prose li {
+    font-size: 1rem;
+  }
+
+  .prose code {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  .prose pre code {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  .prose blockquote {
+    font-size: 1rem;
+  }
+
+  .prose table {
+    font-size: 0.875rem;
+  }
+
+  .prose th,
+  .prose td {
+    padding: 0.75rem 1rem;
+  }
 }
 
 .prose img {
@@ -387,10 +399,13 @@ body {
     -webkit-overflow-scrolling: touch;
     font-size: 0.75rem;
   }
-  .prose th, .prose td {
+
+  .prose th,
+  .prose td {
     padding: 0.5rem 0.75rem;
     white-space: nowrap;
   }
+
   .prose img {
     max-width: 100%;
     margin: 12px 0;
@@ -398,7 +413,8 @@ body {
 }
 
 @media (min-width: 769px) and (max-width: 1024px) {
-  .prose th, .prose td {
+  .prose th,
+  .prose td {
     padding: 0.6rem;
     font-size: 0.8rem;
   }
@@ -415,93 +431,218 @@ body {
   border-top-color: #6b7280;
 }
 
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.3); }
-.dark ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); }
-.dark ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
 
 ::selection {
   background-color: rgb(37 99 235);
   color: rgb(255 255 255);
 }
 
-/* ── Highlight.js ── */
-.hljs { display: block; overflow-x: auto; color: #abb2bf; background: transparent; }
-.dark .hljs { color: #abb2bf; }
-.hljs-comment, .hljs-quote { color: #5c6370; font-style: italic; }
-.hljs-doctag, .hljs-keyword, .hljs-formula { color: #c678dd; }
-.hljs-section, .hljs-name, .hljs-selector-tag, .hljs-deletion, .hljs-subst { color: #e06c75; }
-.hljs-literal { color: #56b6c2; }
-.hljs-string, .hljs-regexp, .hljs-addition, .hljs-attribute, .hljs-meta-string { color: #98c379; }
-.hljs-built_in, .hljs-class .hljs-title { color: #e6c07b; }
-.hljs-attr, .hljs-variable, .hljs-template-variable, .hljs-type,
-.hljs-selector-class, .hljs-selector-attr, .hljs-selector-pseudo, .hljs-number { color: #d19a66; }
-.hljs-symbol, .hljs-bullet, .hljs-link, .hljs-meta, .hljs-selector-id, .hljs-title { color: #61aeee; }
-.hljs-emphasis { font-style: italic; }
-.hljs-strong { font-weight: bold; }
-.hljs-link { text-decoration: underline; }
+/* Highlight.js стили для подсветки синтаксиса */
+.hljs {
+  display: block;
+  overflow-x: auto;
+  color: #abb2bf;
+  background: transparent;
+}
 
-html:not(.dark) .hljs { color: #383a42; }
-html:not(.dark) .hljs-comment, html:not(.dark) .hljs-quote { color: #a0a1a7; font-style: italic; }
-html:not(.dark) .hljs-doctag, html:not(.dark) .hljs-keyword, html:not(.dark) .hljs-formula { color: #a626a4; }
-html:not(.dark) .hljs-section, html:not(.dark) .hljs-name,
-html:not(.dark) .hljs-selector-tag, html:not(.dark) .hljs-deletion, html:not(.dark) .hljs-subst { color: #e45649; }
-html:not(.dark) .hljs-literal { color: #0184bb; }
-html:not(.dark) .hljs-string, html:not(.dark) .hljs-regexp, html:not(.dark) .hljs-addition,
-html:not(.dark) .hljs-attribute, html:not(.dark) .hljs-meta-string { color: #50a14f; }
-html:not(.dark) .hljs-built_in, html:not(.dark) .hljs-class .hljs-title { color: #c18401; }
-html:not(.dark) .hljs-attr, html:not(.dark) .hljs-variable, html:not(.dark) .hljs-template-variable,
-html:not(.dark) .hljs-type, html:not(.dark) .hljs-selector-class, html:not(.dark) .hljs-selector-attr,
-html:not(.dark) .hljs-selector-pseudo, html:not(.dark) .hljs-number { color: #986801; }
-html:not(.dark) .hljs-symbol, html:not(.dark) .hljs-bullet, html:not(.dark) .hljs-link,
-html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .hljs-title { color: #4078f2; }
+.dark .hljs {
+  color: #abb2bf;
+}
 
-/* Subscript / Superscript */
-.prose sub { vertical-align: sub; font-size: 0.75em; line-height: 0; }
-.prose sup { vertical-align: super; font-size: 0.75em; line-height: 0; }
+.hljs-comment,
+.hljs-quote {
+  color: #5c6370;
+  font-style: italic;
+}
 
-/* ═══════════════════════════════════════════════════════════════
-   FIX 8. АККОРДЕОН (details/summary) — полный рефакторинг
+.hljs-doctag,
+.hljs-keyword,
+.hljs-formula {
+  color: #c678dd;
+}
 
-   Проблема А: тёмная тема не применялась — класс .dark на <html>
-     не ставился, стили были через colorScheme. Теперь ставится
-     в ThemeContext (см. htmlParser.tsx fix ниже).
-   Проблема Б: overflow:hidden на details блокировал горизонтальный
-     скролл CodeBlock и таблиц внутри на мобильных.
-   ═══════════════════════════════════════════════════════════════ */
+.hljs-section,
+.hljs-name,
+.hljs-selector-tag,
+.hljs-deletion,
+.hljs-subst {
+  color: #e06c75;
+}
 
+.hljs-literal {
+  color: #56b6c2;
+}
+
+.hljs-string,
+.hljs-regexp,
+.hljs-addition,
+.hljs-attribute,
+.hljs-meta-string {
+  color: #98c379;
+}
+
+.hljs-built_in,
+.hljs-class .hljs-title {
+  color: #e6c07b;
+}
+
+.hljs-attr,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-type,
+.hljs-selector-class,
+.hljs-selector-attr,
+.hljs-selector-pseudo,
+.hljs-number {
+  color: #d19a66;
+}
+
+.hljs-symbol,
+.hljs-bullet,
+.hljs-link,
+.hljs-meta,
+.hljs-selector-id,
+.hljs-title {
+  color: #61aeee;
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}
+
+.hljs-link {
+  text-decoration: underline;
+}
+
+/* Светлая тема для highlight.js */
+html:not(.dark) .hljs {
+  color: #383a42;
+}
+
+html:not(.dark) .hljs-comment,
+html:not(.dark) .hljs-quote {
+  color: #a0a1a7;
+  font-style: italic;
+}
+
+html:not(.dark) .hljs-doctag,
+html:not(.dark) .hljs-keyword,
+html:not(.dark) .hljs-formula {
+  color: #a626a4;
+}
+
+html:not(.dark) .hljs-section,
+html:not(.dark) .hljs-name,
+html:not(.dark) .hljs-selector-tag,
+html:not(.dark) .hljs-deletion,
+html:not(.dark) .hljs-subst {
+  color: #e45649;
+}
+
+html:not(.dark) .hljs-literal {
+  color: #0184bb;
+}
+
+html:not(.dark) .hljs-string,
+html:not(.dark) .hljs-regexp,
+html:not(.dark) .hljs-addition,
+html:not(.dark) .hljs-attribute,
+html:not(.dark) .hljs-meta-string {
+  color: #50a14f;
+}
+
+html:not(.dark) .hljs-built_in,
+html:not(.dark) .hljs-class .hljs-title {
+  color: #c18401;
+}
+
+html:not(.dark) .hljs-attr,
+html:not(.dark) .hljs-variable,
+html:not(.dark) .hljs-template-variable,
+html:not(.dark) .hljs-type,
+html:not(.dark) .hljs-selector-class,
+html:not(.dark) .hljs-selector-attr,
+html:not(.dark) .hljs-selector-pseudo,
+html:not(.dark) .hljs-number {
+  color: #986801;
+}
+
+html:not(.dark) .hljs-symbol,
+html:not(.dark) .hljs-bullet,
+html:not(.dark) .hljs-link,
+html:not(.dark) .hljs-meta,
+html:not(.dark) .hljs-selector-id,
+html:not(.dark) .hljs-title {
+  color: #4078f2;
+}
+/* ... существующие стили ... */
+
+/* Subscript и Superscript */
+.prose sub {
+  vertical-align: sub;
+  font-size: 0.75em;
+  line-height: 0;
+}
+
+.prose sup {
+  vertical-align: super;
+  font-size: 0.75em;
+  line-height: 0;
+}
+
+/* Details/Summary (Accordion) */
 .prose details {
   margin: 1rem 0;
-  /* ВАЖНО: НЕ overflow:hidden — иначе горизонтальный скролл внутри не работает */
-  overflow: visible;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 0.5rem;
-  background-color: rgba(0, 0, 0, 0.025);
+  background-color: rgba(0, 0, 0, 0.02);
 }
 
 .dark .prose details {
-  border-color: rgba(255, 255, 255, 0.18) !important;
-  background-color: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.03);
 }
 
 .prose details summary {
   cursor: pointer;
   font-weight: 600;
-  padding: 0.75rem 1rem;
+  padding: 0.5rem;
+  margin: -1rem -1rem 0.5rem;
   border-radius: 0.5rem 0.5rem 0 0;
   user-select: none;
   list-style: none;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  color: rgba(0, 0, 0, 0.85);
-  transition: background-color 0.15s;
-}
-
-.dark .prose details summary {
-  color: rgba(255, 255, 255, 0.92) !important;
 }
 
 .prose details summary::-webkit-details-marker {
@@ -511,10 +652,9 @@ html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .
 .prose details summary::before {
   content: '▶';
   display: inline-block;
-  flex-shrink: 0;
+  margin-right: 0.5rem;
   transition: transform 0.2s;
-  font-size: 0.7em;
-  opacity: 0.55;
+  font-size: 0.75em;
 }
 
 .prose details[open] summary::before {
@@ -526,67 +666,11 @@ html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .
 }
 
 .dark .prose details summary:hover {
-  background-color: rgba(255, 255, 255, 0.07) !important;
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
-.prose details[open] summary {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-.dark .prose details[open] summary {
-  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-/* ── МОБИЛЬНЫЙ ФИХ: скролл для CodeBlock и таблиц внутри details ── */
-
-/* Обёртка контента (div в processDetailsElement) */
-.prose details > div {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  /* Не используем max-width: 100% — это ломает скролл */
-}
-
-/* CodeBlock враппер (.not-prose .my-4) */
-.prose details .not-prose {
-  max-width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-}
-
-/* Таблица внутри details */
-.prose details table {
-  display: block;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Текстовый контент — добавляем padding */
-.prose details > div > p,
-.prose details > div > ul,
-.prose details > div > ol,
-.prose details > div > blockquote {
+.prose details > :not(summary) {
   padding-left: 1rem;
-  padding-right: 1rem;
-}
-
-@media (max-width: 768px) {
-  .prose details {
-    /* Clip overflow по горизонтали на уровне самого details */
-    overflow-x: hidden;
-  }
-
-  /* Ограничиваем ширину контейнеров внутри, чтобы они скроллились сами */
-  .prose details .not-prose {
-    max-width: calc(100vw - 2rem);
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .prose details table {
-    max-width: calc(100vw - 2rem);
-  }
 }
 
 /* GitHub Alerts */
@@ -598,22 +682,69 @@ html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .
 }
 
 /* Table Alignment */
-.prose table th[align="left"], .prose table td[align="left"] { text-align: left; }
-.prose table th[align="center"], .prose table td[align="center"] { text-align: center; }
-.prose table th[align="right"], .prose table td[align="right"] { text-align: right; }
+.prose table th[align="left"],
+.prose table td[align="left"] {
+  text-align: left;
+}
 
-/* Math */
-.katex { font-size: 1em; }
-.katex-display { margin: 1.5rem 0; overflow-x: auto; overflow-y: hidden; }
-.katex-display::-webkit-scrollbar { height: 8px; }
-.katex-display::-webkit-scrollbar-track { background: transparent; }
-.katex-display::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
-.dark .katex-display::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); }
+.prose table th[align="center"],
+.prose table td[align="center"] {
+  text-align: center;
+}
 
-/* Mermaid */
-.prose .mermaid { margin: 1.5rem 0; }
-.prose .mermaid svg { max-width: 100%; height: auto; }
+.prose table th[align="right"],
+.prose table td[align="right"] {
+  text-align: right;
+}
 
-/* Mark/highlight */
-.prose mark { background-color: rgb(253, 224, 71); color: rgb(0, 0, 0); padding: 2px 4px; border-radius: 2px; }
-.dark .prose mark { background-color: rgb(202, 138, 4); color: rgb(255, 255, 255); }
+/* Math формулы */
+.katex {
+  font-size: 1em;
+}
+
+.katex-display {
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Улучшенная прокрутка для Math */
+.katex-display::-webkit-scrollbar {
+  height: 8px;
+}
+
+.katex-display::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.katex-display::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.dark .katex-display::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Mermaid диаграммы */
+.prose .mermaid {
+  margin: 1.5rem 0;
+}
+
+.prose .mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Highlight (mark) */
+.prose mark {
+  background-color: rgb(253, 224, 71);
+  color: rgb(0, 0, 0);
+  padding: 2px 4px;
+  border-radius: 2px;
+}
+
+.dark .prose mark {
+  background-color: rgb(202, 138, 4);
+  color: rgb(255, 255, 255);
+}
