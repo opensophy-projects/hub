@@ -36,12 +36,8 @@ const NavButton: React.FC<{
   );
 };
 
-// Reads clean heading text — prefers data-heading-text (set by HeadingAnchor)
-// to avoid the "#" anchor character appearing in TOC labels.
 function getHeadingText(heading: Element): string {
-  return (heading as HTMLElement).dataset.headingText
-    || heading.textContent?.replace(/#\s*$/, '').trim()
-    || '';
+  return heading.textContent?.trim() || '';
 }
 
 const MobileNavbarInner: React.FC = () => {
@@ -131,7 +127,6 @@ const MobileNavbarInner: React.FC = () => {
 
   return (
     <>
-      {/* Desktop navbar */}
       <nav
         className={`hidden md:flex fixed top-0 left-0 right-0 z-50 border-b items-center h-16 ${
           isDark
@@ -152,7 +147,6 @@ const MobileNavbarInner: React.FC = () => {
         </div>
       </nav>
 
-      {/* Mobile navbar (bottom) */}
       <nav
         className={`md:hidden fixed bottom-0 left-0 right-0 z-50 border-t ${
           isDark
