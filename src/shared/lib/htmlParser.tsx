@@ -4,6 +4,7 @@ import { CodeBlock } from '../components/CodeBlock';
 import TableWithControls from '@/features/table/components/TableWithControls';
 import Alert from '../components/Alert';
 import NewUIComponentViewer from '@/features/ui-components/NewUIComponentViewer';
+import ImageCard from '../components/ImageCard';
 
 export const TableContext = createContext<{
   onTableClick?: (tableHtml: string) => void;
@@ -54,7 +55,7 @@ const sanitizeInnerHTML = (html: string): string => {
       'del', 'input', 'sub', 'sup', 'details', 'summary', 'mark'
     ],
     ALLOWED_ATTR: [
-      'href', 'src', 'alt', 'title', 'class', 'id', 
+      'href', 'src', 'alt', 'title', 'class', 'id',
       'data-language', 'data-lang', 'data-alert-type',
       'type', 'checked', 'disabled', 'open', 'style', 'align'
     ],
@@ -77,12 +78,10 @@ const processHeadingElement = (element: Element, tagName: string, key: string, e
 const processListElement = (element: Element, tagName: string, key: string, elements: React.ReactNode[]) => {
   const ListTag = tagName as keyof JSX.IntrinsicElements;
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
-  
   const hasTaskList = element.querySelector('input[type="checkbox"]');
-  
   elements.push(
-    <ListTag 
-      key={key} 
+    <ListTag
+      key={key}
       dangerouslySetInnerHTML={{ __html: sanitizedHTML }}
       className={hasTaskList ? 'task-list' : undefined}
     />
@@ -92,7 +91,7 @@ const processListElement = (element: Element, tagName: string, key: string, elem
 const processLinkElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
   elements.push(
-    <a
+    
       key={key}
       href={element.getAttribute('href') || '#'}
       target="_blank"
@@ -102,41 +101,13 @@ const processLinkElement = (element: Element, key: string, elements: React.React
   );
 };
 
-/* ═══════════════════════════════════════════════════════════════
-   FIX 3. ImageComponent — figcaption из CSS (не hardcoded цвета)
-   Используем классы из global.css: .prose figure / .prose figcaption
-   Тёмная тема применяется через CSS .dark .prose figcaption
-   ═══════════════════════════════════════════════════════════════ */
-const ImageComponent: React.FC<{ src: string; alt: string; title?: string }> = ({ src, alt, title }) => {
-  if (title) {
-    return (
-      <figure>
-        <img
-          src={src}
-          alt={alt}
-          loading="lazy"
-        />
-        <figcaption>{title}</figcaption>
-      </figure>
-    );
-  }
-
-  return (
-    <img
-      src={src}
-      alt={alt}
-      loading="lazy"
-    />
-  );
-};
-
 const processImageElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const src = element.getAttribute('src') || '';
   const alt = element.getAttribute('alt') || 'Image';
-  const title = element.getAttribute('title') || '';
+  const title = element.getAttribute('title') || undefined;
 
   elements.push(
-    <ImageComponent key={key} src={src} alt={alt} title={title || undefined} />
+    <ImageCard key={key} src={src} alt={alt} title={title} />
   );
 };
 
@@ -183,44 +154,32 @@ const processHrElement = (key: string, elements: React.ReactNode[]) => {
 
 const processStrongElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
-  elements.push(
-    <strong key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />
-  );
+  elements.push(<strong key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />);
 };
 
 const processEmElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
-  elements.push(
-    <em key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />
-  );
+  elements.push(<em key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />);
 };
 
 const processUnderlineElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
-  elements.push(
-    <u key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />
-  );
+  elements.push(<u key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />);
 };
 
 const processDeleteElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
-  elements.push(
-    <del key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />
-  );
+  elements.push(<del key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />);
 };
 
 const processSubElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
-  elements.push(
-    <sub key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />
-  );
+  elements.push(<sub key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />);
 };
 
 const processSupElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
-  elements.push(
-    <sup key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />
-  );
+  elements.push(<sup key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />);
 };
 
 const processDetailsElement = (
@@ -231,21 +190,18 @@ const processDetailsElement = (
   const isOpen = element.hasAttribute('open');
   const summary = element.querySelector('summary');
   const summaryText = summary?.textContent || 'Подробности';
-  
+
   let contentHTML = element.innerHTML;
-  
   if (summary) {
-    const summaryHTML = summary.outerHTML;
-    contentHTML = contentHTML.replace(summaryHTML, '');
+    contentHTML = contentHTML.replace(summary.outerHTML, '');
   }
-  
+
   const sanitizedContent = sanitizeInnerHTML(contentHTML);
   const contentElements = parseHtmlToReact(sanitizedContent);
 
   elements.push(
     <details key={key} open={isOpen} className="my-4">
       <summary>{summaryText}</summary>
-      {/* div-обёртка нужна для CSS-правил overflow-x: auto на мобильных */}
       <div className="details-content pt-2 pb-3">
         {contentElements}
       </div>
@@ -255,12 +211,9 @@ const processDetailsElement = (
 
 const processAlertElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const alertType = element.dataset.alertType as 'note' | 'tip' | 'important' | 'warning' | 'caution';
-  
   if (alertType) {
-    const contentHTML = element.innerHTML;
-    const sanitizedContent = sanitizeInnerHTML(contentHTML);
+    const sanitizedContent = sanitizeInnerHTML(element.innerHTML);
     const contentElements = parseHtmlToReact(sanitizedContent);
-
     elements.push(
       <Alert key={key} type={alertType}>
         {contentElements}
@@ -271,11 +224,8 @@ const processAlertElement = (element: Element, key: string, elements: React.Reac
 
 const processTextNode = (node: ChildNode, key: string, elements: React.ReactNode[]) => {
   const text = node.textContent || '';
-  const trimmedText = text.trim();
-  if (trimmedText) {
-    elements.push(
-      <span key={key}>{text}</span>
-    );
+  if (text.trim()) {
+    elements.push(<span key={key}>{text}</span>);
   }
 };
 
@@ -285,20 +235,13 @@ const processUIComponent = (
   textContent: string,
   elements: React.ReactNode[]
 ): boolean => {
-  const uicPattern = /\[uic:([a-z-]+)\]/;
-  const match = uicPattern.exec(textContent);
-
-  if (!match) {
-    return false;
-  }
-
-  const componentId = match[1];
+  const match = /\[uic:([a-z-]+)\]/.exec(textContent);
+  if (!match) return false;
   elements.push(
     <div key={key} className="my-6">
-      <NewUIComponentViewer componentId={componentId} />
+      <NewUIComponentViewer componentId={match[1]} />
     </div>
   );
-
   return true;
 };
 
@@ -310,22 +253,22 @@ const processElement = (
   processNodes: (nodes: NodeListOf<ChildNode>, parentKey: string) => void
 ) => {
   const handlers: Record<string, () => void> = {
-    'pre': () => processPreElement(element, key, elements),
-    'code': () => processCodeElement(element, key, elements),
-    'ul': () => processListElement(element, tagName, key, elements),
-    'ol': () => processListElement(element, tagName, key, elements),
-    'a': () => processLinkElement(element, key, elements),
-    'img': () => processImageElement(element, key, elements),
+    'pre':        () => processPreElement(element, key, elements),
+    'code':       () => processCodeElement(element, key, elements),
+    'ul':         () => processListElement(element, tagName, key, elements),
+    'ol':         () => processListElement(element, tagName, key, elements),
+    'a':          () => processLinkElement(element, key, elements),
+    'img':        () => processImageElement(element, key, elements),
     'blockquote': () => processBlockquoteElement(element, key, elements),
-    'table': () => processTableElement(element, key, elements),
-    'hr': () => processHrElement(key, elements),
-    'strong': () => processStrongElement(element, key, elements),
-    'em': () => processEmElement(element, key, elements),
-    'u': () => processUnderlineElement(element, key, elements),
-    'del': () => processDeleteElement(element, key, elements),
-    'sub': () => processSubElement(element, key, elements),
-    'sup': () => processSupElement(element, key, elements),
-    'details': () => processDetailsElement(element, key, elements),
+    'table':      () => processTableElement(element, key, elements),
+    'hr':         () => processHrElement(key, elements),
+    'strong':     () => processStrongElement(element, key, elements),
+    'em':         () => processEmElement(element, key, elements),
+    'u':          () => processUnderlineElement(element, key, elements),
+    'del':        () => processDeleteElement(element, key, elements),
+    'sub':        () => processSubElement(element, key, elements),
+    'sup':        () => processSupElement(element, key, elements),
+    'details':    () => processDetailsElement(element, key, elements),
   };
 
   if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tagName)) {
@@ -354,7 +297,7 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       'del', 'input', 'sub', 'sup', 'details', 'summary', 'mark'
     ],
     ALLOWED_ATTR: [
-      'href', 'src', 'alt', 'title', 'class', 'id', 
+      'href', 'src', 'alt', 'title', 'class', 'id',
       'data-language', 'data-lang', 'data-alert-type',
       'type', 'checked', 'disabled', 'open', 'style', 'align'
     ],
@@ -374,13 +317,10 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
         return;
       }
 
-      if (node.nodeType !== Node.ELEMENT_NODE) {
-        return;
-      }
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
 
       const element = node as Element;
       const tagName = element.tagName.toLowerCase();
-      const textContent = element.textContent || '';
 
       if (tagName === 'div' && element.classList.contains('custom-alert')) {
         processAlertElement(element, key, elements);
@@ -388,13 +328,24 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       }
 
       if (tagName === 'p') {
-        if (processUIComponent(element, key, textContent, elements)) {
+        // Если внутри <p> только одна картинка — рендерим ImageCard напрямую
+        const children = Array.from(element.childNodes).filter(
+          (n) => !(n.nodeType === Node.TEXT_NODE && !n.textContent?.trim())
+        );
+        if (
+          children.length === 1 &&
+          (children[0] as Element).tagName?.toLowerCase() === 'img'
+        ) {
+          processImageElement(children[0] as Element, key, elements);
           return;
         }
 
-        const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
+        if (processUIComponent(element, key, element.textContent || '', elements)) {
+          return;
+        }
+
         elements.push(
-          <p key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />
+          <p key={key} dangerouslySetInnerHTML={{ __html: sanitizeInnerHTML(element.innerHTML) }} />
         );
         return;
       }
