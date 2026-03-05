@@ -20,9 +20,13 @@ const HeadingAnchor: React.FC<HeadingAnchorProps> = ({ id, level, html }) => {
   const Tag = `h${level}` as keyof JSX.IntrinsicElements;
 
   const handleAnchorClick = (e: React.MouseEvent) => {
+    // stopPropagation prevents mobile sidebar from opening when clicking "#"
     e.preventDefault();
+    e.stopPropagation();
+
     const url = `${window.location.pathname}#${id}`;
     window.history.pushState(null, '', url);
+
     const el = document.getElementById(id);
     if (el) {
       const offset = 80;
@@ -34,6 +38,9 @@ const HeadingAnchor: React.FC<HeadingAnchorProps> = ({ id, level, html }) => {
   return (
     <Tag
       id={id}
+      // data-heading-text stores clean text without "#" — used by TOC hooks
+      // so heading.textContent (which includes the "#" anchor char) is NOT used
+      data-heading-text={html.replace(/<[^>]*>/g, '')}
       style={{
         ...TAG_STYLES[level],
         position: 'relative',
@@ -49,7 +56,7 @@ const HeadingAnchor: React.FC<HeadingAnchorProps> = ({ id, level, html }) => {
       <a
         href={`#${id}`}
         onClick={handleAnchorClick}
-        aria-label={`Ссылка на раздел`}
+        aria-label="Ссылка на раздел"
         style={{
           opacity: hovered ? 0.45 : 0,
           transition: 'opacity 0.15s',
