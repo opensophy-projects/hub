@@ -22,11 +22,7 @@ const processPreElement = (element: Element, key: string, elements: React.ReactN
       '';
 
     elements.push(
-      <CodeBlock
-        key={key}
-        code={code.trim()}
-        language={language}
-      />
+      React.createElement(CodeBlock, { key, code: code.trim(), language })
     );
   }
 };
@@ -34,12 +30,11 @@ const processPreElement = (element: Element, key: string, elements: React.ReactN
 const processCodeElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   if (element.parentElement?.tagName.toLowerCase() !== 'pre') {
     elements.push(
-      <code
-        key={key}
-        className="bg-slate-900 px-2 py-1 rounded text-slate-100 font-mono text-sm"
-      >
-        {element.textContent}
-      </code>
+      React.createElement(
+        'code',
+        { key, className: 'bg-slate-900 px-2 py-1 rounded text-slate-100 font-mono text-sm' },
+        element.textContent
+      )
     );
   }
 };
@@ -64,40 +59,38 @@ const sanitizeInnerHTML = (html: string): string => {
 };
 
 const processHeadingElement = (element: Element, tagName: string, key: string, elements: React.ReactNode[]) => {
-  const HeadingTag = tagName as keyof JSX.IntrinsicElements;
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
   elements.push(
-    <HeadingTag
-      key={key}
-      id={element.id}
-      dangerouslySetInnerHTML={{ __html: sanitizedHTML }}
-    />
+    React.createElement(tagName, {
+      key,
+      id: element.id,
+      dangerouslySetInnerHTML: { __html: sanitizedHTML },
+    })
   );
 };
 
 const processListElement = (element: Element, tagName: string, key: string, elements: React.ReactNode[]) => {
-  const ListTag = tagName as keyof JSX.IntrinsicElements;
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
   const hasTaskList = element.querySelector('input[type="checkbox"]');
   elements.push(
-    <ListTag
-      key={key}
-      dangerouslySetInnerHTML={{ __html: sanitizedHTML }}
-      className={hasTaskList ? 'task-list' : undefined}
-    />
+    React.createElement(tagName, {
+      key,
+      dangerouslySetInnerHTML: { __html: sanitizedHTML },
+      className: hasTaskList ? 'task-list' : undefined,
+    })
   );
 };
 
 const processLinkElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
   elements.push(
-    
-      key={key}
-      href={element.getAttribute('href') || '#'}
-      target="_blank"
-      rel="noopener noreferrer"
-      dangerouslySetInnerHTML={{ __html: sanitizedHTML }}
-    />
+    React.createElement('a', {
+      key,
+      href: element.getAttribute('href') || '#',
+      target: '_blank',
+      rel: 'noopener noreferrer',
+      dangerouslySetInnerHTML: { __html: sanitizedHTML },
+    })
   );
 };
 
@@ -107,14 +100,17 @@ const processImageElement = (element: Element, key: string, elements: React.Reac
   const title = element.getAttribute('title') || undefined;
 
   elements.push(
-    <ImageCard key={key} src={src} alt={alt} title={title} />
+    React.createElement(ImageCard, { key, src, alt, title })
   );
 };
 
 const processBlockquoteElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
   elements.push(
-    <blockquote key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />
+    React.createElement('blockquote', {
+      key,
+      dangerouslySetInnerHTML: { __html: sanitizedHTML },
+    })
   );
 };
 
@@ -124,62 +120,57 @@ const TableRenderer: React.FC<{
   isDark: boolean;
 }> = ({ tableHtml, onTableClick, isDark }) => {
   const sanitizedTableHtml = sanitizeInnerHTML(tableHtml);
-  return (
-    <TableWithControls
-      tableHtml={sanitizedTableHtml}
-      isDark={isDark}
-      onFullscreen={(html) => onTableClick?.(sanitizeInnerHTML(html))}
-    />
-  );
+  return React.createElement(TableWithControls, {
+    tableHtml: sanitizedTableHtml,
+    isDark,
+    onFullscreen: (html: string) => onTableClick?.(sanitizeInnerHTML(html)),
+  });
 };
 
 const processTableElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const tableHtml = element.outerHTML;
   elements.push(
-    <TableContext.Consumer key={key}>
-      {({ onTableClick, isDark }) => (
-        <TableRenderer
-          tableHtml={tableHtml}
-          onTableClick={onTableClick}
-          isDark={isDark}
-        />
-      )}
-    </TableContext.Consumer>
+    React.createElement(
+      TableContext.Consumer,
+      { key },
+      ({ onTableClick, isDark }: { onTableClick?: (html: string) => void; isDark: boolean }) =>
+        React.createElement(TableRenderer, { tableHtml, onTableClick, isDark })
+    )
   );
 };
 
 const processHrElement = (key: string, elements: React.ReactNode[]) => {
-  elements.push(<hr key={key} />);
+  elements.push(React.createElement('hr', { key }));
 };
 
 const processStrongElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
-  elements.push(<strong key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />);
+  elements.push(React.createElement('strong', { key, dangerouslySetInnerHTML: { __html: sanitizedHTML } }));
 };
 
 const processEmElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
-  elements.push(<em key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />);
+  elements.push(React.createElement('em', { key, dangerouslySetInnerHTML: { __html: sanitizedHTML } }));
 };
 
 const processUnderlineElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
-  elements.push(<u key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />);
+  elements.push(React.createElement('u', { key, dangerouslySetInnerHTML: { __html: sanitizedHTML } }));
 };
 
 const processDeleteElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
-  elements.push(<del key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />);
+  elements.push(React.createElement('del', { key, dangerouslySetInnerHTML: { __html: sanitizedHTML } }));
 };
 
 const processSubElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
-  elements.push(<sub key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />);
+  elements.push(React.createElement('sub', { key, dangerouslySetInnerHTML: { __html: sanitizedHTML } }));
 };
 
 const processSupElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
-  elements.push(<sup key={key} dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />);
+  elements.push(React.createElement('sup', { key, dangerouslySetInnerHTML: { __html: sanitizedHTML } }));
 };
 
 const processDetailsElement = (
@@ -200,12 +191,12 @@ const processDetailsElement = (
   const contentElements = parseHtmlToReact(sanitizedContent);
 
   elements.push(
-    <details key={key} open={isOpen} className="my-4">
-      <summary>{summaryText}</summary>
-      <div className="details-content pt-2 pb-3">
-        {contentElements}
-      </div>
-    </details>
+    React.createElement(
+      'details',
+      { key, open: isOpen, className: 'my-4' },
+      React.createElement('summary', null, summaryText),
+      React.createElement('div', { className: 'details-content pt-2 pb-3' }, ...contentElements)
+    )
   );
 };
 
@@ -215,9 +206,7 @@ const processAlertElement = (element: Element, key: string, elements: React.Reac
     const sanitizedContent = sanitizeInnerHTML(element.innerHTML);
     const contentElements = parseHtmlToReact(sanitizedContent);
     elements.push(
-      <Alert key={key} type={alertType}>
-        {contentElements}
-      </Alert>
+      React.createElement(Alert, { key, type: alertType }, ...contentElements)
     );
   }
 };
@@ -225,7 +214,7 @@ const processAlertElement = (element: Element, key: string, elements: React.Reac
 const processTextNode = (node: ChildNode, key: string, elements: React.ReactNode[]) => {
   const text = node.textContent || '';
   if (text.trim()) {
-    elements.push(<span key={key}>{text}</span>);
+    elements.push(React.createElement('span', { key }, text));
   }
 };
 
@@ -238,9 +227,11 @@ const processUIComponent = (
   const match = /\[uic:([a-z-]+)\]/.exec(textContent);
   if (!match) return false;
   elements.push(
-    <div key={key} className="my-6">
-      <NewUIComponentViewer componentId={match[1]} />
-    </div>
+    React.createElement(
+      'div',
+      { key, className: 'my-6' },
+      React.createElement(NewUIComponentViewer, { componentId: match[1] })
+    )
   );
   return true;
 };
@@ -328,7 +319,6 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       }
 
       if (tagName === 'p') {
-        // Если внутри <p> только одна картинка — рендерим ImageCard напрямую
         const children = Array.from(element.childNodes).filter(
           (n) => !(n.nodeType === Node.TEXT_NODE && !n.textContent?.trim())
         );
@@ -345,7 +335,10 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
         }
 
         elements.push(
-          <p key={key} dangerouslySetInnerHTML={{ __html: sanitizeInnerHTML(element.innerHTML) }} />
+          React.createElement('p', {
+            key,
+            dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(element.innerHTML) },
+          })
         );
         return;
       }
