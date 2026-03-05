@@ -6,6 +6,16 @@ interface TableOfContentsItem {
   level: number;
 }
 
+// Должна совпадать с slugifyHeading в htmlParser.tsx
+function slugifyHeading(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
 export function useTableOfContents<T>(dependency: T): TableOfContentsItem[] {
   const [toc, setToc] = useState<TableOfContentsItem[]>([]);
 
@@ -19,13 +29,28 @@ export function useTableOfContents<T>(dependency: T): TableOfContentsItem[] {
       );
 
       const items: TableOfContentsItem[] = [];
-      headings.forEach((heading, index) => {
-        const id = `heading-${index}`;
-        heading.id = id;
+      const usedIds = new Map<string, number>();
+
+      headings.forEach((heading) => {
+        const text = heading.textContent || '';
+        let id = slugifyHeading(text);
+
+        // Deduplicate ids
+        if (usedIds.has(id)) {
+          const count = usedIds.get(id)! + 1;
+          usedIds.set(id, count);
+          id = `${id}-${count}`;
+        } else {
+          usedIds.set(id, 0);
+        }
+
+        // Set id on the element (HeadingAnchor already sets it, but ensure sync)
+        if (!heading.id) heading.id = id;
+
         items.push({
-          id,
-          text: heading.textContent || '',
-          level: Number.parseInt(heading.tagName[1], 10),
+          id: heading.id,
+          text,
+          level: parseInt(heading.tagName[1], 10),
         });
       });
 
