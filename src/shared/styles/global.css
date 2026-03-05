@@ -623,3 +623,31 @@ html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .
 /* Mark/highlight */
 .prose mark { background-color: rgb(253, 224, 71); color: rgb(0, 0, 0); padding: 2px 4px; border-radius: 2px; }
 .dark .prose mark { background-color: rgb(202, 138, 4); color: rgb(255, 255, 255); }
+/* ═══════════════════════════════════════════════════════════════
+   ИЗОБРАЖЕНИЯ — карточка (ImageCard в htmlParser.tsx)
+   figure/figcaption больше не используются напрямую (legacy)
+   ═══════════════════════════════════════════════════════════════ */
+.prose figure {
+  margin: 1.5rem 0;
+  width: 100%;
+}
+
+.prose figcaption {
+  margin-top: 0.5rem;
+  text-align: center;
+  font-size: 0.8rem;
+  font-style: italic;
+  line-height: 1.4;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.dark .prose figcaption {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* Базовые стили img — карточка управляет через inline styles */
+.prose img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
