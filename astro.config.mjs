@@ -3,10 +3,8 @@ import react from '@astrojs/react';
 import tailwind from '@astrojs/tailwind';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 async function generateDocs() {
   const { execSync } = await import('node:child_process');
   try {
@@ -15,7 +13,6 @@ async function generateDocs() {
     console.error('Failed to generate docs:', error);
   }
 }
-
 export default defineConfig({
   integrations: [react(), tailwind()],
   site: 'https://hub.opensophy.com',
@@ -32,6 +29,7 @@ export default defineConfig({
       include: ['react', 'react-dom', 'marked', 'framer-motion', 'lucide-react'],
     },
     build: {
+      chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {
           entryFileNames: 'assets/[name].[hash].js',
