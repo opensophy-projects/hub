@@ -6,7 +6,7 @@ interface TableOfContentsItem {
   level: number;
 }
 
-// Must match slugifyHeading in htmlParser.tsx
+// ИСПРАВЛЕНО: функция идентична HeadingAnchor и docUtils
 function slugifyHeading(text: string): string {
   return text
     .toLowerCase()
@@ -31,16 +31,17 @@ export function useTableOfContents<T>(dependency: T): TableOfContentsItem[] {
       const usedIds = new Map<string, number>();
 
       headings.forEach((heading) => {
-        // Use data-heading-text if available (set by HeadingAnchor) to avoid
-        // picking up the "#" anchor character from textContent
+        // Используем data-heading-text если есть (установлен HeadingAnchor)
         const text =
           (heading as HTMLElement).dataset.headingText ||
           heading.textContent?.replace(/#\s*$/, '').trim() ||
           '';
 
+        if (!text) return; // Пропускаем пустые заголовки
+
         let id = slugifyHeading(text);
 
-        // Deduplicate ids
+        // Дедупликация id
         if (usedIds.has(id)) {
           const count = usedIds.get(id)! + 1;
           usedIds.set(id, count);
@@ -49,7 +50,10 @@ export function useTableOfContents<T>(dependency: T): TableOfContentsItem[] {
           usedIds.set(id, 0);
         }
 
-        if (!heading.id) heading.id = id;
+        // Устанавливаем id на элементе если его нет
+        if (!heading.id || heading.id !== id) {
+          heading.id = id;
+        }
 
         items.push({
           id: heading.id,
