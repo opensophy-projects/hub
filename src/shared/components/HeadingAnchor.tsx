@@ -15,21 +15,39 @@ const TAG_STYLES: Record<number, React.CSSProperties> = {
   6: { fontSize: '0.875rem', fontWeight: 700, marginTop: '1rem', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' },
 };
 
+// Функция для генерации slug из текста (идентичная той что в docUtils.mjs)
+function slugifyHeading(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
 const HeadingAnchor: React.FC<HeadingAnchorProps> = ({ id, level, html }) => {
   const [hovered, setHovered] = useState(false);
   const Tag = `h${level}` as keyof JSX.IntrinsicElements;
 
-  // Якорь "#" показывается только для H2, H3, H4 (те что в TOC)
-  const showAnchor = level >= 2 && level <= 4;
+  // Извлекаем чистый текст из HTML
+  const cleanText = html.replace(/<[^>]*>/g, '').trim();
+  
+  // Генерируем валидный slug
+  const validId = id && id.trim() ? id : slugifyHeading(cleanText);
+  
+  // Показываем якорь только если есть валидный id И уровень 2-4
+  const showAnchor = validId && validId.length > 0 && level >= 2 && level <= 4;
 
   const handleAnchorClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const url = `${window.location.pathname}#${id}`;
+    if (!validId) return;
+
+    const url = `${window.location.pathname}#${validId}`;
     window.history.pushState(null, '', url);
 
-    const el = document.getElementById(id);
+    const el = document.getElementById(validId);
     if (el) {
       const offset = 80;
       const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
@@ -39,8 +57,8 @@ const HeadingAnchor: React.FC<HeadingAnchorProps> = ({ id, level, html }) => {
 
   return (
     <Tag
-      id={id}
-      data-heading-text={html.replace(/<[^>]*>/g, '')}
+      id={validId}
+      data-heading-text={cleanText}
       style={{
         ...TAG_STYLES[level],
         position: 'relative',
@@ -55,9 +73,9 @@ const HeadingAnchor: React.FC<HeadingAnchorProps> = ({ id, level, html }) => {
       <span dangerouslySetInnerHTML={{ __html: html }} />
       {showAnchor && (
         <a
-          href={`#${id}`}
+          href={`#${validId}`}
           onClick={handleAnchorClick}
-          aria-label="Ссылка на раздел"
+          aria-label={`Ссылка на раздел: ${cleanText}`}
           style={{
             opacity: hovered ? 0.45 : 0,
             transition: 'opacity 0.15s',
@@ -70,6 +88,7 @@ const HeadingAnchor: React.FC<HeadingAnchorProps> = ({ id, level, html }) => {
             cursor: 'pointer',
             userSelect: 'none',
           }}
+          title={`#${validId}`}
         >
           #
         </a>
