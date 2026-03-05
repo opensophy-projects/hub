@@ -124,33 +124,21 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
   const [searchQuery, setSearchQuery] = useState('');
   const [highlightedHtml, setHighlightedHtml] = useState('');
   const codeRef = useRef<HTMLDivElement>(null);
-  const scrollPosRef = useRef(0);
 
   const lines = code.split('\n');
   const isLongCode = lines.length > 15;
   const displayedLines = isExpanded ? lines : lines.slice(0, 15);
 
-  // КРИТИЧНЫЙ ФИКС: сохраняем позицию скролла при открытии fullscreen
+  // ИСПРАВЛЕНО: убираем манипуляции с body.style полностью
   useEffect(() => {
     if (isFullscreen) {
-      scrollPosRef.current = window.scrollY;
       document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollPosRef.current}px`;
-      document.body.style.width = '100%';
     } else {
       document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      window.scrollTo(0, scrollPosRef.current);
     }
 
     return () => {
       document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
     };
   }, [isFullscreen]);
 
