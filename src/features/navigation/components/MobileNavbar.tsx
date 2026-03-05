@@ -36,6 +36,14 @@ const NavButton: React.FC<{
   );
 };
 
+// Reads clean heading text — prefers data-heading-text (set by HeadingAnchor)
+// to avoid the "#" anchor character appearing in TOC labels.
+function getHeadingText(heading: Element): string {
+  return (heading as HTMLElement).dataset.headingText
+    || heading.textContent?.replace(/#\s*$/, '').trim()
+    || '';
+}
+
 const MobileNavbarInner: React.FC = () => {
   const { isDark, setSidebarOpen } = useTheme();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -60,7 +68,7 @@ const MobileNavbarInner: React.FC = () => {
         if (!heading.id) heading.id = id;
         items.push({
           id,
-          text: heading.textContent || '',
+          text: getHeadingText(heading),
           level: Number.parseInt(heading.tagName[1], 10),
         });
       });
@@ -103,7 +111,7 @@ const MobileNavbarInner: React.FC = () => {
           if (!heading.id) heading.id = id;
           items.push({
             id,
-            text: heading.textContent || '',
+            text: getHeadingText(heading),
             level: Number.parseInt(heading.tagName[1], 10),
           });
         });
@@ -123,7 +131,7 @@ const MobileNavbarInner: React.FC = () => {
 
   return (
     <>
-      {/* Десктопный навбар — сверху, лого по центру */}
+      {/* Desktop navbar */}
       <nav
         className={`hidden md:flex fixed top-0 left-0 right-0 z-50 border-b items-center h-16 ${
           isDark
@@ -131,25 +139,20 @@ const MobileNavbarInner: React.FC = () => {
             : 'bg-[#E8E7E3]/95 border-black/10 backdrop-blur-sm'
         }`}
       >
-        {/* Левая часть */}
         <div className="flex items-center pl-4 w-64 flex-shrink-0">
           <NavButton icon={<Search size={18} />} label="Поиск" onClick={() => setIsSearchOpen(true)} />
         </div>
-
-        {/* Центр — лого */}
         <div className="flex-1 flex items-center justify-center">
           <a href="/" className="flex items-center gap-2">
             <img src="/favicon.png" alt="Opensophy" className="w-10 h-10 object-contain" />
           </a>
         </div>
-
-        {/* Правая часть */}
         <div className="flex items-center pr-4 w-64 flex-shrink-0 justify-end">
           <NavButton icon={<ArrowUp size={18} />} label="Наверх" onClick={handleScrollTop} />
         </div>
       </nav>
 
-      {/* Мобильный навбар — снизу (с кнопкой Оглавление) */}
+      {/* Mobile navbar (bottom) */}
       <nav
         className={`md:hidden fixed bottom-0 left-0 right-0 z-50 border-t ${
           isDark
@@ -191,7 +194,6 @@ const MobileNavbarInner: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* TOC Panel — только для мобильных */}
       <AnimatePresence>
         {isTocOpen && (
           <TocPanel toc={toc} onClose={() => setIsTocOpen(false)} />
