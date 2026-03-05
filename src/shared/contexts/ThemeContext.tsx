@@ -28,24 +28,10 @@ const dispatch = (event: string, detail: unknown) => {
   globalThis.window?.dispatchEvent(new CustomEvent(event, { detail }));
 };
 
-const applyDarkClass = (isDark: boolean) => {
-  if (typeof document === 'undefined') return;
-  if (isDark) {
-    document.documentElement.classList.add('dark');
-  } else {
-    document.documentElement.classList.remove('dark');
-  }
-};
-
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isDark, setIsDark] = useState<boolean>(getInitialTheme);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-
-  // Применяем класс .dark при первом рендере и при смене темы
-  useEffect(() => {
-    applyDarkClass(isDark);
-  }, [isDark]);
 
   // Listen to cross-island events
   useEffect(() => {
