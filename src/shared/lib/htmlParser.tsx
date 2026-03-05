@@ -1,4 +1,4 @@
-import React, { createContext } from 'react';
+import React, { createContext, useContext } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
 import { CodeBlock } from '../components/CodeBlock';
 import TableWithControls from '@/features/table/components/TableWithControls';
@@ -102,30 +102,31 @@ const processLinkElement = (element: Element, key: string, elements: React.React
   );
 };
 
+/* ═══════════════════════════════════════════════════════════════
+   FIX 3. ImageComponent — figcaption из CSS (не hardcoded цвета)
+   Используем классы из global.css: .prose figure / .prose figcaption
+   Тёмная тема применяется через CSS .dark .prose figcaption
+   ═══════════════════════════════════════════════════════════════ */
 const ImageComponent: React.FC<{ src: string; alt: string; title?: string }> = ({ src, alt, title }) => {
-  return (
-    <>
-      {title ? (
-        <figure className="my-6 w-full">
-          <img
-            src={src}
-            alt={alt}
-            loading="lazy"
-            className="rounded-lg shadow-md max-w-full h-auto w-full"
-          />
-          <figcaption className="mt-2 text-center text-xs text-slate-400 italic font-medium">
-            {title}
-          </figcaption>
-        </figure>
-      ) : (
+  if (title) {
+    return (
+      <figure>
         <img
           src={src}
           alt={alt}
           loading="lazy"
-          className="rounded-lg shadow-md max-w-full h-auto my-4 block"
         />
-      )}
-    </>
+        <figcaption>{title}</figcaption>
+      </figure>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+    />
   );
 };
 
@@ -243,8 +244,9 @@ const processDetailsElement = (
 
   elements.push(
     <details key={key} open={isOpen} className="my-4">
-      <summary className="cursor-pointer font-semibold">{summaryText}</summary>
-      <div className="mt-2 pl-4">
+      <summary>{summaryText}</summary>
+      {/* div-обёртка нужна для CSS-правил overflow-x: auto на мобильных */}
+      <div className="details-content pt-2 pb-3">
         {contentElements}
       </div>
     </details>
