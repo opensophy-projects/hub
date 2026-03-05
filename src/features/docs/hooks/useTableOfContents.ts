@@ -6,7 +6,7 @@ interface TableOfContentsItem {
   level: number;
 }
 
-// Должна совпадать с slugifyHeading в htmlParser.tsx
+// Must match slugifyHeading in htmlParser.tsx
 function slugifyHeading(text: string): string {
   return text
     .toLowerCase()
@@ -27,12 +27,17 @@ export function useTableOfContents<T>(dependency: T): TableOfContentsItem[] {
       const headings = articleContent.querySelectorAll(
         'h2:not([data-banner-content] h2), h3:not([data-banner-content] h3), h4:not([data-banner-content] h4)'
       );
-
       const items: TableOfContentsItem[] = [];
       const usedIds = new Map<string, number>();
 
       headings.forEach((heading) => {
-        const text = heading.textContent || '';
+        // Use data-heading-text if available (set by HeadingAnchor) to avoid
+        // picking up the "#" anchor character from textContent
+        const text =
+          (heading as HTMLElement).dataset.headingText ||
+          heading.textContent?.replace(/#\s*$/, '').trim() ||
+          '';
+
         let id = slugifyHeading(text);
 
         // Deduplicate ids
@@ -44,7 +49,6 @@ export function useTableOfContents<T>(dependency: T): TableOfContentsItem[] {
           usedIds.set(id, 0);
         }
 
-        // Set id on the element (HeadingAnchor already sets it, but ensure sync)
         if (!heading.id) heading.id = id;
 
         items.push({
