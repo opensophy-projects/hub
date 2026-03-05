@@ -19,8 +19,10 @@ const HeadingAnchor: React.FC<HeadingAnchorProps> = ({ id, level, html }) => {
   const [hovered, setHovered] = useState(false);
   const Tag = `h${level}` as keyof JSX.IntrinsicElements;
 
+  // Якорь "#" показывается только для H2, H3, H4 (те что в TOC)
+  const showAnchor = level >= 2 && level <= 4;
+
   const handleAnchorClick = (e: React.MouseEvent) => {
-    // stopPropagation prevents mobile sidebar from opening when clicking "#"
     e.preventDefault();
     e.stopPropagation();
 
@@ -38,8 +40,6 @@ const HeadingAnchor: React.FC<HeadingAnchorProps> = ({ id, level, html }) => {
   return (
     <Tag
       id={id}
-      // data-heading-text stores clean text without "#" — used by TOC hooks
-      // so heading.textContent (which includes the "#" anchor char) is NOT used
       data-heading-text={html.replace(/<[^>]*>/g, '')}
       style={{
         ...TAG_STYLES[level],
@@ -53,25 +53,27 @@ const HeadingAnchor: React.FC<HeadingAnchorProps> = ({ id, level, html }) => {
       onMouseLeave={() => setHovered(false)}
     >
       <span dangerouslySetInnerHTML={{ __html: html }} />
-      <a
-        href={`#${id}`}
-        onClick={handleAnchorClick}
-        aria-label="Ссылка на раздел"
-        style={{
-          opacity: hovered ? 0.45 : 0,
-          transition: 'opacity 0.15s',
-          color: 'inherit',
-          textDecoration: 'none',
-          fontSize: '0.75em',
-          fontWeight: 400,
-          lineHeight: 1,
-          flexShrink: 0,
-          cursor: 'pointer',
-          userSelect: 'none',
-        }}
-      >
-        #
-      </a>
+      {showAnchor && (
+        <a
+          href={`#${id}`}
+          onClick={handleAnchorClick}
+          aria-label="Ссылка на раздел"
+          style={{
+            opacity: hovered ? 0.45 : 0,
+            transition: 'opacity 0.15s',
+            color: 'inherit',
+            textDecoration: 'none',
+            fontSize: '0.75em',
+            fontWeight: 400,
+            lineHeight: 1,
+            flexShrink: 0,
+            cursor: 'pointer',
+            userSelect: 'none',
+          }}
+        >
+          #
+        </a>
+      )}
     </Tag>
   );
 };
