@@ -1,59 +1,100 @@
-import React, { useState, useRef, useContext, useMemo } from 'react';
+import React, { useState, useRef, useContext, useMemo, useEffect } from 'react';
 import { Copy, Maximize2, ChevronDown, Search, X } from 'lucide-react';
 import { TableContext } from '../lib/htmlParser';
 import hljs from 'highlight.js/lib/core';
 
-// Импортируем только нужные языки
-import javascript from 'highlight.js/lib/languages/javascript';
-import typescript from 'highlight.js/lib/languages/typescript';
-import python from 'highlight.js/lib/languages/python';
-import bash from 'highlight.js/lib/languages/bash';
-import sql from 'highlight.js/lib/languages/sql';
-import json from 'highlight.js/lib/languages/json';
-import xml from 'highlight.js/lib/languages/xml'; // для HTML
-import css from 'highlight.js/lib/languages/css';
-import yaml from 'highlight.js/lib/languages/yaml';
-import dockerfile from 'highlight.js/lib/languages/dockerfile';
-import markdown from 'highlight.js/lib/languages/markdown';
-import go from 'highlight.js/lib/languages/go';
-import rust from 'highlight.js/lib/languages/rust';
-import php from 'highlight.js/lib/languages/php';
-import cpp from 'highlight.js/lib/languages/cpp';
-import csharp from 'highlight.js/lib/languages/csharp';
-import java from 'highlight.js/lib/languages/java';
+// ─── Маппинг алиасов языков ───────────────────────────────────────────────────
 
-// Регистрируем языки
-hljs.registerLanguage('javascript', javascript);
-hljs.registerLanguage('typescript', typescript);
-hljs.registerLanguage('jsx', javascript); // JSX использует JavaScript
-hljs.registerLanguage('tsx', typescript); // TSX использует TypeScript
-hljs.registerLanguage('python', python);
-hljs.registerLanguage('bash', bash);
-hljs.registerLanguage('shell', bash); // алиас для bash
-hljs.registerLanguage('sh', bash); // алиас для bash
-hljs.registerLanguage('sql', sql);
-hljs.registerLanguage('json', json);
-hljs.registerLanguage('html', xml);
-hljs.registerLanguage('xml', xml);
-hljs.registerLanguage('css', css);
-hljs.registerLanguage('yaml', yaml);
-hljs.registerLanguage('yml', yaml); // алиас для yaml
-hljs.registerLanguage('dockerfile', dockerfile);
-hljs.registerLanguage('markdown', markdown);
-hljs.registerLanguage('md', markdown); // алиас для markdown
-hljs.registerLanguage('go', go);
-hljs.registerLanguage('rust', rust);
-hljs.registerLanguage('php', php);
-hljs.registerLanguage('cpp', cpp);
-hljs.registerLanguage('c++', cpp); // алиас для cpp
-hljs.registerLanguage('csharp', csharp);
-hljs.registerLanguage('cs', csharp); // алиас для csharp
-hljs.registerLanguage('java', java);
+const LANG_ALIASES: Record<string, string> = {
+  'jsx': 'javascript',
+  'tsx': 'typescript',
+  'shell': 'bash',
+  'sh': 'bash',
+  'yml': 'yaml',
+  'md': 'markdown',
+  'c++': 'cpp',
+  'cs': 'csharp',
+};
+
+// ─── Динамический загрузчик языков ───────────────────────────────────────────
+
+const loadedLanguages = new Set<string>();
+const pendingLanguages = new Map<string, Promise<void>>();
+
+async function loadLanguage(lang: string): Promise<void> {
+  const normalized = LANG_ALIASES[lang] ?? lang;
+
+  if (loadedLanguages.has(normalized)) return;
+
+  // Дедупликация — не грузим одно и то же дважды
+  const existing = pendingLanguages.get(normalized);
+  if (existing) return existing;
+
+  const promise = (async () => {
+    try {
+      let module: { default: unknown } | null = null;
+
+      switch (normalized) {
+        case 'javascript': module = await import('highlight.js/lib/languages/javascript'); break;
+        case 'typescript': module = await import('highlight.js/lib/languages/typescript'); break;
+        case 'python':     module = await import('highlight.js/lib/languages/python'); break;
+        case 'bash':       module = await import('highlight.js/lib/languages/bash'); break;
+        case 'sql':        module = await import('highlight.js/lib/languages/sql'); break;
+        case 'json':       module = await import('highlight.js/lib/languages/json'); break;
+        case 'xml':        module = await import('highlight.js/lib/languages/xml'); break;
+        case 'css':        module = await import('highlight.js/lib/languages/css'); break;
+        case 'yaml':       module = await import('highlight.js/lib/languages/yaml'); break;
+        case 'dockerfile': module = await import('highlight.js/lib/languages/dockerfile'); break;
+        case 'markdown':   module = await import('highlight.js/lib/languages/markdown'); break;
+        case 'go':         module = await import('highlight.js/lib/languages/go'); break;
+        case 'rust':       module = await import('highlight.js/lib/languages/rust'); break;
+        case 'php':        module = await import('highlight.js/lib/languages/php'); break;
+        case 'cpp':        module = await import('highlight.js/lib/languages/cpp'); break;
+        case 'csharp':     module = await import('highlight.js/lib/languages/csharp'); break;
+        case 'java':       module = await import('highlight.js/lib/languages/java'); break;
+        case 'html':
+          module = await import('highlight.js/lib/languages/xml');
+          normalized !== 'xml' && hljs.registerLanguage('html', (module as any).default);
+          break;
+        default:
+          // Неизвестный язык — просто пропускаем
+          loadedLanguages.add(normalized);
+          return;
+      }
+
+      if (module) {
+        hljs.registerLanguage(normalized, (module as any).default);
+
+        // Регистрируем алиасы обратно
+        for (const [alias, target] of Object.entries(LANG_ALIASES)) {
+          if (target === normalized && !loadedLanguages.has(alias)) {
+            hljs.registerLanguage(alias, (module as any).default);
+            loadedLanguages.add(alias);
+          }
+        }
+
+        loadedLanguages.add(normalized);
+      }
+    } catch (e) {
+      console.warn(`Failed to load highlight.js language: ${normalized}`, e);
+      loadedLanguages.add(normalized); // Помечаем чтобы не пытаться снова
+    } finally {
+      pendingLanguages.delete(normalized);
+    }
+  })();
+
+  pendingLanguages.set(normalized, promise);
+  return promise;
+}
+
+// ─── Типы ─────────────────────────────────────────────────────────────────────
 
 interface CodeBlockProps {
   code: string;
   language?: string;
 }
+
+// ─── Вспомогательные компоненты ───────────────────────────────────────────────
 
 const CodeBody: React.FC<{
   lines: string[];
@@ -90,40 +131,53 @@ const CodeBody: React.FC<{
   </pre>
 );
 
+// ─── Основной компонент ───────────────────────────────────────────────────────
+
 export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
   const { isDark } = useContext(TableContext);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [highlightedHtml, setHighlightedHtml] = useState('');
   const codeRef = useRef<HTMLDivElement>(null);
 
   const lines = code.split('\n');
   const isLongCode = lines.length > 15;
   const displayedLines = isExpanded ? lines : lines.slice(0, 15);
 
-  const highlightedHtml = useMemo(() => {
-    if (!language || language.trim() === '') return '';
-    try {
-      const normalizedLang = language.toLowerCase().trim();
-      const highlighted = hljs.highlight(code, { language: normalizedLang });
-      return highlighted.value
-        .split('\n')
-        .map(
-          (line, i) =>
-            `<span class="line-number" style="color: ${
-              isDark ? '#888' : '#666'
-            }; display: inline-block; width: 32px; margin-right: 16px; text-align: right; user-select: none;">${
-              i + 1
-            }</span>${line}`
-        )
-        .join('\n');
-    } catch (error) {
-      console.warn(`Failed to highlight code for language: ${language}`, error);
-      return '';
+  // ─── Динамическая подсветка ───────────────────────────────────────────────
+  useEffect(() => {
+    if (!language || !language.trim()) {
+      setHighlightedHtml('');
+      return;
     }
+
+    const normalizedLang = (LANG_ALIASES[language.toLowerCase().trim()] ?? language.toLowerCase().trim());
+    let cancelled = false;
+
+    loadLanguage(normalizedLang).then(() => {
+      if (cancelled) return;
+      try {
+        const result = hljs.highlight(code, { language: normalizedLang });
+        const html = result.value
+          .split('\n')
+          .map(
+            (line, i) =>
+              `<span class="line-number" style="color:${isDark ? '#888' : '#666'};display:inline-block;width:32px;margin-right:16px;text-align:right;user-select:none;">${i + 1}</span>${line}`
+          )
+          .join('\n');
+        if (!cancelled) setHighlightedHtml(html);
+      } catch (err) {
+        console.warn(`highlight.js error for language "${normalizedLang}":`, err);
+        if (!cancelled) setHighlightedHtml('');
+      }
+    });
+
+    return () => { cancelled = true; };
   }, [code, language, isDark]);
 
+  // ─── Поиск ────────────────────────────────────────────────────────────────
   const matchedLines = useMemo(
     () =>
       new Set(
