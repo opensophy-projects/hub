@@ -28,40 +28,16 @@ const dispatch = (event: string, detail: unknown) => {
   globalThis.window?.dispatchEvent(new CustomEvent(event, { detail }));
 };
 
-/* ═══════════════════════════════════════════════════════════════
-   FIX 8. Синхронизация класса .dark на <html>
-   CSS-правила .dark .prose details, .dark .prose blockquote и т.д.
-   работают только когда на <html> есть класс "dark".
-   ThemeContext теперь добавляет/убирает его при смене темы.
-   ═══════════════════════════════════════════════════════════════ */
-const applyDarkClass = (isDark: boolean) => {
-  if (typeof document === 'undefined') return;
-  if (isDark) {
-    document.documentElement.classList.add('dark');
-  } else {
-    document.documentElement.classList.remove('dark');
-  }
-};
-
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isDark, setIsDark] = useState<boolean>(getInitialTheme);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-  // Применяем класс .dark при первом рендере и при смене темы
-  useEffect(() => {
-    applyDarkClass(isDark);
-  }, [isDark]);
-
   // Listen to cross-island events
   useEffect(() => {
     const onSidebar = (e: Event) => setIsSidebarOpen((e as CustomEvent<boolean>).detail);
     const onSearch = (e: Event) => setIsSearchOpen((e as CustomEvent<boolean>).detail);
-    const onTheme = (e: Event) => {
-      const next = (e as CustomEvent<boolean>).detail;
-      setIsDark(next);
-      applyDarkClass(next);
-    };
+    const onTheme = (e: Event) => setIsDark((e as CustomEvent<boolean>).detail);
 
     globalThis.window?.addEventListener(EVENTS.SIDEBAR, onSidebar);
     globalThis.window?.addEventListener(EVENTS.SEARCH, onSearch);
@@ -78,7 +54,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsDark((prev) => {
       const next = !prev;
       globalThis.localStorage.setItem('theme', next ? 'dark' : 'light');
-      applyDarkClass(next);
       dispatch(EVENTS.THEME, next);
       return next;
     });
