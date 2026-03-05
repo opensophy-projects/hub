@@ -91,7 +91,8 @@ const ImageCard: React.FC<ImageCardProps> = ({ src, alt, title, isDark = false }
     <>
       <span
         style={{
-          display: 'inline-block',
+          display: 'block',
+          width: 'fit-content',
           maxWidth: '100%',
           margin: '1.25rem 0',
           borderRadius: '10px',
@@ -101,7 +102,6 @@ const ImageCard: React.FC<ImageCardProps> = ({ src, alt, title, isDark = false }
           boxShadow: isDark
             ? '0 2px 16px rgba(0,0,0,0.5)'
             : '0 2px 12px rgba(0,0,0,0.08)',
-          verticalAlign: 'top',
         }}
       >
         <img
@@ -119,7 +119,6 @@ const ImageCard: React.FC<ImageCardProps> = ({ src, alt, title, isDark = false }
             cursor: 'zoom-in',
             margin: 0,
             border: 'none',
-            borderRadius: title ? '0' : '9px',
             transition: 'opacity 0.2s',
           }}
           onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.88'; }}
