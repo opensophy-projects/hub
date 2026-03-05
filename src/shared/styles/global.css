@@ -159,6 +159,12 @@ body {
   color: inherit;
 }
 
+/* FIX: убирает серый фон в CodeBlock (.not-prose) и pre code в тёмной теме */
+.dark .prose .not-prose code,
+.dark .prose pre code {
+  background-color: transparent;
+}
+
 .prose pre {
   margin-bottom: 1rem;
   overflow-x: auto;
