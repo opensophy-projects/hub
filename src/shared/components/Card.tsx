@@ -46,20 +46,21 @@ const LucideIcon: React.FC<{ name: string; size?: number; color?: string }> = ({
 
 const Card: React.FC<CardProps> = ({ title, icon, color, children, isDark = false }) => {
   const accentColor = color || (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)');
-
-  // Determine if color is a "real" color (not transparent/default) for accent styling
   const hasAccent = !!color;
 
   const cardStyle: React.CSSProperties = {
     position: 'relative',
     borderRadius: '12px',
-    border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)',
-    background: isDark ? '#0f0f0f' : '#ffffff',
+    // Light mode: use the same muted background as the page, not pure white
+    border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)',
+    background: isDark ? '#0f0f0f' : 'rgba(0,0,0,0.03)',
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
     transition: 'transform 0.15s, box-shadow 0.15s',
-    boxShadow: isDark ? '0 2px 12px rgba(0,0,0,0.4)' : '0 2px 8px rgba(0,0,0,0.06)',
+    boxShadow: isDark
+      ? '0 2px 12px rgba(0,0,0,0.4)'
+      : '0 1px 4px rgba(0,0,0,0.05)',
   };
 
   const accentBarStyle: React.CSSProperties = hasAccent ? {
@@ -105,7 +106,7 @@ const Card: React.FC<CardProps> = ({ title, icon, color, children, isDark = fals
 
   const contentStyle: React.CSSProperties = {
     fontSize: '0.85rem',
-    color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.65)',
+    color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)',
     lineHeight: 1.6,
     margin: 0,
   };
@@ -117,13 +118,13 @@ const Card: React.FC<CardProps> = ({ title, icon, color, children, isDark = fals
         (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
         (e.currentTarget as HTMLDivElement).style.boxShadow = isDark
           ? '0 6px 24px rgba(0,0,0,0.5)'
-          : '0 6px 20px rgba(0,0,0,0.1)';
+          : '0 4px 16px rgba(0,0,0,0.09)';
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
         (e.currentTarget as HTMLDivElement).style.boxShadow = isDark
           ? '0 2px 12px rgba(0,0,0,0.4)'
-          : '0 2px 8px rgba(0,0,0,0.06)';
+          : '0 1px 4px rgba(0,0,0,0.05)';
       }}
     >
       {hasAccent && <div style={accentBarStyle} />}
@@ -133,7 +134,7 @@ const Card: React.FC<CardProps> = ({ title, icon, color, children, isDark = fals
             <LucideIcon
               name={icon}
               size={18}
-              color={hasAccent ? accentColor : isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)'}
+              color={hasAccent ? accentColor : isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.55)'}
             />
           </div>
         )}
@@ -156,30 +157,22 @@ const CardGrid: React.FC<CardGridProps> = ({ cols = 2, children, isDark = false 
     margin: '1.5rem 0',
   };
 
-  // Responsive via inline style trick — on mobile always 1 col
   const styleTag = `
     .card-grid-${safeCols} {
       grid-template-columns: repeat(${safeCols}, 1fr);
     }
     @media (max-width: 640px) {
-      .card-grid-${safeCols} {
-        grid-template-columns: 1fr !important;
-      }
+      .card-grid-${safeCols} { grid-template-columns: 1fr !important; }
     }
     @media (min-width: 641px) and (max-width: 900px) {
-      .card-grid-3 {
-        grid-template-columns: repeat(2, 1fr) !important;
-      }
+      .card-grid-3 { grid-template-columns: repeat(2, 1fr) !important; }
     }
   `;
 
   return (
     <>
       <style>{styleTag}</style>
-      <div
-        className={`card-grid-${safeCols}`}
-        style={gridStyle}
-      >
+      <div className={`card-grid-${safeCols}`} style={gridStyle}>
         {children}
       </div>
     </>
