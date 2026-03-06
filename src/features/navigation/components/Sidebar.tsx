@@ -73,7 +73,7 @@ const NavPopoverSwitcher: React.FC<{
   }, [open]);
 
   const active = sections.find((s) => s.navSlug === activeSlug) ?? sections[0];
-  const bg = isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]';
+  const bg = isDark ? 'bg-[#0F0F0F]' : 'bg-[#E1E0DC]';
   const border = isDark ? 'border-white/10' : 'border-black/10';
   const hoverItem = isDark ? 'hover:bg-white/5 text-white/80' : 'hover:bg-black/5 text-black/80';
   const activeItem = isDark ? 'bg-white/10 text-white font-medium' : 'bg-black/10 text-black font-medium';
@@ -179,7 +179,7 @@ const SidebarHeader: React.FC<{
     className="flex-shrink-0 px-4 py-3 border-b flex items-center justify-between sticky top-0 z-20"
     style={{
       borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-      backgroundColor: isDark ? 'rgba(10,10,10,0.95)' : 'rgba(232,231,227,0.95)',
+      backgroundColor: isDark ? 'rgba(15,15,15,0.95)' : 'rgba(225,224,220,0.95)',
       backdropFilter: 'blur(10px)',
     }}
   >
@@ -241,8 +241,8 @@ const SidebarSearch: React.FC<{
           onChange={(e) => onChange(e.target.value)}
           className={`w-full pl-8 pr-3 py-2 rounded-lg text-sm border transition-colors outline-none ${
             isDark
-              ? 'bg-[#0a0a0a] border-white/10 text-white placeholder-white/40 focus:border-white/20'
-              : 'bg-[#E8E7E3] border-black/10 text-black placeholder-black/40 focus:border-black/20'
+              ? 'bg-[#0F0F0F] border-white/10 text-white placeholder-white/40 focus:border-white/20'
+              : 'bg-[#E1E0DC] border-black/10 text-black placeholder-black/40 focus:border-black/20'
           }`}
         />
       </div>
@@ -406,7 +406,7 @@ const ContactsSection: React.FC<{ isDark: boolean; isOpen: boolean; onClose: () 
 }) => {
   if (!isOpen) return null;
   return (
-    <div className={`fixed left-0 top-0 w-full md:w-80 h-screen border-r flex flex-col z-50 ${isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'}`}>
+    <div className={`fixed left-0 top-0 w-full md:w-80 h-screen border-r flex flex-col z-50 ${isDark ? 'bg-[#0F0F0F] border-white/10' : 'bg-[#E1E0DC] border-black/10'}`}>
       <div className="flex items-center justify-between p-4">
         <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>Контакты</h2>
         <button
@@ -493,7 +493,7 @@ const Sidebar: React.FC = () => {
       {!isDesktop && <SidebarOverlay onClose={handleClose} />}
       <aside
         className={`fixed left-0 top-0 h-screen w-full md:w-80 border-r flex flex-col z-50 ${
-          isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
+          isDark ? 'bg-[#0F0F0F] border-white/10' : 'bg-[#E1E0DC] border-black/10'
         }`}
         style={{ height: '100vh' }}
       >
