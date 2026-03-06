@@ -30,10 +30,6 @@ interface DocContentProps {
   };
 }
 
-// ─── Allowed tags/attrs для DOMPurify ────────────────────────────────────────
-// doc.content уже является готовым HTML (после marked() в buildDocFromPath),
-// поэтому здесь мы только санитизируем, НЕ прогоняем через marked() снова.
-
 const SANITIZE_TAGS = [
   'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
   'p', 'br', 'strong', 'em', 'u', 'a',
@@ -52,16 +48,12 @@ const SANITIZE_ATTR = [
   'type', 'checked', 'disabled', 'open', 'style', 'align',
 ];
 
-// ─── Read time estimation ─────────────────────────────────────────────────────
-
 function estimateReadTime(content: string): number {
   if (!content) return 1;
   const text = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   const words = text.split(' ').filter(Boolean).length;
   return Math.max(1, Math.round(words / 200));
 }
-
-// ─── Hero Section ─────────────────────────────────────────────────────────────
 
 const DocHero: React.FC<{
   doc: DocContentProps['doc'];
@@ -243,8 +235,6 @@ const DocHero: React.FC<{
   );
 };
 
-// ─── Main component ───────────────────────────────────────────────────────────
-
 const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
   const { isDark, isSidebarOpen } = useTheme();
   const { loadDocument } = useDocuments();
@@ -292,11 +282,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
     setFullscreenTableHtml(tableHtml);
   };
 
-  // ─── ИСПРАВЛЕНО ───────────────────────────────────────────────────────────
-  // doc.content уже является HTML (buildDocFromPath в docUtils.mjs уже
-  // прогнал markdown через marked()). Повторный вызов marked(doc.content)
-  // ломал data-атрибуты диаграмм, экранируя HTML-теги в текст.
-  // Теперь только санитизируем HTML, не трогая его структуру.
   const htmlContent = useMemo(() => {
     if (!doc.content) return '';
     return DOMPurify.sanitize(doc.content, {
@@ -305,7 +290,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
       ALLOW_DATA_ATTR: true,
     });
   }, [doc.content]);
-  // ─────────────────────────────────────────────────────────────────────────
 
   const contentNodes = useMemo(() => {
     if (!htmlContent) return [];
@@ -343,7 +327,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
           style={{
             marginLeft: isDesktop ? '20rem' : '0',
             marginRight: toc.length > 0 && isDesktop ? TOC_WIDTH : '0',
-            marginTop: isDesktop ? '4rem' : '0',
+            // Десктопный navbar удалён — marginTop не нужен
             marginBottom: isDesktop ? '0' : '3.5rem',
           }}
         >
@@ -372,7 +356,8 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
           className={`hidden md:flex flex-col fixed right-0 z-40 border-l overflow-hidden ${
             isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
           }`}
-          style={{ top: '4rem', width: TOC_WIDTH, height: 'calc(100vh - 4rem)' }}
+          // Десктопный navbar удалён — TOC начинается с top: 0
+          style={{ top: '0', width: TOC_WIDTH, height: '100vh' }}
         >
           <div className={`flex-shrink-0 px-4 py-4 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
             <h2 className={`text-sm font-bold uppercase tracking-widest ${isDark ? 'text-white/50' : 'text-black/50'}`}>
@@ -446,15 +431,13 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
         style={{
           marginLeft: isDesktop ? '20rem' : '0',
           marginRight: toc.length > 0 && isDesktop ? TOC_WIDTH : '0',
-          marginTop: isDesktop ? '4rem' : '0',
+          // Десктопный navbar удалён — marginTop не нужен для десктопа
           marginBottom: isDesktop ? '0' : '3.5rem',
           transition: 'margin-left 0.3s ease',
         }}
       >
-        {/* Hero секция */}
         <DocHero doc={doc} isDark={isDark} readTime={readTime} markdownContent={doc.content} />
 
-        {/* Контент */}
         <article
           className="flex-1 pb-12 w-full"
           style={{ paddingLeft: '2rem', paddingRight: '2rem', paddingTop: '2rem' }}
