@@ -217,7 +217,7 @@ const UniversalGrid: React.FC<UniversalGridProps> = ({ universalProps, onChange,
   );
 };
 
-// ─── AskAI-style select dropdown ──────────────────────────────────────────────
+// ─── AskAI-style select dropdown (with auto-upward positioning) ──────────────
 
 interface AiSelectProps {
   label: string;
@@ -230,7 +230,9 @@ interface AiSelectProps {
 const AiSelect: React.FC<AiSelectProps> = ({ label, value, options, onChange, isDark }) => {
   const [open, setOpen]       = useState(false);
   const [hov, setHov]         = useState<string | null>(null);
+  const [dropUp, setDropUp]   = useState(false);
   const ref                   = useRef<HTMLDivElement>(null);
+  const btnRef                = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -238,6 +240,16 @@ const AiSelect: React.FC<AiSelectProps> = ({ label, value, options, onChange, is
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, [open]);
+
+  // Проверка: если dropdown уходит ниже экрана — открываем вверх
+  useEffect(() => {
+    if (!open || !btnRef.current) return;
+    const btnRect = btnRef.current.getBoundingClientRect();
+    const dropdownHeight = options.length * 32 + 40; // примерная высота меню
+    const spaceBelow = window.innerHeight - btnRect.bottom;
+    
+    setDropUp(spaceBelow < dropdownHeight && btnRect.top > dropdownHeight);
+  }, [open, options.length]);
 
   const popupBg   = tc(isDark, '#0a0a0a', '#E8E7E3');
   const border    = tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)');
@@ -256,6 +268,7 @@ const AiSelect: React.FC<AiSelectProps> = ({ label, value, options, onChange, is
       </span>
       <div ref={ref} style={{ position: 'relative' }}>
         <button
+          ref={btnRef}
           onClick={() => setOpen(v => !v)}
           style={{
             width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'space-between',
@@ -270,10 +283,12 @@ const AiSelect: React.FC<AiSelectProps> = ({ label, value, options, onChange, is
         </button>
         {open && (
           <div style={{
-            position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+            position: 'absolute',
+            [dropUp ? 'bottom' : 'top']: dropUp ? 'calc(100% + 4px)' : 'calc(100% + 4px)',
+            left: 0, right: 0,
             background: popupBg, border: `1px solid ${border}`, borderRadius: 10,
             boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.7)' : '0 8px 32px rgba(0,0,0,0.12)',
-            zIndex: 300, overflow: 'hidden',
+            zIndex: 300, overflow: 'auto', maxHeight: '240px',
             animation: 'aiSelectIn 0.13s ease',
           }}>
             <style>{`@keyframes aiSelectIn{from{opacity:0;transform:translateY(-4px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}`}</style>
@@ -602,10 +617,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = (props) => {
   return (
     <div style={{
       borderRadius: 12, border: `1px solid ${border}`, background: bg,
-      // FIX: Use flex column layout so the panel doesn't overflow; make it scrollable
       display: 'flex', flexDirection: 'column',
       margin: '1.5rem 0',
-      // Prevent the panel from growing taller than the viewport on mobile
       maxHeight: 'calc(100dvh - 3rem)',
       overflow: 'hidden',
     }}>
@@ -633,7 +646,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = (props) => {
         overflowY: 'auto',
         overflowX: 'hidden',
         padding: '14px 14px 10px',
-        // Smooth scrolling on iOS
         WebkitOverflowScrolling: 'touch',
       }}>
         {activeTab === 'universal' ? (
