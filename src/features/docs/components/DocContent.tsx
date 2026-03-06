@@ -9,7 +9,7 @@ import { useTableOfContents } from '../hooks/useTableOfContents';
 import { useScrollProgress } from '../hooks/useScrollProgress';
 import { scrollToElement } from '../utils/scrollUtils';
 import { useDocuments } from '../hooks/useDocuments';
-import { Clock, CalendarDays } from 'lucide-react';
+import { Clock, CalendarDays, ArrowUp } from 'lucide-react';
 import DotWaveBackground from './DotWaveBackground';
 import AskAIButton from './AskAIButton';
 
@@ -315,6 +315,10 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
   const TOC_WIDTH = toc.length > 0 ? '18rem' : '0';
 
+  const handleScrollTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   if (loading) {
     return (
       <div style={{ minHeight: '100vh' }}>
@@ -340,12 +344,12 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
   return (
     <div style={{ minHeight: '100vh' }}>
-      {/* Прогресс-бар — ИСПРАВЛЕНО: для десктопа начинается после сайдбара */}
+      {/* Прогресс-бар — z-index 999 чтобы быть поверх сайдбара */}
       <div
-        className={`fixed top-0 h-1 z-50 ${isDark ? 'bg-white' : 'bg-black'}`}
+        className={`fixed top-0 left-0 h-1 ${isDark ? 'bg-white' : 'bg-black'}`}
         style={{ 
           width: `${scrollProgress}%`,
-          left: isDesktop ? '20rem' : '0',
+          zIndex: 999,
         }}
       />
 
@@ -361,9 +365,25 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
           style={{ top: '0', width: TOC_WIDTH, height: '100vh' }}
         >
           <div className={`flex-shrink-0 px-4 py-4 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
-            <h2 className={`text-sm font-bold uppercase tracking-widest ${isDark ? 'text-white/50' : 'text-black/50'}`}>
-              На этой странице
-            </h2>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className={`text-sm font-bold uppercase tracking-widest ${isDark ? 'text-white/50' : 'text-black/50'}`}>
+                На этой странице
+              </h2>
+              
+              {/* Кнопка Наверх */}
+              <button
+                onClick={handleScrollTop}
+                className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-lg transition-colors ${
+                  isDark
+                    ? 'text-white/60 hover:bg-white/5 hover:text-white'
+                    : 'text-black/60 hover:bg-black/5 hover:text-black'
+                }`}
+                title="Наверх"
+              >
+                <ArrowUp size={15} />
+                <span className="text-[9px] font-medium leading-none">Наверх</span>
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto py-3">
