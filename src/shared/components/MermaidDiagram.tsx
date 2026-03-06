@@ -142,29 +142,33 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
   // FIX: state so cursor updates on re-render (ref alone doesn't trigger it)
   const [isDragging, setIsDragging] = useState(false);
 
-  // Mouse drag
+  // Mouse drag — listeners attached only during active drag to avoid conflicts
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     if (!panMode) return;
+    if (e.button !== 0) return;
+    e.preventDefault();
+
     dragging.current = true;
     setIsDragging(true);
     last.current = { x: e.clientX, y: e.clientY };
-    e.preventDefault();
-  }, [panMode]);
 
-  useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      if (!dragging.current) return;
-      setPos(p => ({ x: p.x + e.clientX - last.current.x, y: p.y + e.clientY - last.current.y }));
-      last.current = { x: e.clientX, y: e.clientY };
+    const onMove = (ev: MouseEvent) => {
+      const dx = ev.clientX - last.current.x;
+      const dy = ev.clientY - last.current.y;
+      last.current = { x: ev.clientX, y: ev.clientY };
+      setPos(p => ({ x: p.x + dx, y: p.y + dy }));
     };
+
     const onUp = () => {
       dragging.current = false;
       setIsDragging(false);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
     };
+
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
-    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
-  }, [setPos]);
+  }, [panMode, setPos]);
 
   // Touch drag
   useEffect(() => {
@@ -367,7 +371,7 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
         .replace(/(<svg[^>]*?)\s+height="[^"]*"/g, '$1')
         .replace(
           /<svg /,
-          '<svg style="max-width:min(100%,700px);height:auto;display:block;overflow:visible;margin:0 auto;" ',
+          '<svg style="max-width:min(100%,400px);height:auto;display:block;overflow:visible;margin:0 auto;" ',
         );
 
       svgCache.set(key, patched);
