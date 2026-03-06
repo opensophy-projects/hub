@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef, lazy, Suspense, memo } from 'react';
+import React, { useState, useMemo, useEffect, useRef, lazy, Suspense, memo, useCallback } from 'react';
 import { useTheme } from '@/shared/contexts/ThemeContext';
 import { useDocuments } from '@/features/docs/hooks/useDocuments';
 import {
@@ -18,6 +18,157 @@ interface Doc {
 }
 interface NavNode { title: string; slug: string; docs: Doc[]; children: Record<string, NavNode>; isCategory: boolean; }
 interface NavSection { navSlug: string; navTitle: string; navIcon: string; }
+
+// ─── GlowingBorder — точная реализация GlowingEffect ─────────────────────────
+
+const easeOutQuint = (x: number): number => 1 - Math.pow(1 - x, 5);
+
+interface GlowingBorderProps {
+  isDark: boolean;
+  side?: 'right' | 'left';
+  spread?: number;
+  movementDuration?: number;
+}
+
+const GlowingBorder: React.FC<GlowingBorderProps> = ({
+  isDark,
+  side = 'right',
+  spread = 28,
+  movementDuration = 1.8,
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const lastPosition = useRef({ x: 0, y: 0 });
+  const animationFrameRef = useRef<number>(0);
+  const tweenRef = useRef<number>(0);
+
+  const animateAngleTransition = useCallback((
+    element: HTMLDivElement,
+    startValue: number,
+    endValue: number,
+    duration: number
+  ) => {
+    cancelAnimationFrame(tweenRef.current);
+    const startTime = performance.now();
+    const animateValue = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easedProgress = easeOutQuint(progress);
+      const value = startValue + (endValue - startValue) * easedProgress;
+      element.style.setProperty('--start', String(value));
+      if (progress < 1) tweenRef.current = requestAnimationFrame(animateValue);
+    };
+    tweenRef.current = requestAnimationFrame(animateValue);
+  }, []);
+
+  const handleMove = useCallback((e?: MouseEvent | { x: number; y: number }) => {
+    if (!containerRef.current) return;
+    cancelAnimationFrame(animationFrameRef.current);
+    animationFrameRef.current = requestAnimationFrame(() => {
+      const element = containerRef.current;
+      if (!element) return;
+      const { left, top, width, height } = element.getBoundingClientRect();
+      const mouseX = e?.x ?? lastPosition.current.x;
+      const mouseY = e?.y ?? lastPosition.current.y;
+      if (e) lastPosition.current = { x: mouseX, y: mouseY };
+
+      const center = [left + width * 0.5, top + height * 0.5];
+      const inactiveRadius = 0.5 * Math.min(width, height) * 0.5;
+      const distanceFromCenter = Math.hypot(mouseX - center[0], mouseY - center[1]);
+      if (distanceFromCenter < inactiveRadius) {
+        element.style.setProperty('--active', '0');
+        return;
+      }
+
+      const proximity = 80;
+      const isActive =
+        mouseX > left - proximity &&
+        mouseX < left + width + proximity &&
+        mouseY > top - proximity &&
+        mouseY < top + height + proximity;
+
+      element.style.setProperty('--active', isActive ? '1' : '0');
+      if (!isActive) return;
+
+      const currentAngle = Number.parseFloat(element.style.getPropertyValue('--start')) || 0;
+      let targetAngle = (180 * Math.atan2(mouseY - center[1], mouseX - center[0])) / Math.PI + 90;
+      const angleDiff = ((targetAngle - currentAngle + 180) % 360) - 180;
+      const newAngle = currentAngle + angleDiff;
+      animateAngleTransition(element, currentAngle, newAngle, movementDuration * 1000);
+    });
+  }, [movementDuration, animateAngleTransition]);
+
+  useEffect(() => {
+    const handleScroll = () => handleMove();
+    const handlePointerMove = (e: PointerEvent) => handleMove(e);
+    globalThis.addEventListener('scroll', handleScroll, { passive: true });
+    document.body.addEventListener('pointermove', handlePointerMove, { passive: true });
+    return () => {
+      cancelAnimationFrame(animationFrameRef.current);
+      cancelAnimationFrame(tweenRef.current);
+      globalThis.removeEventListener('scroll', handleScroll);
+      document.body.removeEventListener('pointermove', handlePointerMove);
+    };
+  }, [handleMove]);
+
+  // Цвет свечения зависит от темы
+  const glowColor = isDark
+    ? 'conic-gradient(from 236.84deg at 50% 50%, #7234ff, #a855f7, #7234ff, #4f46e5, #7234ff calc(25% / 5))'
+    : 'conic-gradient(from 236.84deg at 50% 50%, #7234ff, #a855f7, #7234ff, #4f46e5, #7234ff calc(25% / 5))';
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        pointerEvents: 'none',
+        borderRadius: 'inherit',
+        '--spread': spread,
+        '--start': '0',
+        '--active': '0',
+        '--gradient': glowColor,
+      } as React.CSSProperties}
+    >
+      <style>{`
+        .sidebar-glow-inner {
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+        }
+        .sidebar-glow-inner::after {
+          content: "";
+          position: absolute;
+          border-radius: inherit;
+          inset: -1px;
+          border: 1px solid transparent;
+          background: var(--gradient);
+          background-attachment: fixed;
+          opacity: var(--active);
+          transition: opacity 0.4s ease;
+          -webkit-mask-clip: padding-box, border-box;
+          mask-clip: padding-box, border-box;
+          -webkit-mask-composite: xor;
+          mask-composite: exclude;
+          -webkit-mask-image: linear-gradient(#0000, #0000),
+            conic-gradient(
+              from calc((var(--start) - var(--spread)) * 1deg),
+              #00000000 0deg,
+              #fff,
+              #00000000 calc(var(--spread) * 2deg)
+            );
+          mask-image: linear-gradient(#0000, #0000),
+            conic-gradient(
+              from calc((var(--start) - var(--spread)) * 1deg),
+              #00000000 0deg,
+              #fff,
+              #00000000 calc(var(--spread) * 2deg)
+            );
+        }
+      `}</style>
+      <div className="sidebar-glow-inner" />
+    </div>
+  );
+};
 
 // ─── Динамическая загрузка иконки по имени ────────────────────────────────────
 
@@ -146,7 +297,7 @@ const SidebarOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   );
 };
 
-// ─── IconButton — иконка + текст снизу ───────────────────────────────────────
+// ─── IconButton ───────────────────────────────────────────────────────────────
 
 const IconButton: React.FC<{
   icon: React.ReactNode;
@@ -159,8 +310,8 @@ const IconButton: React.FC<{
     onClick={onClick}
     title={title}
     className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-lg border transition-colors ${
-      isDark 
-        ? 'text-white/70 hover:bg-white/5 hover:text-white border-white/10' 
+      isDark
+        ? 'text-white/70 hover:bg-white/5 hover:text-white border-white/10'
         : 'text-black/70 hover:bg-black/5 hover:text-black border-black/10'
     }`}
   >
@@ -183,13 +334,11 @@ const SidebarHeader: React.FC<{
       backdropFilter: 'blur(10px)',
     }}
   >
-    {/* Логотип: favicon + текст hub */}
     <a href="/" className="flex items-center gap-2">
       <img src="/favicon.png" alt="Opensophy" className="w-7 h-7 object-contain" />
       <h1 className="text-xl font-bold font-veilstack" style={{ color: '#7234ff' }}>hub</h1>
     </a>
 
-    {/* Иконки с текстом */}
     <div className="flex items-center gap-0.5">
       <IconButton
         icon={isDark ? <Sun size={17} /> : <Moon size={17} />}
@@ -218,7 +367,7 @@ const SidebarHeader: React.FC<{
   </div>
 ));
 
-// ─── SidebarSearch — поиск по названию + кнопка «Расширенный» ────────────────
+// ─── SidebarSearch ────────────────────────────────────────────────────────────
 
 const SidebarSearch: React.FC<{
   value: string;
@@ -228,7 +377,6 @@ const SidebarSearch: React.FC<{
 }> = memo(({ value, onChange, isDark, onOpenAdvanced }) => (
   <div className="flex-shrink-0 p-3" style={borderStyle(isDark)}>
     <div className="flex gap-2">
-      {/* Поисковый инпут */}
       <div className="relative flex-1">
         <Search
           size={15}
@@ -247,7 +395,6 @@ const SidebarSearch: React.FC<{
         />
       </div>
 
-      {/* Кнопка расширенного поиска */}
       <button
         onClick={onOpenAdvanced}
         title="Расширенный поиск"
@@ -375,14 +522,14 @@ function buildNavigationTree(docs: Doc[], searchQuery: string, activeNavSlug: st
   return root;
 }
 
-// ─── ContactsSection ──────────────────────────────────────────────────────────
+// ─── CONTACTS ─────────────────────────────────────────────────────────────────
 
 const CONTACTS = [
-  { href: 'https://opensophy.com/',               title: 'Сайт',     subtitle: 'opensophy.com',        external: true  },
-  { href: 'mailto:opensophy@gmail.com',           title: 'Email',    subtitle: 'opensophy@gmail.com',   external: false },
-  { href: 'https://t.me/veilosophy',              title: 'Telegram', subtitle: '@veilosophy',           external: true  },
-  { href: 'https://github.com/opensophy-projects', title: 'GitHub',  subtitle: 'opensophy',             external: true  },
-  { href: 'https://habr.com/ru/users/opensophy/', title: 'Habr',     subtitle: 'opensophy',             external: true  },
+  { href: 'https://opensophy.com/',                title: 'Сайт',     subtitle: 'opensophy.com',        external: true  },
+  { href: 'mailto:opensophy@gmail.com',            title: 'Email',    subtitle: 'opensophy@gmail.com',   external: false },
+  { href: 'https://t.me/veilosophy',               title: 'Telegram', subtitle: '@veilosophy',           external: true  },
+  { href: 'https://github.com/opensophy-projects',  title: 'GitHub',  subtitle: 'opensophy',             external: true  },
+  { href: 'https://habr.com/ru/users/opensophy/',  title: 'Habr',     subtitle: 'opensophy',             external: true  },
 ];
 
 const ContactLink: React.FC<{
@@ -406,7 +553,10 @@ const ContactsSection: React.FC<{ isDark: boolean; isOpen: boolean; onClose: () 
 }) => {
   if (!isOpen) return null;
   return (
-    <div className={`fixed left-0 top-0 w-full md:w-80 h-screen border-r flex flex-col z-50 ${isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'}`}>
+    <div
+      className={`fixed left-0 top-0 w-full md:w-80 h-screen border-r flex flex-col z-50 ${isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'}`}
+      style={{ position: 'relative' }}
+    >
       <div className="flex items-center justify-between p-4">
         <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>Контакты</h2>
         <button
@@ -488,15 +638,48 @@ const Sidebar: React.FC = () => {
 
   if (!isSidebarOpen && !isDesktop) return null;
 
+  // Базовая граница sidebar
+  const baseBorderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+  const innerBorderColor = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
+
   return (
     <>
       {!isDesktop && <SidebarOverlay onClose={handleClose} />}
+
       <aside
-        className={`fixed left-0 top-0 h-screen w-full md:w-80 border-r flex flex-col z-50 ${
-          isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
+        className={`fixed left-0 top-0 h-screen w-full md:w-80 flex flex-col z-50 ${
+          isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'
         }`}
-        style={{ height: '100vh' }}
+        style={{
+          height: '100vh',
+          // Многослойная граница справа: базовая + внутренняя для глубины
+          borderRight: `1px solid ${baseBorderColor}`,
+          boxShadow: isDark
+            ? `1px 0 0 0 ${innerBorderColor}, 4px 0 24px rgba(0,0,0,0.3)`
+            : `1px 0 0 0 ${innerBorderColor}, 4px 0 24px rgba(0,0,0,0.06)`,
+          position: 'relative',
+          overflow: 'hidden',
+        }}
       >
+        {/* GlowingBorder — светящаяся граница следящая за курсором */}
+        <GlowingBorder isDark={isDark} side="right" spread={30} movementDuration={1.8} />
+
+        {/* Статическая декоративная граница (вторая линия) */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: '1px',
+            height: '100%',
+            background: isDark
+              ? 'linear-gradient(to bottom, transparent, rgba(114,52,255,0.15) 30%, rgba(114,52,255,0.1) 70%, transparent)'
+              : 'linear-gradient(to bottom, transparent, rgba(114,52,255,0.1) 30%, rgba(114,52,255,0.07) 70%, transparent)',
+            pointerEvents: 'none',
+            zIndex: 1,
+          }}
+        />
+
         <SidebarHeader
           onClose={handleClose} isDark={isDark}
           onToggleTheme={toggleTheme}
@@ -547,7 +730,6 @@ const Sidebar: React.FC = () => {
 
       <ContactsSection isDark={isDark} isOpen={showContacts} onClose={() => setShowContacts(false)} />
 
-      {/* Расширенный поиск */}
       <AnimatePresence>
         {isAdvancedSearchOpen && (
           <Suspense fallback={null}>
