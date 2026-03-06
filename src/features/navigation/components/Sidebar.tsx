@@ -300,7 +300,11 @@ const CategoryNode: React.FC<{
         }`}
       >
         <div className="flex items-center gap-2">
-          {hasChildren && (isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />)}
+          {hasChildren && (
+            isExpanded 
+              ? <ChevronDown size={16} className={isDark ? 'text-white/60' : 'text-black/60'} />
+              : <ChevronRight size={16} className={isDark ? 'text-white/60' : 'text-black/60'} />
+          )}
           <span>{node.title}</span>
         </div>
         {totalDocs > 0 && (
@@ -471,11 +475,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
     try { localStorage.setItem('hub:activeNavSlug', detected); } catch {}
   }, [sections]);
 
-  // AUTO-EXPAND PATH TO CURRENT DOCUMENT
   useEffect(() => {
     if (!currentDocSlug) return;
     
-    // Build path to current document
     const pathParts: string[] = [];
     let slugForTree = currentDocSlug;
     
