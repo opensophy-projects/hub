@@ -30,7 +30,6 @@ const ALLOWED_ATTR = [
   'data-language', 'data-lang', 'data-alert-type',
   'data-cols', 'data-layout', 'data-status', 'data-title',
   'data-color', 'data-icon', 'data-code',
-  'data-border-color',
   'type', 'checked', 'disabled', 'open', 'style', 'align',
 ];
 
@@ -281,13 +280,13 @@ const processStepsElement = (element: Element, key: string, elements: React.Reac
   elements.push(React.createElement(StepperWithContext, { key, steps }));
 };
 
-// ─── Mermaid diagram ──────────────────────────────────────────────────────────
+// ─── NEW: Mermaid diagram ─────────────────────────────────────────────────────
 
 const processDiagramElement = (element: Element, key: string, elements: React.ReactNode[]) => {
-  const color       = element.dataset.color       || undefined;
-  const borderColor = element.dataset.borderColor || undefined;
-  const encodedCode = element.dataset.code        || '';
+  const color = element.dataset.color || undefined;
+  const encodedCode = element.dataset.code || '';
 
+  // Декодируем из base64 (docUtils.mjs кодирует через Buffer.from().toString('base64'))
   let code = '';
   try {
     code = typeof atob !== 'undefined'
@@ -301,8 +300,7 @@ const processDiagramElement = (element: Element, key: string, elements: React.Re
     React.createElement(MermaidDiagramWithContext, {
       key,
       code,
-      color:       color       || undefined,
-      borderColor: borderColor || undefined,
+      color: color || undefined,
     })
   );
 };
@@ -416,6 +414,7 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
           processStepsElement(element, key, elements);
           return;
         }
+        // ─── Mermaid diagram ──────────────────────────────────────────────
         if (element.classList.contains('custom-diagram')) {
           processDiagramElement(element, key, elements);
           return;
