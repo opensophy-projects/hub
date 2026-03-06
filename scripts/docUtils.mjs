@@ -229,8 +229,9 @@ function preprocessCustomBlocks(content, codeBlocks) {
       const { body, endIndex } = collectBlockBody(lines, i + 1);
       i = endIndex + 1;
 
-      // Кодируем код диаграммы как base64 чтобы избежать проблем с HTML-парсером
-      const encodedCode = Buffer.from(body.trim()).toString('base64');
+      // Код диаграммы кодируем base64 (utf-8) — нет кавычек, безопасен в HTML-атрибутах
+      // Buffer.from / base64 не содержит " ' < > & — DOMPurify не трогает
+      const encodedCode = Buffer.from(body.trim(), 'utf8').toString('base64');
       const html = `<div class="custom-diagram" data-color="${color}" data-code="${encodedCode}"></div>`;
       output.push(html);
       continue;
