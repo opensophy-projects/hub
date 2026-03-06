@@ -797,62 +797,697 @@ npm run start
 
 ## Диаграммы
 
-### Диаграмма без цвета:
+Здесь собраны примеры основных типов диаграмм: простые схемы, средние графики и сложные архитектурные диаграммы.
+
+## Простые схемы
+
+### Линейный флоучарт
 
 :::diagram
-graph TD
-    A[Начало] --> B[Конец]
+flowchart LR
+    A[Начало] --> B[Обработка] --> C[Конец]
 :::
 
 ```
 :::diagram
-graph TD
-    A[Начало] --> B[Конец]
+flowchart LR
+    A[Начало] --> B[Обработка] --> C[Конец]
 :::
 ```
 
-### Диаграмма с цветной границей:
+### Дерево решений
 
-:::diagram[color=#ff6b6b]
-graph TD
-    A --> B --> C
+:::diagram[borderColor=#6366f1]
+flowchart TD
+    A{Есть ошибка?} -->|Да| B[Логировать]
+    A -->|Нет| C[Продолжить]
+    B --> D[Уведомить команду]
+    C --> E[Завершить задачу]
 :::
 
 ```
-:::diagram[color=#ff6b6b]
-graph TD
-    A --> B --> C
+:::diagram[borderColor=#6366f1]
+flowchart TD
+    A{Есть ошибка?} -->|Да| B[Логировать]
+    A -->|Нет| C[Продолжить]
+    B --> D[Уведомить команду]
+    C --> E[Завершить задачу]
 :::
 ```
 
-### Другие типы Mermaid:
+### Последовательность событий (простая)
 
-:::diagram[color=#7234ff]
+:::diagram[color=#10b981]
 sequenceDiagram
-    Alice->>Bob: Привет
-    Bob-->>Alice: Привет!
+    participant U as Пользователь
+    participant S as Сервер
+
+    U->>S: GET /api/data
+    S-->>U: 200 OK + JSON
 :::
 
 ```
-:::diagram[color=#7234ff]
+:::diagram[color=#10b981]
 sequenceDiagram
-    Alice->>Bob: Привет
-    Bob-->>Alice: Привет!
+    participant U as Пользователь
+    participant S as Сервер
+
+    U->>S: GET /api/data
+    S-->>U: 200 OK + JSON
 :::
 ```
 
-:::diagram[color=#22c55e]
-pie title Распределение
-    "Категория A" : 40
-    "Категория B" : 35
-    "Категория C" : 25
+---
+
+## Средние схемы
+
+### Пайплайн CI/CD
+
+:::diagram[color=#f59e0b]
+flowchart LR
+    subgraph Dev[Разработка]
+        A[Коммит] --> B[Lint & Tests]
+    end
+    subgraph CI[CI Pipeline]
+        B --> C[Build Docker]
+        C --> D{Тесты OK?}
+    end
+    subgraph CD[Деплой]
+        D -->|Да| E[Staging]
+        E --> F{QA?}
+        F -->|Approve| G[Production]
+        F -->|Reject| H[Rollback]
+        D -->|Нет| I[Notify Dev]
+    end
+
+    style Dev fill:#1e1e2e,stroke:#6366f1,color:#e0e0e0
+    style CI  fill:#1e1e2e,stroke:#f59e0b,color:#e0e0e0
+    style CD  fill:#1e1e2e,stroke:#10b981,color:#e0e0e0
 :::
 
 ```
-:::diagram[color=#22c55e]
-pie title Распределение
-    "Категория A" : 40
-    "Категория B" : 35
-    "Категория C" : 25
+:::diagram[color=#f59e0b]
+flowchart LR
+    subgraph Dev[Разработка]
+        A[Коммит] --> B[Lint & Tests]
+    end
+    subgraph CI[CI Pipeline]
+        B --> C[Build Docker]
+        C --> D{Тесты OK?}
+    end
+    subgraph CD[Деплой]
+        D -->|Да| E[Staging]
+        E --> F{QA?}
+        F -->|Approve| G[Production]
+        F -->|Reject| H[Rollback]
+        D -->|Нет| I[Notify Dev]
+    end
+
+    style Dev fill:#1e1e2e,stroke:#6366f1,color:#e0e0e0
+    style CI  fill:#1e1e2e,stroke:#f59e0b,color:#e0e0e0
+    style CD  fill:#1e1e2e,stroke:#10b981,color:#e0e0e0
+:::
+```
+
+### Архитектура микросервисов
+
+:::diagram[borderColor=#8b5cf6]
+flowchart TD
+    Client([🌐 Клиент])
+
+    subgraph Gateway[API Gateway]
+        GW[Nginx / Traefik]
+        Auth[Auth Service]
+    end
+
+    subgraph Services[Микросервисы]
+        US[Users Service]
+        OS[Orders Service]
+        NS[Notify Service]
+    end
+
+    subgraph Data[Хранилища]
+        PG[(PostgreSQL)]
+        RD[(Redis)]
+        MQ[[RabbitMQ]]
+    end
+
+    Client --> GW
+    GW --> Auth
+    Auth -->|JWT| GW
+    GW --> US & OS
+    US --> PG
+    OS --> PG & MQ
+    MQ --> NS
+    NS --> RD
+:::
+
+```
+:::diagram[borderColor=#8b5cf6]
+flowchart TD
+    Client([🌐 Клиент])
+
+    subgraph Gateway[API Gateway]
+        GW[Nginx / Traefik]
+        Auth[Auth Service]
+    end
+
+    subgraph Services[Микросервисы]
+        US[Users Service]
+        OS[Orders Service]
+        NS[Notify Service]
+    end
+
+    subgraph Data[Хранилища]
+        PG[(PostgreSQL)]
+        RD[(Redis)]
+        MQ[[RabbitMQ]]
+    end
+
+    Client --> GW
+    GW --> Auth
+    Auth -->|JWT| GW
+    GW --> US & OS
+    US --> PG
+    OS --> PG & MQ
+    MQ --> NS
+    NS --> RD
+:::
+```
+
+### Диаграмма классов
+
+:::diagram[color=#ec4899]
+classDiagram
+    class User {
+        +int id
+        +string name
+        +string email
+        +login() bool
+        +logout() void
+    }
+
+    class Order {
+        +int id
+        +float total
+        +OrderStatus status
+        +create() Order
+        +cancel() void
+    }
+
+    class Product {
+        +int id
+        +string title
+        +float price
+        +int stock
+    }
+
+    class OrderItem {
+        +int qty
+        +float price
+    }
+
+    User "1" --> "0..*" Order : размещает
+    Order "1" --> "1..*" OrderItem : содержит
+    OrderItem "0..*" --> "1" Product : ссылается
+:::
+
+```
+:::diagram[color=#ec4899]
+classDiagram
+    class User {
+        +int id
+        +string name
+        +string email
+        +login() bool
+        +logout() void
+    }
+
+    class Order {
+        +int id
+        +float total
+        +OrderStatus status
+        +create() Order
+        +cancel() void
+    }
+
+    class Product {
+        +int id
+        +string title
+        +float price
+        +int stock
+    }
+
+    class OrderItem {
+        +int qty
+        +float price
+    }
+
+    User "1" --> "0..*" Order : размещает
+    Order "1" --> "1..*" OrderItem : содержит
+    OrderItem "0..*" --> "1" Product : ссылается
+:::
+```
+
+### Диаграмма состояний (State Machine)
+
+:::diagram[borderColor=#f97316]
+stateDiagram-v2
+    [*] --> Draft : создан черновик
+
+    Draft --> Review : отправлен на ревью
+    Review --> Approved : ✅ одобрен
+    Review --> Rejected : ❌ отклонён
+    Rejected --> Draft : исправлен
+
+    Approved --> Published : опубликован
+    Published --> Archived : архивирован
+    Archived --> [*]
+
+    Published --> Draft : снят с публикации
+:::
+
+```
+:::diagram[borderColor=#f97316]
+stateDiagram-v2
+    [*] --> Draft : создан черновик
+
+    Draft --> Review : отправлен на ревью
+    Review --> Approved : ✅ одобрен
+    Review --> Rejected : ❌ отклонён
+    Rejected --> Draft : исправлен
+
+    Approved --> Published : опубликован
+    Published --> Archived : архивирован
+    Archived --> [*]
+
+    Published --> Draft : снят с публикации
+:::
+```
+
+### Git граф
+
+:::diagram[color=#14b8a6]
+gitGraph
+    commit id: "init"
+    branch develop
+    checkout develop
+    commit id: "feat: auth"
+    commit id: "feat: api"
+
+    branch feature/payments
+    checkout feature/payments
+    commit id: "add Stripe"
+    commit id: "add webhooks"
+
+    checkout develop
+    merge feature/payments id: "merge payments"
+    commit id: "fix: tests"
+
+    checkout main
+    merge develop id: "v1.0.0" tag: "v1.0.0"
+    commit id: "hotfix: ssl"
+:::
+
+```
+:::diagram[color=#14b8a6]
+gitGraph
+    commit id: "init"
+    branch develop
+    checkout develop
+    commit id: "feat: auth"
+    commit id: "feat: api"
+
+    branch feature/payments
+    checkout feature/payments
+    commit id: "add Stripe"
+    commit id: "add webhooks"
+
+    checkout develop
+    merge feature/payments id: "merge payments"
+    commit id: "fix: tests"
+
+    checkout main
+    merge develop id: "v1.0.0" tag: "v1.0.0"
+    commit id: "hotfix: ssl"
+:::
+
+```
+
+---
+
+## Сложные схемы
+
+### Полная архитектура SaaS-приложения
+
+:::diagram[color=#6366f1,borderColor=#4f46e5]
+flowchart TD
+    subgraph Internet[🌍 Интернет]
+        User([👤 Пользователь])
+        Mobile([📱 Мобильное приложение])
+    end
+
+    subgraph Edge[Edge / CDN]
+        CDN[CloudFront CDN]
+        WAF[Web Application Firewall]
+    end
+
+    subgraph LoadBalancer[Балансировщик]
+        LB[AWS ALB]
+    end
+
+    subgraph AppLayer[Слой приложения — Kubernetes]
+        API1[API Pod 1]
+        API2[API Pod 2]
+        API3[API Pod 3]
+        Worker[Background Worker]
+        Scheduler[Cron Scheduler]
+    end
+
+    subgraph DataLayer[Данные]
+        direction LR
+        Primary[(🐘 Postgres Primary)]
+        Replica[(🐘 Postgres Replica)]
+        Cache[(⚡ Redis Cluster)]
+        Search[(🔍 Elasticsearch)]
+        Blob[(☁️ S3 / Blob Storage)]
+        Queue[[📨 Kafka]]
+    end
+
+    subgraph Observability[Мониторинг]
+        Logs[Loki / ELK]
+        Metrics[Prometheus + Grafana]
+        Traces[Jaeger / Tempo]
+    end
+
+    User & Mobile --> CDN --> WAF --> LB
+    LB --> API1 & API2 & API3
+    API1 & API2 & API3 --> Primary
+    API1 & API2 & API3 --> Cache
+    Primary --> Replica
+    API1 & API2 & API3 --> Queue
+    Queue --> Worker
+    Worker --> Search & Blob
+    Scheduler --> Worker
+    API1 & API2 & API3 -.-> Logs & Metrics & Traces
+:::
+
+```
+:::diagram[color=#6366f1,borderColor=#4f46e5]
+flowchart TD
+    subgraph Internet[🌍 Интернет]
+        User([👤 Пользователь])
+        Mobile([📱 Мобильное приложение])
+    end
+
+    subgraph Edge[Edge / CDN]
+        CDN[CloudFront CDN]
+        WAF[Web Application Firewall]
+    end
+
+    subgraph LoadBalancer[Балансировщик]
+        LB[AWS ALB]
+    end
+
+    subgraph AppLayer[Слой приложения — Kubernetes]
+        API1[API Pod 1]
+        API2[API Pod 2]
+        API3[API Pod 3]
+        Worker[Background Worker]
+        Scheduler[Cron Scheduler]
+    end
+
+    subgraph DataLayer[Данные]
+        direction LR
+        Primary[(🐘 Postgres Primary)]
+        Replica[(🐘 Postgres Replica)]
+        Cache[(⚡ Redis Cluster)]
+        Search[(🔍 Elasticsearch)]
+        Blob[(☁️ S3 / Blob Storage)]
+        Queue[[📨 Kafka]]
+    end
+
+    subgraph Observability[Мониторинг]
+        Logs[Loki / ELK]
+        Metrics[Prometheus + Grafana]
+        Traces[Jaeger / Tempo]
+    end
+
+    User & Mobile --> CDN --> WAF --> LB
+    LB --> API1 & API2 & API3
+    API1 & API2 & API3 --> Primary
+    API1 & API2 & API3 --> Cache
+    Primary --> Replica
+    API1 & API2 & API3 --> Queue
+    Queue --> Worker
+    Worker --> Search & Blob
+    Scheduler --> Worker
+    API1 & API2 & API3 -.-> Logs & Metrics & Traces
+:::
+```
+
+### ER-диаграмма базы данных
+
+:::diagram[borderColor=#10b981]
+erDiagram
+    USERS {
+        uuid id PK
+        string email UK
+        string name
+        string role
+        timestamp created_at
+    }
+
+    ORGANIZATIONS {
+        uuid id PK
+        string name
+        string slug UK
+        string plan
+        int seats
+    }
+
+    MEMBERSHIPS {
+        uuid user_id FK
+        uuid org_id FK
+        string role
+        timestamp joined_at
+    }
+
+    PROJECTS {
+        uuid id PK
+        uuid org_id FK
+        string name
+        string status
+        timestamp deadline
+    }
+
+    TASKS {
+        uuid id PK
+        uuid project_id FK
+        uuid assignee_id FK
+        string title
+        string priority
+        string status
+    }
+
+    COMMENTS {
+        uuid id PK
+        uuid task_id FK
+        uuid author_id FK
+        text body
+        timestamp created_at
+    }
+
+    USERS ||--o{ MEMBERSHIPS : "участвует"
+    ORGANIZATIONS ||--o{ MEMBERSHIPS : "имеет"
+    ORGANIZATIONS ||--o{ PROJECTS : "владеет"
+    PROJECTS ||--o{ TASKS : "содержит"
+    USERS ||--o{ TASKS : "назначен"
+    TASKS ||--o{ COMMENTS : "получает"
+    USERS ||--o{ COMMENTS : "пишет"
+:::
+
+```
+:::diagram[borderColor=#10b981]
+erDiagram
+    USERS {
+        uuid id PK
+        string email UK
+        string name
+        string role
+        timestamp created_at
+    }
+
+    ORGANIZATIONS {
+        uuid id PK
+        string name
+        string slug UK
+        string plan
+        int seats
+    }
+
+    MEMBERSHIPS {
+        uuid user_id FK
+        uuid org_id FK
+        string role
+        timestamp joined_at
+    }
+
+    PROJECTS {
+        uuid id PK
+        uuid org_id FK
+        string name
+        string status
+        timestamp deadline
+    }
+
+    TASKS {
+        uuid id PK
+        uuid project_id FK
+        uuid assignee_id FK
+        string title
+        string priority
+        string status
+    }
+
+    COMMENTS {
+        uuid id PK
+        uuid task_id FK
+        uuid author_id FK
+        text body
+        timestamp created_at
+    }
+
+    USERS ||--o{ MEMBERSHIPS : "участвует"
+    ORGANIZATIONS ||--o{ MEMBERSHIPS : "имеет"
+    ORGANIZATIONS ||--o{ PROJECTS : "владеет"
+    PROJECTS ||--o{ TASKS : "содержит"
+    USERS ||--o{ TASKS : "назначен"
+    TASKS ||--o{ COMMENTS : "получает"
+    USERS ||--o{ COMMENTS : "пишет"
+:::
+```
+
+### Временная шкала (Timeline)
+
+:::diagram[color=#a855f7]
+timeline
+    title История развития веба
+    section 1990-е
+        1991 : HTML 1.0
+             : Первый веб-сайт
+        1995 : JavaScript (Netscape)
+             : CSS 1.0
+        1998 : Google основан
+    section 2000-е
+        2004 : Gmail, Ajax-революция
+        2005 : YouTube
+        2007 : iPhone / мобильный веб
+        2009 : Node.js
+    section 2010-е
+        2013 : React.js
+        2015 : ES6, GraphQL
+        2017 : WebAssembly
+        2019 : Svelte 3, Tailwind CSS
+    section 2020-е
+        2020 : Edge Functions, Deno
+        2022 : TypeScript повсюду
+        2024 : AI-ассистенты в IDE
+:::
+
+```
+:::diagram[color=#a855f7]
+timeline
+    title История развития веба
+    section 1990-е
+        1991 : HTML 1.0
+             : Первый веб-сайт
+        1995 : JavaScript (Netscape)
+             : CSS 1.0
+        1998 : Google основан
+    section 2000-е
+        2004 : Gmail, Ajax-революция
+        2005 : YouTube
+        2007 : iPhone / мобильный веб
+        2009 : Node.js
+    section 2010-е
+        2013 : React.js
+        2015 : ES6, GraphQL
+        2017 : WebAssembly
+        2019 : Svelte 3, Tailwind CSS
+    section 2020-е
+        2020 : Edge Functions, Deno
+        2022 : TypeScript повсюду
+        2024 : AI-ассистенты в IDE
+:::
+```
+
+### Круговая диаграмма (Pie)
+
+:::diagram[borderColor=#f43f5e]
+pie title Распределение трафика по источникам
+    "Органический поиск" : 42.5
+    "Прямые переходы"    : 23.1
+    "Социальные сети"    : 15.8
+    "Email-рассылка"     : 10.4
+    "Реферальный"        : 8.2
+:::
+
+```
+
+:::diagram[borderColor=#f43f5e]
+pie title Распределение трафика по источникам
+    "Органический поиск" : 42.5
+    "Прямые переходы"    : 23.1
+    "Социальные сети"    : 15.8
+    "Email-рассылка"     : 10.4
+    "Реферальный"        : 8.2
+:::
+```
+
+### Квадрант-диаграмма (приоритизация задач)
+
+:::diagram[color=#f59e0b]
+quadrantChart
+    title Матрица приоритизации задач
+    x-axis Низкий усилия --> Высокий усилия
+    y-axis Низкий импакт --> Высокий импакт
+
+    quadrant-1 Сделать в первую очередь
+    quadrant-2 Запланировать
+    quadrant-3 Делегировать
+    quadrant-4 Пересмотреть
+
+    Онбординг: [0.2, 0.85]
+    Авторизация OAuth: [0.4, 0.9]
+    Dark mode: [0.25, 0.45]
+    Экспорт в PDF: [0.55, 0.65]
+    Аналитика: [0.7, 0.8]
+    Рефакторинг auth: [0.8, 0.35]
+    A/B тесты: [0.65, 0.5]
+    Push-уведомления: [0.45, 0.7]
+:::
+
+```
+
+:::diagram[color=#f59e0b]
+quadrantChart
+    title Матрица приоритизации задач
+    x-axis Низкий усилия --> Высокий усилия
+    y-axis Низкий импакт --> Высокий импакт
+
+    quadrant-1 Сделать в первую очередь
+    quadrant-2 Запланировать
+    quadrant-3 Делегировать
+    quadrant-4 Пересмотреть
+
+    Онбординг: [0.2, 0.85]
+    Авторизация OAuth: [0.4, 0.9]
+    Dark mode: [0.25, 0.45]
+    Экспорт в PDF: [0.55, 0.65]
+    Аналитика: [0.7, 0.8]
+    Рефакторинг auth: [0.8, 0.35]
+    A/B тесты: [0.65, 0.5]
+    Push-уведомления: [0.45, 0.7]
 :::
 ```
