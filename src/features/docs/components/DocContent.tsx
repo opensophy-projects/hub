@@ -360,7 +360,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
       {toc.length > 0 && isDesktop && (
         <aside
           className={`hidden md:flex flex-col fixed right-0 z-40 border-l overflow-hidden ${
-            isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
+            isDark ? 'bg-[#0F0F0F] border-white/10' : 'bg-[#E1E0DC] border-black/10'
           }`}
           style={{ top: '0', width: TOC_WIDTH, height: '100vh' }}
         >
@@ -429,12 +429,12 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
                           ? `${isDark ? `rgba(255,255,255,${glowOpacity})` : `rgba(0,0,0,${glowOpacity})`}`
                           : 'transparent',
                       boxShadow: isActive
-                        ? `inset 3px 0 14px -2px ${accentColor}bb`
+                        ? `inset 3px 0 10px -2px ${accentColor}88`
                         : glowOpacity > 0
-                          ? `inset 3px 0 10px -3px ${isDark ? `rgba(255,255,255,${glowOpacity * 0.55})` : `rgba(0,0,0,${glowOpacity * 0.55})`}`
+                          ? `inset 3px 0 7px -3px ${isDark ? `rgba(255,255,255,${glowOpacity * 0.4})` : `rgba(0,0,0,${glowOpacity * 0.4})`}`
                           : 'none',
                       textShadow: isActive
-                        ? `0 0 18px ${accentColor}99`
+                        ? `0 0 12px ${accentColor}66`
                         : 'none',
                     }}
                   >
