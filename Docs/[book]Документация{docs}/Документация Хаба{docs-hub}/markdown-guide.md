@@ -792,3 +792,67 @@ npm run start
 | `active`  | Текущий шаг — фиолетовый акцент      |
 | `pending` | Ожидает выполнения — приглушённый    |
 | *(нет)*   | Нейтральный вид без статуса          |
+
+---
+
+## Диаграммы
+
+### Диаграмма без цвета:
+
+:::diagram
+graph TD
+    A[Начало] --> B[Конец]
+:::
+
+```
+:::diagram
+graph TD
+    A[Начало] --> B[Конец]
+:::
+```
+
+### Диаграмма с цветной границей:
+
+:::diagram[color=#ff6b6b]
+graph TD
+    A --> B --> C
+:::
+
+```
+:::diagram[color=#ff6b6b]
+graph TD
+    A --> B --> C
+:::
+```
+
+### Другие типы Mermaid:
+
+:::diagram[color=#7234ff]
+sequenceDiagram
+    Alice->>Bob: Привет
+    Bob-->>Alice: Привет!
+:::
+
+```
+:::diagram[color=#7234ff]
+sequenceDiagram
+    Alice->>Bob: Привет
+    Bob-->>Alice: Привет!
+:::
+```
+
+:::diagram[color=#22c55e]
+pie title Распределение
+    "Категория A" : 40
+    "Категория B" : 35
+    "Категория C" : 25
+:::
+
+```
+:::diagram[color=#22c55e]
+pie title Распределение
+    "Категория A" : 40
+    "Категория B" : 35
+    "Категория C" : 25
+:::
+```
