@@ -111,13 +111,13 @@ const TocPanel: React.FC<TocPanelProps> = ({ toc, onClose }) => {
           </h2>
 
           <div className="flex items-center gap-1">
-            {/* Кнопка Наверх с текстом снизу */}
+            {/* Кнопка Наверх с текстом снизу и границей */}
             <button
               onClick={handleScrollTop}
-              className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-lg transition-colors ${
+              className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-lg border transition-colors ${
                 isDark
-                  ? 'text-white/60 hover:bg-white/5 hover:text-white'
-                  : 'text-black/60 hover:bg-black/5 hover:text-black'
+                  ? 'text-white/60 hover:bg-white/5 hover:text-white border-white/10'
+                  : 'text-black/60 hover:bg-black/5 hover:text-black border-black/10'
               }`}
               title="Наверх"
             >
