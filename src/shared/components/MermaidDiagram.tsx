@@ -4,7 +4,6 @@ import React, {
   useState,
   useContext,
   useCallback,
-  useMemo,
 } from 'react';
 import { TableContext } from '../lib/htmlParser';
 
@@ -29,8 +28,7 @@ function nextId() {
   return `mermaid-${++globalIdCounter}`;
 }
 
-// ─── SVG cache — не перерисовываем при смене темы ─────────────────────────────
-// Ключ: `${code}::${isDark}::${color}`
+// ─── SVG cache ────────────────────────────────────────────────────────────────
 const svgCache = new Map<string, string>();
 
 function cacheKey(code: string, isDark: boolean, color?: string) {
@@ -126,8 +124,6 @@ interface DiagramViewerProps {
   svgHtml: string;
   isDark: boolean;
   panMode: boolean;
-  onReset: () => void;
-  // scale/pos controlled externally so fullscreen can read them
   scale: number;
   setScale: React.Dispatch<React.SetStateAction<number>>;
   pos: { x: number; y: number };
@@ -138,34 +134,47 @@ interface DiagramViewerProps {
 const DiagramViewer: React.FC<DiagramViewerProps> = ({
   svgHtml, isDark, panMode, scale, setScale, pos, setPos, isFullscreen,
 }) => {
-  const viewRef  = useRef<HTMLDivElement>(null);
-  const dragging = useRef(false);
-  const last     = useRef({ x: 0, y: 0 });
+  const viewRef   = useRef<HTMLDivElement>(null);
+  // Use state (not ref) for dragging so cursor re-renders correctly
+  const [isDragging, setIsDragging] = useState(false);
+  const lastPos = useRef({ x: 0, y: 0 });
 
-  // Mouse drag
+  // ── Mouse drag ──────────────────────────────────────────────────────────────
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     if (!panMode) return;
-    dragging.current = true;
-    last.current = { x: e.clientX, y: e.clientY };
+    // Only primary button
+    if (e.button !== 0) return;
+    setIsDragging(true);
+    lastPos.current = { x: e.clientX, y: e.clientY };
     e.preventDefault();
   }, [panMode]);
 
   useEffect(() => {
+    if (!isDragging) return;
+
     const onMove = (e: MouseEvent) => {
-      if (!dragging.current) return;
-      setPos(p => ({ x: p.x + e.clientX - last.current.x, y: p.y + e.clientY - last.current.y }));
-      last.current = { x: e.clientX, y: e.clientY };
+      const dx = e.clientX - lastPos.current.x;
+      const dy = e.clientY - lastPos.current.y;
+      lastPos.current = { x: e.clientX, y: e.clientY };
+      setPos(p => ({ x: p.x + dx, y: p.y + dy }));
     };
-    const onUp = () => { dragging.current = false; };
+
+    const onUp = () => {
+      setIsDragging(false);
+    };
+
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
-    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
-  }, [setPos]);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [isDragging, setPos]);
 
-  // Touch drag
+  // ── Touch drag / pinch-zoom ─────────────────────────────────────────────────
   useEffect(() => {
     const el = viewRef.current;
-    if (!el || !panMode) return;
+    if (!el) return;
 
     let lastTouch = { x: 0, y: 0 };
     let lastDist  = 0;
@@ -176,13 +185,14 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
       } else if (e.touches.length === 2) {
         lastDist = Math.hypot(
           e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
+          e.touches[0].clientY - e.touches[1].clientY,
         );
       }
     };
+
     const onTouchMove = (e: TouchEvent) => {
       e.preventDefault();
-      if (e.touches.length === 1) {
+      if (e.touches.length === 1 && panMode) {
         const dx = e.touches[0].clientX - lastTouch.x;
         const dy = e.touches[0].clientY - lastTouch.y;
         setPos(p => ({ x: p.x + dx, y: p.y + dy }));
@@ -190,13 +200,16 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
       } else if (e.touches.length === 2) {
         const dist = Math.hypot(
           e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
+          e.touches[0].clientY - e.touches[1].clientY,
         );
-        const ratio = dist / lastDist;
-        setScale(s => Math.min(4, Math.max(0.25, s * ratio)));
+        if (lastDist > 0) {
+          const ratio = dist / lastDist;
+          setScale(s => Math.min(4, Math.max(0.1, s * ratio)));
+        }
         lastDist = dist;
       }
     };
+
     el.addEventListener('touchstart', onTouchStart, { passive: false });
     el.addEventListener('touchmove', onTouchMove, { passive: false });
     return () => {
@@ -205,21 +218,21 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
     };
   }, [panMode, setPos, setScale]);
 
-  // Wheel zoom (always, not just in pan mode)
+  // ── Wheel zoom (Ctrl/Cmd) ───────────────────────────────────────────────────
   useEffect(() => {
     const el = viewRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
-      if (!e.ctrlKey && !e.metaKey) return; // только с Ctrl/Cmd
+      if (!e.ctrlKey && !e.metaKey) return;
       e.preventDefault();
-      const delta = e.deltaY > 0 ? 0.9 : 1.1;
-      setScale(s => Math.min(4, Math.max(0.25, s * delta)));
+      const factor = e.deltaY > 0 ? 0.9 : 1.1;
+      setScale(s => Math.min(4, Math.max(0.1, s * factor)));
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
   }, [setScale]);
 
-  const minH = isFullscreen ? '100%' : 80;
+  const cursor = panMode ? (isDragging ? 'grabbing' : 'grab') : 'default';
 
   return (
     <div
@@ -228,8 +241,8 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
       style={{
         overflow: 'hidden',
         position: 'relative',
-        cursor: panMode ? (dragging.current ? 'grabbing' : 'grab') : 'default',
-        minHeight: minH,
+        cursor,
+        minHeight: isFullscreen ? '100%' : 80,
         height: isFullscreen ? '100%' : 'auto',
         userSelect: 'none',
         touchAction: 'none',
@@ -239,12 +252,17 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
         style={{
           transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`,
           transformOrigin: 'center center',
-          transition: dragging.current ? 'none' : 'transform 0.05s ease',
+          // No transition while dragging for immediate feel
+          transition: isDragging ? 'none' : 'transform 0.08s ease',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          padding: '20px 24px',
+          // Extra padding so diagram isn't flush with edges
+          padding: '16px 20px',
           willChange: 'transform',
+          // FIX: let the inner SVG determine its natural size
+          width: 'fit-content',
+          margin: '0 auto',
         }}
         dangerouslySetInnerHTML={{ __html: svgHtml }}
       />
@@ -255,21 +273,21 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
 // ─── Main component ────────────────────────────────────────────────────────────
 
 const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = false }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [status, setStatus]       = useState<'loading' | 'ready' | 'error'>('loading');
-  const [errorMsg, setErrorMsg]   = useState('');
-  const [svgHtml, setSvgHtml]     = useState('');
-  const [panMode, setPanMode]     = useState(false);
+  const [status, setStatus]             = useState<'loading' | 'ready' | 'error'>('loading');
+  const [errorMsg, setErrorMsg]         = useState('');
+  const [svgHtml, setSvgHtml]           = useState('');
+  const [panMode, setPanMode]           = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [scale, setScale]         = useState(1);
-  const [pos, setPos]             = useState({ x: 0, y: 0 });
 
-  const resetView = useCallback(() => { setScale(1); setPos({ x: 0, y: 0 }); }, []);
+  // FIX: start at a smaller default scale so diagrams aren't huge
+  const [scale, setScale] = useState(0.75);
+  const [pos, setPos]     = useState({ x: 0, y: 0 });
+
+  const resetView = useCallback(() => { setScale(0.75); setPos({ x: 0, y: 0 }); }, []);
 
   const render = useCallback(async () => {
     const key = cacheKey(code, isDark, color);
 
-    // Если есть в кеше — сразу показываем без "загрузки"
     if (svgCache.has(key)) {
       setSvgHtml(svgCache.get(key)!);
       setStatus('ready');
@@ -287,10 +305,9 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
         theme: isDark ? 'dark' : 'default',
         securityLevel: 'loose',
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-        // Фиксим обрезание текста: добавляем паддинг через viewBox
-        flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis', padding: 20 },
-        sequence: { useMaxWidth: true, boxMargin: 10 },
-        gantt: { useMaxWidth: true, leftPadding: 75, barHeight: 28 },
+        flowchart: { useMaxWidth: false, htmlLabels: true, curve: 'basis', padding: 20 },
+        sequence:  { useMaxWidth: false, boxMargin: 10 },
+        gantt:     { useMaxWidth: false, leftPadding: 75, barHeight: 28 },
         themeVariables: isDark
           ? {
               primaryColor: '#1a1a2e',
@@ -308,14 +325,12 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
               edgeLabelBackground: '#0f0f18',
               textColor: '#d4d4d8',
               labelTextColor: '#d4d4d8',
-              // actors
               actorBkg: '#1a1a2e',
               actorBorder: color || 'rgba(255,255,255,0.2)',
               actorTextColor: '#d4d4d8',
               actorLineColor: 'rgba(255,255,255,0.3)',
               signalColor: 'rgba(255,255,255,0.7)',
               signalTextColor: '#d4d4d8',
-              // gantt
               gridColor: 'rgba(255,255,255,0.07)',
               section0: '#1a1a2e',
               section1: '#131320',
@@ -359,13 +374,15 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
       const id = nextId();
       const { svg } = await mermaid.render(id, code.trim());
 
-      // Патчим SVG: убираем фиксированные размеры, добавляем overflow: visible
+      // FIX: strip fixed width/height so the SVG scales with CSS transform only.
+      // Keep viewBox intact for correct proportions.
       const patched = svg
-        // Убираем width/height атрибуты (оставляем только viewBox)
         .replace(/(<svg[^>]*?)\s+width="[^"]*"/g, '$1')
         .replace(/(<svg[^>]*?)\s+height="[^"]*"/g, '$1')
-        // Добавляем style чтобы SVG растягивался нормально
-        .replace(/<svg /, '<svg style="max-width:100%;height:auto;display:block;overflow:visible;" ');
+        .replace(
+          /<svg /,
+          '<svg style="display:block;overflow:visible;" ',
+        );
 
       svgCache.set(key, patched);
       setSvgHtml(patched);
@@ -378,13 +395,15 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
   }, [code, isDark, color]);
 
   useEffect(() => {
+    // Reset view whenever diagram code changes
+    resetView();
     const t = setTimeout(render, 0);
     return () => clearTimeout(t);
-  }, [render]);
+  }, [render, resetView]);
 
-  const hasColor = !!color;
+  const hasColor    = !!color;
   const borderColor = color || tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)');
-  const bgColor = tc(isDark, '#0a0a0a', '#E8E7E3');
+  const bgColor     = tc(isDark, '#0a0a0a', '#E8E7E3');
 
   // ─── Toolbar ─────────────────────────────────────────────────────────────────
 
@@ -392,17 +411,16 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
     <div style={{
       display: 'flex', alignItems: 'center', gap: 4,
       padding: '6px 10px',
-      borderBottom: status === 'ready' ? `1px solid ${tc(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.07)')}` : 'none',
+      borderBottom: `1px solid ${tc(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.07)')}`,
       background: tc(isDark, 'rgba(255,255,255,0.02)', 'rgba(0,0,0,0.02)'),
     }}>
       <ToolBtn onClick={() => setScale(s => Math.min(4, +(s + 0.25).toFixed(2)))} title="Увеличить" isDark={isDark}>
         <IconPlus />
       </ToolBtn>
-      <ToolBtn onClick={() => setScale(s => Math.max(0.25, +(s - 0.25).toFixed(2)))} title="Уменьшить" isDark={isDark}>
+      <ToolBtn onClick={() => setScale(s => Math.max(0.1, +(s - 0.25).toFixed(2)))} title="Уменьшить" isDark={isDark}>
         <IconMinus />
       </ToolBtn>
 
-      {/* Масштаб текстом */}
       <span style={{
         fontSize: 11, fontWeight: 600, minWidth: 36, textAlign: 'center',
         color: tc(isDark, 'rgba(255,255,255,0.4)', 'rgba(0,0,0,0.4)'),
@@ -436,7 +454,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
       background: bgColor,
       display: 'flex', flexDirection: 'column',
     }}>
-      {/* Fullscreen toolbar */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 4, padding: '8px 12px',
         borderBottom: `1px solid ${borderColor}`,
@@ -447,7 +464,7 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
         <ToolBtn onClick={() => setScale(s => Math.min(4, +(s + 0.25).toFixed(2)))} title="Увеличить" isDark={isDark}>
           <IconPlus />
         </ToolBtn>
-        <ToolBtn onClick={() => setScale(s => Math.max(0.25, +(s - 0.25).toFixed(2)))} title="Уменьшить" isDark={isDark}>
+        <ToolBtn onClick={() => setScale(s => Math.max(0.1, +(s - 0.25).toFixed(2)))} title="Уменьшить" isDark={isDark}>
           <IconMinus />
         </ToolBtn>
         <span style={{
@@ -470,13 +487,11 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
         </ToolBtn>
       </div>
 
-      {/* Fullscreen diagram */}
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
         <DiagramViewer
           svgHtml={svgHtml}
           isDark={isDark}
           panMode={panMode}
-          onReset={resetView}
           scale={scale}
           setScale={setScale}
           pos={pos}
@@ -500,13 +515,10 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
         overflow: 'hidden',
         position: 'relative',
       }}>
-        {/* Цветная полоска */}
         {hasColor && <div style={{ height: 3, background: color }} />}
 
-        {/* Toolbar — показываем только когда ready */}
         {status === 'ready' && Toolbar}
 
-        {/* Загрузка */}
         {status === 'loading' && (
           <div style={{
             padding: '32px 24px', textAlign: 'center', fontSize: 13,
@@ -524,7 +536,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
           </div>
         )}
 
-        {/* Ошибка */}
         {status === 'error' && (
           <div style={{
             padding: '16px 20px',
@@ -551,13 +562,11 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
           </div>
         )}
 
-        {/* Диаграмма — всегда в DOM */}
         <div style={{ display: status === 'ready' ? 'block' : 'none' }}>
           <DiagramViewer
             svgHtml={svgHtml}
             isDark={isDark}
             panMode={panMode}
-            onReset={resetView}
             scale={scale}
             setScale={setScale}
             pos={pos}
