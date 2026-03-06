@@ -799,8 +799,6 @@ npm run start
 
 Здесь собраны примеры всех основных типов диаграмм: простые схемы, средние графики и сложные архитектурные диаграммы.
 
----
-
 ## Простые схемы
 
 ### Линейный флоучарт
@@ -810,32 +808,15 @@ flowchart LR
     A[Начало] --> B[Обработка] --> C[Конец]
 :::
 
-```
-:::diagram
-flowchart LR
-    A[Начало] --> B[Обработка] --> C[Конец]
-:::
-```
-
 ### Дерево решений
 
 :::diagram[borderColor=#6366f1]
-flowchart TD
-    A{Есть ошибка?} -->|Да| B[Логировать]
+flowchart LR
+    A[Есть ошибка?] -->|Да| B[Логировать]
     A -->|Нет| C[Продолжить]
     B --> D[Уведомить команду]
     C --> E[Завершить задачу]
 :::
-
-```
-:::diagram[borderColor=#6366f1]
-flowchart TD
-    A{Есть ошибка?} -->|Да| B[Логировать]
-    A -->|Нет| C[Продолжить]
-    B --> D[Уведомить команду]
-    C --> E[Завершить задачу]
-:::
-```
 
 ### Последовательность событий
 
@@ -847,17 +828,6 @@ sequenceDiagram
     U->>S: GET /api/data
     S-->>U: 200 OK + JSON
 :::
-
-```
-:::diagram[color=#10b981]
-sequenceDiagram
-    participant U as Пользователь
-    participant S as Сервер
-
-    U->>S: GET /api/data
-    S-->>U: 200 OK + JSON
-:::
-```
 
 ---
 
@@ -872,36 +842,16 @@ flowchart LR
     end
     subgraph CI[CI Pipeline]
         B --> C[Build Docker]
-        C --> D{Тесты OK?}
+        C --> D[Тесты OK]
     end
     subgraph CD[Деплой]
         D -->|Да| E[Staging]
-        E --> F{QA?}
+        E --> F[QA пройдено]
         F -->|Approve| G[Production]
         F -->|Reject| H[Rollback]
         D -->|Нет| I[Notify Dev]
     end
 :::
-
-```
-:::diagram[color=#f59e0b]
-flowchart LR
-    subgraph Dev[Разработка]
-        A[Коммит] --> B[Lint and Tests]
-    end
-    subgraph CI[CI Pipeline]
-        B --> C[Build Docker]
-        C --> D{Тесты OK?}
-    end
-    subgraph CD[Деплой]
-        D -->|Да| E[Staging]
-        E --> F{QA?}
-        F -->|Approve| G[Production]
-        F -->|Reject| H[Rollback]
-        D -->|Нет| I[Notify Dev]
-    end
-:::
-```
 
 ### Архитектура микросервисов
 
@@ -929,45 +879,14 @@ flowchart TD
     Client --> GW
     GW --> Auth
     Auth -->|JWT| GW
-    GW --> US & OS
+    GW --> US
+    GW --> OS
     US --> PG
-    OS --> PG & MQ
+    OS --> PG
+    OS --> MQ
     MQ --> NS
     NS --> RD
 :::
-
-```
-:::diagram[borderColor=#8b5cf6]
-flowchart TD
-    Client([Клиент])
-
-    subgraph Gateway[API Gateway]
-        GW[Nginx]
-        Auth[Auth Service]
-    end
-
-    subgraph Services[Микросервисы]
-        US[Users Service]
-        OS[Orders Service]
-        NS[Notify Service]
-    end
-
-    subgraph Data[Хранилища]
-        PG[(PostgreSQL)]
-        RD[(Redis)]
-        MQ[[RabbitMQ]]
-    end
-
-    Client --> GW
-    GW --> Auth
-    Auth -->|JWT| GW
-    GW --> US & OS
-    US --> PG
-    OS --> PG & MQ
-    MQ --> NS
-    NS --> RD
-:::
-```
 
 ### Диаграмма классов
 
@@ -1006,43 +925,6 @@ classDiagram
     OrderItem "0..*" --> "1" Product : ссылается
 :::
 
-```
-:::diagram[color=#ec4899]
-classDiagram
-    class User {
-        +int id
-        +string name
-        +string email
-        +login() bool
-        +logout() void
-    }
-
-    class Order {
-        +int id
-        +float total
-        +string status
-        +create() Order
-        +cancel() void
-    }
-
-    class Product {
-        +int id
-        +string title
-        +float price
-        +int stock
-    }
-
-    class OrderItem {
-        +int qty
-        +float price
-    }
-
-    User "1" --> "0..*" Order : размещает
-    Order "1" --> "1..*" OrderItem : содержит
-    OrderItem "0..*" --> "1" Product : ссылается
-:::
-```
-
 ### Диаграмма состояний
 
 :::diagram[borderColor=#f97316]
@@ -1060,24 +942,6 @@ stateDiagram-v2
 
     Published --> Draft : снят с публикации
 :::
-
-```
-:::diagram[borderColor=#f97316]
-stateDiagram-v2
-    [*] --> Draft : создан черновик
-
-    Draft --> Review : отправлен на ревью
-    Review --> Approved : одобрен
-    Review --> Rejected : отклонён
-    Rejected --> Draft : исправлен
-
-    Approved --> Published : опубликован
-    Published --> Archived : архивирован
-    Archived --> [*]
-
-    Published --> Draft : снят с публикации
-:::
-```
 
 ### Git граф
 
@@ -1103,30 +967,6 @@ gitGraph
     commit id: "hotfix: ssl"
 :::
 
-```
-:::diagram[color=#14b8a6]
-gitGraph
-    commit id: "init"
-    branch develop
-    checkout develop
-    commit id: "feat: auth"
-    commit id: "feat: api"
-
-    branch feature/payments
-    checkout feature/payments
-    commit id: "add Stripe"
-    commit id: "add webhooks"
-
-    checkout develop
-    merge feature/payments id: "merge payments"
-    commit id: "fix: tests"
-
-    checkout main
-    merge develop id: "v1.0.0" tag: "v1.0.0"
-    commit id: "hotfix: ssl"
-:::
-```
-
 ---
 
 ## Сложные схемы
@@ -1135,12 +975,10 @@ gitGraph
 
 :::diagram[color=#6366f1,borderColor=#4f46e5]
 flowchart TD
-    subgraph Internet[Интернет]
-        User([Пользователь])
-        Mobile([Мобильное приложение])
-    end
+    User([Пользователь])
+    Mobile([Мобильное приложение])
 
-    subgraph Edge[Edge / CDN]
+    subgraph Edge[Edge and CDN]
         CDN[CloudFront CDN]
         WAF[Web Application Firewall]
     end
@@ -1154,7 +992,6 @@ flowchart TD
     end
 
     subgraph DataLayer[Данные]
-        direction LR
         Primary[(Postgres Primary)]
         Replica[(Postgres Replica)]
         Cache[(Redis Cluster)]
@@ -1169,61 +1006,24 @@ flowchart TD
         Traces[Jaeger]
     end
 
-    User & Mobile --> CDN --> WAF --> API1 & API2 & API3
-    API1 & API2 & API3 --> Primary & Cache & Queue
+    User --> CDN
+    Mobile --> CDN
+    CDN --> WAF
+    WAF --> API1
+    WAF --> API2
+    WAF --> API3
+    API1 --> Primary
+    API2 --> Cache
+    API3 --> Queue
     Primary --> Replica
     Queue --> Worker
-    Worker --> Search & Blob
+    Worker --> Search
+    Worker --> Blob
     Scheduler --> Worker
-    API1 -.-> Logs & Metrics & Traces
+    API1 -.-> Logs
+    API1 -.-> Metrics
+    API1 -.-> Traces
 :::
-
-```
-:::diagram[color=#6366f1,borderColor=#4f46e5]
-flowchart TD
-    subgraph Internet[Интернет]
-        User([Пользователь])
-        Mobile([Мобильное приложение])
-    end
-
-    subgraph Edge[Edge / CDN]
-        CDN[CloudFront CDN]
-        WAF[Web Application Firewall]
-    end
-
-    subgraph AppLayer[Kubernetes]
-        API1[API Pod 1]
-        API2[API Pod 2]
-        API3[API Pod 3]
-        Worker[Background Worker]
-        Scheduler[Cron Scheduler]
-    end
-
-    subgraph DataLayer[Данные]
-        direction LR
-        Primary[(Postgres Primary)]
-        Replica[(Postgres Replica)]
-        Cache[(Redis Cluster)]
-        Search[(Elasticsearch)]
-        Blob[(S3 Storage)]
-        Queue[[Kafka]]
-    end
-
-    subgraph Observability[Мониторинг]
-        Logs[Loki]
-        Metrics[Prometheus]
-        Traces[Jaeger]
-    end
-
-    User & Mobile --> CDN --> WAF --> API1 & API2 & API3
-    API1 & API2 & API3 --> Primary & Cache & Queue
-    Primary --> Replica
-    Queue --> Worker
-    Worker --> Search & Blob
-    Scheduler --> Worker
-    API1 -.-> Logs & Metrics & Traces
-:::
-```
 
 ### OAuth 2.0 PKCE — диаграмма последовательности
 
@@ -1256,38 +1056,6 @@ sequenceDiagram
     App->>Auth: POST /token (grant_type=refresh_token)
     Auth-->>App: Новый access_token
 :::
-
-```
-:::diagram[color=#0ea5e9]
-sequenceDiagram
-    autonumber
-    actor User as Пользователь
-    participant App as Приложение
-    participant Auth as Auth Server
-    participant API as Resource API
-
-    User->>App: Нажать Войти
-    App->>App: Генерация code_verifier + code_challenge
-    App->>Auth: GET /authorize?code_challenge=...
-    Auth->>User: Показать форму входа
-    User->>Auth: Ввести логин и пароль
-    Auth-->>App: Redirect с authorization_code
-
-    App->>Auth: POST /token (code + code_verifier)
-    Auth->>Auth: Проверить PKCE
-    Auth-->>App: access_token + refresh_token
-
-    App->>API: GET /me (Bearer access_token)
-    API->>Auth: Introspect token
-    Auth-->>API: Token valid
-    API-->>App: User data
-
-    Note over App,API: Токен живёт 15 минут
-
-    App->>Auth: POST /token (grant_type=refresh_token)
-    Auth-->>App: Новый access_token
-:::
-```
 
 ### ER-диаграмма базы данных
 
@@ -1333,83 +1101,12 @@ erDiagram
         string status
     }
 
-    COMMENTS {
-        uuid id PK
-        uuid task_id FK
-        uuid author_id FK
-        text body
-        timestamp created_at
-    }
-
     USERS ||--o{ MEMBERSHIPS : "участвует"
     ORGANIZATIONS ||--o{ MEMBERSHIPS : "имеет"
     ORGANIZATIONS ||--o{ PROJECTS : "владеет"
     PROJECTS ||--o{ TASKS : "содержит"
     USERS ||--o{ TASKS : "назначен"
-    TASKS ||--o{ COMMENTS : "получает"
-    USERS ||--o{ COMMENTS : "пишет"
 :::
-
-```
-:::diagram[borderColor=#10b981]
-erDiagram
-    USERS {
-        uuid id PK
-        string email UK
-        string name
-        string role
-        timestamp created_at
-    }
-
-    ORGANIZATIONS {
-        uuid id PK
-        string name
-        string slug UK
-        string plan
-        int seats
-    }
-
-    MEMBERSHIPS {
-        uuid user_id FK
-        uuid org_id FK
-        string role
-        timestamp joined_at
-    }
-
-    PROJECTS {
-        uuid id PK
-        uuid org_id FK
-        string name
-        string status
-        timestamp deadline
-    }
-
-    TASKS {
-        uuid id PK
-        uuid project_id FK
-        uuid assignee_id FK
-        string title
-        string priority
-        string status
-    }
-
-    COMMENTS {
-        uuid id PK
-        uuid task_id FK
-        uuid author_id FK
-        text body
-        timestamp created_at
-    }
-
-    USERS ||--o{ MEMBERSHIPS : "участвует"
-    ORGANIZATIONS ||--o{ MEMBERSHIPS : "имеет"
-    ORGANIZATIONS ||--o{ PROJECTS : "владеет"
-    PROJECTS ||--o{ TASKS : "содержит"
-    USERS ||--o{ TASKS : "назначен"
-    TASKS ||--o{ COMMENTS : "получает"
-    USERS ||--o{ COMMENTS : "пишет"
-:::
-```
 
 ### Временная шкала
 
@@ -1436,31 +1133,6 @@ timeline
         2024 : AI-ассистенты в IDE
 :::
 
-```
-:::diagram[color=#a855f7]
-timeline
-    title История развития веба
-    section 1990-е
-        1991 : HTML 1.0 и первый веб-сайт
-        1995 : JavaScript и CSS 1.0
-        1998 : Основан Google
-    section 2000-е
-        2004 : Gmail и Ajax-революция
-        2005 : Запуск YouTube
-        2007 : iPhone и мобильный веб
-        2009 : Выход Node.js
-    section 2010-е
-        2013 : React.js
-        2015 : ES6 и GraphQL
-        2017 : WebAssembly
-        2019 : Svelte 3 и Tailwind CSS
-    section 2020-е
-        2020 : Edge Functions и Deno
-        2022 : TypeScript повсюду
-        2024 : AI-ассистенты в IDE
-:::
-```
-
 ### Круговая диаграмма
 
 :::diagram[borderColor=#f43f5e]
@@ -1472,22 +1144,11 @@ pie title Распределение трафика по источникам
     "Реферальный"        : 8.2
 :::
 
-```
-:::diagram[borderColor=#f43f5e]
-pie title Распределение трафика по источникам
-    "Органический поиск" : 42.5
-    "Прямые переходы"    : 23.1
-    "Социальные сети"    : 15.8
-    "Email-рассылка"     : 10.4
-    "Реферальный"        : 8.2
-:::
-```
-
 ### Матрица приоритизации задач
 
 :::diagram[color=#f59e0b]
 quadrantChart
-    title Матрица приоритизации задач
+    title Task Prioritization Matrix
     x-axis Low Effort --> High Effort
     y-axis Low Impact --> High Impact
     quadrant-1 Do First
@@ -1500,27 +1161,6 @@ quadrantChart
     PDF Export: [0.55, 0.65]
     Analytics: [0.7, 0.8]
     Auth refactor: [0.8, 0.35]
-    A/B Tests: [0.65, 0.5]
+    AB Tests: [0.65, 0.5]
     Push notifications: [0.45, 0.7]
 :::
-
-```
-:::diagram[color=#f59e0b]
-quadrantChart
-    title Матрица приоритизации задач
-    x-axis Low Effort --> High Effort
-    y-axis Low Impact --> High Impact
-    quadrant-1 Do First
-    quadrant-2 Schedule
-    quadrant-3 Delegate
-    quadrant-4 Reconsider
-    Onboarding: [0.2, 0.85]
-    OAuth: [0.4, 0.9]
-    Dark mode: [0.25, 0.45]
-    PDF Export: [0.55, 0.65]
-    Analytics: [0.7, 0.8]
-    Auth refactor: [0.8, 0.35]
-    A/B Tests: [0.65, 0.5]
-    Push notifications: [0.45, 0.7]
-:::
-```
