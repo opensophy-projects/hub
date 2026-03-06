@@ -87,7 +87,7 @@ const TocPanel: React.FC<TocPanelProps> = ({ toc, onClose }) => {
     );
   }
 
-  // Десктопная версия — sidebar справа с кнопкой «Наверх» в заголовке
+  // Десктопная версия — sidebar справа
   return (
     <>
       <div
@@ -111,7 +111,7 @@ const TocPanel: React.FC<TocPanelProps> = ({ toc, onClose }) => {
           </h2>
 
           <div className="flex items-center gap-1">
-            {/* Кнопка Наверх с текстом снизу и границей */}
+            {/* Кнопка Наверх с границей как в sidebar */}
             <button
               onClick={handleScrollTop}
               className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-lg border transition-colors ${
