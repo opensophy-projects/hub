@@ -28,10 +28,10 @@ const NavButton: React.FC<{
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-2 md:px-4 py-2 md:py-0 transition-colors ${getTextColor()}`}
+      className={`flex flex-col items-center justify-center gap-1 px-2 py-2 transition-colors ${getTextColor()}`}
     >
-      <div className="w-5 h-5 md:w-4 md:h-4 flex items-center justify-center">{icon}</div>
-      <span className="text-[10px] md:text-sm font-medium">{label}</span>
+      <div className="w-5 h-5 flex items-center justify-center">{icon}</div>
+      <span className="text-[10px] font-medium">{label}</span>
     </button>
   );
 };
@@ -127,26 +127,7 @@ const MobileNavbarInner: React.FC = () => {
 
   return (
     <>
-      <nav
-        className={`hidden md:flex fixed top-0 left-0 right-0 z-50 border-b items-center h-16 ${
-          isDark
-            ? 'bg-[#0a0a0a]/95 border-white/10 backdrop-blur-sm'
-            : 'bg-[#E8E7E3]/95 border-black/10 backdrop-blur-sm'
-        }`}
-      >
-        <div className="flex items-center pl-4 w-64 flex-shrink-0">
-          <NavButton icon={<Search size={18} />} label="Поиск" onClick={() => setIsSearchOpen(true)} />
-        </div>
-        <div className="flex-1 flex items-center justify-center">
-          <a href="/" className="flex items-center gap-2">
-            <img src="/favicon.png" alt="Opensophy" className="w-10 h-10 object-contain" />
-          </a>
-        </div>
-        <div className="flex items-center pr-4 w-64 flex-shrink-0 justify-end">
-          <NavButton icon={<ArrowUp size={18} />} label="Наверх" onClick={handleScrollTop} />
-        </div>
-      </nav>
-
+      {/* Мобильный нижний навбар — только на мобильных */}
       <nav
         className={`md:hidden fixed bottom-0 left-0 right-0 z-50 border-t ${
           isDark
