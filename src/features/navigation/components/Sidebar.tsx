@@ -9,8 +9,6 @@ import { AnimatePresence } from 'framer-motion';
 
 const LazyUnifiedSearchPanel = lazy(() => import('./UnifiedSearchPanel'));
 
-// ─── Типы ─────────────────────────────────────────────────────────────────────
-
 interface Doc {
   id: string; slug: string; title: string; description: string;
   type: string; typename: string; icon?: string; author?: string;
@@ -18,8 +16,6 @@ interface Doc {
 }
 interface NavNode { title: string; slug: string; docs: Doc[]; children: Record<string, NavNode>; isCategory: boolean; }
 interface NavSection { navSlug: string; navTitle: string; navIcon: string; }
-
-// ─── Динамическая загрузка иконки по имени ────────────────────────────────────
 
 const iconCache = new Map<string, React.FC<{ size?: number; className?: string }>>();
 
@@ -44,8 +40,6 @@ const LucideIcon: React.FC<{ name: string; size?: number; className?: string }> 
   return <Icon size={size} className={className} />;
 });
 
-// ─── Хелперы стилей ───────────────────────────────────────────────────────────
-
 const borderStyle = (isDark: boolean) => ({
   borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
 });
@@ -53,8 +47,6 @@ const borderStyle = (isDark: boolean) => ({
 const createCloseKeyHandler = (onClose: () => void) => (e: React.KeyboardEvent) => {
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); }
 };
-
-// ─── NavPopoverSwitcher ───────────────────────────────────────────────────────
 
 const NavPopoverSwitcher: React.FC<{
   sections: NavSection[]; activeSlug: string;
@@ -126,8 +118,6 @@ const NavPopoverSwitcher: React.FC<{
   );
 });
 
-// ─── SidebarOverlay ───────────────────────────────────────────────────────────
-
 const SidebarOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -145,8 +135,6 @@ const SidebarOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     />
   );
 };
-
-// ─── IconButton — иконка + текст снизу ───────────────────────────────────────
 
 const IconButton: React.FC<{
   icon: React.ReactNode;
@@ -169,8 +157,6 @@ const IconButton: React.FC<{
   </button>
 );
 
-// ─── SidebarHeader ────────────────────────────────────────────────────────────
-
 const SidebarHeader: React.FC<{
   onClose: () => void; isDark: boolean;
   onToggleTheme: () => void; onToggleContacts: () => void; isDesktop: boolean;
@@ -183,13 +169,11 @@ const SidebarHeader: React.FC<{
       backdropFilter: 'blur(10px)',
     }}
   >
-    {/* Логотип: favicon + текст hub */}
     <a href="/" className="flex items-center gap-2">
       <img src="/favicon.png" alt="Opensophy" className="w-7 h-7 object-contain" />
       <h1 className="text-xl font-bold font-veilstack" style={{ color: '#7234ff' }}>hub</h1>
     </a>
 
-    {/* Иконки с текстом */}
     <div className="flex items-center gap-0.5">
       <IconButton
         icon={isDark ? <Sun size={17} /> : <Moon size={17} />}
@@ -218,8 +202,6 @@ const SidebarHeader: React.FC<{
   </div>
 ));
 
-// ─── SidebarSearch — поиск по названию + кнопка «Расширенный» ────────────────
-
 const SidebarSearch: React.FC<{
   value: string;
   onChange: (value: string) => void;
@@ -228,7 +210,6 @@ const SidebarSearch: React.FC<{
 }> = memo(({ value, onChange, isDark, onOpenAdvanced }) => (
   <div className="flex-shrink-0 p-3" style={borderStyle(isDark)}>
     <div className="flex gap-2">
-      {/* Поисковый инпут */}
       <div className="relative flex-1">
         <Search
           size={15}
@@ -247,7 +228,6 @@ const SidebarSearch: React.FC<{
         />
       </div>
 
-      {/* Кнопка расширенного поиска */}
       <button
         onClick={onOpenAdvanced}
         title="Расширенный поиск"
@@ -265,22 +245,37 @@ const SidebarSearch: React.FC<{
   </div>
 ));
 
-// ─── DocLink ──────────────────────────────────────────────────────────────────
+const DocLink: React.FC<{ 
+  doc: Doc; 
+  onClose: () => void; 
+  isDark: boolean; 
+  isActive: boolean;
+}> = memo(({ doc, onClose, isDark, isActive }) => {
+  const accentColor = isDark ? '#ffffff' : '#000000';
 
-const DocLink: React.FC<{ doc: Doc; onClose: () => void; isDark: boolean }> = memo(({ doc, onClose, isDark }) => (
-  <a
-    href={`/${doc.slug}`}
-    onClick={onClose}
-    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-      isDark ? 'text-white/70 hover:text-white hover:bg-white/5' : 'text-black/70 hover:text-black hover:bg-black/5'
-    }`}
-  >
-    {doc.icon && <LucideIcon name={doc.icon} size={20} className={isDark ? 'text-white/60' : 'text-black/60'} />}
-    <span>{doc.title}</span>
-  </a>
-));
-
-// ─── CategoryNode ─────────────────────────────────────────────────────────────
+  return (
+    <a
+      href={`/${doc.slug}`}
+      onClick={onClose}
+      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all ${
+        isDark ? 'text-white/70 hover:text-white hover:bg-white/5' : 'text-black/70 hover:text-black hover:bg-black/5'
+      }`}
+      style={{
+        borderLeft: '2px solid',
+        borderLeftColor: isActive ? accentColor : 'transparent',
+        boxShadow: isActive
+          ? `inset 3px 0 10px -2px ${accentColor}88`
+          : 'none',
+        textShadow: isActive ? `0 0 12px ${accentColor}66` : 'none',
+        color: isActive ? accentColor : undefined,
+        fontWeight: isActive ? 600 : 400,
+      }}
+    >
+      {doc.icon && <LucideIcon name={doc.icon} size={20} className={isDark ? 'text-white/60' : 'text-black/60'} />}
+      <span>{doc.title}</span>
+    </a>
+  );
+});
 
 function countDocsInNode(node: NavNode): number {
   let count = node.docs.length;
@@ -291,7 +286,8 @@ function countDocsInNode(node: NavNode): number {
 const CategoryNode: React.FC<{
   node: NavNode; path: string; expandedPaths: Set<string>;
   onToggle: (path: string) => void; onDocClick: () => void; isDark: boolean;
-}> = memo(({ node, path, expandedPaths, onToggle, onDocClick, isDark }) => {
+  currentDocSlug?: string;
+}> = memo(({ node, path, expandedPaths, onToggle, onDocClick, isDark, currentDocSlug }) => {
   const isExpanded = expandedPaths.has(path);
   const hasChildren = Object.keys(node.children).length > 0;
   const totalDocs = countDocsInNode(node);
@@ -320,7 +316,13 @@ const CategoryNode: React.FC<{
           {node.docs.length > 0 && (
             <div className="space-y-1">
               {[...node.docs].sort((a, b) => a.title.localeCompare(b.title)).map((doc) => (
-                <DocLink key={doc.id} doc={doc} onClose={onDocClick} isDark={isDark} />
+                <DocLink 
+                  key={doc.id} 
+                  doc={doc} 
+                  onClose={onDocClick} 
+                  isDark={isDark} 
+                  isActive={currentDocSlug === doc.slug}
+                />
               ))}
             </div>
           )}
@@ -331,6 +333,7 @@ const CategoryNode: React.FC<{
                 key={key} node={child} path={`${path}/${key}`}
                 expandedPaths={expandedPaths} onToggle={onToggle}
                 onDocClick={onDocClick} isDark={isDark}
+                currentDocSlug={currentDocSlug}
               />
             ))}
         </div>
@@ -338,8 +341,6 @@ const CategoryNode: React.FC<{
     </div>
   );
 });
-
-// ─── buildNavigationTree ──────────────────────────────────────────────────────
 
 function buildNavigationTree(docs: Doc[], searchQuery: string, activeNavSlug: string): NavNode {
   const root: NavNode = { title: 'Root', slug: '', docs: [], children: {}, isCategory: false };
@@ -374,8 +375,6 @@ function buildNavigationTree(docs: Doc[], searchQuery: string, activeNavSlug: st
 
   return root;
 }
-
-// ─── ContactsSection ──────────────────────────────────────────────────────────
 
 const CONTACTS = [
   { href: 'https://opensophy.com/',               title: 'Сайт',     subtitle: 'opensophy.com',        external: true  },
@@ -426,9 +425,11 @@ const ContactsSection: React.FC<{ isDark: boolean; isOpen: boolean; onClose: () 
   );
 });
 
-// ─── Sidebar (main) ───────────────────────────────────────────────────────────
+interface SidebarProps {
+  currentDocSlug?: string;
+}
 
-const Sidebar: React.FC = () => {
+const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
   const { isDark, toggleTheme, isSidebarOpen, setSidebarOpen } = useTheme();
   const { manifest: docs } = useDocuments();
   const [searchQuery, setSearchQuery] = useState('');
@@ -528,7 +529,13 @@ const Sidebar: React.FC = () => {
             {navTree.docs.length > 0 && (
               <div className="space-y-1 mb-4">
                 {[...navTree.docs].sort((a, b) => a.title.localeCompare(b.title)).map((doc) => (
-                  <DocLink key={doc.id} doc={doc} onClose={handleClose} isDark={isDark} />
+                  <DocLink 
+                    key={doc.id} 
+                    doc={doc} 
+                    onClose={handleClose} 
+                    isDark={isDark} 
+                    isActive={currentDocSlug === doc.slug}
+                  />
                 ))}
               </div>
             )}
@@ -539,6 +546,7 @@ const Sidebar: React.FC = () => {
                   key={key} node={node} path={key}
                   expandedPaths={expandedPaths} onToggle={togglePath}
                   onDocClick={handleClose} isDark={isDark}
+                  currentDocSlug={currentDocSlug}
                 />
               ))}
           </nav>
@@ -547,7 +555,6 @@ const Sidebar: React.FC = () => {
 
       <ContactsSection isDark={isDark} isOpen={showContacts} onClose={() => setShowContacts(false)} />
 
-      {/* Расширенный поиск */}
       <AnimatePresence>
         {isAdvancedSearchOpen && (
           <Suspense fallback={null}>
