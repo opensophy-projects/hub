@@ -221,18 +221,19 @@ function preprocessCustomBlocks(content, codeBlocks) {
       continue;
     }
 
-    // ─── :::diagram[color=#hex] — Mermaid-схема ───────────────────────────────
+    // ─── :::diagram[color=#hex] или :::diagram[borderColor=#hex] — Mermaid-схема ──
     const diagramMatch = trimmed.match(/^:::diagram(?:\[([^\]]*?)\])?\s*$/);
     if (diagramMatch) {
       const diagramParams = parseParams(diagramMatch[1] || '');
-      const color = diagramParams.color ? escapeAttr(diagramParams.color) : '';
+      // Поддерживаем оба параметра: color и borderColor (синонимы)
+      const color = diagramParams.color || diagramParams.borderColor || '';
+      const colorAttr = color ? escapeAttr(color) : '';
       const { body, endIndex } = collectBlockBody(lines, i + 1);
       i = endIndex + 1;
 
       // Код диаграммы кодируем base64 (utf-8) — нет кавычек, безопасен в HTML-атрибутах
-      // Buffer.from / base64 не содержит " ' < > & — DOMPurify не трогает
       const encodedCode = Buffer.from(body.trim(), 'utf8').toString('base64');
-      const html = `<div class="custom-diagram" data-color="${color}" data-code="${encodedCode}"></div>`;
+      const html = `<div class="custom-diagram" data-color="${colorAttr}" data-code="${encodedCode}"></div>`;
       output.push(html);
       continue;
     }
