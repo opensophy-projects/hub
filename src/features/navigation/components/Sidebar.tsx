@@ -256,7 +256,6 @@ const DocLink: React.FC<{
   return (
     <a
       href={`/${doc.slug}`}
-      onClick={onClose}
       className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all ${
         isDark ? 'text-white/70 hover:text-white hover:bg-white/5' : 'text-black/70 hover:text-black hover:bg-black/5'
       }`}
@@ -472,6 +471,30 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
     try { localStorage.setItem('hub:activeNavSlug', detected); } catch {}
   }, [sections]);
 
+  // AUTO-EXPAND PATH TO CURRENT DOCUMENT
+  useEffect(() => {
+    if (!currentDocSlug) return;
+    
+    // Build path to current document
+    const pathParts: string[] = [];
+    let slugForTree = currentDocSlug;
+    
+    if (activeNavSlug !== '') {
+      slugForTree = currentDocSlug.startsWith(activeNavSlug + '/')
+        ? currentDocSlug.slice(activeNavSlug.length + 1)
+        : currentDocSlug;
+    }
+    
+    const parts = slugForTree.split('/');
+    for (let i = 0; i < parts.length - 1; i++) {
+      pathParts.push(parts.slice(0, i + 1).join('/'));
+    }
+    
+    if (pathParts.length > 0) {
+      setExpandedPaths(new Set(pathParts));
+    }
+  }, [currentDocSlug, activeNavSlug]);
+
   const navTree = useMemo(
     () => buildNavigationTree(docs as Doc[], searchQuery, activeNavSlug),
     [docs, searchQuery, activeNavSlug]
@@ -532,7 +555,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
                   <DocLink 
                     key={doc.id} 
                     doc={doc} 
-                    onClose={handleClose} 
+                    onClose={() => {}} 
                     isDark={isDark} 
                     isActive={currentDocSlug === doc.slug}
                   />
@@ -545,7 +568,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
                 <CategoryNode
                   key={key} node={node} path={key}
                   expandedPaths={expandedPaths} onToggle={togglePath}
-                  onDocClick={handleClose} isDark={isDark}
+                  onDocClick={() => {}}
+                  isDark={isDark}
                   currentDocSlug={currentDocSlug}
                 />
               ))}
