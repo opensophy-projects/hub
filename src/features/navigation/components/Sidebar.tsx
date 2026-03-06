@@ -281,7 +281,6 @@ const DocLink: React.FC<{ doc: Doc; onClose: () => void; isDark: boolean }> = me
 ));
 
 // ─── CategoryNode ─────────────────────────────────────────────────────────────
-
 function countDocsInNode(node: NavNode): number {
   let count = node.docs.length;
   Object.values(node.children).forEach((child) => { count += countDocsInNode(child); });
