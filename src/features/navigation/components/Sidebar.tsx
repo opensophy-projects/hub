@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useRef, lazy, Suspense, memo } from 'react';
 import { useTheme } from '@/shared/contexts/ThemeContext';
 import { useDocuments } from '@/features/docs/hooks/useDocuments';
 import {
@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 
-const LazyUnifiedSearchPanel = React.lazy(() => import('./UnifiedSearchPanel'));
+const LazyUnifiedSearchPanel = lazy(() => import('./UnifiedSearchPanel'));
 
 interface Doc {
   id: string; slug: string; title: string; description: string;
@@ -19,7 +19,7 @@ interface NavSection { navSlug: string; navTitle: string; navIcon: string; }
 
 const iconCache = new Map<string, React.FC<{ size?: number; className?: string }>>();
 
-const LucideIcon: React.FC<{ name: string; size?: number; className?: string }> = React.memo(({ name, size = 16, className }) => {
+const LucideIcon: React.FC<{ name: string; size?: number; className?: string }> = memo(({ name, size = 16, className }) => {
   const [Icon, setIcon] = useState<React.FC<{ size?: number; className?: string }> | null>(
     () => iconCache.get(name) ?? null
   );
@@ -51,7 +51,7 @@ const createCloseKeyHandler = (onClose: () => void) => (e: React.KeyboardEvent) 
 const NavPopoverSwitcher: React.FC<{
   sections: NavSection[]; activeSlug: string;
   onSelect: (slug: string) => void; isDark: boolean;
-}> = React.memo(({ sections, activeSlug, onSelect, isDark }) => {
+}> = memo(({ sections, activeSlug, onSelect, isDark }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -160,7 +160,7 @@ const IconButton: React.FC<{
 const SidebarHeader: React.FC<{
   onClose: () => void; isDark: boolean;
   onToggleTheme: () => void; onToggleContacts: () => void; isDesktop: boolean;
-}> = React.memo(({ onClose, isDark, onToggleTheme, onToggleContacts, isDesktop }) => (
+}> = memo(({ onClose, isDark, onToggleTheme, onToggleContacts, isDesktop }) => (
   <div
     className="flex-shrink-0 px-4 py-3 border-b flex items-center justify-between sticky top-0 z-20"
     style={{
@@ -207,7 +207,7 @@ const SidebarSearch: React.FC<{
   onChange: (value: string) => void;
   isDark: boolean;
   onOpenAdvanced: () => void;
-}> = React.memo(({ value, onChange, isDark, onOpenAdvanced }) => (
+}> = memo(({ value, onChange, isDark, onOpenAdvanced }) => (
   <div className="flex-shrink-0 p-3" style={borderStyle(isDark)}>
     <div className="flex gap-2">
       <div className="relative flex-1">
@@ -250,7 +250,7 @@ const DocLink: React.FC<{
   onClose: () => void; 
   isDark: boolean; 
   isActive: boolean;
-}> = React.memo(({ doc, onClose, isDark, isActive }) => {
+}> = memo(({ doc, onClose, isDark, isActive }) => {
   const accentColor = isDark ? '#ffffff' : '#000000';
 
   return (
@@ -287,7 +287,7 @@ const CategoryNode: React.FC<{
   node: NavNode; path: string; expandedPaths: Set<string>;
   onToggle: (path: string) => void; onDocClick: () => void; isDark: boolean;
   currentDocSlug?: string;
-}> = React.memo(({ node, path, expandedPaths, onToggle, onDocClick, isDark, currentDocSlug }) => {
+}> = memo(({ node, path, expandedPaths, onToggle, onDocClick, isDark, currentDocSlug }) => {
   const isExpanded = expandedPaths.has(path);
   const hasChildren = Object.keys(node.children).length > 0;
   const totalDocs = countDocsInNode(node);
@@ -301,11 +301,7 @@ const CategoryNode: React.FC<{
         }`}
       >
         <div className="flex items-center gap-2">
-          {hasChildren && (
-            <span className="flex-shrink-0 transition-transform duration-200" style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>
-              <ChevronRight size={16} />
-            </span>
-          )}
+          {hasChildren && (isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />)}
           <span>{node.title}</span>
         </div>
         {totalDocs > 0 && (
@@ -404,7 +400,7 @@ const ContactLink: React.FC<{
   </a>
 );
 
-const ContactsSection: React.FC<{ isDark: boolean; isOpen: boolean; onClose: () => void }> = React.memo(({
+const ContactsSection: React.FC<{ isDark: boolean; isOpen: boolean; onClose: () => void }> = memo(({
   isDark, isOpen, onClose,
 }) => {
   if (!isOpen) return null;
@@ -437,26 +433,12 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
   const { isDark, toggleTheme, isSidebarOpen, setSidebarOpen } = useTheme();
   const { manifest: docs } = useDocuments();
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => {
-    try {
-      const saved = localStorage.getItem('hub:expandedPaths');
-      return saved ? new Set(JSON.parse(saved)) : new Set();
-    } catch {
-      return new Set();
-    }
-  });
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [showContacts, setShowContacts] = useState(false);
   const [activeNavSlug, setActiveNavSlug] = useState<string>('');
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
 
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
-
-  // Сохраняем expandedPaths в localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('hub:expandedPaths', JSON.stringify(Array.from(expandedPaths)));
-    } catch {}
-  }, [expandedPaths]);
 
   useEffect(() => {
     if (!isDesktop && isSidebarOpen) {
@@ -479,37 +461,16 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
     return Array.from(map.values());
   }, [docs]);
 
-  // Автоматически открываем категории для текущего документа
   useEffect(() => {
-    if (!currentDocSlug || sections.length === 0) return;
-
+    if (sections.length === 0) return;
     const pathname = window.location.pathname.replace(/^\//, '');
     const matched = sections
       .filter(s => s.navSlug !== '')
       .find(s => pathname === s.navSlug || pathname.startsWith(s.navSlug + '/'));
     const detected = matched ? matched.navSlug : '';
     setActiveNavSlug(detected);
-
-    // Открываем все родительские категории для текущего документа
-    const slugParts = currentDocSlug.split('/');
-    const pathsToExpand = new Set<string>();
-    
-    // Если есть activeNavSlug, начинаем с него
-    let currentPath = detected ? detected : '';
-    
-    slugParts.forEach((part, index) => {
-      if (index < slugParts.length - 1) { // Не включаем последнюю часть (сам документ)
-        currentPath = currentPath ? `${currentPath}/${part}` : part;
-        pathsToExpand.add(currentPath);
-      }
-    });
-
-    if (pathsToExpand.size > 0) {
-      setExpandedPaths(prev => new Set([...prev, ...pathsToExpand]));
-    }
-
     try { localStorage.setItem('hub:activeNavSlug', detected); } catch {}
-  }, [currentDocSlug, sections]);
+  }, [sections]);
 
   const navTree = useMemo(
     () => buildNavigationTree(docs as Doc[], searchQuery, activeNavSlug),
@@ -519,11 +480,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
   const togglePath = (path: string) => {
     setExpandedPaths((prev) => {
       const next = new Set(prev);
-      if (next.has(path)) {
-        next.delete(path);
-      } else {
-        next.add(path);
-      }
+      next.has(path) ? next.delete(path) : next.add(path);
       return next;
     });
   };
@@ -561,6 +518,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
             onSelect={(slug) => {
               try { localStorage.setItem('hub:activeNavSlug', slug); } catch {}
               setActiveNavSlug(slug);
+              setExpandedPaths(new Set());
             }}
             isDark={isDark}
           />
@@ -599,9 +557,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
 
       <AnimatePresence>
         {isAdvancedSearchOpen && (
-          <React.Suspense fallback={null}>
+          <Suspense fallback={null}>
             <LazyUnifiedSearchPanel onClose={() => setIsAdvancedSearchOpen(false)} />
-          </React.Suspense>
+          </Suspense>
         )}
       </AnimatePresence>
     </>
