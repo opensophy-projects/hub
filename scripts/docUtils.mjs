@@ -221,17 +221,29 @@ function preprocessCustomBlocks(content, codeBlocks) {
       continue;
     }
 
-    // ─── :::diagram[color=#hex] — Mermaid-схема ───────────────────────────────
+    // ─── :::diagram[color=#hex,borderColor=#hex] ──────────────────────────────
+    //
+    // Параметры:
+    //   color=<hex>        — акцентный цвет (полоска сверху + цвет границ нод)
+    //   borderColor=<hex>  — цвет внешней рамки блока (независимо от color)
+    //
+    // Примеры:
+    //   :::diagram
+    //   :::diagram[color=#6366f1]
+    //   :::diagram[borderColor=#e11d48]
+    //   :::diagram[color=#6366f1,borderColor=#e11d48]
+    //
     const diagramMatch = trimmed.match(/^:::diagram(?:\[([^\]]*?)\])?\s*$/);
     if (diagramMatch) {
       const diagramParams = parseParams(diagramMatch[1] || '');
-      const color = diagramParams.color ? escapeAttr(diagramParams.color) : '';
+      const color       = diagramParams.color       ? escapeAttr(diagramParams.color)       : '';
+      const borderColor = diagramParams.borderColor ? escapeAttr(diagramParams.borderColor) : '';
       const { body, endIndex } = collectBlockBody(lines, i + 1);
       i = endIndex + 1;
 
       // Кодируем код диаграммы как base64 чтобы избежать проблем с HTML-парсером
       const encodedCode = Buffer.from(body.trim()).toString('base64');
-      const html = `<div class="custom-diagram" data-color="${color}" data-code="${encodedCode}"></div>`;
+      const html = `<div class="custom-diagram" data-color="${color}" data-border-color="${borderColor}" data-code="${encodedCode}"></div>`;
       output.push(html);
       continue;
     }
