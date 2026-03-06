@@ -3,8 +3,11 @@ import { useTheme } from '@/shared/contexts/ThemeContext';
 import { useDocuments } from '@/features/docs/hooks/useDocuments';
 import {
   Search, Sun, Moon, ChevronDown, ChevronRight,
-  Mail, X, Home,
+  Mail, X, Home, SlidersHorizontal,
 } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
+
+const LazyUnifiedSearchPanel = lazy(() => import('./UnifiedSearchPanel'));
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
@@ -17,7 +20,6 @@ interface NavNode { title: string; slug: string; docs: Doc[]; children: Record<s
 interface NavSection { navSlug: string; navTitle: string; navIcon: string; }
 
 // ─── Динамическая загрузка иконки по имени ────────────────────────────────────
-// Вместо import * as icons (весь lucide = ~800 кб) — lazy import только нужной
 
 const iconCache = new Map<string, React.FC<{ size?: number; className?: string }>>();
 
@@ -43,9 +45,6 @@ const LucideIcon: React.FC<{ name: string; size?: number; className?: string }> 
 });
 
 // ─── Хелперы стилей ───────────────────────────────────────────────────────────
-
-const iconBtn = (isDark: boolean) =>
-  `p-2 rounded-lg transition-colors ${isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black'}`;
 
 const borderStyle = (isDark: boolean) => ({
   borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
@@ -147,6 +146,27 @@ const SidebarOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   );
 };
 
+// ─── IconButton — иконка + текст снизу ───────────────────────────────────────
+
+const IconButton: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  isDark: boolean;
+  title?: string;
+}> = ({ icon, label, onClick, isDark, title }) => (
+  <button
+    onClick={onClick}
+    title={title}
+    className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-lg transition-colors ${
+      isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black'
+    }`}
+  >
+    <div className="w-5 h-5 flex items-center justify-center">{icon}</div>
+    <span className="text-[9px] font-medium leading-none">{label}</span>
+  </button>
+);
+
 // ─── SidebarHeader ────────────────────────────────────────────────────────────
 
 const SidebarHeader: React.FC<{
@@ -154,23 +174,41 @@ const SidebarHeader: React.FC<{
   onToggleTheme: () => void; onToggleContacts: () => void; isDesktop: boolean;
 }> = memo(({ onClose, isDark, onToggleTheme, onToggleContacts, isDesktop }) => (
   <div
-    className="flex-shrink-0 p-4 border-b flex items-center justify-between sticky top-0 z-20"
+    className="flex-shrink-0 px-4 py-3 border-b flex items-center justify-between sticky top-0 z-20"
     style={{
       borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
       backgroundColor: isDark ? 'rgba(10,10,10,0.95)' : 'rgba(232,231,227,0.95)',
       backdropFilter: 'blur(10px)',
     }}
   >
-    <a href="/"><h1 className="text-xl font-bold font-veilstack" style={{ color: '#7234ff' }}>hub</h1></a>
-    <div className="flex items-center gap-1">
-      <button onClick={onToggleTheme} className={iconBtn(isDark)} title={isDark ? 'Светлая тема' : 'Тёмная тема'}>
-        {isDark ? <Sun size={18} /> : <Moon size={18} />}
-      </button>
-      <button onClick={onToggleContacts} className={iconBtn(isDark)} title="Контакты">
-        <Mail size={18} />
-      </button>
+    {/* Логотип: favicon + текст hub */}
+    <a href="/" className="flex items-center gap-2">
+      <img src="/favicon.png" alt="Opensophy" className="w-7 h-7 object-contain" />
+      <h1 className="text-xl font-bold font-veilstack" style={{ color: '#7234ff' }}>hub</h1>
+    </a>
+
+    {/* Иконки с текстом */}
+    <div className="flex items-center gap-0.5">
+      <IconButton
+        icon={isDark ? <Sun size={17} /> : <Moon size={17} />}
+        label={isDark ? 'Светлая' : 'Тёмная'}
+        onClick={onToggleTheme}
+        isDark={isDark}
+        title={isDark ? 'Светлая тема' : 'Тёмная тема'}
+      />
+      <IconButton
+        icon={<Mail size={17} />}
+        label="Контакты"
+        onClick={onToggleContacts}
+        isDark={isDark}
+        title="Контакты"
+      />
       {!isDesktop && (
-        <button onClick={onClose} className={iconBtn(isDark)} aria-label="Закрыть меню">
+        <button
+          onClick={onClose}
+          className={`p-2 rounded-lg transition-colors ${isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black'}`}
+          aria-label="Закрыть меню"
+        >
           <X size={18} />
         </button>
       )}
@@ -178,25 +216,49 @@ const SidebarHeader: React.FC<{
   </div>
 ));
 
-// ─── SidebarSearch ────────────────────────────────────────────────────────────
+// ─── SidebarSearch — поиск по названию + кнопка «Расширенный» ────────────────
 
 const SidebarSearch: React.FC<{
-  value: string; onChange: (value: string) => void; isDark: boolean;
-}> = memo(({ value, onChange, isDark }) => (
+  value: string;
+  onChange: (value: string) => void;
+  isDark: boolean;
+  onOpenAdvanced: () => void;
+}> = memo(({ value, onChange, isDark, onOpenAdvanced }) => (
   <div className="flex-shrink-0 p-3 border-b" style={borderStyle(isDark)}>
-    <div className="relative">
-      <Search size={16} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-white/40' : 'text-black/40'}`} />
-      <input
-        type="text"
-        placeholder="Поиск по названию..."
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={`w-full pl-9 pr-3 py-2 rounded-lg text-sm border transition-colors outline-none ${
+    <div className="flex gap-2">
+      {/* Поисковый инпут */}
+      <div className="relative flex-1">
+        <Search
+          size={15}
+          className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-white/40' : 'text-black/40'}`}
+        />
+        <input
+          type="text"
+          placeholder="Поиск по названию..."
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={`w-full pl-8 pr-3 py-2 rounded-lg text-sm border transition-colors outline-none ${
+            isDark
+              ? 'bg-[#0a0a0a] border-white/10 text-white placeholder-white/40 focus:border-white/20'
+              : 'bg-[#E8E7E3] border-black/10 text-black placeholder-black/40 focus:border-black/20'
+          }`}
+        />
+      </div>
+
+      {/* Кнопка расширенного поиска */}
+      <button
+        onClick={onOpenAdvanced}
+        title="Расширенный поиск"
+        className={`flex flex-col items-center justify-center gap-0.5 px-2.5 rounded-lg border transition-colors flex-shrink-0 ${
           isDark
-            ? 'bg-[#0a0a0a] border-white/10 text-white placeholder-white/40 focus:border-white/20'
-            : 'bg-[#E8E7E3] border-black/10 text-black placeholder-black/40 focus:border-black/20'
+            ? 'border-white/10 text-white/60 hover:bg-white/5 hover:text-white hover:border-white/20'
+            : 'border-black/10 text-black/60 hover:bg-black/5 hover:text-black hover:border-black/20'
         }`}
-      />
+        style={{ minHeight: '38px' }}
+      >
+        <SlidersHorizontal size={15} />
+        <span className="text-[9px] font-medium leading-none">Расширенный</span>
+      </button>
     </div>
   </div>
 ));
@@ -353,7 +415,11 @@ const ContactsSection: React.FC<{ isDark: boolean; isOpen: boolean; onClose: () 
       <div className={`fixed left-0 top-0 w-full md:w-80 h-screen border-r flex flex-col z-50 ${isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'}`}>
         <div className="flex items-center justify-between p-4">
           <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>Контакты</h2>
-          <button onClick={onClose} className={iconBtn(isDark)} aria-label="Закрыть контакты">
+          <button
+            onClick={onClose}
+            className={`p-2 rounded-lg transition-colors ${isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black'}`}
+            aria-label="Закрыть контакты"
+          >
             <X size={20} />
           </button>
         </div>
@@ -376,6 +442,7 @@ const Sidebar: React.FC = () => {
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [showContacts, setShowContacts] = useState(false);
   const [activeNavSlug, setActiveNavSlug] = useState<string>('');
+  const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
 
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
 
@@ -434,8 +501,8 @@ const Sidebar: React.FC = () => {
       <aside
         className={`fixed left-0 top-0 h-screen w-full md:w-80 border-r flex flex-col z-50 ${
           isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
-        } ${isDesktop ? 'md:top-16' : ''}`}
-        style={{ height: isDesktop ? 'calc(100vh - 4rem)' : '100vh' }}
+        }`}
+        style={{ height: '100vh' }}
       >
         <SidebarHeader
           onClose={handleClose} isDark={isDark}
@@ -443,7 +510,12 @@ const Sidebar: React.FC = () => {
           onToggleContacts={() => setShowContacts(!showContacts)}
           isDesktop={isDesktop}
         />
-        <SidebarSearch value={searchQuery} onChange={setSearchQuery} isDark={isDark} />
+        <SidebarSearch
+          value={searchQuery}
+          onChange={setSearchQuery}
+          isDark={isDark}
+          onOpenAdvanced={() => setIsAdvancedSearchOpen(true)}
+        />
 
         {sections.length > 1 && (
           <NavPopoverSwitcher
@@ -479,7 +551,17 @@ const Sidebar: React.FC = () => {
           </nav>
         </div>
       </aside>
+
       <ContactsSection isDark={isDark} isOpen={showContacts} onClose={() => setShowContacts(false)} />
+
+      {/* Расширенный поиск */}
+      <AnimatePresence>
+        {isAdvancedSearchOpen && (
+          <Suspense fallback={null}>
+            <LazyUnifiedSearchPanel onClose={() => setIsAdvancedSearchOpen(false)} />
+          </Suspense>
+        )}
+      </AnimatePresence>
     </>
   );
 };
