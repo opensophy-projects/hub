@@ -226,10 +226,11 @@ interface DropdownPortalProps {
   isDark: boolean;
   children: React.ReactNode;
   width: number;
+  portalRef: React.RefObject<HTMLDivElement>;
 }
 
 const DropdownPortal: React.FC<DropdownPortalProps> = ({
-  anchorRect, dropUp, maxHeight, isDark, children, width,
+  anchorRect, dropUp, maxHeight, isDark, children, width, portalRef,
 }) => {
   const style: React.CSSProperties = {
     position: 'fixed',
@@ -251,7 +252,7 @@ const DropdownPortal: React.FC<DropdownPortalProps> = ({
   return createPortal(
     <>
       <style>{`@keyframes aiSelectIn{from{opacity:0;transform:translateY(-4px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}`}</style>
-      <div style={style}>{children}</div>
+      <div ref={portalRef} style={style}>{children}</div>
     </>,
     document.body,
   );
@@ -273,15 +274,20 @@ const AiSelect: React.FC<AiSelectProps> = ({ label, value, options, onChange, is
   const [dropWidth, setDropWidth] = useState(0);
   const ref                       = useRef<HTMLDivElement>(null);
   const btnRef                    = useRef<HTMLButtonElement>(null);
+  const portalRef                 = useRef<HTMLDivElement>(null);
 
-  // Close on outside click
+  // Close on outside click — must check both anchor and portal refs
   useEffect(() => {
     if (!open) return;
     const h = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      const inAnchor = ref.current?.contains(target);
+      const inPortal = portalRef.current?.contains(target);
+      if (!inAnchor && !inPortal) setOpen(false);
     };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
+    // Use mousedown but with a tiny delay so click events on portal fire first
+    document.addEventListener('mousedown', h, { capture: false });
+    return () => document.removeEventListener('mousedown', h, { capture: false } as any);
   }, [open]);
 
   // Recompute position on scroll/resize while open
@@ -356,6 +362,7 @@ const AiSelect: React.FC<AiSelectProps> = ({ label, value, options, onChange, is
             maxHeight={240}
             isDark={isDark}
             width={dropWidth}
+            portalRef={portalRef}
           >
             <div style={{ padding: '7px 11px 3px', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: labelClr }}>
               Выбери вариант
