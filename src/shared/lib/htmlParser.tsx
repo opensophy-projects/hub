@@ -8,6 +8,7 @@ import ImageCard from '../components/ImageCard';
 import { CardWithContext, CardGridWithContext } from '../components/Card';
 import { ColumnsWithContext } from '../components/Columns';
 import { StepperWithContext } from '../components/Stepper';
+import MermaidDiagramWithContext from '../components/MermaidDiagram';
 import type { StepData, StepStatus } from '../components/Stepper';
 
 export const TableContext = createContext<{
@@ -28,7 +29,7 @@ const ALLOWED_ATTR = [
   'href', 'src', 'alt', 'title', 'class', 'id',
   'data-language', 'data-lang', 'data-alert-type',
   'data-cols', 'data-layout', 'data-status', 'data-title',
-  'data-color', 'data-icon',
+  'data-color', 'data-icon', 'data-code',
   'type', 'checked', 'disabled', 'open', 'style', 'align',
 ];
 
@@ -88,7 +89,6 @@ const processHeadingElement = (element: Element, tagName: string, key: string, e
   const id = element.id || slugifyHeading(text);
   const level = parseInt(tagName[1], 10);
   const sanitizedHTML = sanitizeInnerHTML(element.innerHTML);
-  
   const Tag = tagName as keyof JSX.IntrinsicElements;
   elements.push(
     React.createElement(Tag, {
@@ -280,6 +280,33 @@ const processStepsElement = (element: Element, key: string, elements: React.Reac
   elements.push(React.createElement(StepperWithContext, { key, steps }));
 };
 
+// ─── NEW: Mermaid diagram ─────────────────────────────────────────────────────
+
+const processDiagramElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  const color = element.dataset.color || undefined;
+  const encodedCode = element.dataset.code || '';
+
+  // Декодируем из base64 (docUtils.mjs кодирует через Buffer.from().toString('base64'))
+  let code = '';
+  try {
+    code = typeof atob !== 'undefined'
+      ? decodeURIComponent(escape(atob(encodedCode)))
+      : Buffer.from(encodedCode, 'base64').toString('utf-8');
+  } catch {
+    code = encodedCode;
+  }
+
+  elements.push(
+    React.createElement(MermaidDiagramWithContext, {
+      key,
+      code,
+      color: color || undefined,
+    })
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const processUIComponent = (
   element: Element,
   key: string,
@@ -385,6 +412,11 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
         }
         if (element.classList.contains('custom-steps')) {
           processStepsElement(element, key, elements);
+          return;
+        }
+        // ─── Mermaid diagram ──────────────────────────────────────────────
+        if (element.classList.contains('custom-diagram')) {
+          processDiagramElement(element, key, elements);
           return;
         }
       }
