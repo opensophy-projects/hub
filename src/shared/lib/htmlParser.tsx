@@ -284,17 +284,25 @@ const processStepsElement = (element: Element, key: string, elements: React.Reac
 
 const processDiagramElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const color = element.dataset.color || undefined;
-  const encodedCode = element.dataset.code || '';
 
-  // Декодируем из base64 (docUtils.mjs кодирует через Buffer.from().toString('base64'))
+  // Декодируем base64 UTF-8 (docUtils.mjs кодирует через Buffer.from(str,'utf8').toString('base64'))
   let code = '';
-  try {
-    code = typeof atob !== 'undefined'
-      ? decodeURIComponent(escape(atob(encodedCode)))
-      : Buffer.from(encodedCode, 'base64').toString('utf-8');
-  } catch {
-    code = encodedCode;
+  const encodedCode = element.dataset.code || element.getAttribute('data-code') || '';
+  if (encodedCode) {
+    try {
+      // Современный способ: base64 → Uint8Array → TextDecoder (корректно для UTF-8 / кириллицы)
+      const binaryStr = atob(encodedCode);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+      code = new TextDecoder('utf-8').decode(bytes);
+    } catch {
+      code = encodedCode;
+    }
   }
+
+  if (!code.trim()) return;
 
   elements.push(
     React.createElement(MermaidDiagramWithContext, {
