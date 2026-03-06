@@ -129,7 +129,6 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
   const isLongCode = lines.length > 15;
   const displayedLines = isExpanded ? lines : lines.slice(0, 15);
 
-  // ИСПРАВЛЕНО: убираем манипуляции с body.style полностью
   useEffect(() => {
     if (isFullscreen) {
       document.body.style.overflow = 'hidden';
@@ -229,24 +228,24 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
 
   const SearchBox = (
     <div
-      className={`flex-1 flex items-center gap-2 px-3 py-2 rounded border mr-3 ${border}`}
-      style={{ background: bg, color: fg }}
+      className={`flex-1 flex items-center gap-2 px-3 py-2 rounded border ${border}`}
+      style={{ background: bg, color: fg, minWidth: 0 }}
     >
-      <Search size={16} opacity={0.6} />
+      <Search size={16} opacity={0.6} className="flex-shrink-0" />
       <input
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         placeholder="Поиск..."
         style={{ color: fg }}
-        className="flex-1 bg-transparent outline-none text-sm"
+        className="flex-1 bg-transparent outline-none text-sm min-w-0"
       />
       {searchQuery && (
-        <button onClick={() => setSearchQuery('')}>
+        <button onClick={() => setSearchQuery('')} className="flex-shrink-0">
           <X size={14} />
         </button>
       )}
       {matchedLines.size > 0 && (
-        <span className="text-xs opacity-60">{matchedLines.size} найдено</span>
+        <span className="text-xs opacity-60 whitespace-nowrap flex-shrink-0">{matchedLines.size} найдено</span>
       )}
     </div>
   );
@@ -257,16 +256,16 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
       style={{ background: bg }}
     >
       <div
-        className={`border-b px-4 py-3 flex justify-between ${border}`}
+        className={`border-b px-3 md:px-4 py-3 flex flex-wrap gap-2 items-center ${border}`}
         style={{ background: bg }}
       >
         {SearchBox}
-        <div className="flex gap-2">
-          <button onClick={handleCopy}>
-            <Copy size={16} />
+        <div className="flex gap-2 flex-shrink-0">
+          <button onClick={handleCopy} title={isCopied ? 'Скопировано!' : 'Копировать'} className="p-1.5 md:p-2">
+            <Copy size={14} className="md:w-4 md:h-4" />
           </button>
-          <button onClick={() => setIsFullscreen(true)}>
-            <Maximize2 size={16} />
+          <button onClick={() => setIsFullscreen(true)} title="Полноэкранный режим" className="p-1.5 md:p-2">
+            <Maximize2 size={14} className="md:w-4 md:h-4" />
           </button>
         </div>
       </div>
@@ -307,12 +306,12 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
           style={{ background: bg }}
         >
           <div
-            className={`border-b px-6 py-4 flex items-center justify-between gap-4 ${border}`}
+            className={`border-b px-4 md:px-6 py-4 flex flex-wrap items-center justify-between gap-4 ${border}`}
             style={{ background: bg }}
           >
             {SearchBox}
-            <div className="flex items-center gap-4 flex-shrink-0">
-              <span className="text-sm opacity-60 whitespace-nowrap">
+            <div className="flex items-center gap-2 md:gap-4 flex-shrink-0 flex-wrap">
+              <span className="text-xs md:text-sm opacity-60 whitespace-nowrap">
                 Всего строк: {lines.length}
               </span>
               <button
@@ -321,7 +320,7 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
                 title={isCopied ? 'Скопировано!' : 'Копировать'}
               >
                 <Copy size={14} />
-                <span className="text-sm">{isCopied ? 'Скопировано!' : 'Копировать'}</span>
+                <span className="text-sm hidden md:inline">{isCopied ? 'Скопировано!' : 'Копировать'}</span>
               </button>
               <button
                 onClick={() => setIsFullscreen(false)}
