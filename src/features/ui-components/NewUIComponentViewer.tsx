@@ -6,6 +6,7 @@ import React, {
   useMemo,
   useRef,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { useTheme } from '@/shared/contexts/ThemeContext';
 import { X, Maximize2, RotateCcw, Settings } from 'lucide-react';
 import { loadComponent, getDefaultProps } from './loader';
@@ -46,7 +47,6 @@ const DEFAULT_UNIVERSAL_PROPS: UniversalProps = {
   saturate: 1,
 };
 
-// Порядок: 3 колонки (Масштаб / Вращение X / Яркость), (Прозрачность / Вращение Y / Контраст), (Размытие / Вращение Z / Насыщенность)
 const UNIVERSAL_FIELDS: Array<{
   label: string;
   key: keyof UniversalProps;
@@ -84,7 +84,7 @@ const useIsMobile = () => {
   return isMobile;
 };
 
-// ─── NumberInput — цифра + ползунок ──────────────────────────────────────────
+// ─── NumberInput ──────────────────────────────────────────────────────────────
 
 interface NumberInputProps {
   value: number;
@@ -168,7 +168,7 @@ const NumberInput: React.FC<NumberInputProps> = ({
   );
 };
 
-// ─── Universal 3-column grid (responsive) ─────────────────────────────────────
+// ─── Universal 3-column grid ──────────────────────────────────────────────────
 
 interface UniversalGridProps {
   universalProps: UniversalProps;
@@ -217,7 +217,45 @@ const UniversalGrid: React.FC<UniversalGridProps> = ({ universalProps, onChange,
   );
 };
 
-// ─── AskAI-style select dropdown (with auto-upward positioning) ──────────────
+// ─── AiSelect — portal-based dropdown (never clipped by scroll containers) ───
+
+interface DropdownPortalProps {
+  anchorRect: DOMRect;
+  dropUp: boolean;
+  maxHeight: number;
+  isDark: boolean;
+  children: React.ReactNode;
+  width: number;
+}
+
+const DropdownPortal: React.FC<DropdownPortalProps> = ({
+  anchorRect, dropUp, maxHeight, isDark, children, width,
+}) => {
+  const style: React.CSSProperties = {
+    position: 'fixed',
+    left: anchorRect.left,
+    width,
+    zIndex: 99999,
+    background: tc(isDark, '#0a0a0a', '#E8E7E3'),
+    border: `1px solid ${tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)')}`,
+    borderRadius: 10,
+    boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.7)' : '0 8px 32px rgba(0,0,0,0.12)',
+    overflow: 'auto',
+    maxHeight,
+    animation: 'aiSelectIn 0.13s ease',
+    ...(dropUp
+      ? { bottom: window.innerHeight - anchorRect.top + 4 }
+      : { top: anchorRect.bottom + 4 }),
+  };
+
+  return createPortal(
+    <>
+      <style>{`@keyframes aiSelectIn{from{opacity:0;transform:translateY(-4px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}`}</style>
+      <div style={style}>{children}</div>
+    </>,
+    document.body,
+  );
+};
 
 interface AiSelectProps {
   label: string;
@@ -228,34 +266,63 @@ interface AiSelectProps {
 }
 
 const AiSelect: React.FC<AiSelectProps> = ({ label, value, options, onChange, isDark }) => {
-  const [open, setOpen]       = useState(false);
-  const [hov, setHov]         = useState<string | null>(null);
-  const [dropUp, setDropUp]   = useState(false);
-  const ref                   = useRef<HTMLDivElement>(null);
-  const btnRef                = useRef<HTMLButtonElement>(null);
+  const [open, setOpen]           = useState(false);
+  const [hov, setHov]             = useState<string | null>(null);
+  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
+  const [dropUp, setDropUp]       = useState(false);
+  const [dropWidth, setDropWidth] = useState(0);
+  const ref                       = useRef<HTMLDivElement>(null);
+  const btnRef                    = useRef<HTMLButtonElement>(null);
 
+  // Close on outside click
   useEffect(() => {
     if (!open) return;
-    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, [open]);
 
-  // Проверка: если dropdown уходит ниже экрана — открываем вверх
+  // Recompute position on scroll/resize while open
   useEffect(() => {
     if (!open || !btnRef.current) return;
-    const btnRect = btnRef.current.getBoundingClientRect();
-    const dropdownHeight = options.length * 32 + 40; // примерная высота меню
-    const spaceBelow = window.innerHeight - btnRect.bottom;
-    
-    setDropUp(spaceBelow < dropdownHeight && btnRect.top > dropdownHeight);
+    const update = () => {
+      if (!btnRef.current) return;
+      const rect = btnRef.current.getBoundingClientRect();
+      setAnchorRect(rect);
+      setDropWidth(rect.width);
+      const dropdownHeight = Math.min(options.length * 34 + 48, 240);
+      setDropUp(
+        window.innerHeight - rect.bottom < dropdownHeight && rect.top > dropdownHeight
+      );
+    };
+    update();
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
   }, [open, options.length]);
 
-  const popupBg   = tc(isDark, '#0a0a0a', '#E8E7E3');
-  const border    = tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)');
+  const handleToggle = () => {
+    if (!btnRef.current) return;
+    const rect = btnRef.current.getBoundingClientRect();
+    setAnchorRect(rect);
+    setDropWidth(rect.width);
+    const dropdownHeight = Math.min(options.length * 34 + 48, 240);
+    // Sync calculation — no flicker
+    setDropUp(
+      window.innerHeight - rect.bottom < dropdownHeight && rect.top > dropdownHeight
+    );
+    setOpen(v => !v);
+  };
+
   const textColor = tc(isDark, 'rgba(255,255,255,0.85)', 'rgba(0,0,0,0.85)');
   const labelClr  = tc(isDark, 'rgba(255,255,255,0.3)',  'rgba(0,0,0,0.35)');
   const btnBg     = tc(isDark, '#1a1a1a', '#d4d3cf');
+  const border    = tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)');
   const rowHov    = tc(isDark, 'rgba(255,255,255,0.06)', 'rgba(0,0,0,0.06)');
   const cellBg    = tc(isDark, 'rgba(255,255,255,0.025)', 'rgba(0,0,0,0.02)');
   const borderColor = tc(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.07)');
@@ -269,7 +336,7 @@ const AiSelect: React.FC<AiSelectProps> = ({ label, value, options, onChange, is
       <div ref={ref} style={{ position: 'relative' }}>
         <button
           ref={btnRef}
-          onClick={() => setOpen(v => !v)}
+          onClick={handleToggle}
           style={{
             width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '5px 9px', borderRadius: 7, border: `1px solid ${border}`,
@@ -281,17 +348,15 @@ const AiSelect: React.FC<AiSelectProps> = ({ label, value, options, onChange, is
             <path d="M2 3 L5 7 L8 3" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
           </svg>
         </button>
-        {open && (
-          <div style={{
-            position: 'absolute',
-            [dropUp ? 'bottom' : 'top']: dropUp ? 'calc(100% + 4px)' : 'calc(100% + 4px)',
-            left: 0, right: 0,
-            background: popupBg, border: `1px solid ${border}`, borderRadius: 10,
-            boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.7)' : '0 8px 32px rgba(0,0,0,0.12)',
-            zIndex: 300, overflow: 'auto', maxHeight: '240px',
-            animation: 'aiSelectIn 0.13s ease',
-          }}>
-            <style>{`@keyframes aiSelectIn{from{opacity:0;transform:translateY(-4px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}`}</style>
+
+        {open && anchorRect && (
+          <DropdownPortal
+            anchorRect={anchorRect}
+            dropUp={dropUp}
+            maxHeight={240}
+            isDark={isDark}
+            width={dropWidth}
+          >
             <div style={{ padding: '7px 11px 3px', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: labelClr }}>
               Выбери вариант
             </div>
@@ -312,7 +377,7 @@ const AiSelect: React.FC<AiSelectProps> = ({ label, value, options, onChange, is
                 {opt}
               </button>
             ))}
-          </div>
+          </DropdownPortal>
         )}
       </div>
     </div>
@@ -359,6 +424,7 @@ const SpecificGrid: React.FC<SpecificGridProps> = ({ config, componentProps, onC
       background: borderColor,
       border: `1px solid ${borderColor}`,
       borderRadius: 10,
+      // overflow: visible — важно! иначе portal не поможет если родитель clip
       overflow: 'visible',
     }}>
       {visibleProps.map((prop: PropDefinition) => {
@@ -400,7 +466,6 @@ const SpecificGrid: React.FC<SpecificGridProps> = ({ config, componentProps, onC
           );
         }
 
-        // text / default
         const strVal = typeof val === 'string' ? val : (prop.default as string ?? '');
         return (
           <div
@@ -550,12 +615,10 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
       borderRadius: 12, border: `1px solid ${border}`, background: bg,
       overflow: 'hidden', margin: '1.5rem 0',
     }}>
-      {/* Header: название слева, кнопки справа */}
       <div style={{
         display: 'flex', alignItems: 'center', padding: '7px 11px',
         borderBottom: `1px solid ${border}`, background: headerBg, gap: 8,
       }}>
-        {/* Название */}
         <div style={{
           fontSize: 13, fontWeight: 600,
           color: tc(isDark,'rgba(255,255,255,0.85)','rgba(0,0,0,0.85)'),
@@ -567,9 +630,7 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
         }}>
           {config.name}
         </div>
-
         <div style={{ flex: 1 }} />
-
         <IconBtn onClick={onRefresh} title="Запустить заново" isDark={isDark}>
           <RotateCcw size={14} />
         </IconBtn>
@@ -581,7 +642,6 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
         </IconBtn>
       </div>
 
-      {/* Preview */}
       <div style={{
         minHeight: 380, display: 'flex', alignItems: 'center',
         justifyContent: 'center', padding: 32,
@@ -595,7 +655,7 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
   );
 };
 
-// ─── Settings panel — инлайн ───────────────────────────────────────────────────
+// ─── Settings panel ────────────────────────────────────────────────────────────
 
 interface SettingsPanelProps extends ComponentRenderProps {
   config: ComponentConfig;
@@ -622,7 +682,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = (props) => {
       maxHeight: 'calc(100dvh - 3rem)',
       overflow: 'hidden',
     }}>
-      {/* Preview сверху */}
+      {/* Preview */}
       <div style={{
         minHeight: 220, flexShrink: 0,
         display: 'flex', alignItems: 'center',
@@ -635,12 +695,12 @@ const SettingsPanel: React.FC<SettingsPanelProps> = (props) => {
         />
       </div>
 
-      {/* Tab bar — fixed, не скроллируется */}
+      {/* Tab bar */}
       <div style={{ flexShrink: 0 }}>
         <TabBar active={activeTab} onSelect={setActiveTab} isDark={isDark} />
       </div>
 
-      {/* Settings grid — scrollable area */}
+      {/* Settings grid — scrollable, but dropdowns escape via portal */}
       <div style={{
         flex: 1,
         overflowY: 'auto',
@@ -664,7 +724,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = (props) => {
         )}
       </div>
 
-      {/* Footer — fixed at bottom */}
+      {/* Footer */}
       <div style={{
         flexShrink: 0,
         display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px',
@@ -765,7 +825,7 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
     });
   }, [componentId]);
 
-  const handleRefresh   = useCallback(() => setRefreshKey(k => k + 1), []);
+  const handleRefresh = useCallback(() => setRefreshKey(k => k + 1), []);
 
   const handlePropChange = useCallback((name: string, value: PropValue) => {
     setComponentProps(prev => ({ ...prev, [name]: value }));
