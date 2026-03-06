@@ -370,13 +370,13 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
                 На этой странице
               </h2>
               
-              {/* Кнопка Наверх */}
+              {/* Кнопка Наверх с границами как в sidebar */}
               <button
                 onClick={handleScrollTop}
-                className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-lg transition-colors ${
+                className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-lg border transition-colors ${
                   isDark
-                    ? 'text-white/60 hover:bg-white/5 hover:text-white'
-                    : 'text-black/60 hover:bg-black/5 hover:text-black'
+                    ? 'text-white/60 hover:bg-white/5 hover:text-white border-white/10'
+                    : 'text-black/60 hover:bg-black/5 hover:text-black border-black/10'
                 }`}
                 title="Наверх"
               >
