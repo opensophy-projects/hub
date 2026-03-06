@@ -204,15 +204,13 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
 
   const handleResultClick = useCallback((doc: SearchResult) => {
     const url = getDocUrl(doc);
-    // Используем createElement для создания временной ссылки и программного клика
-    // Это безопасный способ навигации, который не модифицирует глобальное состояние напрямую
     const link = document.createElement('a');
     link.href = url;
     link.click();
   }, [getDocUrl]);
 
   const activeFiltersCount = selectedTypenames.size + selectedTags.size;
-  const bg = isDark ? '#0a0a0a' : '#E8E7E3';
+  const bg = isDark ? '#0F0F0F' : '#E1E0DC';
   const border = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
   
   const searchIconClass = `w-5 h-5 flex-shrink-0 ${getTextClasses(isDark, '40')}`;
