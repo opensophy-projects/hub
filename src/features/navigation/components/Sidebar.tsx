@@ -79,7 +79,7 @@ const NavPopoverSwitcher: React.FC<{
   const activeItem = isDark ? 'bg-white/10 text-white font-medium' : 'bg-black/10 text-black font-medium';
 
   return (
-    <div className={`flex-shrink-0 px-3 py-2 border-b ${border}`} style={borderStyle(isDark)} ref={ref}>
+    <div className={`flex-shrink-0 px-3 py-2`} ref={ref}>
       <button
         onClick={() => setOpen((v) => !v)}
         className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm border transition-colors ${border} ${
@@ -158,8 +158,10 @@ const IconButton: React.FC<{
   <button
     onClick={onClick}
     title={title}
-    className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-lg transition-colors ${
-      isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black'
+    className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-lg border transition-colors ${
+      isDark 
+        ? 'text-white/70 hover:bg-white/5 hover:text-white border-white/10' 
+        : 'text-black/70 hover:bg-black/5 hover:text-black border-black/10'
     }`}
   >
     <div className="w-5 h-5 flex items-center justify-center">{icon}</div>
@@ -404,32 +406,23 @@ const ContactsSection: React.FC<{ isDark: boolean; isOpen: boolean; onClose: () 
 }) => {
   if (!isOpen) return null;
   return (
-    <>
-      <button
-        type="button"
-        className="fixed inset-0 bg-black/50 z-40 cursor-default"
-        onClick={onClose}
-        onKeyDown={createCloseKeyHandler(onClose)}
-        aria-label="Закрыть контакты"
-      />
-      <div className={`fixed left-0 top-0 w-full md:w-80 h-screen border-r flex flex-col z-50 ${isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'}`}>
-        <div className="flex items-center justify-between p-4">
-          <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>Контакты</h2>
-          <button
-            onClick={onClose}
-            className={`p-2 rounded-lg transition-colors ${isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black'}`}
-            aria-label="Закрыть контакты"
-          >
-            <X size={20} />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-3 space-y-1">
-          {CONTACTS.map((c) => (
-            <ContactLink key={c.href} {...c} isDark={isDark} />
-          ))}
-        </div>
+    <div className={`fixed left-0 top-0 w-full md:w-80 h-screen border-r flex flex-col z-50 ${isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'}`}>
+      <div className="flex items-center justify-between p-4">
+        <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>Контакты</h2>
+        <button
+          onClick={onClose}
+          className={`p-2 rounded-lg transition-colors ${isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black'}`}
+          aria-label="Закрыть контакты"
+        >
+          <X size={20} />
+        </button>
       </div>
-    </>
+      <div className="flex-1 overflow-y-auto p-3 space-y-1">
+        {CONTACTS.map((c) => (
+          <ContactLink key={c.href} {...c} isDark={isDark} />
+        ))}
+      </div>
+    </div>
   );
 });
 
