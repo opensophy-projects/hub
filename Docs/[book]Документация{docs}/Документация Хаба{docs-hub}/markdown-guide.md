@@ -815,6 +815,30 @@ flowchart LR
 :::
 ```
 
+### Основные типы узлов
+
+:::diagram
+graph LR
+A[Прямоугольник]
+B(Круг)
+C{Условие}
+D[[Подпроцесс]]
+E((Начало/конец))
+A --> B --> C --> D --> E
+:::
+
+```
+:::diagram
+graph LR
+A[Прямоугольник]
+B(Круг)
+C{Условие}
+D[[Подпроцесс]]
+E((Начало/конец))
+A --> B --> C --> D --> E
+:::
+```
+
 ### Дерево решений
 
 :::diagram[borderColor=#6366f1]
@@ -1518,5 +1542,221 @@ quadrantChart
     Auth refactor: [0.8, 0.35]
     AB Tests: [0.65, 0.5]
     Push notifications: [0.45, 0.7]
+:::
+```
+
+### Gantt chart
+
+:::diagram
+gantt
+title Project
+dateFormat  YYYY-MM-DD
+section Dev
+Backend :a1, 2026-03-01, 5d
+Frontend :a2, after a1, 4d
+:::
+
+```
+:::diagram
+gantt
+title Project
+dateFormat  YYYY-MM-DD
+section Dev
+Backend :a1, 2026-03-01, 5d
+Frontend :a2, after a1, 4d
+:::
+```
+
+### Покрасить конкретный блок (style)
+
+:::diagram
+graph TD
+A[User request] --> B[Backend]
+B --> C[Database]
+style A fill:#9f9,stroke:#333,stroke-width:2px
+style B fill:#f9f
+style C fill:#bbf
+:::
+
+```
+:::diagram
+graph TD
+A[User request] --> B[Backend]
+B --> C[Database]
+style A fill:#9f9,stroke:#333,stroke-width:2px
+style B fill:#f9f
+style C fill:#bbf
+:::
+```
+
+### Создать тип блоков (classDef)
+
+:::diagram
+graph TD
+A[User] --> B[API Gateway]
+B --> C[Auth Service]
+B --> D[Data Service]
+D --> E[Database]
+classDef frontend fill:#d4f1ff,stroke:#333
+classDef backend fill:#ffe6cc,stroke:#333
+classDef database fill:#e6ccff,stroke:#333
+class A frontend
+class B,C,D backend
+class E database
+:::
+
+```
+:::diagram
+graph TD
+A[User] --> B[API Gateway]
+B --> C[Auth Service]
+B --> D[Data Service]
+D --> E[Database]
+classDef frontend fill:#d4f1ff,stroke:#333
+classDef backend fill:#ffe6cc,stroke:#333
+classDef database fill:#e6ccff,stroke:#333
+class A frontend
+class B,C,D backend
+class E database
+:::
+```
+
+### Красить ветки (линии)
+
+:::diagram
+graph TD
+A --> B
+A --> C
+linkStyle 0 stroke:#ff0000,stroke-width:2px
+linkStyle 1 stroke:#0000ff
+:::
+
+```
+:::diagram
+graph TD
+A --> B
+A --> C
+linkStyle 0 stroke:#ff0000,stroke-width:2px
+linkStyle 1 stroke:#0000ff
+:::
+```
+
+### Цветовая схема
+
+:::diagram
+graph TD
+User[User] --> FE[Frontend]
+FE --> API[API]
+API --> AUTH[Auth Service]
+API --> DB[(Database)]
+classDef user fill:#e0ffe0
+classDef frontend fill:#d4f1ff
+classDef backend fill:#ffe6cc
+classDef db fill:#f3d9ff
+class User user
+class FE frontend
+class API,AUTH backend
+class DB db
+:::
+
+```
+:::diagram
+graph TD
+User[User] --> FE[Frontend]
+FE --> API[API]
+API --> AUTH[Auth Service]
+API --> DB[(Database)]
+classDef user fill:#e0ffe0
+classDef frontend fill:#d4f1ff
+classDef backend fill:#ffe6cc
+classDef db fill:#f3d9ff
+class User user
+class FE frontend
+class API,AUTH backend
+class DB db
+:::
+```
+
+### Bar chart
+
+:::diagram
+xychart-beta
+    title "Sales per month"
+    x-axis [Jan, Feb, Mar, Apr, May]
+    y-axis "Sales" 0 --> 100
+    bar [35, 55, 20, 80, 60]
+:::
+
+```
+:::diagram
+xychart-beta
+    title "Sales per month"
+    x-axis [Jan, Feb, Mar, Apr, May]
+    y-axis "Sales" 0 --> 100
+    bar [35, 55, 20, 80, 60]
+:::
+```
+
+### Line chart
+
+:::diagram
+xychart-beta
+    title "Website traffic"
+    x-axis [Mon, Tue, Wed, Thu, Fri]
+    y-axis "Visits" 0 --> 500
+    line [120, 210, 350, 280, 420]
+:::
+
+```
+:::diagram
+xychart-beta
+    title "Website traffic"
+    x-axis [Mon, Tue, Wed, Thu, Fri]
+    y-axis "Visits" 0 --> 500
+    line [120, 210, 350, 280, 420]
+:::
+```
+
+### Несколько линий
+
+:::diagram
+xychart-beta
+    title "Users growth"
+    x-axis [Jan, Feb, Mar, Apr]
+    y-axis "Users" 0 --> 1000
+    line "Free users" [120, 300, 500, 700]
+    line "Premium users" [20, 60, 120, 240]
+:::
+
+```
+:::diagram
+xychart-beta
+    title "Users growth"
+    x-axis [Jan, Feb, Mar, Apr]
+    y-axis "Users" 0 --> 1000
+    line "Free users" [120, 300, 500, 700]
+    line "Premium users" [20, 60, 120, 240]
+:::
+```
+
+### Смешанный график
+
+:::diagram
+xychart-beta
+    title "Revenue vs Costs"
+    x-axis [Q1, Q2, Q3, Q4]
+    y-axis "USD (k)" 0 --> 200
+    bar [80, 120, 150, 170]
+    line [60, 90, 110, 140]
+:::
+
+```
+:::diagram
+xychart-beta
+    title "Revenue vs Costs"
+    x-axis [Q1, Q2, Q3, Q4]
+    y-axis "USD (k)" 0 --> 200
+    bar [80, 120, 150, 170]
+    line [60, 90, 110, 140]
 :::
 ```
