@@ -3,7 +3,7 @@ import { TableContext } from '../lib/htmlParser';
 
 interface MermaidDiagramProps {
   code: string;
-  color?: string; // border accent color, e.g. #ff6b6b
+  color?: string;
   isDark?: boolean;
 }
 
@@ -20,9 +20,11 @@ async function getMermaid() {
 let idCounter = 0;
 
 const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = false }) => {
+  // Single container ref — always rendered in the DOM
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError]     = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  // Stable unique ID per component instance
   const idRef = useRef(`mermaid-${++idCounter}`);
 
   useEffect(() => {
@@ -31,6 +33,11 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
     const render = async () => {
       setLoading(true);
       setError(null);
+
+      // Clear previous render immediately
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+      }
 
       try {
         const mermaidModule = await getMermaid();
@@ -72,11 +79,12 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
               },
         });
 
-        const { svg } = await mermaid.render(idRef.current, code.trim());
+        // Use a unique id per render to avoid mermaid's internal cache collisions
+        const renderId = `${idRef.current}-${Date.now()}`;
+        const { svg } = await mermaid.render(renderId, code.trim());
 
         if (!cancelled && containerRef.current) {
           containerRef.current.innerHTML = svg;
-          // Убеждаемся что svg адаптивен
           const svgEl = containerRef.current.querySelector('svg');
           if (svgEl) {
             svgEl.style.maxWidth = '100%';
@@ -99,7 +107,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
   }, [code, isDark, color]);
 
   const borderColor = color || (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)');
-  const bg          = isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
   const hasColor    = !!color;
 
   return (
@@ -114,7 +121,7 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
         ...(hasColor ? { boxShadow: `0 0 0 1px ${borderColor}22` } : {}),
       }}
     >
-      {/* Цветная полоска сверху, если задан color (как у Card) */}
+      {/* Цветная полоска сверху */}
       {hasColor && (
         <div style={{
           height: 3,
@@ -138,7 +145,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
         <div style={{
           padding: '16px 20px',
           background: isDark ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.06)',
-          borderTop: hasColor ? undefined : undefined,
         }}>
           <div style={{
             fontSize: 12, fontWeight: 700, color: '#ef4444',
@@ -164,20 +170,21 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
         </div>
       )}
 
-      {!loading && !error && (
-        <div
-          ref={containerRef}
-          style={{
-            padding: '20px 24px',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            minHeight: 80,
-          }}
-        />
-      )}
-
-      {loading && <div ref={containerRef} style={{ display: 'none' }} />}
+      {/*
+        FIX: The container is always in the DOM (not conditionally rendered).
+        We just hide it while loading so mermaid.render() always has a real
+        DOM node to inject the SVG into via containerRef.
+      */}
+      <div
+        ref={containerRef}
+        style={{
+          padding: !loading && !error ? '20px 24px' : undefined,
+          display: !loading && !error ? 'flex' : 'none',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: !loading && !error ? 80 : undefined,
+        }}
+      />
     </div>
   );
 };
