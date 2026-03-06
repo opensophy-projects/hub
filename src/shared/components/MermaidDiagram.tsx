@@ -30,7 +30,6 @@ function nextId() {
 }
 
 // ─── SVG cache — не перерисовываем при смене темы ─────────────────────────────
-// Ключ: `${code}::${isDark}::${color}`
 const svgCache = new Map<string, string>();
 
 function cacheKey(code: string, isDark: boolean, color?: string) {
@@ -127,7 +126,6 @@ interface DiagramViewerProps {
   isDark: boolean;
   panMode: boolean;
   onReset: () => void;
-  // scale/pos controlled externally so fullscreen can read them
   scale: number;
   setScale: React.Dispatch<React.SetStateAction<number>>;
   pos: { x: number; y: number };
@@ -141,11 +139,14 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
   const viewRef  = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
   const last     = useRef({ x: 0, y: 0 });
+  // FIX: state so cursor updates on re-render (ref alone doesn't trigger it)
+  const [isDragging, setIsDragging] = useState(false);
 
   // Mouse drag
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     if (!panMode) return;
     dragging.current = true;
+    setIsDragging(true);
     last.current = { x: e.clientX, y: e.clientY };
     e.preventDefault();
   }, [panMode]);
@@ -156,7 +157,10 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
       setPos(p => ({ x: p.x + e.clientX - last.current.x, y: p.y + e.clientY - last.current.y }));
       last.current = { x: e.clientX, y: e.clientY };
     };
-    const onUp = () => { dragging.current = false; };
+    const onUp = () => {
+      dragging.current = false;
+      setIsDragging(false);
+    };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
     return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
@@ -210,7 +214,7 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
     const el = viewRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
-      if (!e.ctrlKey && !e.metaKey) return; // только с Ctrl/Cmd
+      if (!e.ctrlKey && !e.metaKey) return;
       e.preventDefault();
       const delta = e.deltaY > 0 ? 0.9 : 1.1;
       setScale(s => Math.min(4, Math.max(0.25, s * delta)));
@@ -228,7 +232,8 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
       style={{
         overflow: 'hidden',
         position: 'relative',
-        cursor: panMode ? (dragging.current ? 'grabbing' : 'grab') : 'default',
+        // FIX: isDragging is state, so cursor actually updates
+        cursor: panMode ? (isDragging ? 'grabbing' : 'grab') : 'default',
         minHeight: minH,
         height: isFullscreen ? '100%' : 'auto',
         userSelect: 'none',
@@ -269,7 +274,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
   const render = useCallback(async () => {
     const key = cacheKey(code, isDark, color);
 
-    // Если есть в кеше — сразу показываем без "загрузки"
     if (svgCache.has(key)) {
       setSvgHtml(svgCache.get(key)!);
       setStatus('ready');
@@ -287,7 +291,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
         theme: isDark ? 'dark' : 'default',
         securityLevel: 'loose',
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-        // Фиксим обрезание текста: добавляем паддинг через viewBox
         flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis', padding: 20 },
         sequence: { useMaxWidth: true, boxMargin: 10 },
         gantt: { useMaxWidth: true, leftPadding: 75, barHeight: 28 },
@@ -308,14 +311,12 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
               edgeLabelBackground: '#0f0f18',
               textColor: '#d4d4d8',
               labelTextColor: '#d4d4d8',
-              // actors
               actorBkg: '#1a1a2e',
               actorBorder: color || 'rgba(255,255,255,0.2)',
               actorTextColor: '#d4d4d8',
               actorLineColor: 'rgba(255,255,255,0.3)',
               signalColor: 'rgba(255,255,255,0.7)',
               signalTextColor: '#d4d4d8',
-              // gantt
               gridColor: 'rgba(255,255,255,0.07)',
               section0: '#1a1a2e',
               section1: '#131320',
@@ -359,13 +360,15 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
       const id = nextId();
       const { svg } = await mermaid.render(id, code.trim());
 
-      // Патчим SVG: убираем фиксированные размеры, добавляем overflow: visible
+      // FIX: cap SVG width so diagrams don't render huge.
+      // Original kept max-width:100% which stretched to full container width.
       const patched = svg
-        // Убираем width/height атрибуты (оставляем только viewBox)
         .replace(/(<svg[^>]*?)\s+width="[^"]*"/g, '$1')
         .replace(/(<svg[^>]*?)\s+height="[^"]*"/g, '$1')
-        // Добавляем style чтобы SVG растягивался нормально
-        .replace(/<svg /, '<svg style="max-width:100%;height:auto;display:block;overflow:visible;" ');
+        .replace(
+          /<svg /,
+          '<svg style="max-width:min(100%,700px);height:auto;display:block;overflow:visible;margin:0 auto;" ',
+        );
 
       svgCache.set(key, patched);
       setSvgHtml(patched);
@@ -402,7 +405,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
         <IconMinus />
       </ToolBtn>
 
-      {/* Масштаб текстом */}
       <span style={{
         fontSize: 11, fontWeight: 600, minWidth: 36, textAlign: 'center',
         color: tc(isDark, 'rgba(255,255,255,0.4)', 'rgba(0,0,0,0.4)'),
@@ -436,7 +438,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
       background: bgColor,
       display: 'flex', flexDirection: 'column',
     }}>
-      {/* Fullscreen toolbar */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 4, padding: '8px 12px',
         borderBottom: `1px solid ${borderColor}`,
@@ -470,7 +471,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
         </ToolBtn>
       </div>
 
-      {/* Fullscreen diagram */}
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
         <DiagramViewer
           svgHtml={svgHtml}
@@ -500,13 +500,10 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
         overflow: 'hidden',
         position: 'relative',
       }}>
-        {/* Цветная полоска */}
         {hasColor && <div style={{ height: 3, background: color }} />}
 
-        {/* Toolbar — показываем только когда ready */}
         {status === 'ready' && Toolbar}
 
-        {/* Загрузка */}
         {status === 'loading' && (
           <div style={{
             padding: '32px 24px', textAlign: 'center', fontSize: 13,
@@ -524,7 +521,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
           </div>
         )}
 
-        {/* Ошибка */}
         {status === 'error' && (
           <div style={{
             padding: '16px 20px',
@@ -551,7 +547,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
           </div>
         )}
 
-        {/* Диаграмма — всегда в DOM */}
         <div style={{ display: status === 'ready' ? 'block' : 'none' }}>
           <DiagramViewer
             svgHtml={svgHtml}
@@ -577,4 +572,4 @@ const MermaidDiagramWithContext: React.FC<Omit<MermaidDiagramProps, 'isDark'>> =
 };
 
 export { MermaidDiagram };
-export default MermaidDiagramWithContext
+export default MermaidDiagramWithContext;
