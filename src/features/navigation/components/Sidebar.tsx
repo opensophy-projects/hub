@@ -199,6 +199,8 @@ const ContactsSection: React.FC<{ isDark: boolean; isOpen: boolean; onClose: () 
   );
 });
 
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
+
 const Sidebar: React.FC = () => {
   const { isDark, toggleTheme, isSidebarOpen, setSidebarOpen } = useTheme();
   const { manifest: docs } = useDocuments();
@@ -242,7 +244,7 @@ const Sidebar: React.FC = () => {
   const handleClose = () => setSidebarOpen(false);
   if (!isSidebarOpen && !isDesktop) return null;
 
-  const SidebarContent = (
+  const content = (
     <>
       <SidebarHeader onClose={handleClose} isDark={isDark} onToggleTheme={toggleTheme} onToggleContacts={() => setShowContacts(v => !v)} isDesktop={isDesktop} />
       <SidebarSearch value={searchQuery} onChange={setSearchQuery} isDark={isDark} onOpenAdvanced={() => setIsAdvancedSearchOpen(true)} />
@@ -274,48 +276,37 @@ const Sidebar: React.FC = () => {
 
       {isDesktop ? (
         /*
-         * ПК: панель как раньше (fixed, border-r), но вместо обычной границы —
-         * тонкая абсолютная полоска справа с GlowingEffect поверх неё.
-         * Панель НЕ становится карточкой — никаких padding/border-radius.
+         * ПК: панель как раньше.
+         * Правая граница — отдельный div шириной 8px с GlowingEffect.
+         * borderWidth=3 чтобы был виден как на карточках.
+         * rounded-[0.75px] на контейнере чтобы after: работал корректно.
          */
         <div
           className={`hidden md:flex fixed left-0 top-0 h-screen z-50 flex-col ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}
           style={{ width: '20rem' }}
         >
-          {SidebarContent}
+          {content}
 
-          {/*
-           * Граница справа с GlowingEffect.
-           * Это тонкая полоска (1px wide) прибитая к правому краю панели.
-           * GlowingEffect работает на ней — эффект виден только на этой линии.
-           */}
+          {/* Правая граница с GlowingEffect */}
           <div
-            className="absolute top-0 right-0 h-full"
-            style={{ width: '1px' }}
+            className="absolute top-0 right-0 h-full pointer-events-none"
+            style={{ width: '8px' }}
           >
-            {/* Базовая статичная линия */}
-            <div
-              className="absolute inset-0"
-              style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)' }}
-            />
-            {/* GlowingEffect поверх — работает на всю высоту панели */}
             <GlowingEffect
               spread={40}
               glow={true}
               disabled={false}
               proximity={64}
               inactiveZone={0.01}
-              borderWidth={1}
+              borderWidth={3}
               isNegative={isDark}
             />
           </div>
         </div>
       ) : (
         /* Мобиль: не трогаем */
-        <div
-          className={`fixed left-0 top-0 w-full h-screen z-50 flex flex-col ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}
-        >
-          {SidebarContent}
+        <div className={`fixed left-0 top-0 w-full h-screen z-50 flex flex-col ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}>
+          {content}
         </div>
       )}
 
