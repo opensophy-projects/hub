@@ -568,7 +568,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
             isDark={isDark}
             panMode={panMode}
             scale={scale}
-            setScale={setScale}
             pos={pos}
             setPos={setPos}
           />
