@@ -71,7 +71,6 @@ function parseParams(paramStr) {
 }
 
 // ─── collectBlockBody ─────────────────────────────────────────────────────────
-// Depth-aware: nested ::: openers increase depth, lone ::: closes.
 
 function collectBlockBody(lines, startAfterIndex) {
   const bodyLines = [];
@@ -98,7 +97,6 @@ function collectBlockBody(lines, startAfterIndex) {
 }
 
 // ─── parseInnerBlocks ────────────────────────────────────────────────────────
-// Flat inner blocks (:::card, :::col, :::step) — each ends with its own :::.
 
 function parseInnerBlocks(bodyStr, innerTag) {
   const lines = bodyStr.split('\n');
@@ -127,9 +125,6 @@ function parseInnerBlocks(bodyStr, innerTag) {
 }
 
 // ─── markedWithCodeBlocks ─────────────────────────────────────────────────────
-// KEY FIX: restores protected code block placeholders BEFORE passing to marked().
-// This ensures fenced code inside cards/steps/columns renders as CodeBlock,
-// not as literal ___CODE_BLOCK_N___ text.
 
 function markedWithCodeBlocks(str, codeBlocks) {
   const restored = str.replace(/___CODE_BLOCK_(\d+)___/g, (_, i) => codeBlocks[parseInt(i, 10)]);
@@ -218,11 +213,25 @@ function preprocessCustomBlocks(content, codeBlocks) {
       for (const step of steps) {
         const status = escapeAttr(step.params.status || 'default');
         const title = escapeAttr(step.inlineText || '');
-        // Restore code blocks before marked so fenced code renders correctly
         const contentHtml = markedWithCodeBlocks(step.body.trim(), codeBlocks);
         html += `<div class="custom-step" data-status="${status}" data-title="${title}">${contentHtml}</div>`;
       }
       html += '</div>';
+      output.push(html);
+      continue;
+    }
+
+    // ─── :::diagram[color=#hex] — Mermaid-схема ───────────────────────────────
+    const diagramMatch = trimmed.match(/^:::diagram(?:\[([^\]]*?)\])?\s*$/);
+    if (diagramMatch) {
+      const diagramParams = parseParams(diagramMatch[1] || '');
+      const color = diagramParams.color ? escapeAttr(diagramParams.color) : '';
+      const { body, endIndex } = collectBlockBody(lines, i + 1);
+      i = endIndex + 1;
+
+      // Кодируем код диаграммы как base64 чтобы избежать проблем с HTML-парсером
+      const encodedCode = Buffer.from(body.trim()).toString('base64');
+      const html = `<div class="custom-diagram" data-color="${color}" data-code="${encodedCode}"></div>`;
       output.push(html);
       continue;
     }
@@ -253,10 +262,10 @@ export function preprocessAlerts(content) {
     return `<div class="custom-alert" data-alert-type="${type}">\n${parsedContent}\n</div>`;
   });
 
-  // Process custom blocks (codeBlocks passed so inner content can restore them)
+  // Process custom blocks
   const protected3 = preprocessCustomBlocks(protected2, codeBlocks);
 
-  // Restore any remaining placeholders outside custom blocks
+  // Restore remaining placeholders
   return protected3.replaceAll(/___CODE_BLOCK_(\d+)___/g, (_match, index) =>
     codeBlocks[Number.parseInt(index, 10)]
   );
