@@ -73,11 +73,12 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
   borderColor: borderColorProp,
   isDark = false,
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef  = useRef<HTMLDivElement>(null);
   const [error,   setError]   = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [zoom,    setZoom]    = useState(ZOOM_DEFAULT);
-  const idRef = useRef(`mermaid-${++idCounter}`);
+  // Stable unique ID per component instance — used as prefix only
+  const instanceId = useRef(`mmd-${++idCounter}`);
 
   // ─── Render mermaid ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -86,6 +87,7 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
     const render = async () => {
       setLoading(true);
       setError(null);
+
       if (containerRef.current) containerRef.current.innerHTML = '';
 
       try {
@@ -98,37 +100,50 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
           fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
           themeVariables: isDark
             ? {
-                primaryColor:       '#1a1a2e',
-                primaryTextColor:   '#e0e0e0',
-                primaryBorderColor: color || 'rgba(255,255,255,0.2)',
-                lineColor:          'rgba(255,255,255,0.4)',
-                secondaryColor:     '#16213e',
-                tertiaryColor:      '#0f3460',
-                background:         '#0a0a0a',
-                mainBkg:            '#111',
-                nodeBorder:         color || 'rgba(255,255,255,0.25)',
-                clusterBkg:         'rgba(255,255,255,0.04)',
-                titleColor:         '#e0e0e0',
-                edgeLabelBackground:'#1a1a1a',
+                primaryColor:        '#1a1a2e',
+                primaryTextColor:    '#e0e0e0',
+                primaryBorderColor:  color || 'rgba(255,255,255,0.2)',
+                lineColor:           'rgba(255,255,255,0.4)',
+                secondaryColor:      '#16213e',
+                tertiaryColor:       '#0f3460',
+                background:          '#0a0a0a',
+                mainBkg:             '#111',
+                nodeBorder:          color || 'rgba(255,255,255,0.25)',
+                clusterBkg:          'rgba(255,255,255,0.04)',
+                titleColor:          '#e0e0e0',
+                edgeLabelBackground: '#1a1a1a',
               }
             : {
-                primaryColor:       '#f0f0f0',
-                primaryTextColor:   '#1a1a1a',
-                primaryBorderColor: color || 'rgba(0,0,0,0.2)',
-                lineColor:          'rgba(0,0,0,0.4)',
-                secondaryColor:     '#e8e8e8',
-                tertiaryColor:      '#ddd',
-                background:         '#E8E7E3',
-                mainBkg:            '#f8f8f6',
-                nodeBorder:         color || 'rgba(0,0,0,0.2)',
-                clusterBkg:         'rgba(0,0,0,0.04)',
-                titleColor:         '#1a1a1a',
-                edgeLabelBackground:'#f0f0f0',
+                primaryColor:        '#f0f0f0',
+                primaryTextColor:    '#1a1a1a',
+                primaryBorderColor:  color || 'rgba(0,0,0,0.2)',
+                lineColor:           'rgba(0,0,0,0.4)',
+                secondaryColor:      '#e8e8e8',
+                tertiaryColor:       '#ddd',
+                background:          '#E8E7E3',
+                mainBkg:             '#f8f8f6',
+                nodeBorder:          color || 'rgba(0,0,0,0.2)',
+                clusterBkg:          'rgba(0,0,0,0.04)',
+                titleColor:          '#1a1a1a',
+                edgeLabelBackground: '#f0f0f0',
               },
         });
 
-        const renderId = `${idRef.current}-${Date.now()}`;
-        const { svg } = await mermaid.render(renderId, code.trim());
+        // Each render needs a truly unique id to avoid mermaid's internal cache
+        const renderId = `${instanceId.current}-${Date.now()}`;
+
+        // ─── KEY FIX ────────────────────────────────────────────────────────
+        // mermaid v11 writes a temporary <div id="renderId"> straight into
+        // document.body if we don't pass a container element as the 3rd arg.
+        // Passing containerRef.current keeps everything scoped to our node
+        // and prevents the "mermaid version X.Y.Z / Syntax error in text"
+        // ghost element appearing at the bottom of the page.
+        // ────────────────────────────────────────────────────────────────────
+        const { svg } = await mermaid.render(
+          renderId,
+          code.trim(),
+          containerRef.current ?? undefined,
+        );
 
         if (!cancelled && containerRef.current) {
           containerRef.current.innerHTML = svg;
@@ -140,7 +155,15 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
           }
         }
       } catch (e: unknown) {
-        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
+        if (!cancelled) {
+          const raw = e instanceof Error ? e.message : String(e);
+          // Strip the noisy "Syntax error in text\nmermaid version X.Y.Z\n" prefix
+          const clean = raw
+            .replace(/^Syntax error in text\s*/i, '')
+            .replace(/mermaid version[\s\S]*?\n/gi, '')
+            .trim();
+          setError(clean || raw);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -156,7 +179,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
   const zoomReset = useCallback(() => setZoom(ZOOM_DEFAULT), []);
 
   // ─── Visual tokens ──────────────────────────────────────────────────────────
-  // borderColorProp overrides the outer container border independently from color accent
   const outerBorder   = borderColorProp || color || (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)');
   const hasAccent     = !!color;
   const toolbarBg     = isDark ? 'rgba(255,255,255,0.025)' : 'rgba(0,0,0,0.025)';
@@ -183,7 +205,7 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
         <div style={{ height: 3, background: color, borderRadius: '12px 12px 0 0' }} />
       )}
 
-      {/* ── Toolbar: zoom controls ── */}
+      {/* ── Toolbar ── */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -217,7 +239,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
 
         <div style={{ flex: 1 }} />
 
-        {/* Border color swatch — shown only when explicit borderColor is set */}
         {borderColorProp && (
           <div
             title={`Цвет рамки: ${borderColorProp}`}
@@ -259,22 +280,31 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
           }}>
             {error}
           </pre>
-          <div style={{
-            marginTop: 10, padding: '8px 12px',
-            background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
-            borderRadius: 7, fontSize: 11,
-            color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
-            fontFamily: 'ui-monospace, monospace', whiteSpace: 'pre',
-          }}>
-            {code}
-          </div>
+          <details style={{ marginTop: 10 }}>
+            <summary style={{
+              fontSize: 11, cursor: 'pointer',
+              color: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)',
+            }}>
+              Исходный код
+            </summary>
+            <div style={{
+              marginTop: 6, padding: '8px 12px',
+              background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
+              borderRadius: 7, fontSize: 11,
+              color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
+              fontFamily: 'ui-monospace, monospace', whiteSpace: 'pre',
+            }}>
+              {code}
+            </div>
+          </details>
         </div>
       )}
 
       {/*
-        Container is ALWAYS in the DOM (never conditionally removed) so
-        mermaid.render() always finds a real node via containerRef.
-        We use display:none to hide it while loading / on error.
+        The container is always in the DOM so mermaid always has a real node.
+        Hidden via display:none while loading or on error.
+        The 3rd arg to mermaid.render() keeps the temp element scoped here,
+        preventing body pollution ("mermaid version X / Syntax error in text").
       */}
       <div
         style={{
@@ -292,7 +322,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
             transformOrigin: 'top center',
             transform: `scale(${zoom})`,
             transition: 'transform 0.18s cubic-bezier(0.4,0,0.2,1)',
-            // Push container height so zoomed-in content isn't clipped
             marginBottom: zoom > 1 ? `${(zoom - 1) * 50}%` : 0,
           }}
         />
