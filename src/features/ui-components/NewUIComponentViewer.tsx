@@ -1,11 +1,18 @@
-import React, { useState, useCallback, Suspense, useEffect, useMemo } from 'react';
+import React, {
+  useState,
+  useCallback,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react';
 import { useTheme } from '@/shared/contexts/ThemeContext';
-import { X, Maximize2, RotateCcw, Settings, Sliders } from 'lucide-react';
+import { X, Maximize2, RotateCcw, Settings } from 'lucide-react';
 import { loadComponent, getDefaultProps } from './loader';
 import { ComponentWrapper } from './ComponentWrapper';
 import type { UniversalProps, ComponentConfig, PropDefinition } from './types';
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type PropValue = string | number | boolean | string[] | undefined;
 type ComponentPropsMap = Record<string, PropValue>;
@@ -18,7 +25,7 @@ interface LoadedComponentData {
   fileContents: Record<string, string>;
 }
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const DEFAULT_UNIVERSAL_PROPS: UniversalProps = {
   enableUniversalProps: true,
@@ -39,157 +46,8 @@ const DEFAULT_UNIVERSAL_PROPS: UniversalProps = {
   saturate: 1,
 };
 
-// ─── Shared UI Helpers ────────────────────────────────────────────────────────
-
-const cx = (...classes: (string | false | undefined)[]) =>
-  classes.filter(Boolean).join(' ');
-
-const themeClass = (isDark: boolean, dark: string, light: string) =>
-  isDark ? dark : light;
-
-const SLIDER_THUMB = (isDark: boolean) =>
-  cx(
-    isDark
-      ? 'bg-white/10 [&::-webkit-slider-thumb]:bg-white [&::-moz-range-thumb]:bg-white'
-      : 'bg-black/10 [&::-webkit-slider-thumb]:bg-black [&::-moz-range-thumb]:bg-black',
-    'w-full h-3 rounded-lg appearance-none cursor-pointer',
-    '[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full',
-    '[&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0',
-  );
-
-// ─── SliderControl ────────────────────────────────────────────────────────────
-
-interface SliderControlProps {
-  label: string;
-  value: number;
-  onChange: (value: number) => void;
-  min: number;
-  max: number;
-  step: number;
-  isDark: boolean;
-}
-
-const SliderControl: React.FC<SliderControlProps> = ({ label, value, onChange, min, max, step, isDark }) => (
-  <div className="space-y-2">
-    <label className={`block text-xs md:text-sm font-medium ${themeClass(isDark, 'text-white', 'text-black')}`}>
-      {label}
-    </label>
-    <input
-      type="range"
-      value={value}
-      onChange={(e) => onChange(Number(e.target.value))}
-      min={min}
-      max={max}
-      step={step}
-      className={SLIDER_THUMB(isDark)}
-    />
-    <div className={`text-center text-xs md:text-sm font-semibold ${themeClass(isDark, 'text-white', 'text-black')}`}>
-      {value.toFixed(step < 1 ? 1 : 0)}
-    </div>
-  </div>
-);
-
-// ─── NumberControl ────────────────────────────────────────────────────────────
-
-interface NumberControlProps {
-  inputId: string;
-  prop: PropDefinition;
-  value: PropValue;
-  onChange: (name: string, value: PropValue) => void;
-  isDark: boolean;
-}
-
-const NumberControl: React.FC<NumberControlProps> = ({ inputId, prop, value, onChange, isDark }) => {
-  const numericValue = typeof value === 'number' ? value : (prop.default as number ?? 0);
-
-  return (
-    <div className="space-y-3">
-      <input
-        id={inputId}
-        type="range"
-        value={numericValue}
-        onChange={(e) => onChange(prop.name, Number(e.target.value))}
-        min={prop.min ?? 0}
-        max={prop.max ?? 100}
-        step={prop.step ?? 1}
-        className={SLIDER_THUMB(isDark)}
-      />
-      <div className={`text-center text-lg font-semibold ${themeClass(isDark, 'text-white', 'text-black')}`}>
-        {numericValue}
-      </div>
-    </div>
-  );
-};
-
-// ─── SelectControl ────────────────────────────────────────────────────────────
-
-interface SelectControlProps {
-  inputId: string;
-  prop: PropDefinition;
-  value: PropValue;
-  onChange: (name: string, value: PropValue) => void;
-  isDark: boolean;
-}
-
-const SelectControl: React.FC<SelectControlProps> = ({ inputId, prop, value, onChange, isDark }) => {
-  const stringValue = typeof value === 'string' ? value : (prop.default as string ?? '');
-
-  return (
-    <select
-      id={inputId}
-      value={stringValue}
-      onChange={(e) => onChange(prop.name, e.target.value)}
-      className={`w-full px-3 md:px-4 py-2.5 md:py-3 rounded-lg border text-xs md:text-sm ${
-        themeClass(isDark, 'bg-white/5 border-white/10 text-white', 'bg-white border-black/10 text-black')
-      }`}
-    >
-      {prop.options?.map((opt: string) => (
-        <option key={opt} value={opt}>{opt}</option>
-      ))}
-    </select>
-  );
-};
-
-// ─── PropControl ──────────────────────────────────────────────────────────────
-
-interface PropControlProps {
-  prop: PropDefinition;
-  value: PropValue;
-  onChange: (name: string, value: PropValue) => void;
-  isDark: boolean;
-}
-
-const PropControl: React.FC<PropControlProps> = ({ prop, value, onChange, isDark }) => {
-  const inputId = `prop-${prop.name}`;
-
-  return (
-    <div className="space-y-3">
-      <label htmlFor={inputId} className={`block text-xs md:text-sm font-medium ${themeClass(isDark, 'text-white', 'text-black')}`}>
-        {prop.description}
-        <span className={`ml-2 text-xs ${themeClass(isDark, 'text-white/50', 'text-black/50')}`}>
-          ({prop.type})
-        </span>
-      </label>
-
-      {prop.control === 'number' && (
-        <NumberControl inputId={inputId} prop={prop} value={value} onChange={onChange} isDark={isDark} />
-      )}
-      {prop.control === 'select' && (
-        <SelectControl inputId={inputId} prop={prop} value={value} onChange={onChange} isDark={isDark} />
-      )}
-    </div>
-  );
-};
-
-// ─── UniversalPropsEditor ─────────────────────────────────────────────────────
-
-interface UniversalPropsEditorProps {
-  universalProps: UniversalProps;
-  onChange: (name: keyof UniversalProps, value: PropValue) => void;
-  isDark: boolean;
-}
-
-const UNIVERSAL_SLIDERS: Array<{
+// Порядок: 3 колонки (Масштаб / Вращение X / Яркость), (Прозрачность / Вращение Y / Контраст), (Размытие / Вращение Z / Насыщенность)
+const UNIVERSAL_FIELDS: Array<{
   label: string;
   key: keyof UniversalProps;
   min: number;
@@ -197,61 +55,254 @@ const UNIVERSAL_SLIDERS: Array<{
   step: number;
   default: number;
 }> = [
-  { label: 'Масштаб',           key: 'scale',          min: 0.1, max: 3,   step: 0.1, default: 1 },
-  { label: 'Прозрачность',      key: 'opacity',        min: 0,   max: 1,   step: 0.1, default: 1 },
-  { label: 'Вращение X',        key: 'rotateX',        min: -180, max: 180, step: 5,  default: 0 },
-  { label: 'Вращение Y',        key: 'rotateY',        min: -180, max: 180, step: 5,  default: 0 },
-  { label: 'Вращение Z',        key: 'rotateZ',        min: -180, max: 180, step: 5,  default: 0 },
-  { label: 'Скорость анимации', key: 'animationSpeed', min: 0.1, max: 5,   step: 0.1, default: 1 },
-  { label: 'Размытие',          key: 'blur',           min: 0,   max: 20,  step: 1,   default: 0 },
-  { label: 'Яркость',           key: 'brightness',     min: 0,   max: 2,   step: 0.1, default: 1 },
-  { label: 'Контраст',          key: 'contrast',       min: 0,   max: 2,   step: 0.1, default: 1 },
-  { label: 'Насыщенность',      key: 'saturate',       min: 0,   max: 2,   step: 0.1, default: 1 },
+  { label: 'Масштаб',      key: 'scale',      min: 0.1,  max: 3,    step: 0.05, default: 1   },
+  { label: 'Вращение X',   key: 'rotateX',    min: -180, max: 180,  step: 1,    default: 0   },
+  { label: 'Яркость',      key: 'brightness', min: 0,    max: 2,    step: 0.05, default: 1   },
+  { label: 'Прозрачность', key: 'opacity',    min: 0,    max: 1,    step: 0.05, default: 1   },
+  { label: 'Вращение Y',   key: 'rotateY',    min: -180, max: 180,  step: 1,    default: 0   },
+  { label: 'Контраст',     key: 'contrast',   min: 0,    max: 2,    step: 0.05, default: 1   },
+  { label: 'Размытие',     key: 'blur',       min: 0,    max: 20,   step: 0.5,  default: 0   },
+  { label: 'Вращение Z',   key: 'rotateZ',    min: -180, max: 180,  step: 1,    default: 0   },
+  { label: 'Насыщенность', key: 'saturate',   min: 0,    max: 2,    step: 0.05, default: 1   },
 ];
 
-const UniversalPropsEditor: React.FC<UniversalPropsEditorProps> = ({ universalProps, onChange, isDark }) => (
-  <div className="space-y-4 md:space-y-6">
-    <h3 className={`text-base md:text-lg font-bold ${themeClass(isDark, 'text-white', 'text-black')}`}>
-      Общие настройки компонента
-    </h3>
+// ─── Theme helpers ─────────────────────────────────────────────────────────────
 
-    <label className="flex items-center gap-2 cursor-pointer">
-      <input
-        type="checkbox"
-        checked={universalProps.enableUniversalProps}
-        onChange={(e) => onChange('enableUniversalProps', e.target.checked)}
-        className="rounded"
-      />
-      <span className={`text-xs md:text-sm font-medium ${themeClass(isDark, 'text-white', 'text-black')}`}>
-        Включить общие настройки
-      </span>
-    </label>
+const tc = (isDark: boolean, d: string, l: string) => (isDark ? d : l);
 
-    {universalProps.enableUniversalProps && UNIVERSAL_SLIDERS.map(({ label, key, min, max, step, default: def }) => (
-      <SliderControl
-        key={key}
-        label={label}
-        value={(universalProps[key] as number) || def}
-        onChange={(v) => onChange(key, v)}
-        min={min}
-        max={max}
-        step={step}
-        isDark={isDark}
-      />
-    ))}
-  </div>
-);
+// ─── NumberInput — цифра + ползунок ──────────────────────────────────────────
 
-// ─── ComponentPropsEditor ─────────────────────────────────────────────────────
-
-interface ComponentPropsEditorProps {
-  config: ComponentConfig;
-  componentProps: ComponentPropsMap;
-  onChange: (name: string, value: PropValue) => void;
+interface NumberInputProps {
+  value: number;
+  onChange: (v: number) => void;
+  min: number;
+  max: number;
+  step: number;
   isDark: boolean;
 }
 
-const ComponentPropsEditor: React.FC<ComponentPropsEditorProps> = ({ config, componentProps, onChange, isDark }) => {
+const NumberInput: React.FC<NumberInputProps> = ({
+  value, onChange, min, max, step, isDark,
+}) => {
+  const [editing, setEditing] = useState(false);
+  const [raw, setRaw]         = useState('');
+  const inputRef              = useRef<HTMLInputElement>(null);
+
+  const startEdit = () => {
+    setRaw(String(value));
+    setEditing(true);
+    setTimeout(() => inputRef.current?.select(), 0);
+  };
+
+  const commit = () => {
+    const n = parseFloat(raw);
+    if (!isNaN(n)) onChange(Math.min(max, Math.max(min, n)));
+    setEditing(false);
+  };
+
+  const border = tc(isDark, 'rgba(255,255,255,0.14)', 'rgba(0,0,0,0.14)');
+  const bg     = tc(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.06)');
+  const fg     = tc(isDark, '#fff', '#000');
+
+  const numStr = step < 1 ? value.toFixed(step < 0.1 ? 2 : 1) : String(Math.round(value));
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <input
+        type="range"
+        min={min} max={max} step={step} value={value}
+        onChange={e => onChange(Number(e.target.value))}
+        style={{
+          flex: 1,
+          accentColor: tc(isDark, '#fff', '#000'),
+          cursor: 'pointer',
+          height: 4,
+        }}
+      />
+      {editing ? (
+        <input
+          ref={inputRef}
+          type="number"
+          value={raw}
+          min={min} max={max} step={step}
+          onChange={e => setRaw(e.target.value)}
+          onBlur={commit}
+          onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false); }}
+          style={{
+            width: 54, padding: '2px 5px', borderRadius: 6,
+            border: `1px solid ${border}`, background: bg, color: fg,
+            fontSize: 11, textAlign: 'center', outline: 'none',
+            fontFamily: 'ui-monospace, monospace',
+          }}
+        />
+      ) : (
+        <button
+          onClick={startEdit}
+          title={`Мин: ${min}  Макс: ${max}`}
+          style={{
+            width: 54, padding: '2px 5px', borderRadius: 6,
+            border: `1px solid ${border}`, background: bg, color: fg,
+            fontSize: 11, textAlign: 'center', cursor: 'pointer',
+            fontFamily: 'ui-monospace, monospace', flexShrink: 0,
+          }}
+        >
+          {numStr}
+        </button>
+      )}
+    </div>
+  );
+};
+
+// ─── Universal 3-column grid ───────────────────────────────────────────────────
+
+interface UniversalGridProps {
+  universalProps: UniversalProps;
+  onChange: (key: keyof UniversalProps, v: PropValue) => void;
+  isDark: boolean;
+}
+
+const UniversalGrid: React.FC<UniversalGridProps> = ({ universalProps, onChange, isDark }) => {
+  const borderColor = tc(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.07)');
+  const cellBg      = tc(isDark, 'rgba(255,255,255,0.025)', 'rgba(0,0,0,0.02)');
+  const labelColor  = tc(isDark, 'rgba(255,255,255,0.45)', 'rgba(0,0,0,0.45)');
+
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(3, 1fr)',
+      gap: 1,
+      background: borderColor,
+      border: `1px solid ${borderColor}`,
+      borderRadius: 10,
+      overflow: 'hidden',
+    }}>
+      {UNIVERSAL_FIELDS.map(f => (
+        <div
+          key={f.key}
+          style={{ background: cellBg, padding: '9px 11px', display: 'flex', flexDirection: 'column', gap: 5 }}
+        >
+          <span style={{
+            fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+            letterSpacing: '0.05em', color: labelColor,
+          }}>
+            {f.label}
+          </span>
+          <NumberInput
+            value={(universalProps[f.key] as number) ?? f.default}
+            onChange={v => onChange(f.key, v)}
+            min={f.min} max={f.max} step={f.step}
+            isDark={isDark}
+          />
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ─── AskAI-style select dropdown ──────────────────────────────────────────────
+
+interface AiSelectProps {
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (v: string) => void;
+  isDark: boolean;
+}
+
+const AiSelect: React.FC<AiSelectProps> = ({ label, value, options, onChange, isDark }) => {
+  const [open, setOpen]       = useState(false);
+  const [hov, setHov]         = useState<string | null>(null);
+  const ref                   = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [open]);
+
+  const popupBg   = tc(isDark, '#0a0a0a', '#E8E7E3');
+  const border    = tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)');
+  const textColor = tc(isDark, 'rgba(255,255,255,0.85)', 'rgba(0,0,0,0.85)');
+  const labelClr  = tc(isDark, 'rgba(255,255,255,0.3)',  'rgba(0,0,0,0.35)');
+  const btnBg     = tc(isDark, '#1a1a1a', '#d4d3cf');
+  const rowHov    = tc(isDark, 'rgba(255,255,255,0.06)', 'rgba(0,0,0,0.06)');
+  const cellBg    = tc(isDark, 'rgba(255,255,255,0.025)', 'rgba(0,0,0,0.02)');
+  const borderColor = tc(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.07)');
+  const labelColor  = tc(isDark, 'rgba(255,255,255,0.45)', 'rgba(0,0,0,0.45)');
+
+  return (
+    <div style={{ background: cellBg, border: `1px solid ${borderColor}`, borderRadius: 10, padding: '9px 11px' }}>
+      <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: labelColor, display: 'block', marginBottom: 5 }}>
+        {label}
+      </span>
+      <div ref={ref} style={{ position: 'relative' }}>
+        <button
+          onClick={() => setOpen(v => !v)}
+          style={{
+            width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '5px 9px', borderRadius: 7, border: `1px solid ${border}`,
+            background: btnBg, color: textColor, fontSize: 12, fontWeight: 500, cursor: 'pointer',
+          }}
+        >
+          <span>{value}</span>
+          <svg width="9" height="9" viewBox="0 0 10 10" style={{ opacity: 0.5, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
+            <path d="M2 3 L5 7 L8 3" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+          </svg>
+        </button>
+        {open && (
+          <div style={{
+            position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+            background: popupBg, border: `1px solid ${border}`, borderRadius: 10,
+            boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.7)' : '0 8px 32px rgba(0,0,0,0.12)',
+            zIndex: 300, overflow: 'hidden',
+            animation: 'aiSelectIn 0.13s ease',
+          }}>
+            <style>{`@keyframes aiSelectIn{from{opacity:0;transform:translateY(-4px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}`}</style>
+            <div style={{ padding: '7px 11px 3px', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: labelClr }}>
+              Выбери вариант
+            </div>
+            {options.map(opt => (
+              <button
+                key={opt}
+                onClick={() => { onChange(opt); setOpen(false); }}
+                onMouseEnter={() => setHov(opt)}
+                onMouseLeave={() => setHov(null)}
+                style={{
+                  display: 'flex', alignItems: 'center', width: '100%',
+                  padding: '5px 11px', fontSize: 12, textAlign: 'left', cursor: 'pointer',
+                  border: 'none', color: textColor,
+                  background: hov === opt ? rowHov : opt === value ? tc(isDark,'rgba(255,255,255,0.08)','rgba(0,0,0,0.08)') : 'transparent',
+                }}
+              >
+                {opt === value && <span style={{ marginRight: 6, opacity: 0.6 }}>✓</span>}
+                {opt}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ─── Specific props grid ───────────────────────────────────────────────────────
+
+interface SpecificGridProps {
+  config: ComponentConfig;
+  componentProps: ComponentPropsMap;
+  onChange: (name: string, v: PropValue) => void;
+  isDark: boolean;
+}
+
+const SpecificGrid: React.FC<SpecificGridProps> = ({ config, componentProps, onChange, isDark }) => {
+  const borderColor = tc(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.07)');
+  const cellBg      = tc(isDark, 'rgba(255,255,255,0.025)', 'rgba(0,0,0,0.02)');
+  const labelColor  = tc(isDark, 'rgba(255,255,255,0.45)', 'rgba(0,0,0,0.45)');
+  const border      = tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)');
+  const textColor   = tc(isDark, 'rgba(255,255,255,0.85)', 'rgba(0,0,0,0.85)');
+  const inputBg     = tc(isDark, '#1a1a1a', '#d4d3cf');
+
   const visibleProps = useMemo(() => {
     if (config.specificProps?.length) {
       return config.props.filter((p: PropDefinition) => config.specificProps!.includes(p.name));
@@ -259,62 +310,167 @@ const ComponentPropsEditor: React.FC<ComponentPropsEditorProps> = ({ config, com
     return config.props;
   }, [config]);
 
-  return (
-    <div className="space-y-4 md:space-y-6">
-      <h3 className={`text-base md:text-lg font-bold ${themeClass(isDark, 'text-white', 'text-black')}`}>
-        Специфические настройки
-      </h3>
+  if (!visibleProps.length) {
+    return (
+      <div style={{ padding: 20, textAlign: 'center', fontSize: 13, color: labelColor }}>
+        Нет специфических настроек
+      </div>
+    );
+  }
 
-      {visibleProps.length > 0 ? (
-        visibleProps.map((prop: PropDefinition) => (
-          <PropControl
+  // Разделяем: сначала числа/текст (в сетку), потом select (в сетку тоже)
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+      gap: 1,
+      background: borderColor,
+      border: `1px solid ${borderColor}`,
+      borderRadius: 10,
+      overflow: 'visible',
+    }}>
+      {visibleProps.map((prop: PropDefinition) => {
+        const val = componentProps[prop.name];
+
+        if (prop.control === 'select') {
+          const strVal = typeof val === 'string' ? val : (prop.default as string ?? '');
+          return (
+            <AiSelect
+              key={prop.name}
+              label={prop.description}
+              value={strVal}
+              options={prop.options ?? []}
+              onChange={v => onChange(prop.name, v)}
+              isDark={isDark}
+            />
+          );
+        }
+
+        if (prop.control === 'number') {
+          const numVal = typeof val === 'number' ? val : (prop.default as number ?? 0);
+          return (
+            <div
+              key={prop.name}
+              style={{ background: cellBg, padding: '9px 11px', display: 'flex', flexDirection: 'column', gap: 5 }}
+            >
+              <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: labelColor }}>
+                {prop.description}
+              </span>
+              <NumberInput
+                value={numVal}
+                onChange={v => onChange(prop.name, v)}
+                min={prop.min ?? 0}
+                max={prop.max ?? 100}
+                step={prop.step ?? 1}
+                isDark={isDark}
+              />
+            </div>
+          );
+        }
+
+        // text / default
+        const strVal = typeof val === 'string' ? val : (prop.default as string ?? '');
+        return (
+          <div
             key={prop.name}
-            prop={prop}
-            value={componentProps[prop.name]}
-            onChange={onChange}
-            isDark={isDark}
-          />
-        ))
-      ) : (
-        <p className={`text-xs md:text-sm ${themeClass(isDark, 'text-white/50', 'text-black/50')}`}>
-          Для этого компонента нет специфических настроек
-        </p>
-      )}
+            style={{ background: cellBg, padding: '9px 11px', display: 'flex', flexDirection: 'column', gap: 5 }}
+          >
+            <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: labelColor }}>
+              {prop.description}
+            </span>
+            <input
+              type="text"
+              value={strVal}
+              onChange={e => onChange(prop.name, e.target.value)}
+              style={{
+                width: '100%', padding: '4px 7px', borderRadius: 6,
+                border: `1px solid ${border}`, background: inputBg,
+                color: textColor, fontSize: 12, outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 };
 
-// ─── TabButtons ───────────────────────────────────────────────────────────────
+// ─── Tab bar ───────────────────────────────────────────────────────────────────
 
-interface TabButtonsProps {
-  activeTab: TabType;
+interface TabBarProps {
+  active: TabType;
+  onSelect: (t: TabType) => void;
   isDark: boolean;
-  onTabChange: (tab: TabType) => void;
 }
 
-const TabButtons: React.FC<TabButtonsProps> = ({ activeTab, isDark, onTabChange }) => {
-  const tabClass = (tab: TabType) => cx(
-    'flex-1 px-3 md:px-4 py-2.5 md:py-3 text-xs md:text-sm font-medium transition-colors flex items-center justify-center gap-1 md:gap-2',
-    activeTab === tab
-      ? themeClass(isDark, 'bg-white/10 text-white', 'bg-black/10 text-black')
-      : themeClass(isDark, 'text-white/60 hover:bg-white/5', 'text-black/60 hover:bg-black/5'),
-  );
+const TabBar: React.FC<TabBarProps> = ({ active, onSelect, isDark }) => {
+  const border = tc(isDark, 'rgba(255,255,255,0.09)', 'rgba(0,0,0,0.09)');
+  const bg     = tc(isDark, 'rgba(255,255,255,0.02)', 'rgba(0,0,0,0.02)');
 
   return (
-    <div className={`flex border-b sticky top-0 z-10 bg-inherit ${themeClass(isDark, 'border-white/10', 'border-black/10')}`}>
-      <button onClick={() => onTabChange('universal')} className={tabClass('universal')}>
-        <Sliders size={14} className="md:w-4 md:h-4" />
-        <span className="hidden sm:inline">Общие</span>
-      </button>
-      <button onClick={() => onTabChange('specific')} className={tabClass('specific')}>
-        <Settings size={14} className="md:w-4 md:h-4" />
-        <span className="hidden sm:inline">Специфические</span>
-      </button>
+    <div style={{
+      display: 'flex', gap: 4, padding: '7px 11px',
+      borderBottom: `1px solid ${border}`, background: bg,
+    }}>
+      {(['universal', 'specific'] as TabType[]).map(tab => {
+        const isActive = active === tab;
+        return (
+          <button
+            key={tab}
+            onClick={() => onSelect(tab)}
+            style={{
+              padding: '5px 13px', borderRadius: 8,
+              border: `1px solid ${isActive ? tc(isDark,'rgba(255,255,255,0.14)','rgba(0,0,0,0.14)') : 'transparent'}`,
+              background: isActive ? tc(isDark,'rgba(255,255,255,0.09)','rgba(0,0,0,0.09)') : 'transparent',
+              color: isActive ? tc(isDark,'#fff','#000') : tc(isDark,'rgba(255,255,255,0.5)','rgba(0,0,0,0.5)'),
+              fontSize: 12, fontWeight: isActive ? 600 : 400, cursor: 'pointer', transition: 'all 0.14s',
+            }}
+          >
+            {tab === 'universal' ? 'Общие настройки компонента' : 'Специфические настройки'}
+          </button>
+        );
+      })}
     </div>
   );
 };
 
-// ─── ComponentPreview (shared render) ────────────────────────────────────────
+// ─── Icon button ───────────────────────────────────────────────────────────────
+
+const IconBtn: React.FC<{
+  onClick: () => void;
+  title: string;
+  isDark: boolean;
+  children: React.ReactNode;
+  active?: boolean;
+}> = ({ onClick, title, isDark, children, active }) => (
+  <button
+    onClick={onClick}
+    title={title}
+    style={{
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      width: 30, height: 30, borderRadius: 7,
+      border: active ? `1px solid ${tc(isDark,'rgba(255,255,255,0.2)','rgba(0,0,0,0.2)')}` : 'none',
+      background: active ? tc(isDark,'rgba(255,255,255,0.1)','rgba(0,0,0,0.08)') : 'transparent',
+      color: active ? tc(isDark,'#fff','#000') : tc(isDark,'rgba(255,255,255,0.55)','rgba(0,0,0,0.55)'),
+      cursor: 'pointer', transition: 'all 0.14s',
+    }}
+    onMouseEnter={e => {
+      const b = e.currentTarget as HTMLButtonElement;
+      b.style.background = tc(isDark,'rgba(255,255,255,0.08)','rgba(0,0,0,0.07)');
+      b.style.color = tc(isDark,'#fff','#000');
+    }}
+    onMouseLeave={e => {
+      const b = e.currentTarget as HTMLButtonElement;
+      b.style.background = active ? tc(isDark,'rgba(255,255,255,0.1)','rgba(0,0,0,0.08)') : 'transparent';
+      b.style.color = active ? tc(isDark,'#fff','#000') : tc(isDark,'rgba(255,255,255,0.55)','rgba(0,0,0,0.55)');
+    }}
+  >
+    {children}
+  </button>
+);
+
+// ─── Component render ──────────────────────────────────────────────────────────
 
 interface ComponentRenderProps {
   Component: AnyComponent;
@@ -324,201 +480,219 @@ interface ComponentRenderProps {
   isDark: boolean;
 }
 
-const ComponentRender: React.FC<ComponentRenderProps> = ({ Component, componentProps, universalProps, refreshKey, isDark }) => (
+const ComponentRender: React.FC<ComponentRenderProps> = ({
+  Component, componentProps, universalProps, refreshKey, isDark,
+}) => (
   <ComponentWrapper {...universalProps} className="w-full h-full">
-    <Suspense fallback={<div className={themeClass(isDark, 'text-white/50', 'text-black/50')}>Загрузка...</div>}>
+    <Suspense fallback={
+      <div style={{ color: tc(isDark,'rgba(255,255,255,0.4)','rgba(0,0,0,0.4)'), fontSize: 13 }}>
+        Загрузка...
+      </div>
+    }>
       <Component key={refreshKey} {...componentProps} />
     </Suspense>
   </ComponentWrapper>
 );
 
-// ─── ModalHeader ──────────────────────────────────────────────────────────────
+// ─── Preview panel ─────────────────────────────────────────────────────────────
 
-interface ModalHeaderProps {
-  config: ComponentConfig;
-  isDark: boolean;
-  onClose: () => void;
-  onRefresh: () => void;
-  onReset: () => void;
-  headerBgClass: string;
-}
-
-const ModalHeader: React.FC<ModalHeaderProps> = ({ config, isDark, onClose, onRefresh, onReset, headerBgClass }) => {
-  const iconBtnClass = cx(
-    'rounded-lg transition-colors',
-    themeClass(isDark, 'hover:bg-white/10 text-white/70', 'hover:bg-black/10 text-black/70'),
-  );
-
-  return (
-    <div className={`flex items-center justify-between px-3 md:px-4 py-2 md:py-3 border-b gap-2 flex-wrap ${headerBgClass}`}>
-      <h2 className={`text-xs md:text-sm font-bold truncate ${themeClass(isDark, 'text-white', 'text-black')}`}>
-        {config.name} — Настройки
-      </h2>
-      <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
-        <button onClick={onRefresh} className={`p-1.5 md:p-2 ${iconBtnClass}`} title="Обновить">
-          <RotateCcw size={16} className="md:w-[18px] md:h-[18px]" />
-        </button>
-        <button
-          onClick={onReset}
-          className={`px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
-            themeClass(isDark, 'bg-white/10 hover:bg-white/20 text-white', 'bg-black/10 hover:bg-black/20 text-black')
-          }`}
-        >
-          Сбросить
-        </button>
-        <button onClick={onClose} className={`p-1.5 md:p-2 ${iconBtnClass}`} aria-label="Закрыть">
-          <X size={16} className="md:w-5 md:h-5" />
-        </button>
-      </div>
-    </div>
-  );
-};
-
-// ─── PreviewMode ──────────────────────────────────────────────────────────────
-
-interface PreviewModeProps extends ComponentRenderProps {
+interface PreviewPanelProps extends ComponentRenderProps {
   config: ComponentConfig;
   onRefresh: () => void;
   onFullscreen: () => void;
   onOpenSettings: () => void;
 }
 
-const PreviewMode: React.FC<PreviewModeProps> = ({
+const PreviewPanel: React.FC<PreviewPanelProps> = ({
   config, Component, componentProps, universalProps, refreshKey, isDark,
   onRefresh, onFullscreen, onOpenSettings,
 }) => {
-  const btnClass = cx(
-    'px-3 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border border-transparent',
-    themeClass(isDark, 'text-white/70 hover:text-white hover:bg-white/5', 'text-black/70 hover:text-black hover:bg-black/5'),
-  );
+  const border    = tc(isDark, 'rgba(255,255,255,0.09)', 'rgba(0,0,0,0.09)');
+  const bg        = tc(isDark, '#0a0a0a', '#E8E7E3');
+  const headerBg  = tc(isDark, 'rgba(255,255,255,0.025)', 'rgba(0,0,0,0.025)');
 
   return (
-    <div className={`rounded-lg border overflow-hidden my-6 ${themeClass(isDark, 'border-white/10 bg-[#0a0a0a]', 'border-black/10 bg-[#E8E7E3]')}`}>
-      <div className={`flex items-center justify-between px-3 py-2 border-b ${themeClass(isDark, 'border-white/10 bg-white/5', 'border-black/10 bg-black/5')}`}>
-        <h3 className={`text-sm font-bold ${themeClass(isDark, 'text-white', 'text-black')}`}>
+    <div style={{
+      borderRadius: 12, border: `1px solid ${border}`, background: bg,
+      overflow: 'hidden', margin: '1.5rem 0',
+    }}>
+      {/* Header: название слева, кнопки справа */}
+      <div style={{
+        display: 'flex', alignItems: 'center', padding: '7px 11px',
+        borderBottom: `1px solid ${border}`, background: headerBg, gap: 8,
+      }}>
+        {/* Название */}
+        <div style={{
+          fontSize: 13, fontWeight: 600,
+          color: tc(isDark,'rgba(255,255,255,0.85)','rgba(0,0,0,0.85)'),
+          padding: '3px 9px', borderRadius: 7,
+          background: tc(isDark,'rgba(255,255,255,0.06)','rgba(0,0,0,0.06)'),
+          border: `1px solid ${border}`, flexShrink: 0,
+        }}>
           {config.name}
-        </h3>
-        <div className="flex gap-2">
-          <button onClick={onRefresh} className={btnClass} title="Запустить анимацию заново"><RotateCcw size={18} /></button>
-          <button onClick={onFullscreen} className={btnClass} title="Открыть на весь экран"><Maximize2 size={18} /></button>
-          <button onClick={onOpenSettings} className={btnClass} title="Управление настройками"><Settings size={18} /></button>
         </div>
+
+        <div style={{ flex: 1 }} />
+
+        <IconBtn onClick={onRefresh} title="Запустить заново" isDark={isDark}>
+          <RotateCcw size={14} />
+        </IconBtn>
+        <IconBtn onClick={onFullscreen} title="Открыть на весь экран" isDark={isDark}>
+          <Maximize2 size={14} />
+        </IconBtn>
+        <IconBtn onClick={onOpenSettings} title="Настройки" isDark={isDark}>
+          <Settings size={14} />
+        </IconBtn>
       </div>
 
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
+      {/* Preview */}
+      <div style={{
+        minHeight: 380, display: 'flex', alignItems: 'center',
+        justifyContent: 'center', padding: 32,
+      }}>
         <ComponentRender
-          Component={Component}
-          componentProps={componentProps}
-          universalProps={universalProps}
-          refreshKey={refreshKey}
-          isDark={isDark}
+          Component={Component} componentProps={componentProps}
+          universalProps={universalProps} refreshKey={refreshKey} isDark={isDark}
         />
       </div>
     </div>
   );
 };
 
-// ─── SettingsModal ────────────────────────────────────────────────────────────
+// ─── Settings panel — инлайн ───────────────────────────────────────────────────
 
-interface SettingsModalProps extends ComponentRenderProps {
+interface SettingsPanelProps extends ComponentRenderProps {
   config: ComponentConfig;
   onClose: () => void;
-  onPropChange: (name: string, value: PropValue) => void;
-  onUniversalPropChange: (name: keyof UniversalProps, value: PropValue) => void;
+  onPropChange: (name: string, v: PropValue) => void;
+  onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
   onRefresh: () => void;
   onReset: () => void;
 }
 
-const SettingsModal: React.FC<SettingsModalProps> = (props) => {
-  const { isDark, onClose } = props;
+const SettingsPanel: React.FC<SettingsPanelProps> = (props) => {
+  const { isDark, config, onClose, onRefresh, onReset } = props;
   const [activeTab, setActiveTab] = useState<TabType>('universal');
 
-  const modalBgClass = themeClass(isDark, 'border-white/10 bg-[#0a0a0a]', 'border-black/10 bg-white');
-  const headerBgClass = themeClass(isDark, 'border-white/10 bg-white/5', 'border-black/10 bg-black/5');
-  const borderColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+  const border   = tc(isDark, 'rgba(255,255,255,0.09)', 'rgba(0,0,0,0.09)');
+  const bg       = tc(isDark, '#0a0a0a', '#E8E7E3');
+  const footerBg = tc(isDark, 'rgba(255,255,255,0.025)', 'rgba(0,0,0,0.025)');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <button className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} aria-label="Закрыть" />
-
-      <div className={`relative w-full max-w-2xl md:max-w-6xl h-[85vh] rounded-xl border shadow-2xl flex flex-col overflow-hidden ${modalBgClass}`}>
-        <ModalHeader
-          config={props.config}
-          isDark={isDark}
-          onClose={onClose}
-          onRefresh={props.onRefresh}
-          onReset={props.onReset}
-          headerBgClass={headerBgClass}
+    <div style={{
+      borderRadius: 12, border: `1px solid ${border}`, background: bg,
+      overflow: 'hidden', margin: '1.5rem 0',
+    }}>
+      {/* Preview сверху */}
+      <div style={{
+        minHeight: 320, display: 'flex', alignItems: 'center',
+        justifyContent: 'center', padding: 28,
+        borderBottom: `1px solid ${border}`,
+      }}>
+        <ComponentRender
+          Component={props.Component} componentProps={props.componentProps}
+          universalProps={props.universalProps} refreshKey={props.refreshKey} isDark={isDark}
         />
+      </div>
 
-        <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
-          <div className="w-full md:w-1/2 overflow-auto border-b md:border-b-0 md:border-r flex flex-col" style={{ borderColor }}>
-            <TabButtons activeTab={activeTab} isDark={isDark} onTabChange={setActiveTab} />
+      {/* Tab bar */}
+      <TabBar active={activeTab} onSelect={setActiveTab} isDark={isDark} />
 
-            <div className="flex-1 overflow-auto p-4 md:p-6">
-              {activeTab === 'universal' ? (
-                <UniversalPropsEditor
-                  universalProps={props.universalProps}
-                  onChange={props.onUniversalPropChange}
-                  isDark={isDark}
-                />
-              ) : (
-                <ComponentPropsEditor
-                  config={props.config}
-                  componentProps={props.componentProps}
-                  onChange={props.onPropChange}
-                  isDark={isDark}
-                />
-              )}
-            </div>
-          </div>
+      {/* Settings grid */}
+      <div style={{ padding: '14px 14px 10px' }}>
+        {activeTab === 'universal' ? (
+          <UniversalGrid
+            universalProps={props.universalProps}
+            onChange={props.onUniversalPropChange}
+            isDark={isDark}
+          />
+        ) : (
+          <SpecificGrid
+            config={config}
+            componentProps={props.componentProps}
+            onChange={props.onPropChange}
+            isDark={isDark}
+          />
+        )}
+      </div>
 
-          <div className={`hidden md:flex w-full md:w-1/2 overflow-auto p-6 md:p-8 items-center justify-center ${themeClass(isDark, 'bg-black/20', 'bg-gray-50')}`}>
-            <ComponentRender
-              Component={props.Component}
-              componentProps={props.componentProps}
-              universalProps={props.universalProps}
-              refreshKey={props.refreshKey}
-              isDark={isDark}
-            />
-          </div>
-        </div>
+      {/* Footer */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px',
+        borderTop: `1px solid ${border}`, background: footerBg,
+      }}>
+        <IconBtn onClick={onRefresh} title="Запустить заново" isDark={isDark}>
+          <RotateCcw size={13} />
+        </IconBtn>
+        <button
+          onClick={onReset}
+          style={{
+            padding: '4px 11px', borderRadius: 7,
+            border: `1px solid ${border}`,
+            background: tc(isDark,'rgba(255,255,255,0.05)','rgba(0,0,0,0.05)'),
+            color: tc(isDark,'rgba(255,255,255,0.65)','rgba(0,0,0,0.65)'),
+            fontSize: 12, fontWeight: 500, cursor: 'pointer',
+          }}
+        >
+          Сбросить
+        </button>
+        <div style={{ flex: 1 }} />
+        <IconBtn onClick={onClose} title="Закрыть настройки" isDark={isDark}>
+          <X size={13} />
+        </IconBtn>
       </div>
     </div>
   );
 };
 
-// ─── FullscreenModal ──────────────────────────────────────────────────────────
+// ─── Fullscreen modal ──────────────────────────────────────────────────────────
 
 interface FullscreenModalProps extends ComponentRenderProps {
   onClose: () => void;
 }
 
-const FullscreenModal: React.FC<FullscreenModalProps> = ({ Component, componentProps, universalProps, refreshKey, isDark, onClose }) => (
-  <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-    <button className="absolute inset-0" onClick={onClose} aria-label="Закрыть полноэкранный режим" />
-    <div className={`relative w-full max-w-6xl h-[90vh] rounded-xl border shadow-2xl overflow-auto ${themeClass(isDark, 'border-white/10 bg-[#0a0a0a]', 'border-black/10 bg-white')}`}>
+const FullscreenModal: React.FC<FullscreenModalProps> = ({
+  Component, componentProps, universalProps, refreshKey, isDark, onClose,
+}) => (
+  <div style={{
+    position: 'fixed', inset: 0, zIndex: 60,
+    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+    background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)',
+  }}>
+    <button
+      style={{ position: 'absolute', inset: 0, border: 'none', background: 'transparent', cursor: 'default' }}
+      onClick={onClose}
+      aria-label="Закрыть"
+    />
+    <div style={{
+      position: 'relative', width: '100%', maxWidth: 1024, height: '90vh',
+      borderRadius: 16, border: `1px solid ${tc(isDark,'rgba(255,255,255,0.1)','rgba(0,0,0,0.1)')}`,
+      background: tc(isDark,'#0a0a0a','#fff'), overflow: 'auto',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
       <button
         onClick={onClose}
-        className={`absolute top-4 right-4 p-2 rounded-lg z-10 ${themeClass(isDark, 'bg-black/50 hover:bg-black/70 text-white', 'bg-white/50 hover:bg-white/70 text-black')}`}
-        aria-label="Закрыть"
+        style={{
+          position: 'absolute', top: 14, right: 14,
+          width: 30, height: 30, borderRadius: 7, border: 'none',
+          background: tc(isDark,'rgba(255,255,255,0.1)','rgba(0,0,0,0.1)'),
+          color: tc(isDark,'#fff','#000'), cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10,
+        }}
       >
-        <X size={20} />
+        <X size={16} />
       </button>
-      <div className="p-12 flex items-center justify-center min-h-full">
+      <div style={{ padding: 48, width: '100%' }}>
         <ComponentRender
-          Component={Component}
-          componentProps={componentProps}
-          universalProps={universalProps}
-          refreshKey={refreshKey}
-          isDark={isDark}
+          Component={Component} componentProps={componentProps}
+          universalProps={universalProps} refreshKey={refreshKey} isDark={isDark}
         />
       </div>
     </div>
   </div>
 );
 
-// ─── UIComponentViewer (root) ─────────────────────────────────────────────────
+// ─── Root ──────────────────────────────────────────────────────────────────────
 
 interface UIComponentViewerProps {
   componentId: string;
@@ -526,15 +700,15 @@ interface UIComponentViewerProps {
 
 const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) => {
   const { isDark } = useTheme();
-  const [isOpen, setIsOpen] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen]   = useState(false);
+  const [refreshKey, setRefreshKey]       = useState(0);
   const [componentProps, setComponentProps] = useState<ComponentPropsMap>({});
   const [universalProps, setUniversalProps] = useState<UniversalProps>(DEFAULT_UNIVERSAL_PROPS);
-  const [componentData, setComponentData] = useState<LoadedComponentData | null>(null);
+  const [componentData, setComponentData]   = useState<LoadedComponentData | null>(null);
 
   useEffect(() => {
-    loadComponent(componentId).then((data) => {
+    loadComponent(componentId).then(data => {
       if (data) {
         setComponentData(data);
         setComponentProps(getDefaultProps(data.config));
@@ -542,31 +716,33 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
     });
   }, [componentId]);
 
-  const handleRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
+  const handleRefresh   = useCallback(() => setRefreshKey(k => k + 1), []);
 
   const handlePropChange = useCallback((name: string, value: PropValue) => {
-    setComponentProps((prev) => ({ ...prev, [name]: value }));
+    setComponentProps(prev => ({ ...prev, [name]: value }));
   }, []);
 
-  const handleUniversalPropChange = useCallback((name: keyof UniversalProps, value: PropValue) => {
-    setUniversalProps((prev) => ({ ...prev, [name]: value }));
+  const handleUniversalPropChange = useCallback((key: keyof UniversalProps, value: PropValue) => {
+    setUniversalProps(prev => ({ ...prev, [key]: value }));
   }, []);
 
-  const handleResetProps = useCallback(() => {
+  const handleReset = useCallback(() => {
     if (!componentData) return;
     setComponentProps(getDefaultProps(componentData.config));
     setUniversalProps(DEFAULT_UNIVERSAL_PROPS);
-    setRefreshKey((k) => k + 1);
+    setRefreshKey(k => k + 1);
   }, [componentData]);
 
   if (!componentData) {
     return (
-      <button
-        disabled
-        className={`px-4 py-2 rounded-lg font-medium my-6 ${themeClass(isDark, 'bg-white/10 text-white/50', 'bg-black/10 text-black/50')}`}
-      >
-        Загрузка компонента...
-      </button>
+      <div style={{
+        padding: '18px 24px', borderRadius: 10, margin: '1.5rem 0',
+        border: `1px solid ${tc(isDark,'rgba(255,255,255,0.09)','rgba(0,0,0,0.09)')}`,
+        color: tc(isDark,'rgba(255,255,255,0.35)','rgba(0,0,0,0.35)'), fontSize: 13,
+        textAlign: 'center',
+      }}>
+        Загрузка компонента…
+      </div>
     );
   }
 
@@ -580,23 +756,23 @@ const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) =>
 
   return (
     <>
-      {isOpen ? (
-        <SettingsModal
+      {settingsOpen ? (
+        <SettingsPanel
           {...sharedProps}
           config={componentData.config}
-          onClose={() => setIsOpen(false)}
+          onClose={() => setSettingsOpen(false)}
           onPropChange={handlePropChange}
           onUniversalPropChange={handleUniversalPropChange}
           onRefresh={handleRefresh}
-          onReset={handleResetProps}
+          onReset={handleReset}
         />
       ) : (
-        <PreviewMode
+        <PreviewPanel
           {...sharedProps}
           config={componentData.config}
           onRefresh={handleRefresh}
           onFullscreen={() => setIsFullscreen(true)}
-          onOpenSettings={() => setIsOpen(true)}
+          onOpenSettings={() => setSettingsOpen(true)}
         />
       )}
 
