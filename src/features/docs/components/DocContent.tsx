@@ -81,13 +81,12 @@ const DocHero: React.FC<{
   const metaBadgeBg = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
   const metaBadgeBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
 
-  // Breadcrumbs
+  // Breadcrumbs — показываем только реальные категории (typename)
   const breadcrumbs = [];
   breadcrumbs.push({ label: 'Главная', href: '/' });
-  if (doc.navTitle && doc.navSlug) {
-    breadcrumbs.push({ label: doc.navTitle, href: `/${doc.navSlug}` });
-  }
-  if (doc.typename) {
+  
+  // Добавляем typename только если он есть и не пустой
+  if (doc.typename && doc.typename.trim() !== '') {
     breadcrumbs.push({ label: doc.typename, href: null });
   }
 
@@ -108,7 +107,7 @@ const DocHero: React.FC<{
       </div>
 
       <div style={{ position: 'relative', zIndex: 1 }}>
-        {/* Breadcrumbs */}
+        {/* Breadcrumbs — показываем только если есть реальные категории */}
         {breadcrumbs.length > 1 && (
           <div
             style={{
