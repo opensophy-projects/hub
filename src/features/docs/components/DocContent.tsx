@@ -9,7 +9,7 @@ import { useTableOfContents } from '../hooks/useTableOfContents';
 import { useScrollProgress } from '../hooks/useScrollProgress';
 import { scrollToElement } from '../utils/scrollUtils';
 import { useDocuments } from '../hooks/useDocuments';
-import { Clock, CalendarDays, ArrowUp } from 'lucide-react';
+import { Clock, CalendarDays, ArrowUp, ChevronRight } from 'lucide-react';
 import DotWaveBackground from './DotWaveBackground';
 import AskAIButton from './AskAIButton';
 
@@ -27,6 +27,8 @@ interface DocContentProps {
     author?: string;
     date?: string;
     tags?: string[];
+    navSlug?: string;
+    navTitle?: string;
   };
 }
 
@@ -79,6 +81,16 @@ const DocHero: React.FC<{
   const metaBadgeBg = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
   const metaBadgeBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
 
+  // Breadcrumbs
+  const breadcrumbs = [];
+  breadcrumbs.push({ label: 'Главная', href: '/' });
+  if (doc.navTitle && doc.navSlug) {
+    breadcrumbs.push({ label: doc.navTitle, href: `/${doc.navSlug}` });
+  }
+  if (doc.typename) {
+    breadcrumbs.push({ label: doc.typename, href: null });
+  }
+
   return (
     <div
       style={{
@@ -96,6 +108,47 @@ const DocHero: React.FC<{
       </div>
 
       <div style={{ position: 'relative', zIndex: 1 }}>
+        {/* Breadcrumbs */}
+        {breadcrumbs.length > 1 && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              marginBottom: '1.5rem',
+              flexWrap: 'wrap',
+              fontSize: '0.8rem',
+            }}
+          >
+            {breadcrumbs.map((crumb, index) => (
+              <React.Fragment key={index}>
+                {crumb.href ? (
+                  <a
+                    href={crumb.href}
+                    style={{
+                      color: isDark ? '#ffffff' : '#000000',
+                      textDecoration: 'none',
+                      transition: 'opacity 0.2s',
+                      opacity: 0.7,
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                    onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
+                  >
+                    {crumb.label}
+                  </a>
+                ) : (
+                  <span style={{ color: isDark ? '#ffffff' : '#000000', fontWeight: 600 }}>
+                    {crumb.label}
+                  </span>
+                )}
+                {index < breadcrumbs.length - 1 && (
+                  <ChevronRight size={14} style={{ opacity: 0.4, color: isDark ? '#ffffff' : '#000000' }} />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        )}
+
         <div
           style={{
             display: 'flex',
@@ -168,7 +221,7 @@ const DocHero: React.FC<{
             style={{
               fontSize: 'clamp(0.9rem, 1.5vw, 1.05rem)',
               lineHeight: 1.65,
-              color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.82)',
+              color: isDark ? '#ffffff' : '#000000',
               margin: '0 0 1.75rem 0',
               maxWidth: '680px',
             }}
@@ -208,7 +261,7 @@ const DocHero: React.FC<{
                   <React.Fragment key={author}>
                     <strong
                       style={{
-                        color: isDark ? 'rgba(255,255,255,0.8)' : '#000000',
+                        color: isDark ? '#ffffff' : '#000000',
                         fontWeight: 600,
                       }}
                     >
@@ -344,7 +397,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
   return (
     <div style={{ minHeight: '100vh' }}>
-      {/* Прогресс-бар — z-index 999 чтобы быть поверх сайдбара */}
       <div
         className={`fixed top-0 left-0 h-1 ${isDark ? 'bg-white' : 'bg-black'}`}
         style={{ 
@@ -354,9 +406,8 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
       />
 
       <TopNavbar />
-      <Sidebar />
+      <Sidebar currentDocSlug={doc.slug} />
 
-      {/* TOC справа */}
       {toc.length > 0 && isDesktop && (
         <aside
           className={`hidden md:flex flex-col fixed right-0 z-40 border-l overflow-hidden ${
@@ -370,7 +421,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
                 На этой странице
               </h2>
               
-              {/* Кнопка Наверх с границами как в sidebar */}
               <button
                 onClick={handleScrollTop}
                 className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-lg border transition-colors ${
