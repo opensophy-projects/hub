@@ -40,12 +40,12 @@ const TocPanel: React.FC<TocPanelProps> = ({ toc, onClose }) => {
         />
         <div
           className={`fixed bottom-0 left-0 right-0 z-[61] w-full rounded-t-2xl border-t max-h-[70vh] overflow-y-auto ${
-            isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
+            isDark ? 'bg-[#0F0F0F] border-white/10' : 'bg-[#E1E0DC] border-black/10'
           }`}
         >
           <div
             className={`sticky top-0 flex items-center justify-between p-4 border-b ${
-              isDark ? 'bg-[#0a0a0a]/95 border-white/10' : 'bg-[#E8E7E3]/95 border-black/10'
+              isDark ? 'bg-[#0F0F0F]/95 border-white/10' : 'bg-[#E1E0DC]/95 border-black/10'
             }`}
           >
             <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>
@@ -96,7 +96,7 @@ const TocPanel: React.FC<TocPanelProps> = ({ toc, onClose }) => {
       />
       <aside
         className={`fixed right-0 top-0 h-screen w-80 border-l flex flex-col z-50 ${
-          isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
+          isDark ? 'bg-[#0F0F0F] border-white/10' : 'bg-[#E1E0DC] border-black/10'
         }`}
       >
         {/* Заголовок: текст + кнопка Наверх */}
