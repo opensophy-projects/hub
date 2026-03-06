@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTheme } from '@/shared/contexts/ThemeContext';
 import { scrollToElement } from '@/features/docs/utils/scrollUtils';
-import { X } from 'lucide-react';
+import { X, ArrowUp } from 'lucide-react';
 
 interface ToContentsItem {
   id: string;
@@ -19,19 +19,22 @@ const TocPanel: React.FC<TocPanelProps> = ({ toc, onClose }) => {
 
   const handleClick = (id: string) => {
     scrollToElement(id);
-    // Даём время на скролл, потом закрываем
     setTimeout(() => {
       onClose();
     }, 100);
   };
 
+  const handleScrollTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
 
   if (!isDesktop) {
-    // Мобильная версия как раньше (BottomSheet)
+    // Мобильная версия — bottom sheet
     return (
       <>
-        <div 
+        <div
           className={`fixed inset-0 z-[60] ${isDark ? 'bg-black/50' : 'bg-white/50'}`}
           onClick={onClose}
         />
@@ -84,34 +87,56 @@ const TocPanel: React.FC<TocPanelProps> = ({ toc, onClose }) => {
     );
   }
 
-  // Десктопная версия как Sidebar справа
+  // Десктопная версия — sidebar справа с кнопкой «Наверх» в заголовке
   return (
     <>
-      <div 
+      <div
         className="fixed inset-0 bg-black/50 z-40"
         onClick={onClose}
       />
       <aside
-        className={`fixed right-0 top-16 h-[calc(100vh-4rem)] w-80 border-l flex flex-col z-50 ${
+        className={`fixed right-0 top-0 h-screen w-80 border-l flex flex-col z-50 ${
           isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
         }`}
       >
-        <div className="flex items-center justify-between p-4 border-b" style={{
-          borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-        }}>
-          <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>
+        {/* Заголовок: текст + кнопка Наверх */}
+        <div
+          className="flex items-center justify-between px-4 py-3 border-b"
+          style={{
+            borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+          }}
+        >
+          <h2 className={`text-sm font-bold uppercase tracking-widest ${isDark ? 'text-white/50' : 'text-black/50'}`}>
             На этой странице
           </h2>
-          <button
-            onClick={onClose}
-            className={`p-2 rounded-lg transition-colors ${
-              isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black'
-            }`}
-          >
-            <X size={20} />
-          </button>
+
+          <div className="flex items-center gap-1">
+            {/* Кнопка Наверх с текстом снизу */}
+            <button
+              onClick={handleScrollTop}
+              className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-lg transition-colors ${
+                isDark
+                  ? 'text-white/60 hover:bg-white/5 hover:text-white'
+                  : 'text-black/60 hover:bg-black/5 hover:text-black'
+              }`}
+              title="Наверх"
+            >
+              <ArrowUp size={15} />
+              <span className="text-[9px] font-medium leading-none">Наверх</span>
+            </button>
+
+            {/* Кнопка закрытия */}
+            <button
+              onClick={onClose}
+              className={`p-1.5 rounded-lg transition-colors ${
+                isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black'
+              }`}
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
-        
+
         {toc.length === 0 ? (
           <div className="flex-1 flex items-center justify-center p-4">
             <p className={`text-sm text-center ${isDark ? 'text-white/50' : 'text-black/50'}`}>
