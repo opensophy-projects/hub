@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
-import { marked } from 'marked';
 import DOMPurify from 'isomorphic-dompurify';
 import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
@@ -31,14 +30,34 @@ interface DocContentProps {
   };
 }
 
+// ─── Allowed tags/attrs для DOMPurify ────────────────────────────────────────
+// doc.content уже является готовым HTML (после marked() в buildDocFromPath),
+// поэтому здесь мы только санитизируем, НЕ прогоняем через marked() снова.
+
+const SANITIZE_TAGS = [
+  'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+  'p', 'br', 'strong', 'em', 'u', 'a',
+  'ul', 'ol', 'li', 'blockquote', 'code',
+  'pre', 'img', 'table', 'tr', 'td', 'th',
+  'thead', 'tbody', 'div', 'span', 'hr', 'figure', 'figcaption',
+  'del', 'input', 'sub', 'sup', 'details', 'summary', 'mark',
+];
+
+const SANITIZE_ATTR = [
+  'href', 'src', 'alt', 'title', 'class', 'id',
+  'data-language', 'data-lang', 'data-alert-type',
+  'data-cols', 'data-layout', 'data-status', 'data-title',
+  'data-color', 'data-icon', 'data-code',
+  'data-border-color',
+  'type', 'checked', 'disabled', 'open', 'style', 'align',
+];
+
 // ─── Read time estimation ─────────────────────────────────────────────────────
 
 function estimateReadTime(content: string): number {
   if (!content) return 1;
-  // Strip HTML tags
   const text = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   const words = text.split(' ').filter(Boolean).length;
-  // Average reading speed: 200 words/min (Russian text slightly slower)
   return Math.max(1, Math.round(words / 200));
 }
 
@@ -62,9 +81,7 @@ const DocHero: React.FC<{
       })
     : null;
 
-  // Solid base color под канвас
   const heroBg = isDark ? '#0a0a0a' : '#E8E7E3';
-
   const borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
   const metaTextColor = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.75)';
   const metaBadgeBg = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
@@ -82,160 +99,146 @@ const DocHero: React.FC<{
         position: 'relative',
       }}
     >
-      {/* Канвас обёрнут чтобы overflow не резал дропдаун */}
       <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
         <DotWaveBackground isDark={isDark} />
       </div>
 
-      {/* Весь контент поверх канваса */}
       <div style={{ position: 'relative', zIndex: 1 }}>
-      {/* Верхняя мета-строка: дата + тема */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.625rem',
-          marginBottom: '1.25rem',
-          flexWrap: 'wrap',
-        }}
-      >
-        {formattedDate && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.625rem',
+            marginBottom: '1.25rem',
+            flexWrap: 'wrap',
+          }}
+        >
+          {formattedDate && (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                fontSize: '0.75rem',
+                color: metaTextColor,
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              <CalendarDays size={13} style={{ opacity: 0.7 }} />
+              {formattedDate}
+            </span>
+          )}
+
+          {doc.typename && doc.typename.trim() !== '' && (
+            <>
+              {formattedDate && (
+                <span style={{ color: metaTextColor, fontSize: '0.7rem' }}>·</span>
+              )}
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  color: metaTextColor,
+                  background: metaBadgeBg,
+                  border: `1px solid ${metaBadgeBorder}`,
+                  borderRadius: '6px',
+                  padding: '2px 8px',
+                }}
+              >
+                {doc.typename}
+              </span>
+            </>
+          )}
+        </div>
+
+        <h1
+          style={{
+            fontSize: 'clamp(1.6rem, 4vw, 2.8rem)',
+            fontWeight: 700,
+            lineHeight: 1.15,
+            letterSpacing: '-0.02em',
+            color: isDark ? '#ffffff' : '#0a0a0a',
+            margin: '0 0 1rem 0',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+            maxWidth: '820px',
+          }}
+        >
+          {doc.title}
+        </h1>
+
+        {doc.description && (
+          <p
+            style={{
+              fontSize: 'clamp(0.9rem, 1.5vw, 1.05rem)',
+              lineHeight: 1.65,
+              color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.82)',
+              margin: '0 0 1.75rem 0',
+              maxWidth: '680px',
+            }}
+          >
+            {doc.description}
+          </p>
+        )}
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem',
+            flexWrap: 'wrap',
+            paddingTop: '1rem',
+          }}
+        >
           <span
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.35rem',
-              fontSize: '0.75rem',
+              fontSize: '0.8rem',
               color: metaTextColor,
-              fontVariantNumeric: 'tabular-nums',
             }}
           >
-            <CalendarDays size={13} style={{ opacity: 0.7 }} />
-            {formattedDate}
+            <Clock size={13} style={{ opacity: 0.7 }} />
+            {readTime} мин чтения
           </span>
-        )}
 
-        {doc.typename && doc.typename.trim() !== '' && (
-          <>
-            {formattedDate && (
-              <span style={{ color: metaTextColor, fontSize: '0.7rem' }}>·</span>
-            )}
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.3rem',
-                fontSize: '0.7rem',
-                fontWeight: 600,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                color: metaTextColor,
-                background: metaBadgeBg,
-                border: `1px solid ${metaBadgeBorder}`,
-                borderRadius: '6px',
-                padding: '2px 8px',
-              }}
-            >
-              {doc.typename}
-            </span>
-          </>
-        )}
-      </div>
+          {authors.length > 0 && (
+            <>
+              <span style={{ color: metaTextColor, fontSize: '0.75rem' }}>·</span>
+              <span style={{ fontSize: '0.8rem', color: metaTextColor }}>
+                {authors.length === 1 ? 'Автор' : 'Авторы'}:{' '}
+                {authors.map((author, i) => (
+                  <React.Fragment key={author}>
+                    <strong
+                      style={{
+                        color: isDark ? 'rgba(255,255,255,0.8)' : '#000000',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {author}
+                    </strong>
+                    {i < authors.length - 1 && ', '}
+                  </React.Fragment>
+                ))}
+              </span>
+            </>
+          )}
 
-      {/* Заголовок */}
-      <h1
-        style={{
-          fontSize: 'clamp(1.6rem, 4vw, 2.8rem)',
-          fontWeight: 700,
-          lineHeight: 1.15,
-          letterSpacing: '-0.02em',
-          color: isDark ? '#ffffff' : '#0a0a0a',
-          margin: '0 0 1rem 0',
-          fontFamily: 'system-ui, -apple-system, sans-serif',
-          maxWidth: '820px',
-        }}
-      >
-        {doc.title}
-      </h1>
-
-      {/* Описание */}
-      {doc.description && (
-        <p
-          style={{
-            fontSize: 'clamp(0.9rem, 1.5vw, 1.05rem)',
-            lineHeight: 1.65,
-            color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.82)',
-            margin: '0 0 1.75rem 0',
-            maxWidth: '680px',
-          }}
-        >
-          {doc.description}
-        </p>
-      )}
-
-      {/* Нижняя мета-строка: время чтения + авторы + AskAI */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '1rem',
-          flexWrap: 'wrap',
-          paddingTop: '1rem',
-        }}
-      >
-        {/* Время чтения */}
-        <span
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.35rem',
-            fontSize: '0.8rem',
-            color: metaTextColor,
-          }}
-        >
-          <Clock size={13} style={{ opacity: 0.7 }} />
-          {readTime} мин чтения
-        </span>
-
-        {/* Авторы */}
-        {authors.length > 0 && (
-          <>
-            <span style={{ color: metaTextColor, fontSize: '0.75rem' }}>·</span>
-            <span
-              style={{
-                fontSize: '0.8rem',
-                color: metaTextColor,
-              }}
-            >
-              {authors.length === 1 ? 'Автор' : 'Авторы'}:{' '}
-              {authors.map((author, i) => (
-                <React.Fragment key={author}>
-                  <strong
-                    style={{
-                      color: isDark ? 'rgba(255,255,255,0.8)' : '#000000',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {author}
-                  </strong>
-                  {i < authors.length - 1 && ', '}
-                </React.Fragment>
-              ))}
-            </span>
-          </>
-        )}
-
-        {/* Spacer + кнопка Ask AI */}
-        <div style={{ marginLeft: 'auto' }}>
-          <AskAIButton
-            isDark={isDark}
-            pageTitle={doc.title}
-            pageSlug={doc.slug}
-            markdownContent={markdownContent}
-          />
+          <div style={{ marginLeft: 'auto' }}>
+            <AskAIButton
+              isDark={isDark}
+              pageTitle={doc.title}
+              pageSlug={doc.slug}
+              markdownContent={markdownContent}
+            />
+          </div>
         </div>
       </div>
-    </div>
     </div>
   );
 };
@@ -289,10 +292,20 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
     setFullscreenTableHtml(tableHtml);
   };
 
+  // ─── ИСПРАВЛЕНО ───────────────────────────────────────────────────────────
+  // doc.content уже является HTML (buildDocFromPath в docUtils.mjs уже
+  // прогнал markdown через marked()). Повторный вызов marked(doc.content)
+  // ломал data-атрибуты диаграмм, экранируя HTML-теги в текст.
+  // Теперь только санитизируем HTML, не трогая его структуру.
   const htmlContent = useMemo(() => {
     if (!doc.content) return '';
-    return DOMPurify.sanitize(marked(doc.content));
+    return DOMPurify.sanitize(doc.content, {
+      ALLOWED_TAGS: SANITIZE_TAGS,
+      ALLOWED_ATTR: SANITIZE_ATTR,
+      ALLOW_DATA_ATTR: true,
+    });
   }, [doc.content]);
+  // ─────────────────────────────────────────────────────────────────────────
 
   const contentNodes = useMemo(() => {
     if (!htmlContent) return [];
