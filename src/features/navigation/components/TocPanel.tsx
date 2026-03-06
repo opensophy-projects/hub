@@ -19,7 +19,10 @@ const TocPanel: React.FC<TocPanelProps> = ({ toc, onClose }) => {
 
   const handleClick = (id: string) => {
     scrollToElement(id);
-    onClose();
+    // Даём время на скролл, потом закрываем
+    setTimeout(() => {
+      onClose();
+    }, 100);
   };
 
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
