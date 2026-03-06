@@ -226,7 +226,7 @@ const SidebarSearch: React.FC<{
   isDark: boolean;
   onOpenAdvanced: () => void;
 }> = memo(({ value, onChange, isDark, onOpenAdvanced }) => (
-  <div className="flex-shrink-0 p-3 border-b" style={borderStyle(isDark)}>
+  <div className="flex-shrink-0 p-3" style={borderStyle(isDark)}>
     <div className="flex gap-2">
       {/* Поисковый инпут */}
       <div className="relative flex-1">
