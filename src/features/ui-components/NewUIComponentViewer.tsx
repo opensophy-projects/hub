@@ -70,6 +70,20 @@ const UNIVERSAL_FIELDS: Array<{
 
 const tc = (isDark: boolean, d: string, l: string) => (isDark ? d : l);
 
+// ─── Responsive grid columns helper ──────────────────────────────────────────
+
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 640 : false
+  );
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  return isMobile;
+};
+
 // ─── NumberInput — цифра + ползунок ──────────────────────────────────────────
 
 interface NumberInputProps {
@@ -117,6 +131,7 @@ const NumberInput: React.FC<NumberInputProps> = ({
           accentColor: tc(isDark, '#fff', '#000'),
           cursor: 'pointer',
           height: 4,
+          minWidth: 0,
         }}
       />
       {editing ? (
@@ -132,7 +147,7 @@ const NumberInput: React.FC<NumberInputProps> = ({
             width: 54, padding: '2px 5px', borderRadius: 6,
             border: `1px solid ${border}`, background: bg, color: fg,
             fontSize: 11, textAlign: 'center', outline: 'none',
-            fontFamily: 'ui-monospace, monospace',
+            fontFamily: 'ui-monospace, monospace', flexShrink: 0,
           }}
         />
       ) : (
@@ -153,7 +168,7 @@ const NumberInput: React.FC<NumberInputProps> = ({
   );
 };
 
-// ─── Universal 3-column grid ───────────────────────────────────────────────────
+// ─── Universal 3-column grid (responsive) ─────────────────────────────────────
 
 interface UniversalGridProps {
   universalProps: UniversalProps;
@@ -162,14 +177,17 @@ interface UniversalGridProps {
 }
 
 const UniversalGrid: React.FC<UniversalGridProps> = ({ universalProps, onChange, isDark }) => {
+  const isMobile    = useIsMobile();
   const borderColor = tc(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.07)');
   const cellBg      = tc(isDark, 'rgba(255,255,255,0.025)', 'rgba(0,0,0,0.02)');
   const labelColor  = tc(isDark, 'rgba(255,255,255,0.45)', 'rgba(0,0,0,0.45)');
 
+  const cols = isMobile ? 1 : 3;
+
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(3, 1fr)',
+      gridTemplateColumns: `repeat(${cols}, 1fr)`,
       gap: 1,
       background: borderColor,
       border: `1px solid ${borderColor}`,
@@ -318,7 +336,6 @@ const SpecificGrid: React.FC<SpecificGridProps> = ({ config, componentProps, onC
     );
   }
 
-  // Разделяем: сначала числа/текст (в сетку), потом select (в сетку тоже)
   return (
     <div style={{
       display: 'grid',
@@ -412,6 +429,7 @@ const TabBar: React.FC<TabBarProps> = ({ active, onSelect, isDark }) => {
     <div style={{
       display: 'flex', gap: 4, padding: '7px 11px',
       borderBottom: `1px solid ${border}`, background: bg,
+      flexWrap: 'wrap',
     }}>
       {(['universal', 'specific'] as TabType[]).map(tab => {
         const isActive = active === tab;
@@ -425,6 +443,7 @@ const TabBar: React.FC<TabBarProps> = ({ active, onSelect, isDark }) => {
               background: isActive ? tc(isDark,'rgba(255,255,255,0.09)','rgba(0,0,0,0.09)') : 'transparent',
               color: isActive ? tc(isDark,'#fff','#000') : tc(isDark,'rgba(255,255,255,0.5)','rgba(0,0,0,0.5)'),
               fontSize: 12, fontWeight: isActive ? 600 : 400, cursor: 'pointer', transition: 'all 0.14s',
+              whiteSpace: 'nowrap',
             }}
           >
             {tab === 'universal' ? 'Общие настройки компонента' : 'Специфические настройки'}
@@ -453,7 +472,7 @@ const IconBtn: React.FC<{
       border: active ? `1px solid ${tc(isDark,'rgba(255,255,255,0.2)','rgba(0,0,0,0.2)')}` : 'none',
       background: active ? tc(isDark,'rgba(255,255,255,0.1)','rgba(0,0,0,0.08)') : 'transparent',
       color: active ? tc(isDark,'#fff','#000') : tc(isDark,'rgba(255,255,255,0.55)','rgba(0,0,0,0.55)'),
-      cursor: 'pointer', transition: 'all 0.14s',
+      cursor: 'pointer', transition: 'all 0.14s', flexShrink: 0,
     }}
     onMouseEnter={e => {
       const b = e.currentTarget as HTMLButtonElement;
@@ -528,6 +547,8 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
           padding: '3px 9px', borderRadius: 7,
           background: tc(isDark,'rgba(255,255,255,0.06)','rgba(0,0,0,0.06)'),
           border: `1px solid ${border}`, flexShrink: 0,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          maxWidth: 'calc(100% - 120px)',
         }}>
           {config.name}
         </div>
@@ -581,12 +602,18 @@ const SettingsPanel: React.FC<SettingsPanelProps> = (props) => {
   return (
     <div style={{
       borderRadius: 12, border: `1px solid ${border}`, background: bg,
-      overflow: 'hidden', margin: '1.5rem 0',
+      // FIX: Use flex column layout so the panel doesn't overflow; make it scrollable
+      display: 'flex', flexDirection: 'column',
+      margin: '1.5rem 0',
+      // Prevent the panel from growing taller than the viewport on mobile
+      maxHeight: 'calc(100dvh - 3rem)',
+      overflow: 'hidden',
     }}>
       {/* Preview сверху */}
       <div style={{
-        minHeight: 320, display: 'flex', alignItems: 'center',
-        justifyContent: 'center', padding: 28,
+        minHeight: 220, flexShrink: 0,
+        display: 'flex', alignItems: 'center',
+        justifyContent: 'center', padding: 20,
         borderBottom: `1px solid ${border}`,
       }}>
         <ComponentRender
@@ -595,11 +622,20 @@ const SettingsPanel: React.FC<SettingsPanelProps> = (props) => {
         />
       </div>
 
-      {/* Tab bar */}
-      <TabBar active={activeTab} onSelect={setActiveTab} isDark={isDark} />
+      {/* Tab bar — fixed, не скроллируется */}
+      <div style={{ flexShrink: 0 }}>
+        <TabBar active={activeTab} onSelect={setActiveTab} isDark={isDark} />
+      </div>
 
-      {/* Settings grid */}
-      <div style={{ padding: '14px 14px 10px' }}>
+      {/* Settings grid — scrollable area */}
+      <div style={{
+        flex: 1,
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        padding: '14px 14px 10px',
+        // Smooth scrolling on iOS
+        WebkitOverflowScrolling: 'touch',
+      }}>
         {activeTab === 'universal' ? (
           <UniversalGrid
             universalProps={props.universalProps}
@@ -616,8 +652,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = (props) => {
         )}
       </div>
 
-      {/* Footer */}
+      {/* Footer — fixed at bottom */}
       <div style={{
+        flexShrink: 0,
         display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px',
         borderTop: `1px solid ${border}`, background: footerBg,
       }}>
