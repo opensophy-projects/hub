@@ -4,7 +4,6 @@ import React, {
   useState,
   useContext,
   useCallback,
-  useMemo,
 } from 'react';
 import { TableContext } from '../lib/htmlParser';
 
@@ -139,10 +138,9 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
   const viewRef  = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
   const last     = useRef({ x: 0, y: 0 });
-  // FIX: state so cursor updates on re-render (ref alone doesn't trigger it)
   const [isDragging, setIsDragging] = useState(false);
 
-  // Mouse drag — listeners attached only during active drag to avoid conflicts
+  // Mouse drag
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     if (!panMode) return;
     if (e.button !== 0) return;
@@ -213,7 +211,7 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
     };
   }, [panMode, setPos, setScale]);
 
-  // Wheel zoom (always, not just in pan mode)
+  // Wheel zoom
   useEffect(() => {
     const el = viewRef.current;
     if (!el) return;
@@ -236,7 +234,6 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
       style={{
         overflow: 'hidden',
         position: 'relative',
-        // FIX: isDragging is state, so cursor actually updates
         cursor: panMode ? (isDragging ? 'grabbing' : 'grab') : 'default',
         minHeight: minH,
         height: isFullscreen ? '100%' : 'auto',
@@ -297,75 +294,101 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
         flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis', padding: 20 },
         sequence: { useMaxWidth: true, boxMargin: 10 },
-        gantt: { useMaxWidth: true, leftPadding: 75, barHeight: 28 },
+        gantt: { useMaxWidth: true, leftPadding: 75, barHeight: 28, fontSize: 13 },
         themeVariables: isDark
           ? {
               primaryColor: '#1a1a2e',
-              primaryTextColor: '#d4d4d8',
-              primaryBorderColor: color || 'rgba(255,255,255,0.2)',
-              lineColor: 'rgba(255,255,255,0.4)',
+              primaryTextColor: '#e8e8e8',
+              primaryBorderColor: color || 'rgba(255,255,255,0.25)',
+              lineColor: 'rgba(255,255,255,0.5)',
               secondaryColor: '#16213e',
               tertiaryColor: '#1a1a2e',
               background: '#0a0a0a',
               mainBkg: '#131320',
-              nodeBorder: color || 'rgba(255,255,255,0.25)',
-              clusterBkg: 'rgba(255,255,255,0.04)',
-              clusterBorder: 'rgba(255,255,255,0.1)',
-              titleColor: '#d4d4d8',
+              nodeBorder: color || 'rgba(255,255,255,0.3)',
+              clusterBkg: 'rgba(255,255,255,0.05)',
+              clusterBorder: 'rgba(255,255,255,0.15)',
+              titleColor: '#e8e8e8',
               edgeLabelBackground: '#0f0f18',
-              textColor: '#d4d4d8',
-              labelTextColor: '#d4d4d8',
+              textColor: '#e8e8e8',
+              labelTextColor: '#e8e8e8',
               actorBkg: '#1a1a2e',
-              actorBorder: color || 'rgba(255,255,255,0.2)',
-              actorTextColor: '#d4d4d8',
-              actorLineColor: 'rgba(255,255,255,0.3)',
-              signalColor: 'rgba(255,255,255,0.7)',
-              signalTextColor: '#d4d4d8',
-              gridColor: 'rgba(255,255,255,0.07)',
+              actorBorder: color || 'rgba(255,255,255,0.25)',
+              actorTextColor: '#e8e8e8',
+              actorLineColor: 'rgba(255,255,255,0.4)',
+              signalColor: 'rgba(255,255,255,0.8)',
+              signalTextColor: '#e8e8e8',
+              gridColor: 'rgba(255,255,255,0.1)',
               section0: '#1a1a2e',
               section1: '#131320',
               taskBkgColor: color || '#1e3a5f',
-              taskBorderColor: color || 'rgba(255,255,255,0.2)',
-              taskTextColor: '#d4d4d8',
-              taskTextOutsideColor: '#d4d4d8',
+              taskBorderColor: color || 'rgba(255,255,255,0.25)',
+              taskTextColor: '#e8e8e8',
+              taskTextOutsideColor: '#e8e8e8',
+              // xychart
+              xyChart: {
+                backgroundColor: 'transparent',
+                titleColor: '#e8e8e8',
+                xAxisTitleColor: '#e8e8e8',
+                xAxisLabelColor: '#c0c0c0',
+                xAxisTickColor: 'rgba(255,255,255,0.2)',
+                xAxisLineColor: 'rgba(255,255,255,0.2)',
+                yAxisTitleColor: '#e8e8e8',
+                yAxisLabelColor: '#c0c0c0',
+                yAxisTickColor: 'rgba(255,255,255,0.2)',
+                yAxisLineColor: 'rgba(255,255,255,0.2)',
+                plotColorPalette: '#3b82f6,#10b981,#f59e0b,#ef4444,#8b5cf6,#ec4899',
+              },
             }
           : {
               primaryColor: '#e8e7f0',
               primaryTextColor: '#1a1a2e',
-              primaryBorderColor: color || 'rgba(0,0,0,0.18)',
-              lineColor: 'rgba(0,0,0,0.4)',
+              primaryBorderColor: color || 'rgba(0,0,0,0.2)',
+              lineColor: 'rgba(0,0,0,0.5)',
               secondaryColor: '#f0eff8',
               tertiaryColor: '#e0dff0',
               background: '#E8E7E3',
               mainBkg: '#eeecf8',
-              nodeBorder: color || 'rgba(0,0,0,0.2)',
-              clusterBkg: 'rgba(0,0,0,0.03)',
-              clusterBorder: 'rgba(0,0,0,0.1)',
+              nodeBorder: color || 'rgba(0,0,0,0.25)',
+              clusterBkg: 'rgba(0,0,0,0.04)',
+              clusterBorder: 'rgba(0,0,0,0.12)',
               titleColor: '#1a1a2e',
               edgeLabelBackground: '#f5f4fc',
               textColor: '#1a1a2e',
               labelTextColor: '#1a1a2e',
               actorBkg: '#eeecf8',
-              actorBorder: color || 'rgba(0,0,0,0.18)',
+              actorBorder: color || 'rgba(0,0,0,0.2)',
               actorTextColor: '#1a1a2e',
-              actorLineColor: 'rgba(0,0,0,0.3)',
-              signalColor: 'rgba(0,0,0,0.6)',
+              actorLineColor: 'rgba(0,0,0,0.4)',
+              signalColor: 'rgba(0,0,0,0.7)',
               signalTextColor: '#1a1a2e',
-              gridColor: 'rgba(0,0,0,0.08)',
+              gridColor: 'rgba(0,0,0,0.1)',
               section0: '#eeecf8',
               section1: '#e4e2f4',
               taskBkgColor: color || '#c7d2fe',
-              taskBorderColor: color || 'rgba(0,0,0,0.15)',
+              taskBorderColor: color || 'rgba(0,0,0,0.18)',
               taskTextColor: '#1a1a2e',
               taskTextOutsideColor: '#1a1a2e',
+              // xychart
+              xyChart: {
+                backgroundColor: 'transparent',
+                titleColor: '#1a1a2e',
+                xAxisTitleColor: '#1a1a2e',
+                xAxisLabelColor: '#4a4a4a',
+                xAxisTickColor: 'rgba(0,0,0,0.2)',
+                xAxisLineColor: 'rgba(0,0,0,0.2)',
+                yAxisTitleColor: '#1a1a2e',
+                yAxisLabelColor: '#4a4a4a',
+                yAxisTickColor: 'rgba(0,0,0,0.2)',
+                yAxisLineColor: 'rgba(0,0,0,0.2)',
+                plotColorPalette: '#3b82f6,#10b981,#f59e0b,#ef4444,#8b5cf6,#ec4899',
+              },
             },
       });
 
       const id = nextId();
       const { svg } = await mermaid.render(id, code.trim());
 
-      // FIX: cap SVG width so diagrams don't render huge.
-      // Original kept max-width:100% which stretched to full container width.
       const patched = svg
         .replace(/(<svg[^>]*?)\s+width="[^"]*"/g, '$1')
         .replace(/(<svg[^>]*?)\s+height="[^"]*"/g, '$1')
