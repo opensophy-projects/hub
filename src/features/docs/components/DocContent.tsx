@@ -327,7 +327,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
           style={{
             marginLeft: isDesktop ? '20rem' : '0',
             marginRight: toc.length > 0 && isDesktop ? TOC_WIDTH : '0',
-            // Десктопный navbar удалён — marginTop не нужен
             marginBottom: isDesktop ? '0' : '3.5rem',
           }}
         >
@@ -341,10 +340,13 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
   return (
     <div style={{ minHeight: '100vh' }}>
-      {/* Прогресс-бар */}
+      {/* Прогресс-бар — ИСПРАВЛЕНО: для десктопа начинается после сайдбара */}
       <div
-        className={`fixed top-0 left-0 h-1 z-50 ${isDark ? 'bg-white' : 'bg-black'}`}
-        style={{ width: `${scrollProgress}%` }}
+        className={`fixed top-0 h-1 z-50 ${isDark ? 'bg-white' : 'bg-black'}`}
+        style={{ 
+          width: `${scrollProgress}%`,
+          left: isDesktop ? '20rem' : '0',
+        }}
       />
 
       <TopNavbar />
@@ -356,7 +358,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
           className={`hidden md:flex flex-col fixed right-0 z-40 border-l overflow-hidden ${
             isDark ? 'bg-[#0a0a0a] border-white/10' : 'bg-[#E8E7E3] border-black/10'
           }`}
-          // Десктопный navbar удалён — TOC начинается с top: 0
           style={{ top: '0', width: TOC_WIDTH, height: '100vh' }}
         >
           <div className={`flex-shrink-0 px-4 py-4 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
@@ -431,7 +432,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
         style={{
           marginLeft: isDesktop ? '20rem' : '0',
           marginRight: toc.length > 0 && isDesktop ? TOC_WIDTH : '0',
-          // Десктопный navbar удалён — marginTop не нужен для десктопа
           marginBottom: isDesktop ? '0' : '3.5rem',
           transition: 'margin-left 0.3s ease',
         }}
