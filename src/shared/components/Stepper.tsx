@@ -72,8 +72,10 @@ const STEP_COLORS: Record<StepStatus, {
   },
 };
 
-const pick = (v: string | ThemePair, isDark: boolean): string =>
-  typeof v === 'string' ? v : (isDark ? v.dark : v.light);
+function pick(v: string | ThemePair, isDark: boolean): string {
+  if (typeof v === 'string') return v;
+  return isDark ? v.dark : v.light;
+}
 
 function getStepColors(status: StepStatus, isDark: boolean): StepColors {
   const c = STEP_COLORS[status];
