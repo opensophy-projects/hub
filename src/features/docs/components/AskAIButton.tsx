@@ -91,10 +91,10 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
   }, [open]);
 
   const getPageUrl = () =>
-    typeof window !== 'undefined' ? window.location.href : pageSlug;
+    typeof globalThis.window === 'undefined' ? pageSlug : globalThis.window.location.href;
 
   const handleProviderClick = (p: typeof PROVIDERS[0]) => {
-    window.open(p.getUrl(pageTitle, getPageUrl()), '_blank', 'noopener,noreferrer');
+    globalThis.window.open(p.getUrl(pageTitle, getPageUrl()), '_blank', 'noopener,noreferrer');
     setOpen(false);
   };
 
