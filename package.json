@@ -1,7 +1,7 @@
 {
   "name": "opensophy-hub",
   "private": true,
-  "version": "3.1.0",
+  "version": "3.2.0",
   "type": "module",
   "scripts": {
     "dev": "npm run generate:docs && npm run generate:sitemap && astro dev",
@@ -13,7 +13,7 @@
     "generate": "npm run generate:docs && npm run generate:sitemap"
   },
   "dependencies": {
-    "astro": "^5.17.1",
+    "astro": "^5.17.3",
     "clsx": "^2.1.1",
     "framer-motion": "^12.24.7",
     "highlight.js": "^11.11.1",
@@ -46,6 +46,8 @@
     "esbuild": "^0.25.0",
     "h3": ">=1.15.5",
     "devalue": ">=5.6.3",
-    "diff": ">=8.0.3"
+    "diff": ">=8.0.3",
+    "svgo": ">=4.0.1",
+    "dompurify": ">=3.3.2"
   }
 }
