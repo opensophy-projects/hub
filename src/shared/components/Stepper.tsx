@@ -27,7 +27,6 @@ interface StepColors {
   contentColor: string;
 }
 
-// Theme-dependent values indexed by [status][isDark ? 'dark' : 'light']
 type ThemePair = { dark: string; light: string };
 
 const STEP_COLORS: Record<StepStatus, {
@@ -105,63 +104,45 @@ const StepItem: React.FC<StepItemProps> = ({ step, index, isLast, isDark }) => {
     <div style={{ display: 'flex', gap: '1rem', position: 'relative' }}>
       {/* Left: dot + line */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, width: '32px' }}>
-        <div
-          style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: '50%',
-            background: colors.dotBg,
-            border: `2px solid ${colors.dotBorder}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: step.status === 'done' ? '14px' : '0.75rem',
-            fontWeight: 700,
-            color: colors.dotText,
-            flexShrink: 0,
-            zIndex: 1,
-            transition: 'all 0.2s',
-          }}
-        >
+        <div style={{
+          width: '32px', height: '32px', borderRadius: '50%',
+          background: colors.dotBg, border: `2px solid ${colors.dotBorder}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: step.status === 'done' ? '14px' : '0.75rem',
+          fontWeight: 700, color: colors.dotText,
+          flexShrink: 0, zIndex: 1, transition: 'all 0.2s',
+        }}>
           {step.status === 'done' ? '✓' : index + 1}
         </div>
         {!isLast && (
-          <div
-            style={{
-              width: '2px',
-              flex: 1,
-              minHeight: '24px',
-              background: colors.lineColor,
-              margin: '4px 0',
-              borderRadius: '2px',
-              transition: 'background 0.2s',
-            }}
-          />
+          <div style={{
+            width: '2px', flex: 1, minHeight: '24px',
+            background: colors.lineColor, margin: '4px 0',
+            borderRadius: '2px', transition: 'background 0.2s',
+          }} />
         )}
       </div>
 
-      {/* Right: content */}
-      <div style={{ flex: 1, paddingBottom: isLast ? 0 : '1.5rem', paddingTop: '4px' }}>
-        <p
-          style={{
-            margin: '0 0 0.4rem 0',
-            fontSize: '0.95rem',
-            fontWeight: 700,
-            color: colors.titleColor,
-            lineHeight: 1.3,
-            transition: 'color 0.2s',
-          }}
-        >
+      {/* Right: content — FIX: minWidth:0 + overflow:hidden prevent child overflow */}
+      <div style={{
+        flex: 1,
+        minWidth: 0,           // ← critical: allows flex child to shrink below content size
+        overflow: 'hidden',    // ← clips overflowing children (CodeBlock, tables, etc.)
+        paddingBottom: isLast ? 0 : '1.5rem',
+        paddingTop: '4px',
+      }}>
+        <p style={{
+          margin: '0 0 0.4rem 0', fontSize: '0.95rem', fontWeight: 700,
+          color: colors.titleColor, lineHeight: 1.3, transition: 'color 0.2s',
+        }}>
           {step.title}
         </p>
-        <div
-          style={{
-            fontSize: '0.85rem',
-            color: colors.contentColor,
-            lineHeight: 1.65,
-            transition: 'color 0.2s',
-          }}
-        >
+        <div style={{
+          fontSize: '0.85rem', color: colors.contentColor,
+          lineHeight: 1.65, transition: 'color 0.2s',
+          // Allow block-level children to take full width without overflowing
+          maxWidth: '100%',
+        }}>
           {step.content}
         </div>
       </div>
@@ -174,7 +155,6 @@ const StepItem: React.FC<StepItemProps> = ({ step, index, isLast, isDark }) => {
 const Stepper: React.FC<StepperProps> = ({ steps, isDark = false }) => (
   <div style={{ margin: '1.5rem 0', display: 'flex', flexDirection: 'column', gap: 0 }}>
     {steps.map((step, index) => (
-      // FIX S6479: use stable key combining title + index (title alone may not be unique)
       <StepItem
         key={`${step.title}-${index}`}
         step={step}
