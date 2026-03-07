@@ -9,10 +9,10 @@ interface TableOfContentsItem {
 function slugifyHeading(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
+    .replaceAll(/[^\w\s-]/g, '')
+    .replaceAll(/\s+/g, '-')
+    .replaceAll(/-+/g, '-')
+    .replaceAll(/^-|-$/g, '');
 }
 
 export function useTableOfContents<T>(dependency: T): TableOfContentsItem[] {
@@ -51,7 +51,7 @@ export function useTableOfContents<T>(dependency: T): TableOfContentsItem[] {
         items.push({
           id: heading.id,
           text,
-          level: parseInt(heading.tagName[1], 10),
+          level: Number.parseInt(heading.tagName[1], 10),
         });
       });
 
