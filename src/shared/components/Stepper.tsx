@@ -123,11 +123,11 @@ const StepItem: React.FC<StepItemProps> = ({ step, index, isLast, isDark }) => {
         )}
       </div>
 
-      {/* Right: content — FIX: minWidth:0 + overflow:hidden prevent child overflow */}
+      
       <div style={{
         flex: 1,
-        minWidth: 0,           // ← critical: allows flex child to shrink below content size
-        overflow: 'hidden',    // ← clips overflowing children (CodeBlock, tables, etc.)
+        minWidth: 0,           
+        overflow: 'hidden',    
         paddingBottom: isLast ? 0 : '1.5rem',
         paddingTop: '4px',
       }}>
