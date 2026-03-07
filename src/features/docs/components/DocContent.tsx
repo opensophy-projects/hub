@@ -51,9 +51,18 @@ const SANITIZE_ATTR = [
   'type', 'checked', 'disabled', 'open', 'style', 'align',
 ];
 
+// FIX S5852: /<[^>]*>/g on a string with unclosed '<' causes O(n²) backtracking.
+// Replace with a split-based approach — O(n), no regex quantifier risk.
+function stripHtmlTags(html: string): string {
+  return html
+    .split('<')
+    .map((chunk, i) => (i === 0 ? chunk : chunk.slice(chunk.indexOf('>') + 1)))
+    .join(' ');
+}
+
 function estimateReadTime(content: string): number {
   if (!content) return 1;
-  const text = content.replaceAll(/<[^>]*>/g, ' ').replaceAll(/\s+/g, ' ').trim();
+  const text = stripHtmlTags(content).replaceAll(/\s+/g, ' ').trim();
   const words = text.split(' ').filter(Boolean).length;
   return Math.max(1, Math.round(words / 200));
 }
