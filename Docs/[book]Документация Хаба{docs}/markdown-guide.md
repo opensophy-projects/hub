@@ -1,14 +1,15 @@
 ---
-title: "Полное руководство по форматированию Markdown в Hub"
-description: Справочник по всем доступным вариантам форматирования текста, кода, таблиц и компонентов в документации Hub. Включает примеры синтаксиса и демонстрацию результатов.
+title: Полное руководство по форматированию Markdown в Hub
+description: Справочник по всем доступным вариантам форматирования текста, кода, таблиц и компонентов в документации Hub.
 type: docs
 typename: Документация
-icon: file-code-corner
-category: hub
+category: markdown
+icon: file-code
 author: veilosophy
 date: 2026-02-16
-tags: Markdown, форматирование, руководство, синтаксис, документация, UI компоненты
-keywords: Markdown руководство, форматирование текста, синтаксис Markdown, документация Hub, примеры форматирования
+updated: 2026-03-07
+tags: markdown, форматирование, руководство, синтаксис, документация, ui
+keywords: markdown руководство, markdown синтаксис, форматирование markdown, документация hub
 canonical: null
 robots: index, follow
 lang: ru
