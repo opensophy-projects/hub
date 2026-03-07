@@ -51,8 +51,7 @@ const SANITIZE_ATTR = [
   'type', 'checked', 'disabled', 'open', 'style', 'align',
 ];
 
-// FIX S5852: /<[^>]*>/g on a string with unclosed '<' causes O(n²) backtracking.
-// Replace with a split-based approach — O(n), no regex quantifier risk.
+
 function stripHtmlTags(html: string): string {
   return html
     .split('<')
