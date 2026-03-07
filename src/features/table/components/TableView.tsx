@@ -4,9 +4,7 @@ import type { ParsedRow } from '../types/table';
 import { SortIcon } from './SortIcons';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { getTableStyles } from './tableStyles';
-// FIX react-refresh/only-export-components: `getTableStyles` was exported from this
-// file alongside React components, which breaks HMR Fast Refresh. Moved to the
-// dedicated `tableStyles.ts` module (no JSX) and re-exported from there.
+
 export { getTableStyles } from './tableStyles';
 
 export type ColumnAlignment = 'left' | 'center' | 'right' | null;
