@@ -1,6 +1,7 @@
-# Hub — Open-source платформа для документации и контента
+# Hub V3.2  — Open-source платформа для документации и контента
 
-<img width="981" height="363" alt="banner" src="https://github.com/user-attachments/assets/d56ddb4b-0554-4f5d-9c5f-eee5b7d8986a" />
+<img width="1536" height="1024" alt="banner" src="https://github.com/user-attachments/assets/68d613c4-a5a2-4c0b-beb6-f42e26a4e4fe" />
+
 
 <div align="center">
 
@@ -28,36 +29,14 @@
 
 <div align="center">
 
-|  |  |  |  |
-|:---:|:---:|:---:|:---:|
-| **📝 Расширенный Markdown** | **🧩 UI Component System** | **🔍 Умный поиск** | **⚡ Быстрый старт** |
-| Алерты `:::note` `:::tip` `:::warning`, аккордеоны, таблицы с сортировкой и фильтрами, подсветка синтаксиса — всё из коробки | Встраивайте интерактивные React-компоненты прямо в Markdown через `[uic:component-name]` с живым preview и настройкой пропсов | Полнотекстовый поиск по заголовку, описанию, тегам и авторам. Фильтры по категориям, сортировка по дате | Добавьте `.md` файл в `Docs/` — страница появится автоматически. Никакой настройки роутинга |
-| **🎨 Modern UI/UX** | **📱 Mobile-first** | **🔒 Безопасность** | **🪶 Лёгкость** |
-| Тёмная и светлая тема, кастомные шрифты, Framer Motion анимации, прогресс-бар чтения, TOC на десктопе и в мобильном bottom sheet | Адаптивная навигация: sidebar на десктопе, bottom navigation bar на мобильных устройствах | SonarCloud + CodeFactor + XSS-санитизация через DOMPurify. Статический сайт без серверного кода | Сборка за 5 секунд. Файлы чанков от 0.1 до 205 кБ. Lazy-loading поиска и модальных окон |
+|  |  |  |
+|:---:|:---:|:---:|
+| **📝 Мощный Markdown** | **🧩 Блог, Доки и UI Библиотека** | **🗂️ Структура = Папки** |
+| Алерты, аккордеоны, таблицы с сортировкой, подсветка синтаксиса — и это только начало. [Оцени весь потенциал →](https://hub.opensophy.com/docs/markdown-guide/) | Создай документацию, блог или полноценную UI-библиотеку с живым просмотром компонентов прямо в браузере. [Как это работает →](https://hub.opensophy.com/docs/component-guide/) | Папки в `Docs/` — это и есть твоя навигация на сайте. Никакой настройки роутинга, всё работает из коробки |
+| **📊 Markdown Blocks** | **🎨 Opensophy Style** | **✍️ Ленивое заполнение** |
+| Таблицы, код-блоки, диаграммы и тяжёлые схемы — всё поддерживается. Mermaid встроен, рендерится мгновенно | Простой и при этом современно мощный дизайн с поддержкой смены тем + mobile first  | Сложные Markdown-блоки пишутся в разы короче. Изображения, алерты и компоненты — без лишнего кода |
 
 </div>
-
----
-
-## 📚 Документация
-
-| Ресурс | Описание |
-|---|---|
-| [📝 Полное руководство по Markdown](https://hub.opensophy.com/docs/markdown-guide/) | Все возможности форматирования: алерты, таблицы, блоки кода, аккордеоны и UI-компоненты |
-| [🧩 Добавление UI компонентов](https://hub.opensophy.com/docs/component-guide/) | Как создать и зарегистрировать новый интерактивный компонент |
-| [🌐 Opensophy](https://opensophy.com/) | Главный сайт проекта |
-
----
-
-## 🎨 Технологии
-
-**Core:** [Astro 5](https://astro.build) · [React 18](https://react.dev) · [TypeScript](https://www.typescriptlang.org)
-
-**Стилизация:** [Tailwind CSS](https://tailwindcss.com) · [Framer Motion](https://www.framer.com/motion)
-
-**Контент:** [Marked](https://marked.js.org) · [highlight.js](https://highlightjs.org) · [isomorphic-dompurify](https://github.com/cure53/DOMPurify)
-
-**UI:** [Lucide React](https://lucide.dev) · Custom Registry System · tailwind-merge
 
 ---
 
@@ -71,96 +50,26 @@
 
 Запустите проект прямо в браузере — без установки Node.js и клонирования репозитория.
 
-[![Open in Bolt](https://img.shields.io/badge/Open%20in-Bolt.new-7C3AED?style=for-the-badge&logo=lightning&logoColor=white)](https://bolt.new/~/github-zekqzpyk)
+[![Open in Bolt](https://img.shields.io/badge/Open%20in-Bolt.new-7C3AED?style=for-the-badge&logo=lightning&logoColor=white)](https://bolt.new/~/github-hzpz2bmw-j2bz6ju7)
 
 </td>
 <td width="50%">
 
-### 💻 Локальный запуск
-
-```bash
-git clone https://github.com/opensophy-projects/hub.git
-cd hub
-npm install
-npm run dev
-```
-
-Проект запустится на `http://localhost:4321`
-
-</td>
-</tr>
-</table>
-
-### Команды
-
-```bash
-npm run dev              # Dev-сервер
-npm run build            # Production-сборка
-npm run preview          # Preview production
-npm run generate:docs    # Генерация JSON из Docs/
-npm run generate:sitemap # Генерация sitemap.xml
-npm run generate         # Оба скрипта разом
-```
-
 ---
 
-## 📖 Создание контента
+## 🎨 Технологии
 
-Создайте `.md` файл в директории `Docs/` с frontmatter:
+**Core:** [Astro 5](https://astro.build) · [React 18](https://react.dev) · [TypeScript](https://www.typescriptlang.org)
 
-```markdown
----
-title: "Заголовок статьи"
-description: "Краткое описание"
-type: docs          # docs | blog | news (и прочие)
-typename: Категория # отображаемая категория в сайдбаре
-author: veilosophy
-date: 2026-02-18
-tags: тег1, тег2
-keywords: ключевое слово для поиска
-robots: index, follow
-lang: ru
----
+**Стилизация:** [Tailwind CSS](https://tailwindcss.com) · [Framer Motion](https://www.framer.com/motion)
 
-# Содержимое статьи
-```
+**Контент:** [Marked](https://marked.js.org) · [highlight.js](https://highlightjs.org) · [isomorphic-dompurify](https://github.com/cure53/DOMPurify) · Mermaid
 
-Затем выполните `npm run generate:docs` — страница появится автоматически.
-
-> Главная страница (`/`) управляется через файл `Docs/welcome.md`
-
----
-
-## 🎯 Структура проекта
-
-```
-hub/
-├── Docs/                     # Markdown-источники контента
-├── public/
-│   ├── data/docs/            # Сгенерированные JSON (manifest + статьи)
-│   └── sitemap.xml
-├── scripts/
-│   ├── generateDocs.mjs      # Markdown → JSON
-│   └── generateSitemap.mjs   # sitemap.xml
-└── src/
-    ├── app/                  # Astro-страницы и layout
-    ├── features/
-    │   ├── docs/             # Рендер документов, TOC, scroll progress
-    │   ├── navigation/       # Sidebar, MobileNavbar, Search, TocPanel
-    │   ├── table/            # Интерактивные таблицы с фильтрами
-    │   └── ui-components/    # Registry, Viewer, ComponentWrapper
-    └── shared/
-        ├── components/       # CodeBlock, Alert, Accordion, NotFound
-        ├── contexts/         # ThemeContext (cross-island CustomEvent)
-        ├── hooks/            # useDebounce
-        └── lib/              # htmlParser, classUtils
-```
+**UI:** [Lucide React](https://lucide.dev) · Custom Registry System · tailwind-merge
 
 ---
 
 ## 🔒 Безопасность
-
-Проект проходит комплексную проверку:
 
 - **[SonarCloud](https://sonarcloud.io/project/overview?id=opensophy-projects_hub)** — качество кода, уязвимости, технический долг
 - **[CodeFactor](https://www.codefactor.io/repository/github/opensophy-projects/hub)** — статический анализ
@@ -169,46 +78,9 @@ hub/
 
 ---
 
-## 🤝 Благодарности
-
-- **[Claude Code](https://claude.ai/code)** — AI-ассистент разработки от Anthropic
-- **[@4erfox](https://github.com/4erfox)** — за примеры и критику
-
----
-
 ## 📄 Лицензии
 
-### Исходный код
-
-Код проекта Hub лицензирован под **Apache License 2.0**
-
-- ✅ Коммерческое использование
-- ✅ Модификация
-- ✅ Распространение
-- ✅ Патентное использование
-- ⚠️ Требуется указание авторства
-- ⚠️ Требуется указание изменений
-
-Подробнее: [LICENSE](./LICENSE)
-
-### Документация и контент
-
-Все материалы в директории `Docs/`, опубликованные от авторов **veilosophy / opensophy** (ветка `main`), лицензированы под **Creative Commons Attribution-NoDerivatives 4.0 International (CC BY-ND 4.0)**
-
-- ✅ Копирование и распространение
-- ✅ Коммерческое использование
-- ⚠️ Требуется указание авторства (veilosophy / opensophy)
-- ❌ Запрещены производные работы
-
-Подробнее: [LICENSE-DOCS](./LICENSE-DOCS)
-
----
-
-## 🔗 Ссылки
-
-[Демо](https://hub.opensophy.com) · [Opensophy](https://opensophy.com) · [SonarCloud](https://sonarcloud.io/project/overview?id=opensophy-projects_hub) · [GitHub](https://github.com/opensophy-projects/hub)
-
-**Email:** opensophy@gmail.com
+**Код** — [Apache License 2.0](./LICENSE) · **Документация** — [CC BY-ND 4.0](./LICENSE-DOCS)
 
 ---
 
