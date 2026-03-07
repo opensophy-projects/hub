@@ -75,7 +75,7 @@ const tc = (isDark: boolean, d: string, l: string) => (isDark ? d : l);
 const useIsMobile = () => {
   // FIX S7735/S7741/S7764: use direct undefined comparison; positive condition
   const [isMobile, setIsMobile] = useState(() =>
-    globalThis.window !== undefined ? globalThis.window.innerWidth < 640 : false
+    globalThis.window === undefined ? false : globalThis.window.innerWidth < 640
   );
   useEffect(() => {
     const handler = () => setIsMobile(globalThis.window.innerWidth < 640);
