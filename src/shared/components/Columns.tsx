@@ -65,7 +65,6 @@ export const Col: React.FC<ColProps> = ({ children }) => <>{children}</>;
 
 // ─── Context-aware export ─────────────────────────────────────────────────────
 export const ColumnsWithContext: React.FC<ColumnsProps> = (props) => {
-  // isDark is consumed from context here but forwarded as needed in future
   useContext(TableContext);
   return <Columns {...props} />;
 };
