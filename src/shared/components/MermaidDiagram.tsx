@@ -298,10 +298,10 @@ const ToolbarContent: React.FC<ToolbarContentProps> = ({
     {hasColor && (
       <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, marginRight: 2, flexShrink: 0 }} />
     )}
-    <ToolBtn onClick={onZoomIn} title="Увеличить" label="Увеличить" isDark={isDark}>
+    <ToolBtn onClick={onZoomIn} title="Увеличить" label="+" isDark={isDark}>
       <IconPlus />
     </ToolBtn>
-    <ToolBtn onClick={onZoomOut} title="Уменьшить" label="Уменьшить" isDark={isDark}>
+    <ToolBtn onClick={onZoomOut} title="Уменьшить" label="−" isDark={isDark}>
       <IconMinus />
     </ToolBtn>
 
@@ -434,9 +434,11 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
       const id = nextId();
       const { svg } = await mermaid.render(id, code.trim());
 
+      // FIX S5852: replace lazy [^>]*? with greedy [^>]* — [^>] already cannot match '>',
+      // so the outcome is identical but there is no backtracking path for the engine.
       const patched = svg
-        .replaceAll(/(<svg[^>]*?)\s+width="[^"]*"/g, '$1')
-        .replaceAll(/(<svg[^>]*?)\s+height="[^"]*"/g, '$1')
+        .replaceAll(/(<svg[^>]*)\s+width="[^"]*"/g, '$1')
+        .replaceAll(/(<svg[^>]*)\s+height="[^"]*"/g, '$1')
         .replace(
           /<svg /,
           '<svg style="max-width:min(100%,400px);height:auto;display:block;overflow:visible;margin:0 auto;" ',
