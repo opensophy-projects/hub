@@ -3,7 +3,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        veilstack: ['UnifixSP', 'system-ui', 'sans-serif'],
+        customfont: ['customfont', 'system-ui', 'sans-serif'],
       },
       animation: {
         marquee: 'marquee var(--duration) linear infinite',
