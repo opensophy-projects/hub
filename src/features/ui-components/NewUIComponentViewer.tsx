@@ -73,9 +73,9 @@ const tc = (isDark: boolean, d: string, l: string) => (isDark ? d : l);
 // ─── Responsive grid columns helper ──────────────────────────────────────────
 
 const useIsMobile = () => {
-  // FIX S7735/S7764: use globalThis.window; positive condition instead of negated
+  // FIX S7735/S7741/S7764: use direct undefined comparison; positive condition
   const [isMobile, setIsMobile] = useState(() =>
-    typeof globalThis.window !== 'undefined' ? globalThis.window.innerWidth < 640 : false
+    globalThis.window !== undefined ? globalThis.window.innerWidth < 640 : false
   );
   useEffect(() => {
     const handler = () => setIsMobile(globalThis.window.innerWidth < 640);
@@ -96,7 +96,6 @@ interface NumberInputProps {
   isDark: boolean;
 }
 
-// FIX S121: extract decimal precision into a named variable (removes nested ternary)
 const getDecimalPlaces = (step: number): number => {
   if (step >= 1)   return 0;
   if (step >= 0.1) return 1;
@@ -117,9 +116,10 @@ const NumberInput: React.FC<NumberInputProps> = ({
   };
 
   const commit = () => {
-    // FIX S7773: Number.parseFloat / Number.isNaN
     const n = Number.parseFloat(raw);
-    if (!Number.isNaN(n)) onChange(Math.min(max, Math.max(min, n)));
+    if (!Number.isNaN(n)) {
+      onChange(Math.min(max, Math.max(min, n)));
+    }
     setEditing(false);
   };
 
@@ -127,12 +127,10 @@ const NumberInput: React.FC<NumberInputProps> = ({
   const bg     = tc(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.06)');
   const fg     = tc(isDark, '#fff', '#000');
 
-  // FIX S3358: no nested ternary — use helper function
   const decimals = getDecimalPlaces(step);
   const numStr   = decimals > 0 ? value.toFixed(decimals) : String(Math.round(value));
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // FIX S2681: always use braces for each branch
     if (e.key === 'Enter') {
       commit();
     } else if (e.key === 'Escape') {
@@ -304,7 +302,7 @@ const AiSelect: React.FC<AiSelectProps> = ({ label, value, options, onChange, is
       }
     };
     document.addEventListener('mousedown', h, { capture: false });
-    return () => document.removeEventListener('mousedown', h, { capture: false } as any);
+    return () => document.removeEventListener('mousedown', h, { capture: false } as EventListenerOptions);
   }, [open]);
 
   const computeDropUp = (rect: DOMRect) => {
@@ -350,6 +348,12 @@ const AiSelect: React.FC<AiSelectProps> = ({ label, value, options, onChange, is
   const labelColor  = tc(isDark, 'rgba(255,255,255,0.45)', 'rgba(0,0,0,0.45)');
   const activeOptBg = tc(isDark, 'rgba(255,255,255,0.08)', 'rgba(0,0,0,0.08)');
 
+  const getOptionBg = (opt: string) => {
+    if (hov === opt)    return rowHov;
+    if (opt === value)  return activeOptBg;
+    return 'transparent';
+  };
+
   return (
     <div style={{ background: cellBg, border: `1px solid ${borderColor}`, borderRadius: 10, padding: '9px 11px' }}>
       <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: labelColor, display: 'block', marginBottom: 5 }}>
@@ -383,30 +387,23 @@ const AiSelect: React.FC<AiSelectProps> = ({ label, value, options, onChange, is
             <div style={{ padding: '7px 11px 3px', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: labelClr }}>
               Выбери вариант
             </div>
-            {options.map(opt => {
-              // FIX S3358: no nested ternary — compute background before JSX
-              let optBg = 'transparent';
-              if (hov === opt)      { optBg = rowHov; }
-              else if (opt === value) { optBg = activeOptBg; }
-
-              return (
-                <button
-                  key={opt}
-                  onClick={() => { onChange(opt); setOpen(false); }}
-                  onMouseEnter={() => setHov(opt)}
-                  onMouseLeave={() => setHov(null)}
-                  style={{
-                    display: 'flex', alignItems: 'center', width: '100%',
-                    padding: '5px 11px', fontSize: 12, textAlign: 'left', cursor: 'pointer',
-                    border: 'none', color: textColor,
-                    background: optBg,
-                  }}
-                >
-                  {opt === value && <span style={{ marginRight: 6, opacity: 0.6 }}>✓</span>}
-                  {opt}
-                </button>
-              );
-            })}
+            {options.map(opt => (
+              <button
+                key={opt}
+                onClick={() => { onChange(opt); setOpen(false); }}
+                onMouseEnter={() => setHov(opt)}
+                onMouseLeave={() => setHov(null)}
+                style={{
+                  display: 'flex', alignItems: 'center', width: '100%',
+                  padding: '5px 11px', fontSize: 12, textAlign: 'left', cursor: 'pointer',
+                  border: 'none', color: textColor,
+                  background: getOptionBg(opt),
+                }}
+              >
+                {opt === value && <span style={{ marginRight: 6, opacity: 0.6 }}>✓</span>}
+                {opt}
+              </button>
+            ))}
           </DropdownPortal>
         )}
       </div>
