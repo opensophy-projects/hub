@@ -19,8 +19,11 @@ const ImageLightbox: React.FC<{
   }, [onClose]);
 
   return (
-    <div
+    // FIX S6848/S1082: use <button> instead of <div onClick> for the overlay
+    <button
+      type="button"
       onClick={onClose}
+      aria-label="Закрыть лайтбокс"
       style={{
         position: 'fixed',
         inset: 0,
@@ -31,24 +34,38 @@ const ImageLightbox: React.FC<{
         justifyContent: 'center',
         padding: '1.5rem',
         cursor: 'zoom-out',
+        border: 'none',
+        width: '100%',
+        height: '100%',
       }}
     >
-      <img
-        src={src}
-        alt={alt}
+      {/* FIX S6847/S1082: remove onClick from <img> — clicks bubble to overlay button.
+          stopPropagation was only needed to prevent closing when clicking the image;
+          we achieve the same by stopping propagation on the wrapping span instead. */}
+      <span
         onClick={(e) => e.stopPropagation()}
-        style={{
-          maxWidth: '90vw',
-          maxHeight: '90vh',
-          objectFit: 'contain',
-          borderRadius: '10px',
-          boxShadow: '0 8px 60px rgba(0,0,0,0.8)',
-          cursor: 'default',
-          userSelect: 'none',
-        }}
-      />
+        // role/keyboard not needed — <span> here has no interactive handler itself,
+        // only stops bubbling; screen readers interact with the outer <button>.
+        style={{ display: 'inline-flex' }}
+      >
+        <img
+          src={src}
+          alt={alt}
+          style={{
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            objectFit: 'contain',
+            borderRadius: '10px',
+            boxShadow: '0 8px 60px rgba(0,0,0,0.8)',
+            cursor: 'default',
+            userSelect: 'none',
+          }}
+        />
+      </span>
+
       <button
-        onClick={onClose}
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onClose(); }}
         aria-label="Закрыть"
         style={{
           position: 'fixed',
@@ -71,7 +88,7 @@ const ImageLightbox: React.FC<{
       >
         ✕
       </button>
-    </div>
+    </button>
   );
 };
 
@@ -104,27 +121,43 @@ const ImageCard: React.FC<ImageCardProps> = ({ src, alt, title, isDark = false }
           verticalAlign: 'top',
         }}
       >
-        <img
-          src={src}
-          alt={alt}
-          loading="lazy"
+        {/* FIX S6847/S6848/S1082: wrap <img> in a <button> so the interactive
+            handler lives on a native interactive element */}
+        <button
+          type="button"
           onClick={() => setLightboxOpen(true)}
+          aria-label={`Открыть изображение: ${alt}`}
           style={{
             display: 'block',
-            maxWidth: '100%',
-            maxHeight: '480px',
-            width: 'auto',
-            height: 'auto',
-            objectFit: 'contain',
-            cursor: 'zoom-in',
-            margin: 0,
+            padding: 0,
             border: 'none',
+            background: 'transparent',
+            cursor: 'zoom-in',
             borderRadius: title ? '0' : '9px',
-            transition: 'opacity 0.2s',
+            overflow: 'hidden',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.88'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
-        />
+        >
+          <img
+            src={src}
+            alt={alt}
+            loading="lazy"
+            style={{
+              display: 'block',
+              maxWidth: '100%',
+              maxHeight: '480px',
+              width: 'auto',
+              height: 'auto',
+              objectFit: 'contain',
+              margin: 0,
+              border: 'none',
+              borderRadius: title ? '0' : '9px',
+              transition: 'opacity 0.2s',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.88'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+          />
+        </button>
+
         {title && (
           <span
             style={{
