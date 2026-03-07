@@ -13,6 +13,8 @@ const docsDir = path.join(__dirname, '../Docs');
 const outputDir = path.join(__dirname, '../public/data/docs');
 const manifestFile = path.join(outputDir, 'manifest.json');
 
+const EXCLUDED_FIELDS = new Set(['content', 'keywords', 'robots']);
+
 function generateDocs() {
   console.log('🔄 Generating docs manifest...');
 
@@ -26,16 +28,15 @@ function generateDocs() {
   }
 
   const allMdFiles = scanDocsDirectoryRecursive(docsDir);
-  const manifest = [];
 
-  for (const mdPath of allMdFiles) {
+  const manifest = allMdFiles.map((mdPath) => {
     const doc = buildDocFromPath(mdPath, docsDir);
-    // manifest — только метаданные, без content
-    const { content: _content, keywords: _kw, robots: _rb, ...meta } = doc;
-    manifest.push(meta);
-  }
+    return Object.fromEntries(
+      Object.entries(doc).filter(([k]) => !EXCLUDED_FIELDS.has(k))
+    );
+  });
 
-  const sorted = manifest.sort(
+  const sorted = manifest.toSorted(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
