@@ -27,48 +27,63 @@ interface StepColors {
   contentColor: string;
 }
 
-function getStepColors(status: StepStatus, isDark: boolean): StepColors {
-  if (status === 'done') {
-    return {
-      dotBg:        '#22c55e',
-      dotBorder:    '#22c55e',
-      dotText:      '#fff',
-      lineColor:    '#22c55e',
-      titleColor:   isDark ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.9)',
-      contentColor: isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.6)',
-    };
-  }
+// Theme-dependent values indexed by [status][isDark ? 'dark' : 'light']
+type ThemePair = { dark: string; light: string };
 
-  if (status === 'active') {
-    return {
-      dotBg:        '#7234ff',
-      dotBorder:    '#7234ff',
-      dotText:      '#fff',
-      lineColor:    isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)',
-      titleColor:   isDark ? '#fff' : '#0a0a0a',
-      contentColor: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)',
-    };
-  }
-
-  if (status === 'pending') {
-    return {
-      dotBg:        'transparent',
-      dotBorder:    isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
-      dotText:      isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
-      lineColor:    isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
-      titleColor:   isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
-      contentColor: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
-    };
-  }
-
-  // default — neutral
-  return {
+const STEP_COLORS: Record<StepStatus, {
+  dotBg:        string | ThemePair;
+  dotBorder:    string | ThemePair;
+  dotText:      string | ThemePair;
+  lineColor:    string | ThemePair;
+  titleColor:   ThemePair;
+  contentColor: ThemePair;
+}> = {
+  done: {
+    dotBg:        '#22c55e',
+    dotBorder:    '#22c55e',
+    dotText:      '#fff',
+    lineColor:    '#22c55e',
+    titleColor:   { dark: 'rgba(255,255,255,0.9)',  light: 'rgba(0,0,0,0.9)'  },
+    contentColor: { dark: 'rgba(255,255,255,0.55)', light: 'rgba(0,0,0,0.6)'  },
+  },
+  active: {
+    dotBg:        '#7234ff',
+    dotBorder:    '#7234ff',
+    dotText:      '#fff',
+    lineColor:    { dark: 'rgba(255,255,255,0.12)', light: 'rgba(0,0,0,0.12)' },
+    titleColor:   { dark: '#fff',                  light: '#0a0a0a'           },
+    contentColor: { dark: 'rgba(255,255,255,0.7)',  light: 'rgba(0,0,0,0.7)'  },
+  },
+  pending: {
     dotBg:        'transparent',
-    dotBorder:    isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)',
-    dotText:      isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
-    lineColor:    isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)',
-    titleColor:   isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)',
-    contentColor: isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.6)',
+    dotBorder:    { dark: 'rgba(255,255,255,0.2)',  light: 'rgba(0,0,0,0.2)'  },
+    dotText:      { dark: 'rgba(255,255,255,0.3)',  light: 'rgba(0,0,0,0.3)'  },
+    lineColor:    { dark: 'rgba(255,255,255,0.08)', light: 'rgba(0,0,0,0.08)' },
+    titleColor:   { dark: 'rgba(255,255,255,0.4)',  light: 'rgba(0,0,0,0.4)'  },
+    contentColor: { dark: 'rgba(255,255,255,0.3)',  light: 'rgba(0,0,0,0.3)'  },
+  },
+  default: {
+    dotBg:        'transparent',
+    dotBorder:    { dark: 'rgba(255,255,255,0.3)',  light: 'rgba(0,0,0,0.25)' },
+    dotText:      { dark: 'rgba(255,255,255,0.7)',  light: 'rgba(0,0,0,0.6)'  },
+    lineColor:    { dark: 'rgba(255,255,255,0.12)', light: 'rgba(0,0,0,0.1)'  },
+    titleColor:   { dark: 'rgba(255,255,255,0.85)', light: 'rgba(0,0,0,0.85)' },
+    contentColor: { dark: 'rgba(255,255,255,0.55)', light: 'rgba(0,0,0,0.6)'  },
+  },
+};
+
+const pick = (v: string | ThemePair, isDark: boolean): string =>
+  typeof v === 'string' ? v : (isDark ? v.dark : v.light);
+
+function getStepColors(status: StepStatus, isDark: boolean): StepColors {
+  const c = STEP_COLORS[status];
+  return {
+    dotBg:        pick(c.dotBg,        isDark),
+    dotBorder:    pick(c.dotBorder,    isDark),
+    dotText:      pick(c.dotText,      isDark),
+    lineColor:    pick(c.lineColor,    isDark),
+    titleColor:   pick(c.titleColor,   isDark),
+    contentColor: pick(c.contentColor, isDark),
   };
 }
 
