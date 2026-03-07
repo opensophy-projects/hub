@@ -70,12 +70,12 @@ function escapeAttr(str) {
 function parseParams(paramStr) {
   const params = {};
   if (!paramStr) return params;
-  // S5852 FALSE POSITIVE: /([a-zA-Z_-]+)=([^\s,\]]+)/g has no nested quantifiers.
-  // [a-zA-Z_-]+ and [^\s,\]]+ are disjoint character classes — backtracking terminates
-  // immediately when neither class matches. SonarCloud flags this incorrectly.
-  const regex = /([a-zA-Z_-]+)=([^\s,\]]+)/g;
-  let m;
-  while ((m = regex.exec(paramStr)) !== null) params[m[1]] = m[2];
+  // FIX S5852: replace regex exec loop with string split — no quantifiers, no backtracking.
+  // Input format: "key1=val1 key2=val2,key3=val3"  (space or comma separated)
+  for (const token of paramStr.split(/[\s,]+/)) {
+    const eq = token.indexOf('=');
+    if (eq > 0) params[token.slice(0, eq)] = token.slice(eq + 1);
+  }
   return params;
 }
 
