@@ -252,30 +252,20 @@ function SearchBox({ value, onChange, matchCount, bg, fg, border }: SearchBoxPro
   );
 }
 
-// ---------------------------------------------------------------------------
-// useHighlightedHtml — syntax highlighting extracted into a custom hook to
-// reduce Cognitive Complexity of CodeBlock (FIX SonarCloud S3776).
-//
-// FIX (CodeFactor / React): never call setState synchronously inside useEffect
-// — it causes cascading renders. Instead, collect the new value asynchronously
-// and call setState only once, after the async work completes (or after the
-// effect determines no highlighting is needed via the cancelled flag).
-// ---------------------------------------------------------------------------
+
 
 function useHighlightedHtml(code: string, language: string, isDark: boolean): string {
   const [highlightedHtml, setHighlightedHtml] = useState('');
 
   useEffect(() => {
-    // FIX (SonarCloud S6582): optional chaining preferred over !lang || !lang.trim()
+    
     const normalizedLang = language?.trim()
       ? (LANG_ALIASES[language.toLowerCase().trim()] ?? language.toLowerCase().trim())
       : '';
 
     let cancelled = false;
 
-    // FIX: do NOT call setHighlightedHtml('') synchronously here.
-    // Instead, resolve the new value asynchronously in all branches and
-    // call setState exactly once — eliminating the cascading-render warning.
+    
     const resolve = async () => {
       if (!normalizedLang) {
         // No language — resolve immediately with empty string (async, not sync)
