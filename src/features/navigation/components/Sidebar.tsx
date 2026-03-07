@@ -13,8 +13,16 @@ interface Doc {
   id: string; slug: string; title: string; description: string;
   type: string; typename: string; icon?: string; author?: string;
   date?: string; tags?: string[]; navSlug?: string; navTitle?: string; navIcon?: string;
+  categoryIcon?: string | null; categorySlug?: string | null;
 }
-interface NavNode { title: string; slug: string; docs: Doc[]; children: Record<string, NavNode>; isCategory: boolean; }
+interface NavNode {
+  title: string;
+  slug: string;
+  icon: string | null;
+  docs: Doc[];
+  children: Record<string, NavNode>;
+  isCategory: boolean;
+}
 interface NavSection { navSlug: string; navTitle: string; navIcon: string; }
 
 const iconCache = new Map<string, React.FC<{ size?: number; className?: string }>>();
@@ -257,8 +265,6 @@ const SidebarSearch: React.FC<{
 
 // ─── DocLink ──────────────────────────────────────────────────────────────────
 
-// FIX: removed unused `onClose` prop — it was defined but never called inside the component.
-// Callers that passed `onClose={() => {}}` (no-op) are updated to omit the prop entirely.
 const DocLink: React.FC<{
   doc: Doc;
   isDark: boolean;
@@ -267,7 +273,7 @@ const DocLink: React.FC<{
   const accentColor = isDark ? '#ffffff' : '#000000';
 
   return (
-    <a
+    
       href={`/${doc.slug}`}
       className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all ${
         isDark ? 'text-white/70 hover:text-white hover:bg-white/5' : 'text-black/70 hover:text-black hover:bg-black/5'
@@ -320,6 +326,14 @@ const CategoryNode: React.FC<{
               ? <ChevronDown size={16} className={isDark ? 'text-white/60' : 'text-black/60'} />
               : <ChevronRight size={16} className={isDark ? 'text-white/60' : 'text-black/60'} />
           )}
+          {/* Иконка категории из папки [icon]Name */}
+          {node.icon && (
+            <LucideIcon
+              name={node.icon}
+              size={15}
+              className={isDark ? 'text-white/60' : 'text-black/60'}
+            />
+          )}
           <span>{node.title}</span>
         </div>
         {totalDocs > 0 && (
@@ -362,7 +376,7 @@ const CategoryNode: React.FC<{
 // ─── buildNavigationTree ──────────────────────────────────────────────────────
 
 function buildNavigationTree(docs: Doc[], searchQuery: string, activeNavSlug: string): NavNode {
-  const root: NavNode = { title: 'Root', slug: '', docs: [], children: {}, isCategory: false };
+  const root: NavNode = { title: 'Root', slug: '', icon: null, docs: [], children: {}, isCategory: false };
   const query = searchQuery.toLowerCase();
 
   const filtered = docs.filter((doc) => {
@@ -382,8 +396,29 @@ function buildNavigationTree(docs: Doc[], searchQuery: string, activeNavSlug: st
     for (let i = 0; i < parts.length - 1; i++) {
       const part = parts[i];
       if (!current.children[part]) {
-        const displayTitle = i === parts.length - 2 && doc.typename ? doc.typename : part;
-        current.children[part] = { title: displayTitle, slug: part, docs: [], children: {}, isCategory: true };
+        // Используем typename как отображаемое имя, slug как ключ,
+        // и categoryIcon из последнего уровня вложенности
+        const isLastDirLevel = i === parts.length - 2;
+        const displayTitle = isLastDirLevel && doc.typename ? doc.typename : part;
+        const icon = isLastDirLevel ? (doc.categoryIcon ?? null) : null;
+
+        current.children[part] = {
+          title: displayTitle,
+          slug: part,
+          icon,
+          docs: [],
+          children: {},
+          isCategory: true,
+        };
+      } else if (i === parts.length - 2) {
+        // Обновляем иконку если она ещё не задана
+        if (!current.children[part].icon && doc.categoryIcon) {
+          current.children[part].icon = doc.categoryIcon;
+        }
+        // Обновляем title если он пока равен slug
+        if (current.children[part].title === part && doc.typename) {
+          current.children[part].title = doc.typename;
+        }
       }
       current = current.children[part];
     }
@@ -406,7 +441,7 @@ const CONTACTS = [
 const ContactLink: React.FC<{
   href: string; title: string; subtitle: string; external: boolean; isDark: boolean;
 }> = ({ href, title, subtitle, external, isDark }) => (
-  <a
+  
     href={href}
     target={external ? '_blank' : undefined}
     rel={external ? 'noopener noreferrer' : undefined}
@@ -446,7 +481,6 @@ const ContactsSection: React.FC<{ isDark: boolean; isOpen: boolean; onClose: () 
 
 // ─── trySetStorage ────────────────────────────────────────────────────────────
 
-// FIX: replaced bare `catch {}` (empty block) with a proper helper that logs warnings in dev.
 function trySetStorage(key: string, value: string): void {
   try {
     localStorage.setItem(key, value);
@@ -493,9 +527,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
     return Array.from(map.values());
   }, [docs]);
 
-  // Detect active nav section from URL and persist it.
-  // setState is wrapped in startTransition — marks updates as non-urgent,
-  // which resolves the "cascading renders inside effect" lint warning.
   useEffect(() => {
     if (sections.length === 0) return;
     const pathname = globalThis.window.location.pathname.replace(/^\//, '');
@@ -507,7 +538,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
     startTransition(() => { setActiveNavSlug(detected); });
   }, [sections]);
 
-  // Expand tree to show current doc.
   useEffect(() => {
     if (!currentDocSlug) return;
 
@@ -531,8 +561,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
     [docs, searchQuery, activeNavSlug]
   );
 
-  // FIX: replaced ternary-as-statement with if/else — ternaries must return a value,
-  // using them as void statements is a misuse and triggers no-unused-expressions lint.
   const togglePath = (path: string) => {
     setExpandedPaths((prev) => {
       const next = new Set(prev);
