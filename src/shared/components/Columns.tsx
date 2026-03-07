@@ -33,7 +33,8 @@ const Columns: React.FC<ColumnsProps> = ({ layout = 'equal', children, isDark = 
   // For image-right we reverse the visual order of columns
   const shouldReverse = layout === 'image-right';
 
-  const uid = React.useId().replace(/:/g, '');
+  // Fix 1: replaceAll instead of replace() with global regex (SonarCloud S7781)
+  const uid = React.useId().replaceAll(':', '');
 
   const styleTag = `
     .columns-${uid} {
@@ -57,8 +58,10 @@ const Columns: React.FC<ColumnsProps> = ({ layout = 'equal', children, isDark = 
     <>
       <style>{styleTag}</style>
       <div className={`columns-${uid}`}>
-        {orderedCols.map((child, i) => (
-          <div key={i} style={{ minWidth: 0 }}>
+        {/* Fix 2: use child.key from React.Children.toArray() instead of array index (SonarCloud S6479)
+            React.Children.toArray() guarantees stable, unique keys on each child element */}
+        {orderedCols.map((child) => (
+          <div key={(child as React.ReactElement).key} style={{ minWidth: 0 }}>
             {child}
           </div>
         ))}
