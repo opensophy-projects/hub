@@ -6,14 +6,13 @@ typename: Документация
 category: Сетевые технологии
 author: veilosophy
 date: 2025-12-25
+updated: 2026-01-20
 tags: сети, протоколы, OSI, TCP/IP, модели, технологии
 keywords: сетевые модели, OSI, TCP/IP, протоколы, сетевые технологии, networking
 canonical: null
 robots: index, follow
 lang: ru
 ---
-
-**Обновлено 20.01.2026**
 
 ## 1. Сравнительная Таблица Сетевых Моделей (OSI и TCP/IP)
 
