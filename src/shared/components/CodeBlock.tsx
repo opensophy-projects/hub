@@ -62,7 +62,7 @@ async function loadLanguage(lang: string): Promise<void> {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       hljs.registerLanguage(normalized, (module as any).default);
 
-      // Register all aliases that map to this language
+      // Register all aliases that point to this language
       for (const [alias, target] of Object.entries(LANG_ALIASES)) {
         if (target === normalized && !loadedLanguages.has(alias)) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -99,8 +99,9 @@ function buildHighlightedHtml(code: string, lang: string, isDark: boolean): stri
     .join('\n');
 }
 
+// FIX (SonarCloud S6759): props must be Readonly
 /** Highlight all occurrences of `query` inside `text`. */
-function HighlightedText({ text, query }: { text: string; query: string }): JSX.Element {
+function HighlightedText({ text, query }: Readonly<{ text: string; query: string }>): JSX.Element {
   if (!query) return <>{text}</>;
 
   const lower = text.toLowerCase();
@@ -133,13 +134,13 @@ function HighlightedText({ text, query }: { text: string; query: string }): JSX.
 // ---------------------------------------------------------------------------
 
 interface CodeBodyProps {
-  lines: string[];
-  matchedLines: Set<number>;
-  searchQuery: string;
-  fg: string;
-  bg: string;
-  isDark: boolean;
-  highlightedHtml: string;
+  readonly lines: string[];
+  readonly matchedLines: Set<number>;
+  readonly searchQuery: string;
+  readonly fg: string;
+  readonly bg: string;
+  readonly isDark: boolean;
+  readonly highlightedHtml: string;
 }
 
 const CodeBody: React.FC<CodeBodyProps> = ({
@@ -179,43 +180,88 @@ const CodeBody: React.FC<CodeBodyProps> = ({
 );
 
 // ---------------------------------------------------------------------------
-// Main component
+// ToolbarButton — extracted to eliminate duplicated JSX in normal/fullscreen
+// and reduce Cognitive Complexity of CodeBlock (FIX SonarCloud S3776).
 // ---------------------------------------------------------------------------
 
-interface CodeBlockProps {
-  code: string;
-  language?: string;
+interface ToolbarButtonProps {
+  readonly onClick: () => void;
+  readonly title: string;
+  readonly label: string;
+  readonly icon: React.ReactNode;
+  readonly color?: string;
+  readonly border: string;
+  readonly btnHover: string;
+  readonly fg: string;
 }
 
-const PREVIEW_LINES = 15;
+function ToolbarButton({ onClick, title, label, icon, color, border, btnHover, fg }: ToolbarButtonProps) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${border} ${btnHover}`}
+      style={{ color: color ?? fg }}
+    >
+      {icon}
+      <span className="leading-none" style={{ fontSize: '10px' }}>
+        {label}
+      </span>
+    </button>
+  );
+}
 
-export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
-  const { isDark } = useContext(TableContext);
+// ---------------------------------------------------------------------------
+// SearchBox — extracted to remove duplicated JSX (FIX SonarCloud S3776).
+// ---------------------------------------------------------------------------
 
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+interface SearchBoxProps {
+  readonly value: string;
+  readonly onChange: (v: string) => void;
+  readonly matchCount: number;
+  readonly bg: string;
+  readonly fg: string;
+  readonly border: string;
+}
+
+function SearchBox({ value, onChange, matchCount, bg, fg, border }: SearchBoxProps) {
+  return (
+    <div
+      className={`flex-1 flex items-center gap-2 px-3 py-2 rounded border ${border}`}
+      style={{ background: bg, color: fg, minWidth: 0 }}
+    >
+      <Search size={16} opacity={0.6} className="flex-shrink-0" />
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Поиск..."
+        style={{ color: fg }}
+        className="flex-1 bg-transparent outline-none text-sm min-w-0"
+      />
+      {value && (
+        <button onClick={() => onChange('')} className="flex-shrink-0">
+          <X size={14} />
+        </button>
+      )}
+      {matchCount > 0 && (
+        <span className="text-xs opacity-60 whitespace-nowrap flex-shrink-0">
+          {matchCount} найдено
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// useHighlightedHtml — syntax highlighting extracted into a custom hook to
+// reduce Cognitive Complexity of CodeBlock (FIX SonarCloud S3776).
+// ---------------------------------------------------------------------------
+
+function useHighlightedHtml(code: string, language: string, isDark: boolean): string {
   const [highlightedHtml, setHighlightedHtml] = useState('');
 
-  const codeRef = useRef<HTMLDivElement>(null);
-  const lines = useMemo(() => code.split('\n'), [code]);
-  const isLongCode = lines.length > PREVIEW_LINES;
-  const displayedLines = isExpanded ? lines : lines.slice(0, PREVIEW_LINES);
-
-  // Lock body scroll in fullscreen
   useEffect(() => {
-    document.body.style.overflow = isFullscreen ? 'hidden' : '';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isFullscreen]);
-
-  // Syntax highlighting
-  useEffect(() => {
-    // FIX (SonarCloud S6582):
-    // Optional chaining is preferred here and semantically correct:
-    // !language?.trim() is true when language is undefined, null, or an empty/whitespace string.
+    // FIX (SonarCloud S6582): optional chaining preferred over !lang || !lang.trim()
     if (!language?.trim()) {
       setHighlightedHtml('');
       return;
@@ -239,6 +285,44 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
       cancelled = true;
     };
   }, [code, language, isDark]);
+
+  return highlightedHtml;
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
+
+interface CodeBlockProps {
+  readonly code: string;
+  readonly language?: string;
+}
+
+const PREVIEW_LINES = 15;
+
+export function CodeBlock({ code, language = '' }: CodeBlockProps) {
+  const { isDark } = useContext(TableContext);
+
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const codeRef = useRef<HTMLDivElement>(null);
+  const lines = useMemo(() => code.split('\n'), [code]);
+  const isLongCode = lines.length > PREVIEW_LINES;
+  const displayedLines = isExpanded ? lines : lines.slice(0, PREVIEW_LINES);
+
+  // Extracted hook — keeps this function's complexity well below S3776 threshold
+  const highlightedHtml = useHighlightedHtml(code, language, isDark);
+
+  // Lock body scroll in fullscreen
+  useEffect(() => {
+    document.body.style.overflow = isFullscreen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isFullscreen]);
 
   // Search — find which line indices match the query
   const matchedLines = useMemo(() => {
@@ -264,7 +348,7 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
   const border = isDark ? 'border-white/10' : 'border-black/10';
   const btnHover = isDark ? 'hover:bg-white/10' : 'hover:bg-black/10';
 
-  // Shared props passed to CodeBody
+  // Shared code body props
   const bodyProps: CodeBodyProps = {
     lines: displayedLines,
     matchedLines,
@@ -275,30 +359,29 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
     highlightedHtml,
   };
 
-  const SearchBox = (
-    <div
-      className={`flex-1 flex items-center gap-2 px-3 py-2 rounded border ${border}`}
-      style={{ background: bg, color: fg, minWidth: 0 }}
-    >
-      <Search size={16} opacity={0.6} className="flex-shrink-0" />
-      <input
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        placeholder="Поиск..."
-        style={{ color: fg }}
-        className="flex-1 bg-transparent outline-none text-sm min-w-0"
-      />
-      {searchQuery && (
-        <button onClick={() => setSearchQuery('')} className="flex-shrink-0">
-          <X size={14} />
-        </button>
-      )}
-      {matchedLines.size > 0 && (
-        <span className="text-xs opacity-60 whitespace-nowrap flex-shrink-0">
-          {matchedLines.size} найдено
-        </span>
-      )}
-    </div>
+  // Shared elements — defined once, reused in both normal and fullscreen views
+  const copyBtn = (
+    <ToolbarButton
+      onClick={handleCopy}
+      title={isCopied ? 'Скопировано!' : 'Копировать'}
+      label={isCopied ? 'Готово' : 'Копировать'}
+      icon={isCopied ? <Check size={14} /> : <Copy size={14} />}
+      color={isCopied ? '#22c55e' : fg}
+      border={border}
+      btnHover={btnHover}
+      fg={fg}
+    />
+  );
+
+  const searchBoxEl = (
+    <SearchBox
+      value={searchQuery}
+      onChange={setSearchQuery}
+      matchCount={matchedLines.size}
+      bg={bg}
+      fg={fg}
+      border={border}
+    />
   );
 
   // ── Fullscreen overlay ──────────────────────────────────────────────────
@@ -313,36 +396,23 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
             className={`border-b px-4 md:px-6 py-4 flex flex-wrap items-center justify-between gap-4 ${border}`}
             style={{ background: bg }}
           >
-            {SearchBox}
+            {searchBoxEl}
             <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-              <span className="text-xs md:text-sm opacity-60 whitespace-nowrap">
-                Строк: {lines.length}
-              </span>
-              <button
-                onClick={handleCopy}
-                className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${border} ${btnHover}`}
-                style={{ color: isCopied ? '#22c55e' : fg }}
-                title={isCopied ? 'Скопировано!' : 'Копировать'}
-              >
-                {isCopied ? <Check size={14} /> : <Copy size={14} />}
-                <span className="leading-none" style={{ fontSize: '10px' }}>
-                  {isCopied ? 'Готово' : 'Копировать'}
-                </span>
-              </button>
-              <button
+              <span className="text-xs opacity-60 whitespace-nowrap">Строк: {lines.length}</span>
+              {copyBtn}
+              <ToolbarButton
                 onClick={() => setIsFullscreen(false)}
-                className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${border} ${btnHover}`}
-                style={{ color: fg }}
-                title="Закрыть"
-              >
-                <Minimize2 size={14} />
-                <span className="leading-none" style={{ fontSize: '10px' }}>Свернуть</span>
-              </button>
+                title="Свернуть"
+                label="Свернуть"
+                icon={<Minimize2 size={14} />}
+                border={border}
+                btnHover={btnHover}
+                fg={fg}
+              />
             </div>
           </div>
 
           <div className="flex-1 overflow-auto not-prose">
-            {/* Pass full lines list (not just preview) in fullscreen */}
             <CodeBody {...bodyProps} lines={lines} />
           </div>
         </div>
@@ -361,28 +431,18 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
           className={`border-b px-3 md:px-4 py-3 flex flex-wrap gap-2 items-center ${border}`}
           style={{ background: bg }}
         >
-          {SearchBox}
+          {searchBoxEl}
           <div className="flex gap-1.5 flex-shrink-0">
-            <button
-              onClick={handleCopy}
-              title={isCopied ? 'Скопировано!' : 'Копировать'}
-              className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${border} ${btnHover}`}
-              style={{ color: isCopied ? '#22c55e' : fg }}
-            >
-              {isCopied ? <Check size={14} /> : <Copy size={14} />}
-              <span className="leading-none" style={{ fontSize: '10px' }}>
-                {isCopied ? 'Готово' : 'Копировать'}
-              </span>
-            </button>
-            <button
+            {copyBtn}
+            <ToolbarButton
               onClick={() => setIsFullscreen(true)}
               title="Полноэкранный режим"
-              className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${border} ${btnHover}`}
-              style={{ color: fg }}
-            >
-              <Maximize2 size={14} />
-              <span className="leading-none" style={{ fontSize: '10px' }}>Развернуть</span>
-            </button>
+              label="Развернуть"
+              icon={<Maximize2 size={14} />}
+              border={border}
+              btnHover={btnHover}
+              fg={fg}
+            />
           </div>
         </div>
 
@@ -401,7 +461,6 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
           </button>
         )}
       </div>
-
     </div>
   );
 }
