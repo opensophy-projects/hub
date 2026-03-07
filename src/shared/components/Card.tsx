@@ -14,9 +14,7 @@ export interface CardProps {
 export interface CardGridProps {
   cols?: number;
   children?: React.ReactNode;
-  // FIX isDark unused: CardGrid never used isDark internally — it only renders a
-  // CSS grid wrapper. The prop was accepted but silently ignored. Removed to avoid
-  // confusion. If child Cards need theming, they get it via TableContext directly.
+  
 }
 
 // ─── Icon loader (lazy lucide) ────────────────────────────────────────────────
@@ -44,9 +42,7 @@ const LucideIcon: React.FC<{ name: string; size?: number; color?: string }> = ({
   return <Icon size={size} color={color} />;
 };
 
-// ─── Card styles ──────────────────────────────────────────────────────────────
-// FIX Complex Method: all style derivations extracted from the Card component body
-// into pure helper functions — Card itself now only assembles and renders.
+// ─── Card styles ──────────────────────────────────────────────────────────────.
 
 const CARD_HOVER_CLASS = 'sophy-card';
 
