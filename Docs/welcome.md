@@ -2,6 +2,7 @@
 title: "Добро пожаловать в Hub"
 description: "Hub проекта Opensophy - центр знаний"
 author: ""
+icon: crown
 date: 2026-02-17
 tags: welcome, hub, opensophy
 keywords: Opensophy, Hub, документация, знания, AI, security
