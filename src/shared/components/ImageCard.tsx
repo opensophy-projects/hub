@@ -19,11 +19,7 @@ const ImageLightbox: React.FC<{
   }, [onClose]);
 
   return (
-    // FIX S6848/S1082: use <button> instead of <div onClick> for the overlay
-    <button
-      type="button"
-      onClick={onClose}
-      aria-label="Закрыть лайтбокс"
+    <div
       style={{
         position: 'fixed',
         inset: 0,
@@ -33,39 +29,42 @@ const ImageLightbox: React.FC<{
         alignItems: 'center',
         justifyContent: 'center',
         padding: '1.5rem',
-        cursor: 'zoom-out',
-        border: 'none',
-        width: '100%',
-        height: '100%',
       }}
     >
-      {/* FIX S6847/S1082: remove onClick from <img> — clicks bubble to overlay button.
-          stopPropagation was only needed to prevent closing when clicking the image;
-          we achieve the same by stopping propagation on the wrapping span instead. */}
-      <span
-        onClick={(e) => e.stopPropagation()}
-        // role/keyboard not needed — <span> here has no interactive handler itself,
-        // only stops bubbling; screen readers interact with the outer <button>.
-        style={{ display: 'inline-flex' }}
-      >
-        <img
-          src={src}
-          alt={alt}
-          style={{
-            maxWidth: '90vw',
-            maxHeight: '90vh',
-            objectFit: 'contain',
-            borderRadius: '10px',
-            boxShadow: '0 8px 60px rgba(0,0,0,0.8)',
-            cursor: 'default',
-            userSelect: 'none',
-          }}
-        />
-      </span>
+      {/* Backdrop — native button, closes on click */}
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Закрыть лайтбокс"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          border: 'none',
+          background: 'transparent',
+          cursor: 'zoom-out',
+        }}
+      />
+
+      {/* Image sits above the backdrop via zIndex */}
+      <img
+        src={src}
+        alt={alt}
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          maxWidth: '90vw',
+          maxHeight: '90vh',
+          objectFit: 'contain',
+          borderRadius: '10px',
+          boxShadow: '0 8px 60px rgba(0,0,0,0.8)',
+          userSelect: 'none',
+          pointerEvents: 'none',
+        }}
+      />
 
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); onClose(); }}
+        onClick={onClose}
         aria-label="Закрыть"
         style={{
           position: 'fixed',
@@ -83,12 +82,12 @@ const ImageLightbox: React.FC<{
           cursor: 'pointer',
           fontSize: '18px',
           lineHeight: 1,
-          zIndex: 10000,
+          zIndex: 2,
         }}
       >
         ✕
       </button>
-    </button>
+    </div>
   );
 };
 
@@ -121,8 +120,6 @@ const ImageCard: React.FC<ImageCardProps> = ({ src, alt, title, isDark = false }
           verticalAlign: 'top',
         }}
       >
-        {/* FIX S6847/S6848/S1082: wrap <img> in a <button> so the interactive
-            handler lives on a native interactive element */}
         <button
           type="button"
           onClick={() => setLightboxOpen(true)}
