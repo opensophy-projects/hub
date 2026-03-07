@@ -68,15 +68,15 @@
     "icon": "album"
   },
   {
-    "id": "article/instrumenty-i-servisytools-and-services/devsecops-tools",
+    "id": "article/tools-and-services/devsecops-tools",
     "title": "Введение в DAST, SAST, SCA, IAST и RASP: Гид по инструментам безопасности",
-    "slug": "article/instrumenty-i-servisytools-and-services/devsecops-tools",
+    "slug": "article/tools-and-services/devsecops-tools",
     "description": "Разбор основных методологий тестирования безопасности приложений (AppSec) с примерами бесплатных инструментов для интеграции в SDLC.",
-    "typename": "Инструменты и Сервисы(tools-and-services)",
+    "typename": "Инструменты и Сервисы",
     "categoryPath": [
       {
-        "slug": "instrumenty-i-servisytools-and-services",
-        "title": "Инструменты и Сервисы(tools-and-services)",
+        "slug": "tools-and-services",
+        "title": "Инструменты и Сервисы",
         "icon": "signal"
       }
     ],
