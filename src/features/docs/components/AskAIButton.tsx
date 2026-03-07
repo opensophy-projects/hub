@@ -91,7 +91,7 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
   }, [open]);
 
   const getPageUrl = () =>
-    typeof globalThis.window === 'undefined' ? pageSlug : globalThis.window.location.href;
+    globalThis.window === undefined ? pageSlug : globalThis.window.location.href;
 
   const handleProviderClick = (p: typeof PROVIDERS[0]) => {
     globalThis.window.open(p.getUrl(pageTitle, getPageUrl()), '_blank', 'noopener,noreferrer');
