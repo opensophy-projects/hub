@@ -38,6 +38,37 @@ function cacheKey(code: string, isDark: boolean, color?: string) {
 
 const tc = (isDark: boolean, d: string, l: string) => (isDark ? d : l);
 
+// ─── SVG attribute patcher ────────────────────────────────────────────────────
+// FIX S5852: regex like /(<svg[^>]*)\s+width="[^"]*"/g causes O(n²) backtracking
+// because [^>]* competes with \s+ on every position. Replace with string operations
+// that operate only on the opening <svg ...> tag — O(n), no backtracking at all.
+
+function removeSvgAttr(svgTag: string, attr: string): string {
+  let result = svgTag;
+  let start  = result.indexOf(` ${attr}="`);
+  while (start !== -1) {
+    const valueEnd = result.indexOf('"', start + attr.length + 3);
+    if (valueEnd === -1) break;
+    result = result.slice(0, start) + result.slice(valueEnd + 1);
+    start  = result.indexOf(` ${attr}="`);
+  }
+  return result;
+}
+
+function patchSvg(svg: string): string {
+  const tagEnd = svg.indexOf('>');
+  if (tagEnd === -1) return svg;
+
+  let tag = svg.slice(0, tagEnd + 1);
+  tag = removeSvgAttr(tag, 'width');
+  tag = removeSvgAttr(tag, 'height');
+
+  const style = ' style="max-width:min(100%,400px);height:auto;display:block;overflow:visible;margin:0 auto;"';
+  if (tag.startsWith('<svg')) tag = `<svg${style}${tag.slice(4)}`;
+
+  return tag + svg.slice(tagEnd + 1);
+}
+
 // ─── Icon components ──────────────────────────────────────────────────────────
 
 const IconPlus = () => (
@@ -433,16 +464,7 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
 
       const id = nextId();
       const { svg } = await mermaid.render(id, code.trim());
-
-      // FIX S5852: replace lazy [^>]*? with greedy [^>]* — [^>] already cannot match '>',
-      // so the outcome is identical but there is no backtracking path for the engine.
-      const patched = svg
-        .replaceAll(/(<svg[^>]*)\s+width="[^"]*"/g, '$1')
-        .replaceAll(/(<svg[^>]*)\s+height="[^"]*"/g, '$1')
-        .replace(
-          /<svg /,
-          '<svg style="max-width:min(100%,400px);height:auto;display:block;overflow:visible;margin:0 auto;" ',
-        );
+      const patched = patchSvg(svg);
 
       svgCache.set(key, patched);
       setSvgHtml(patched);
