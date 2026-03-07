@@ -387,8 +387,8 @@ const ToolbarContent: React.FC<ToolbarContentProps> = ({
     {hasColor && (
       <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, marginRight: 2, flexShrink: 0 }} />
     )}
-    <ToolBtn onClick={onZoomIn}  title="Увеличить"  label="+" isDark={isDark}><IconPlus  /></ToolBtn>
-    <ToolBtn onClick={onZoomOut} title="Уменьшить"  label="−" isDark={isDark}><IconMinus /></ToolBtn>
+    <ToolBtn onClick={onZoomIn}  title="Увеличить"  label="Увеличить" isDark={isDark}><IconPlus  /></ToolBtn>
+    <ToolBtn onClick={onZoomOut} title="Уменьшить"  label="Уменьшить" isDark={isDark}><IconMinus /></ToolBtn>
 
     <span style={{
       fontSize: 11, fontWeight: 600, minWidth: 36, textAlign: 'center',
