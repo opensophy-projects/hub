@@ -3,6 +3,11 @@ import DOMPurify from 'isomorphic-dompurify';
 import type { ParsedRow } from '../types/table';
 import { SortIcon } from './SortIcons';
 import { useDragScroll } from '../hooks/useDragScroll';
+import { getTableStyles } from './tableStyles';
+// FIX react-refresh/only-export-components: `getTableStyles` was exported from this
+// file alongside React components, which breaks HMR Fast Refresh. Moved to the
+// dedicated `tableStyles.ts` module (no JSX) and re-exported from there.
+export { getTableStyles } from './tableStyles';
 
 export type ColumnAlignment = 'left' | 'center' | 'right' | null;
 
@@ -31,7 +36,7 @@ export const TableView: React.FC<TableViewProps> = ({
   onSort,
   headerAlignments = [],
 }) => {
-  const styles = useMemo(() => getTableStyles(isDark), [isDark]);
+  const styles          = useMemo(() => getTableStyles(isDark), [isDark]);
   const scrollbarStyles = useMemo(() => getScrollbarStyles(isDark), [isDark]);
   const { scrollRef, dragStyle, dragHandlers } = useDragScroll();
 
@@ -40,13 +45,7 @@ export const TableView: React.FC<TableViewProps> = ({
       <div
         ref={scrollRef}
         className="table-scroll-container"
-        style={{
-          overflowX: 'auto',
-          overflowY: 'auto',
-          maxHeight: '480px',
-          position: 'relative',
-          ...dragStyle,
-        }}
+        style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '480px', position: 'relative', ...dragStyle }}
         {...dragHandlers}
       >
         <table className="border-collapse text-sm" style={{ width: 'auto', minWidth: '100%' }}>
@@ -86,6 +85,8 @@ export const TableView: React.FC<TableViewProps> = ({
   );
 };
 
+// ─── TableHead ────────────────────────────────────────────────────────────────
+
 interface TableHeadProps {
   isDark: boolean;
   headers: string[];
@@ -98,18 +99,12 @@ interface TableHeadProps {
 
 function getJustifyContent(alignment: ColumnAlignment): string {
   if (alignment === 'center') return 'center';
-  if (alignment === 'right') return 'flex-end';
+  if (alignment === 'right')  return 'flex-end';
   return 'flex-start';
 }
 
 const TableHead: React.FC<TableHeadProps> = ({
-  isDark,
-  headers,
-  visibleColumns,
-  sortColumn,
-  sortDirection,
-  onSort,
-  headerAlignments,
+  isDark, headers, visibleColumns, sortColumn, sortDirection, onSort, headerAlignments,
 }) => (
   <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
     <tr className={`${isDark ? 'border-white/10' : 'border-black/10'} border-b`}>
@@ -148,6 +143,8 @@ const TableHead: React.FC<TableHeadProps> = ({
   </thead>
 );
 
+// ─── TableRow / CellContent ───────────────────────────────────────────────────
+
 interface TableRowProps {
   isDark: boolean;
   row: ParsedRow;
@@ -166,17 +163,14 @@ const getRowHoverBgColor = (isEvenRow: boolean, isDark: boolean): string => {
   return '#ddd8cd';
 };
 
-interface TextPart {
-  text: string;
-  isMatch: boolean;
-}
+interface TextPart { text: string; isMatch: boolean; }
 
 const splitTextByQuery = (text: string, lowerQuery: string): TextPart[] => {
-  const lowerText = text.toLowerCase();
-  const queryLen = lowerQuery.length;
+  const lowerText  = text.toLowerCase();
+  const queryLen   = lowerQuery.length;
   const parts: TextPart[] = [];
   let currentIndex = 0;
-  let searchIndex = lowerText.indexOf(lowerQuery);
+  let searchIndex  = lowerText.indexOf(lowerQuery);
 
   while (searchIndex !== -1) {
     if (searchIndex > currentIndex) {
@@ -184,7 +178,7 @@ const splitTextByQuery = (text: string, lowerQuery: string): TextPart[] => {
     }
     parts.push({ text: text.substring(searchIndex, searchIndex + queryLen), isMatch: true });
     currentIndex = searchIndex + queryLen;
-    searchIndex = lowerText.indexOf(lowerQuery, currentIndex);
+    searchIndex  = lowerText.indexOf(lowerQuery, currentIndex);
   }
 
   if (currentIndex < text.length) {
@@ -216,20 +210,14 @@ const buildHighlightFragment = (parts: TextPart[]): DocumentFragment => {
 const highlightTextNode = (node: Node, lowerQuery: string): void => {
   const text = node.textContent || '';
   if (!text.toLowerCase().includes(lowerQuery)) return;
-
-  const parts = splitTextByQuery(text, lowerQuery);
-  const fragment = buildHighlightFragment(parts);
-  node.parentNode?.replaceChild(fragment, node);
+  node.parentNode?.replaceChild(buildHighlightFragment(splitTextByQuery(text, lowerQuery)), node);
 };
 
 const highlightInElement = (element: HTMLElement, query: string): void => {
   const lowerQuery = query.toLowerCase();
 
   const walk = (node: Node): void => {
-    if (node.nodeType === Node.TEXT_NODE) {
-      highlightTextNode(node, lowerQuery);
-      return;
-    }
+    if (node.nodeType === Node.TEXT_NODE) { highlightTextNode(node, lowerQuery); return; }
     if (node.nodeType === Node.ELEMENT_NODE && node.nodeName !== 'MARK') {
       Array.from(node.childNodes).forEach(walk);
     }
@@ -238,13 +226,12 @@ const highlightInElement = (element: HTMLElement, query: string): void => {
   Array.from(element.childNodes).forEach(walk);
 };
 
-const ALLOWED_TAGS = [
+const CELL_ALLOWED_TAGS = [
   'strong', 'b', 'em', 'i', 'code', 'a', 'br',
   'u', 'del', 's', 'strike', 'sub', 'sup', 'mark',
   'span', 'div', 'p',
 ];
-
-const ALLOWED_ATTR = ['href', 'target', 'rel', 'class', 'style'];
+const CELL_ALLOWED_ATTR = ['href', 'target', 'rel', 'class', 'style'];
 
 const CellContent: React.FC<{ html: string; searchQuery: string }> = ({ html, searchQuery }) => {
   const contentRef = React.useRef<HTMLDivElement>(null);
@@ -253,48 +240,32 @@ const CellContent: React.FC<{ html: string; searchQuery: string }> = ({ html, se
     if (!contentRef.current) return;
 
     const sanitizedHtml = DOMPurify.sanitize(html, {
-      ALLOWED_TAGS,
-      ALLOWED_ATTR,
+      ALLOWED_TAGS: CELL_ALLOWED_TAGS,
+      ALLOWED_ATTR: CELL_ALLOWED_ATTR,
       ALLOW_DATA_ATTR: false,
     });
 
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(sanitizedHtml, 'text/html');
-
+    const doc = new DOMParser().parseFromString(sanitizedHtml, 'text/html');
     contentRef.current.innerHTML = '';
-    while (doc.body.firstChild) {
-      contentRef.current.appendChild(doc.body.firstChild);
-    }
+    while (doc.body.firstChild) contentRef.current.appendChild(doc.body.firstChild);
 
-    if (searchQuery && contentRef.current) {
-      highlightInElement(contentRef.current, searchQuery);
-    }
+    if (searchQuery) highlightInElement(contentRef.current, searchQuery);
   }, [html, searchQuery]);
 
   return <div ref={contentRef} />;
 };
 
-const TableRow: React.FC<TableRowProps> = ({
-  isDark,
-  row,
-  rowIndex,
-  visibleColumns,
-  searchQuery,
-}) => {
-  const isEvenRow = rowIndex % 2 === 0;
+const TableRow: React.FC<TableRowProps> = ({ isDark, row, rowIndex, visibleColumns, searchQuery }) => {
+  const isEvenRow   = rowIndex % 2 === 0;
   const [isHovered, setIsHovered] = useState(false);
-
-  const bgColor = isHovered
+  const bgColor     = isHovered
     ? getRowHoverBgColor(isEvenRow, isDark)
     : getRowBgColor(isEvenRow, isDark);
 
   return (
     <tr
       className={`border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}
-      style={{
-        backgroundColor: bgColor,
-        transition: 'background-color 0.12s ease',
-      }}
+      style={{ backgroundColor: bgColor, transition: 'background-color 0.12s ease' }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -318,82 +289,22 @@ const TableRow: React.FC<TableRowProps> = ({
   );
 };
 
+// ─── Scrollbar styles (internal only) ────────────────────────────────────────
+
 function getScrollbarStyles(isDark: boolean): string {
-  const thumb = isDark ? 'rgba(150, 150, 150, 0.6)' : 'rgba(0, 0, 0, 0.2)';
+  const thumb      = isDark ? 'rgba(150, 150, 150, 0.6)'  : 'rgba(0, 0, 0, 0.2)';
   const thumbHover = isDark ? 'rgba(190, 190, 190, 0.85)' : 'rgba(0, 0, 0, 0.35)';
-  const track = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
+  const track      = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
 
   return `
-    .table-scroll-container::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-    .table-scroll-container::-webkit-scrollbar-track {
-      background: ${track};
-      border-radius: 4px;
-    }
-    .table-scroll-container::-webkit-scrollbar-thumb {
-      background: ${thumb};
-      border-radius: 4px;
-    }
-    .table-scroll-container::-webkit-scrollbar-thumb:hover {
-      background: ${thumbHover};
-    }
-    .table-scroll-container::-webkit-scrollbar-corner {
-      background: transparent;
-    }
+    .table-scroll-container::-webkit-scrollbar       { width: 8px; height: 8px; }
+    .table-scroll-container::-webkit-scrollbar-track  { background: ${track}; border-radius: 4px; }
+    .table-scroll-container::-webkit-scrollbar-thumb  { background: ${thumb}; border-radius: 4px; }
+    .table-scroll-container::-webkit-scrollbar-thumb:hover { background: ${thumbHover}; }
+    .table-scroll-container::-webkit-scrollbar-corner { background: transparent; }
     .table-scroll-container {
       scrollbar-color: ${thumb} ${track};
       scrollbar-width: thin;
     }
-  `;
-}
-
-export function getTableStyles(isDark: boolean): string {
-  const border = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.2)';
-  const color = isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgb(0, 0, 0)';
-  const codeBg = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
-  const codeBorder = isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)';
-  const strongColor = isDark ? 'rgba(255, 255, 255, 1)' : 'rgb(0, 0, 0)';
-  const thBg = isDark ? '#1a1a1a' : '#E8E7E3';
-  const markBg = isDark ? 'rgb(202, 138, 4)' : 'rgb(253, 224, 71)';
-  const markColor = isDark ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)';
-
-  return `
-    table { border-collapse: collapse; width: auto; min-width: 100%; }
-    th, td {
-      border: 1px solid ${border};
-      padding: 0.75rem 1rem;
-      color: ${color};
-      white-space: nowrap;
-    }
-    th {
-      font-weight: 600;
-      background-color: ${thBg};
-    }
-    td code {
-      background-color: ${codeBg};
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-size: 0.85em;
-      font-family: ui-monospace, monospace;
-      white-space: pre-wrap;
-      word-break: break-word;
-      border: 1px solid ${codeBorder};
-    }
-    td strong, td b { font-weight: 700; color: ${strongColor}; }
-    td em, td i { font-style: italic; }
-    td u { text-decoration: underline; text-underline-offset: 2px; }
-    td del, td s, td strike { text-decoration: line-through; opacity: 0.7; }
-    td sub { vertical-align: sub; font-size: 0.75em; }
-    td sup { vertical-align: super; font-size: 0.75em; }
-    td mark {
-      background-color: ${markBg};
-      color: ${markColor};
-      padding: 2px 4px;
-      border-radius: 2px;
-    }
-    td a { color: rgb(59 130 246); text-decoration: underline; word-break: break-word; }
-    td a:hover { color: rgb(37 99 235); }
   `;
 }
