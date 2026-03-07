@@ -42,12 +42,12 @@ export function useDragScroll() {
     const dy = e.clientY - dragStartPos.current.y;
 
     if (!isDragging.current) {
-      // FIX S7769: Math.sqrt(dx*dx + dy*dy) → Math.hypot(dx, dy)
+      
       if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
       // Порог пройден — начинаем drag
       isDragging.current = true;
       setDragging(true);
-      // FIX S7764: window → globalThis.window
+      
       globalThis.window.getSelection()?.removeAllRanges();
     }
 
