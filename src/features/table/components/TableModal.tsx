@@ -17,7 +17,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
 
   const parsedTable = useMemo(() => parseTableFromHTML(tableHtml), [tableHtml]);
 
-  // Fix: initialize visibleColumns via useMemo instead of setState in useEffect
+  
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
     () => new Set(parsedTable.headers.map((h) => h.text))
   );
@@ -100,7 +100,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
       if (e.key === 'Escape') onClose();
     };
 
-    // Fix: capture ref value at effect time, not in cleanup
+    
     const dialog = dialogRef.current;
 
     const handleBackdropClick = (e: MouseEvent) => {
