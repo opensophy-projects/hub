@@ -1,6 +1,5 @@
-/**
- * Утилиты для генерации часто используемых CSS-классов на основе темы
- */
+
+// Утилиты для генерации часто используемых CSS-классов на основе темы ───────────────────────────
 export const getButtonClasses = (
   isDark: boolean,
   variant: 'primary' | 'secondary' | 'ghost' = 'primary'
