@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Filter, X, RotateCcw } from 'lucide-react';
 
 interface FilterSectionProps {
   isDark: boolean;
@@ -15,6 +16,10 @@ interface FilterSectionProps {
   visibleColumns?: Set<string>;
   onColumnToggle?: (columnName: string) => void;
 }
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 const getCheckboxClassName = (isActive: boolean, isDark: boolean): string => {
   if (isActive) {
@@ -33,6 +38,48 @@ const getCheckboxTextClassName = (isActive: boolean, isDark: boolean): string =>
   }
   return isDark ? 'text-white/80' : 'text-black/80';
 };
+
+// ---------------------------------------------------------------------------
+// ToolbarButton — pill style: icon on top, label below
+// ---------------------------------------------------------------------------
+
+interface ToolbarButtonProps {
+  onClick: () => void;
+  title: string;
+  label: string;
+  icon: React.ReactNode;
+  isDark: boolean;
+  active?: boolean;
+}
+
+function ToolbarButton({ onClick, title, label, icon, isDark, active }: ToolbarButtonProps) {
+  const border   = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.15)';
+  const bg       = active
+    ? isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'
+    : isDark ? 'rgba(255,255,255,0.07)' : '#E8E7E3';
+  const bgHover  = isDark ? 'rgba(255,255,255,0.18)' : '#ddd8cd';
+  const color    = active
+    ? isDark ? '#ffffff' : '#000000'
+    : isDark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.75)';
+
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      style={{ background: bg, color, border: `1px solid ${border}` }}
+      className="flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors flex-shrink-0"
+      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = bgHover; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = bg; }}
+    >
+      {icon}
+      <span className="leading-none whitespace-nowrap" style={{ fontSize: '10px' }}>
+        {label}
+      </span>
+    </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
 
 export const FilterSection: React.FC<FilterSectionProps> = ({
   isDark,
@@ -55,14 +102,9 @@ export const FilterSection: React.FC<FilterSectionProps> = ({
     0
   );
 
-  const btnClass = `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-    isDark
-      ? 'bg-white/10 hover:bg-white/20 text-white'
-      : 'bg-black/10 hover:bg-black/20 text-black'
-  }`;
-
   return (
     <>
+      {/* ── Toolbar row ──────────────────────────────────────────────────── */}
       <div
         className={`flex flex-wrap items-center gap-2 p-3 border-b ${
           isDark ? 'border-white/10' : 'border-black/10'
@@ -73,31 +115,44 @@ export const FilterSection: React.FC<FilterSectionProps> = ({
           placeholder="Поиск в таблице..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className={`flex-1 min-w-[200px] px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+          className={`flex-1 min-w-[160px] px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
             isDark
               ? 'bg-white/10 border border-white/20 text-white placeholder-white/50 focus:bg-white/15 focus:border-white/40'
-              : 'bg-white border border-black/20 text-black placeholder-black/50 focus:bg-white border-black/40'
+              : 'bg-white border border-black/20 text-black placeholder-black/50 focus:border-black/40'
           }`}
         />
-        <button onClick={() => setLocalShowFilters((v) => !v)} className={btnClass}>
-          Фильтрация{activeFiltCount > 0 && ` (${activeFiltCount})`}
-        </button>
+
+        <ToolbarButton
+          onClick={() => setLocalShowFilters((v) => !v)}
+          title="Фильтрация"
+          label={activeFiltCount > 0 ? `Фильтры (${activeFiltCount})` : 'Фильтры'}
+          icon={<Filter size={14} />}
+          isDark={isDark}
+          active={localShowFilters || activeFiltCount > 0}
+        />
+
         {activeFiltCount > 0 && (
-          <button onClick={onResetFilters} className={btnClass}>
-            Сбросить
-          </button>
+          <ToolbarButton
+            onClick={onResetFilters}
+            title="Сбросить фильтры"
+            label="Сбросить"
+            icon={<RotateCcw size={14} />}
+            isDark={isDark}
+          />
         )}
+
         {isFullscreen && onClose && (
-          <button
+          <ToolbarButton
             onClick={onClose}
-            className={btnClass}
-            aria-label="Закрыть полноэкранный режим"
-          >
-            ✕
-          </button>
+            title="Закрыть"
+            label="Закрыть"
+            icon={<X size={14} />}
+            isDark={isDark}
+          />
         )}
       </div>
 
+      {/* ── Filter panel ────────────────────────────────────────────────── */}
       {localShowFilters && (
         <div
           className={`w-full p-3 border-b rounded-b-lg overflow-y-auto max-h-60 ${
@@ -129,9 +184,7 @@ export const FilterSection: React.FC<FilterSectionProps> = ({
                           <input
                             type="checkbox"
                             checked={isChecked}
-                            onChange={(e) =>
-                              onFilterChange(header.text, value, e.target.checked)
-                            }
+                            onChange={(e) => onFilterChange(header.text, value, e.target.checked)}
                             className="cursor-pointer"
                           />
                           <span className={getCheckboxTextClassName(isChecked, isDark)}>
@@ -148,16 +201,8 @@ export const FilterSection: React.FC<FilterSectionProps> = ({
 
           {isFullscreen && onToggleColumns && visibleColumns && onColumnToggle && (
             <>
-              <div
-                className={`border-t pt-3 mb-2 ${
-                  isDark ? 'border-white/10' : 'border-black/10'
-                }`}
-              >
-                <h4
-                  className={`font-semibold text-sm mb-2 ${
-                    isDark ? 'text-white' : 'text-black'
-                  }`}
-                >
+              <div className={`border-t pt-3 mb-2 ${isDark ? 'border-white/10' : 'border-black/10'}`}>
+                <h4 className={`font-semibold text-sm mb-2 ${isDark ? 'text-white' : 'text-black'}`}>
                   Видимость колонок
                 </h4>
               </div>
@@ -175,9 +220,7 @@ export const FilterSection: React.FC<FilterSectionProps> = ({
                         onChange={() => onColumnToggle(header.text)}
                         className="cursor-pointer"
                       />
-                      <span
-                        className={`text-sm ${getCheckboxTextClassName(isVisible, isDark)}`}
-                      >
+                      <span className={`text-sm ${getCheckboxTextClassName(isVisible, isDark)}`}>
                         {header.text}
                       </span>
                     </label>
