@@ -225,13 +225,11 @@ function preprocessCustomBlocks(content, codeBlocks) {
     const diagramMatch = trimmed.match(/^:::diagram(?:\[([^\]]*?)\])?\s*$/);
     if (diagramMatch) {
       const diagramParams = parseParams(diagramMatch[1] || '');
-      // Поддерживаем оба параметра: color и borderColor (синонимы)
       const color = diagramParams.color || diagramParams.borderColor || '';
       const colorAttr = color ? escapeAttr(color) : '';
       const { body, endIndex } = collectBlockBody(lines, i + 1);
       i = endIndex + 1;
 
-      // Код диаграммы кодируем base64 (utf-8) — нет кавычек, безопасен в HTML-атрибутах
       const encodedCode = Buffer.from(body.trim(), 'utf8').toString('base64');
       const html = `<div class="custom-diagram" data-color="${colorAttr}" data-code="${encodedCode}"></div>`;
       output.push(html);
@@ -252,22 +250,18 @@ export function preprocessAlerts(content) {
   const codeBlockPattern = /```[\s\S]*?```/g;
   const alertPattern = /^:::(note|tip|important|warning|caution)\n([\s\S]*?)^:::$/gm;
 
-  // Protect code blocks
   const protected1 = content.replaceAll(codeBlockPattern, (match) => {
     codeBlocks.push(match);
     return `___CODE_BLOCK_${codeBlocks.length - 1}___`;
   });
 
-  // Process alerts
   const protected2 = protected1.replaceAll(alertPattern, (_match, type, alertContent) => {
     const parsedContent = marked.parse(alertContent.trim());
     return `<div class="custom-alert" data-alert-type="${type}">\n${parsedContent}\n</div>`;
   });
 
-  // Process custom blocks
   const protected3 = preprocessCustomBlocks(protected2, codeBlocks);
 
-  // Restore remaining placeholders
   return protected3.replaceAll(/___CODE_BLOCK_(\d+)___/g, (_match, index) =>
     codeBlocks[Number.parseInt(index, 10)]
   );
@@ -335,6 +329,7 @@ export function buildDocFromPath(mdPath, docsDir) {
     navIcon: info.navIcon,
     author: metadata.author || '',
     date: metadata.date || new Date().toISOString().split('T')[0],
+    updated: metadata.updated || '',
     tags: metadata.tags ? metadata.tags.split(',').map((t) => t.trim()) : [],
     lang: metadata.lang || 'ru',
     keywords: metadata.keywords || '',
