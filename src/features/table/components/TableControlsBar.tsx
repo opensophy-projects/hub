@@ -1,18 +1,5 @@
 import React from 'react';
-
-const ExpandIcon: React.FC = () => (
-  <svg
-    className="w-4 h-4"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-  </svg>
-);
+import { Filter, X, Maximize2 } from 'lucide-react';
 
 interface TableControlsBarProps {
   isDark: boolean;
@@ -24,6 +11,48 @@ interface TableControlsBarProps {
   onFullscreen: () => void;
 }
 
+// ---------------------------------------------------------------------------
+// ToolbarButton — pill-style: icon on top, label below (same style as CodeBlock)
+// ---------------------------------------------------------------------------
+
+interface ToolbarButtonProps {
+  onClick: () => void;
+  title: string;
+  label: string;
+  icon: React.ReactNode;
+  isDark: boolean;
+  active?: boolean;
+}
+
+function ToolbarButton({ onClick, title, label, icon, isDark, active }: ToolbarButtonProps) {
+  const border   = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.15)';
+  const bg       = active
+    ? isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'
+    : isDark ? 'rgba(255,255,255,0.07)' : '#E8E7E3';
+  const bgHover  = isDark ? 'rgba(255,255,255,0.18)' : '#ddd8cd';
+  const color    = active
+    ? isDark ? '#ffffff' : '#000000'
+    : isDark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.75)';
+
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      style={{ background: bg, color, border: `1px solid ${border}` }}
+      className="flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors"
+      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = bgHover; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = bg; }}
+    >
+      {icon}
+      <span className="leading-none whitespace-nowrap" style={{ fontSize: '10px' }}>
+        {label}
+      </span>
+    </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
 export const TableControlsBar: React.FC<TableControlsBarProps> = ({
   isDark,
   searchQuery,
@@ -32,45 +61,49 @@ export const TableControlsBar: React.FC<TableControlsBarProps> = ({
   activeFilterCount,
   onResetFilters,
   onFullscreen,
-}) => {
-  const btnClass = `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-    isDark
-      ? 'bg-white/10 hover:bg-white/20 text-white'
-      : 'bg-[#E8E7E3] hover:bg-[#ddd8cd] text-black border border-black/20'
-  }`;
-
-  return (
-    <div
-      className={`flex flex-wrap items-center gap-2 p-3 border-b ${
-        isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-black/5'
+}) => (
+  <div
+    className={`flex flex-wrap items-center gap-2 p-3 border-b ${
+      isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-black/5'
+    }`}
+  >
+    <input
+      type="text"
+      placeholder="Поиск в таблице..."
+      value={searchQuery}
+      onChange={(e) => onSearchChange(e.target.value)}
+      className={`flex-1 min-w-[200px] px-3 py-2 rounded-lg text-sm transition-colors focus:outline-none ${
+        isDark
+          ? 'bg-white/10 border border-white/20 text-white placeholder-white/50 focus:bg-white/15 focus:border-white/40'
+          : 'bg-[#E8E7E3] border border-black/20 text-black placeholder-black/50 focus:border-black/40'
       }`}
-    >
-      <input
-        type="text"
-        placeholder="Поиск в таблице..."
-        value={searchQuery}
-        onChange={(e) => onSearchChange(e.target.value)}
-        className={`flex-1 min-w-[200px] px-3 py-2 rounded-lg text-sm transition-colors focus:outline-none ${
-          isDark
-            ? 'bg-white/10 border border-white/20 text-white placeholder-white/50 focus:bg-white/15 focus:border-white/40'
-            : 'bg-[#E8E7E3] border border-black/20 text-black placeholder-black/50 focus:bg-[#E8E7E3] focus:border-black/40'
-        }`}
+    />
+
+    <ToolbarButton
+      onClick={onToggleFilters}
+      title="Фильтрация и колонки"
+      label={activeFilterCount > 0 ? `Фильтры (${activeFilterCount})` : 'Фильтры'}
+      icon={<Filter size={14} />}
+      isDark={isDark}
+      active={activeFilterCount > 0}
+    />
+
+    {activeFilterCount > 0 && (
+      <ToolbarButton
+        onClick={onResetFilters}
+        title="Сбросить фильтры"
+        label="Сбросить"
+        icon={<X size={14} />}
+        isDark={isDark}
       />
-      <button onClick={onToggleFilters} className={btnClass} title="Фильтрация и колонки">
-        Фильтрация {activeFilterCount > 0 && `(${activeFilterCount})`}
-      </button>
-      {activeFilterCount > 0 && (
-        <button onClick={onResetFilters} className={btnClass}>
-          Сбросить
-        </button>
-      )}
-      <button
-        onClick={onFullscreen}
-        className={`${btnClass} flex items-center gap-2`}
-        title="Открыть в полном размере"
-      >
-        <ExpandIcon />
-      </button>
-    </div>
-  );
-};
+    )}
+
+    <ToolbarButton
+      onClick={onFullscreen}
+      title="Открыть в полном размере"
+      label="Развернуть"
+      icon={<Maximize2 size={14} />}
+      isDark={isDark}
+    />
+  </div>
+);
