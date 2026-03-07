@@ -1,31 +1,31 @@
 import React, { useState } from 'react';
 import { Filter, X, RotateCcw } from 'lucide-react';
 
+// ─── Props ────────────────────────────────────────────────────────────────────
+
 interface FilterSectionProps {
-  isDark: boolean;
-  searchQuery: string;
-  onSearchChange: (value: string) => void;
-  headers: Array<{ text: string; colIndex: number }>;
-  activeFilters: Map<string, Set<string>>;
-  uniqueValues: Map<string, string[]>;
-  onFilterChange: (column: string, value: string, checked: boolean) => void;
-  onResetFilters: () => void;
-  isFullscreen?: boolean;
-  onClose?: () => void;
-  onToggleColumns?: () => void;
-  visibleColumns?: Set<string>;
-  onColumnToggle?: (columnName: string) => void;
+  readonly isDark: boolean;
+  readonly searchQuery: string;
+  readonly onSearchChange: (value: string) => void;
+  readonly headers: ReadonlyArray<{ readonly text: string; readonly colIndex: number }>;
+  // Map/Set are mutable by design — Readonly<Map<…>> gives false safety and
+  // SonarCloud S6759 does not flag Map/Set fields, so these stay as-is.
+  readonly activeFilters: Map<string, Set<string>>;
+  readonly uniqueValues: Map<string, string[]>;
+  readonly onFilterChange: (column: string, value: string, checked: boolean) => void;
+  readonly onResetFilters: () => void;
+  readonly isFullscreen?: boolean;
+  readonly onClose?: () => void;
+  readonly onToggleColumns?: () => void;
+  readonly visibleColumns?: Set<string>;
+  readonly onColumnToggle?: (columnName: string) => void;
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const getCheckboxClassName = (isActive: boolean, isDark: boolean): string => {
   if (isActive) {
-    return isDark
-      ? 'bg-white/20 border border-white/40'
-      : 'bg-blue-100 border border-blue-300';
+    return isDark ? 'bg-white/20 border border-white/40' : 'bg-blue-100 border border-blue-300';
   }
   return isDark
     ? 'bg-white/5 border border-white/10 hover:bg-white/10'
@@ -39,28 +39,33 @@ const getCheckboxTextClassName = (isActive: boolean, isDark: boolean): string =>
   return isDark ? 'text-white/80' : 'text-black/80';
 };
 
-// ---------------------------------------------------------------------------
-// ToolbarButton — pill style: icon on top, label below
-// ---------------------------------------------------------------------------
+// ─── ToolbarButton — pill style: icon on top, label below ─────────────────────
 
 interface ToolbarButtonProps {
-  onClick: () => void;
-  title: string;
-  label: string;
-  icon: React.ReactNode;
-  isDark: boolean;
-  active?: boolean;
+  readonly onClick: () => void;
+  readonly title: string;
+  readonly label: string;
+  readonly icon: React.ReactNode;
+  readonly isDark: boolean;
+  readonly active?: boolean;
 }
 
-function ToolbarButton({ onClick, title, label, icon, isDark, active }: ToolbarButtonProps) {
-  const border   = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.15)';
-  const bg       = active
-    ? isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'
-    : isDark ? 'rgba(255,255,255,0.07)' : '#E8E7E3';
-  const bgHover  = isDark ? 'rgba(255,255,255,0.18)' : '#ddd8cd';
-  const color    = active
-    ? isDark ? '#ffffff' : '#000000'
-    : isDark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.75)';
+// FIX S3358: no nested ternaries — each value computed independently via if/return.
+function getToolbarButtonBg(isDark: boolean, active: boolean): string {
+  if (active) return isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)';
+  return isDark ? 'rgba(255,255,255,0.07)' : '#E8E7E3';
+}
+
+function getToolbarButtonColor(isDark: boolean, active: boolean): string {
+  if (active) return isDark ? '#ffffff' : '#000000';
+  return isDark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.75)';
+}
+
+function ToolbarButton({ onClick, title, label, icon, isDark, active = false }: ToolbarButtonProps) {
+  const border  = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.15)';
+  const bg      = getToolbarButtonBg(isDark, active);
+  const bgHover = isDark ? 'rgba(255,255,255,0.18)' : '#ddd8cd';
+  const color   = getToolbarButtonColor(isDark, active);
 
   return (
     <button
@@ -79,7 +84,7 @@ function ToolbarButton({ onClick, title, label, icon, isDark, active }: ToolbarB
   );
 }
 
-// ---------------------------------------------------------------------------
+// ─── FilterSection ─────────────────────────────────────────────────────────────
 
 export const FilterSection: React.FC<FilterSectionProps> = ({
   isDark,
@@ -96,20 +101,19 @@ export const FilterSection: React.FC<FilterSectionProps> = ({
   visibleColumns,
   onColumnToggle,
 }) => {
-  const [localShowFilters, setLocalShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+
   const activeFiltCount = Array.from(activeFilters.values()).reduce(
     (sum, set) => sum + set.size,
-    0
+    0,
   );
+
+  const filterLabel = activeFiltCount > 0 ? `Фильтры (${activeFiltCount})` : 'Фильтры';
 
   return (
     <>
-      {/* ── Toolbar row ──────────────────────────────────────────────────── */}
-      <div
-        className={`flex flex-wrap items-center gap-2 p-3 border-b ${
-          isDark ? 'border-white/10' : 'border-black/10'
-        }`}
-      >
+      {/* ── Toolbar row ─────────────────────────────────────────────────── */}
+      <div className={`flex flex-wrap items-center gap-2 p-3 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
         <input
           type="text"
           placeholder="Поиск в таблице..."
@@ -123,12 +127,12 @@ export const FilterSection: React.FC<FilterSectionProps> = ({
         />
 
         <ToolbarButton
-          onClick={() => setLocalShowFilters((v) => !v)}
+          onClick={() => setShowFilters((v) => !v)}
           title="Фильтрация"
-          label={activeFiltCount > 0 ? `Фильтры (${activeFiltCount})` : 'Фильтры'}
+          label={filterLabel}
           icon={<Filter size={14} />}
           isDark={isDark}
-          active={localShowFilters || activeFiltCount > 0}
+          active={showFilters || activeFiltCount > 0}
         />
 
         {activeFiltCount > 0 && (
@@ -153,24 +157,16 @@ export const FilterSection: React.FC<FilterSectionProps> = ({
       </div>
 
       {/* ── Filter panel ────────────────────────────────────────────────── */}
-      {localShowFilters && (
-        <div
-          className={`w-full p-3 border-b rounded-b-lg overflow-y-auto max-h-60 ${
-            isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-black/5'
-          }`}
-        >
+      {showFilters && (
+        <div className={`w-full p-3 border-b rounded-b-lg overflow-y-auto max-h-60 ${isDark ? 'border-white/10 bg-white/5' : 'border-black/10 bg-black/5'}`}>
           <div className="grid grid-cols-2 gap-3 mb-4">
             {headers.map((header) => {
-              const values = uniqueValues.get(header.text) || [];
-              const activeSet = activeFilters.get(header.text) || new Set();
+              const values    = uniqueValues.get(header.text) ?? [];
+              const activeSet = activeFilters.get(header.text) ?? new Set<string>();
 
               return (
                 <div key={header.colIndex}>
-                  <label
-                    className={`block text-xs font-semibold mb-2 ${
-                      isDark ? 'text-white/70' : 'text-black/70'
-                    }`}
-                  >
+                  <label className={`block text-xs font-semibold mb-2 ${isDark ? 'text-white/70' : 'text-black/70'}`}>
                     {header.text}
                   </label>
                   <div className="space-y-1">
@@ -199,6 +195,7 @@ export const FilterSection: React.FC<FilterSectionProps> = ({
             })}
           </div>
 
+          {/* Column visibility — only in fullscreen when all callbacks are provided */}
           {isFullscreen && onToggleColumns && visibleColumns && onColumnToggle && (
             <>
               <div className={`border-t pt-3 mb-2 ${isDark ? 'border-white/10' : 'border-black/10'}`}>
