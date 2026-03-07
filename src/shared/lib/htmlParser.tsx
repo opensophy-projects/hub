@@ -135,11 +135,7 @@ const processBlockquoteElement = (element: Element, key: string, elements: React
   );
 };
 
-// FIX Fast Refresh (react-refresh/only-export-components):
-// TableRenderer was a named React.FC defined in a file that also exports non-component
-// values (TableContext, parseHtmlToReact). This breaks HMR Fast Refresh.
-// Fix: inlined into processTableElement as an anonymous render call — no named component,
-// no export, so the linter rule no longer triggers.
+
 const processTableElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const tableHtml = element.outerHTML;
   elements.push(
@@ -208,8 +204,7 @@ const processCardGridElement = (element: Element, key: string, elements: React.R
 };
 
 const processColumnsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
-  // FIX @typescript-eslint/no-explicit-any: replaced `as any` with the proper
-  // ColumnsLayout union type imported from the Columns component.
+  
   const layout = (element.dataset.layout || 'equal') as ColumnsLayout;
   const colElements: React.ReactNode[] = [];
   for (const [i, col] of Array.from(element.children).entries()) {
@@ -249,7 +244,7 @@ const processDiagramElement = (element: Element, key: string, elements: React.Re
     }
     code = new TextDecoder('utf-8').decode(bytes);
   } catch {
-    // keep raw value on decode failure
+   
   }
 
   if (!code.trim()) return;
