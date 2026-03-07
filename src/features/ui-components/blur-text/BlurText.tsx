@@ -91,8 +91,7 @@ const BlurText: React.FC<BlurTextProps> = ({
           ease: easing as any,
         };
 
-        // ИСПРАВЛЕНО: используем стабильный уникальный ключ
-        // который не меняется между рендерами
+        
         const stableKey = `blur-text-${componentId.current}-${index}`;
 
         return (
