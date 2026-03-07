@@ -232,9 +232,7 @@ interface DiagramViewerProps {
   isFullscreen?: boolean;
 }
 
-// FIX isDark unused: removed from props — DiagramViewer never used isDark internally.
-// FIX dragging.current in render: replaced ref read in JSX with `isDragging` state,
-// which correctly triggers re-renders and drives the transition style.
+
 const DiagramViewer: React.FC<DiagramViewerProps> = ({
   svgHtml, panMode, scale, setScale, pos, setPos, isFullscreen,
 }) => {
@@ -351,8 +349,7 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
         style={{
           transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`,
           transformOrigin: 'center center',
-          // FIX: was `dragging.current ? ...` — ref reads don't trigger re-renders.
-          // Now uses `isDragging` state, so transition switches correctly.
+        
           transition: isDragging ? 'none' : 'transform 0.05s ease',
           display: 'flex', justifyContent: 'center', alignItems: 'center',
           padding: '20px 24px', willChange: 'transform',
@@ -430,8 +427,7 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
 
   const resetView = useCallback(() => { setScale(1); setPos({ x: 0, y: 0 }); }, []);
 
-  // FIX Complex Method: mermaid config extracted to `getMermaidConfig()` above,
-  // keeping this callback focused on cache-check → initialize → render → patch.
+ 
   const render = useCallback(async () => {
     const key = cacheKey(code, isDark, color);
 
