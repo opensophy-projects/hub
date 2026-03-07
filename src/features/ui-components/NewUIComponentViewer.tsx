@@ -8,7 +8,7 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTheme } from '@/shared/contexts/ThemeContext';
-import { X, Maximize2, RotateCcw, RefreshCcw, Settings } from 'lucide-react';
+import { X, Maximize2, Play, RefreshCcw, Settings } from 'lucide-react';
 import { loadComponent, getDefaultProps } from './loader';
 import { ComponentWrapper } from './ComponentWrapper';
 import type { UniversalProps, ComponentConfig, PropDefinition } from './types';
@@ -560,8 +560,6 @@ const TabBar: React.FC<TabBarProps> = ({ active, onSelect, isDark }) => {
 };
 
 // ─── Icon button — pill style: icon on top, label below ──────────────────────
-// FIX: Added `label` prop, changed layout to flex-col (icon + text under it),
-// matching the design pattern used in CodeBlock's ToolbarButton.
 
 const IconBtn: React.FC<{
   onClick: () => void;
@@ -687,7 +685,7 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
         <div style={{ flex: 1, minWidth: 8 }} />
         <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
           <IconBtn onClick={onRefresh} title="Запустить заново" label="Заново" isDark={isDark}>
-            <RotateCcw size={13} />
+            <Play size={13} />
           </IconBtn>
           <IconBtn onClick={onFullscreen} title="Открыть на весь экран" label="Развернуть" isDark={isDark}>
             <Maximize2 size={13} />
@@ -784,7 +782,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = (props) => {
         flexWrap: 'wrap', rowGap: 6,
       }}>
         <IconBtn onClick={onRefresh} title="Запустить заново" label="Заново" isDark={isDark}>
-          <RotateCcw size={13} />
+          <Play size={13} />
         </IconBtn>
         <IconBtn onClick={onReset} title="Сбросить настройки" label="Сбросить" isDark={isDark}>
           <RefreshCcw size={13} />
