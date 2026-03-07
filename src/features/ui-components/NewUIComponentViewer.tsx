@@ -8,7 +8,7 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTheme } from '@/shared/contexts/ThemeContext';
-import { X, Maximize2, RotateCcw, Settings } from 'lucide-react';
+import { X, Maximize2, RotateCcw, RefreshCcw, Settings } from 'lucide-react';
 import { loadComponent, getDefaultProps } from './loader';
 import { ComponentWrapper } from './ComponentWrapper';
 import type { UniversalProps, ComponentConfig, PropDefinition } from './types';
@@ -670,29 +670,32 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
     }}>
       <div style={{
         display: 'flex', alignItems: 'center', padding: '7px 11px',
-        borderBottom: `1px solid ${border}`, background: headerBg, gap: 8,
+        borderBottom: `1px solid ${border}`, background: headerBg, gap: 6,
+        flexWrap: 'wrap', rowGap: 4,
       }}>
         <div style={{
           fontSize: 13, fontWeight: 600,
           color: tc(isDark,'rgba(255,255,255,0.85)','rgba(0,0,0,0.85)'),
           padding: '3px 9px', borderRadius: 7,
           background: tc(isDark,'rgba(255,255,255,0.06)','rgba(0,0,0,0.06)'),
-          border: `1px solid ${border}`, flexShrink: 0,
+          border: `1px solid ${border}`, flexShrink: 1,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          maxWidth: 'calc(100% - 180px)',
+          minWidth: 0, maxWidth: 200,
         }}>
           {config.name}
         </div>
-        <div style={{ flex: 1 }} />
-        <IconBtn onClick={onRefresh} title="Запустить заново" label="Заново" isDark={isDark}>
-          <RotateCcw size={13} />
-        </IconBtn>
-        <IconBtn onClick={onFullscreen} title="Открыть на весь экран" label="Развернуть" isDark={isDark}>
-          <Maximize2 size={13} />
-        </IconBtn>
-        <IconBtn onClick={onOpenSettings} title="Настройки" label="Настройки" isDark={isDark}>
-          <Settings size={13} />
-        </IconBtn>
+        <div style={{ flex: 1, minWidth: 8 }} />
+        <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+          <IconBtn onClick={onRefresh} title="Запустить заново" label="Заново" isDark={isDark}>
+            <RotateCcw size={13} />
+          </IconBtn>
+          <IconBtn onClick={onFullscreen} title="Открыть на весь экран" label="Развернуть" isDark={isDark}>
+            <Maximize2 size={13} />
+          </IconBtn>
+          <IconBtn onClick={onOpenSettings} title="Настройки" label="Настройки" isDark={isDark}>
+            <Settings size={13} />
+          </IconBtn>
+        </div>
       </div>
 
       <div style={{
@@ -776,24 +779,16 @@ const SettingsPanel: React.FC<SettingsPanelProps> = (props) => {
 
       <div style={{
         flexShrink: 0,
-        display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px',
+        display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
         borderTop: `1px solid ${border}`, background: footerBg,
+        flexWrap: 'wrap', rowGap: 6,
       }}>
         <IconBtn onClick={onRefresh} title="Запустить заново" label="Заново" isDark={isDark}>
           <RotateCcw size={13} />
         </IconBtn>
-        <button
-          onClick={onReset}
-          style={{
-            padding: '4px 11px', borderRadius: 7,
-            border: `1px solid ${border}`,
-            background: tc(isDark,'rgba(255,255,255,0.05)','rgba(0,0,0,0.05)'),
-            color: tc(isDark,'rgba(255,255,255,0.65)','rgba(0,0,0,0.65)'),
-            fontSize: 12, fontWeight: 500, cursor: 'pointer',
-          }}
-        >
-          Сбросить
-        </button>
+        <IconBtn onClick={onReset} title="Сбросить настройки" label="Сбросить" isDark={isDark}>
+          <RefreshCcw size={13} />
+        </IconBtn>
         <div style={{ flex: 1 }} />
         <IconBtn onClick={onClose} title="Закрыть настройки" label="Закрыть" isDark={isDark}>
           <X size={13} />
