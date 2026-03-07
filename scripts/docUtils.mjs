@@ -4,10 +4,11 @@ import { marked } from 'marked';
 
 marked.setOptions({ breaks: true, gfm: true });
 
+// ─── Slug / Name parsers ──────────────────────────────────────────────────────
+
 export function parseNavPopoverFolder(folderName) {
-  // FIX S5852: replaced .+? (lazy, backtrack-prone) with [^\]{]+ — exactly what is expected
-  // between ] and { : any char that is not ] or {. Safe, no backtracking path.
-  const match = folderName.match(/^\[([^\]]+)\]([^\{]+)\{([^}]+)\}$/);
+  // Matches: [icon] Title {slug}
+  const match = folderName.match(/^\[([^\]]+)\]([^{]+)\{([^}]+)\}$/);
   if (match) return { navIcon: match[1].trim(), navTitle: match[2].trim(), navSlug: match[3].trim() };
   return null;
 }
@@ -15,7 +16,7 @@ export function parseNavPopoverFolder(folderName) {
 export function parseCategoryName(folderName) {
   const nav = parseNavPopoverFolder(folderName);
   if (nav) return { title: nav.navTitle, slug: nav.navSlug };
-  // FIX S5852: replaced .+? with [^{]+ — matches any char except '{', no backtracking
+  // Matches: Title {slug}
   const match = folderName.match(/^([^{]+)\{([^}]+)\}$/);
   if (match) return { title: match[1].trim(), slug: match[2].trim() };
   return { title: folderName, slug: slugify(folderName) };
@@ -29,34 +30,47 @@ export function slugify(str) {
     .replaceAll(/-+/g, '-');
 }
 
+// ─── File system ──────────────────────────────────────────────────────────────
+
 export function scanDocsDirectoryRecursive(baseDir) {
   const results = [];
+
   function scan(currentDir) {
     if (!fs.existsSync(currentDir)) return;
     for (const item of fs.readdirSync(currentDir)) {
       const fullPath = path.join(currentDir, item);
-      if (fs.statSync(fullPath).isDirectory()) scan(fullPath);
-      else if (item.endsWith('.md') && item !== 'README.md') results.push(fullPath);
+      if (fs.statSync(fullPath).isDirectory()) {
+        scan(fullPath);
+      } else if (item.endsWith('.md') && item !== 'README.md') {
+        results.push(fullPath);
+      }
     }
   }
+
   scan(baseDir);
   return results;
 }
 
+// ─── Front matter ─────────────────────────────────────────────────────────────
+
 export function extractFrontMatter(content) {
-  const frontMatterRegex = /^---\n([\s\S]*?)\n---\n/;
-  const match = content.match(frontMatterRegex);
+  const match = content.match(/^---\n([\s\S]*?)\n---\n/);
   if (!match) return { metadata: {}, content };
+
   const metadata = {};
   for (const line of match[1].split('\n')) {
-    const [key, ...valueParts] = line.split(':');
-    if (key && valueParts.length > 0)
-      metadata[key.trim()] = valueParts.join(':').trim().replaceAll(/^['"]|['"]$/g, '');
+    const colonIndex = line.indexOf(':');
+    if (colonIndex > 0) {
+      const key = line.slice(0, colonIndex).trim();
+      const value = line.slice(colonIndex + 1).trim().replaceAll(/^['"]|['"]$/g, '');
+      metadata[key] = value;
+    }
   }
-  return { metadata, content: content.replace(frontMatterRegex, '') };
+
+  return { metadata, content: content.replace(match[0], '') };
 }
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function escapeAttr(str) {
   return String(str)
@@ -70,8 +84,6 @@ function escapeAttr(str) {
 function parseParams(paramStr) {
   const params = {};
   if (!paramStr) return params;
-  // FIX S5852: replace regex exec loop with string split — no quantifiers, no backtracking.
-  // Input format: "key1=val1 key2=val2,key3=val3"  (space or comma separated)
   for (const token of paramStr.split(/[\s,]+/)) {
     const eq = token.indexOf('=');
     if (eq > 0) params[token.slice(0, eq)] = token.slice(eq + 1);
@@ -79,7 +91,12 @@ function parseParams(paramStr) {
   return params;
 }
 
-// ─── collectBlockBody ─────────────────────────────────────────────────────────
+function markedWithCodeBlocks(str, codeBlocks) {
+  const restored = str.replaceAll(/___CODE_BLOCK_(\d+)___/g, (_, i) => codeBlocks[Number.parseInt(i, 10)]);
+  return marked(restored);
+}
+
+// ─── Block body collector ─────────────────────────────────────────────────────
 
 function collectBlockBody(lines, startAfterIndex) {
   const bodyLines = [];
@@ -92,34 +109,34 @@ function collectBlockBody(lines, startAfterIndex) {
       if (trimmed === ':::') {
         depth--;
         if (depth === 0) return { body: bodyLines.join('\n'), endIndex: i };
-        bodyLines.push(lines[i]);
       } else {
         depth++;
-        bodyLines.push(lines[i]);
       }
+      bodyLines.push(lines[i]);
     } else {
       bodyLines.push(lines[i]);
     }
     i++;
   }
+
   return { body: bodyLines.join('\n'), endIndex: i - 1 };
 }
 
-// ─── parseInnerBlocks ────────────────────────────────────────────────────────
+// ─── Inner block parser ───────────────────────────────────────────────────────
 
 function parseInnerBlocks(bodyStr, innerTag) {
   const lines = bodyStr.split('\n');
   const results = [];
+  // Pre-compile the regex once instead of per-line
+  const openRe = new RegExp(`^:::${innerTag}(?:\\[([^\\]]*)\\])?(?:\\s+(.+?))?\\s*$`);
   let i = 0;
 
   while (i < lines.length) {
-    const openMatch = lines[i].trim().match(
-      new RegExp(String.raw`^:::${innerTag}(?:\[([^\]]*?)\])?(?:\s+(.+?))?\s*$`)
-    );
+    const openMatch = lines[i].trim().match(openRe);
     if (!openMatch) { i++; continue; }
 
-    const params = parseParams(openMatch[1] || '');
-    const inlineText = openMatch[2] || '';
+    const params = parseParams(openMatch[1] ?? '');
+    const inlineText = openMatch[2] ?? '';
     i++;
 
     const bodyLines = [];
@@ -128,19 +145,14 @@ function parseInnerBlocks(bodyStr, innerTag) {
       bodyLines.push(lines[i]);
       i++;
     }
+
     results.push({ params, inlineText, body: bodyLines.join('\n') });
   }
+
   return results;
 }
 
-// ─── markedWithCodeBlocks ─────────────────────────────────────────────────────
-
-function markedWithCodeBlocks(str, codeBlocks) {
-  const restored = str.replaceAll(/___CODE_BLOCK_(\d+)___/g, (_, i) => codeBlocks[Number.parseInt(i, 10)]);
-  return marked(restored);
-}
-
-// ─── buildCardHtml ────────────────────────────────────────────────────────────
+// ─── Card builder ─────────────────────────────────────────────────────────────
 
 function buildCardHtml(params, body, codeBlocks) {
   const color = params.color ? escapeAttr(params.color) : '';
@@ -158,19 +170,17 @@ function buildCardHtml(params, body, codeBlocks) {
   return `<div class="custom-card" data-color="${color}" data-title="${title}" data-icon="${icon}">${contentHtml}</div>`;
 }
 
-// ─── Block handlers for preprocessCustomBlocks ───────────────────────────────
+// ─── Block handlers ───────────────────────────────────────────────────────────
 
 function handleCardsBlock(trimmed, lines, i, codeBlocks, output) {
-  const match = trimmed.match(/^:::cards(?:\[([^\]]*?)\])?\s*$/);
+  const match = trimmed.match(/^:::cards(?:\[([^\]]*)\])?\s*$/);
   if (!match) return null;
 
-  const gridParams = parseParams(match[1] || '');
-  const cols = Math.min(3, Math.max(1, Number.parseInt(gridParams.cols || '2', 10)));
+  const cols = Math.min(3, Math.max(1, Number.parseInt(parseParams(match[1] ?? '').cols ?? '2', 10)));
   const { body, endIndex } = collectBlockBody(lines, i + 1);
 
-  const cards = parseInnerBlocks(body, 'card');
   let html = `<div class="custom-cardgrid" data-cols="${cols}">`;
-  for (const card of cards) html += buildCardHtml(card.params, card.body, codeBlocks);
+  for (const card of parseInnerBlocks(body, 'card')) html += buildCardHtml(card.params, card.body, codeBlocks);
   html += '</div>';
   output.push(html);
 
@@ -178,27 +188,24 @@ function handleCardsBlock(trimmed, lines, i, codeBlocks, output) {
 }
 
 function handleCardBlock(trimmed, lines, i, codeBlocks, output) {
-  const match = trimmed.match(/^:::card(?:\[([^\]]*?)\])?\s*$/);
+  const match = trimmed.match(/^:::card(?:\[([^\]]*)\])?\s*$/);
   if (!match) return null;
 
-  const cardParams = parseParams(match[1] || '');
   const { body, endIndex } = collectBlockBody(lines, i + 1);
-  output.push(buildCardHtml(cardParams, body, codeBlocks));
+  output.push(buildCardHtml(parseParams(match[1] ?? ''), body, codeBlocks));
 
   return endIndex + 1;
 }
 
 function handleColumnsBlock(trimmed, lines, i, codeBlocks, output) {
-  const match = trimmed.match(/^:::columns(?:\[([^\]]*?)\])?\s*$/);
+  const match = trimmed.match(/^:::columns(?:\[([^\]]*)\])?\s*$/);
   if (!match) return null;
 
-  const colsParams = parseParams(match[1] || '');
-  const layout = escapeAttr(colsParams.layout || 'equal');
+  const layout = escapeAttr(parseParams(match[1] ?? '').layout ?? 'equal');
   const { body, endIndex } = collectBlockBody(lines, i + 1);
 
-  const cols = parseInnerBlocks(body, 'col');
   let html = `<div class="custom-columns" data-layout="${layout}">`;
-  for (const col of cols)
+  for (const col of parseInnerBlocks(body, 'col'))
     html += `<div class="custom-col">${markedWithCodeBlocks(col.body.trim(), codeBlocks)}</div>`;
   html += '</div>';
   output.push(html);
@@ -210,14 +217,12 @@ function handleStepsBlock(trimmed, lines, i, codeBlocks, output) {
   if (!/^:::steps\s*$/.test(trimmed)) return null;
 
   const { body, endIndex } = collectBlockBody(lines, i + 1);
-  const steps = parseInnerBlocks(body, 'step');
 
   let html = '<div class="custom-steps">';
-  for (const step of steps) {
-    const status = escapeAttr(step.params.status || 'default');
-    const title = escapeAttr(step.inlineText || '');
-    const contentHtml = markedWithCodeBlocks(step.body.trim(), codeBlocks);
-    html += `<div class="custom-step" data-status="${status}" data-title="${title}">${contentHtml}</div>`;
+  for (const step of parseInnerBlocks(body, 'step')) {
+    const status = escapeAttr(step.params.status ?? 'default');
+    const title = escapeAttr(step.inlineText ?? '');
+    html += `<div class="custom-step" data-status="${status}" data-title="${title}">${markedWithCodeBlocks(step.body.trim(), codeBlocks)}</div>`;
   }
   html += '</div>';
   output.push(html);
@@ -226,21 +231,20 @@ function handleStepsBlock(trimmed, lines, i, codeBlocks, output) {
 }
 
 function handleDiagramBlock(trimmed, lines, i, output) {
-  const match = trimmed.match(/^:::diagram(?:\[([^\]]*?)\])?\s*$/);
+  const match = trimmed.match(/^:::diagram(?:\[([^\]]*)\])?\s*$/);
   if (!match) return null;
 
-  const diagramParams = parseParams(match[1] || '');
-  const color = diagramParams.color || diagramParams.borderColor || '';
-  const colorAttr = color ? escapeAttr(color) : '';
+  const diagramParams = parseParams(match[1] ?? '');
+  const color = escapeAttr(diagramParams.color ?? diagramParams.borderColor ?? '');
   const { body, endIndex } = collectBlockBody(lines, i + 1);
 
   const encodedCode = Buffer.from(body.trim(), 'utf8').toString('base64');
-  output.push(`<div class="custom-diagram" data-color="${colorAttr}" data-code="${encodedCode}"></div>`);
+  output.push(`<div class="custom-diagram" data-color="${color}" data-code="${encodedCode}"></div>`);
 
   return endIndex + 1;
 }
 
-// ─── preprocessCustomBlocks ───────────────────────────────────────────────────
+// ─── Custom block preprocessor ────────────────────────────────────────────────
 
 function preprocessCustomBlocks(content, codeBlocks) {
   const lines = content.split('\n');
@@ -257,7 +261,7 @@ function preprocessCustomBlocks(content, codeBlocks) {
       handleStepsBlock(trimmed, lines, i, codeBlocks, output) ??
       handleDiagramBlock(trimmed, lines, i, output);
 
-    if (nextI !== null && nextI !== undefined) {
+    if (nextI != null) {
       i = nextI;
     } else {
       output.push(lines[i]);
@@ -268,29 +272,30 @@ function preprocessCustomBlocks(content, codeBlocks) {
   return output.join('\n');
 }
 
-// ─── preprocessAlerts ─────────────────────────────────────────────────────────
+// ─── Alert preprocessor ───────────────────────────────────────────────────────
 
 export function preprocessAlerts(content) {
   const codeBlocks = [];
-  const codeBlockPattern = /```[\s\S]*?```/g;
-  const alertPattern = /^:::(note|tip|important|warning|caution)\n([\s\S]*?)^:::$/gm;
+  const CODE_BLOCK_RE = /```[\s\S]*?```/g;
+  const ALERT_RE = /^:::(note|tip|important|warning|caution)\n([\s\S]*?)^:::$/gm;
 
-  const protected1 = content.replaceAll(codeBlockPattern, (match) => {
+  // Protect code blocks from being processed
+  const withoutCode = content.replaceAll(CODE_BLOCK_RE, (match) => {
     codeBlocks.push(match);
     return `___CODE_BLOCK_${codeBlocks.length - 1}___`;
   });
 
-  const protected2 = protected1.replaceAll(alertPattern, (_match, type, alertContent) => {
-    const parsedContent = marked.parse(alertContent.trim());
-    return `<div class="custom-alert" data-alert-type="${type}">\n${parsedContent}\n</div>`;
-  });
-
-  const protected3 = preprocessCustomBlocks(protected2, codeBlocks);
-
-  return protected3.replaceAll(/___CODE_BLOCK_(\d+)___/g, (_match, index) =>
-    codeBlocks[Number.parseInt(index, 10)]
+  // Process alert blocks
+  const withAlerts = withoutCode.replaceAll(ALERT_RE, (_match, type, alertContent) =>
+    `<div class="custom-alert" data-alert-type="${type}">\n${marked.parse(alertContent.trim())}\n</div>`
   );
+
+  // Process custom blocks, then restore code blocks
+  return preprocessCustomBlocks(withAlerts, codeBlocks)
+    .replaceAll(/___CODE_BLOCK_(\d+)___/g, (_match, index) => codeBlocks[Number.parseInt(index, 10)]);
 }
+
+// ─── Content helpers ──────────────────────────────────────────────────────────
 
 export function processImageSyntax(content) {
   return content.replaceAll(
@@ -308,6 +313,8 @@ export function getFirstParagraph(content) {
   return '';
 }
 
+// ─── Doc info / builder ───────────────────────────────────────────────────────
+
 export function getDocInfo(fullPath, docsDir) {
   const relativePath = path.relative(docsDir, fullPath);
   const parts = relativePath.split(path.sep);
@@ -319,19 +326,18 @@ export function getDocInfo(fullPath, docsDir) {
     return { slug: isWelcome ? '' : slugify(fileName), navSlug: '', navTitle: '', navIcon: '', typename: '' };
   }
 
-  const firstDir = dirs[0];
-  const navDef = parseNavPopoverFolder(firstDir);
+  const navDef = parseNavPopoverFolder(dirs[0]);
 
   if (navDef) {
     const subDirs = dirs.slice(1);
-    const slugParts = [navDef.navSlug, ...subDirs.map((d) => parseCategoryName(d).slug), slugify(fileName)];
-    const typename = subDirs.length > 0 ? parseCategoryName(subDirs[subDirs.length - 1]).title : '';
-    return { slug: slugParts.join('/'), navSlug: navDef.navSlug, navTitle: navDef.navTitle, navIcon: navDef.navIcon, typename };
+    const slug = [navDef.navSlug, ...subDirs.map((d) => parseCategoryName(d).slug), slugify(fileName)].join('/');
+    const typename = subDirs.length > 0 ? parseCategoryName(subDirs.at(-1)).title : '';
+    return { slug, navSlug: navDef.navSlug, navTitle: navDef.navTitle, navIcon: navDef.navIcon, typename };
   }
 
-  const slugParts = [...dirs.map((d) => parseCategoryName(d).slug), slugify(fileName)];
-  const typename = parseCategoryName(dirs[dirs.length - 1]).title;
-  return { slug: slugParts.join('/'), navSlug: '', navTitle: '', navIcon: '', typename };
+  const slug = [...dirs.map((d) => parseCategoryName(d).slug), slugify(fileName)].join('/');
+  const typename = parseCategoryName(dirs.at(-1)).title;
+  return { slug, navSlug: '', navTitle: '', navIcon: '', typename };
 }
 
 export function buildDocFromPath(mdPath, docsDir) {
