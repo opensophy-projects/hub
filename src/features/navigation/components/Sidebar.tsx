@@ -171,7 +171,7 @@ const SidebarHeader: React.FC<{
   >
     <a href="/" className="flex items-center gap-2">
       <img src="/favicon.png" alt="Opensophy" className="w-7 h-7 object-contain" />
-      <h1 className="text-xl font-bold font-veilstack" style={{ color: '#7234ff' }}>hub</h1>
+      <h1 className="text-xl font-bold font-customfont" style={{ color: '#7234ff' }}>hub</h1>
     </a>
 
     <div className="flex items-center gap-0.5">
