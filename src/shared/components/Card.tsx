@@ -44,23 +44,39 @@ const LucideIcon: React.FC<{ name: string; size?: number; color?: string }> = ({
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
+// Unique class suffix to avoid collisions between multiple Card instances
+const CARD_HOVER_CLASS = 'sophy-card';
+
+const cardHoverStyle = `
+  .${CARD_HOVER_CLASS} { transition: transform 0.15s, box-shadow 0.15s; }
+  .${CARD_HOVER_CLASS}:hover { transform: translateY(-2px); }
+  .${CARD_HOVER_CLASS}.card-dark:hover  { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
+  .${CARD_HOVER_CLASS}.card-light:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.09); }
+`;
+
 const Card: React.FC<CardProps> = ({ title, icon, color, children, isDark = false }) => {
   const accentColor = color || (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)');
   const hasAccent = !!color;
 
+  // FIX S3358: extract nested ternary for iconWrap background into a named variable
+  const iconWrapBg = hasAccent
+    ? `${accentColor}22`
+    : isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)';
+
+  // FIX S3358: extract nested ternary for icon color into a named variable
+  const iconColor = hasAccent
+    ? accentColor
+    : isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.55)';
+
   const cardStyle: React.CSSProperties = {
     position: 'relative',
     borderRadius: '12px',
-    // Light mode: use the same muted background as the page, not pure white
     border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)',
     background: isDark ? '#0f0f0f' : 'rgba(0,0,0,0.03)',
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
-    transition: 'transform 0.15s, box-shadow 0.15s',
-    boxShadow: isDark
-      ? '0 2px 12px rgba(0,0,0,0.4)'
-      : '0 1px 4px rgba(0,0,0,0.05)',
+    boxShadow: isDark ? '0 2px 12px rgba(0,0,0,0.4)' : '0 1px 4px rgba(0,0,0,0.05)',
   };
 
   const accentBarStyle: React.CSSProperties = hasAccent ? {
@@ -86,9 +102,7 @@ const Card: React.FC<CardProps> = ({ title, icon, color, children, isDark = fals
     width: '36px',
     height: '36px',
     borderRadius: '8px',
-    background: hasAccent
-      ? `${accentColor}22`
-      : isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)',
+    background: iconWrapBg,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -112,36 +126,25 @@ const Card: React.FC<CardProps> = ({ title, icon, color, children, isDark = fals
   };
 
   return (
-    <div
-      style={cardStyle}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
-        (e.currentTarget as HTMLDivElement).style.boxShadow = isDark
-          ? '0 6px 24px rgba(0,0,0,0.5)'
-          : '0 4px 16px rgba(0,0,0,0.09)';
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
-        (e.currentTarget as HTMLDivElement).style.boxShadow = isDark
-          ? '0 2px 12px rgba(0,0,0,0.4)'
-          : '0 1px 4px rgba(0,0,0,0.05)';
-      }}
-    >
-      {hasAccent && <div style={accentBarStyle} />}
-      <div style={bodyStyle}>
-        {icon && (
-          <div style={iconWrapStyle}>
-            <LucideIcon
-              name={icon}
-              size={18}
-              color={hasAccent ? accentColor : isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.55)'}
-            />
-          </div>
-        )}
-        {title && <p style={titleStyle}>{title}</p>}
-        {children && <div style={contentStyle}>{children}</div>}
+    // FIX S6848: replace onMouseEnter/onMouseLeave JS handlers with CSS hover classes
+    <>
+      <style>{cardHoverStyle}</style>
+      <div
+        style={cardStyle}
+        className={`${CARD_HOVER_CLASS} ${isDark ? 'card-dark' : 'card-light'}`}
+      >
+        {hasAccent && <div style={accentBarStyle} />}
+        <div style={bodyStyle}>
+          {icon && (
+            <div style={iconWrapStyle}>
+              <LucideIcon name={icon} size={18} color={iconColor} />
+            </div>
+          )}
+          {title && <p style={titleStyle}>{title}</p>}
+          {children && <div style={contentStyle}>{children}</div>}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
