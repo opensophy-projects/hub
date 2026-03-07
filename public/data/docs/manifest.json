@@ -281,9 +281,9 @@
     "icon": "app-window"
   },
   {
-    "id": "article/career/ats-hr",
+    "id": "article/career/career-tutorial",
     "title": "Как начать путь в кибербезопасности: от первых шагов до осознанной карьеры",
-    "slug": "article/career/ats-hr",
+    "slug": "article/career/career-tutorial",
     "description": "Практическое руководство по входу в кибербезопасность — от выбора специализации до первой работы. Реальные методы, без мифов и волшебных курсов.",
     "typename": "Карьера",
     "categoryPath": [
