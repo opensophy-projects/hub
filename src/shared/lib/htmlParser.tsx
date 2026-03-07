@@ -10,6 +10,7 @@ import { ColumnsWithContext } from '../components/Columns';
 import { StepperWithContext } from '../components/Stepper';
 import MermaidDiagramWithContext from '../components/MermaidDiagram';
 import type { StepData, StepStatus } from '../components/Stepper';
+import type { ColumnsLayout } from '../components/Columns';
 
 export const TableContext = createContext<{
   onTableClick?: (tableHtml: string) => void;
@@ -46,12 +47,12 @@ function slugifyHeading(text: string): string {
 }
 
 const TAG_STYLES: Record<number, React.CSSProperties> = {
-  1: { fontSize: 'clamp(1.4rem,3vw,2.25rem)', fontWeight: 700, marginTop: '2rem', marginBottom: '1rem', lineHeight: 1.2, scrollMarginTop: '5rem' },
-  2: { fontSize: 'clamp(1.2rem,2.5vw,1.875rem)', fontWeight: 700, marginTop: '2rem', marginBottom: '1rem', lineHeight: 1.25, scrollMarginTop: '5rem' },
-  3: { fontSize: 'clamp(1.05rem,2vw,1.5rem)', fontWeight: 700, marginTop: '1.5rem', marginBottom: '0.75rem', lineHeight: 1.3, scrollMarginTop: '5rem' },
-  4: { fontSize: 'clamp(1rem,1.8vw,1.25rem)', fontWeight: 700, marginTop: '1.5rem', marginBottom: '0.75rem', scrollMarginTop: '5rem' },
-  5: { fontSize: '1rem', fontWeight: 700, marginTop: '1.25rem', marginBottom: '0.5rem', scrollMarginTop: '5rem' },
-  6: { fontSize: '0.875rem', fontWeight: 700, marginTop: '1rem', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em', scrollMarginTop: '5rem' },
+  1: { fontSize: 'clamp(1.4rem,3vw,2.25rem)',   fontWeight: 700, marginTop: '2rem',    marginBottom: '1rem',    lineHeight: 1.2,  scrollMarginTop: '5rem' },
+  2: { fontSize: 'clamp(1.2rem,2.5vw,1.875rem)', fontWeight: 700, marginTop: '2rem',    marginBottom: '1rem',    lineHeight: 1.25, scrollMarginTop: '5rem' },
+  3: { fontSize: 'clamp(1.05rem,2vw,1.5rem)',    fontWeight: 700, marginTop: '1.5rem',  marginBottom: '0.75rem', lineHeight: 1.3,  scrollMarginTop: '5rem' },
+  4: { fontSize: 'clamp(1rem,1.8vw,1.25rem)',    fontWeight: 700, marginTop: '1.5rem',  marginBottom: '0.75rem',                   scrollMarginTop: '5rem' },
+  5: { fontSize: '1rem',                          fontWeight: 700, marginTop: '1.25rem', marginBottom: '0.5rem',                    scrollMarginTop: '5rem' },
+  6: { fontSize: '0.875rem',                      fontWeight: 700, marginTop: '1rem',    marginBottom: '0.5rem',  textTransform: 'uppercase', letterSpacing: '0.05em', scrollMarginTop: '5rem' },
 };
 
 // ── Element processors ────────────────────────────────────────────────────────
@@ -80,14 +81,13 @@ const processCodeElement = (element: Element, key: string, elements: React.React
 };
 
 const processHeadingElement = (element: Element, tagName: string, key: string, elements: React.ReactNode[]) => {
-  const text = element.textContent || '';
-  const id = element.id || slugifyHeading(text);
+  const text  = element.textContent || '';
+  const id    = element.id || slugifyHeading(text);
   const level = Number.parseInt(tagName[1], 10);
-  const Tag = tagName as keyof JSX.IntrinsicElements;
+  const Tag   = tagName as keyof JSX.IntrinsicElements;
   elements.push(
     React.createElement(Tag, {
-      key,
-      id,
+      key, id,
       style: TAG_STYLES[level],
       dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(element.innerHTML) },
     })
@@ -120,29 +120,26 @@ const processLinkElement = (element: Element, key: string, elements: React.React
 const processImageElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   elements.push(React.createElement(ImageCard, {
     key,
-    src: element.getAttribute('src') || '',
-    alt: element.getAttribute('alt') || 'Image',
+    src:   element.getAttribute('src')   || '',
+    alt:   element.getAttribute('alt')   || 'Image',
     title: element.getAttribute('title') || undefined,
   }));
 };
 
 const processBlockquoteElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   elements.push(
-    React.createElement('blockquote', { key, dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(element.innerHTML) } })
+    React.createElement('blockquote', {
+      key,
+      dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(element.innerHTML) },
+    })
   );
 };
 
-const TableRenderer: React.FC<{
-  tableHtml: string;
-  onTableClick?: (html: string) => void;
-  isDark: boolean;
-}> = ({ tableHtml, onTableClick, isDark }) =>
-  React.createElement(TableWithControls, {
-    tableHtml: sanitizeInnerHTML(tableHtml),
-    isDark,
-    onFullscreen: (html: string) => onTableClick?.(sanitizeInnerHTML(html)),
-  });
-
+// FIX Fast Refresh (react-refresh/only-export-components):
+// TableRenderer was a named React.FC defined in a file that also exports non-component
+// values (TableContext, parseHtmlToReact). This breaks HMR Fast Refresh.
+// Fix: inlined into processTableElement as an anonymous render call — no named component,
+// no export, so the linter rule no longer triggers.
 const processTableElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const tableHtml = element.outerHTML;
   elements.push(
@@ -150,17 +147,26 @@ const processTableElement = (element: Element, key: string, elements: React.Reac
       TableContext.Consumer,
       { key },
       ({ onTableClick, isDark }: { onTableClick?: (html: string) => void; isDark: boolean }) =>
-        React.createElement(TableRenderer, { tableHtml, onTableClick, isDark })
+        React.createElement(TableWithControls, {
+          tableHtml: sanitizeInnerHTML(tableHtml),
+          isDark,
+          onFullscreen: (html: string) => onTableClick?.(sanitizeInnerHTML(html)),
+        })
     )
   );
 };
 
 const processInlineElement = (tag: string, element: Element, key: string, elements: React.ReactNode[]) => {
-  elements.push(React.createElement(tag, { key, dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(element.innerHTML) } }));
+  elements.push(
+    React.createElement(tag, {
+      key,
+      dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(element.innerHTML) },
+    })
+  );
 };
 
 const processDetailsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
-  const summary = element.querySelector('summary');
+  const summary     = element.querySelector('summary');
   const summaryText = summary?.textContent || 'Подробности';
   const contentHTML = summary ? element.innerHTML.replace(summary.outerHTML, '') : element.innerHTML;
   const contentElements = parseHtmlToReact(sanitizeInnerHTML(contentHTML));
@@ -195,41 +201,42 @@ const processCardElement = (element: Element, key: string, elements: React.React
 const processCardGridElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const cols = Number.parseInt(element.dataset.cols || '2', 10);
   const cardElements: React.ReactNode[] = [];
-  Array.from(element.children).forEach((child, i) => {
+  for (const [i, child] of Array.from(element.children).entries()) {
     if (child.classList.contains('custom-card')) processCardElement(child, `${key}-card-${i}`, cardElements);
-  });
+  }
   elements.push(React.createElement(CardGridWithContext, { key, cols }, ...cardElements));
 };
 
 const processColumnsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
-  const layout = (element.dataset.layout || 'equal') as any;
+  // FIX @typescript-eslint/no-explicit-any: replaced `as any` with the proper
+  // ColumnsLayout union type imported from the Columns component.
+  const layout = (element.dataset.layout || 'equal') as ColumnsLayout;
   const colElements: React.ReactNode[] = [];
-  Array.from(element.children).forEach((col, i) => {
+  for (const [i, col] of Array.from(element.children).entries()) {
     if (col.classList.contains('custom-col')) {
       const colContent = parseHtmlToReact(sanitizeInnerHTML(col.innerHTML));
       colElements.push(React.createElement('div', { key: `${key}-col-${i}` }, ...colContent));
     }
-  });
+  }
   elements.push(React.createElement(ColumnsWithContext, { key, layout }, ...colElements));
 };
 
 const processStepsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const steps: StepData[] = [];
-  Array.from(element.children).forEach((stepEl) => {
+  for (const stepEl of Array.from(element.children)) {
     if (stepEl.classList.contains('custom-step')) {
       const contentNodes = parseHtmlToReact(sanitizeInnerHTML(stepEl.innerHTML));
       steps.push({
-        title: stepEl.dataset.title || '',
-        status: (stepEl.dataset.status || 'default') as StepStatus,
+        title:   stepEl.dataset.title || '',
+        status:  (stepEl.dataset.status || 'default') as StepStatus,
         content: React.createElement(React.Fragment, null, ...contentNodes),
       });
     }
-  });
+  }
   elements.push(React.createElement(StepperWithContext, { key, steps }));
 };
 
 const processDiagramElement = (element: Element, key: string, elements: React.ReactNode[]) => {
-  // dataset.code is the canonical access — getAttribute fallback kept for safety (not a Sonar violation here)
   const encodedCode = element.dataset.code || '';
   if (!encodedCode) return;
 
@@ -238,7 +245,6 @@ const processDiagramElement = (element: Element, key: string, elements: React.Re
     const binaryStr = atob(encodedCode);
     const bytes = new Uint8Array(binaryStr.length);
     for (let i = 0; i < binaryStr.length; i++) {
-      // codePointAt is Unicode-aware (Sonar S7758)
       bytes[i] = binaryStr.codePointAt(i) ?? 0;
     }
     code = new TextDecoder('utf-8').decode(bytes);
@@ -273,7 +279,7 @@ const processTextNode = (node: ChildNode, key: string, elements: React.ReactNode
   if (text.trim()) elements.push(React.createElement('span', { key }, text));
 };
 
-// ── Div dispatcher (extracted to reduce cognitive complexity of processNodes) ─
+// ── Div dispatcher ────────────────────────────────────────────────────────────
 
 const DIV_CLASS_HANDLERS: Array<[string, (el: Element, key: string, els: React.ReactNode[]) => void]> = [
   ['custom-alert',    processAlertElement],
@@ -328,7 +334,7 @@ const processParagraphElement = (
 // ── Main element dispatcher ───────────────────────────────────────────────────
 
 const HEADING_TAGS = new Set(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']);
-const INLINE_TAGS = new Set(['strong', 'em', 'u', 'del', 'sub', 'sup']);
+const INLINE_TAGS  = new Set(['strong', 'em', 'u', 'del', 'sub', 'sup']);
 
 const processElement = (
   element: Element,
@@ -338,7 +344,7 @@ const processElement = (
   processNodes: (nodes: NodeListOf<ChildNode>, parentKey: string) => void
 ) => {
   if (HEADING_TAGS.has(tagName)) { processHeadingElement(element, tagName, key, elements); return; }
-  if (INLINE_TAGS.has(tagName)) { processInlineElement(tagName, element, key, elements); return; }
+  if (INLINE_TAGS.has(tagName))  { processInlineElement(tagName, element, key, elements); return; }
 
   switch (tagName) {
     case 'pre':        return processPreElement(element, key, elements);
@@ -365,15 +371,14 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
     ALLOW_DATA_ATTR: true,
   });
 
-  const doc = new DOMParser().parseFromString(sanitized, 'text/html');
+  const doc      = new DOMParser().parseFromString(sanitized, 'text/html');
   const elements: React.ReactNode[] = [];
 
-  // Extracted from parseHtmlToReact body to keep cognitive complexity ≤ 15
   const processNodes = (nodes: NodeListOf<ChildNode>, parentKey = '') => {
     Array.from(nodes).forEach((node, index) => {
       const key = `${parentKey}-${index}`;
 
-      if (node.nodeType === Node.TEXT_NODE) { processTextNode(node, key, elements); return; }
+      if (node.nodeType === Node.TEXT_NODE)    { processTextNode(node, key, elements); return; }
       if (node.nodeType !== Node.ELEMENT_NODE) return;
 
       const element = node as Element;
