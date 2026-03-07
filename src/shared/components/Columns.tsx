@@ -2,13 +2,11 @@ import React, { useContext } from 'react';
 import { TableContext } from '../lib/htmlParser';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
 export type ColumnsLayout = 'equal' | 'image-left' | 'image-right' | 'wide-left' | 'wide-right';
 
 export interface ColumnsProps {
   layout?: ColumnsLayout;
   children?: React.ReactNode;
-  isDark?: boolean;
 }
 
 export interface ColProps {
@@ -16,7 +14,6 @@ export interface ColProps {
 }
 
 // ─── Layout → grid template ───────────────────────────────────────────────────
-
 const LAYOUT_TEMPLATES: Record<ColumnsLayout, string> = {
   'equal':       '1fr 1fr',
   'image-left':  '1fr 1.6fr',
@@ -26,14 +23,9 @@ const LAYOUT_TEMPLATES: Record<ColumnsLayout, string> = {
 };
 
 // ─── Columns ──────────────────────────────────────────────────────────────────
-
-const Columns: React.FC<ColumnsProps> = ({ layout = 'equal', children, isDark = false }) => {
+const Columns: React.FC<ColumnsProps> = ({ layout = 'equal', children }) => {
   const template = LAYOUT_TEMPLATES[layout] ?? LAYOUT_TEMPLATES.equal;
-
-  // For image-right we reverse the visual order of columns
   const shouldReverse = layout === 'image-right';
-
-  // Fix 1: replaceAll instead of replace() with global regex (SonarCloud S7781)
   const uid = React.useId().replaceAll(':', '');
 
   const styleTag = `
@@ -58,8 +50,6 @@ const Columns: React.FC<ColumnsProps> = ({ layout = 'equal', children, isDark = 
     <>
       <style>{styleTag}</style>
       <div className={`columns-${uid}`}>
-        {/* Fix 2: use child.key from React.Children.toArray() instead of array index (SonarCloud S6479)
-            React.Children.toArray() guarantees stable, unique keys on each child element */}
         {orderedCols.map((child) => (
           <div key={(child as React.ReactElement).key} style={{ minWidth: 0 }}>
             {child}
@@ -71,16 +61,13 @@ const Columns: React.FC<ColumnsProps> = ({ layout = 'equal', children, isDark = 
 };
 
 // ─── Col (single column wrapper — used internally by parser) ─────────────────
-
-export const Col: React.FC<ColProps> = ({ children }) => {
-  return <>{children}</>;
-};
+export const Col: React.FC<ColProps> = ({ children }) => <>{children}</>;
 
 // ─── Context-aware export ─────────────────────────────────────────────────────
-
-export const ColumnsWithContext: React.FC<Omit<ColumnsProps, 'isDark'>> = (props) => {
-  const { isDark } = useContext(TableContext);
-  return <Columns {...props} isDark={isDark} />;
+export const ColumnsWithContext: React.FC<ColumnsProps> = (props) => {
+  // isDark is consumed from context here but forwarded as needed in future
+  useContext(TableContext);
+  return <Columns {...props} />;
 };
 
 export { Columns };
