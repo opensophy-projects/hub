@@ -1,10 +1,6 @@
 ---
 title: Полное руководство по форматированию Markdown в Hub
 description: Справочник по всем доступным вариантам форматирования текста, кода, таблиц и компонентов в документации Hub.
-type: docs
-typename: Документация
-category: markdown
-icon: file-code
 author: veilosophy
 date: 2026-02-16
 updated: 2026-03-07
