@@ -15,12 +15,15 @@ interface MermaidDiagramProps {
 
 // ─── Mermaid singleton ────────────────────────────────────────────────────────
 
-let mermaidPromise: Promise<any> | null = null;
-async function getMermaid() {
-  if (!mermaidPromise) {
-    mermaidPromise = import('mermaid').then((m) => m.default);
+// Store the resolved module (not the Promise) to avoid "Promise in boolean conditional" (S6544)
+type MermaidType = Awaited<ReturnType<typeof import('mermaid')>>['default'];
+let mermaidModule: MermaidType | null = null;
+
+async function getMermaid(): Promise<MermaidType> {
+  if (!mermaidModule) {
+    mermaidModule = await import('mermaid').then((m) => m.default);
   }
-  return mermaidPromise;
+  return mermaidModule;
 }
 
 let globalIdCounter = 0;
@@ -86,15 +89,19 @@ const ToolBtn: React.FC<{
 }> = ({ onClick, title, isDark, active, children }) => {
   const [hov, setHov] = useState(false);
 
-  const bg = active
-    ? tc(isDark, 'rgba(255,255,255,0.15)', 'rgba(0,0,0,0.12)')
-    : hov
-    ? tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.07)')
-    : tc(isDark, 'rgba(255,255,255,0.05)', 'rgba(0,0,0,0.04)');
+  // Extracted from nested ternary to independent statements (S3358)
+  const activeBg  = tc(isDark, 'rgba(255,255,255,0.15)', 'rgba(0,0,0,0.12)');
+  const hovBg     = tc(isDark, 'rgba(255,255,255,0.1)',  'rgba(0,0,0,0.07)');
+  const defaultBg = tc(isDark, 'rgba(255,255,255,0.05)', 'rgba(0,0,0,0.04)');
+  const bg = active ? activeBg : (hov ? hovBg : defaultBg);
 
   const border = active
     ? tc(isDark, 'rgba(255,255,255,0.2)', 'rgba(0,0,0,0.18)')
     : tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)');
+
+  const activeColor  = tc(isDark, '#fff', '#000');
+  const defaultColor = tc(isDark, 'rgba(255,255,255,0.65)', 'rgba(0,0,0,0.55)');
+  const color = active ? activeColor : defaultColor;
 
   return (
     <button
@@ -107,9 +114,7 @@ const ToolBtn: React.FC<{
         width: 28, height: 28, borderRadius: 7,
         border: `1px solid ${border}`,
         background: bg,
-        color: active
-          ? tc(isDark, '#fff', '#000')
-          : tc(isDark, 'rgba(255,255,255,0.65)', 'rgba(0,0,0,0.55)'),
+        color,
         cursor: 'pointer', transition: 'all 0.12s', flexShrink: 0,
       }}
     >
@@ -124,7 +129,7 @@ interface DiagramViewerProps {
   svgHtml: string;
   isDark: boolean;
   panMode: boolean;
-  onReset: () => void;
+  // onReset removed — defined but never used inside component (S6767)
   scale: number;
   setScale: React.Dispatch<React.SetStateAction<number>>;
   pos: { x: number; y: number };
@@ -160,12 +165,12 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
     const onUp = () => {
       dragging.current = false;
       setIsDragging(false);
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
+      globalThis.window.removeEventListener('mousemove', onMove);
+      globalThis.window.removeEventListener('mouseup', onUp);
     };
 
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
+    globalThis.window.addEventListener('mousemove', onMove);
+    globalThis.window.addEventListener('mouseup', onUp);
   }, [panMode, setPos]);
 
   // Touch drag
@@ -203,7 +208,7 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
         lastDist = dist;
       }
     };
-    el.addEventListener('touchstart', onTouchStart, { passive: false });
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
     el.addEventListener('touchmove', onTouchMove, { passive: false });
     return () => {
       el.removeEventListener('touchstart', onTouchStart);
@@ -225,20 +230,37 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
     return () => el.removeEventListener('wheel', onWheel);
   }, [setScale]);
 
-  const minH = isFullscreen ? '100%' : 80;
+  const minH   = isFullscreen ? '100%' : 80;
+  // Extracted nested ternary for cursor (S3358)
+  const cursor = panMode ? (isDragging ? 'grabbing' : 'grab') : 'default';
 
   return (
+    // role + onKeyDown added to satisfy non-interactive element with handler rule (S6848)
     <div
       ref={viewRef}
+      role="application"
+      aria-label="Diagram viewer — drag to pan, Ctrl+scroll to zoom"
+      tabIndex={panMode ? 0 : -1}
       onMouseDown={onMouseDown}
+      onKeyDown={(e) => {
+        const step = 20;
+        const moves: Record<string, () => void> = {
+          ArrowLeft:  () => setPos(p => ({ ...p, x: p.x - step })),
+          ArrowRight: () => setPos(p => ({ ...p, x: p.x + step })),
+          ArrowUp:    () => setPos(p => ({ ...p, y: p.y - step })),
+          ArrowDown:  () => setPos(p => ({ ...p, y: p.y + step })),
+        };
+        moves[e.key]?.();
+      }}
       style={{
         overflow: 'hidden',
         position: 'relative',
-        cursor: panMode ? (isDragging ? 'grabbing' : 'grab') : 'default',
+        cursor,
         minHeight: minH,
         height: isFullscreen ? '100%' : 'auto',
         userSelect: 'none',
         touchAction: 'none',
+        outline: 'none',
       }}
     >
       <div
@@ -261,14 +283,14 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
 // ─── Main component ────────────────────────────────────────────────────────────
 
 const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = false }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [status, setStatus]       = useState<'loading' | 'ready' | 'error'>('loading');
-  const [errorMsg, setErrorMsg]   = useState('');
-  const [svgHtml, setSvgHtml]     = useState('');
-  const [panMode, setPanMode]     = useState(false);
+  // containerRef removed — declared but never used (S1854)
+  const [status, setStatus]             = useState<'loading' | 'ready' | 'error'>('loading');
+  const [errorMsg, setErrorMsg]         = useState('');
+  const [svgHtml, setSvgHtml]           = useState('');
+  const [panMode, setPanMode]           = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [scale, setScale]         = useState(1);
-  const [pos, setPos]             = useState({ x: 0, y: 0 });
+  const [scale, setScale]               = useState(1);
+  const [pos, setPos]                   = useState({ x: 0, y: 0 });
 
   const resetView = useCallback(() => { setScale(1); setPos({ x: 0, y: 0 }); }, []);
 
@@ -276,7 +298,8 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
     const key = cacheKey(code, isDark, color);
 
     if (svgCache.has(key)) {
-      setSvgHtml(svgCache.get(key)!);
+      // ?? '' avoids non-null assertion — Map.get() is guaranteed defined after has() (S4325)
+      setSvgHtml(svgCache.get(key) ?? '');
       setStatus('ready');
       return;
     }
@@ -325,7 +348,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
               taskBorderColor: color || 'rgba(255,255,255,0.25)',
               taskTextColor: '#e8e8e8',
               taskTextOutsideColor: '#e8e8e8',
-              // xychart
               xyChart: {
                 backgroundColor: 'transparent',
                 titleColor: '#e8e8e8',
@@ -369,7 +391,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
               taskBorderColor: color || 'rgba(0,0,0,0.18)',
               taskTextColor: '#1a1a2e',
               taskTextOutsideColor: '#1a1a2e',
-              // xychart
               xyChart: {
                 backgroundColor: 'transparent',
                 titleColor: '#1a1a2e',
@@ -389,9 +410,10 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
       const id = nextId();
       const { svg } = await mermaid.render(id, code.trim());
 
+      // replaceAll instead of replace+global regex (S7781)
       const patched = svg
-        .replace(/(<svg[^>]*?)\s+width="[^"]*"/g, '$1')
-        .replace(/(<svg[^>]*?)\s+height="[^"]*"/g, '$1')
+        .replaceAll(/(<svg[^>]*?)\s+width="[^"]*"/g, '$1')
+        .replaceAll(/(<svg[^>]*?)\s+height="[^"]*"/g, '$1')
         .replace(
           /<svg /,
           '<svg style="max-width:min(100%,400px);height:auto;display:block;overflow:visible;margin:0 auto;" ',
@@ -401,6 +423,7 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
       setSvgHtml(patched);
       setStatus('ready');
     } catch (e: unknown) {
+      // instanceof check prevents Object stringification (S6551)
       const msg = e instanceof Error ? e.message : String(e);
       setErrorMsg(msg);
       setStatus('error');
@@ -412,9 +435,9 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
     return () => clearTimeout(t);
   }, [render]);
 
-  const hasColor = !!color;
+  const hasColor    = !!color;
   const borderColor = color || tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)');
-  const bgColor = tc(isDark, '#0a0a0a', '#E8E7E3');
+  const bgColor     = tc(isDark, '#0a0a0a', '#E8E7E3');
 
   // ─── Toolbar ─────────────────────────────────────────────────────────────────
 
@@ -503,7 +526,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
           svgHtml={svgHtml}
           isDark={isDark}
           panMode={panMode}
-          onReset={resetView}
           scale={scale}
           setScale={setScale}
           pos={pos}
@@ -579,7 +601,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
             svgHtml={svgHtml}
             isDark={isDark}
             panMode={panMode}
-            onReset={resetView}
             scale={scale}
             setScale={setScale}
             pos={pos}
