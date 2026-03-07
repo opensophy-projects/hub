@@ -4,7 +4,6 @@ description: Разбор основных методологий тестиро
 type: docs
 typename: Документация
 category: Подборка
-icon: shredder
 author: veilosophy
 date: 2026-01-24
 tags: AppSec, DAST, SAST, SCA, IAST, RASP, OpenSource
