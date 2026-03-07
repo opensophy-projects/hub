@@ -8,20 +8,66 @@ interface AskAIButtonProps {
   markdownContent?: string;
 }
 
+function buildAiQuery(title: string, url: string): string {
+  return `Объясни эту страницу: "${title}" — ${url}`;
+}
+
 const PROVIDERS = [
   {
     id: 'chatgpt',
     name: 'ChatGPT',
     getUrl: (title: string, url: string) =>
-      `https://chatgpt.com/?q=${encodeURIComponent(`Объясни эту страницу: "${title}" — ${url}`)}`,
+      `https://chatgpt.com/?q=${encodeURIComponent(buildAiQuery(title, url))}`,
   },
   {
     id: 'claude',
     name: 'Claude',
     getUrl: (title: string, url: string) =>
-      `https://claude.ai/new?q=${encodeURIComponent(`Объясни эту страницу: "${title}" — ${url}`)}`,
+      `https://claude.ai/new?q=${encodeURIComponent(buildAiQuery(title, url))}`,
   },
 ];
+
+// ─── Theme helpers ────────────────────────────────────────────────────────────
+
+interface Theme {
+  popupBg: string;
+  border: string;
+  textColor: string;
+  labelColor: string;
+  rowHov: string;
+  divColor: string;
+  btnBg: string;
+  btnBorder: string;
+  btnHov: string;
+}
+
+function getTheme(isDark: boolean): Theme {
+  return isDark
+    ? {
+        popupBg:   '#0a0a0a',
+        border:    'rgba(255,255,255,0.1)',
+        textColor: 'rgba(255,255,255,0.85)',
+        labelColor:'rgba(255,255,255,0.3)',
+        rowHov:    'rgba(255,255,255,0.06)',
+        divColor:  'rgba(255,255,255,0.08)',
+        btnBg:     '#1a1a1a',
+        btnBorder: 'rgba(255,255,255,0.12)',
+        btnHov:    '#222222',
+      }
+    : {
+        popupBg:   '#E8E7E3',
+        border:    'rgba(0,0,0,0.1)',
+        textColor: 'rgba(0,0,0,0.85)',
+        labelColor:'rgba(0,0,0,0.35)',
+        rowHov:    'rgba(0,0,0,0.06)',
+        divColor:  'rgba(0,0,0,0.08)',
+        btnBg:     '#d4d3cf',
+        btnBorder: 'rgba(0,0,0,0.15)',
+        btnHov:    '#c8c7c3',
+      };
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 const AskAIButton: React.FC<AskAIButtonProps> = ({
   isDark,
@@ -33,6 +79,7 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
   const [copied, setCopied] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const t = getTheme(isDark);
 
   useEffect(() => {
     if (!open) return;
@@ -57,33 +104,31 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
       await navigator.clipboard.writeText(markdownContent);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (_) {}
+    } catch {
+      // clipboard unavailable — silent fail
+    }
   };
 
-  const popupBg   = isDark ? '#0a0a0a' : '#E8E7E3';
-  const border    = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-  const textColor = isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)';
-  const labelColor= isDark ? 'rgba(255,255,255,0.3)'  : 'rgba(0,0,0,0.35)';
-  const rowHov    = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
-  const divColor  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
-  const btnBg     = isDark ? '#1a1a1a' : '#d4d3cf';
-  const btnBorder = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.15)';
-  const btnHov    = isDark ? '#222222' : '#c8c7c3';
+  const boxShadow = isDark
+    ? '0 8px 32px rgba(0,0,0,0.7)'
+    : '0 8px 32px rgba(0,0,0,0.12)';
 
   return (
     <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
       {/* Кнопка */}
       <button
         onClick={() => setOpen(v => !v)}
+        onMouseEnter={e => (e.currentTarget.style.background = t.btnHov)}
+        onMouseLeave={e => (e.currentTarget.style.background = open ? t.btnHov : t.btnBg)}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
           gap: '0.35rem',
           padding: '0.35rem 0.7rem',
           borderRadius: '8px',
-          border: `1px solid ${btnBorder}`,
-          background: open ? btnHov : btnBg,
-          color: textColor,
+          border: `1px solid ${t.btnBorder}`,
+          background: open ? t.btnHov : t.btnBg,
+          color: t.textColor,
           fontSize: '0.76rem',
           fontWeight: 500,
           cursor: 'pointer',
@@ -91,8 +136,6 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
           userSelect: 'none',
           lineHeight: 1,
         }}
-        onMouseEnter={e => (e.currentTarget.style.background = btnHov)}
-        onMouseLeave={e => (e.currentTarget.style.background = open ? btnHov : btnBg)}
       >
         <Sparkles size={11} style={{ opacity: 0.7 }} />
         Спросить у ИИ
@@ -114,12 +157,10 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
             top: 'calc(100% + 7px)',
             right: 0,
             width: '200px',
-            background: popupBg,
-            border: `1px solid ${border}`,
+            background: t.popupBg,
+            border: `1px solid ${t.border}`,
             borderRadius: '10px',
-            boxShadow: isDark
-              ? '0 8px 32px rgba(0,0,0,0.7)'
-              : '0 8px 32px rgba(0,0,0,0.12)',
+            boxShadow,
             zIndex: 200,
             overflow: 'hidden',
             animation: 'askAiIn 0.13s ease',
@@ -139,7 +180,7 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
             fontWeight: 700,
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
-            color: labelColor,
+            color: t.labelColor,
           }}>
             Выбери ИИ
           </div>
@@ -156,10 +197,10 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
                 alignItems: 'center',
                 width: '100%',
                 padding: '0.42rem 0.75rem',
-                background: hoveredId === p.id ? rowHov : 'transparent',
+                background: hoveredId === p.id ? t.rowHov : 'transparent',
                 border: 'none',
                 cursor: 'pointer',
-                color: textColor,
+                color: t.textColor,
                 fontSize: '0.83rem',
                 textAlign: 'left',
                 transition: 'background 0.1s',
@@ -170,7 +211,7 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
           ))}
 
           {/* Разделитель */}
-          <div style={{ height: '1px', background: divColor, margin: '4px 0' }} />
+          <div style={{ height: '1px', background: t.divColor, margin: '4px 0' }} />
 
           {/* Копировать Markdown */}
           <button
@@ -184,10 +225,10 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
               gap: '0.5rem',
               width: '100%',
               padding: '0.42rem 0.75rem 0.6rem',
-              background: hoveredId === 'copy' ? rowHov : 'transparent',
+              background: hoveredId === 'copy' ? t.rowHov : 'transparent',
               border: 'none',
               cursor: markdownContent ? 'pointer' : 'default',
-              color: markdownContent ? textColor : labelColor,
+              color: markdownContent ? t.textColor : t.labelColor,
               fontSize: '0.83rem',
               textAlign: 'left',
               transition: 'background 0.1s',
