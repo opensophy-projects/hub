@@ -441,7 +441,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
   const [activeNavSlug, setActiveNavSlug] = useState<string>('');
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
 
-  // FIX S7764: use globalThis.window instead of window
   const isDesktop = globalThis.window !== undefined && globalThis.window.innerWidth >= 768;
 
   useEffect(() => {
@@ -467,7 +466,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
 
   useEffect(() => {
     if (sections.length === 0) return;
-    // FIX S7764: use globalThis.window instead of window
     const pathname = globalThis.window.location.pathname.replace(/^\//, '');
     const matched = sections
       .filter(s => s.navSlug !== '')
