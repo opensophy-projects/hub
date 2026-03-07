@@ -147,6 +147,123 @@ function getTocBoxShadow(isActive: boolean, isDark: boolean, glowOpacity: number
   return 'none';
 }
 
+// ─── DocHero sub-components ───────────────────────────────────────────────────
+
+interface HeroColors {
+  heroBg: string;
+  borderColor: string;
+  metaTextColor: string;
+  metaBadgeBg: string;
+  metaBadgeBorder: string;
+  textPrimary: string;
+}
+
+function useHeroColors(isDark: boolean): HeroColors {
+  return {
+    heroBg:          isDark ? '#0a0a0a' : '#E8E7E3',
+    borderColor:     isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+    metaTextColor:   isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.75)',
+    metaBadgeBg:     isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)',
+    metaBadgeBorder: isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)',
+    textPrimary:     isDark ? '#ffffff' : '#000000',
+  };
+}
+
+const HeroBreadcrumbs: React.FC<{
+  typename?: string;
+  textPrimary: string;
+}> = ({ typename, textPrimary }) => {
+  if (!typename?.trim()) return null;
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap', fontSize: '0.8rem' }}>
+      <a
+        href="/"
+        style={{ color: textPrimary, textDecoration: 'none', transition: 'opacity 0.2s', opacity: 0.7 }}
+        onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+        onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
+      >
+        Главная
+      </a>
+      <ChevronRight size={14} style={{ opacity: 0.4, color: textPrimary }} />
+      <span style={{ color: textPrimary, fontWeight: 600 }}>{typename}</span>
+      <ChevronRight size={14} style={{ opacity: 0.4, color: textPrimary }} />
+    </div>
+  );
+};
+
+const HeroMeta: React.FC<{
+  date?: string;
+  updated?: string;
+  typename?: string;
+  metaTextColor: string;
+  metaBadgeBg: string;
+  metaBadgeBorder: string;
+}> = ({ date, updated, typename, metaTextColor, metaBadgeBg, metaBadgeBorder }) => {
+  const locale = 'ru-RU';
+  const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+  const formattedDate    = date    ? new Date(date).toLocaleDateString(locale, dateOptions)    : null;
+  const formattedUpdated = updated ? new Date(updated).toLocaleDateString(locale, dateOptions) : null;
+  const dot = <span style={{ color: metaTextColor, fontSize: '0.7rem' }}>·</span>;
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+      {formattedDate && (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: metaTextColor, fontVariantNumeric: 'tabular-nums' }}>
+          <CalendarDays size={13} style={{ opacity: 0.7 }} />
+          {formattedDate}
+        </span>
+      )}
+
+      {formattedUpdated && (
+        <>
+          {formattedDate && dot}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: metaTextColor, fontVariantNumeric: 'tabular-nums' }}>
+            <RefreshCw size={13} style={{ opacity: 0.7 }} />
+            Обновлено: {formattedUpdated}
+          </span>
+        </>
+      )}
+
+      {typename?.trim() && (
+        <>
+          {(formattedDate || formattedUpdated) && dot}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: metaTextColor, background: metaBadgeBg, border: `1px solid ${metaBadgeBorder}`, borderRadius: '6px', padding: '2px 8px' }}>
+            {typename}
+          </span>
+        </>
+      )}
+    </div>
+  );
+};
+
+const HeroAuthors: React.FC<{
+  author?: string;
+  metaTextColor: string;
+  textPrimary: string;
+}> = ({ author, metaTextColor, textPrimary }) => {
+  const authors = author
+    ? author.split(',').map((a) => a.trim()).filter(Boolean)
+    : [];
+
+  if (authors.length === 0) return null;
+
+  return (
+    <>
+      <span style={{ color: metaTextColor, fontSize: '0.75rem' }}>·</span>
+      <span style={{ fontSize: '0.8rem', color: metaTextColor }}>
+        {authors.length === 1 ? 'Автор' : 'Авторы'}:{' '}
+        {authors.map((a, i) => (
+          <React.Fragment key={a}>
+            <strong style={{ color: textPrimary, fontWeight: 600 }}>{a}</strong>
+            {i < authors.length - 1 && ', '}
+          </React.Fragment>
+        ))}
+      </span>
+    </>
+  );
+};
+
 // ─── DocHero ──────────────────────────────────────────────────────────────────
 
 const DocHero: React.FC<{
@@ -155,35 +272,14 @@ const DocHero: React.FC<{
   readTime: number;
   markdownContent?: string;
 }> = ({ doc, isDark, readTime, markdownContent }) => {
-  const authors = doc.author
-    ? doc.author.split(',').map((a) => a.trim()).filter(Boolean)
-    : [];
-
-  const dateLocale = 'ru-RU';
-  const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-
-  const formattedDate    = doc.date    ? new Date(doc.date).toLocaleDateString(dateLocale, dateOptions)    : null;
-  const formattedUpdated = doc.updated ? new Date(doc.updated).toLocaleDateString(dateLocale, dateOptions) : null;
-
-  const heroBg         = isDark ? '#0a0a0a' : '#E8E7E3';
-  const borderColor    = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
-  const metaTextColor  = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.75)';
-  const metaBadgeBg    = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
-  const metaBadgeBorder= isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
-  const textPrimary    = isDark ? '#ffffff' : '#000000';
-
-  const breadcrumbs: { label: string; href: string | null }[] = [{ label: 'Главная', href: '/' }];
-  if (doc.typename?.trim()) breadcrumbs.push({ label: doc.typename, href: null });
+  const colors = useHeroColors(isDark);
 
   return (
     <div
       style={{
-        background: heroBg,
-        borderBottom: `1px solid ${borderColor}`,
-        paddingBottom: '2.5rem',
-        paddingTop: '3rem',
-        paddingLeft: '2rem',
-        paddingRight: '2rem',
+        background: colors.heroBg,
+        borderBottom: `1px solid ${colors.borderColor}`,
+        padding: '3rem 2rem 2.5rem',
         position: 'relative',
       }}
     >
@@ -192,86 +288,34 @@ const DocHero: React.FC<{
       </div>
 
       <div style={{ position: 'relative', zIndex: 1 }}>
-        {breadcrumbs.length > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap', fontSize: '0.8rem' }}>
-            {breadcrumbs.map((crumb) => (
-              <React.Fragment key={crumb.label}>
-                {crumb.href ? (
-                  <a
-                    href={crumb.href}
-                    style={{ color: textPrimary, textDecoration: 'none', transition: 'opacity 0.2s', opacity: 0.7 }}
-                    onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-                    onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
-                  >
-                    {crumb.label}
-                  </a>
-                ) : (
-                  <span style={{ color: textPrimary, fontWeight: 600 }}>{crumb.label}</span>
-                )}
-                <ChevronRight size={14} style={{ opacity: 0.4, color: textPrimary }} />
-              </React.Fragment>
-            ))}
-          </div>
-        )}
+        <HeroBreadcrumbs typename={doc.typename} textPrimary={colors.textPrimary} />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-          {formattedDate && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: metaTextColor, fontVariantNumeric: 'tabular-nums' }}>
-              <CalendarDays size={13} style={{ opacity: 0.7 }} />
-              {formattedDate}
-            </span>
-          )}
-
-          {formattedUpdated && (
-            <>
-              {formattedDate && <span style={{ color: metaTextColor, fontSize: '0.7rem' }}>·</span>}
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: metaTextColor, fontVariantNumeric: 'tabular-nums' }}>
-                <RefreshCw size={13} style={{ opacity: 0.7 }} />
-                Обновлено: {formattedUpdated}
-              </span>
-            </>
-          )}
-
-          {doc.typename?.trim() && (
-            <>
-              {(formattedDate || formattedUpdated) && <span style={{ color: metaTextColor, fontSize: '0.7rem' }}>·</span>}
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: metaTextColor, background: metaBadgeBg, border: `1px solid ${metaBadgeBorder}`, borderRadius: '6px', padding: '2px 8px' }}>
-                {doc.typename}
-              </span>
-            </>
-          )}
-        </div>
+        <HeroMeta
+          date={doc.date}
+          updated={doc.updated}
+          typename={doc.typename}
+          metaTextColor={colors.metaTextColor}
+          metaBadgeBg={colors.metaBadgeBg}
+          metaBadgeBorder={colors.metaBadgeBorder}
+        />
 
         <h1 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.8rem)', fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.02em', color: isDark ? '#ffffff' : '#0a0a0a', margin: '0 0 1rem 0', fontFamily: 'system-ui, -apple-system, sans-serif', maxWidth: '820px' }}>
           {doc.title}
         </h1>
 
         {doc.description && (
-          <p style={{ fontSize: 'clamp(0.9rem, 1.5vw, 1.05rem)', lineHeight: 1.65, color: textPrimary, margin: '0 0 1.75rem 0', maxWidth: '680px' }}>
+          <p style={{ fontSize: 'clamp(0.9rem, 1.5vw, 1.05rem)', lineHeight: 1.65, color: colors.textPrimary, margin: '0 0 1.75rem 0', maxWidth: '680px' }}>
             {doc.description}
           </p>
         )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', paddingTop: '1rem' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: metaTextColor }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: colors.metaTextColor }}>
             <Clock size={13} style={{ opacity: 0.7 }} />
             {readTime} мин чтения
           </span>
 
-          {authors.length > 0 && (
-            <>
-              <span style={{ color: metaTextColor, fontSize: '0.75rem' }}>·</span>
-              <span style={{ fontSize: '0.8rem', color: metaTextColor }}>
-                {authors.length === 1 ? 'Автор' : 'Авторы'}:{' '}
-                {authors.map((author, i) => (
-                  <React.Fragment key={author}>
-                    <strong style={{ color: textPrimary, fontWeight: 600 }}>{author}</strong>
-                    {i < authors.length - 1 && ', '}
-                  </React.Fragment>
-                ))}
-              </span>
-            </>
-          )}
+          <HeroAuthors author={doc.author} metaTextColor={colors.metaTextColor} textPrimary={colors.textPrimary} />
 
           <div style={{ marginLeft: 'auto' }}>
             <AskAIButton isDark={isDark} pageTitle={doc.title} pageSlug={doc.slug} markdownContent={markdownContent} />
