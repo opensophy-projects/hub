@@ -8,8 +8,6 @@ interface FilterSectionProps {
   readonly searchQuery: string;
   readonly onSearchChange: (value: string) => void;
   readonly headers: ReadonlyArray<{ readonly text: string; readonly colIndex: number }>;
-  // Map/Set are mutable by design — Readonly<Map<…>> gives false safety and
-  // SonarCloud S6759 does not flag Map/Set fields, so these stay as-is.
   readonly activeFilters: Map<string, Set<string>>;
   readonly uniqueValues: Map<string, string[]>;
   readonly onFilterChange: (column: string, value: string, checked: boolean) => void;
@@ -50,7 +48,7 @@ interface ToolbarButtonProps {
   readonly active?: boolean;
 }
 
-// FIX S3358: no nested ternaries — each value computed independently via if/return.
+
 function getToolbarButtonBg(isDark: boolean, active: boolean): string {
   if (active) return isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)';
   return isDark ? 'rgba(255,255,255,0.07)' : '#E8E7E3';
