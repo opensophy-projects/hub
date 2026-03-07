@@ -44,9 +44,8 @@ function generateDocs() {
 
   console.log(`✅ Generated manifest.json with ${sorted.length} documents`);
   sorted.forEach((doc) =>
-    console.log(`  - ${doc.title} (${doc.typename || 'no-category'}) - slug: ${doc.slug || '/'}`)
+    console.log(`  - ${doc.title} (${doc.typename || 'no-category'}) [icon: ${doc.categoryIcon || 'none'}] - slug: ${doc.slug || '/'}`)
   );
-  console.log('✅ No individual JSON files generated - using raw markdown files');
 }
 
 generateDocs();
