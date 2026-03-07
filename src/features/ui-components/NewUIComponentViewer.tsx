@@ -73,7 +73,6 @@ const tc = (isDark: boolean, d: string, l: string) => (isDark ? d : l);
 // ─── Responsive grid columns helper ──────────────────────────────────────────
 
 const useIsMobile = () => {
-  // FIX S7735/S7741/S7764: use direct undefined comparison; positive condition
   const [isMobile, setIsMobile] = useState(() =>
     globalThis.window === undefined ? false : globalThis.window.innerWidth < 640
   );
@@ -234,7 +233,7 @@ const UniversalGrid: React.FC<UniversalGridProps> = ({ universalProps, onChange,
   );
 };
 
-// ─── AiSelect — portal-based dropdown (never clipped by scroll containers) ────
+// ─── AiSelect — portal-based dropdown ────────────────────────────────────────
 
 interface DropdownPortalProps {
   anchorRect: DOMRect;
@@ -560,40 +559,68 @@ const TabBar: React.FC<TabBarProps> = ({ active, onSelect, isDark }) => {
   );
 };
 
-// ─── Icon button ──────────────────────────────────────────────────────────────
+// ─── Icon button — pill style: icon on top, label below ──────────────────────
+// FIX: Added `label` prop, changed layout to flex-col (icon + text under it),
+// matching the design pattern used in CodeBlock's ToolbarButton.
 
 const IconBtn: React.FC<{
   onClick: () => void;
   title: string;
+  label: string;
   isDark: boolean;
   children: React.ReactNode;
   active?: boolean;
-}> = ({ onClick, title, isDark, children, active }) => (
-  <button
-    onClick={onClick}
-    title={title}
-    style={{
-      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-      width: 30, height: 30, borderRadius: 7,
-      border: active ? `1px solid ${tc(isDark,'rgba(255,255,255,0.2)','rgba(0,0,0,0.2)')}` : 'none',
-      background: active ? tc(isDark,'rgba(255,255,255,0.1)','rgba(0,0,0,0.08)') : 'transparent',
-      color: active ? tc(isDark,'#fff','#000') : tc(isDark,'rgba(255,255,255,0.55)','rgba(0,0,0,0.55)'),
-      cursor: 'pointer', transition: 'all 0.14s', flexShrink: 0,
-    }}
-    onMouseEnter={e => {
-      const b = e.currentTarget as HTMLButtonElement;
-      b.style.background = tc(isDark,'rgba(255,255,255,0.08)','rgba(0,0,0,0.07)');
-      b.style.color = tc(isDark,'#fff','#000');
-    }}
-    onMouseLeave={e => {
-      const b = e.currentTarget as HTMLButtonElement;
-      b.style.background = active ? tc(isDark,'rgba(255,255,255,0.1)','rgba(0,0,0,0.08)') : 'transparent';
-      b.style.color = active ? tc(isDark,'#fff','#000') : tc(isDark,'rgba(255,255,255,0.55)','rgba(0,0,0,0.55)');
-    }}
-  >
-    {children}
-  </button>
-);
+}> = ({ onClick, title, label, isDark, children, active }) => {
+  const border   = active
+    ? tc(isDark, 'rgba(255,255,255,0.2)', 'rgba(0,0,0,0.2)')
+    : tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.14)');
+  const bg       = active
+    ? tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.08)')
+    : tc(isDark, 'rgba(255,255,255,0.05)', 'rgba(0,0,0,0.04)');
+  const bgHover  = tc(isDark, 'rgba(255,255,255,0.12)', 'rgba(0,0,0,0.1)');
+  const color    = active
+    ? tc(isDark, '#fff', '#000')
+    : tc(isDark, 'rgba(255,255,255,0.65)', 'rgba(0,0,0,0.55)');
+  const colorHov = tc(isDark, '#fff', '#000');
+
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      style={{
+        display: 'inline-flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 2,
+        padding: '5px 8px',
+        minWidth: 44,
+        borderRadius: 8,
+        border: `1px solid ${border}`,
+        background: bg,
+        color,
+        cursor: 'pointer',
+        transition: 'all 0.14s',
+        flexShrink: 0,
+      }}
+      onMouseEnter={e => {
+        const b = e.currentTarget as HTMLButtonElement;
+        b.style.background = bgHover;
+        b.style.color = colorHov;
+      }}
+      onMouseLeave={e => {
+        const b = e.currentTarget as HTMLButtonElement;
+        b.style.background = bg;
+        b.style.color = color;
+      }}
+    >
+      {children}
+      <span style={{ fontSize: 9, fontWeight: 500, lineHeight: 1, whiteSpace: 'nowrap' }}>
+        {label}
+      </span>
+    </button>
+  );
+};
 
 // ─── Component render ─────────────────────────────────────────────────────────
 
@@ -652,19 +679,19 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
           background: tc(isDark,'rgba(255,255,255,0.06)','rgba(0,0,0,0.06)'),
           border: `1px solid ${border}`, flexShrink: 0,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          maxWidth: 'calc(100% - 120px)',
+          maxWidth: 'calc(100% - 180px)',
         }}>
           {config.name}
         </div>
         <div style={{ flex: 1 }} />
-        <IconBtn onClick={onRefresh} title="Запустить заново" isDark={isDark}>
-          <RotateCcw size={14} />
+        <IconBtn onClick={onRefresh} title="Запустить заново" label="Заново" isDark={isDark}>
+          <RotateCcw size={13} />
         </IconBtn>
-        <IconBtn onClick={onFullscreen} title="Открыть на весь экран" isDark={isDark}>
-          <Maximize2 size={14} />
+        <IconBtn onClick={onFullscreen} title="Открыть на весь экран" label="Развернуть" isDark={isDark}>
+          <Maximize2 size={13} />
         </IconBtn>
-        <IconBtn onClick={onOpenSettings} title="Настройки" isDark={isDark}>
-          <Settings size={14} />
+        <IconBtn onClick={onOpenSettings} title="Настройки" label="Настройки" isDark={isDark}>
+          <Settings size={13} />
         </IconBtn>
       </div>
 
@@ -752,7 +779,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = (props) => {
         display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px',
         borderTop: `1px solid ${border}`, background: footerBg,
       }}>
-        <IconBtn onClick={onRefresh} title="Запустить заново" isDark={isDark}>
+        <IconBtn onClick={onRefresh} title="Запустить заново" label="Заново" isDark={isDark}>
           <RotateCcw size={13} />
         </IconBtn>
         <button
@@ -768,7 +795,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = (props) => {
           Сбросить
         </button>
         <div style={{ flex: 1 }} />
-        <IconBtn onClick={onClose} title="Закрыть настройки" isDark={isDark}>
+        <IconBtn onClick={onClose} title="Закрыть настройки" label="Закрыть" isDark={isDark}>
           <X size={13} />
         </IconBtn>
       </div>
