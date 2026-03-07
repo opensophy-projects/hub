@@ -1,33 +1,5 @@
 [
   {
-    "id": "docs/wwgwgegw/frontmatter-guide",
-    "title": "Полное руководство по Frontmatter в Hub",
-    "slug": "docs/wwgwgegw/frontmatter-guide",
-    "description": "Справочник по всем доступным полям frontmatter с примерами использования и рекомендациями для документации Hub.",
-    "typename": "Документация",
-    "categoryPath": [
-      {
-        "slug": "wwgwgegw",
-        "title": "wwgwgegw",
-        "icon": "book"
-      }
-    ],
-    "navSlug": "docs",
-    "navTitle": "Документация Хаба",
-    "navIcon": "book",
-    "author": "veilosophy",
-    "date": "2026-03-07",
-    "updated": "",
-    "tags": [
-      "frontmatter",
-      "документация",
-      "markdown",
-      "руководство"
-    ],
-    "lang": "ru",
-    "icon": "chart-no-axes-column"
-  },
-  {
     "id": "docs/frontmatter-guide",
     "title": "Полное руководство по Frontmatter в Hub",
     "slug": "docs/frontmatter-guide",
@@ -95,12 +67,18 @@
     "icon": "file-code"
   },
   {
-    "id": "article/devsecops-tools",
+    "id": "article/-/devsecops-tools",
     "title": "Введение в DAST, SAST, SCA, IAST и RASP: Гид по инструментам безопасности",
-    "slug": "article/devsecops-tools",
+    "slug": "article/-/devsecops-tools",
     "description": "Разбор основных методологий тестирования безопасности приложений (AppSec) с примерами бесплатных инструментов для интеграции в SDLC.",
     "typename": "Документация",
-    "categoryPath": [],
+    "categoryPath": [
+      {
+        "slug": "-",
+        "title": "Инструменты и Сервисы",
+        "icon": "signal"
+      }
+    ],
     "navSlug": "article",
     "navTitle": "Статьи opensophy",
     "navIcon": "brain",
