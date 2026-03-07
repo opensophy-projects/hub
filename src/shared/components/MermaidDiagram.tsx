@@ -89,11 +89,13 @@ const ToolBtn: React.FC<{
 }> = ({ onClick, title, isDark, active, children }) => {
   const [hov, setHov] = useState(false);
 
-  // Extracted from nested ternary to independent statements (S3358)
+  // All three states computed independently — no nested ternaries (S3358)
   const activeBg  = tc(isDark, 'rgba(255,255,255,0.15)', 'rgba(0,0,0,0.12)');
   const hovBg     = tc(isDark, 'rgba(255,255,255,0.1)',  'rgba(0,0,0,0.07)');
   const defaultBg = tc(isDark, 'rgba(255,255,255,0.05)', 'rgba(0,0,0,0.04)');
-  const bg = active ? activeBg : (hov ? hovBg : defaultBg);
+  let bg = defaultBg;
+  if (active) bg = activeBg;
+  else if (hov) bg = hovBg;
 
   const border = active
     ? tc(isDark, 'rgba(255,255,255,0.2)', 'rgba(0,0,0,0.18)')
@@ -140,7 +142,7 @@ interface DiagramViewerProps {
 const DiagramViewer: React.FC<DiagramViewerProps> = ({
   svgHtml, isDark, panMode, scale, setScale, pos, setPos, isFullscreen,
 }) => {
-  const viewRef  = useRef<HTMLDivElement>(null);
+  const viewRef  = useRef<HTMLButtonElement>(null);
   const dragging = useRef(false);
   const last     = useRef({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -230,27 +232,24 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
     return () => el.removeEventListener('wheel', onWheel);
   }, [setScale]);
 
-  const minH   = isFullscreen ? '100%' : 80;
-  // Extracted nested ternary for cursor (S3358)
-  const cursor = panMode ? (isDragging ? 'grabbing' : 'grab') : 'default';
+  const minH = isFullscreen ? '100%' : 80;
+  // Flattened — no nested ternaries (S3358)
+  let cursor = 'default';
+  if (panMode && isDragging) cursor = 'grabbing';
+  else if (panMode) cursor = 'grab';
 
   return (
-    // role + onKeyDown added to satisfy non-interactive element with handler rule (S6848)
-    <div
+    // Using <button> — native interactive element, avoids S6847/S6845
+    <button
       ref={viewRef}
-      role="application"
       aria-label="Diagram viewer — drag to pan, Ctrl+scroll to zoom"
-      tabIndex={panMode ? 0 : -1}
       onMouseDown={onMouseDown}
       onKeyDown={(e) => {
         const step = 20;
-        const moves: Record<string, () => void> = {
-          ArrowLeft:  () => setPos(p => ({ ...p, x: p.x - step })),
-          ArrowRight: () => setPos(p => ({ ...p, x: p.x + step })),
-          ArrowUp:    () => setPos(p => ({ ...p, y: p.y - step })),
-          ArrowDown:  () => setPos(p => ({ ...p, y: p.y + step })),
-        };
-        moves[e.key]?.();
+        if (e.key === 'ArrowLeft')  setPos(p => ({ ...p, x: p.x - step }));
+        if (e.key === 'ArrowRight') setPos(p => ({ ...p, x: p.x + step }));
+        if (e.key === 'ArrowUp')    setPos(p => ({ ...p, y: p.y - step }));
+        if (e.key === 'ArrowDown')  setPos(p => ({ ...p, y: p.y + step }));
       }}
       style={{
         overflow: 'hidden',
@@ -261,6 +260,12 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
         userSelect: 'none',
         touchAction: 'none',
         outline: 'none',
+        display: 'block',
+        width: '100%',
+        padding: 0,
+        border: 'none',
+        background: 'none',
+        textAlign: 'left',
       }}
     >
       <div
@@ -276,7 +281,7 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
         }}
         dangerouslySetInnerHTML={{ __html: svgHtml }}
       />
-    </div>
+    </button>
   );
 };
 
@@ -423,8 +428,8 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
       setSvgHtml(patched);
       setStatus('ready');
     } catch (e: unknown) {
-      // instanceof check prevents Object stringification (S6551)
-      const msg = e instanceof Error ? e.message : String(e);
+      // Avoid Object stringification (S6551): extract message safely
+      const msg = e instanceof Error ? e.message : 'Unknown render error';
       setErrorMsg(msg);
       setStatus('error');
     }
