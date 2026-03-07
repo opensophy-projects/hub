@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 
 interface ThemeContextType {
@@ -17,7 +16,7 @@ const getInitialTheme = (): boolean => {
   return globalThis.localStorage.getItem('theme') !== 'light';
 };
 
-// Custom events for cross-island communication
+
 const EVENTS = {
   SIDEBAR: 'hub:sidebar',
   SEARCH: 'hub:search',
@@ -46,7 +45,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     applyDarkClass(isDark);
   }, [isDark]);
 
-  // Listen to cross-island events
+
   useEffect(() => {
     const onSidebar = (e: Event) => setIsSidebarOpen((e as CustomEvent<boolean>).detail);
     const onSearch = (e: Event) => setIsSearchOpen((e as CustomEvent<boolean>).detail);
