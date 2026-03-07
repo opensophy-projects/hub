@@ -15,7 +15,7 @@ export interface Doc {
   canonical?: string;
   robots?: string;
   lang?: string;
+  categoryIcon?: string | null;
 }
-
 
 export const docs: Doc[] = [];
