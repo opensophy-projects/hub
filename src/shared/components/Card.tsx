@@ -14,7 +14,9 @@ export interface CardProps {
 export interface CardGridProps {
   cols?: number;
   children?: React.ReactNode;
-  isDark?: boolean;
+  // FIX isDark unused: CardGrid never used isDark internally — it only renders a
+  // CSS grid wrapper. The prop was accepted but silently ignored. Removed to avoid
+  // confusion. If child Cards need theming, they get it via TableContext directly.
 }
 
 // ─── Icon loader (lazy lucide) ────────────────────────────────────────────────
@@ -42,9 +44,10 @@ const LucideIcon: React.FC<{ name: string; size?: number; color?: string }> = ({
   return <Icon size={size} color={color} />;
 };
 
-// ─── Card ─────────────────────────────────────────────────────────────────────
+// ─── Card styles ──────────────────────────────────────────────────────────────
+// FIX Complex Method: all style derivations extracted from the Card component body
+// into pure helper functions — Card itself now only assembles and renders.
 
-// Unique class suffix to avoid collisions between multiple Card instances
 const CARD_HOVER_CLASS = 'sophy-card';
 
 const cardHoverStyle = `
@@ -54,29 +57,18 @@ const cardHoverStyle = `
   .${CARD_HOVER_CLASS}.card-light:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.09); }
 `;
 
-const Card: React.FC<CardProps> = ({ title, icon, color, children, isDark = false }) => {
-  const accentColor = color || (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)');
-  const hasAccent = !!color;
+function getIconWrapBg(hasAccent: boolean, accentColor: string, isDark: boolean): string {
+  if (hasAccent) return `${accentColor}22`;
+  return isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)';
+}
 
-  let iconWrapBg: string;
-  if (hasAccent) {
-    iconWrapBg = `${accentColor}22`;
-  } else if (isDark) {
-    iconWrapBg = 'rgba(255,255,255,0.07)';
-  } else {
-    iconWrapBg = 'rgba(0,0,0,0.05)';
-  }
+function getIconColor(hasAccent: boolean, accentColor: string, isDark: boolean): string {
+  if (hasAccent) return accentColor;
+  return isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.55)';
+}
 
-  let iconColor: string;
-  if (hasAccent) {
-    iconColor = accentColor;
-  } else if (isDark) {
-    iconColor = 'rgba(255,255,255,0.7)';
-  } else {
-    iconColor = 'rgba(0,0,0,0.55)';
-  }
-
-  const cardStyle: React.CSSProperties = {
+function getCardStyles(isDark: boolean, hasAccent: boolean, accentColor: string) {
+  const card: React.CSSProperties = {
     position: 'relative',
     borderRadius: '12px',
     border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)',
@@ -87,69 +79,61 @@ const Card: React.FC<CardProps> = ({ title, icon, color, children, isDark = fals
     boxShadow: isDark ? '0 2px 12px rgba(0,0,0,0.4)' : '0 1px 4px rgba(0,0,0,0.05)',
   };
 
-  const accentBarStyle: React.CSSProperties = hasAccent ? {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '3px',
-    background: accentColor,
+  const accentBar: React.CSSProperties = hasAccent ? {
+    position: 'absolute', top: 0, left: 0, right: 0,
+    height: '3px', background: accentColor,
     borderRadius: '12px 12px 0 0',
   } : {};
 
-  const bodyStyle: React.CSSProperties = {
-    padding: '1.25rem',
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.5rem',
+  const body: React.CSSProperties = {
+    padding: '1.25rem', flex: 1,
+    display: 'flex', flexDirection: 'column', gap: '0.5rem',
     paddingTop: hasAccent ? '1.4rem' : '1.25rem',
   };
 
-  const iconWrapStyle: React.CSSProperties = {
-    width: '36px',
-    height: '36px',
-    borderRadius: '8px',
-    background: iconWrapBg,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: '0.4rem',
-    flexShrink: 0,
+  const iconWrap: React.CSSProperties = {
+    width: '36px', height: '36px', borderRadius: '8px',
+    background: getIconWrapBg(hasAccent, accentColor, isDark),
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    marginBottom: '0.4rem', flexShrink: 0,
   };
 
-  const titleStyle: React.CSSProperties = {
-    fontSize: '0.95rem',
-    fontWeight: 700,
+  const title: React.CSSProperties = {
+    fontSize: '0.95rem', fontWeight: 700,
     color: isDark ? '#fff' : '#0a0a0a',
-    margin: 0,
-    lineHeight: 1.3,
+    margin: 0, lineHeight: 1.3,
   };
 
-  const contentStyle: React.CSSProperties = {
+  const content: React.CSSProperties = {
     fontSize: '0.85rem',
     color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)',
-    lineHeight: 1.6,
-    margin: 0,
+    lineHeight: 1.6, margin: 0,
   };
 
+  return { card, accentBar, body, iconWrap, title, content };
+}
+
+// ─── Card ─────────────────────────────────────────────────────────────────────
+
+const Card: React.FC<CardProps> = ({ title, icon, color, children, isDark = false }) => {
+  const accentColor = color || (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)');
+  const hasAccent   = !!color;
+  const iconColor   = getIconColor(hasAccent, accentColor, isDark);
+  const s           = getCardStyles(isDark, hasAccent, accentColor);
+
   return (
-    // FIX S6848: replace onMouseEnter/onMouseLeave JS handlers with CSS hover classes
     <>
       <style>{cardHoverStyle}</style>
-      <div
-        style={cardStyle}
-        className={`${CARD_HOVER_CLASS} ${isDark ? 'card-dark' : 'card-light'}`}
-      >
-        {hasAccent && <div style={accentBarStyle} />}
-        <div style={bodyStyle}>
+      <div style={s.card} className={`${CARD_HOVER_CLASS} ${isDark ? 'card-dark' : 'card-light'}`}>
+        {hasAccent && <div style={s.accentBar} />}
+        <div style={s.body}>
           {icon && (
-            <div style={iconWrapStyle}>
+            <div style={s.iconWrap}>
               <LucideIcon name={icon} size={18} color={iconColor} />
             </div>
           )}
-          {title && <p style={titleStyle}>{title}</p>}
-          {children && <div style={contentStyle}>{children}</div>}
+          {title    && <p   style={s.title}  >{title}   </p>}
+          {children && <div style={s.content}>{children}</div>}
         </div>
       </div>
     </>
@@ -158,7 +142,7 @@ const Card: React.FC<CardProps> = ({ title, icon, color, children, isDark = fals
 
 // ─── CardGrid ─────────────────────────────────────────────────────────────────
 
-const CardGrid: React.FC<CardGridProps> = ({ cols = 2, children, isDark = false }) => {
+const CardGrid: React.FC<CardGridProps> = ({ cols = 2, children }) => {
   const safeCols = Math.min(3, Math.max(1, cols));
 
   const gridStyle: React.CSSProperties = {
@@ -169,9 +153,7 @@ const CardGrid: React.FC<CardGridProps> = ({ cols = 2, children, isDark = false 
   };
 
   const styleTag = `
-    .card-grid-${safeCols} {
-      grid-template-columns: repeat(${safeCols}, 1fr);
-    }
+    .card-grid-${safeCols} { grid-template-columns: repeat(${safeCols}, 1fr); }
     @media (max-width: 640px) {
       .card-grid-${safeCols} { grid-template-columns: 1fr !important; }
     }
@@ -197,9 +179,8 @@ export const CardWithContext: React.FC<Omit<CardProps, 'isDark'>> = (props) => {
   return <Card {...props} isDark={isDark} />;
 };
 
-export const CardGridWithContext: React.FC<Omit<CardGridProps, 'isDark'>> = (props) => {
-  const { isDark } = useContext(TableContext);
-  return <CardGrid {...props} isDark={isDark} />;
+export const CardGridWithContext: React.FC<CardGridProps> = (props) => {
+  return <CardGrid {...props} />;
 };
 
 export { Card, CardGrid };
