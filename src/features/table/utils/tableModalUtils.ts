@@ -22,7 +22,7 @@ export function parseTableFromHTML(html: string): ParsedTable {
     Array.from(tr.querySelectorAll('td')).forEach((td, index) => {
       const header = headers[index];
       if (header) {
-        // ИСПРАВЛЕНО: используем innerHTML вместо textContent для сохранения форматирования
+        
         record[header.text] = td.innerHTML?.trim() || '';
       }
     });
@@ -34,7 +34,7 @@ export function parseTableFromHTML(html: string): ParsedTable {
 
 export function getUniqueValuesForColumn(rows: Array<Record<string, string>>, columnName: string): string[] {
   const values = rows.map((row) => {
-    // ИСПРАВЛЕНО: убираем HTML теги для получения текстового значения при фильтрации
+    
     const html = row[columnName] || '';
     const div = document.createElement('div');
     div.innerHTML = html;
@@ -50,7 +50,7 @@ export function filterRows(
   visibleColumns: Set<string>,
 ): Array<Record<string, string>> {
   return rows.filter((row) => {
-    // ИСПРАВЛЕНО: для поиска убираем HTML теги
+  
     const matchesSearch =
       searchQuery === '' ||
       Array.from(visibleColumns).some((col) => {
@@ -63,7 +63,7 @@ export function filterRows(
 
     const matchesFilters = Array.from(activeFilters.entries()).every(([col, values]) => {
       if (values.size === 0) return true;
-      // ИСПРАВЛЕНО: для фильтров также убираем HTML теги
+      
       const html = row[col] || '';
       const div = document.createElement('div');
       div.innerHTML = html;
