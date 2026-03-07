@@ -1,15 +1,11 @@
 ---
 title: "Мастер таблица по сетевым моделям и протоколам"
 description: Руководство объединяет две методологически корректные таблицы — одну для концептуальных моделей (OSI и TCP/IP) и одну для конкретных протоколов и технологий.
-type: docs
-typename: Документация
-category: Сетевые технологии
 author: veilosophy
 date: 2025-12-25
 updated: 2026-01-20
 tags: сети, протоколы, OSI, TCP/IP, модели, технологии
 keywords: сетевые модели, OSI, TCP/IP, протоколы, сетевые технологии, networking
-canonical: null
 robots: index, follow
 lang: ru
 ---
