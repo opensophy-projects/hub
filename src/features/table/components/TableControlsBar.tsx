@@ -24,7 +24,7 @@ interface ToolbarButtonProps {
   readonly active?: boolean;
 }
 
-// FIX S3358: no nested ternaries — each value computed via independent if/return.
+
 function getToolbarButtonBg(isDark: boolean, active: boolean): string {
   if (active) return isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)';
   return isDark ? 'rgba(255,255,255,0.07)' : '#E8E7E3';
