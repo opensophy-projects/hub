@@ -289,15 +289,14 @@ const processDivElement = (
   key: string,
   elements: React.ReactNode[],
   processNodes: (nodes: NodeListOf<ChildNode>, parentKey: string) => void
-): boolean => {
+): void => {
   for (const [cls, handler] of DIV_CLASS_HANDLERS) {
     if (element.classList.contains(cls)) {
       handler(element, key, elements);
-      return true;
+      return;
     }
   }
   if (element.childNodes.length > 0) processNodes(element.childNodes, key);
-  return true;
 };
 
 // ── Paragraph dispatcher ──────────────────────────────────────────────────────
