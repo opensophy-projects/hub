@@ -9,12 +9,19 @@ import { AnimatePresence } from 'framer-motion';
 
 const LazyUnifiedSearchPanel = lazy(() => import('./UnifiedSearchPanel'));
 
+interface CategoryPathItem {
+  slug: string;
+  title: string;
+  icon: string | null;
+}
+
 interface Doc {
   id: string; slug: string; title: string; description: string;
   type: string; typename: string; icon?: string; author?: string;
   date?: string; tags?: string[]; navSlug?: string; navTitle?: string; navIcon?: string;
-  categoryIcon?: string | null; categorySlug?: string | null;
+  categoryPath?: CategoryPathItem[];
 }
+
 interface NavNode {
   title: string;
   slug: string;
@@ -23,6 +30,7 @@ interface NavNode {
   children: Record<string, NavNode>;
   isCategory: boolean;
 }
+
 interface NavSection { navSlug: string; navTitle: string; navIcon: string; }
 
 const iconCache = new Map<string, React.FC<{ size?: number; className?: string }>>();
@@ -393,30 +401,26 @@ function buildNavigationTree(docs: Doc[], searchQuery: string, activeNavSlug: st
     }
 
     const parts = slugForTree.split('/');
+    // categoryPath содержит точные данные каждой папки: {slug, title, icon}
+    const catPath = doc.categoryPath ?? [];
+
     let current = root;
     for (let i = 0; i < parts.length - 1; i++) {
       const part = parts[i];
-      if (!current.children[part]) {
-        const isLastDirLevel = i === parts.length - 2;
-        const displayTitle = isLastDirLevel && doc.typename ? doc.typename : part;
-        const icon = isLastDirLevel ? (doc.categoryIcon ?? null) : null;
 
+      if (!current.children[part]) {
+        // Берём title и icon напрямую из categoryPath[i] — точные данные папки без искажений
+        const catInfo = catPath[i];
         current.children[part] = {
-          title: displayTitle,
+          title: catInfo?.title ?? part,
           slug: part,
-          icon,
+          icon: catInfo?.icon ?? null,
           docs: [],
           children: {},
           isCategory: true,
         };
-      } else if (i === parts.length - 2) {
-        if (!current.children[part].icon && doc.categoryIcon) {
-          current.children[part].icon = doc.categoryIcon;
-        }
-        if (current.children[part].title === part && doc.typename) {
-          current.children[part].title = doc.typename;
-        }
       }
+
       current = current.children[part];
     }
     current.docs.push(doc);
