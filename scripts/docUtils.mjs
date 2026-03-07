@@ -15,11 +15,21 @@ export function parseNavPopoverFolder(folderName) {
 
 export function parseCategoryName(folderName) {
   const nav = parseNavPopoverFolder(folderName);
-  if (nav) return { title: nav.navTitle, slug: nav.navSlug };
+  if (nav) return { title: nav.navTitle, slug: nav.navSlug, icon: nav.navIcon };
+  
+  // Matches: [icon] Title {slug}
+  const matchWithSlug = folderName.match(/^\[([^\]]+)\]([^{]+)\{([^}]+)\}$/);
+  if (matchWithSlug) return { title: matchWithSlug[2].trim(), slug: matchWithSlug[3].trim(), icon: matchWithSlug[1].trim() };
+  
+  // NEW: Matches: [icon] Title (категория с иконкой)
+  const matchWithIcon = folderName.match(/^\[([^\]]+)\](.+)$/);
+  if (matchWithIcon) return { title: matchWithIcon[2].trim(), slug: slugify(matchWithIcon[2].trim()), icon: matchWithIcon[1].trim() };
+  
   // Matches: Title {slug}
-  const match = folderName.match(/^([^{]+)\{([^}]+)\}$/);
-  if (match) return { title: match[1].trim(), slug: match[2].trim() };
-  return { title: folderName, slug: slugify(folderName) };
+  const matchSlugOnly = folderName.match(/^([^{]+)\{([^}]+)\}$/);
+  if (matchSlugOnly) return { title: matchSlugOnly[1].trim(), slug: matchSlugOnly[2].trim(), icon: null };
+  
+  return { title: folderName, slug: slugify(folderName), icon: null };
 }
 
 export function slugify(str) {
@@ -127,7 +137,6 @@ function collectBlockBody(lines, startAfterIndex) {
 function parseInnerBlocks(bodyStr, innerTag) {
   const lines = bodyStr.split('\n');
   const results = [];
-  // Pre-compile the regex once instead of per-line
   const openRe = new RegExp(String.raw`^:::${innerTag}(?:\[([^\]]*)\])?(?:\s+(.+?))?\s*$`);
   let i = 0;
 
@@ -279,18 +288,15 @@ export function preprocessAlerts(content) {
   const CODE_BLOCK_RE = /```[\s\S]*?```/g;
   const ALERT_RE = /^:::(note|tip|important|warning|caution)\n([\s\S]*?)^:::$/gm;
 
-  // Protect code blocks from being processed
   const withoutCode = content.replaceAll(CODE_BLOCK_RE, (match) => {
     codeBlocks.push(match);
     return `___CODE_BLOCK_${codeBlocks.length - 1}___`;
   });
 
-  // Process alert blocks
   const withAlerts = withoutCode.replaceAll(ALERT_RE, (_match, type, alertContent) =>
     `<div class="custom-alert" data-alert-type="${type}">\n${marked.parse(alertContent.trim())}\n</div>`
   );
 
-  // Process custom blocks, then restore code blocks
   return preprocessCustomBlocks(withAlerts, codeBlocks)
     .replaceAll(/___CODE_BLOCK_(\d+)___/g, (_match, index) => codeBlocks[Number.parseInt(index, 10)]);
 }
@@ -323,7 +329,7 @@ export function getDocInfo(fullPath, docsDir) {
 
   if (dirs.length === 0) {
     const isWelcome = fileName === 'welcome';
-    return { slug: isWelcome ? '' : slugify(fileName), navSlug: '', navTitle: '', navIcon: '', typename: '' };
+    return { slug: isWelcome ? '' : slugify(fileName), navSlug: '', navTitle: '', navIcon: '', typename: '', categoryIcon: null };
   }
 
   const navDef = parseNavPopoverFolder(dirs[0]);
@@ -331,13 +337,27 @@ export function getDocInfo(fullPath, docsDir) {
   if (navDef) {
     const subDirs = dirs.slice(1);
     const slug = [navDef.navSlug, ...subDirs.map((d) => parseCategoryName(d).slug), slugify(fileName)].join('/');
-    const typename = subDirs.length > 0 ? parseCategoryName(subDirs.at(-1)).title : '';
-    return { slug, navSlug: navDef.navSlug, navTitle: navDef.navTitle, navIcon: navDef.navIcon, typename };
+    const categoryInfo = subDirs.length > 0 ? parseCategoryName(subDirs.at(-1)) : { title: '', icon: null };
+    return { 
+      slug, 
+      navSlug: navDef.navSlug, 
+      navTitle: navDef.navTitle, 
+      navIcon: navDef.navIcon, 
+      typename: categoryInfo.title,
+      categoryIcon: categoryInfo.icon
+    };
   }
 
   const slug = [...dirs.map((d) => parseCategoryName(d).slug), slugify(fileName)].join('/');
-  const typename = parseCategoryName(dirs.at(-1)).title;
-  return { slug, navSlug: '', navTitle: '', navIcon: '', typename };
+  const categoryInfo = parseCategoryName(dirs.at(-1));
+  return { 
+    slug, 
+    navSlug: '', 
+    navTitle: '', 
+    navIcon: '', 
+    typename: categoryInfo.title,
+    categoryIcon: categoryInfo.icon
+  };
 }
 
 export function buildDocFromPath(mdPath, docsDir) {
@@ -355,6 +375,7 @@ export function buildDocFromPath(mdPath, docsDir) {
     description: metadata.description || getFirstParagraph(processed),
     content: htmlContent,
     typename: metadata.typename || info.typename,
+    categoryIcon: info.categoryIcon,
     navSlug: info.navSlug,
     navTitle: info.navTitle,
     navIcon: info.navIcon,
