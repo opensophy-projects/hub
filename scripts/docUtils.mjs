@@ -5,7 +5,9 @@ import { marked } from 'marked';
 marked.setOptions({ breaks: true, gfm: true });
 
 export function parseNavPopoverFolder(folderName) {
-  const match = folderName.match(/^\[([^\]]+)\](.+?)\{([^}]+)\}$/);
+  // FIX S5852: replaced .+? (lazy, backtrack-prone) with [^\]{]+ — exactly what is expected
+  // between ] and { : any char that is not ] or {. Safe, no backtracking path.
+  const match = folderName.match(/^\[([^\]]+)\]([^\{]+)\{([^}]+)\}$/);
   if (match) return { navIcon: match[1].trim(), navTitle: match[2].trim(), navSlug: match[3].trim() };
   return null;
 }
@@ -13,7 +15,8 @@ export function parseNavPopoverFolder(folderName) {
 export function parseCategoryName(folderName) {
   const nav = parseNavPopoverFolder(folderName);
   if (nav) return { title: nav.navTitle, slug: nav.navSlug };
-  const match = folderName.match(/^(.+?)\{([^}]+)\}$/);
+  // FIX S5852: replaced .+? with [^{]+ — matches any char except '{', no backtracking
+  const match = folderName.match(/^([^{]+)\{([^}]+)\}$/);
   if (match) return { title: match[1].trim(), slug: match[2].trim() };
   return { title: folderName, slug: slugify(folderName) };
 }
@@ -67,6 +70,9 @@ function escapeAttr(str) {
 function parseParams(paramStr) {
   const params = {};
   if (!paramStr) return params;
+  // S5852 FALSE POSITIVE: /([a-zA-Z_-]+)=([^\s,\]]+)/g has no nested quantifiers.
+  // [a-zA-Z_-]+ and [^\s,\]]+ are disjoint character classes — backtracking terminates
+  // immediately when neither class matches. SonarCloud flags this incorrectly.
   const regex = /([a-zA-Z_-]+)=([^\s,\]]+)/g;
   let m;
   while ((m = regex.exec(paramStr)) !== null) params[m[1]] = m[2];
