@@ -128,7 +128,7 @@ function parseInnerBlocks(bodyStr, innerTag) {
   const lines = bodyStr.split('\n');
   const results = [];
   // Pre-compile the regex once instead of per-line
-  const openRe = new RegExp(`^:::${innerTag}(?:\\[([^\\]]*)\\])?(?:\\s+(.+?))?\\s*$`);
+  const openRe = new RegExp(String.raw`^:::${innerTag}(?:\[([^\]]*)\])?(?:\s+(.+?))?\s*$`);
   let i = 0;
 
   while (i < lines.length) {
@@ -261,11 +261,11 @@ function preprocessCustomBlocks(content, codeBlocks) {
       handleStepsBlock(trimmed, lines, i, codeBlocks, output) ??
       handleDiagramBlock(trimmed, lines, i, output);
 
-    if (nextI != null) {
-      i = nextI;
-    } else {
+    if (nextI == null) {
       output.push(lines[i]);
       i++;
+    } else {
+      i = nextI;
     }
   }
 
