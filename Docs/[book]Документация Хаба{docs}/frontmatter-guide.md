@@ -4,7 +4,7 @@ description: Справочник по всем доступным полям fr
 type: docs
 typename: Документация
 category: hub
-icon: file-code
+icon: chart-no-axes-column
 author: veilosophy
 date: 2026-02-18
 tags: frontmatter, документация, markdown, руководство
