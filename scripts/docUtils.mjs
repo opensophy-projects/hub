@@ -48,7 +48,7 @@ export function extractFrontMatter(content) {
   for (const line of match[1].split('\n')) {
     const [key, ...valueParts] = line.split(':');
     if (key && valueParts.length > 0)
-      metadata[key.trim()] = valueParts.join(':').trim().replace(/^['"]/, '').replace(/['"]$/, '');
+      metadata[key.trim()] = valueParts.join(':').trim().replaceAll(/^['"]|['"]$/g, '');
   }
   return { metadata, content: content.replace(frontMatterRegex, '') };
 }
@@ -57,8 +57,11 @@ export function extractFrontMatter(content) {
 
 function escapeAttr(str) {
   return String(str)
-    .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
 }
 
 function parseParams(paramStr) {
@@ -79,7 +82,7 @@ function collectBlockBody(lines, startAfterIndex) {
 
   while (i < lines.length && depth > 0) {
     const trimmed = lines[i].trim();
-    if (/^:::/.test(trimmed)) {
+    if (trimmed.startsWith(':::')) {
       if (trimmed === ':::') {
         depth--;
         if (depth === 0) return { body: bodyLines.join('\n'), endIndex: i };
@@ -105,7 +108,7 @@ function parseInnerBlocks(bodyStr, innerTag) {
 
   while (i < lines.length) {
     const openMatch = lines[i].trim().match(
-      new RegExp(`^:::${innerTag}(?:\\[([^\\]]*?)\\])?(?:\\s+(.+?))?\\s*$`)
+      new RegExp(String.raw`^:::${innerTag}(?:\[([^\]]*?)\])?(?:\s+(.+?))?\s*$`)
     );
     if (!openMatch) { i++; continue; }
 
@@ -127,7 +130,7 @@ function parseInnerBlocks(bodyStr, innerTag) {
 // ─── markedWithCodeBlocks ─────────────────────────────────────────────────────
 
 function markedWithCodeBlocks(str, codeBlocks) {
-  const restored = str.replace(/___CODE_BLOCK_(\d+)___/g, (_, i) => codeBlocks[parseInt(i, 10)]);
+  const restored = str.replaceAll(/___CODE_BLOCK_(\d+)___/g, (_, i) => codeBlocks[Number.parseInt(i, 10)]);
   return marked(restored);
 }
 
@@ -149,6 +152,88 @@ function buildCardHtml(params, body, codeBlocks) {
   return `<div class="custom-card" data-color="${color}" data-title="${title}" data-icon="${icon}">${contentHtml}</div>`;
 }
 
+// ─── Block handlers for preprocessCustomBlocks ───────────────────────────────
+
+function handleCardsBlock(trimmed, lines, i, codeBlocks, output) {
+  const match = trimmed.match(/^:::cards(?:\[([^\]]*?)\])?\s*$/);
+  if (!match) return null;
+
+  const gridParams = parseParams(match[1] || '');
+  const cols = Math.min(3, Math.max(1, Number.parseInt(gridParams.cols || '2', 10)));
+  const { body, endIndex } = collectBlockBody(lines, i + 1);
+
+  const cards = parseInnerBlocks(body, 'card');
+  let html = `<div class="custom-cardgrid" data-cols="${cols}">`;
+  for (const card of cards) html += buildCardHtml(card.params, card.body, codeBlocks);
+  html += '</div>';
+  output.push(html);
+
+  return endIndex + 1;
+}
+
+function handleCardBlock(trimmed, lines, i, codeBlocks, output) {
+  const match = trimmed.match(/^:::card(?:\[([^\]]*?)\])?\s*$/);
+  if (!match) return null;
+
+  const cardParams = parseParams(match[1] || '');
+  const { body, endIndex } = collectBlockBody(lines, i + 1);
+  output.push(buildCardHtml(cardParams, body, codeBlocks));
+
+  return endIndex + 1;
+}
+
+function handleColumnsBlock(trimmed, lines, i, codeBlocks, output) {
+  const match = trimmed.match(/^:::columns(?:\[([^\]]*?)\])?\s*$/);
+  if (!match) return null;
+
+  const colsParams = parseParams(match[1] || '');
+  const layout = escapeAttr(colsParams.layout || 'equal');
+  const { body, endIndex } = collectBlockBody(lines, i + 1);
+
+  const cols = parseInnerBlocks(body, 'col');
+  let html = `<div class="custom-columns" data-layout="${layout}">`;
+  for (const col of cols)
+    html += `<div class="custom-col">${markedWithCodeBlocks(col.body.trim(), codeBlocks)}</div>`;
+  html += '</div>';
+  output.push(html);
+
+  return endIndex + 1;
+}
+
+function handleStepsBlock(trimmed, lines, i, codeBlocks, output) {
+  if (!/^:::steps\s*$/.test(trimmed)) return null;
+
+  const { body, endIndex } = collectBlockBody(lines, i + 1);
+  const steps = parseInnerBlocks(body, 'step');
+
+  let html = '<div class="custom-steps">';
+  for (const step of steps) {
+    const status = escapeAttr(step.params.status || 'default');
+    const title = escapeAttr(step.inlineText || '');
+    const contentHtml = markedWithCodeBlocks(step.body.trim(), codeBlocks);
+    html += `<div class="custom-step" data-status="${status}" data-title="${title}">${contentHtml}</div>`;
+  }
+  html += '</div>';
+  output.push(html);
+
+  return endIndex + 1;
+}
+
+function handleDiagramBlock(trimmed, lines, i, output) {
+  const match = trimmed.match(/^:::diagram(?:\[([^\]]*?)\])?\s*$/);
+  if (!match) return null;
+
+  const diagramParams = parseParams(match[1] || '');
+  const color = diagramParams.color || diagramParams.borderColor || '';
+  const colorAttr = color ? escapeAttr(color) : '';
+  const { body, endIndex } = collectBlockBody(lines, i + 1);
+
+  const encodedCode = Buffer.from(body.trim(), 'utf8').toString('base64');
+  output.push(`<div class="custom-diagram" data-color="${colorAttr}" data-code="${encodedCode}"></div>`);
+
+  return endIndex + 1;
+}
+
 // ─── preprocessCustomBlocks ───────────────────────────────────────────────────
 
 function preprocessCustomBlocks(content, codeBlocks) {
@@ -159,85 +244,19 @@ function preprocessCustomBlocks(content, codeBlocks) {
   while (i < lines.length) {
     const trimmed = lines[i].trim();
 
-    // :::cards[cols=N]
-    const cardsMatch = trimmed.match(/^:::cards(?:\[([^\]]*?)\])?\s*$/);
-    if (cardsMatch) {
-      const gridParams = parseParams(cardsMatch[1] || '');
-      const cols = Math.min(3, Math.max(1, parseInt(gridParams.cols || '2', 10)));
-      const { body, endIndex } = collectBlockBody(lines, i + 1);
-      i = endIndex + 1;
+    const nextI =
+      handleCardsBlock(trimmed, lines, i, codeBlocks, output) ??
+      handleCardBlock(trimmed, lines, i, codeBlocks, output) ??
+      handleColumnsBlock(trimmed, lines, i, codeBlocks, output) ??
+      handleStepsBlock(trimmed, lines, i, codeBlocks, output) ??
+      handleDiagramBlock(trimmed, lines, i, output);
 
-      const cards = parseInnerBlocks(body, 'card');
-      let html = `<div class="custom-cardgrid" data-cols="${cols}">`;
-      for (const card of cards) html += buildCardHtml(card.params, card.body, codeBlocks);
-      html += '</div>';
-      output.push(html);
-      continue;
+    if (nextI !== null && nextI !== undefined) {
+      i = nextI;
+    } else {
+      output.push(lines[i]);
+      i++;
     }
-
-    // :::card standalone
-    const cardMatch = trimmed.match(/^:::card(?:\[([^\]]*?)\])?\s*$/);
-    if (cardMatch) {
-      const cardParams = parseParams(cardMatch[1] || '');
-      const { body, endIndex } = collectBlockBody(lines, i + 1);
-      i = endIndex + 1;
-      output.push(buildCardHtml(cardParams, body, codeBlocks));
-      continue;
-    }
-
-    // :::columns[layout=...]
-    const columnsMatch = trimmed.match(/^:::columns(?:\[([^\]]*?)\])?\s*$/);
-    if (columnsMatch) {
-      const colsParams = parseParams(columnsMatch[1] || '');
-      const layout = escapeAttr(colsParams.layout || 'equal');
-      const { body, endIndex } = collectBlockBody(lines, i + 1);
-      i = endIndex + 1;
-
-      const cols = parseInnerBlocks(body, 'col');
-      let html = `<div class="custom-columns" data-layout="${layout}">`;
-      for (const col of cols)
-        html += `<div class="custom-col">${markedWithCodeBlocks(col.body.trim(), codeBlocks)}</div>`;
-      html += '</div>';
-      output.push(html);
-      continue;
-    }
-
-    // :::steps
-    const stepsMatch = trimmed.match(/^:::steps\s*$/);
-    if (stepsMatch) {
-      const { body, endIndex } = collectBlockBody(lines, i + 1);
-      i = endIndex + 1;
-
-      const steps = parseInnerBlocks(body, 'step');
-      let html = '<div class="custom-steps">';
-      for (const step of steps) {
-        const status = escapeAttr(step.params.status || 'default');
-        const title = escapeAttr(step.inlineText || '');
-        const contentHtml = markedWithCodeBlocks(step.body.trim(), codeBlocks);
-        html += `<div class="custom-step" data-status="${status}" data-title="${title}">${contentHtml}</div>`;
-      }
-      html += '</div>';
-      output.push(html);
-      continue;
-    }
-
-    // ─── :::diagram[color=#hex] или :::diagram[borderColor=#hex] — Mermaid-схема ──
-    const diagramMatch = trimmed.match(/^:::diagram(?:\[([^\]]*?)\])?\s*$/);
-    if (diagramMatch) {
-      const diagramParams = parseParams(diagramMatch[1] || '');
-      const color = diagramParams.color || diagramParams.borderColor || '';
-      const colorAttr = color ? escapeAttr(color) : '';
-      const { body, endIndex } = collectBlockBody(lines, i + 1);
-      i = endIndex + 1;
-
-      const encodedCode = Buffer.from(body.trim(), 'utf8').toString('base64');
-      const html = `<div class="custom-diagram" data-color="${colorAttr}" data-code="${encodedCode}"></div>`;
-      output.push(html);
-      continue;
-    }
-
-    output.push(lines[i]);
-    i++;
   }
 
   return output.join('\n');
