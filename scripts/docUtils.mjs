@@ -335,6 +335,8 @@ export function getDocInfo(fullPath, docsDir) {
       navTitle: '', 
       navIcon: '', 
       typename: '', 
+      categorySlug: null,
+      categoryTitle: null,
       categoryIcon: null,
       categoryOriginalName: null
     };
@@ -346,9 +348,8 @@ export function getDocInfo(fullPath, docsDir) {
     const subDirs = dirs.slice(1);
     const slug = [navDef.navSlug, ...subDirs.map((d) => parseCategoryName(d).slug), slugify(fileName)].join('/');
     
-    // FIX: берём ПОСЛЕДНЮЮ подпапку как typename
     const lastSubDir = subDirs.length > 0 ? subDirs[subDirs.length - 1] : null;
-    const categoryInfo = lastSubDir ? parseCategoryName(lastSubDir) : { title: '', icon: null };
+    const categoryInfo = lastSubDir ? parseCategoryName(lastSubDir) : { title: '', slug: '', icon: null };
     
     return { 
       slug, 
@@ -356,8 +357,9 @@ export function getDocInfo(fullPath, docsDir) {
       navTitle: navDef.navTitle, 
       navIcon: navDef.navIcon, 
       typename: categoryInfo.title,
+      categorySlug: categoryInfo.slug,
       categoryIcon: categoryInfo.icon,
-      categoryOriginalName: lastSubDir // сохраняем оригинальное название
+      categoryOriginalName: lastSubDir
     };
   }
 
@@ -370,6 +372,7 @@ export function getDocInfo(fullPath, docsDir) {
     navTitle: '', 
     navIcon: '', 
     typename: categoryInfo.title,
+    categorySlug: categoryInfo.slug,
     categoryIcon: categoryInfo.icon,
     categoryOriginalName: dirs[dirs.length - 1]
   };
@@ -383,7 +386,6 @@ export function buildDocFromPath(mdPath, docsDir) {
   const info = getDocInfo(mdPath, docsDir);
   const fileName = path.basename(mdPath, '.md');
 
-  // FIX: если в metadata есть typename — используем его, иначе — берём из папки
   const finalTypename = metadata.typename?.trim() || info.typename;
 
   return {
@@ -392,8 +394,9 @@ export function buildDocFromPath(mdPath, docsDir) {
     slug: info.slug,
     description: metadata.description || getFirstParagraph(processed),
     content: htmlContent,
-    typename: finalTypename, // приоритет frontmatter
-    categoryIcon: info.categoryIcon, // иконка категории
+    typename: finalTypename,
+    categorySlug: info.categorySlug,
+    categoryIcon: info.categoryIcon,
     navSlug: info.navSlug,
     navTitle: info.navTitle,
     navIcon: info.navIcon,
