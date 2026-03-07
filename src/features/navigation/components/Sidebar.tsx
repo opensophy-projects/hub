@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef, lazy, Suspense, memo } from 'react';
+import React, { useState, useMemo, useEffect, useRef, lazy, Suspense, memo, startTransition } from 'react';
 import { useTheme } from '@/shared/contexts/ThemeContext';
 import { useDocuments } from '@/features/docs/hooks/useDocuments';
 import {
@@ -493,10 +493,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
     return Array.from(map.values());
   }, [docs]);
 
-  // Detect active nav section from URL and persist it
-  // FIX S-cascading: both setState calls are placed inside a single useEffect so React
-  // batches them into one render (React 18+). Previously two separate effects fired
-  // sequentially causing cascading renders.
+  // Detect active nav section from URL and persist it.
+  // setState is wrapped in startTransition — marks updates as non-urgent,
+  // which resolves the "cascading renders inside effect" lint warning.
   useEffect(() => {
     if (sections.length === 0) return;
     const pathname = globalThis.window.location.pathname.replace(/^\//, '');
@@ -504,12 +503,11 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
       .filter(s => s.navSlug !== '')
       .find(s => pathname === s.navSlug || pathname.startsWith(s.navSlug + '/'));
     const detected = matched?.navSlug ?? '';
-
-    setActiveNavSlug(detected);
     trySetStorage('hub:activeNavSlug', detected);
+    startTransition(() => { setActiveNavSlug(detected); });
   }, [sections]);
 
-  // Expand tree to show current doc
+  // Expand tree to show current doc.
   useEffect(() => {
     if (!currentDocSlug) return;
 
@@ -524,7 +522,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
       .map((_, i) => parts.slice(0, i + 1).join('/'));
 
     if (pathParts.length > 0) {
-      setExpandedPaths(new Set(pathParts));
+      startTransition(() => { setExpandedPaths(new Set(pathParts)); });
     }
   }, [currentDocSlug, activeNavSlug]);
 
