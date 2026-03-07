@@ -16,19 +16,19 @@ export function parseNavPopoverFolder(folderName) {
 export function parseCategoryName(folderName) {
   const nav = parseNavPopoverFolder(folderName);
   if (nav) return { title: nav.navTitle, slug: nav.navSlug, icon: nav.navIcon };
-  
+
   // Matches: [icon] Title {slug}
   const matchWithSlug = folderName.match(/^\[([^\]]+)\]([^{]+)\{([^}]+)\}$/);
   if (matchWithSlug) return { title: matchWithSlug[2].trim(), slug: matchWithSlug[3].trim(), icon: matchWithSlug[1].trim() };
-  
-  // NEW: Matches: [icon] Title (категория с иконкой)
+
+  // Matches: [icon]Title (категория с иконкой, без slug)
   const matchWithIcon = folderName.match(/^\[([^\]]+)\](.+)$/);
   if (matchWithIcon) return { title: matchWithIcon[2].trim(), slug: slugify(matchWithIcon[2].trim()), icon: matchWithIcon[1].trim() };
-  
+
   // Matches: Title {slug}
   const matchSlugOnly = folderName.match(/^([^{]+)\{([^}]+)\}$/);
   if (matchSlugOnly) return { title: matchSlugOnly[1].trim(), slug: matchSlugOnly[2].trim(), icon: null };
-  
+
   return { title: folderName, slug: slugify(folderName), icon: null };
 }
 
@@ -329,16 +329,13 @@ export function getDocInfo(fullPath, docsDir) {
 
   if (dirs.length === 0) {
     const isWelcome = fileName === 'welcome';
-    return { 
-      slug: isWelcome ? '' : slugify(fileName), 
-      navSlug: '', 
-      navTitle: '', 
-      navIcon: '', 
-      typename: '', 
-      categorySlug: null,
-      categoryTitle: null,
-      categoryIcon: null,
-      categoryOriginalName: null
+    return {
+      slug: isWelcome ? '' : slugify(fileName),
+      navSlug: '',
+      navTitle: '',
+      navIcon: '',
+      typename: '',
+      categoryPath: [],
     };
   }
 
@@ -346,35 +343,43 @@ export function getDocInfo(fullPath, docsDir) {
 
   if (navDef) {
     const subDirs = dirs.slice(1);
-    const slug = [navDef.navSlug, ...subDirs.map((d) => parseCategoryName(d).slug), slugify(fileName)].join('/');
-    
-    const lastSubDir = subDirs.length > 0 ? subDirs[subDirs.length - 1] : null;
-    const categoryInfo = lastSubDir ? parseCategoryName(lastSubDir) : { title: '', slug: '', icon: null };
-    
-    return { 
-      slug, 
-      navSlug: navDef.navSlug, 
-      navTitle: navDef.navTitle, 
-      navIcon: navDef.navIcon, 
-      typename: categoryInfo.title,
-      categorySlug: categoryInfo.slug,
-      categoryIcon: categoryInfo.icon,
-      categoryOriginalName: lastSubDir
+    // categoryPath — массив {slug, title, icon} для каждой подпапки (без navPopover-папки)
+    const categoryPath = subDirs.map((d) => {
+      const info = parseCategoryName(d);
+      return { slug: info.slug, title: info.title, icon: info.icon };
+    });
+
+    const slug = [navDef.navSlug, ...categoryPath.map(c => c.slug), slugify(fileName)].join('/');
+
+    // typename = title последней категории (для обратной совместимости)
+    const lastCat = categoryPath[categoryPath.length - 1] ?? null;
+
+    return {
+      slug,
+      navSlug: navDef.navSlug,
+      navTitle: navDef.navTitle,
+      navIcon: navDef.navIcon,
+      typename: lastCat?.title ?? '',
+      categoryPath,
     };
   }
 
-  const slug = [...dirs.map((d) => parseCategoryName(d).slug), slugify(fileName)].join('/');
-  const categoryInfo = parseCategoryName(dirs[dirs.length - 1]);
-  
-  return { 
-    slug, 
-    navSlug: '', 
-    navTitle: '', 
-    navIcon: '', 
-    typename: categoryInfo.title,
-    categorySlug: categoryInfo.slug,
-    categoryIcon: categoryInfo.icon,
-    categoryOriginalName: dirs[dirs.length - 1]
+  // Без navPopover
+  const categoryPath = dirs.map((d) => {
+    const info = parseCategoryName(d);
+    return { slug: info.slug, title: info.title, icon: info.icon };
+  });
+
+  const slug = [...categoryPath.map(c => c.slug), slugify(fileName)].join('/');
+  const lastCat = categoryPath[categoryPath.length - 1] ?? null;
+
+  return {
+    slug,
+    navSlug: '',
+    navTitle: '',
+    navIcon: '',
+    typename: lastCat?.title ?? '',
+    categoryPath,
   };
 }
 
@@ -395,8 +400,8 @@ export function buildDocFromPath(mdPath, docsDir) {
     description: metadata.description || getFirstParagraph(processed),
     content: htmlContent,
     typename: finalTypename,
-    categorySlug: info.categorySlug,
-    categoryIcon: info.categoryIcon,
+    // categoryPath: [{slug, title, icon}, ...] — полный путь категорий
+    categoryPath: info.categoryPath,
     navSlug: info.navSlug,
     navTitle: info.navTitle,
     navIcon: info.navIcon,
