@@ -15,7 +15,6 @@ interface MermaidDiagramProps {
 
 // ─── Mermaid singleton ────────────────────────────────────────────────────────
 
-// Store the resolved module (not the Promise) to avoid "Promise in boolean conditional" (S6544)
 type MermaidType = Awaited<ReturnType<typeof import('mermaid')>>['default'];
 let mermaidModule: MermaidType | null = null;
 
@@ -31,65 +30,62 @@ function nextId() {
   return `mermaid-${++globalIdCounter}`;
 }
 
-// ─── SVG cache — не перерисовываем при смене темы ─────────────────────────────
 const svgCache = new Map<string, string>();
 
 function cacheKey(code: string, isDark: boolean, color?: string) {
   return `${isDark ? 'dark' : 'light'}::${color ?? ''}::${code}`;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 const tc = (isDark: boolean, d: string, l: string) => (isDark ? d : l);
 
 // ─── Icon components ──────────────────────────────────────────────────────────
 
 const IconPlus = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+  <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
     <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
   </svg>
 );
 const IconMinus = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+  <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
     <path d="M2 7h10" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
   </svg>
 );
 const IconHand = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
     <path d="M9 11V6a2 2 0 1 1 4 0v4m0 0V8a2 2 0 1 1 4 0v3m0 0v-1a2 2 0 1 1 4 0v5a7 7 0 0 1-7 7H9a7 7 0 0 1-7-7v-3a2 2 0 1 1 4 0v3"
       stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 const IconMaximize = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
     <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m10 0h3a2 2 0 0 0 2-2v-3"
       stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 const IconClose = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
     <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
   </svg>
 );
 const IconReset = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
     <path d="M4 12a8 8 0 1 1 1.5 4.8M4 12V7m0 5H9"
       stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
-// ─── ToolButton ────────────────────────────────────────────────────────────────
+// ─── ToolBtn — pill style: icon on top, label below ───────────────────────────
 
 const ToolBtn: React.FC<{
   onClick: () => void;
   title: string;
+  label: string;
   isDark: boolean;
   active?: boolean;
   children: React.ReactNode;
-}> = ({ onClick, title, isDark, active, children }) => {
+}> = ({ onClick, title, label, isDark, active, children }) => {
   const [hov, setHov] = useState(false);
 
-  // All three states computed independently — no nested ternaries (S3358)
   const activeBg  = tc(isDark, 'rgba(255,255,255,0.15)', 'rgba(0,0,0,0.12)');
   const hovBg     = tc(isDark, 'rgba(255,255,255,0.1)',  'rgba(0,0,0,0.07)');
   const defaultBg = tc(isDark, 'rgba(255,255,255,0.05)', 'rgba(0,0,0,0.04)');
@@ -101,9 +97,9 @@ const ToolBtn: React.FC<{
     ? tc(isDark, 'rgba(255,255,255,0.2)', 'rgba(0,0,0,0.18)')
     : tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)');
 
-  const activeColor  = tc(isDark, '#fff', '#000');
-  const defaultColor = tc(isDark, 'rgba(255,255,255,0.65)', 'rgba(0,0,0,0.55)');
-  const color = active ? activeColor : defaultColor;
+  const color = active
+    ? tc(isDark, '#fff', '#000')
+    : tc(isDark, 'rgba(255,255,255,0.65)', 'rgba(0,0,0,0.55)');
 
   return (
     <button
@@ -112,15 +108,26 @@ const ToolBtn: React.FC<{
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        width: 28, height: 28, borderRadius: 7,
+        display: 'inline-flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 2,
+        padding: '4px 7px',
+        minWidth: 36,
+        borderRadius: 7,
         border: `1px solid ${border}`,
         background: bg,
         color,
-        cursor: 'pointer', transition: 'all 0.12s', flexShrink: 0,
+        cursor: 'pointer',
+        transition: 'all 0.12s',
+        flexShrink: 0,
       }}
     >
       {children}
+      <span style={{ fontSize: 9, fontWeight: 500, lineHeight: 1, whiteSpace: 'nowrap' }}>
+        {label}
+      </span>
     </button>
   );
 };
@@ -131,7 +138,6 @@ interface DiagramViewerProps {
   svgHtml: string;
   isDark: boolean;
   panMode: boolean;
-  // onReset removed — defined but never used inside component (S6767)
   scale: number;
   setScale: React.Dispatch<React.SetStateAction<number>>;
   pos: { x: number; y: number };
@@ -147,7 +153,6 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
   const last     = useRef({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
 
-  // Mouse drag
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     if (!panMode) return;
     if (e.button !== 0) return;
@@ -175,7 +180,6 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
     globalThis.window.addEventListener('mouseup', onUp);
   }, [panMode, setPos]);
 
-  // Touch drag
   useEffect(() => {
     const el = viewRef.current;
     if (!el || !panMode) return;
@@ -218,7 +222,6 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
     };
   }, [panMode, setPos, setScale]);
 
-  // Wheel zoom
   useEffect(() => {
     const el = viewRef.current;
     if (!el) return;
@@ -233,13 +236,11 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
   }, [setScale]);
 
   const minH = isFullscreen ? '100%' : 80;
-  // Flattened — no nested ternaries (S3358)
   let cursor = 'default';
   if (panMode && isDragging) cursor = 'grabbing';
   else if (panMode) cursor = 'grab';
 
   return (
-    // Using <button> — native interactive element, avoids S6847/S6845
     <button
       ref={viewRef}
       aria-label="Diagram viewer — drag to pan, Ctrl+scroll to zoom"
@@ -252,20 +253,11 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
         if (e.key === 'ArrowDown')  setPos(p => ({ ...p, y: p.y + step }));
       }}
       style={{
-        overflow: 'hidden',
-        position: 'relative',
-        cursor,
-        minHeight: minH,
-        height: isFullscreen ? '100%' : 'auto',
-        userSelect: 'none',
-        touchAction: 'none',
-        outline: 'none',
-        display: 'block',
-        width: '100%',
-        padding: 0,
-        border: 'none',
-        background: 'none',
-        textAlign: 'left',
+        overflow: 'hidden', position: 'relative', cursor,
+        minHeight: minH, height: isFullscreen ? '100%' : 'auto',
+        userSelect: 'none', touchAction: 'none', outline: 'none',
+        display: 'block', width: '100%', padding: 0,
+        border: 'none', background: 'none', textAlign: 'left',
       }}
     >
       <div
@@ -273,11 +265,8 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
           transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`,
           transformOrigin: 'center center',
           transition: dragging.current ? 'none' : 'transform 0.05s ease',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: '20px 24px',
-          willChange: 'transform',
+          display: 'flex', justifyContent: 'center', alignItems: 'center',
+          padding: '20px 24px', willChange: 'transform',
         }}
         dangerouslySetInnerHTML={{ __html: svgHtml }}
       />
@@ -285,10 +274,75 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
   );
 };
 
+// ─── Shared toolbar content ───────────────────────────────────────────────────
+
+interface ToolbarContentProps {
+  isDark: boolean;
+  scale: number;
+  panMode: boolean;
+  hasColor: boolean;
+  color?: string;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onTogglePan: () => void;
+  onReset: () => void;
+  onFullscreenToggle: () => void;
+  isFullscreen: boolean;
+}
+
+const ToolbarContent: React.FC<ToolbarContentProps> = ({
+  isDark, scale, panMode, hasColor, color,
+  onZoomIn, onZoomOut, onTogglePan, onReset, onFullscreenToggle, isFullscreen,
+}) => (
+  <>
+    {hasColor && (
+      <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, marginRight: 2, flexShrink: 0 }} />
+    )}
+    <ToolBtn onClick={onZoomIn} title="Увеличить" label="+" isDark={isDark}>
+      <IconPlus />
+    </ToolBtn>
+    <ToolBtn onClick={onZoomOut} title="Уменьшить" label="−" isDark={isDark}>
+      <IconMinus />
+    </ToolBtn>
+
+    <span style={{
+      fontSize: 11, fontWeight: 600, minWidth: 36, textAlign: 'center',
+      color: tc(isDark, 'rgba(255,255,255,0.4)', 'rgba(0,0,0,0.4)'),
+      fontFamily: 'ui-monospace, monospace', flexShrink: 0,
+    }}>
+      {Math.round(scale * 100)}%
+    </span>
+
+    <div style={{
+      width: 1, height: 20,
+      background: tc(isDark, 'rgba(255,255,255,0.08)', 'rgba(0,0,0,0.08)'),
+      margin: '0 2px', flexShrink: 0,
+    }} />
+
+    <ToolBtn onClick={onTogglePan} title="Режим перемещения" label="Рука" isDark={isDark} active={panMode}>
+      <IconHand />
+    </ToolBtn>
+    <ToolBtn onClick={onReset} title="Сбросить вид" label="Сброс" isDark={isDark}>
+      <IconReset />
+    </ToolBtn>
+
+    <div style={{ flex: 1 }} />
+
+    {isFullscreen ? (
+      <ToolBtn onClick={onFullscreenToggle} title="Выйти из полноэкранного режима" label="Свернуть" isDark={isDark}>
+        <IconClose />
+      </ToolBtn>
+    ) : (
+      <ToolBtn onClick={onFullscreenToggle} title="Полноэкранный режим" label="Развернуть" isDark={isDark}>
+        <IconMaximize />
+      </ToolBtn>
+    )}
+  </>
+);
+
 // ─── Main component ────────────────────────────────────────────────────────────
 
 const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = false }) => {
-  // containerRef removed — declared but never used (S1854)
   const [status, setStatus]             = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorMsg, setErrorMsg]         = useState('');
   const [svgHtml, setSvgHtml]           = useState('');
@@ -303,7 +357,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
     const key = cacheKey(code, isDark, color);
 
     if (svgCache.has(key)) {
-      // ?? '' avoids non-null assertion — Map.get() is guaranteed defined after has() (S4325)
       setSvgHtml(svgCache.get(key) ?? '');
       setStatus('ready');
       return;
@@ -325,88 +378,54 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
         gantt: { useMaxWidth: true, leftPadding: 75, barHeight: 28, fontSize: 13 },
         themeVariables: isDark
           ? {
-              primaryColor: '#1a1a2e',
-              primaryTextColor: '#e8e8e8',
+              primaryColor: '#1a1a2e', primaryTextColor: '#e8e8e8',
               primaryBorderColor: color || 'rgba(255,255,255,0.25)',
-              lineColor: 'rgba(255,255,255,0.5)',
-              secondaryColor: '#16213e',
-              tertiaryColor: '#1a1a2e',
-              background: '#0a0a0a',
-              mainBkg: '#131320',
+              lineColor: 'rgba(255,255,255,0.5)', secondaryColor: '#16213e',
+              tertiaryColor: '#1a1a2e', background: '#0a0a0a', mainBkg: '#131320',
               nodeBorder: color || 'rgba(255,255,255,0.3)',
-              clusterBkg: 'rgba(255,255,255,0.05)',
-              clusterBorder: 'rgba(255,255,255,0.15)',
-              titleColor: '#e8e8e8',
-              edgeLabelBackground: '#0f0f18',
-              textColor: '#e8e8e8',
-              labelTextColor: '#e8e8e8',
-              actorBkg: '#1a1a2e',
-              actorBorder: color || 'rgba(255,255,255,0.25)',
-              actorTextColor: '#e8e8e8',
-              actorLineColor: 'rgba(255,255,255,0.4)',
-              signalColor: 'rgba(255,255,255,0.8)',
-              signalTextColor: '#e8e8e8',
+              clusterBkg: 'rgba(255,255,255,0.05)', clusterBorder: 'rgba(255,255,255,0.15)',
+              titleColor: '#e8e8e8', edgeLabelBackground: '#0f0f18',
+              textColor: '#e8e8e8', labelTextColor: '#e8e8e8',
+              actorBkg: '#1a1a2e', actorBorder: color || 'rgba(255,255,255,0.25)',
+              actorTextColor: '#e8e8e8', actorLineColor: 'rgba(255,255,255,0.4)',
+              signalColor: 'rgba(255,255,255,0.8)', signalTextColor: '#e8e8e8',
               gridColor: 'rgba(255,255,255,0.1)',
-              section0: '#1a1a2e',
-              section1: '#131320',
+              section0: '#1a1a2e', section1: '#131320',
               taskBkgColor: color || '#1e3a5f',
               taskBorderColor: color || 'rgba(255,255,255,0.25)',
-              taskTextColor: '#e8e8e8',
-              taskTextOutsideColor: '#e8e8e8',
+              taskTextColor: '#e8e8e8', taskTextOutsideColor: '#e8e8e8',
               xyChart: {
-                backgroundColor: 'transparent',
-                titleColor: '#e8e8e8',
-                xAxisTitleColor: '#e8e8e8',
-                xAxisLabelColor: '#c0c0c0',
-                xAxisTickColor: 'rgba(255,255,255,0.2)',
-                xAxisLineColor: 'rgba(255,255,255,0.2)',
-                yAxisTitleColor: '#e8e8e8',
-                yAxisLabelColor: '#c0c0c0',
-                yAxisTickColor: 'rgba(255,255,255,0.2)',
-                yAxisLineColor: 'rgba(255,255,255,0.2)',
+                backgroundColor: 'transparent', titleColor: '#e8e8e8',
+                xAxisTitleColor: '#e8e8e8', xAxisLabelColor: '#c0c0c0',
+                xAxisTickColor: 'rgba(255,255,255,0.2)', xAxisLineColor: 'rgba(255,255,255,0.2)',
+                yAxisTitleColor: '#e8e8e8', yAxisLabelColor: '#c0c0c0',
+                yAxisTickColor: 'rgba(255,255,255,0.2)', yAxisLineColor: 'rgba(255,255,255,0.2)',
                 plotColorPalette: '#3b82f6,#10b981,#f59e0b,#ef4444,#8b5cf6,#ec4899',
               },
             }
           : {
-              primaryColor: '#e8e7f0',
-              primaryTextColor: '#1a1a2e',
+              primaryColor: '#e8e7f0', primaryTextColor: '#1a1a2e',
               primaryBorderColor: color || 'rgba(0,0,0,0.2)',
-              lineColor: 'rgba(0,0,0,0.5)',
-              secondaryColor: '#f0eff8',
-              tertiaryColor: '#e0dff0',
-              background: '#E8E7E3',
-              mainBkg: '#eeecf8',
+              lineColor: 'rgba(0,0,0,0.5)', secondaryColor: '#f0eff8',
+              tertiaryColor: '#e0dff0', background: '#E8E7E3', mainBkg: '#eeecf8',
               nodeBorder: color || 'rgba(0,0,0,0.25)',
-              clusterBkg: 'rgba(0,0,0,0.04)',
-              clusterBorder: 'rgba(0,0,0,0.12)',
-              titleColor: '#1a1a2e',
-              edgeLabelBackground: '#f5f4fc',
-              textColor: '#1a1a2e',
-              labelTextColor: '#1a1a2e',
-              actorBkg: '#eeecf8',
-              actorBorder: color || 'rgba(0,0,0,0.2)',
-              actorTextColor: '#1a1a2e',
-              actorLineColor: 'rgba(0,0,0,0.4)',
-              signalColor: 'rgba(0,0,0,0.7)',
-              signalTextColor: '#1a1a2e',
+              clusterBkg: 'rgba(0,0,0,0.04)', clusterBorder: 'rgba(0,0,0,0.12)',
+              titleColor: '#1a1a2e', edgeLabelBackground: '#f5f4fc',
+              textColor: '#1a1a2e', labelTextColor: '#1a1a2e',
+              actorBkg: '#eeecf8', actorBorder: color || 'rgba(0,0,0,0.2)',
+              actorTextColor: '#1a1a2e', actorLineColor: 'rgba(0,0,0,0.4)',
+              signalColor: 'rgba(0,0,0,0.7)', signalTextColor: '#1a1a2e',
               gridColor: 'rgba(0,0,0,0.1)',
-              section0: '#eeecf8',
-              section1: '#e4e2f4',
+              section0: '#eeecf8', section1: '#e4e2f4',
               taskBkgColor: color || '#c7d2fe',
               taskBorderColor: color || 'rgba(0,0,0,0.18)',
-              taskTextColor: '#1a1a2e',
-              taskTextOutsideColor: '#1a1a2e',
+              taskTextColor: '#1a1a2e', taskTextOutsideColor: '#1a1a2e',
               xyChart: {
-                backgroundColor: 'transparent',
-                titleColor: '#1a1a2e',
-                xAxisTitleColor: '#1a1a2e',
-                xAxisLabelColor: '#4a4a4a',
-                xAxisTickColor: 'rgba(0,0,0,0.2)',
-                xAxisLineColor: 'rgba(0,0,0,0.2)',
-                yAxisTitleColor: '#1a1a2e',
-                yAxisLabelColor: '#4a4a4a',
-                yAxisTickColor: 'rgba(0,0,0,0.2)',
-                yAxisLineColor: 'rgba(0,0,0,0.2)',
+                backgroundColor: 'transparent', titleColor: '#1a1a2e',
+                xAxisTitleColor: '#1a1a2e', xAxisLabelColor: '#4a4a4a',
+                xAxisTickColor: 'rgba(0,0,0,0.2)', xAxisLineColor: 'rgba(0,0,0,0.2)',
+                yAxisTitleColor: '#1a1a2e', yAxisLabelColor: '#4a4a4a',
+                yAxisTickColor: 'rgba(0,0,0,0.2)', yAxisLineColor: 'rgba(0,0,0,0.2)',
                 plotColorPalette: '#3b82f6,#10b981,#f59e0b,#ef4444,#8b5cf6,#ec4899',
               },
             },
@@ -415,7 +434,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
       const id = nextId();
       const { svg } = await mermaid.render(id, code.trim());
 
-      // replaceAll instead of replace+global regex (S7781)
       const patched = svg
         .replaceAll(/(<svg[^>]*?)\s+width="[^"]*"/g, '$1')
         .replaceAll(/(<svg[^>]*?)\s+height="[^"]*"/g, '$1')
@@ -428,7 +446,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
       setSvgHtml(patched);
       setStatus('ready');
     } catch (e: unknown) {
-      // Avoid Object stringification (S6551): extract message safely
       const msg = e instanceof Error ? e.message : 'Unknown render error';
       setErrorMsg(msg);
       setStatus('error');
@@ -444,48 +461,19 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
   const borderColor = color || tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)');
   const bgColor     = tc(isDark, '#0a0a0a', '#E8E7E3');
 
-  // ─── Toolbar ─────────────────────────────────────────────────────────────────
+  const toolbarBorderBottom = status === 'ready'
+    ? `1px solid ${tc(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.07)')}`
+    : 'none';
 
-  const Toolbar = (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 4,
-      padding: '6px 10px',
-      borderBottom: status === 'ready' ? `1px solid ${tc(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.07)')}` : 'none',
-      background: tc(isDark, 'rgba(255,255,255,0.02)', 'rgba(0,0,0,0.02)'),
-    }}>
-      <ToolBtn onClick={() => setScale(s => Math.min(4, +(s + 0.25).toFixed(2)))} title="Увеличить" isDark={isDark}>
-        <IconPlus />
-      </ToolBtn>
-      <ToolBtn onClick={() => setScale(s => Math.max(0.25, +(s - 0.25).toFixed(2)))} title="Уменьшить" isDark={isDark}>
-        <IconMinus />
-      </ToolBtn>
+  const toolbarCommonProps = {
+    isDark, scale, panMode, hasColor, color,
+    onZoomIn:  () => setScale(s => Math.min(4, +(s + 0.25).toFixed(2))),
+    onZoomOut: () => setScale(s => Math.max(0.25, +(s - 0.25).toFixed(2))),
+    onTogglePan: () => setPanMode(v => !v),
+    onReset: resetView,
+  };
 
-      <span style={{
-        fontSize: 11, fontWeight: 600, minWidth: 36, textAlign: 'center',
-        color: tc(isDark, 'rgba(255,255,255,0.4)', 'rgba(0,0,0,0.4)'),
-        fontFamily: 'ui-monospace, monospace',
-      }}>
-        {Math.round(scale * 100)}%
-      </span>
-
-      <div style={{ width: 1, height: 16, background: tc(isDark, 'rgba(255,255,255,0.08)', 'rgba(0,0,0,0.08)'), margin: '0 2px' }} />
-
-      <ToolBtn onClick={() => setPanMode(v => !v)} title="Режим перемещения" isDark={isDark} active={panMode}>
-        <IconHand />
-      </ToolBtn>
-      <ToolBtn onClick={resetView} title="Сбросить вид" isDark={isDark}>
-        <IconReset />
-      </ToolBtn>
-
-      <div style={{ flex: 1 }} />
-
-      <ToolBtn onClick={() => setIsFullscreen(true)} title="Полноэкранный режим" isDark={isDark}>
-        <IconMaximize />
-      </ToolBtn>
-    </div>
-  );
-
-  // ─── Fullscreen modal ─────────────────────────────────────────────────────────
+  // ─── Fullscreen modal ───────────────────────────────────────────────────────
 
   const Fullscreen = isFullscreen && status === 'ready' ? (
     <div style={{
@@ -494,69 +482,58 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
       display: 'flex', flexDirection: 'column',
     }}>
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 4, padding: '8px 12px',
+        display: 'flex', alignItems: 'center', gap: 4,
+        padding: '6px 10px',
         borderBottom: `1px solid ${borderColor}`,
         background: tc(isDark, 'rgba(255,255,255,0.02)', 'rgba(0,0,0,0.02)'),
         flexShrink: 0,
+        flexWrap: 'wrap',      // ← wrap on narrow screens
+        rowGap: 4,
       }}>
-        {hasColor && <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, marginRight: 4 }} />}
-        <ToolBtn onClick={() => setScale(s => Math.min(4, +(s + 0.25).toFixed(2)))} title="Увеличить" isDark={isDark}>
-          <IconPlus />
-        </ToolBtn>
-        <ToolBtn onClick={() => setScale(s => Math.max(0.25, +(s - 0.25).toFixed(2)))} title="Уменьшить" isDark={isDark}>
-          <IconMinus />
-        </ToolBtn>
-        <span style={{
-          fontSize: 11, fontWeight: 600, minWidth: 36, textAlign: 'center',
-          color: tc(isDark, 'rgba(255,255,255,0.4)', 'rgba(0,0,0,0.4)'),
-          fontFamily: 'ui-monospace, monospace',
-        }}>
-          {Math.round(scale * 100)}%
-        </span>
-        <div style={{ width: 1, height: 16, background: tc(isDark, 'rgba(255,255,255,0.08)', 'rgba(0,0,0,0.08)'), margin: '0 2px' }} />
-        <ToolBtn onClick={() => setPanMode(v => !v)} title="Режим перемещения" isDark={isDark} active={panMode}>
-          <IconHand />
-        </ToolBtn>
-        <ToolBtn onClick={resetView} title="Сбросить вид" isDark={isDark}>
-          <IconReset />
-        </ToolBtn>
-        <div style={{ flex: 1 }} />
-        <ToolBtn onClick={() => { setIsFullscreen(false); resetView(); }} title="Выйти из полноэкранного режима" isDark={isDark}>
-          <IconClose />
-        </ToolBtn>
+        <ToolbarContent
+          {...toolbarCommonProps}
+          onFullscreenToggle={() => { setIsFullscreen(false); resetView(); }}
+          isFullscreen
+        />
       </div>
 
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
         <DiagramViewer
-          svgHtml={svgHtml}
-          isDark={isDark}
-          panMode={panMode}
-          scale={scale}
-          setScale={setScale}
-          pos={pos}
-          setPos={setPos}
-          isFullscreen
+          svgHtml={svgHtml} isDark={isDark} panMode={panMode}
+          scale={scale} setScale={setScale} pos={pos} setPos={setPos} isFullscreen
         />
       </div>
     </div>
   ) : null;
 
-  // ─── Render ───────────────────────────────────────────────────────────────────
+  // ─── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <>
       {Fullscreen}
       <div style={{
-        margin: '1.5rem 0',
-        borderRadius: 12,
+        margin: '1.5rem 0', borderRadius: 12,
         border: `1px solid ${borderColor}`,
-        background: bgColor,
-        overflow: 'hidden',
-        position: 'relative',
+        background: bgColor, overflow: 'hidden', position: 'relative',
       }}>
         {hasColor && <div style={{ height: 3, background: color }} />}
 
-        {status === 'ready' && Toolbar}
+        {status === 'ready' && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '6px 10px',
+            borderBottom: toolbarBorderBottom,
+            background: tc(isDark, 'rgba(255,255,255,0.02)', 'rgba(0,0,0,0.02)'),
+            flexWrap: 'wrap',   // ← wrap on narrow screens
+            rowGap: 4,
+          }}>
+            <ToolbarContent
+              {...toolbarCommonProps}
+              onFullscreenToggle={() => setIsFullscreen(true)}
+              isFullscreen={false}
+            />
+          </div>
+        )}
 
         {status === 'loading' && (
           <div style={{
@@ -592,8 +569,7 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
               fontFamily: 'ui-monospace, monospace',
             }}>{errorMsg}</pre>
             <pre style={{
-              marginTop: 10, padding: '8px 12px', borderRadius: 7,
-              fontSize: 11,
+              marginTop: 10, padding: '8px 12px', borderRadius: 7, fontSize: 11,
               background: tc(isDark, 'rgba(255,255,255,0.03)', 'rgba(0,0,0,0.03)'),
               color: tc(isDark, 'rgba(255,255,255,0.4)', 'rgba(0,0,0,0.4)'),
               fontFamily: 'ui-monospace, monospace', whiteSpace: 'pre-wrap',
@@ -603,13 +579,8 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
 
         <div style={{ display: status === 'ready' ? 'block' : 'none' }}>
           <DiagramViewer
-            svgHtml={svgHtml}
-            isDark={isDark}
-            panMode={panMode}
-            scale={scale}
-            setScale={setScale}
-            pos={pos}
-            setPos={setPos}
+            svgHtml={svgHtml} isDark={isDark} panMode={panMode}
+            scale={scale} setScale={setScale} pos={pos} setPos={setPos}
           />
         </div>
       </div>
