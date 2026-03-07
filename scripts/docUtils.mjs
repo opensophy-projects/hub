@@ -329,7 +329,15 @@ export function getDocInfo(fullPath, docsDir) {
 
   if (dirs.length === 0) {
     const isWelcome = fileName === 'welcome';
-    return { slug: isWelcome ? '' : slugify(fileName), navSlug: '', navTitle: '', navIcon: '', typename: '', categoryIcon: null };
+    return { 
+      slug: isWelcome ? '' : slugify(fileName), 
+      navSlug: '', 
+      navTitle: '', 
+      navIcon: '', 
+      typename: '', 
+      categoryIcon: null,
+      categoryOriginalName: null
+    };
   }
 
   const navDef = parseNavPopoverFolder(dirs[0]);
@@ -337,26 +345,33 @@ export function getDocInfo(fullPath, docsDir) {
   if (navDef) {
     const subDirs = dirs.slice(1);
     const slug = [navDef.navSlug, ...subDirs.map((d) => parseCategoryName(d).slug), slugify(fileName)].join('/');
-    const categoryInfo = subDirs.length > 0 ? parseCategoryName(subDirs.at(-1)) : { title: '', icon: null };
+    
+    // FIX: берём ПОСЛЕДНЮЮ подпапку как typename
+    const lastSubDir = subDirs.length > 0 ? subDirs[subDirs.length - 1] : null;
+    const categoryInfo = lastSubDir ? parseCategoryName(lastSubDir) : { title: '', icon: null };
+    
     return { 
       slug, 
       navSlug: navDef.navSlug, 
       navTitle: navDef.navTitle, 
       navIcon: navDef.navIcon, 
       typename: categoryInfo.title,
-      categoryIcon: categoryInfo.icon
+      categoryIcon: categoryInfo.icon,
+      categoryOriginalName: lastSubDir // сохраняем оригинальное название
     };
   }
 
   const slug = [...dirs.map((d) => parseCategoryName(d).slug), slugify(fileName)].join('/');
-  const categoryInfo = parseCategoryName(dirs.at(-1));
+  const categoryInfo = parseCategoryName(dirs[dirs.length - 1]);
+  
   return { 
     slug, 
     navSlug: '', 
     navTitle: '', 
     navIcon: '', 
     typename: categoryInfo.title,
-    categoryIcon: categoryInfo.icon
+    categoryIcon: categoryInfo.icon,
+    categoryOriginalName: dirs[dirs.length - 1]
   };
 }
 
@@ -368,14 +383,17 @@ export function buildDocFromPath(mdPath, docsDir) {
   const info = getDocInfo(mdPath, docsDir);
   const fileName = path.basename(mdPath, '.md');
 
+  // FIX: если в metadata есть typename — используем его, иначе — берём из папки
+  const finalTypename = metadata.typename?.trim() || info.typename;
+
   return {
     id: info.slug || 'welcome',
     title: metadata.title || fileName,
     slug: info.slug,
     description: metadata.description || getFirstParagraph(processed),
     content: htmlContent,
-    typename: metadata.typename || info.typename,
-    categoryIcon: info.categoryIcon,
+    typename: finalTypename, // приоритет frontmatter
+    categoryIcon: info.categoryIcon, // иконка категории
     navSlug: info.navSlug,
     navTitle: info.navTitle,
     navIcon: info.navIcon,
