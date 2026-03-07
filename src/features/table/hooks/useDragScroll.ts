@@ -9,8 +9,8 @@ const DRAG_THRESHOLD = 5;
  * - userSelect и cursor управляются через возвращаемый style.
  */
 export function useDragScroll() {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const isDragging = useRef(false);
+  const scrollRef    = useRef<HTMLDivElement>(null);
+  const isDragging   = useRef(false);
   const dragStartPos = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
   const [dragging, setDragging] = useState(false);
 
@@ -27,7 +27,7 @@ export function useDragScroll() {
       x: e.clientX,
       y: e.clientY,
       scrollLeft: el.scrollLeft,
-      scrollTop: el.scrollTop,
+      scrollTop:  el.scrollTop,
     };
   }, []);
 
@@ -42,16 +42,18 @@ export function useDragScroll() {
     const dy = e.clientY - dragStartPos.current.y;
 
     if (!isDragging.current) {
-      if (Math.sqrt(dx * dx + dy * dy) < DRAG_THRESHOLD) return;
+      // FIX S7769: Math.sqrt(dx*dx + dy*dy) → Math.hypot(dx, dy)
+      if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
       // Порог пройден — начинаем drag
       isDragging.current = true;
       setDragging(true);
-      window.getSelection()?.removeAllRanges();
+      // FIX S7764: window → globalThis.window
+      globalThis.window.getSelection()?.removeAllRanges();
     }
 
     e.preventDefault();
     el.scrollLeft = dragStartPos.current.scrollLeft - dx;
-    el.scrollTop = dragStartPos.current.scrollTop - dy;
+    el.scrollTop  = dragStartPos.current.scrollTop  - dy;
   }, []);
 
   const onMouseUp = useCallback(() => {
@@ -65,8 +67,8 @@ export function useDragScroll() {
   }, []);
 
   const dragStyle: React.CSSProperties = {
-    cursor: dragging ? 'grabbing' : 'default',
-    userSelect: dragging ? 'none' : 'text',
+    cursor:     dragging ? 'grabbing' : 'default',
+    userSelect: dragging ? 'none'     : 'text',
   };
 
   const dragHandlers = {
