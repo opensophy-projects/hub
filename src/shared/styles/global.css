@@ -3,16 +3,9 @@
 @import 'tailwindcss/utilities';
 
 @font-face {
-  font-family: 'UnifixSP';
-  src: url('/UnifixSP.woff2') format('woff2');
+  font-family: 'customfont';
+  src: url('/customfont.woff2') format('woff2');
   font-weight: 400;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'VeilStack';
-  src: url('/UnifixSP.woff2') format('woff2');
-  font-weight: 700;
   font-style: normal;
 }
 
@@ -32,8 +25,8 @@ body {
   line-height: 1.5;
 }
 
-.font-veilstack {
-  font-family: 'VeilStack', 'UnifixSP', sans-serif;
+.font-customfont {
+  font-family: 'customfont', sans-serif;
   letter-spacing: -0.02em;
 }
 
