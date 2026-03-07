@@ -9,7 +9,7 @@ import { useTableOfContents } from '../hooks/useTableOfContents';
 import { useScrollProgress } from '../hooks/useScrollProgress';
 import { scrollToElement } from '../utils/scrollUtils';
 import { useDocuments } from '../hooks/useDocuments';
-import { Clock, CalendarDays, ArrowUp, ChevronRight } from 'lucide-react';
+import { Clock, CalendarDays, ArrowUp, ChevronRight, RefreshCw } from 'lucide-react';
 import DotWaveBackground from './DotWaveBackground';
 import AskAIButton from './AskAIButton';
 
@@ -26,6 +26,7 @@ interface DocContentProps {
     content?: string;
     author?: string;
     date?: string;
+    updated?: string;
     tags?: string[];
     navSlug?: string;
     navTitle?: string;
@@ -75,17 +76,23 @@ const DocHero: React.FC<{
       })
     : null;
 
+  const formattedUpdated = doc.updated
+    ? new Date(doc.updated).toLocaleDateString('ru-RU', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : null;
+
   const heroBg = isDark ? '#0a0a0a' : '#E8E7E3';
   const borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
   const metaTextColor = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.75)';
   const metaBadgeBg = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
   const metaBadgeBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
 
-  // Breadcrumbs — показываем только реальные категории (typename)
   const breadcrumbs = [];
   breadcrumbs.push({ label: 'Главная', href: '/' });
   
-  // Добавляем typename только если он есть и не пустой
   if (doc.typename && doc.typename.trim() !== '') {
     breadcrumbs.push({ label: doc.typename, href: null });
   }
@@ -107,7 +114,6 @@ const DocHero: React.FC<{
       </div>
 
       <div style={{ position: 'relative', zIndex: 1 }}>
-        {/* Breadcrumbs — показываем только если есть реальные категории */}
         {breadcrumbs.length > 1 && (
           <div
             style={{
@@ -173,9 +179,30 @@ const DocHero: React.FC<{
             </span>
           )}
 
-          {doc.typename && doc.typename.trim() !== '' && (
+          {formattedUpdated && (
             <>
               {formattedDate && (
+                <span style={{ color: metaTextColor, fontSize: '0.7rem' }}>·</span>
+              )}
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  fontSize: '0.75rem',
+                  color: metaTextColor,
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                <RefreshCw size={13} style={{ opacity: 0.7 }} />
+                Обновлено: {formattedUpdated}
+              </span>
+            </>
+          )}
+
+          {doc.typename && doc.typename.trim() !== '' && (
+            <>
+              {(formattedDate || formattedUpdated) && (
                 <span style={{ color: metaTextColor, fontSize: '0.7rem' }}>·</span>
               )}
               <span
