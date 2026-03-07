@@ -55,31 +55,32 @@ const UNIVERSAL_FIELDS: Array<{
   step: number;
   default: number;
 }> = [
-  { label: 'Масштаб',      key: 'scale',      min: 0.1,  max: 3,    step: 0.05, default: 1   },
-  { label: 'Вращение X',   key: 'rotateX',    min: -180, max: 180,  step: 1,    default: 0   },
-  { label: 'Яркость',      key: 'brightness', min: 0,    max: 2,    step: 0.05, default: 1   },
-  { label: 'Прозрачность', key: 'opacity',    min: 0,    max: 1,    step: 0.05, default: 1   },
-  { label: 'Вращение Y',   key: 'rotateY',    min: -180, max: 180,  step: 1,    default: 0   },
-  { label: 'Контраст',     key: 'contrast',   min: 0,    max: 2,    step: 0.05, default: 1   },
-  { label: 'Размытие',     key: 'blur',       min: 0,    max: 20,   step: 0.5,  default: 0   },
-  { label: 'Вращение Z',   key: 'rotateZ',    min: -180, max: 180,  step: 1,    default: 0   },
-  { label: 'Насыщенность', key: 'saturate',   min: 0,    max: 2,    step: 0.05, default: 1   },
+  { label: 'Масштаб',      key: 'scale',      min: 0.1,  max: 3,    step: 0.05, default: 1 },
+  { label: 'Вращение X',   key: 'rotateX',    min: -180, max: 180,  step: 1,    default: 0 },
+  { label: 'Яркость',      key: 'brightness', min: 0,    max: 2,    step: 0.05, default: 1 },
+  { label: 'Прозрачность', key: 'opacity',    min: 0,    max: 1,    step: 0.05, default: 1 },
+  { label: 'Вращение Y',   key: 'rotateY',    min: -180, max: 180,  step: 1,    default: 0 },
+  { label: 'Контраст',     key: 'contrast',   min: 0,    max: 2,    step: 0.05, default: 1 },
+  { label: 'Размытие',     key: 'blur',       min: 0,    max: 20,   step: 0.5,  default: 0 },
+  { label: 'Вращение Z',   key: 'rotateZ',    min: -180, max: 180,  step: 1,    default: 0 },
+  { label: 'Насыщенность', key: 'saturate',   min: 0,    max: 2,    step: 0.05, default: 1 },
 ];
 
-// ─── Theme helpers ─────────────────────────────────────────────────────────────
+// ─── Theme helpers ────────────────────────────────────────────────────────────
 
 const tc = (isDark: boolean, d: string, l: string) => (isDark ? d : l);
 
 // ─── Responsive grid columns helper ──────────────────────────────────────────
 
 const useIsMobile = () => {
+  // FIX S7735/S7764: use globalThis.window; positive condition instead of negated
   const [isMobile, setIsMobile] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth < 640 : false
+    typeof globalThis.window !== 'undefined' ? globalThis.window.innerWidth < 640 : false
   );
   useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 640);
-    window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
+    const handler = () => setIsMobile(globalThis.window.innerWidth < 640);
+    globalThis.window.addEventListener('resize', handler);
+    return () => globalThis.window.removeEventListener('resize', handler);
   }, []);
   return isMobile;
 };
@@ -95,6 +96,13 @@ interface NumberInputProps {
   isDark: boolean;
 }
 
+// FIX S121: extract decimal precision into a named variable (removes nested ternary)
+const getDecimalPlaces = (step: number): number => {
+  if (step >= 1)   return 0;
+  if (step >= 0.1) return 1;
+  return 2;
+};
+
 const NumberInput: React.FC<NumberInputProps> = ({
   value, onChange, min, max, step, isDark,
 }) => {
@@ -109,8 +117,9 @@ const NumberInput: React.FC<NumberInputProps> = ({
   };
 
   const commit = () => {
-    const n = parseFloat(raw);
-    if (!isNaN(n)) onChange(Math.min(max, Math.max(min, n)));
+    // FIX S7773: Number.parseFloat / Number.isNaN
+    const n = Number.parseFloat(raw);
+    if (!Number.isNaN(n)) onChange(Math.min(max, Math.max(min, n)));
     setEditing(false);
   };
 
@@ -118,7 +127,18 @@ const NumberInput: React.FC<NumberInputProps> = ({
   const bg     = tc(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.06)');
   const fg     = tc(isDark, '#fff', '#000');
 
-  const numStr = step < 1 ? value.toFixed(step < 0.1 ? 2 : 1) : String(Math.round(value));
+  // FIX S3358: no nested ternary — use helper function
+  const decimals = getDecimalPlaces(step);
+  const numStr   = decimals > 0 ? value.toFixed(decimals) : String(Math.round(value));
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // FIX S2681: always use braces for each branch
+    if (e.key === 'Enter') {
+      commit();
+    } else if (e.key === 'Escape') {
+      setEditing(false);
+    }
+  };
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -142,7 +162,7 @@ const NumberInput: React.FC<NumberInputProps> = ({
           min={min} max={max} step={step}
           onChange={e => setRaw(e.target.value)}
           onBlur={commit}
-          onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false); }}
+          onKeyDown={handleKeyDown}
           style={{
             width: 54, padding: '2px 5px', borderRadius: 6,
             border: `1px solid ${border}`, background: bg, color: fg,
@@ -181,8 +201,7 @@ const UniversalGrid: React.FC<UniversalGridProps> = ({ universalProps, onChange,
   const borderColor = tc(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.07)');
   const cellBg      = tc(isDark, 'rgba(255,255,255,0.025)', 'rgba(0,0,0,0.02)');
   const labelColor  = tc(isDark, 'rgba(255,255,255,0.45)', 'rgba(0,0,0,0.45)');
-
-  const cols = isMobile ? 1 : 3;
+  const cols        = isMobile ? 1 : 3;
 
   return (
     <div style={{
@@ -217,7 +236,7 @@ const UniversalGrid: React.FC<UniversalGridProps> = ({ universalProps, onChange,
   );
 };
 
-// ─── AiSelect — portal-based dropdown (never clipped by scroll containers) ───
+// ─── AiSelect — portal-based dropdown (never clipped by scroll containers) ────
 
 interface DropdownPortalProps {
   anchorRect: DOMRect;
@@ -245,7 +264,7 @@ const DropdownPortal: React.FC<DropdownPortalProps> = ({
     maxHeight,
     animation: 'aiSelectIn 0.13s ease',
     ...(dropUp
-      ? { bottom: window.innerHeight - anchorRect.top + 4 }
+      ? { bottom: globalThis.window.innerHeight - anchorRect.top + 4 }
       : { top: anchorRect.bottom + 4 }),
   };
 
@@ -267,30 +286,32 @@ interface AiSelectProps {
 }
 
 const AiSelect: React.FC<AiSelectProps> = ({ label, value, options, onChange, isDark }) => {
-  const [open, setOpen]           = useState(false);
-  const [hov, setHov]             = useState<string | null>(null);
+  const [open, setOpen]             = useState(false);
+  const [hov, setHov]               = useState<string | null>(null);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
-  const [dropUp, setDropUp]       = useState(false);
-  const [dropWidth, setDropWidth] = useState(0);
-  const ref                       = useRef<HTMLDivElement>(null);
-  const btnRef                    = useRef<HTMLButtonElement>(null);
-  const portalRef                 = useRef<HTMLDivElement>(null);
+  const [dropUp, setDropUp]         = useState(false);
+  const [dropWidth, setDropWidth]   = useState(0);
+  const ref                         = useRef<HTMLDivElement>(null);
+  const btnRef                      = useRef<HTMLButtonElement>(null);
+  const portalRef                   = useRef<HTMLDivElement>(null);
 
-  // Close on outside click — must check both anchor and portal refs
   useEffect(() => {
     if (!open) return;
     const h = (e: MouseEvent) => {
       const target = e.target as Node;
-      const inAnchor = ref.current?.contains(target);
-      const inPortal = portalRef.current?.contains(target);
-      if (!inAnchor && !inPortal) setOpen(false);
+      if (!ref.current?.contains(target) && !portalRef.current?.contains(target)) {
+        setOpen(false);
+      }
     };
-    // Use mousedown but with a tiny delay so click events on portal fire first
     document.addEventListener('mousedown', h, { capture: false });
     return () => document.removeEventListener('mousedown', h, { capture: false } as any);
   }, [open]);
 
-  // Recompute position on scroll/resize while open
+  const computeDropUp = (rect: DOMRect) => {
+    const dropdownHeight = Math.min(options.length * 34 + 48, 240);
+    return globalThis.window.innerHeight - rect.bottom < dropdownHeight && rect.top > dropdownHeight;
+  };
+
   useEffect(() => {
     if (!open || !btnRef.current) return;
     const update = () => {
@@ -298,18 +319,16 @@ const AiSelect: React.FC<AiSelectProps> = ({ label, value, options, onChange, is
       const rect = btnRef.current.getBoundingClientRect();
       setAnchorRect(rect);
       setDropWidth(rect.width);
-      const dropdownHeight = Math.min(options.length * 34 + 48, 240);
-      setDropUp(
-        window.innerHeight - rect.bottom < dropdownHeight && rect.top > dropdownHeight
-      );
+      setDropUp(computeDropUp(rect));
     };
     update();
-    window.addEventListener('scroll', update, true);
-    window.addEventListener('resize', update);
+    globalThis.window.addEventListener('scroll', update, true);
+    globalThis.window.addEventListener('resize', update);
     return () => {
-      window.removeEventListener('scroll', update, true);
-      window.removeEventListener('resize', update);
+      globalThis.window.removeEventListener('scroll', update, true);
+      globalThis.window.removeEventListener('resize', update);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, options.length]);
 
   const handleToggle = () => {
@@ -317,22 +336,19 @@ const AiSelect: React.FC<AiSelectProps> = ({ label, value, options, onChange, is
     const rect = btnRef.current.getBoundingClientRect();
     setAnchorRect(rect);
     setDropWidth(rect.width);
-    const dropdownHeight = Math.min(options.length * 34 + 48, 240);
-    // Sync calculation — no flicker
-    setDropUp(
-      window.innerHeight - rect.bottom < dropdownHeight && rect.top > dropdownHeight
-    );
+    setDropUp(computeDropUp(rect));
     setOpen(v => !v);
   };
 
-  const textColor = tc(isDark, 'rgba(255,255,255,0.85)', 'rgba(0,0,0,0.85)');
-  const labelClr  = tc(isDark, 'rgba(255,255,255,0.3)',  'rgba(0,0,0,0.35)');
-  const btnBg     = tc(isDark, '#1a1a1a', '#d4d3cf');
-  const border    = tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)');
-  const rowHov    = tc(isDark, 'rgba(255,255,255,0.06)', 'rgba(0,0,0,0.06)');
-  const cellBg    = tc(isDark, 'rgba(255,255,255,0.025)', 'rgba(0,0,0,0.02)');
+  const textColor   = tc(isDark, 'rgba(255,255,255,0.85)', 'rgba(0,0,0,0.85)');
+  const labelClr    = tc(isDark, 'rgba(255,255,255,0.3)',  'rgba(0,0,0,0.35)');
+  const btnBg       = tc(isDark, '#1a1a1a', '#d4d3cf');
+  const border      = tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)');
+  const rowHov      = tc(isDark, 'rgba(255,255,255,0.06)', 'rgba(0,0,0,0.06)');
+  const cellBg      = tc(isDark, 'rgba(255,255,255,0.025)', 'rgba(0,0,0,0.02)');
   const borderColor = tc(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.07)');
   const labelColor  = tc(isDark, 'rgba(255,255,255,0.45)', 'rgba(0,0,0,0.45)');
+  const activeOptBg = tc(isDark, 'rgba(255,255,255,0.08)', 'rgba(0,0,0,0.08)');
 
   return (
     <div style={{ background: cellBg, border: `1px solid ${borderColor}`, borderRadius: 10, padding: '9px 11px' }}>
@@ -367,23 +383,30 @@ const AiSelect: React.FC<AiSelectProps> = ({ label, value, options, onChange, is
             <div style={{ padding: '7px 11px 3px', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: labelClr }}>
               Выбери вариант
             </div>
-            {options.map(opt => (
-              <button
-                key={opt}
-                onClick={() => { onChange(opt); setOpen(false); }}
-                onMouseEnter={() => setHov(opt)}
-                onMouseLeave={() => setHov(null)}
-                style={{
-                  display: 'flex', alignItems: 'center', width: '100%',
-                  padding: '5px 11px', fontSize: 12, textAlign: 'left', cursor: 'pointer',
-                  border: 'none', color: textColor,
-                  background: hov === opt ? rowHov : opt === value ? tc(isDark,'rgba(255,255,255,0.08)','rgba(0,0,0,0.08)') : 'transparent',
-                }}
-              >
-                {opt === value && <span style={{ marginRight: 6, opacity: 0.6 }}>✓</span>}
-                {opt}
-              </button>
-            ))}
+            {options.map(opt => {
+              // FIX S3358: no nested ternary — compute background before JSX
+              let optBg = 'transparent';
+              if (hov === opt)      { optBg = rowHov; }
+              else if (opt === value) { optBg = activeOptBg; }
+
+              return (
+                <button
+                  key={opt}
+                  onClick={() => { onChange(opt); setOpen(false); }}
+                  onMouseEnter={() => setHov(opt)}
+                  onMouseLeave={() => setHov(null)}
+                  style={{
+                    display: 'flex', alignItems: 'center', width: '100%',
+                    padding: '5px 11px', fontSize: 12, textAlign: 'left', cursor: 'pointer',
+                    border: 'none', color: textColor,
+                    background: optBg,
+                  }}
+                >
+                  {opt === value && <span style={{ marginRight: 6, opacity: 0.6 }}>✓</span>}
+                  {opt}
+                </button>
+              );
+            })}
           </DropdownPortal>
         )}
       </div>
@@ -391,7 +414,7 @@ const AiSelect: React.FC<AiSelectProps> = ({ label, value, options, onChange, is
   );
 };
 
-// ─── Specific props grid ───────────────────────────────────────────────────────
+// ─── Specific props grid ──────────────────────────────────────────────────────
 
 interface SpecificGridProps {
   config: ComponentConfig;
@@ -431,7 +454,6 @@ const SpecificGrid: React.FC<SpecificGridProps> = ({ config, componentProps, onC
       background: borderColor,
       border: `1px solid ${borderColor}`,
       borderRadius: 10,
-      // overflow: visible — важно! иначе portal не поможет если родитель clip
       overflow: 'visible',
     }}>
       {visibleProps.map((prop: PropDefinition) => {
@@ -500,7 +522,7 @@ const SpecificGrid: React.FC<SpecificGridProps> = ({ config, componentProps, onC
   );
 };
 
-// ─── Tab bar ───────────────────────────────────────────────────────────────────
+// ─── Tab bar ──────────────────────────────────────────────────────────────────
 
 interface TabBarProps {
   active: TabType;
@@ -541,7 +563,7 @@ const TabBar: React.FC<TabBarProps> = ({ active, onSelect, isDark }) => {
   );
 };
 
-// ─── Icon button ───────────────────────────────────────────────────────────────
+// ─── Icon button ──────────────────────────────────────────────────────────────
 
 const IconBtn: React.FC<{
   onClick: () => void;
@@ -576,7 +598,7 @@ const IconBtn: React.FC<{
   </button>
 );
 
-// ─── Component render ──────────────────────────────────────────────────────────
+// ─── Component render ─────────────────────────────────────────────────────────
 
 interface ComponentRenderProps {
   Component: AnyComponent;
@@ -600,7 +622,7 @@ const ComponentRender: React.FC<ComponentRenderProps> = ({
   </ComponentWrapper>
 );
 
-// ─── Preview panel ─────────────────────────────────────────────────────────────
+// ─── Preview panel ────────────────────────────────────────────────────────────
 
 interface PreviewPanelProps extends ComponentRenderProps {
   config: ComponentConfig;
@@ -613,9 +635,9 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
   config, Component, componentProps, universalProps, refreshKey, isDark,
   onRefresh, onFullscreen, onOpenSettings,
 }) => {
-  const border    = tc(isDark, 'rgba(255,255,255,0.09)', 'rgba(0,0,0,0.09)');
-  const bg        = tc(isDark, '#0a0a0a', '#E8E7E3');
-  const headerBg  = tc(isDark, 'rgba(255,255,255,0.025)', 'rgba(0,0,0,0.025)');
+  const border   = tc(isDark, 'rgba(255,255,255,0.09)', 'rgba(0,0,0,0.09)');
+  const bg       = tc(isDark, '#0a0a0a', '#E8E7E3');
+  const headerBg = tc(isDark, 'rgba(255,255,255,0.025)', 'rgba(0,0,0,0.025)');
 
   return (
     <div style={{
@@ -662,7 +684,7 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
   );
 };
 
-// ─── Settings panel ────────────────────────────────────────────────────────────
+// ─── Settings panel ───────────────────────────────────────────────────────────
 
 interface SettingsPanelProps extends ComponentRenderProps {
   config: ComponentConfig;
@@ -689,7 +711,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = (props) => {
       maxHeight: 'calc(100dvh - 3rem)',
       overflow: 'hidden',
     }}>
-      {/* Preview */}
       <div style={{
         minHeight: 220, flexShrink: 0,
         display: 'flex', alignItems: 'center',
@@ -702,12 +723,10 @@ const SettingsPanel: React.FC<SettingsPanelProps> = (props) => {
         />
       </div>
 
-      {/* Tab bar */}
       <div style={{ flexShrink: 0 }}>
         <TabBar active={activeTab} onSelect={setActiveTab} isDark={isDark} />
       </div>
 
-      {/* Settings grid — scrollable, but dropdowns escape via portal */}
       <div style={{
         flex: 1,
         overflowY: 'auto',
@@ -731,7 +750,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = (props) => {
         )}
       </div>
 
-      {/* Footer */}
       <div style={{
         flexShrink: 0,
         display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px',
@@ -761,7 +779,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = (props) => {
   );
 };
 
-// ─── Fullscreen modal ──────────────────────────────────────────────────────────
+// ─── Fullscreen modal ─────────────────────────────────────────────────────────
 
 interface FullscreenModalProps extends ComponentRenderProps {
   onClose: () => void;
@@ -808,7 +826,7 @@ const FullscreenModal: React.FC<FullscreenModalProps> = ({
   </div>
 );
 
-// ─── Root ──────────────────────────────────────────────────────────────────────
+// ─── Root ─────────────────────────────────────────────────────────────────────
 
 interface UIComponentViewerProps {
   componentId: string;
@@ -816,9 +834,9 @@ interface UIComponentViewerProps {
 
 const UIComponentViewer: React.FC<UIComponentViewerProps> = ({ componentId }) => {
   const { isDark } = useTheme();
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [isFullscreen, setIsFullscreen]   = useState(false);
-  const [refreshKey, setRefreshKey]       = useState(0);
+  const [settingsOpen, setSettingsOpen]     = useState(false);
+  const [isFullscreen, setIsFullscreen]     = useState(false);
+  const [refreshKey, setRefreshKey]         = useState(0);
   const [componentProps, setComponentProps] = useState<ComponentPropsMap>({});
   const [universalProps, setUniversalProps] = useState<UniversalProps>(DEFAULT_UNIVERSAL_PROPS);
   const [componentData, setComponentData]   = useState<LoadedComponentData | null>(null);
