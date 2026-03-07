@@ -2,18 +2,17 @@ import React, { useEffect, useRef } from 'react';
 
 interface DotWaveBackgroundProps {
   isDark: boolean;
-  
 }
 
 // Color presets matching the reference shader
 const COLOR_PRESETS = {
   dark: {
-    shadow:    [0.04,  0.04,  0.04 ] as const, // neutral dark, no blue tint
-    highlight: [0.12,  0.12,  0.12 ] as const, // neutral white dots
+    shadow:    [0.04,  0.04,  0.04 ] as const,
+    highlight: [0.12,  0.12,  0.12 ] as const,
   },
   light: {
-    shadow:    [0.91,  0.906, 0.898] as const, // #E8E7E3 base
-    highlight: [0.82,  0.816, 0.808] as const, // slightly darker dots
+    shadow:    [0.91,  0.906, 0.898] as const,
+    highlight: [0.82,  0.816, 0.808] as const,
   },
 } as const;
 
@@ -26,7 +25,6 @@ const VERTEX_SHADER = `
   }
 `;
 
-// Exact fragment shader from the reference — grid dot wave
 const FRAGMENT_SHADER = `
   precision highp float;
 
@@ -114,7 +112,6 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
   const rafRef    = useRef<number>(0);
   const themeRef  = useRef(isDark);
 
-  // Update theme ref so the RAF loop always reads the latest value
   useEffect(() => {
     themeRef.current = isDark;
   }, [isDark]);
@@ -126,7 +123,6 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
     const gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: false });
     if (!gl) return;
 
-    // ── compile shaders ──────────────────────────────────────────────────────
     const vert = createShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER);
     const frag = createShader(gl, gl.FRAGMENT_SHADER, FRAGMENT_SHADER);
     if (!vert || !frag) return;
@@ -134,7 +130,6 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
     const program = createProgram(gl, vert, frag);
     if (!program) return;
 
-    // ── fullscreen quad ──────────────────────────────────────────────────────
     const positions = new Float32Array([-1, -1,  1, -1, -1,  1,  1,  1]);
     const buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
@@ -144,35 +139,31 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
     gl.enableVertexAttribArray(aPos);
     gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
-    // ── uniform locations ────────────────────────────────────────────────────
     const uTime       = gl.getUniformLocation(program, 'u_time');
     const uResolution = gl.getUniformLocation(program, 'u_resolution');
     const uShadow     = gl.getUniformLocation(program, 'u_colorShadow');
     const uHighlight  = gl.getUniformLocation(program, 'u_colorHighlight');
 
-    // ── resize ───────────────────────────────────────────────────────────────
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
-      const w   = canvas.offsetWidth;
-      const h   = canvas.offsetHeight;
-      canvas.width  = w * dpr;
-      canvas.height = h * dpr;
+      canvas.width  = canvas.offsetWidth  * dpr;
+      canvas.height = canvas.offsetHeight * dpr;
       gl.viewport(0, 0, canvas.width, canvas.height);
     };
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
 
-    // ── render loop ──────────────────────────────────────────────────────────
     const startTime = performance.now();
 
     const render = () => {
-      const t      = (performance.now() - startTime) / 1000 * 0.5; // same scale as ref
+      const t      = (performance.now() - startTime) / 1000 * 0.5;
       const preset = COLOR_PRESETS[themeRef.current ? 'dark' : 'light'];
 
       gl.useProgram(program);
       gl.uniform1f(uTime, t);
-      gl.uniform3f(uResolution, canvas.width, canvas.height, 1.0);
+      // FIX S7748: 1.0 → 1 (no unnecessary trailing zero)
+      gl.uniform3f(uResolution, canvas.width, canvas.height, 1);
       gl.uniform3f(uShadow,    ...preset.shadow);
       gl.uniform3f(uHighlight, ...preset.highlight);
 
@@ -201,8 +192,16 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
   return (
     <canvas
       ref={canvasRef}
-      
-      style={{ position: "absolute", inset: 0, top: 0, left: 0, width: "100%", height: "100%", display: "block", pointerEvents: "none" }}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        display: 'block',
+        pointerEvents: 'none',
+      }}
     />
   );
 };
