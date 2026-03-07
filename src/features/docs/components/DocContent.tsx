@@ -273,6 +273,36 @@ const DocHero: React.FC<{
   );
 };
 
+// ─── Layout helpers ───────────────────────────────────────────────────────────
+
+function getMainMargins(isDesktop: boolean, hasToc: boolean, tocWidth: string) {
+  return {
+    marginLeft:   isDesktop ? '20rem' : '0',
+    marginRight:  hasToc && isDesktop ? tocWidth : '0',
+    marginBottom: isDesktop ? '0' : '3.5rem',
+  };
+}
+
+const DocLoadingScreen: React.FC<{
+  isDark: boolean;
+  isDesktop: boolean;
+  tocWidth: string;
+  hasToc: boolean;
+}> = ({ isDark, isDesktop, tocWidth, hasToc }) => (
+  <div style={{ minHeight: '100vh' }}>
+    <TopNavbar />
+    <Sidebar />
+    <main
+      className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}
+      style={getMainMargins(isDesktop, hasToc, tocWidth)}
+    >
+      <p className={`text-lg ${isDark ? 'text-white/60' : 'text-black/60'}`}>
+        Загрузка документа...
+      </p>
+    </main>
+  </div>
+);
+
 // ─── DocContentMain ───────────────────────────────────────────────────────────
 
 const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
@@ -292,10 +322,10 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
     });
   }, [initialDoc.slug, initialDoc.content, loadDocument]);
 
-  const toc          = useTableOfContents(doc);
+  const toc            = useTableOfContents(doc);
   const scrollProgress = useScrollProgress();
-  const activeId     = useActiveHeading(toc);
-  const isDesktop    = useIsDesktop();
+  const activeId       = useActiveHeading(toc);
+  const isDesktop      = useIsDesktop();
 
   const handleTableClick = (tableHtml: string) => setFullscreenTableHtml(tableHtml);
 
@@ -321,28 +351,12 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
   );
 
   const TOC_WIDTH = toc.length > 0 ? '18rem' : '0';
+  const hasToc    = toc.length > 0;
 
   const handleScrollTop = () => globalThis.window.scrollTo({ top: 0, behavior: 'smooth' });
 
   if (loading) {
-    return (
-      <div style={{ minHeight: '100vh' }}>
-        <TopNavbar />
-        <Sidebar />
-        <main
-          className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}
-          style={{
-            marginLeft:   isDesktop ? '20rem' : '0',
-            marginRight:  toc.length > 0 && isDesktop ? TOC_WIDTH : '0',
-            marginBottom: isDesktop ? '0' : '3.5rem',
-          }}
-        >
-          <p className={`text-lg ${isDark ? 'text-white/60' : 'text-black/60'}`}>
-            Загрузка документа...
-          </p>
-        </main>
-      </div>
-    );
+    return <DocLoadingScreen isDark={isDark} isDesktop={isDesktop} tocWidth={TOC_WIDTH} hasToc={hasToc} />;
   }
 
   return (
@@ -422,12 +436,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
 
       <main
         className={`min-h-screen ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}
-        style={{
-          marginLeft:   isDesktop ? '20rem' : '0',
-          marginRight:  toc.length > 0 && isDesktop ? TOC_WIDTH : '0',
-          marginBottom: isDesktop ? '0' : '3.5rem',
-          transition:   'margin-left 0.3s ease',
-        }}
+        style={{ ...getMainMargins(isDesktop, hasToc, TOC_WIDTH), transition: 'margin-left 0.3s ease' }}
       >
         <DocHero doc={doc} isDark={isDark} readTime={readTime} markdownContent={doc.content} />
 
