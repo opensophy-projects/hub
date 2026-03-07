@@ -58,15 +58,23 @@ const Card: React.FC<CardProps> = ({ title, icon, color, children, isDark = fals
   const accentColor = color || (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)');
   const hasAccent = !!color;
 
-  // FIX S3358: extract nested ternary for iconWrap background into a named variable
-  const iconWrapBg = hasAccent
-    ? `${accentColor}22`
-    : isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)';
+  let iconWrapBg: string;
+  if (hasAccent) {
+    iconWrapBg = `${accentColor}22`;
+  } else if (isDark) {
+    iconWrapBg = 'rgba(255,255,255,0.07)';
+  } else {
+    iconWrapBg = 'rgba(0,0,0,0.05)';
+  }
 
-  // FIX S3358: extract nested ternary for icon color into a named variable
-  const iconColor = hasAccent
-    ? accentColor
-    : isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.55)';
+  let iconColor: string;
+  if (hasAccent) {
+    iconColor = accentColor;
+  } else if (isDark) {
+    iconColor = 'rgba(255,255,255,0.7)';
+  } else {
+    iconColor = 'rgba(0,0,0,0.55)';
+  }
 
   const cardStyle: React.CSSProperties = {
     position: 'relative',
