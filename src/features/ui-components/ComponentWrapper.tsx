@@ -71,7 +71,7 @@ export const ComponentWrapper: React.FC<ComponentWrapperProps> = ({
       saturate !== 1 && `saturate(${saturate})`,
     ].filter(Boolean);
 
-    // Fix S3533: use const — colorStyle is never reassigned, only properties are set
+    
     const colorStyle: CSSProperties = {};
     if (colorMode === 'solid' && color) {
       colorStyle.color = color;
