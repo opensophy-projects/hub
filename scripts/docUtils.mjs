@@ -4,32 +4,17 @@ import { marked } from 'marked';
 
 marked.setOptions({ breaks: true, gfm: true });
 
-// ─── Slug / Name parsers ──────────────────────────────────────────────────────
+// ─── Entry name parser ────────────────────────────────────────────────────────
 
-/**
- * Парсит имя папки/файла по новой схеме:
- *   [N][icon]Title{slug}  — Nav Popover
- *   [C][icon]Title{slug}  — Категория
- *   [A][icon]Title{slug}  — Статья (md-файл без расширения)
- *
- * {slug} опционален — если не указан, генерируется из Title через slugify.
- * [icon] опционален.
- *
- * Возвращает: { type: 'N'|'C'|'A'|null, icon: string|null, title: string, slug: string }
- */
 export function parseEntryName(name) {
-  // Определяем тип: N, C или A
   const typeMatch = name.match(/^\[([NCA])\]/);
   const entryType = typeMatch ? typeMatch[1] : null;
   const rest      = typeMatch ? name.slice(typeMatch[0].length) : name;
 
-  // Извлекаем иконку [icon]
   const iconMatch = rest.match(/^\[([^\]]+)\]/);
   const icon      = iconMatch ? iconMatch[1].trim() : null;
   const afterIcon = iconMatch ? rest.slice(iconMatch[0].length) : rest;
 
-  // Извлекаем slug {slug}
-  // [^{]* вместо .*? — исключает backtracking (ReDoS)
   const slugMatch = afterIcon.match(/^([^{]*)\{([^}]+)\}$/);
   let title, slug;
 
@@ -44,30 +29,26 @@ export function parseEntryName(name) {
   return { type: entryType, icon, title, slug };
 }
 
-/** Обратная совместимость — парсер navPopover (поддерживает и старый, и новый форматы) */
+// ─── Nav popover / category name parsers ─────────────────────────────────────
+
 export function parseNavPopoverFolder(folderName) {
-  // Новая схема: [N][icon]Title{slug}
   const entry = parseEntryName(folderName);
   if (entry.type === 'N') {
     return { navIcon: entry.icon ?? '', navTitle: entry.title, navSlug: entry.slug };
   }
 
-  // Старая схема: [icon]Title{slug}
   const match = folderName.match(/^\[([^\]]+)\]([^{]+)\{([^}]+)\}$/);
   if (match) return { navIcon: match[1].trim(), navTitle: match[2].trim(), navSlug: match[3].trim() };
 
   return null;
 }
 
-/** Парсит имя папки-категории (поддерживает [C] и старые форматы) */
 export function parseCategoryName(folderName) {
-  // Новая схема: [C][icon]Title{slug}
   const entry = parseEntryName(folderName);
   if (entry.type === 'C') {
     return { title: entry.title, slug: entry.slug, icon: entry.icon };
   }
 
-  // Старые схемы (обратная совместимость)
   const matchWithSlug = folderName.match(/^\[([^\]]+)\]([^{]+)\{([^}]+)\}$/);
   if (matchWithSlug) return { title: matchWithSlug[2].trim(), slug: matchWithSlug[3].trim(), icon: matchWithSlug[1].trim() };
 
@@ -80,6 +61,8 @@ export function parseCategoryName(folderName) {
   return { title: folderName, slug: slugify(folderName), icon: null };
 }
 
+// ─── Slugify ──────────────────────────────────────────────────────────────────
+
 const TRANSLIT_MAP = {
   а:'a',  б:'b',  в:'v',  г:'g',  д:'d',  е:'e',  ё:'yo', ж:'zh', з:'z',  и:'i',
   й:'y',  к:'k',  л:'l',  м:'m',  н:'n',  о:'o',  п:'p',  р:'r',  с:'s',  т:'t',
@@ -90,7 +73,7 @@ const TRANSLIT_MAP = {
 export function slugify(str) {
   return str
     .toLowerCase()
-    .replaceAll(/[а-яёъь]/g, (ch) => TRANSLIT_MAP[ch] ?? ch)
+    .replaceAll(/[а-яё]/g, (ch) => TRANSLIT_MAP[ch] ?? ch)
     .replaceAll(/[^\w\s-]/g, '')
     .replaceAll(/\s+/g, '-')
     .replaceAll(/-+/g, '-')
@@ -121,8 +104,6 @@ export function scanDocsDirectoryRecursive(baseDir) {
 // ─── Front matter ─────────────────────────────────────────────────────────────
 
 export function extractFrontMatter(content) {
-  // Ищем закрывающий --- без [\s\S]*? (ReDoS).
-  // Проверяем что контент начинается с ---, затем ищем следующую строку ---.
   if (!content.startsWith('---\n')) return { metadata: {}, content };
   const closeIndex = content.indexOf('\n---\n', 4);
   if (closeIndex === -1) return { metadata: {}, content };
@@ -200,7 +181,6 @@ function collectBlockBody(lines, startAfterIndex) {
 function parseInnerBlocks(bodyStr, innerTag) {
   const lines   = bodyStr.split('\n');
   const results = [];
-  // (?:\s+([^\s].*?))? → (?:\s+(\S[^]*))?  — захватываем всё после пробела без backtracking
   const openRe  = new RegExp(String.raw`^:::${innerTag}(?:\[([^\]]*)\])?(?:\s+(\S.*))?\s*$`);
   let i = 0;
 
@@ -330,10 +310,9 @@ function preprocessCustomBlocks(content, codeBlocks) {
 
 export function preprocessAlerts(content) {
   const codeBlocks = [];
+  let withoutCode  = '';
+  let searchFrom   = 0;
 
-  // Заменяем code blocks без regex [\s\S]*? (ReDoS) — используем indexOf
-  let withoutCode = '';
-  let searchFrom  = 0;
   while (true) {
     const open = content.indexOf('```', searchFrom);
     if (open === -1) { withoutCode += content.slice(searchFrom); break; }
@@ -345,16 +324,14 @@ export function preprocessAlerts(content) {
     searchFrom = close + 3;
   }
 
-  // ALERT_RE: ([\s\S]*?) заменяем — ищем ::: через indexOf построчно
-  const ALERT_TYPES = new Set(['note', 'tip', 'important', 'warning', 'caution']);
-  const alertLines  = withoutCode.split('\n');
-  const alertOutput = [];
+  const ALERT_TYPES     = new Set(['note', 'tip', 'important', 'warning', 'caution']);
+  const ALERT_PREFIX_RE = /^:::([a-z]+)$/;
+  const alertLines      = withoutCode.split('\n');
+  const alertOutput     = [];
   let j = 0;
 
   while (j < alertLines.length) {
-    const line        = alertLines[j];
-    const alertPrefix = line.match(/^:::([a-z]+)$/);
-    const alertType   = alertPrefix?.[1];
+    const alertType = ALERT_PREFIX_RE.exec(alertLines[j])?.[1];
 
     if (alertType && ALERT_TYPES.has(alertType)) {
       const bodyLines = [];
@@ -366,16 +343,14 @@ export function preprocessAlerts(content) {
       alertOutput.push(
         `<div class="custom-alert" data-alert-type="${alertType}">\n${marked.parse(bodyLines.join('\n').trim())}\n</div>`
       );
-      j++; // пропускаем закрывающий :::
+      j++;
     } else {
-      alertOutput.push(line);
+      alertOutput.push(alertLines[j]);
       j++;
     }
   }
 
-  const withAlerts = alertOutput.join('\n');
-
-  return preprocessCustomBlocks(withAlerts, codeBlocks)
+  return preprocessCustomBlocks(alertOutput.join('\n'), codeBlocks)
     .replaceAll(/___CODE_BLOCK_(\d+)___/g, (_match, index) => codeBlocks[Number.parseInt(index, 10)]);
 }
 
@@ -397,7 +372,7 @@ export function getFirstParagraph(content) {
   return '';
 }
 
-// ─── Doc info / builder ───────────────────────────────────────────────────────
+// ─── Doc info ─────────────────────────────────────────────────────────────────
 
 export function getDocInfo(fullPath, docsDir) {
   const relativePath = path.relative(docsDir, fullPath);
@@ -405,15 +380,13 @@ export function getDocInfo(fullPath, docsDir) {
   const fileName     = path.basename(fullPath, '.md');
   const dirs         = parts.slice(0, -1);
 
-  // Парсим имя файла — может быть [A][icon]Title{slug}.md или просто name.md
   const fileEntry = parseEntryName(fileName);
   const fileSlug  = fileEntry.slug;
   const fileIcon  = fileEntry.icon;
 
   if (dirs.length === 0) {
-    const isWelcome = fileName === 'welcome';
     return {
-      slug:         isWelcome ? '' : fileSlug,
+      slug:         fileName === 'welcome' ? '' : fileSlug,
       navSlug:      '',
       navTitle:     '',
       navIcon:      '',
@@ -423,7 +396,6 @@ export function getDocInfo(fullPath, docsDir) {
     };
   }
 
-  // Определяем первую папку — navPopover?
   const firstEntry   = parseEntryName(dirs[0]);
   const oldNavDef    = parseNavPopoverFolder(dirs[0]);
   const isNavPopover = firstEntry.type === 'N' || oldNavDef !== null;
@@ -433,8 +405,7 @@ export function getDocInfo(fullPath, docsDir) {
       ? { navIcon: firstEntry.icon ?? '', navTitle: firstEntry.title, navSlug: firstEntry.slug }
       : oldNavDef;
 
-    const subDirs      = dirs.slice(1);
-    const categoryPath = subDirs.map((d) => {
+    const categoryPath = dirs.slice(1).map((d) => {
       const info = parseCategoryName(d);
       return { slug: info.slug, title: info.title, icon: info.icon };
     });
@@ -453,7 +424,6 @@ export function getDocInfo(fullPath, docsDir) {
     };
   }
 
-  // Без navPopover
   const categoryPath = dirs.map((d) => {
     const info = parseCategoryName(d);
     return { slug: info.slug, title: info.title, icon: info.icon };
@@ -473,21 +443,19 @@ export function getDocInfo(fullPath, docsDir) {
   };
 }
 
-export function buildDocFromPath(mdPath, docsDir) {
-  const rawContent              = fs.readFileSync(mdPath, 'utf-8');
-  const { metadata, content: cleanContent } = extractFrontMatter(rawContent);
-  const processed               = processImageSyntax(cleanContent);
-  const htmlContent             = marked(preprocessAlerts(processed));
-  const info                    = getDocInfo(mdPath, docsDir);
-  const fileName                = path.basename(mdPath, '.md');
-  const fileEntry               = parseEntryName(fileName);
+// ─── Doc builder ──────────────────────────────────────────────────────────────
 
-  // title:    frontmatter > title из [A]Title в имени файла > имя файла
-  const finalTitle   = metadata.title?.trim()   || fileEntry.title || fileName;
-  // typename: frontmatter > последняя категория из пути
+export function buildDocFromPath(mdPath, docsDir) {
+  const rawContent                          = fs.readFileSync(mdPath, 'utf-8');
+  const { metadata, content: cleanContent } = extractFrontMatter(rawContent);
+  const processed                           = processImageSyntax(cleanContent);
+  const htmlContent                         = marked(preprocessAlerts(processed));
+  const info                                = getDocInfo(mdPath, docsDir);
+  const fileEntry                           = parseEntryName(path.basename(mdPath, '.md'));
+
+  const finalTitle    = metadata.title?.trim()   || fileEntry.title || path.basename(mdPath, '.md');
   const finalTypename = metadata.typename?.trim() || info.typename;
-  // icon:     frontmatter > иконка из [A][icon]... в имени файла
-  const finalIcon    = metadata.icon?.trim()    || info.fileIcon || '';
+  const finalIcon     = metadata.icon?.trim()    || info.fileIcon || '';
 
   return {
     id:           info.slug || 'welcome',
