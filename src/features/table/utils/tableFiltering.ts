@@ -8,7 +8,7 @@ export function filterAndSortRows(
     const cellElements = Array.from(row.querySelectorAll('td'));
     return {
       element: row,
-      // ИСПРАВЛЕНО: используем innerHTML для сохранения форматирования
+      
       cells: cellElements.map((td) => td.innerHTML?.trim() || ''),
       alignments: cellElements.map((td) => {
         const alignAttr = td.getAttribute('align');
@@ -47,7 +47,7 @@ function applyFilters(
 
   return rows.filter((row) => {
     for (const [colIndex, values] of filters) {
-      // ИСПРАВЛЕНО: для фильтрации убираем HTML теги, сравниваем только текст
+      
       const cellHTML = row.cells[colIndex] ?? '';
       const cellText = stripHtmlTags(cellHTML);
       if (values.size > 0 && !values.has(cellText)) {
@@ -62,7 +62,7 @@ function applySearch(rows: ParsedRow[], searchQuery: string): ParsedRow[] {
   if (!searchQuery) return rows;
   const query = searchQuery.toLowerCase();
   return rows.filter((row) =>
-    // ИСПРАВЛЕНО: для поиска убираем HTML теги, ищем только по тексту
+    
     row.cells.some((cellHTML) => stripHtmlTags(cellHTML).toLowerCase().includes(query))
   );
 }
@@ -75,7 +75,7 @@ function applySort(
   if (sortColumn === null || sortDirection === 'none') return rows;
 
   return [...rows].sort((a, b) => {
-    // ИСПРАВЛЕНО: для сортировки убираем HTML теги, сортируем по тексту
+    
     const aVal = stripHtmlTags(a.cells[sortColumn] ?? '');
     const bVal = stripHtmlTags(b.cells[sortColumn] ?? '');
     const cmp = aVal.localeCompare(bVal, 'ru');
