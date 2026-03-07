@@ -29,7 +29,8 @@ export function parseEntryName(name) {
   const afterIcon = iconMatch ? rest.slice(iconMatch[0].length) : rest;
 
   // Извлекаем slug {slug}
-  const slugMatch = afterIcon.match(/^(.*?)\{([^}]+)\}$/);
+  // [^{]* вместо .*? — исключает backtracking (ReDoS)
+  const slugMatch = afterIcon.match(/^([^{]*)\{([^}]+)\}$/);
   let title, slug;
 
   if (slugMatch) {
@@ -70,7 +71,7 @@ export function parseCategoryName(folderName) {
   const matchWithSlug = folderName.match(/^\[([^\]]+)\]([^{]+)\{([^}]+)\}$/);
   if (matchWithSlug) return { title: matchWithSlug[2].trim(), slug: matchWithSlug[3].trim(), icon: matchWithSlug[1].trim() };
 
-  const matchWithIcon = folderName.match(/^\[([^\]]+)\](.+)$/);
+  const matchWithIcon = folderName.match(/^\[([^\]]+)\]([^\n]+)$/);
   if (matchWithIcon) return { title: matchWithIcon[2].trim(), slug: slugify(matchWithIcon[2].trim()), icon: matchWithIcon[1].trim() };
 
   const matchSlugOnly = folderName.match(/^([^{]+)\{([^}]+)\}$/);
@@ -120,11 +121,17 @@ export function scanDocsDirectoryRecursive(baseDir) {
 // ─── Front matter ─────────────────────────────────────────────────────────────
 
 export function extractFrontMatter(content) {
-  const match = content.match(/^---\n([\s\S]*?)\n---\n/);
-  if (!match) return { metadata: {}, content };
+  // Ищем закрывающий --- без [\s\S]*? (ReDoS).
+  // Проверяем что контент начинается с ---, затем ищем следующую строку ---.
+  if (!content.startsWith('---\n')) return { metadata: {}, content };
+  const closeIndex = content.indexOf('\n---\n', 4);
+  if (closeIndex === -1) return { metadata: {}, content };
+
+  const rawBlock = content.slice(4, closeIndex);
+  const rest     = content.slice(closeIndex + 5);
 
   const metadata = {};
-  for (const line of match[1].split('\n')) {
+  for (const line of rawBlock.split('\n')) {
     const colonIndex = line.indexOf(':');
     if (colonIndex > 0) {
       const key   = line.slice(0, colonIndex).trim();
@@ -133,7 +140,7 @@ export function extractFrontMatter(content) {
     }
   }
 
-  return { metadata, content: content.replace(match[0], '') };
+  return { metadata, content: rest };
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -193,7 +200,8 @@ function collectBlockBody(lines, startAfterIndex) {
 function parseInnerBlocks(bodyStr, innerTag) {
   const lines   = bodyStr.split('\n');
   const results = [];
-  const openRe  = new RegExp(String.raw`^:::${innerTag}(?:\[([^\]]*)\])?(?:\s+(.+?))?\s*$`);
+  // (?:\s+([^\s].*?))? → (?:\s+(\S[^]*))?  — захватываем всё после пробела без backtracking
+  const openRe  = new RegExp(String.raw`^:::${innerTag}(?:\[([^\]]*)\])?(?:\s+(\S.*))?\s*$`);
   let i = 0;
 
   while (i < lines.length) {
@@ -223,11 +231,11 @@ function buildCardHtml(params, body, codeBlocks) {
   const color = params.color ? escapeAttr(params.color) : '';
   let remaining = body;
 
-  const titleMatch = remaining.match(/^\[title\](.+)$/m);
+  const titleMatch = remaining.match(/^\[title\]([^\n]+)$/m);
   const title = titleMatch ? escapeAttr(titleMatch[1].trim()) : '';
   if (titleMatch) remaining = remaining.replace(titleMatch[0], '');
 
-  const iconMatch = remaining.match(/^\[icon\](.+)$/m);
+  const iconMatch = remaining.match(/^\[icon\]([^\n]+)$/m);
   const icon = iconMatch ? escapeAttr(iconMatch[1].trim()) : '';
   if (iconMatch) remaining = remaining.replace(iconMatch[0], '');
 
@@ -321,18 +329,51 @@ function preprocessCustomBlocks(content, codeBlocks) {
 // ─── Alert preprocessor ───────────────────────────────────────────────────────
 
 export function preprocessAlerts(content) {
-  const codeBlocks    = [];
-  const CODE_BLOCK_RE = /```[\s\S]*?```/g;
-  const ALERT_RE      = /^:::(note|tip|important|warning|caution)\n([\s\S]*?)^:::$/gm;
+  const codeBlocks = [];
 
-  const withoutCode = content.replaceAll(CODE_BLOCK_RE, (match) => {
-    codeBlocks.push(match);
-    return `___CODE_BLOCK_${codeBlocks.length - 1}___`;
-  });
+  // Заменяем code blocks без regex [\s\S]*? (ReDoS) — используем indexOf
+  let withoutCode = '';
+  let searchFrom  = 0;
+  while (true) {
+    const open = content.indexOf('```', searchFrom);
+    if (open === -1) { withoutCode += content.slice(searchFrom); break; }
+    const close = content.indexOf('```', open + 3);
+    if (close === -1) { withoutCode += content.slice(searchFrom); break; }
+    withoutCode += content.slice(searchFrom, open);
+    codeBlocks.push(content.slice(open, close + 3));
+    withoutCode += `___CODE_BLOCK_${codeBlocks.length - 1}___`;
+    searchFrom = close + 3;
+  }
 
-  const withAlerts = withoutCode.replaceAll(ALERT_RE, (_match, type, alertContent) =>
-    `<div class="custom-alert" data-alert-type="${type}">\n${marked.parse(alertContent.trim())}\n</div>`
-  );
+  // ALERT_RE: ([\s\S]*?) заменяем — ищем ::: через indexOf построчно
+  const ALERT_TYPES = new Set(['note', 'tip', 'important', 'warning', 'caution']);
+  const alertLines  = withoutCode.split('\n');
+  const alertOutput = [];
+  let j = 0;
+
+  while (j < alertLines.length) {
+    const line        = alertLines[j];
+    const alertPrefix = line.match(/^:::([a-z]+)$/);
+    const alertType   = alertPrefix?.[1];
+
+    if (alertType && ALERT_TYPES.has(alertType)) {
+      const bodyLines = [];
+      j++;
+      while (j < alertLines.length && alertLines[j] !== ':::') {
+        bodyLines.push(alertLines[j]);
+        j++;
+      }
+      alertOutput.push(
+        `<div class="custom-alert" data-alert-type="${alertType}">\n${marked.parse(bodyLines.join('\n').trim())}\n</div>`
+      );
+      j++; // пропускаем закрывающий :::
+    } else {
+      alertOutput.push(line);
+      j++;
+    }
+  }
+
+  const withAlerts = alertOutput.join('\n');
 
   return preprocessCustomBlocks(withAlerts, codeBlocks)
     .replaceAll(/___CODE_BLOCK_(\d+)___/g, (_match, index) => codeBlocks[Number.parseInt(index, 10)]);
