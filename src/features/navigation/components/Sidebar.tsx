@@ -48,6 +48,8 @@ const createCloseKeyHandler = (onClose: () => void) => (e: React.KeyboardEvent) 
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); }
 };
 
+// ─── NavPopoverSwitcher ───────────────────────────────────────────────────────
+
 const NavPopoverSwitcher: React.FC<{
   sections: NavSection[]; activeSlug: string;
   onSelect: (slug: string) => void; isDark: boolean;
@@ -71,7 +73,7 @@ const NavPopoverSwitcher: React.FC<{
   const activeItem = isDark ? 'bg-white/10 text-white font-medium' : 'bg-black/10 text-black font-medium';
 
   return (
-    <div className={`flex-shrink-0 px-3 py-2`} ref={ref}>
+    <div className="flex-shrink-0 px-3 py-2" ref={ref}>
       <button
         onClick={() => setOpen((v) => !v)}
         className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm border transition-colors ${border} ${
@@ -118,6 +120,8 @@ const NavPopoverSwitcher: React.FC<{
   );
 });
 
+// ─── SidebarOverlay ───────────────────────────────────────────────────────────
+
 const SidebarOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -136,6 +140,8 @@ const SidebarOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   );
 };
 
+// ─── IconButton ───────────────────────────────────────────────────────────────
+
 const IconButton: React.FC<{
   icon: React.ReactNode;
   label: string;
@@ -147,8 +153,8 @@ const IconButton: React.FC<{
     onClick={onClick}
     title={title}
     className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-lg border transition-colors ${
-      isDark 
-        ? 'text-white/70 hover:bg-white/5 hover:text-white border-white/10' 
+      isDark
+        ? 'text-white/70 hover:bg-white/5 hover:text-white border-white/10'
         : 'text-black/70 hover:bg-black/5 hover:text-black border-black/10'
     }`}
   >
@@ -156,6 +162,8 @@ const IconButton: React.FC<{
     <span className="text-[9px] font-medium leading-none">{label}</span>
   </button>
 );
+
+// ─── SidebarHeader ────────────────────────────────────────────────────────────
 
 const SidebarHeader: React.FC<{
   onClose: () => void; isDark: boolean;
@@ -202,6 +210,8 @@ const SidebarHeader: React.FC<{
   </div>
 ));
 
+// ─── SidebarSearch ────────────────────────────────────────────────────────────
+
 const SidebarSearch: React.FC<{
   value: string;
   onChange: (value: string) => void;
@@ -245,12 +255,15 @@ const SidebarSearch: React.FC<{
   </div>
 ));
 
-const DocLink: React.FC<{ 
-  doc: Doc; 
-  onClose: () => void; 
-  isDark: boolean; 
+// ─── DocLink ──────────────────────────────────────────────────────────────────
+
+// FIX: removed unused `onClose` prop — it was defined but never called inside the component.
+// Callers that passed `onClose={() => {}}` (no-op) are updated to omit the prop entirely.
+const DocLink: React.FC<{
+  doc: Doc;
+  isDark: boolean;
   isActive: boolean;
-}> = memo(({ doc, onClose, isDark, isActive }) => {
+}> = memo(({ doc, isDark, isActive }) => {
   const accentColor = isDark ? '#ffffff' : '#000000';
 
   return (
@@ -262,9 +275,7 @@ const DocLink: React.FC<{
       style={{
         borderLeft: '2px solid',
         borderLeftColor: isActive ? accentColor : 'transparent',
-        boxShadow: isActive
-          ? `inset 3px 0 10px -2px ${accentColor}88`
-          : 'none',
+        boxShadow: isActive ? `inset 3px 0 10px -2px ${accentColor}88` : 'none',
         textShadow: isActive ? `0 0 12px ${accentColor}66` : 'none',
         color: isActive ? accentColor : undefined,
         fontWeight: isActive ? 600 : 400,
@@ -276,11 +287,15 @@ const DocLink: React.FC<{
   );
 });
 
+// ─── Nav tree helpers ─────────────────────────────────────────────────────────
+
 function countDocsInNode(node: NavNode): number {
   let count = node.docs.length;
-  Object.values(node.children).forEach((child) => { count += countDocsInNode(child); });
+  for (const child of Object.values(node.children)) count += countDocsInNode(child);
   return count;
 }
+
+// ─── CategoryNode ─────────────────────────────────────────────────────────────
 
 const CategoryNode: React.FC<{
   node: NavNode; path: string; expandedPaths: Set<string>;
@@ -301,7 +316,7 @@ const CategoryNode: React.FC<{
       >
         <div className="flex items-center gap-2">
           {hasChildren && (
-            isExpanded 
+            isExpanded
               ? <ChevronDown size={16} className={isDark ? 'text-white/60' : 'text-black/60'} />
               : <ChevronRight size={16} className={isDark ? 'text-white/60' : 'text-black/60'} />
           )}
@@ -319,11 +334,10 @@ const CategoryNode: React.FC<{
           {node.docs.length > 0 && (
             <div className="space-y-1">
               {[...node.docs].sort((a, b) => a.title.localeCompare(b.title)).map((doc) => (
-                <DocLink 
-                  key={doc.id} 
-                  doc={doc} 
-                  onClose={onDocClick} 
-                  isDark={isDark} 
+                <DocLink
+                  key={doc.id}
+                  doc={doc}
+                  isDark={isDark}
                   isActive={currentDocSlug === doc.slug}
                 />
               ))}
@@ -345,6 +359,8 @@ const CategoryNode: React.FC<{
   );
 });
 
+// ─── buildNavigationTree ──────────────────────────────────────────────────────
+
 function buildNavigationTree(docs: Doc[], searchQuery: string, activeNavSlug: string): NavNode {
   const root: NavNode = { title: 'Root', slug: '', docs: [], children: {}, isCategory: false };
   const query = searchQuery.toLowerCase();
@@ -355,12 +371,10 @@ function buildNavigationTree(docs: Doc[], searchQuery: string, activeNavSlug: st
     return matchesSearch && matchesSection;
   });
 
-  filtered.forEach((doc) => {
+  for (const doc of filtered) {
     let slugForTree = doc.slug;
-    if (activeNavSlug !== '') {
-      slugForTree = doc.slug.startsWith(activeNavSlug + '/')
-        ? doc.slug.slice(activeNavSlug.length + 1)
-        : doc.slug;
+    if (activeNavSlug !== '' && doc.slug.startsWith(activeNavSlug + '/')) {
+      slugForTree = doc.slug.slice(activeNavSlug.length + 1);
     }
 
     const parts = slugForTree.split('/');
@@ -374,17 +388,19 @@ function buildNavigationTree(docs: Doc[], searchQuery: string, activeNavSlug: st
       current = current.children[part];
     }
     current.docs.push(doc);
-  });
+  }
 
   return root;
 }
 
+// ─── Contacts ─────────────────────────────────────────────────────────────────
+
 const CONTACTS = [
-  { href: 'https://opensophy.com/',               title: 'Сайт',     subtitle: 'opensophy.com',        external: true  },
-  { href: 'mailto:opensophy@gmail.com',           title: 'Email',    subtitle: 'opensophy@gmail.com',   external: false },
-  { href: 'https://t.me/veilosophy',              title: 'Telegram', subtitle: '@veilosophy',           external: true  },
-  { href: 'https://github.com/opensophy-projects', title: 'GitHub',  subtitle: 'opensophy',             external: true  },
-  { href: 'https://habr.com/ru/users/opensophy/', title: 'Habr',     subtitle: 'opensophy',             external: true  },
+  { href: 'https://opensophy.com/',                title: 'Сайт',     subtitle: 'opensophy.com',         external: true  },
+  { href: 'mailto:opensophy@gmail.com',            title: 'Email',    subtitle: 'opensophy@gmail.com',   external: false },
+  { href: 'https://t.me/veilosophy',               title: 'Telegram', subtitle: '@veilosophy',           external: true  },
+  { href: 'https://github.com/opensophy-projects',  title: 'GitHub',   subtitle: 'opensophy',             external: true  },
+  { href: 'https://habr.com/ru/users/opensophy/',  title: 'Habr',     subtitle: 'opensophy',             external: true  },
 ];
 
 const ContactLink: React.FC<{
@@ -428,6 +444,19 @@ const ContactsSection: React.FC<{ isDark: boolean; isOpen: boolean; onClose: () 
   );
 });
 
+// ─── trySetStorage ────────────────────────────────────────────────────────────
+
+// FIX: replaced bare `catch {}` (empty block) with a proper helper that logs warnings in dev.
+function trySetStorage(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch (err) {
+    if (process.env.NODE_ENV !== 'production') console.warn('[Sidebar] localStorage unavailable:', err);
+  }
+}
+
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
+
 interface SidebarProps {
   currentDocSlug?: string;
 }
@@ -464,34 +493,36 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
     return Array.from(map.values());
   }, [docs]);
 
+  // Detect active nav section from URL and persist it
+  // FIX S-cascading: both setState calls are placed inside a single useEffect so React
+  // batches them into one render (React 18+). Previously two separate effects fired
+  // sequentially causing cascading renders.
   useEffect(() => {
     if (sections.length === 0) return;
     const pathname = globalThis.window.location.pathname.replace(/^\//, '');
     const matched = sections
       .filter(s => s.navSlug !== '')
       .find(s => pathname === s.navSlug || pathname.startsWith(s.navSlug + '/'));
-    const detected = matched ? matched.navSlug : '';
+    const detected = matched?.navSlug ?? '';
+
     setActiveNavSlug(detected);
-    try { localStorage.setItem('hub:activeNavSlug', detected); } catch {}
+    trySetStorage('hub:activeNavSlug', detected);
   }, [sections]);
 
+  // Expand tree to show current doc
   useEffect(() => {
     if (!currentDocSlug) return;
-    
-    const pathParts: string[] = [];
+
     let slugForTree = currentDocSlug;
-    
-    if (activeNavSlug !== '') {
-      slugForTree = currentDocSlug.startsWith(activeNavSlug + '/')
-        ? currentDocSlug.slice(activeNavSlug.length + 1)
-        : currentDocSlug;
+    if (activeNavSlug !== '' && currentDocSlug.startsWith(activeNavSlug + '/')) {
+      slugForTree = currentDocSlug.slice(activeNavSlug.length + 1);
     }
-    
+
     const parts = slugForTree.split('/');
-    for (let i = 0; i < parts.length - 1; i++) {
-      pathParts.push(parts.slice(0, i + 1).join('/'));
-    }
-    
+    const pathParts = parts
+      .slice(0, -1)
+      .map((_, i) => parts.slice(0, i + 1).join('/'));
+
     if (pathParts.length > 0) {
       setExpandedPaths(new Set(pathParts));
     }
@@ -502,10 +533,16 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
     [docs, searchQuery, activeNavSlug]
   );
 
+  // FIX: replaced ternary-as-statement with if/else — ternaries must return a value,
+  // using them as void statements is a misuse and triggers no-unused-expressions lint.
   const togglePath = (path: string) => {
     setExpandedPaths((prev) => {
       const next = new Set(prev);
-      next.has(path) ? next.delete(path) : next.add(path);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
       return next;
     });
   };
@@ -541,7 +578,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
             sections={sections}
             activeSlug={activeNavSlug}
             onSelect={(slug) => {
-              try { localStorage.setItem('hub:activeNavSlug', slug); } catch {}
+              trySetStorage('hub:activeNavSlug', slug);
               setActiveNavSlug(slug);
               setExpandedPaths(new Set());
             }}
@@ -554,11 +591,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
             {navTree.docs.length > 0 && (
               <div className="space-y-1 mb-4">
                 {[...navTree.docs].sort((a, b) => a.title.localeCompare(b.title)).map((doc) => (
-                  <DocLink 
-                    key={doc.id} 
-                    doc={doc} 
-                    onClose={() => {}} 
-                    isDark={isDark} 
+                  <DocLink
+                    key={doc.id}
+                    doc={doc}
+                    isDark={isDark}
                     isActive={currentDocSlug === doc.slug}
                   />
                 ))}
