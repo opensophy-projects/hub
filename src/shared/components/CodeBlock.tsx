@@ -1,5 +1,5 @@
 import React, { useState, useRef, useContext, useMemo, useEffect } from 'react';
-import { Copy, Maximize2, ChevronDown, Search, X } from 'lucide-react';
+import { Copy, Check, Maximize2, Minimize2, ChevronDown, Search, X } from 'lucide-react';
 import { TableContext } from '../lib/htmlParser';
 import hljs from 'highlight.js/lib/core';
 
@@ -314,26 +314,29 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
             style={{ background: bg }}
           >
             {SearchBox}
-            <div className="flex items-center gap-2 md:gap-4 flex-shrink-0 flex-wrap">
+            <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
               <span className="text-xs md:text-sm opacity-60 whitespace-nowrap">
-                Всего строк: {lines.length}
+                Строк: {lines.length}
               </span>
               <button
                 onClick={handleCopy}
-                className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${btnHover}`}
+                className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${border} ${btnHover}`}
+                style={{ color: isCopied ? '#22c55e' : fg }}
                 title={isCopied ? 'Скопировано!' : 'Копировать'}
               >
-                <Copy size={14} />
-                <span className="text-sm hidden md:inline">
-                  {isCopied ? 'Скопировано!' : 'Копировать'}
+                {isCopied ? <Check size={14} /> : <Copy size={14} />}
+                <span className="leading-none" style={{ fontSize: '10px' }}>
+                  {isCopied ? 'Готово' : 'Копировать'}
                 </span>
               </button>
               <button
                 onClick={() => setIsFullscreen(false)}
-                className={`p-2 rounded transition-colors ${btnHover}`}
+                className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${border} ${btnHover}`}
+                style={{ color: fg }}
                 title="Закрыть"
               >
-                <X size={20} />
+                <Minimize2 size={14} />
+                <span className="leading-none" style={{ fontSize: '10px' }}>Свернуть</span>
               </button>
             </div>
           </div>
@@ -359,20 +362,26 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
           style={{ background: bg }}
         >
           {SearchBox}
-          <div className="flex gap-2 flex-shrink-0">
+          <div className="flex gap-1.5 flex-shrink-0">
             <button
               onClick={handleCopy}
               title={isCopied ? 'Скопировано!' : 'Копировать'}
-              className="p-1.5 md:p-2"
+              className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${border} ${btnHover}`}
+              style={{ color: isCopied ? '#22c55e' : fg }}
             >
-              <Copy size={14} className="md:w-4 md:h-4" />
+              {isCopied ? <Check size={14} /> : <Copy size={14} />}
+              <span className="leading-none" style={{ fontSize: '10px' }}>
+                {isCopied ? 'Готово' : 'Копировать'}
+              </span>
             </button>
             <button
               onClick={() => setIsFullscreen(true)}
               title="Полноэкранный режим"
-              className="p-1.5 md:p-2"
+              className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${border} ${btnHover}`}
+              style={{ color: fg }}
             >
-              <Maximize2 size={14} className="md:w-4 md:h-4" />
+              <Maximize2 size={14} />
+              <span className="leading-none" style={{ fontSize: '10px' }}>Развернуть</span>
             </button>
           </div>
         </div>
@@ -393,7 +402,6 @@ export function CodeBlock({ code, language = '' }: Readonly<CodeBlockProps>) {
         )}
       </div>
 
-      {isCopied && <div className="mt-2 text-sm text-green-500">✓ Код скопирован</div>}
     </div>
   );
 }
