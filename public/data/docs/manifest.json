@@ -249,9 +249,9 @@
     "icon": "container"
   },
   {
-    "id": "article/tools-and-services/vibecoders-and-web-developers-ui-components.md",
+    "id": "article/tools-and-services/vibecoders-and-web-developers-ui-components",
     "title": "Вайбкодерам и веб-разработчикам: список сайтов с готовыми UI-компонентами",
-    "slug": "article/tools-and-services/vibecoders-and-web-developers-ui-components.md",
+    "slug": "article/tools-and-services/vibecoders-and-web-developers-ui-components",
     "description": "Практическая подборка сайтов и open-source ресурсов с готовыми UI-компонентами для веб-дизайна и frontend-разработки.",
     "typename": "Инструменты и Сервисы",
     "categoryPath": [
