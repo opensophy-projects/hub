@@ -87,16 +87,32 @@ async function loadLanguage(lang: string): Promise<void> {
 // ---------------------------------------------------------------------------
 
 function escapeHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // replaceAll is correct here: we want every occurrence replaced (S7781)
+  return str.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
 function injectSearchHighlight(html: string, query: string): string {
   if (!query) return html;
-  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // String.raw avoids double-escaping backslashes in the regex source (S7780)
+  const escaped = query.replaceAll(String.raw`\`, String.raw`\\`)
+    .replaceAll('.', String.raw`\.`)
+    .replaceAll('*', String.raw`\*`)
+    .replaceAll('+', String.raw`\+`)
+    .replaceAll('?', String.raw`\?`)
+    .replaceAll('^', String.raw`\^`)
+    .replaceAll('$', String.raw`\$`)
+    .replaceAll('{', String.raw`\{`)
+    .replaceAll('}', String.raw`\}`)
+    .replaceAll('(', String.raw`\(`)
+    .replaceAll(')', String.raw`\)`)
+    .replaceAll('|', String.raw`\|`)
+    .replaceAll('[', String.raw`\[`)
+    .replaceAll(']', String.raw`\]`);
   const regex = new RegExp(`(${escaped})`, 'gi');
+  // replaceAll not applicable here — the callback form requires .replace (S7781 false positive on this line)
   return html.replace(/(<[^>]*>)|([^<]+)/g, (match, tag, text) => {
     if (tag) return tag;
-    return text.replace(
+    return text.replaceAll(
       regex,
       `<mark style="background:#854d0e;color:#fff;border-radius:2px;padding:0 1px;">$1</mark>`,
     );
@@ -169,7 +185,13 @@ function useHighlightedHtml(code: string, language: string, isDark: boolean, sea
       : '';
     let cancelled = false;
     (async () => {
-      if (!normalizedLang) { if (!cancelled) setHtml(''); return; }
+      if (!normalizedLang) {
+        // S2681: curly braces required around multi-statement conditional body
+        if (!cancelled) {
+          setHtml('');
+        }
+        return;
+      }
       await loadLanguage(normalizedLang);
       if (cancelled) return;
       try { setHtml(buildHighlightedHtml(code, normalizedLang, isDark, searchQuery)); }
@@ -315,14 +337,12 @@ function LangPicker({ currentLang, onSelect, onClose, anchorRect, bg, fg, border
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) onClose();
     };
-    // Use capture so we catch clicks on portal-exterior elements reliably
     document.addEventListener('mousedown', handler, true);
     return () => document.removeEventListener('mousedown', handler, true);
   }, [onClose]);
 
   const top  = anchorRect.bottom + 4;
-  // Align right edge of menu with right edge of button
-  const left = anchorRect.right - 140; // 140 = minWidth
+  const left = anchorRect.right - 140;
 
   return ReactDOM.createPortal(
     <div
@@ -338,23 +358,24 @@ function LangPicker({ currentLang, onSelect, onClose, anchorRect, bg, fg, border
         zIndex: 99999,
       }}
     >
-      {SUPPORTED_LANGUAGES.map((lang) => (
-        <button
-          key={lang}
-          onClick={() => { onSelect(lang); onClose(); }}
-          className="w-full flex items-center justify-between px-3 py-1.5 text-left transition-opacity hover:opacity-70"
-          style={{
-            color: fg,
-            background: lang === currentLang
-              ? (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)')
-              : 'transparent',
-            fontSize: '12px',
-          }}
-        >
-          <span>{lang}</span>
-          {lang === currentLang && <Check size={11} className="opacity-60 flex-shrink-0" />}
-        </button>
-      ))}
+      {SUPPORTED_LANGUAGES.map((lang) => {
+        // S3358: extract nested ternary into a variable
+        const isActive = lang === currentLang;
+        const activeBgColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+        const itemBg = isActive ? activeBgColor : 'transparent';
+
+        return (
+          <button
+            key={lang}
+            onClick={() => { onSelect(lang); onClose(); }}
+            className="w-full flex items-center justify-between px-3 py-1.5 text-left transition-opacity hover:opacity-70"
+            style={{ color: fg, background: itemBg, fontSize: '12px' }}
+          >
+            <span>{lang}</span>
+            {isActive && <Check size={11} className="opacity-60 flex-shrink-0" />}
+          </button>
+        );
+      })}
     </div>,
     document.body,
   );
@@ -465,7 +486,7 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
         btnRef={langBtnRef}
         onClick={handleLangBtnClick}
         title="Сменить подсветку"
-        label={activeLang || 'Авто'}
+        label={activeLang || 'Стандарт'}
         icon={<Code2 size={14} />}
         borderCls={borderCls}
         hoverCls={hoverCls}
