@@ -55,91 +55,6 @@ function removeSvgAttr(svgTag: string, attr: string): string {
   return result;
 }
 
-/** Parse a hex or rgb color string into [r, g, b] or null */
-function parseColor(color: string): [number, number, number] | null {
-  const hex = color.trim();
-  if (hex.startsWith('#')) {
-    const h = hex.slice(1);
-    if (h.length === 3) {
-      return [
-        parseInt(h[0] + h[0], 16),
-        parseInt(h[1] + h[1], 16),
-        parseInt(h[2] + h[2], 16),
-      ];
-    }
-    if (h.length === 6) {
-      return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
-    }
-  }
-  const rgb = hex.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
-  if (rgb) return [parseInt(rgb[1]), parseInt(rgb[2]), parseInt(rgb[3])];
-  return null;
-}
-
-/** Relative luminance — determines if text should be dark or light */
-function luminance(r: number, g: number, b: number): number {
-  const [rs, gs, bs] = [r, g, b].map((c) => {
-    const s = c / 255;
-    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-  });
-  return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
-}
-
-/**
- * After Mermaid renders, it may override classDef/style fill values with its
- * themeVariables CSS. We fix this by scanning all <style> blocks for fill rules,
- * collecting explicit user-defined fills, then injecting a <style> block at the
- * end of the SVG that re-applies them with higher specificity. We also fix text
- * color so it stays readable regardless of dark/light theme.
- */
-function applyFillOverrides(svg: string): string {
-  // Extract all CSS rules from <style> blocks
-  const styleBlocks: string[] = [];
-  const styleRe = /<style[^>]*>([\s\S]*?)<\/style>/gi;
-  let m: RegExpExecArray | null;
-  while ((m = styleRe.exec(svg)) !== null) styleBlocks.push(m[1]);
-  const allCss = styleBlocks.join('\n');
-
-  // Find rules like .classname { fill: #xxx ... }
-  // These come from classDef/style directives compiled by Mermaid
-  const fillRules: Record<string, string> = {};
-  const ruleRe = /([.#][\w-]+(?:\s*,\s*[.#][\w-]+)*)\s*\{([^}]*)\}/g;
-  while ((m = ruleRe.exec(allCss)) !== null) {
-    const selectors = m[1];
-    const body = m[2];
-    const fillMatch = body.match(/\bfill\s*:\s*([^;!]+)/);
-    if (!fillMatch) continue;
-    const fillVal = fillMatch[1].trim();
-    // Only care about explicit color values (not 'none', 'inherit', variables)
-    if (
-      fillVal === 'none' || fillVal === 'inherit' ||
-      fillVal.startsWith('var(') || fillVal.startsWith('url(')
-    ) continue;
-    for (const sel of selectors.split(',')) {
-      fillRules[sel.trim()] = fillVal;
-    }
-  }
-
-  if (Object.keys(fillRules).length === 0) return svg;
-
-  // Build override <style> block with higher specificity (double class trick)
-  const overrides = Object.entries(fillRules).map(([sel, fill]) => {
-    const parsed = parseColor(fill);
-    const textColor = parsed
-      ? (luminance(...parsed) > 0.35 ? '#1a1a1a' : '#f0f0f0')
-      : '#f0f0f0';
-
-    // Target both rect/polygon (node shapes) and text inside them
-    return [
-      `${sel}${sel} rect, ${sel}${sel} polygon, ${sel}${sel} circle, ${sel}${sel} ellipse { fill: ${fill} !important; stroke: ${fill} !important; filter: brightness(0.95); }`,
-      `${sel}${sel} .label, ${sel}${sel} span, ${sel}${sel} p { color: ${textColor} !important; }`,
-      `${sel}${sel} text { fill: ${textColor} !important; }`,
-    ].join('\n');
-  }).join('\n');
-
-  return svg.replace('</svg>', `<style>\n/* fill overrides */\n${overrides}\n</style>\n</svg>`);
-}
-
 function patchSvg(svg: string): string {
   const tagEnd = svg.indexOf('>');
   if (tagEnd === -1) return svg;
@@ -155,10 +70,7 @@ function patchSvg(svg: string): string {
   const style = ' style="width:100%;max-width:800px;height:auto;display:block;overflow:visible;margin:0 auto;"';
   if (tag.startsWith('<svg')) tag = `<svg${style}${tag.slice(4)}`;
 
-  const patched = tag + svg.slice(tagEnd + 1);
-
-  // Re-apply user-defined fill colors that dark theme may have overridden
-  return applyFillOverrides(patched);
+  return tag + svg.slice(tagEnd + 1);
 }
 
 // ─── Mermaid theme config ─────────────────────────────────────────────────────
