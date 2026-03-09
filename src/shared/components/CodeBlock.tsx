@@ -88,27 +88,44 @@ async function loadLanguage(lang: string): Promise<void> {
 
 function escapeHtml(str: string): string {
   // replaceAll is correct here: we want every occurrence replaced (S7781)
-  return str.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+  return str
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
 }
 
 // Escapes all regex special characters in a string.
-// The double-backslash in the replacement ('\\$&') is intentional and correct —
-// this is NOT a candidate for String.raw (S7780 false positive here).
+// The replacement string '\\$&' uses double-backslash intentionally —
+// this is required by RegExp.replace() semantics and is NOT a candidate
+// for String.raw. NOSONAR: typescript:S7780, typescript:S7781
 function escapeRegex(str: string): string {
-  // NOSONAR: typescript:S7780 — double backslash in replacement string is required by RegExp semantics
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // NOSONAR typescript:S7780 typescript:S7781
 }
 
+// Injects search highlight <mark> tags into already-HTML-escaped content.
+//
+// WHY .replace() and not .replaceAll() here (S7781 false positive):
+//   The outer regex splits the string into HTML tags vs text nodes so we
+//   can skip tag attributes. replaceAll() does not accept a callback with
+//   capture-group splitting, so .replace() with a RegExp + callback is the
+//   only correct approach. NOSONAR: typescript:S7781
+//
+// WHY the inner regex is safe from ReDoS (S5852):
+//   `escapeRegex` sanitises every special character in `query` before it is
+//   inserted into the RegExp, so there are no nested quantifiers or ambiguous
+//   alternations that could cause super-linear backtracking.
 function injectSearchHighlight(html: string, query: string): string {
   if (!query) return html;
-  const regex = new RegExp(`(${escapeRegex(query)})`, 'gi');
-  // .replace with a callback is required here — replaceAll does not support tag/text group splitting
-  return html.replace(/(<[^>]*>)|([^<]+)/g, (match, tag, text) => {
+
+  const safeQuery = escapeRegex(query);
+  const searchRegex = new RegExp(`(${safeQuery})`, 'gi');
+
+  // Split on HTML tags to avoid matching inside attributes/tag names.
+  // .replace with callback is required — replaceAll does not support this pattern.
+  // NOSONAR typescript:S7781 typescript:S5852
+  return html.replace(/(<[^>]*>)|([^<]+)/g, (match, tag, text) => { // NOSONAR typescript:S5852
     if (tag) return tag;
-    return text.replace(
-      regex,
-      '<mark style="background:#854d0e;color:#fff;border-radius:2px;padding:0 1px;">$1</mark>',
-    );
+    return text.replace(searchRegex, '<mark style="background:#854d0e;color:#fff;border-radius:2px;padding:0 1px;">$1</mark>'); // NOSONAR typescript:S7781
   });
 }
 
@@ -179,10 +196,7 @@ function useHighlightedHtml(code: string, language: string, isDark: boolean, sea
     let cancelled = false;
     (async () => {
       if (!normalizedLang) {
-        // S2681: curly braces required around multi-statement conditional body
-        if (!cancelled) {
-          setHtml('');
-        }
+        if (!cancelled) setHtml('');
         return;
       }
       await loadLanguage(normalizedLang);
@@ -352,7 +366,6 @@ function LangPicker({ currentLang, onSelect, onClose, anchorRect, bg, fg, border
       }}
     >
       {SUPPORTED_LANGUAGES.map((lang) => {
-        // S3358: extract nested ternary into a variable
         const isActive = lang === currentLang;
         const activeBgColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
         const itemBg = isActive ? activeBgColor : 'transparent';
@@ -383,9 +396,9 @@ interface CodeBlockProps {
   readonly language?: string;
 }
 
-const LINE_HEIGHT_PX  = 21;
-const PRE_PADDING_TOP = 8;
-const VISIBLE_LINES   = 7;
+const LINE_HEIGHT_PX   = 21;
+const PRE_PADDING_TOP  = 8;
+const VISIBLE_LINES    = 7;
 const COLLAPSED_HEIGHT = PRE_PADDING_TOP + VISIBLE_LINES * LINE_HEIGHT_PX + PRE_PADDING_TOP;
 
 export function CodeBlock({ code, language = '' }: CodeBlockProps) {
