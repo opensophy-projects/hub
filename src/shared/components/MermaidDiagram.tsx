@@ -40,14 +40,104 @@ const tc = (isDark: boolean, d: string, l: string) => (isDark ? d : l);
 
 function removeSvgAttr(svgTag: string, attr: string): string {
   let result = svgTag;
-  let start  = result.indexOf(` ${attr}="`);
-  while (start !== -1) {
-    const valueEnd = result.indexOf('"', start + attr.length + 3);
-    if (valueEnd === -1) break;
-    result = result.slice(0, start) + result.slice(valueEnd + 1);
-    start  = result.indexOf(` ${attr}="`);
+  // Remove both attr="..." and attr='...' variants
+  const patterns = [` ${attr}="`, ` ${attr}='`];
+  for (const pattern of patterns) {
+    let start = result.indexOf(pattern);
+    while (start !== -1) {
+      const quoteChar = pattern[pattern.length - 1];
+      const valueEnd = result.indexOf(quoteChar, start + pattern.length);
+      if (valueEnd === -1) break;
+      result = result.slice(0, start) + result.slice(valueEnd + 1);
+      start = result.indexOf(pattern);
+    }
   }
   return result;
+}
+
+/** Parse a hex or rgb color string into [r, g, b] or null */
+function parseColor(color: string): [number, number, number] | null {
+  const hex = color.trim();
+  if (hex.startsWith('#')) {
+    const h = hex.slice(1);
+    if (h.length === 3) {
+      return [
+        parseInt(h[0] + h[0], 16),
+        parseInt(h[1] + h[1], 16),
+        parseInt(h[2] + h[2], 16),
+      ];
+    }
+    if (h.length === 6) {
+      return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+    }
+  }
+  const rgb = hex.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+  if (rgb) return [parseInt(rgb[1]), parseInt(rgb[2]), parseInt(rgb[3])];
+  return null;
+}
+
+/** Relative luminance — determines if text should be dark or light */
+function luminance(r: number, g: number, b: number): number {
+  const [rs, gs, bs] = [r, g, b].map((c) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+}
+
+/**
+ * After Mermaid renders, it may override classDef/style fill values with its
+ * themeVariables CSS. We fix this by scanning all <style> blocks for fill rules,
+ * collecting explicit user-defined fills, then injecting a <style> block at the
+ * end of the SVG that re-applies them with higher specificity. We also fix text
+ * color so it stays readable regardless of dark/light theme.
+ */
+function applyFillOverrides(svg: string): string {
+  // Extract all CSS rules from <style> blocks
+  const styleBlocks: string[] = [];
+  const styleRe = /<style[^>]*>([\s\S]*?)<\/style>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = styleRe.exec(svg)) !== null) styleBlocks.push(m[1]);
+  const allCss = styleBlocks.join('\n');
+
+  // Find rules like .classname { fill: #xxx ... }
+  // These come from classDef/style directives compiled by Mermaid
+  const fillRules: Record<string, string> = {};
+  const ruleRe = /([.#][\w-]+(?:\s*,\s*[.#][\w-]+)*)\s*\{([^}]*)\}/g;
+  while ((m = ruleRe.exec(allCss)) !== null) {
+    const selectors = m[1];
+    const body = m[2];
+    const fillMatch = body.match(/\bfill\s*:\s*([^;!]+)/);
+    if (!fillMatch) continue;
+    const fillVal = fillMatch[1].trim();
+    // Only care about explicit color values (not 'none', 'inherit', variables)
+    if (
+      fillVal === 'none' || fillVal === 'inherit' ||
+      fillVal.startsWith('var(') || fillVal.startsWith('url(')
+    ) continue;
+    for (const sel of selectors.split(',')) {
+      fillRules[sel.trim()] = fillVal;
+    }
+  }
+
+  if (Object.keys(fillRules).length === 0) return svg;
+
+  // Build override <style> block with higher specificity (double class trick)
+  const overrides = Object.entries(fillRules).map(([sel, fill]) => {
+    const parsed = parseColor(fill);
+    const textColor = parsed
+      ? (luminance(...parsed) > 0.35 ? '#1a1a1a' : '#f0f0f0')
+      : '#f0f0f0';
+
+    // Target both rect/polygon (node shapes) and text inside them
+    return [
+      `${sel}${sel} rect, ${sel}${sel} polygon, ${sel}${sel} circle, ${sel}${sel} ellipse { fill: ${fill} !important; stroke: ${fill} !important; filter: brightness(0.95); }`,
+      `${sel}${sel} .label, ${sel}${sel} span, ${sel}${sel} p { color: ${textColor} !important; }`,
+      `${sel}${sel} text { fill: ${textColor} !important; }`,
+    ].join('\n');
+  }).join('\n');
+
+  return svg.replace('</svg>', `<style>\n/* fill overrides */\n${overrides}\n</style>\n</svg>`);
 }
 
 function patchSvg(svg: string): string {
@@ -55,17 +145,23 @@ function patchSvg(svg: string): string {
   if (tagEnd === -1) return svg;
 
   let tag = svg.slice(0, tagEnd + 1);
+
+  // Strip width, height AND any existing style from the opening <svg> tag
   tag = removeSvgAttr(tag, 'width');
   tag = removeSvgAttr(tag, 'height');
+  tag = removeSvgAttr(tag, 'style');
 
-  const style = ' style="max-width:min(100%,400px);height:auto;display:block;overflow:visible;margin:0 auto;"';
+  // Inject our own style — 800px max-width, responsive height
+  const style = ' style="width:100%;max-width:800px;height:auto;display:block;overflow:visible;margin:0 auto;"';
   if (tag.startsWith('<svg')) tag = `<svg${style}${tag.slice(4)}`;
 
-  return tag + svg.slice(tagEnd + 1);
+  const patched = tag + svg.slice(tagEnd + 1);
+
+  // Re-apply user-defined fill colors that dark theme may have overridden
+  return applyFillOverrides(patched);
 }
 
 // ─── Mermaid theme config ─────────────────────────────────────────────────────
-// Extracted from `render` callback to reduce its cyclomatic complexity.
 
 function getMermaidConfig(isDark: boolean, color?: string) {
   const darkVars = {
@@ -127,9 +223,10 @@ function getMermaidConfig(isDark: boolean, color?: string) {
     theme: isDark ? 'dark' as const : 'default' as const,
     securityLevel: 'loose' as const,
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-    flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis', padding: 20 },
-    sequence:  { useMaxWidth: true, boxMargin: 10 },
-    gantt:     { useMaxWidth: true, leftPadding: 75, barHeight: 28, fontSize: 13 },
+    // useMaxWidth:false lets the SVG expand to its natural size, we cap it via CSS
+    flowchart: { useMaxWidth: false, htmlLabels: true, curve: 'basis', padding: 20 },
+    sequence:  { useMaxWidth: false, boxMargin: 10 },
+    gantt:     { useMaxWidth: false, leftPadding: 75, barHeight: 28, fontSize: 13 },
     themeVariables: isDark ? darkVars : lightVars,
   };
 }
@@ -232,7 +329,6 @@ interface DiagramViewerProps {
   isFullscreen?: boolean;
 }
 
-
 const DiagramViewer: React.FC<DiagramViewerProps> = ({
   svgHtml, panMode, scale, setScale, pos, setPos, isFullscreen,
 }) => {
@@ -244,11 +340,9 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     if (!panMode || e.button !== 0) return;
     e.preventDefault();
-
     dragging.current = true;
     setIsDragging(true);
     last.current = { x: e.clientX, y: e.clientY };
-
     const onMove = (ev: MouseEvent) => {
       const dx = ev.clientX - last.current.x;
       const dy = ev.clientY - last.current.y;
@@ -261,7 +355,6 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
       globalThis.window.removeEventListener('mousemove', onMove);
       globalThis.window.removeEventListener('mouseup', onUp);
     };
-
     globalThis.window.addEventListener('mousemove', onMove);
     globalThis.window.addEventListener('mouseup', onUp);
   }, [panMode, setPos]);
@@ -269,10 +362,8 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
   useEffect(() => {
     const el = viewRef.current;
     if (!el || !panMode) return;
-
     let lastTouch = { x: 0, y: 0 };
     let lastDist  = 0;
-
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 1) {
         lastTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -295,11 +386,10 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
           e.touches[0].clientX - e.touches[1].clientX,
           e.touches[0].clientY - e.touches[1].clientY,
         );
-        setScale(s => Math.min(4, Math.max(0.25, s * (dist / lastDist))));
+        setScale(s => Math.min(8, Math.max(0.25, s * (dist / lastDist))));
         lastDist = dist;
       }
     };
-
     el.addEventListener('touchstart', onTouchStart, { passive: true });
     el.addEventListener('touchmove',  onTouchMove,  { passive: false });
     return () => {
@@ -314,7 +404,7 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
     const onWheel = (e: WheelEvent) => {
       if (!e.ctrlKey && !e.metaKey) return;
       e.preventDefault();
-      setScale(s => Math.min(4, Math.max(0.25, s * (e.deltaY > 0 ? 0.9 : 1.1))));
+      setScale(s => Math.min(8, Math.max(0.25, s * (e.deltaY > 0 ? 0.9 : 1.1))));
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
@@ -339,6 +429,7 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
       style={{
         overflow: 'hidden', position: 'relative', cursor,
         minHeight: isFullscreen ? '100%' : 80,
+        maxHeight: isFullscreen ? undefined : '480px',
         height: isFullscreen ? '100%' : 'auto',
         userSelect: 'none', touchAction: 'none', outline: 'none',
         display: 'block', width: '100%', padding: 0,
@@ -349,7 +440,6 @@ const DiagramViewer: React.FC<DiagramViewerProps> = ({
         style={{
           transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`,
           transformOrigin: 'center center',
-        
           transition: isDragging ? 'none' : 'transform 0.05s ease',
           display: 'flex', justifyContent: 'center', alignItems: 'center',
           padding: '20px 24px', willChange: 'transform',
@@ -427,7 +517,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
 
   const resetView = useCallback(() => { setScale(1); setPos({ x: 0, y: 0 }); }, []);
 
- 
   const render = useCallback(async () => {
     const key = cacheKey(code, isDark, color);
 
@@ -478,15 +567,13 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
 
   const toolbarCommonProps = {
     isDark, scale, panMode, hasColor, color,
-    onZoomIn:    () => setScale(s => Math.min(4, +(s + 0.25).toFixed(2))),
+    onZoomIn:    () => setScale(s => Math.min(8, +(s + 0.25).toFixed(2))),
     onZoomOut:   () => setScale(s => Math.max(0.25, +(s - 0.25).toFixed(2))),
     onTogglePan: () => setPanMode(v => !v),
     onReset:     resetView,
   };
 
   const viewerProps = { svgHtml, panMode, scale, setScale, pos, setPos };
-
-  // ─── Fullscreen modal ─────────────────────────────────────────────────────
 
   const Fullscreen = isFullscreen && status === 'ready' ? (
     <div style={{
@@ -510,8 +597,6 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
       </div>
     </div>
   ) : null;
-
-  // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
     <>
@@ -579,7 +664,7 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
           </div>
         )}
 
-        <div style={{ display: status === 'ready' ? 'block' : 'none' }}>
+        <div style={{ display: status === 'ready' ? 'block' : 'none', maxHeight: '480px', overflow: 'hidden' }}>
           <DiagramViewer {...viewerProps} />
         </div>
       </div>
