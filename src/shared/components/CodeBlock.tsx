@@ -1,5 +1,9 @@
-import React, { useState, useRef, useContext, useMemo, useEffect } from 'react';
-import { Copy, Check, Maximize2, Minimize2, ChevronDown, Search, X } from 'lucide-react';
+import React, { useState, useRef, useContext, useMemo, useEffect, useCallback } from 'react';
+import ReactDOM from 'react-dom';
+import {
+  Copy, Check, Maximize2, Minimize2,
+  ChevronDown, ChevronUp, Search, X, Code2,
+} from 'lucide-react';
 import { TableContext } from '../lib/htmlParser';
 import hljs from 'highlight.js/lib/core';
 
@@ -18,19 +22,24 @@ const LANG_ALIASES: Record<string, string> = {
   cs: 'csharp',
 };
 
+const SUPPORTED_LANGUAGES = [
+  'javascript', 'typescript', 'python', 'bash',
+  'sql', 'json', 'xml', 'html', 'css', 'yaml',
+  'dockerfile', 'markdown', 'go', 'rust', 'php',
+  'cpp', 'csharp', 'java',
+] as const;
+
 const loadedLanguages = new Set<string>();
 const pendingLanguages = new Map<string, Promise<void>>();
 
 async function loadLanguage(lang: string): Promise<void> {
   const normalized = LANG_ALIASES[lang] ?? lang;
   if (loadedLanguages.has(normalized)) return;
-
   const existing = pendingLanguages.get(normalized);
   if (existing) return existing;
 
   const promise = (async () => {
     try {
-      // prettier-ignore
       const loaders: Record<string, () => Promise<{ default: unknown }>> = {
         javascript: () => import('highlight.js/lib/languages/javascript'),
         typescript: () => import('highlight.js/lib/languages/typescript'),
@@ -39,7 +48,7 @@ async function loadLanguage(lang: string): Promise<void> {
         sql:        () => import('highlight.js/lib/languages/sql'),
         json:       () => import('highlight.js/lib/languages/json'),
         xml:        () => import('highlight.js/lib/languages/xml'),
-        html:       () => import('highlight.js/lib/languages/xml'), // html → xml grammar
+        html:       () => import('highlight.js/lib/languages/xml'),
         css:        () => import('highlight.js/lib/languages/css'),
         yaml:       () => import('highlight.js/lib/languages/yaml'),
         dockerfile: () => import('highlight.js/lib/languages/dockerfile'),
@@ -51,21 +60,12 @@ async function loadLanguage(lang: string): Promise<void> {
         csharp:     () => import('highlight.js/lib/languages/csharp'),
         java:       () => import('highlight.js/lib/languages/java'),
       };
-
       const loader = loaders[normalized];
-      if (!loader) {
-        loadedLanguages.add(normalized);
-        return;
-      }
-
+      if (!loader) { loadedLanguages.add(normalized); return; }
       const module = await loader();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       hljs.registerLanguage(normalized, (module as any).default);
-
-      // Register all aliases that point to this language
       for (const [alias, target] of Object.entries(LANG_ALIASES)) {
         if (target === normalized && !loadedLanguages.has(alias)) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           hljs.registerLanguage(alias, (module as any).default);
           loadedLanguages.add(alias);
         }
@@ -73,60 +73,111 @@ async function loadLanguage(lang: string): Promise<void> {
       loadedLanguages.add(normalized);
     } catch (e) {
       console.warn(`Failed to load highlight.js language: ${normalized}`, e);
-      loadedLanguages.add(normalized); // mark as attempted so we don't retry forever
+      loadedLanguages.add(normalized);
     } finally {
       pendingLanguages.delete(normalized);
     }
   })();
-
   pendingLanguages.set(normalized, promise);
   return promise;
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Highlight builder
 // ---------------------------------------------------------------------------
 
-/** Build syntax-highlighted HTML with inline line numbers. */
-function buildHighlightedHtml(code: string, lang: string, isDark: boolean): string {
-  const lineColor = isDark ? '#888' : '#666';
-  const lineStyle = `color:${lineColor};display:inline-block;width:32px;margin-right:16px;text-align:right;user-select:none;`;
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 
-  const result = hljs.highlight(code, { language: lang });
-  return result.value
+function injectSearchHighlight(html: string, query: string): string {
+  if (!query) return html;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(${escaped})`, 'gi');
+  return html.replace(/(<[^>]*>)|([^<]+)/g, (match, tag, text) => {
+    if (tag) return tag;
+    return text.replace(
+      regex,
+      `<mark style="background:#854d0e;color:#fff;border-radius:2px;padding:0 1px;">$1</mark>`,
+    );
+  });
+}
+
+function buildHighlightedHtml(code: string, lang: string, isDark: boolean, searchQuery: string): string {
+  const lineColor = isDark ? '#555' : '#999';
+  const lineStyle = [
+    `color:${lineColor}`,
+    'display:inline-block',
+    'width:28px',
+    'margin-right:14px',
+    'text-align:right',
+    'user-select:none',
+    'font-size:11px',
+  ].join(';');
+
+  let highlighted: string;
+  try {
+    highlighted = hljs.highlight(code, { language: lang }).value;
+  } catch {
+    highlighted = escapeHtml(code);
+  }
+
+  return highlighted
+    .replace(/\n$/, '')
     .split('\n')
-    .map((line, i) => `<span class="line-number" style="${lineStyle}">${i + 1}</span>${line}`)
+    .map((line, i) => {
+      const withSearch = injectSearchHighlight(line, searchQuery);
+      return `<span class="line-number" style="${lineStyle}">${i + 1}</span>${withSearch}`;
+    })
     .join('\n');
 }
 
-// FIX (SonarCloud S6759): props must be Readonly
-/** Highlight all occurrences of `query` inside `text`. */
+// ---------------------------------------------------------------------------
+// HighlightedText — plain-text fallback
+// ---------------------------------------------------------------------------
+
 function HighlightedText({ text, query }: Readonly<{ text: string; query: string }>): JSX.Element {
   if (!query) return <>{text}</>;
-
   const lower = text.toLowerCase();
   const lowerQ = query.toLowerCase();
   const qLen = lowerQ.length;
   const parts: JSX.Element[] = [];
-  let cursor = 0;
-  let key = 0;
-
+  let cursor = 0, key = 0;
   while (cursor < text.length) {
     const idx = lower.indexOf(lowerQ, cursor);
-    if (idx === -1) {
-      parts.push(<span key={key++}>{text.slice(cursor)}</span>);
-      break;
-    }
+    if (idx === -1) { parts.push(<span key={key++}>{text.slice(cursor)}</span>); break; }
     if (idx > cursor) parts.push(<span key={key++}>{text.slice(cursor, idx)}</span>);
     parts.push(
-      <span key={key++} style={{ background: '#78350f', color: '#fff' }}>
+      <span key={key++} style={{ background: '#854d0e', color: '#fff', borderRadius: '2px', padding: '0 1px' }}>
         {text.slice(idx, idx + qLen)}
-      </span>
+      </span>,
     );
     cursor = idx + qLen;
   }
-
   return <>{parts}</>;
+}
+
+// ---------------------------------------------------------------------------
+// useHighlightedHtml
+// ---------------------------------------------------------------------------
+
+function useHighlightedHtml(code: string, language: string, isDark: boolean, searchQuery: string): string {
+  const [html, setHtml] = useState('');
+  useEffect(() => {
+    const normalizedLang = language?.trim()
+      ? (LANG_ALIASES[language.toLowerCase().trim()] ?? language.toLowerCase().trim())
+      : '';
+    let cancelled = false;
+    (async () => {
+      if (!normalizedLang) { if (!cancelled) setHtml(''); return; }
+      await loadLanguage(normalizedLang);
+      if (cancelled) return;
+      try { setHtml(buildHighlightedHtml(code, normalizedLang, isDark, searchQuery)); }
+      catch { if (!cancelled) setHtml(''); }
+    })();
+    return () => { cancelled = true; };
+  }, [code, language, isDark, searchQuery]);
+  return html;
 }
 
 // ---------------------------------------------------------------------------
@@ -143,46 +194,40 @@ interface CodeBodyProps {
   readonly highlightedHtml: string;
 }
 
-const CodeBody: React.FC<CodeBodyProps> = ({
-  lines,
-  matchedLines,
-  searchQuery,
-  fg,
-  bg,
-  isDark,
-  highlightedHtml,
-}) => (
-  <pre className="p-4 text-sm font-mono not-prose hljs" style={{ background: bg, color: fg }}>
-    {highlightedHtml ? (
-      <code
-        dangerouslySetInnerHTML={{ __html: highlightedHtml }}
-        className="language-code"
-        style={{ color: fg }}
-      />
-    ) : (
-      lines.map((line, i) => (
-        <div key={`${i}-${line.slice(0, 8)}`} className="whitespace-pre" style={{ color: fg }}>
-          <span
-            className="inline-block w-8 mr-4 text-right select-none"
-            style={{ color: isDark ? '#888' : '#666' }}
-          >
-            {i + 1}
-          </span>
-          {matchedLines.has(i) ? (
-            <HighlightedText text={line} query={searchQuery} />
-          ) : (
-            <span>{line}</span>
-          )}
-        </div>
-      ))
-    )}
-  </pre>
+const CodeBody = React.forwardRef<HTMLPreElement, CodeBodyProps>(
+  ({ lines, matchedLines, searchQuery, fg, bg, isDark, highlightedHtml }, ref) => (
+    <pre
+      ref={ref}
+      className="text-sm font-mono not-prose hljs"
+      style={{ background: bg, color: fg, margin: 0, padding: '8px 12px' }}
+    >
+      {highlightedHtml ? (
+        <code
+          dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+          className="language-code"
+          style={{ color: fg }}
+        />
+      ) : (
+        lines.map((line, i) => (
+          <div key={`${i}-${line.slice(0, 8)}`} className="whitespace-pre" style={{ color: fg }}>
+            <span
+              className="inline-block mr-3.5 text-right select-none"
+              style={{ color: isDark ? '#555' : '#999', width: '28px', fontSize: '11px' }}
+            >
+              {i + 1}
+            </span>
+            {matchedLines.has(i)
+              ? <HighlightedText text={line} query={searchQuery} />
+              : <span>{line}</span>}
+          </div>
+        ))
+      )}
+    </pre>
+  )
 );
+CodeBody.displayName = 'CodeBody';
 
-// ---------------------------------------------------------------------------
-// ToolbarButton — extracted to eliminate duplicated JSX in normal/fullscreen
-// and reduce Cognitive Complexity of CodeBlock (FIX SonarCloud S3776).
-// ---------------------------------------------------------------------------
+// ── ToolbarButton ──────────────────────────────────────────────────────────
 
 interface ToolbarButtonProps {
   readonly onClick: () => void;
@@ -190,30 +235,30 @@ interface ToolbarButtonProps {
   readonly label: string;
   readonly icon: React.ReactNode;
   readonly color?: string;
-  readonly border: string;
-  readonly btnHover: string;
+  readonly borderCls: string;
+  readonly hoverCls: string;
   readonly fg: string;
+  readonly active?: boolean;
+  readonly activeBg?: string;
+  readonly btnRef?: React.RefObject<HTMLButtonElement>;
 }
 
-function ToolbarButton({ onClick, title, label, icon, color, border, btnHover, fg }: ToolbarButtonProps) {
+function ToolbarButton({ onClick, title, label, icon, color, borderCls, hoverCls, fg, active, activeBg, btnRef }: ToolbarButtonProps) {
   return (
     <button
+      ref={btnRef}
       onClick={onClick}
       title={title}
-      className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${border} ${btnHover}`}
-      style={{ color: color ?? fg }}
+      className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg border transition-colors ${borderCls} ${hoverCls}`}
+      style={{ color: color ?? fg, lineHeight: 1, background: active && activeBg ? activeBg : undefined }}
     >
       {icon}
-      <span className="leading-none" style={{ fontSize: '10px' }}>
-        {label}
-      </span>
+      <span style={{ fontSize: '10px', whiteSpace: 'nowrap' }}>{label}</span>
     </button>
   );
 }
 
-// ---------------------------------------------------------------------------
-// SearchBox — extracted to remove duplicated JSX (FIX SonarCloud S3776).
-// ---------------------------------------------------------------------------
+// ── SearchBox ──────────────────────────────────────────────────────────────
 
 interface SearchBoxProps {
   readonly value: string;
@@ -221,30 +266,28 @@ interface SearchBoxProps {
   readonly matchCount: number;
   readonly bg: string;
   readonly fg: string;
-  readonly border: string;
+  readonly borderCls: string;
 }
 
-function SearchBox({ value, onChange, matchCount, bg, fg, border }: SearchBoxProps) {
+function SearchBox({ value, onChange, matchCount, bg, fg, borderCls }: SearchBoxProps) {
   return (
-    <div
-      className={`flex-1 flex items-center gap-2 px-3 py-2 rounded border ${border}`}
-      style={{ background: bg, color: fg, minWidth: 0 }}
-    >
-      <Search size={16} opacity={0.6} className="flex-shrink-0" />
+    <div className={`flex-1 flex items-center gap-1.5 px-2.5 py-1 rounded border ${borderCls}`}
+      style={{ background: bg, color: fg, minWidth: '120px' }}>
+      <Search size={13} opacity={0.5} className="flex-shrink-0" />
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Поиск..."
-        style={{ color: fg }}
-        className="flex-1 bg-transparent outline-none text-sm min-w-0"
+        style={{ color: fg, fontSize: '12px' }}
+        className="flex-1 bg-transparent outline-none min-w-0"
       />
       {value && (
-        <button onClick={() => onChange('')} className="flex-shrink-0">
-          <X size={14} />
+        <button onClick={() => onChange('')} className="flex-shrink-0 opacity-60 hover:opacity-100">
+          <X size={12} />
         </button>
       )}
       {matchCount > 0 && (
-        <span className="text-xs opacity-60 whitespace-nowrap flex-shrink-0">
+        <span className="opacity-50 whitespace-nowrap flex-shrink-0" style={{ fontSize: '11px' }}>
           {matchCount} найдено
         </span>
       )}
@@ -252,46 +295,69 @@ function SearchBox({ value, onChange, matchCount, bg, fg, border }: SearchBoxPro
   );
 }
 
+// ── LangPicker — rendered into document.body via portal ───────────────────
 
+interface LangPickerProps {
+  readonly currentLang: string;
+  readonly onSelect: (lang: string) => void;
+  readonly onClose: () => void;
+  readonly anchorRect: DOMRect;
+  readonly bg: string;
+  readonly fg: string;
+  readonly borderCls: string;
+  readonly isDark: boolean;
+}
 
-function useHighlightedHtml(code: string, language: string, isDark: boolean): string {
-  const [highlightedHtml, setHighlightedHtml] = useState('');
+function LangPicker({ currentLang, onSelect, onClose, anchorRect, bg, fg, borderCls, isDark }: LangPickerProps) {
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    
-    const normalizedLang = language?.trim()
-      ? (LANG_ALIASES[language.toLowerCase().trim()] ?? language.toLowerCase().trim())
-      : '';
-
-    let cancelled = false;
-
-    
-    const resolve = async () => {
-      if (!normalizedLang) {
-        // No language — resolve immediately with empty string (async, not sync)
-        if (!cancelled) setHighlightedHtml('');
-        return;
-      }
-
-      await loadLanguage(normalizedLang);
-      if (cancelled) return;
-
-      try {
-        setHighlightedHtml(buildHighlightedHtml(code, normalizedLang, isDark));
-      } catch (err) {
-        console.warn(`highlight.js error for language "${normalizedLang}":`, err);
-        if (!cancelled) setHighlightedHtml('');
-      }
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
     };
+    // Use capture so we catch clicks on portal-exterior elements reliably
+    document.addEventListener('mousedown', handler, true);
+    return () => document.removeEventListener('mousedown', handler, true);
+  }, [onClose]);
 
-    resolve();
+  const top  = anchorRect.bottom + 4;
+  // Align right edge of menu with right edge of button
+  const left = anchorRect.right - 140; // 140 = minWidth
 
-    return () => {
-      cancelled = true;
-    };
-  }, [code, language, isDark]);
-
-  return highlightedHtml;
+  return ReactDOM.createPortal(
+    <div
+      ref={ref}
+      className={`rounded-lg border shadow-2xl overflow-y-auto ${borderCls}`}
+      style={{
+        position: 'fixed',
+        top,
+        left,
+        background: bg,
+        minWidth: '140px',
+        maxHeight: '240px',
+        zIndex: 99999,
+      }}
+    >
+      {SUPPORTED_LANGUAGES.map((lang) => (
+        <button
+          key={lang}
+          onClick={() => { onSelect(lang); onClose(); }}
+          className="w-full flex items-center justify-between px-3 py-1.5 text-left transition-opacity hover:opacity-70"
+          style={{
+            color: fg,
+            background: lang === currentLang
+              ? (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)')
+              : 'transparent',
+            fontSize: '12px',
+          }}
+        >
+          <span>{lang}</span>
+          {lang === currentLang && <Check size={11} className="opacity-60 flex-shrink-0" />}
+        </button>
+      ))}
+    </div>,
+    document.body,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -303,59 +369,71 @@ interface CodeBlockProps {
   readonly language?: string;
 }
 
-const PREVIEW_LINES = 15;
+const LINE_HEIGHT_PX  = 21;
+const PRE_PADDING_TOP = 8;
+const VISIBLE_LINES   = 7;
+const COLLAPSED_HEIGHT = PRE_PADDING_TOP + VISIBLE_LINES * LINE_HEIGHT_PX + PRE_PADDING_TOP;
 
 export function CodeBlock({ code, language = '' }: CodeBlockProps) {
   const { isDark } = useContext(TableContext);
 
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [isExpanded, setIsExpanded]         = useState(false);
+  const [isCopied, setIsCopied]             = useState(false);
+  const [isFullscreen, setIsFullscreen]     = useState(false);
+  const [searchQuery, setSearchQuery]       = useState('');
+  const [showLangPicker, setShowLangPicker] = useState(false);
+  const [langBtnRect, setLangBtnRect]       = useState<DOMRect | null>(null);
+  const [activeLang, setActiveLang]         = useState<string>(language);
 
-  const codeRef = useRef<HTMLDivElement>(null);
-  const lines = useMemo(() => code.split('\n'), [code]);
-  const isLongCode = lines.length > PREVIEW_LINES;
-  const displayedLines = isExpanded ? lines : lines.slice(0, PREVIEW_LINES);
+  const langBtnRef = useRef<HTMLButtonElement>(null);
 
-  // Extracted hook — keeps this function's complexity well below S3776 threshold
-  const highlightedHtml = useHighlightedHtml(code, language, isDark);
+  useEffect(() => { setActiveLang(language); }, [language]);
 
-  // Lock body scroll in fullscreen
+  const bg        = isDark ? '#0d0d0d' : '#ECEAE5';
+  const fg        = isDark ? '#e8e8e8' : '#1a1a1a';
+  const borderCls = isDark ? 'border-white/10' : 'border-black/10';
+  const hoverCls  = isDark ? 'hover:bg-white/10' : 'hover:bg-black/10';
+  const activeBg  = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
+
+  const lines = useMemo(() => {
+    const raw = code.split('\n');
+    if (raw[raw.length - 1] === '') raw.pop();
+    return raw;
+  }, [code]);
+
+  const isLongCode = lines.length > VISIBLE_LINES;
+
+  const highlightedHtml = useHighlightedHtml(code, activeLang, isDark, searchQuery);
+
   useEffect(() => {
     document.body.style.overflow = isFullscreen ? 'hidden' : '';
-    return () => {
-      document.body.style.overflow = '';
-    };
+    return () => { document.body.style.overflow = ''; };
   }, [isFullscreen]);
 
-  // Search — find which line indices match the query
   const matchedLines = useMemo(() => {
     if (!searchQuery) return new Set<number>();
     const lowerQ = searchQuery.toLowerCase();
-    return new Set(
-      lines.reduce<number[]>((acc, line, i) => {
-        if (line.toLowerCase().includes(lowerQ)) acc.push(i);
-        return acc;
-      }, [])
-    );
+    return new Set(lines.reduce<number[]>((acc, line, i) => {
+      if (line.toLowerCase().includes(lowerQ)) acc.push(i);
+      return acc;
+    }, []));
   }, [lines, searchQuery]);
 
-  const handleCopy = () => {
+  const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(code);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
-  };
+  }, [code]);
 
-  // Theme tokens
-  const bg = isDark ? '#0a0a0a' : '#E8E7E3';
-  const fg = isDark ? '#ffffff' : '#000000';
-  const border = isDark ? 'border-white/10' : 'border-black/10';
-  const btnHover = isDark ? 'hover:bg-white/10' : 'hover:bg-black/10';
+  const handleLangBtnClick = useCallback(() => {
+    if (langBtnRef.current) {
+      setLangBtnRect(langBtnRef.current.getBoundingClientRect());
+    }
+    setShowLangPicker((p) => !p);
+  }, []);
 
-  // Shared code body props
   const bodyProps: CodeBodyProps = {
-    lines: displayedLines,
+    lines,
     matchedLines,
     searchQuery,
     fg,
@@ -364,18 +442,50 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
     highlightedHtml,
   };
 
-  // Shared elements — defined once, reused in both normal and fullscreen views
+  const fadeGradient = `linear-gradient(to bottom, transparent 0%, ${bg} 100%)`;
+
+  // ── Shared toolbar elements ─────────────────────────────────────────────
+
   const copyBtn = (
     <ToolbarButton
       onClick={handleCopy}
       title={isCopied ? 'Скопировано!' : 'Копировать'}
       label={isCopied ? 'Готово' : 'Копировать'}
       icon={isCopied ? <Check size={14} /> : <Copy size={14} />}
-      color={isCopied ? '#22c55e' : fg}
-      border={border}
-      btnHover={btnHover}
+      color={isCopied ? '#22c55e' : undefined}
+      borderCls={borderCls}
+      hoverCls={hoverCls}
       fg={fg}
     />
+  );
+
+  const langBtn = (
+    <>
+      <ToolbarButton
+        btnRef={langBtnRef}
+        onClick={handleLangBtnClick}
+        title="Сменить подсветку"
+        label={activeLang || 'Авто'}
+        icon={<Code2 size={14} />}
+        borderCls={borderCls}
+        hoverCls={hoverCls}
+        fg={fg}
+        active={showLangPicker}
+        activeBg={activeBg}
+      />
+      {showLangPicker && langBtnRect && (
+        <LangPicker
+          currentLang={activeLang}
+          onSelect={setActiveLang}
+          onClose={() => setShowLangPicker(false)}
+          anchorRect={langBtnRect}
+          bg={bg}
+          fg={fg}
+          borderCls={borderCls}
+          isDark={isDark}
+        />
+      )}
+    </>
   );
 
   const searchBoxEl = (
@@ -385,7 +495,7 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
       matchCount={matchedLines.size}
       bg={bg}
       fg={fg}
-      border={border}
+      borderCls={borderCls}
     />
   );
 
@@ -394,31 +504,28 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
     return (
       <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
         <div
-          className={`w-full max-w-4xl max-h-screen flex flex-col rounded-lg border ${border} not-prose`}
+          className={`w-full max-w-4xl max-h-screen flex flex-col rounded-lg border ${borderCls} not-prose`}
           style={{ background: bg }}
         >
-          <div
-            className={`border-b px-4 md:px-6 py-4 flex flex-wrap items-center justify-between gap-4 ${border}`}
-            style={{ background: bg }}
-          >
+          <div className={`border-b px-3 py-2 flex flex-wrap items-center gap-2 ${borderCls}`} style={{ background: bg }}>
             {searchBoxEl}
-            <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-              <span className="text-xs opacity-60 whitespace-nowrap">Строк: {lines.length}</span>
-              {copyBtn}
-              <ToolbarButton
-                onClick={() => setIsFullscreen(false)}
-                title="Свернуть"
-                label="Свернуть"
-                icon={<Minimize2 size={14} />}
-                border={border}
-                btnHover={btnHover}
-                fg={fg}
-              />
-            </div>
+            <span style={{ fontSize: '11px', color: fg, opacity: 0.4, whiteSpace: 'nowrap' }}>
+              {lines.length} строк
+            </span>
+            {copyBtn}
+            {langBtn}
+            <ToolbarButton
+              onClick={() => setIsFullscreen(false)}
+              title="Свернуть"
+              label="Свернуть"
+              icon={<Minimize2 size={14} />}
+              borderCls={borderCls}
+              hoverCls={hoverCls}
+              fg={fg}
+            />
           </div>
-
           <div className="flex-1 overflow-auto not-prose">
-            <CodeBody {...bodyProps} lines={lines} />
+            <CodeBody {...bodyProps} />
           </div>
         </div>
       </div>
@@ -427,42 +534,52 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
 
   // ── Normal view ─────────────────────────────────────────────────────────
   return (
-    <div className="my-4 not-prose">
-      <div
-        className={`rounded-lg overflow-hidden border ${border} not-prose`}
-        style={{ background: bg }}
-      >
-        <div
-          className={`border-b px-3 md:px-4 py-3 flex flex-wrap gap-2 items-center ${border}`}
-          style={{ background: bg }}
-        >
+    <div className="my-3 not-prose">
+      <div className={`rounded-lg overflow-hidden border ${borderCls} not-prose`} style={{ background: bg }}>
+
+        {/* Toolbar */}
+        <div className={`border-b px-3 py-2 flex flex-wrap items-center gap-2 ${borderCls}`} style={{ background: bg }}>
           {searchBoxEl}
           <div className="flex gap-1.5 flex-shrink-0">
             {copyBtn}
+            {langBtn}
             <ToolbarButton
               onClick={() => setIsFullscreen(true)}
               title="Полноэкранный режим"
               label="Развернуть"
               icon={<Maximize2 size={14} />}
-              border={border}
-              btnHover={btnHover}
+              borderCls={borderCls}
+              hoverCls={hoverCls}
               fg={fg}
             />
           </div>
         </div>
 
-        <div ref={codeRef} className="overflow-auto max-h-96 not-prose">
+        {/* Code area */}
+        <div
+          className="not-prose relative overflow-hidden transition-[max-height] duration-300"
+          style={{ maxHeight: isExpanded ? 'none' : `${COLLAPSED_HEIGHT}px` }}
+        >
           <CodeBody {...bodyProps} />
+
+          {isLongCode && !isExpanded && (
+            <div
+              className="absolute bottom-0 left-0 right-0 pointer-events-none"
+              style={{ height: `${LINE_HEIGHT_PX * 2.5}px`, background: fadeGradient }}
+            />
+          )}
         </div>
 
-        {isLongCode && !isExpanded && (
+        {/* Expand / collapse */}
+        {isLongCode && (
           <button
-            onClick={() => setIsExpanded(true)}
-            className={`w-full border-t py-3 text-sm flex items-center justify-center gap-2 ${border}`}
-            style={{ background: bg, color: fg }}
+            onClick={() => setIsExpanded((p) => !p)}
+            className={`w-full border-t py-2 text-xs flex items-center justify-center gap-1.5 transition-colors ${borderCls} ${hoverCls}`}
+            style={{ background: bg, color: fg, opacity: 0.7 }}
           >
-            <ChevronDown size={16} />
-            <span>Открыть полностью ({lines.length} строк)</span>
+            {isExpanded
+              ? <><ChevronUp size={13} /><span>Скрыть</span></>
+              : <><ChevronDown size={13} /><span>Открыть полностью ({lines.length} строк)</span></>}
           </button>
         )}
       </div>
