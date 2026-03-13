@@ -1,401 +1,983 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+/**
+ * UnifiedSearchPanel — Command Palette style search
+ *
+ * Features:
+ * - Desktop: centered modal with backdrop blur
+ * - Mobile: fullscreen (matches BottomSheet pattern in project)
+ * - Icons from doc.icon (parsed from [A][icon-name] filenames)
+ * - Full-text search via loadDocument → strips HTML → caches in module Map
+ * - Filters: typename, category (from categoryPath), tags (wrap, not scroll), date
+ * - Proper <a href> navigation (works in dev/Astro/Vite)
+ * - Keyboard nav: ↑↓ Enter Esc
+ */
+
+import React, {
+  useState, useMemo, useEffect, useCallback, useRef, memo,
+} from 'react';
 import { useTheme } from '@/shared/contexts/ThemeContext';
 import { useDebounce } from '@/shared/hooks/useDebounce';
-import { getInputClasses, getCardClasses, getTextClasses, getBadgeClasses } from '@/shared/lib/classUtils';
-import { SearchIcon } from './icons';
-import { X, ChevronDown } from 'lucide-react';
 import { useDocuments } from '@/features/docs/hooks/useDocuments';
+import {
+  Search, X, Hash, Clock, ChevronRight,
+  Loader2, RefreshCw, CalendarDays, SlidersHorizontal,
+  ArrowUpDown, Layers, Tag, ArrowDown, ArrowUp,
+} from 'lucide-react';
 
-interface UnifiedSearchPanelProps {
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface UnifiedSearchPanelProps {
   onClose: () => void;
 }
 
-interface SearchResult {
+interface CategoryPathItem {
+  slug: string;
+  title: string;
+  icon: string | null;
+}
+
+interface DocMeta {
   id: string;
   slug: string;
   title: string;
   description: string;
   type: string;
   typename?: string;
-  category?: string;
   author?: string;
   date?: string;
+  updated?: string;
   tags?: string[];
+  icon?: string;
+  navSlug?: string;
+  navTitle?: string;
+  categoryPath?: CategoryPathItem[];
 }
 
-type SortOption = 'date-desc' | 'date-asc';
+interface IndexedDoc extends DocMeta {
+  plainText: string;
+}
 
-const getFilterButtonClasses = (isActive: boolean, isDark: boolean): string => {
-  if (isActive) {
-    return isDark
-      ? 'bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border-2 border-blue-500 font-semibold'
-      : 'bg-blue-100 hover:bg-blue-200 text-blue-700 border-2 border-blue-600 font-semibold';
-  }
-  return isDark
-    ? 'bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border-2 border-transparent'
-    : 'bg-black/5 hover:bg-black/10 text-black/70 hover:text-black border-2 border-transparent';
-};
+// 'new'     = published within last 30 days
+// 'updated' = has `updated` field within last 30 days
+// (no 'old' filter — old docs sorted via sortOrder instead)
+type DateFilter = 'all' | 'new' | 'updated';
+type SortOrder  = 'date-desc' | 'date-asc';
 
-const CheckboxList: React.FC<{
-  items: string[];
-  selected: Set<string>;
-  onToggle: (item: string) => void;
-  isDark: boolean;
-  prefix?: string;
-}> = ({ items, selected, onToggle, isDark, prefix = '' }) => {
-  const borderColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-  const emptyTextClass = getTextClasses(isDark, '50');
-  
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function getSnippet(text: string, query: string, radius = 100): string {
+  const idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return text.slice(0, radius * 2).trim() + '…';
+  const start = Math.max(0, idx - radius);
+  const end   = Math.min(text.length, idx + query.length + radius);
+  return (start > 0 ? '…' : '') + text.slice(start, end).trim() + (end < text.length ? '…' : '');
+}
+
+function scoreDoc(doc: IndexedDoc, q: string): number {
+  const lq = q.toLowerCase();
+  let s = 0;
+  if (doc.title.toLowerCase().includes(lq))              s += 12;
+  if (doc.typename?.toLowerCase().includes(lq))          s +=  4;
+  if (doc.description.toLowerCase().includes(lq))        s +=  3;
+  if (doc.tags?.some(t => t.toLowerCase().includes(lq))) s +=  2;
+  if (doc.plainText.toLowerCase().includes(lq))          s +=  1;
+  return s;
+}
+
+function fmtDate(d: string): string {
+  return new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function getDocUrl(doc: DocMeta): string {
+  if (doc.slug === 'welcome') return '/';
+  return `/${doc.slug}`;
+}
+
+// ─── Highlight ────────────────────────────────────────────────────────────────
+
+const Highlight = memo(function Highlight({ text, query }: { text: string; query: string }) {
+  if (!query.trim()) return <>{text}</>;
+  const re    = new RegExp(`(${escapeRe(query)})`, 'gi');
+  const parts = text.split(re);
   return (
-    <div 
-      className="space-y-1 max-h-40 overflow-y-auto border rounded-lg p-2" 
-      style={{ borderColor }}
-    >
-      {items.length === 0 ? (
-        <p className={`text-xs text-center py-2 ${emptyTextClass}`}>
-          Не найдено
-        </p>
-      ) : (
-        items.map(item => {
-          const isSelected = selected.has(item);
-          
-          let itemBgClass: string;
-          if (isSelected) {
-            itemBgClass = isDark ? 'bg-blue-600/20' : 'bg-blue-100';
-          } else {
-            itemBgClass = isDark ? 'hover:bg-white/5' : 'hover:bg-black/5';
-          }
-          
-          let itemTextClass: string;
-          if (isSelected) {
-            itemTextClass = isDark ? 'text-blue-400 font-semibold' : 'text-blue-700 font-semibold';
-          } else {
-            itemTextClass = isDark ? 'text-white/70' : 'text-black/70';
-          }
-          
-          return (
-            <label
-              key={item}
-              className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${itemBgClass}`}
-            >
-              <input 
-                type="checkbox" 
-                checked={isSelected} 
-                onChange={() => onToggle(item)} 
-                className="rounded" 
-              />
-              <span className={`text-xs ${itemTextClass}`}>
-                {prefix}{item}
-              </span>
-            </label>
-          );
-        })
+    <>
+      {parts.map((part, i) =>
+        re.test(part)
+          ? <mark key={i} style={{ background: 'rgba(255,200,50,0.3)', color: 'inherit', borderRadius: '2px', padding: '0 1px' }}>{part}</mark>
+          : part
       )}
-    </div>
+    </>
   );
-};
+});
+
+// ─── Dynamic Lucide icon (same pattern as Sidebar) ───────────────────────────
+
+const lucideIconCache = new Map<string, React.FC<{ size?: number; style?: React.CSSProperties }>>();
+
+const LucideIcon = memo(function LucideIcon({
+  name, size = 14, style,
+}: {
+  name: string;
+  size?: number;
+  style?: React.CSSProperties;
+}) {
+  const [Icon, setIcon] = useState<React.FC<{ size?: number; style?: React.CSSProperties }> | null>(
+    () => lucideIconCache.get(name) ?? null
+  );
+  useEffect(() => {
+    if (!name || lucideIconCache.has(name)) return;
+    const pascal = name.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('');
+    import('lucide-react').then((mod) => {
+      const ic = (mod as Record<string, unknown>)[pascal] as React.FC<{ size?: number; style?: React.CSSProperties }> | undefined;
+      if (ic) { lucideIconCache.set(name, ic); setIcon(() => ic); }
+    });
+  }, [name]);
+  if (!Icon) return <span style={{ width: size, height: size, display: 'inline-block', flexShrink: 0 }} />;
+  return <Icon size={size} style={style} />;
+});
+
+// ─── Module-level content cache (survives re-mounts) ─────────────────────────
+const contentCache = new Map<string, string>(); // slug → plain text
+
+// ─── Color theme ──────────────────────────────────────────────────────────────
+
+function makeColors(isDark: boolean) {
+  return isDark ? {
+    overlay:          'rgba(0,0,0,0.65)',
+    bg:               '#0F0F0F',
+    surface:          '#141414',
+    border:           'rgba(255,255,255,0.08)',
+    borderStrong:     'rgba(255,255,255,0.16)',
+    fg:               '#e8e8e8',
+    fgMuted:          'rgba(255,255,255,0.42)',
+    fgSub:            'rgba(255,255,255,0.22)',
+    pillBg:           'rgba(255,255,255,0.06)',
+    pillActive:       'rgba(255,255,255,0.13)',
+    pillBorder:       'rgba(255,255,255,0.09)',
+    pillActiveBorder: 'rgba(255,255,255,0.32)',
+    itemHover:        'rgba(255,255,255,0.04)',
+    itemActive:       'rgba(255,255,255,0.09)',
+    kbd:              'rgba(255,255,255,0.07)',
+    kbdBorder:        'rgba(255,255,255,0.13)',
+    tagBg:            'rgba(255,255,255,0.06)',
+    divider:          'rgba(255,255,255,0.07)',
+    iconBg:           'rgba(255,255,255,0.06)',
+    iconBorder:       'rgba(255,255,255,0.09)',
+    contentBadge:     'rgba(59,130,246,0.15)',
+    contentBadgeFg:   'rgba(147,197,253,0.9)',
+    filterActiveBg:   'rgba(255,255,255,0.09)',
+    sectionLabel:     'rgba(255,255,255,0.2)',
+    resetBg:          'rgba(239,68,68,0.1)',
+    resetBorder:      'rgba(239,68,68,0.3)',
+    resetFg:          '#f87171',
+  } : {
+    overlay:          'rgba(0,0,0,0.28)',
+    bg:               '#E1E0DC',
+    surface:          '#D8D7D3',
+    border:           'rgba(0,0,0,0.08)',
+    borderStrong:     'rgba(0,0,0,0.16)',
+    fg:               '#111111',
+    fgMuted:          'rgba(0,0,0,0.45)',
+    fgSub:            'rgba(0,0,0,0.28)',
+    pillBg:           'rgba(0,0,0,0.05)',
+    pillActive:       'rgba(0,0,0,0.11)',
+    pillBorder:       'rgba(0,0,0,0.09)',
+    pillActiveBorder: 'rgba(0,0,0,0.32)',
+    itemHover:        'rgba(0,0,0,0.03)',
+    itemActive:       'rgba(0,0,0,0.07)',
+    kbd:              'rgba(0,0,0,0.06)',
+    kbdBorder:        'rgba(0,0,0,0.12)',
+    tagBg:            'rgba(0,0,0,0.06)',
+    divider:          'rgba(0,0,0,0.07)',
+    iconBg:           'rgba(0,0,0,0.05)',
+    iconBorder:       'rgba(0,0,0,0.08)',
+    contentBadge:     'rgba(37,99,235,0.1)',
+    contentBadgeFg:   'rgba(37,99,235,0.85)',
+    filterActiveBg:   'rgba(0,0,0,0.08)',
+    sectionLabel:     'rgba(0,0,0,0.25)',
+    resetBg:          'rgba(239,68,68,0.08)',
+    resetBorder:      'rgba(239,68,68,0.25)',
+    resetFg:          '#dc2626',
+  };
+}
+type C = ReturnType<typeof makeColors>;
+
+// ─── Pill ─────────────────────────────────────────────────────────────────────
+
+const Pill: React.FC<{
+  label: React.ReactNode;
+  active: boolean;
+  C: C;
+  onClick: () => void;
+}> = ({ label, active, C, onClick }) => (
+  <button
+    onClick={onClick}
+    style={{
+      display: 'inline-flex', alignItems: 'center', gap: '4px',
+      padding: '4px 11px',
+      borderRadius: '20px',
+      border: `1px solid ${active ? C.pillActiveBorder : C.pillBorder}`,
+      background: active ? C.pillActive : C.pillBg,
+      color: active ? C.fg : C.fgMuted,
+      fontSize: '12px',
+      fontWeight: active ? 600 : 400,
+      cursor: 'pointer',
+      transition: 'all 0.1s',
+      lineHeight: 1.5,
+      whiteSpace: 'nowrap',
+      flexShrink: 0,
+    }}
+  >
+    {label}
+  </button>
+);
+
+// ─── FilterSection ────────────────────────────────────────────────────────────
+
+const FilterSection: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  C: C;
+  children: React.ReactNode;
+}> = ({ icon, label, C, children }) => (
+  <div>
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: '5px',
+      fontSize: '10px', fontWeight: 700, textTransform: 'uppercase',
+      letterSpacing: '0.07em', color: C.sectionLabel,
+      marginBottom: '7px',
+    }}>
+      {icon}{label}
+    </div>
+    {/* flex-wrap so tags don't scroll — they wrap instead */}
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+      {children}
+    </div>
+  </div>
+);
+
+// ─── ResultItem ───────────────────────────────────────────────────────────────
+
+interface ResultItemProps {
+  doc: IndexedDoc;
+  query: string;
+  isSelected: boolean;
+  idx: number;
+  C: C;
+  onHover: () => void;
+}
+
+const ResultItem = memo(function ResultItem({
+  doc, query, isSelected, idx, C, onHover,
+}: ResultItemProps) {
+  const q = query.toLowerCase();
+  const inTitle   = Boolean(q && doc.title.toLowerCase().includes(q));
+  const inDesc    = Boolean(q && doc.description.toLowerCase().includes(q));
+  const inContent = Boolean(q && doc.plainText.toLowerCase().includes(q));
+
+  let snippet = doc.description.slice(0, 140) + (doc.description.length > 140 ? '…' : '');
+  if (query) {
+    if (inContent && !inTitle && !inDesc) {
+      snippet = getSnippet(doc.plainText, query);
+    } else if (inDesc) {
+      snippet = getSnippet(doc.description, query);
+    }
+  }
+
+  const showContentBadge = Boolean(query && inContent && !inTitle && !inDesc);
+  const url = getDocUrl(doc);
+
+  return (
+    <a
+      href={url}
+      data-idx={idx}
+      onMouseEnter={onHover}
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '10px',
+        padding: '9px 10px',
+        borderRadius: '10px',
+        textDecoration: 'none',
+        color: 'inherit',
+        background: isSelected ? C.itemActive : 'transparent',
+        transition: 'background 0.07s',
+        marginBottom: '1px',
+        outline: 'none',
+      }}
+    >
+      {/* Icon — from doc.icon (parsed from [A][icon-name]) */}
+      <div style={{
+        flexShrink: 0,
+        width: '32px', height: '32px',
+        borderRadius: '8px',
+        background: C.iconBg,
+        border: `1px solid ${C.iconBorder}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        marginTop: '1px',
+      }}>
+        {doc.icon
+          ? <LucideIcon name={doc.icon} size={14} style={{ color: C.fgMuted }} />
+          : <Search size={12} style={{ color: C.fgSub }} />
+        }
+      </div>
+
+      {/* Content */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Title + badges */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '2px' }}>
+          <span style={{ fontSize: '14px', fontWeight: 600, color: C.fg, lineHeight: 1.3 }}>
+            <Highlight text={doc.title} query={query} />
+          </span>
+          {doc.typename?.trim() && (
+            <span style={{
+              fontSize: '10px', padding: '1px 7px', borderRadius: '10px',
+              background: C.tagBg, color: C.fgMuted,
+              fontWeight: 600, letterSpacing: '0.05em',
+              textTransform: 'uppercase', flexShrink: 0,
+            }}>
+              {doc.typename}
+            </span>
+          )}
+          {showContentBadge && (
+            <span style={{
+              fontSize: '10px', padding: '1px 6px', borderRadius: '8px',
+              background: C.contentBadge, color: C.contentBadgeFg, flexShrink: 0,
+            }}>
+              в тексте
+            </span>
+          )}
+        </div>
+
+        {/* Snippet */}
+        <p style={{
+          fontSize: '12px', color: C.fgMuted, margin: 0, lineHeight: 1.5,
+          overflow: 'hidden', display: '-webkit-box',
+          WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const,
+        }}>
+          <Highlight text={snippet} query={query} />
+        </p>
+
+        {/* Tags + dates */}
+        {((doc.tags && doc.tags.length > 0) || doc.date || doc.updated) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '5px', flexWrap: 'wrap' }}>
+            {doc.tags?.slice(0, 4).map(tag => (
+              <span key={tag} style={{
+                display: 'inline-flex', alignItems: 'center', gap: '2px',
+                fontSize: '10px', color: C.fgSub,
+                background: C.tagBg, padding: '1px 6px', borderRadius: '8px',
+              }}>
+                <Hash size={8} />{tag}
+              </span>
+            ))}
+            <span style={{ flex: 1 }} />
+            {doc.updated ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '10px', color: C.fgSub }}>
+                <RefreshCw size={8} />{fmtDate(doc.updated)}
+              </span>
+            ) : doc.date ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '10px', color: C.fgSub }}>
+                <CalendarDays size={8} />{fmtDate(doc.date)}
+              </span>
+            ) : null}
+          </div>
+        )}
+      </div>
+
+      <ChevronRight size={13} style={{
+        color: isSelected ? C.fgMuted : 'transparent',
+        flexShrink: 0, marginTop: '9px', transition: 'color 0.1s',
+      }} />
+    </a>
+  );
+});
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const { isDark } = useTheme();
-  const { manifest: docs } = useDocuments();
-  
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTypenames, setSelectedTypenames] = useState<Set<string>>(new Set());
-  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
-  const [sortBy, setSortBy] = useState<SortOption>('date-desc');
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [tagSearch, setTagSearch] = useState('');
-  
-  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  const { manifest: docs, loadDocument } = useDocuments();
+  const C = useMemo(() => makeColors(isDark), [isDark]);
 
+  const [query, setQuery]               = useState('');
+  const [filterTypename, setFilterTypename] = useState<string>('all');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [activeTags, setActiveTags]     = useState<Set<string>>(new Set());
+  const [dateFilter, setDateFilter]     = useState<DateFilter>('all');
+  const [sortOrder, setSortOrder]       = useState<SortOrder>('date-desc');
+  const [showFilters, setShowFilters]   = useState(false);
+  const [indexing, setIndexing]         = useState(false);
+  const [indexed, setIndexed]           = useState(false);
+  const [contentIndex, setContentIndex] = useState<Map<string, string>>(new Map());
+  const [selectedIdx, setSelectedIdx]   = useState(0);
+  const [isMobile, setIsMobile]         = useState(false);
+
+  const inputRef   = useRef<HTMLInputElement>(null);
+  const listRef    = useRef<HTMLDivElement>(null);
+  const debouncedQ = useDebounce(query, 200);
+
+  // ── Mobile detection ──────────────────────────────────────────────────────
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => { 
-      if (e.key === 'Escape') onClose(); 
-    };
-    document.addEventListener('keydown', handleEscape);
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  // ── Mount: focus + scroll lock + Esc ──────────────────────────────────────
+  useEffect(() => {
+    inputRef.current?.focus();
     document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
     return () => {
-      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('keydown', onKey);
       document.body.style.overflow = '';
     };
   }, [onClose]);
 
+  // ── Full-text index build (lazy, on first keystroke) ──────────────────────
+  useEffect(() => {
+    if (debouncedQ.length < 1 || indexed || indexing) return;
+    setIndexing(true);
+
+    const build = async () => {
+      const map = new Map<string, string>();
+
+      await Promise.allSettled(
+        (docs as DocMeta[]).map(async (doc) => {
+          // Use module-level cache to avoid refetching on re-mount
+          if (contentCache.has(doc.slug)) {
+            map.set(doc.slug, contentCache.get(doc.slug)!);
+            return;
+          }
+
+          let text = '';
+          try {
+            // Primary: loadDocument hook (returns { content: HTML })
+            const full = await loadDocument(doc.slug);
+            if (full?.content) {
+              text = stripHtml(full.content);
+            }
+          } catch {
+            // Fallback: direct JSON fetch — works in Astro dev mode
+            try {
+              const res = await fetch(`/data/docs/${doc.slug}.json`);
+              if (res.ok) {
+                const json = await res.json();
+                if (json?.content) text = stripHtml(json.content);
+              }
+            } catch { /* ignore */ }
+          }
+
+          contentCache.set(doc.slug, text);
+          map.set(doc.slug, text);
+        })
+      );
+
+      setContentIndex(map);
+      setIndexed(true);
+      setIndexing(false);
+    };
+
+    build();
+  }, [debouncedQ, docs, indexed, indexing, loadDocument]);
+
+  // ── Derived data ──────────────────────────────────────────────────────────
   const allTypenames = useMemo(() => {
-    const typenames = new Set<string>();
-    docs.forEach(doc => {
-      const typename = doc.typename?.trim();
-      if (typename) {
-        typenames.add(typename);
-      }
+    const s = new Set<string>();
+    (docs as DocMeta[]).forEach(d => { if (d.typename?.trim()) s.add(d.typename.trim()); });
+    return Array.from(s).sort();
+  }, [docs]);
+
+  // Categories from categoryPath (same as Sidebar)
+  const allCategories = useMemo(() => {
+    const m = new Map<string, string>(); // slug → title
+    (docs as DocMeta[]).forEach(d => {
+      d.categoryPath?.forEach(cp => { m.set(cp.slug, cp.title); });
     });
-    return Array.from(typenames).sort();
+    return Array.from(m.entries()).sort((a, b) => a[1].localeCompare(b[1]));
   }, [docs]);
 
   const allTags = useMemo(() => {
-    const tags = new Set<string>();
-    docs.forEach(doc => { 
-      doc.tags?.forEach(tag => tags.add(tag)); 
-    });
-    return Array.from(tags).sort();
+    const s = new Set<string>();
+    (docs as DocMeta[]).forEach(d => d.tags?.forEach(t => s.add(t)));
+    return Array.from(s).sort();
   }, [docs]);
 
-  const filteredResults = useMemo(() => {
-    let results = [...docs] as SearchResult[];
+  const hasUpdatedDocs = useMemo(() =>
+    (docs as DocMeta[]).some(d => d.updated),
+    [docs]
+  );
 
-    if (selectedTypenames.size > 0) {
-      results = results.filter(doc => {
-        return doc.typename && selectedTypenames.has(doc.typename);
+  // ── Search + filter ───────────────────────────────────────────────────────
+  const results = useMemo<IndexedDoc[]>(() => {
+    let list = (docs as DocMeta[]).map(d => ({
+      ...d,
+      plainText: contentIndex.get(d.slug) ?? '',
+    }));
+
+    if (filterTypename !== 'all')
+      list = list.filter(d => d.typename === filterTypename);
+
+    if (filterCategory !== 'all')
+      list = list.filter(d => d.categoryPath?.some(cp => cp.slug === filterCategory));
+
+    if (activeTags.size > 0)
+      list = list.filter(d => d.tags?.some(t => activeTags.has(t)));
+
+    // Date filter — "new" = published in last 30d, "updated" = updated in last 30d
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    if (dateFilter === 'new')
+      list = list.filter(d => d.date && new Date(d.date).getTime() >= cutoff);
+    else if (dateFilter === 'updated')
+      list = list.filter(d => d.updated && new Date(d.updated).getTime() >= cutoff);
+
+    const q = debouncedQ.trim();
+    if (q) {
+      list = list
+        .map(d => ({ d, score: scoreDoc(d, q) }))
+        .filter(({ score }) => score > 0)
+        .sort((a, b) => b.score - a.score)
+        .map(({ d }) => d);
+    } else {
+      // No query: sort by chosen order
+      list = list.sort((a, b) => {
+        const diff = new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime();
+        return sortOrder === 'date-desc' ? diff : -diff;
       });
     }
-    
-    if (selectedTags.size > 0) {
-      results = results.filter(doc => {
-        return doc.tags?.some(tag => selectedTags.has(tag));
-      });
+
+    return list.slice(0, 30);
+  }, [debouncedQ, docs, contentIndex, filterTypename, filterCategory, activeTags, dateFilter, sortOrder]);
+
+  useEffect(() => { setSelectedIdx(0); }, [results]);
+
+  // ── Keyboard navigation ───────────────────────────────────────────────────
+  // Use keydown on input — Enter triggers real <a> click (works in dev)
+  const handleInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIdx(i => Math.min(i + 1, results.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIdx(i => Math.max(i - 1, 0));
+    } else if (e.key === 'Enter' && results[selectedIdx]) {
+      e.preventDefault();
+      // Trigger the <a> element directly — works in dev with Astro/Vite
+      const el = listRef.current?.querySelector<HTMLAnchorElement>(`[data-idx="${selectedIdx}"]`);
+      if (el) el.click();
     }
+  }, [results, selectedIdx]);
 
-    if (debouncedSearchQuery.trim()) {
-      const query = debouncedSearchQuery.toLowerCase();
-      results = results.filter(doc => {
-        const titleMatch = doc.title.toLowerCase().includes(query);
-        const descriptionMatch = doc.description.toLowerCase().includes(query);
-        const authorMatch = doc.author?.toLowerCase().includes(query) ?? false;
-        const tagMatch = doc.tags?.some(tag => tag.toLowerCase().includes(query)) ?? false;
-        const typenameMatch = doc.typename?.toLowerCase().includes(query) ?? false;
-        const typeMatch = doc.type?.toLowerCase().includes(query) ?? false;
-        
-        return titleMatch || descriptionMatch || authorMatch || tagMatch || typenameMatch || typeMatch;
-      });
-    }
+  // Scroll selected item into view
+  useEffect(() => {
+    const el = listRef.current?.querySelector(`[data-idx="${selectedIdx}"]`) as HTMLElement | null;
+    el?.scrollIntoView({ block: 'nearest' });
+  }, [selectedIdx]);
 
-    results.sort((a, b) => {
-      const dateA = new Date(a.date || 0).getTime();
-      const dateB = new Date(b.date || 0).getTime();
-      const diff = dateB - dateA;
-      return sortBy === 'date-desc' ? diff : -diff;
-    });
-
-    return results.slice(0, 20);
-  }, [docs, selectedTypenames, selectedTags, debouncedSearchQuery, sortBy]);
-
-  const toggleSet = useCallback((setFn: React.Dispatch<React.SetStateAction<Set<string>>>, item: string) => {
-    setFn(prev => {
+  const toggleTag = useCallback((tag: string) => {
+    setActiveTags(prev => {
       const next = new Set(prev);
-      if (next.has(item)) {
-        next.delete(item);
-      } else {
-        next.add(item);
-      }
+      next.has(tag) ? next.delete(tag) : next.add(tag);
       return next;
     });
   }, []);
 
-  const handleReset = useCallback(() => {
-    setSearchQuery('');
-    setSelectedTypenames(new Set());
-    setSelectedTags(new Set());
-    setSortBy('date-desc');
+  const resetFilters = useCallback(() => {
+    setFilterTypename('all');
+    setFilterCategory('all');
+    setActiveTags(new Set());
+    setDateFilter('all');
   }, []);
 
-  const getDocUrl = useCallback((doc: SearchResult): string => {
-    if (doc.slug === 'welcome') return '/';
-    return doc.type?.trim() ? `/${doc.type}/${doc.slug}` : `/${doc.slug}`;
-  }, []);
+  const activeFiltersCount = [
+    filterTypename !== 'all',
+    filterCategory !== 'all',
+    activeTags.size > 0,
+    dateFilter !== 'all',
+  ].filter(Boolean).length;
 
-  const handleResultClick = useCallback((doc: SearchResult) => {
-    const url = getDocUrl(doc);
-    const link = document.createElement('a');
-    link.href = url;
-    link.click();
-  }, [getDocUrl]);
+  const hasActiveFilters = activeFiltersCount > 0;
+  const showResults = debouncedQ.trim().length > 0 || hasActiveFilters;
 
-  const activeFiltersCount = selectedTypenames.size + selectedTags.size;
-  const bg = isDark ? '#0F0F0F' : '#E1E0DC';
-  const border = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-  
-  const searchIconClass = `w-5 h-5 flex-shrink-0 ${getTextClasses(isDark, '40')}`;
-  const inputClass = `flex-1 bg-transparent outline-none text-base ${
-    isDark ? 'text-white placeholder-white/40' : 'text-black placeholder-black/40'
-  }`;
-  const closeButtonClass = `flex-shrink-0 p-1.5 rounded-lg transition-colors ${
-    isDark ? 'text-white hover:bg-white/10' : 'text-black hover:bg-black/10'
-  }`;
-  const advancedButtonClass = `w-full px-4 py-3 flex items-center justify-between transition-colors ${
-    isDark ? 'text-white hover:bg-white/5' : 'text-black hover:bg-black/5'
-  }`;
-  const chevronClass = `transition-transform duration-200 ${
-    showAdvanced ? 'rotate-180' : ''
-  } ${getTextClasses(isDark, '70')}`;
+  // ── Layout: desktop = centered modal, mobile = fullscreen ────────────────
+  // Mobile fullscreen matches BottomSheet / TocPanel pattern in this project
+  const panelStyle: React.CSSProperties = isMobile
+    ? {
+        position: 'fixed', inset: 0, zIndex: 62,
+        background: C.bg,
+        display: 'flex', flexDirection: 'column',
+        overflow: 'hidden',
+      }
+    : {
+        position: 'fixed',
+        top: '10vh',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: 'min(680px, 92vw)',
+        maxHeight: '78vh',
+        zIndex: 62,
+        background: C.bg,
+        border: `1px solid ${C.border}`,
+        borderRadius: '16px',
+        boxShadow: isDark
+          ? '0 40px 100px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.04) inset'
+          : '0 40px 100px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,255,255,0.6) inset',
+        overflow: 'hidden',
+        display: 'flex', flexDirection: 'column',
+        animation: 'sp-panel-in 0.18s cubic-bezier(.22,.61,.36,1)',
+      };
 
+  // ──────────────────────────────────────────────────────────────────────────
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col" style={{ backgroundColor: bg }}>
+    <>
+      <style>{`
+        @keyframes sp-panel-in {
+          from { opacity:0; transform:translateX(-50%) translateY(-8px) scale(0.97); }
+          to   { opacity:1; transform:translateX(-50%) translateY(0) scale(1); }
+        }
+        @keyframes sp-overlay-in { from{opacity:0;} to{opacity:1;} }
+        @keyframes sp-spin { to { transform:rotate(360deg); } }
+        .sp-scroll::-webkit-scrollbar       { width:4px; }
+        .sp-scroll::-webkit-scrollbar-track { background:transparent; }
+        .sp-scroll::-webkit-scrollbar-thumb { background:rgba(128,128,128,0.25); border-radius:4px; }
+      `}</style>
 
-      {/* Шапка с поиском */}
-      <div className="flex-shrink-0 flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: border }}>
-        <SearchIcon className={searchIconClass} />
-        <input
-          type="text"
-          placeholder="Поиск по заголовку, описанию, тегам..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          autoFocus
-          className={inputClass}
-        />
-        <button
+      {/* Backdrop (desktop only) */}
+      {!isMobile && (
+        <div
           onClick={onClose}
-          className={closeButtonClass}
-        >
-          <X size={20} />
-        </button>
-      </div>
-
-      {/* Быстрый фильтр по typename */}
-      {allTypenames.length > 0 && (
-        <div className="flex-shrink-0 px-4 py-3 border-b flex gap-2 flex-wrap" style={{ borderColor: border }}>
-          {allTypenames.map(t => (
-            <button
-              key={t}
-              onClick={() => toggleSet(setSelectedTypenames, t)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                getFilterButtonClasses(selectedTypenames.has(t), isDark)
-              }`}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
+          style={{
+            position: 'fixed', inset: 0, zIndex: 61,
+            background: C.overlay,
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            animation: 'sp-overlay-in 0.15s ease',
+          }}
+        />
       )}
 
-      {/* Расширенные фильтры — аккордеон */}
-      <div className="flex-shrink-0 border-b" style={{ borderColor: border }}>
-        <button
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className={advancedButtonClass}
-        >
-          <span className="text-sm font-medium">
-            Расширенные фильтры {activeFiltersCount > 0 && `(${activeFiltersCount})`}
-          </span>
-          <ChevronDown size={18} className={chevronClass} />
-        </button>
+      {/* ── Panel ─────────────────────────────────────────────────────────── */}
+      <div style={panelStyle}>
 
-        {showAdvanced && (
-          <div className="px-4 pb-4 space-y-4" style={{ backgroundColor: bg }}>
+        {/* Search row */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '10px',
+          padding: '0 14px',
+          background: C.surface,
+          borderBottom: `1px solid ${C.border}`,
+          flexShrink: 0,
+        }}>
+          {indexing
+            ? <Loader2 size={17} style={{ color: C.fgMuted, flexShrink: 0, animation: 'sp-spin 0.9s linear infinite' }} />
+            : <Search size={17} style={{ color: C.fgMuted, flexShrink: 0 }} />
+          }
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            onKeyDown={handleInputKeyDown}
+            placeholder="Поиск по документам…"
+            style={{
+              flex: 1, border: 'none', outline: 'none',
+              background: 'transparent', color: C.fg,
+              fontSize: '15px', padding: '15px 0',
+              fontFamily: 'inherit', lineHeight: 1,
+            }}
+          />
 
-            {/* Теги */}
-            {allTags.length > 0 && (
-              <div>
-                <h4 className={`text-xs font-semibold mb-2 ${getTextClasses(isDark, '70')}`}>
-                  Теги {selectedTags.size > 0 && `(${selectedTags.size})`}
-                </h4>
-                <input
-                  type="text"
-                  placeholder="Поиск по тегам..."
-                  value={tagSearch}
-                  onChange={(e) => setTagSearch(e.target.value)}
-                  className={`w-full px-3 py-2 mb-2 rounded-lg text-xs border outline-none ${getInputClasses(isDark)}`}
+          {query && (
+            <button
+              onClick={() => { setQuery(''); inputRef.current?.focus(); }}
+              style={{
+                border: 'none', background: 'none', cursor: 'pointer',
+                color: C.fgMuted, padding: '4px', borderRadius: '6px',
+                display: 'flex', flexShrink: 0,
+              }}
+            >
+              <X size={15} />
+            </button>
+          )}
+
+          {/* Filters toggle button */}
+          <button
+            onClick={() => setShowFilters(v => !v)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '5px',
+              border: `1px solid ${showFilters || hasActiveFilters ? C.borderStrong : C.border}`,
+              background: showFilters || hasActiveFilters ? C.filterActiveBg : C.kbd,
+              borderRadius: '8px',
+              color: showFilters || hasActiveFilters ? C.fg : C.fgMuted,
+              fontSize: '12px', padding: '5px 10px',
+              cursor: 'pointer', fontFamily: 'inherit',
+              lineHeight: 1, flexShrink: 0,
+              fontWeight: hasActiveFilters ? 600 : 400,
+            }}
+          >
+            <SlidersHorizontal size={13} />
+            {!isMobile && 'Фильтры'}
+            {hasActiveFilters && (
+              <span style={{
+                background: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.14)',
+                borderRadius: '10px', padding: '0 5px',
+                fontSize: '10px', lineHeight: '1.6',
+              }}>
+                {activeFiltersCount}
+              </span>
+            )}
+          </button>
+
+          {/* Close button */}
+          {isMobile ? (
+            <button
+              onClick={onClose}
+              style={{
+                border: 'none', background: 'none', cursor: 'pointer',
+                color: C.fgMuted, padding: '4px 6px', borderRadius: '6px',
+                display: 'flex', flexShrink: 0,
+              }}
+            >
+              <X size={18} />
+            </button>
+          ) : (
+            <kbd
+              onClick={onClose}
+              style={{
+                border: `1px solid ${C.kbdBorder}`, background: C.kbd,
+                borderRadius: '6px', color: C.fgMuted,
+                fontSize: '11px', padding: '3px 8px',
+                cursor: 'pointer', fontFamily: 'monospace',
+                lineHeight: 1.5, flexShrink: 0,
+                userSelect: 'none',
+              }}
+            >
+              Esc
+            </kbd>
+          )}
+        </div>
+
+        {/* ── Filter panel (collapsible) ───────────────────────────────────── */}
+        {showFilters && (
+          <div
+            className="sp-scroll"
+            style={{
+              borderBottom: `1px solid ${C.border}`,
+              background: C.surface,
+              padding: '12px 14px',
+              display: 'flex', flexDirection: 'column', gap: '14px',
+              flexShrink: 0,
+              overflowY: 'auto',
+              maxHeight: '260px',
+            }}
+          >
+            {/* Date */}
+            <FilterSection icon={<CalendarDays size={10} />} label="Дата публикации" C={C}>
+              <Pill label="Все" active={dateFilter === 'all'} C={C} onClick={() => setDateFilter('all')} />
+              <Pill
+                label={<><CalendarDays size={10} />Новые (30д)</>}
+                active={dateFilter === 'new'} C={C}
+                onClick={() => setDateFilter(v => v === 'new' ? 'all' : 'new')}
+              />
+              {hasUpdatedDocs && (
+                <Pill
+                  label={<><RefreshCw size={10} />Обновлённые (30д)</>}
+                  active={dateFilter === 'updated'} C={C}
+                  onClick={() => setDateFilter(v => v === 'updated' ? 'all' : 'updated')}
                 />
-                <CheckboxList
-                  items={allTags.filter(t => t.toLowerCase().includes(tagSearch.toLowerCase()))}
-                  selected={selectedTags}
-                  onToggle={(item) => toggleSet(setSelectedTags, item)}
-                  isDark={isDark}
-                  prefix="#"
-                />
-              </div>
+              )}
+            </FilterSection>
+
+            {/* Sort order */}
+            <FilterSection icon={<ArrowUpDown size={10} />} label="Сортировка" C={C}>
+              <Pill
+                label={<><ArrowDown size={10} />Сначала новые</>}
+                active={sortOrder === 'date-desc'} C={C}
+                onClick={() => setSortOrder('date-desc')}
+              />
+              <Pill
+                label={<><ArrowUp size={10} />Сначала старые</>}
+                active={sortOrder === 'date-asc'} C={C}
+                onClick={() => setSortOrder('date-asc')}
+              />
+            </FilterSection>
+
+            {/* Typename */}
+            {allTypenames.length > 0 && (
+              <FilterSection icon={<Layers size={10} />} label="Тип" C={C}>
+                <Pill label="Все" active={filterTypename === 'all'} C={C}
+                  onClick={() => setFilterTypename('all')} />
+                {allTypenames.map(t => (
+                  <Pill key={t} label={t} active={filterTypename === t} C={C}
+                    onClick={() => setFilterTypename(v => v === t ? 'all' : t)} />
+                ))}
+              </FilterSection>
             )}
 
-            {/* Сортировка */}
-            <div>
-              <h4 className={`text-xs font-semibold mb-2 ${getTextClasses(isDark, '70')}`}>
-                Сортировка
-              </h4>
-              <div className="flex gap-2 flex-wrap">
-                <button
-                  onClick={() => setSortBy('date-desc')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    getFilterButtonClasses(sortBy === 'date-desc', isDark)
-                  }`}
-                >
-                  Сначала новые
-                </button>
-                <button
-                  onClick={() => setSortBy('date-asc')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    getFilterButtonClasses(sortBy === 'date-asc', isDark)
-                  }`}
-                >
-                  Сначала старые
-                </button>
-              </div>
-            </div>
+            {/* Category — from categoryPath (same as Sidebar) */}
+            {allCategories.length > 0 && (
+              <FilterSection icon={<Layers size={10} />} label="Категория" C={C}>
+                <Pill label="Все" active={filterCategory === 'all'} C={C}
+                  onClick={() => setFilterCategory('all')} />
+                {allCategories.map(([slug, title]) => (
+                  <Pill key={slug} label={title} active={filterCategory === slug} C={C}
+                    onClick={() => setFilterCategory(v => v === slug ? 'all' : slug)} />
+                ))}
+              </FilterSection>
+            )}
 
-            {activeFiltersCount > 0 && (
+            {/* Tags — flex-wrap, NO horizontal scroll */}
+            {allTags.length > 0 && (
+              <FilterSection icon={<Tag size={10} />} label="Теги" C={C}>
+                {allTags.map(tag => (
+                  <button
+                    key={tag}
+                    onClick={() => toggleTag(tag)}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '3px',
+                      padding: '4px 9px', borderRadius: '20px',
+                      border: `1px solid ${activeTags.has(tag) ? C.pillActiveBorder : C.pillBorder}`,
+                      background: activeTags.has(tag) ? C.pillActive : 'transparent',
+                      color: activeTags.has(tag) ? C.fg : C.fgSub,
+                      fontSize: '11px', fontWeight: activeTags.has(tag) ? 600 : 400,
+                      cursor: 'pointer', transition: 'all 0.1s', lineHeight: 1.5,
+                    }}
+                  >
+                    <Hash size={9} />{tag}
+                  </button>
+                ))}
+              </FilterSection>
+            )}
+
+            {/* Reset */}
+            {hasActiveFilters && (
               <button
-                onClick={handleReset}
-                className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  isDark
-                    ? 'bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500'
-                    : 'bg-red-100 hover:bg-red-200 text-red-700 border border-red-600'
-                }`}
+                onClick={resetFilters}
+                style={{
+                  alignSelf: 'flex-start',
+                  border: `1px solid ${C.resetBorder}`,
+                  background: C.resetBg,
+                  borderRadius: '8px', color: C.resetFg,
+                  fontSize: '12px', padding: '5px 12px',
+                  cursor: 'pointer',
+                }}
               >
-                Сбросить все фильтры
+                × Сбросить фильтры
               </button>
             )}
           </div>
         )}
-      </div>
 
-      {/* Результаты */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 pb-24">
-        {filteredResults.length > 0 ? (
-          <>
-            <p className={`text-xs font-semibold mb-3 ${getTextClasses(isDark, '50')}`}>
-              Найдено: {filteredResults.length}
-            </p>
-            <div className="space-y-2">
-              {filteredResults.map((result) => (
-                <button
-                  key={result.id}
-                  onClick={() => handleResultClick(result)}
-                  className={`w-full text-left p-3 rounded-lg transition-colors border ${getCardClasses(isDark)}`}
-                >
-                  {result.typename?.trim() && (
-                    <div className="mb-1">
-                      <span className={`text-xs px-2 py-0.5 rounded ${getBadgeClasses(isDark, 'default')}`}>
-                        {result.typename}
-                      </span>
-                    </div>
-                  )}
-                  <h4 className={`font-semibold text-sm mb-1 ${isDark ? 'text-white' : 'text-black'}`}>
-                    {result.title}
-                  </h4>
-                  <p className={`text-xs ${getTextClasses(isDark, '50')}`}>
-                    {result.description.substring(0, 100)}...
-                  </p>
-                  {result.tags && result.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {result.tags.slice(0, 3).map(tag => (
-                        <span key={tag} className={`text-xs px-1.5 py-0.5 rounded ${getBadgeClasses(isDark, 'light')}`}>
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </button>
-              ))}
+        {/* ── Results ─────────────────────────────────────────────────────── */}
+        <div
+          ref={listRef}
+          className="sp-scroll"
+          style={{ flex: 1, overflowY: 'auto', padding: '6px 6px 10px' }}
+        >
+          {/* Status line */}
+          {showResults && (
+            <div style={{
+              padding: '3px 10px 5px', fontSize: '11px', color: C.fgSub,
+              display: 'flex', gap: '6px', alignItems: 'center',
+            }}>
+              <span>
+                {results.length} результат{results.length === 1 ? '' : results.length < 5 ? 'а' : 'ов'}
+              </span>
+              {indexed  && debouncedQ && <span style={{ opacity: 0.7 }}>· с поиском по содержимому</span>}
+              {indexing && <span style={{ opacity: 0.7 }}>· индексируем документы…</span>}
             </div>
-          </>
-        ) : (
-          <div className="text-center py-12">
-            <p className={`text-sm ${getTextClasses(isDark, '60')}`}>
-              {searchQuery || activeFiltersCount > 0
-                ? 'Ничего не найдено. Попробуйте изменить запрос или фильтры.'
-                : 'Начните вводить запрос или выберите фильтры'}
-            </p>
+          )}
+
+          {/* Empty state — show recent docs */}
+          {!showResults && (
+            <>
+              <div style={{
+                padding: '8px 10px 4px', fontSize: '10px', color: C.fgSub,
+                textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 700,
+                display: 'flex', alignItems: 'center', gap: '5px',
+              }}>
+                <Clock size={10} /> Последние документы
+              </div>
+              {results.slice(0, 6).map((doc, i) => (
+                <ResultItem key={doc.id} doc={doc} query="" isSelected={i === selectedIdx}
+                  idx={i} C={C} onHover={() => setSelectedIdx(i)} />
+              ))}
+              <p style={{ textAlign: 'center', fontSize: '12px', color: C.fgSub, padding: '10px 0 4px', margin: 0 }}>
+                Начните вводить запрос для полнотекстового поиска
+              </p>
+            </>
+          )}
+
+          {/* No results */}
+          {showResults && results.length === 0 && (
+            <div style={{ padding: '48px 16px', textAlign: 'center' }}>
+              <Search size={26} style={{ color: C.fgSub, margin: '0 auto 10px' }} />
+              <p style={{ color: C.fgMuted, fontSize: '14px', margin: 0 }}>Ничего не найдено</p>
+              <p style={{ color: C.fgSub, fontSize: '12px', margin: '4px 0 0' }}>
+                Попробуйте другой запрос или сбросьте фильтры
+              </p>
+            </div>
+          )}
+
+          {/* Result list */}
+          {showResults && results.map((doc, i) => (
+            <ResultItem
+              key={doc.id} doc={doc} query={debouncedQ}
+              isSelected={i === selectedIdx} idx={i} C={C}
+              onHover={() => setSelectedIdx(i)}
+            />
+          ))}
+        </div>
+
+        {/* ── Footer (desktop only) ─────────────────────────────────────── */}
+        {!isMobile && (
+          <div style={{
+            borderTop: `1px solid ${C.divider}`,
+            padding: '6px 14px',
+            display: 'flex', alignItems: 'center', gap: '14px',
+            flexShrink: 0,
+          }}>
+            {([
+              { keys: ['↑', '↓'], label: 'навигация' },
+              { keys: ['↵'],      label: 'открыть'   },
+              { keys: ['Esc'],    label: 'закрыть'   },
+            ] as const).map(({ keys, label }) => (
+              <span key={label} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: C.fgSub }}>
+                {keys.map(k => (
+                  <kbd key={k} style={{
+                    background: C.kbd, border: `1px solid ${C.kbdBorder}`,
+                    borderRadius: '4px', padding: '1px 5px',
+                    fontFamily: 'monospace', fontSize: '10px', color: C.fgMuted,
+                  }}>
+                    {k}
+                  </kbd>
+                ))}
+                <span>{label}</span>
+              </span>
+            ))}
+            {indexed && (
+              <span style={{ marginLeft: 'auto', fontSize: '10px', color: C.fgSub, opacity: 0.6 }}>
+                full-text ✓
+              </span>
+            )}
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 };
 
