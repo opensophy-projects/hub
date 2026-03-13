@@ -13,6 +13,7 @@
     "generate": "npm run generate:docs && npm run generate:sitemap"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.2.1",
     "astro": "^6.0.4",
     "clsx": "^2.1.1",
     "framer-motion": "^12.24.7",
