@@ -40,49 +40,56 @@ function getHeadingText(heading: Element): string {
   return heading.textContent?.trim() || '';
 }
 
+// Общая утилита сбора заголовков из DOM
+function scanHeadings(): TocItem[] {
+  const container =
+    document.querySelector('[data-article-content]') ||
+    document.querySelector('article') ||
+    document.querySelector('main');
+
+  if (!container) return [];
+
+  const headings = container.querySelectorAll('h2, h3, h4');
+  const items: TocItem[] = [];
+  headings.forEach((heading, index) => {
+    const id = heading.id || `heading-${index}`;
+    if (!heading.id) heading.id = id;
+    items.push({
+      id,
+      text: getHeadingText(heading),
+      level: Number.parseInt(heading.tagName[1], 10),
+    });
+  });
+  return items;
+}
+
 const MobileNavbarInner: React.FC = () => {
   const { isDark, setSidebarOpen } = useTheme();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isTocOpen, setIsTocOpen] = useState(false);
   const [toc, setToc] = useState<TocItem[]>([]);
 
+  // Фоновый сбор TOC через MutationObserver — заполняет кэш как только DOM готов
   useEffect(() => {
-    const generateTOC = (): boolean => {
-      const container =
-        document.querySelector('[data-article-content]') ||
-        document.querySelector('article') ||
-        document.querySelector('main');
-
-      if (!container) return false;
-
-      const headings = container.querySelectorAll('h2, h3, h4');
-      if (headings.length === 0) return false;
-
-      const items: TocItem[] = [];
-      headings.forEach((heading, index) => {
-        const id = heading.id || `heading-${index}`;
-        if (!heading.id) heading.id = id;
-        items.push({
-          id,
-          text: getHeadingText(heading),
-          level: Number.parseInt(heading.tagName[1], 10),
-        });
-      });
-
+    const items = scanHeadings();
+    if (items.length > 0) {
       setToc(items);
-      return true;
-    };
-
-    if (generateTOC()) return;
+      return;
+    }
 
     const observer = new MutationObserver(() => {
-      if (generateTOC()) observer.disconnect();
+      const found = scanHeadings();
+      if (found.length > 0) {
+        setToc(found);
+        observer.disconnect();
+      }
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
 
     const fallback = setTimeout(() => {
-      generateTOC();
+      const found = scanHeadings();
+      if (found.length > 0) setToc(found);
       observer.disconnect();
     }, 3000);
 
@@ -92,33 +99,22 @@ const MobileNavbarInner: React.FC = () => {
     };
   }, []);
 
+  // FIX БАГ 2: всегда делаем свежий scan в момент нажатия — не полагаемся на
+  // закэшированный state, который мог быть пустым если DOM ещё не был готов
   const handleTocOpen = () => {
-    if (toc.length === 0) {
-      const container =
-        document.querySelector('[data-article-content]') ||
-        document.querySelector('article') ||
-        document.querySelector('main');
+    const freshItems = scanHeadings();
 
-      if (container) {
-        const headings = container.querySelectorAll('h2, h3, h4');
-        const items: TocItem[] = [];
-        headings.forEach((heading, index) => {
-          const id = heading.id || `heading-${index}`;
-          if (!heading.id) heading.id = id;
-          items.push({
-            id,
-            text: getHeadingText(heading),
-            level: Number.parseInt(heading.tagName[1], 10),
-          });
-        });
-        if (items.length > 0) {
-          setToc(items);
-          setIsTocOpen(true);
-          return;
-        }
-      }
+    if (freshItems.length > 0) {
+      // Обновляем кэш и сразу открываем
+      setToc(freshItems);
+      setIsTocOpen(true);
+    } else if (toc.length > 0) {
+      // Свежий scan пустой, но кэш есть — используем кэш (страница не изменилась)
+      setIsTocOpen(true);
+    } else {
+      // Совсем нет заголовков — открываем панель с сообщением "нет оглавления"
+      setIsTocOpen((v) => !v);
     }
-    setIsTocOpen((v) => !v);
   };
 
   const handleScrollTop = () => {
