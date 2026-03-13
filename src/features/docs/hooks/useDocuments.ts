@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 
 export interface DocMetadata {
   id: string;
@@ -16,14 +16,9 @@ export interface DocMetadata {
   robots?: string;
   lang?: string;
   icon?: string;
-  // Nav-popover fields
   navSlug?: string;
   navTitle?: string;
   navIcon?: string;
-}
-
-export interface DocWithContent extends DocMetadata {
-  content: string;
 }
 
 export function useDocuments() {
@@ -48,16 +43,5 @@ export function useDocuments() {
       });
   }, []);
 
-  const loadDocument = useCallback(async (slug: string): Promise<DocWithContent | null> => {
-    try {
-      const response = await fetch(`/data/docs/${slug}.json`);
-      if (!response.ok) throw new Error(`Document not found: ${slug}`);
-      return await response.json();
-    } catch (err) {
-      console.error(`Failed to load document ${slug}:`, err);
-      return null;
-    }
-  }, []);
-
-  return { manifest, loading, error, loadDocument };
+  return { manifest, loading, error };
 }
