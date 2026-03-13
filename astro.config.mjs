@@ -1,10 +1,12 @@
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
-import tailwind from '@astrojs/tailwind';
+import tailwindcss from '@tailwindcss/vite';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 async function generateDocs() {
   const { execSync } = await import('node:child_process');
   try {
@@ -13,8 +15,9 @@ async function generateDocs() {
     console.error('Failed to generate docs:', error);
   }
 }
+
 export default defineConfig({
-  integrations: [react(), tailwind()],
+  integrations: [react()],
   site: 'https://hub.opensophy.com',
   output: 'static',
   srcDir: './src/app',
@@ -22,6 +25,7 @@ export default defineConfig({
     assets: 'assets',
   },
   vite: {
+    plugins: [tailwindcss()],
     ssr: {
       external: ['isomorphic-dompurify'],
     },
@@ -36,9 +40,7 @@ export default defineConfig({
           chunkFileNames: 'assets/[name].[hash].js',
           assetFileNames: 'assets/[name].[hash][extname]',
           manualChunks(id) {
-            if (id.includes('node_modules/lucide-react')) {
-              return 'lucide';
-            }
+            if (id.includes('node_modules/lucide-react')) return 'lucide';
             if (id.includes('node_modules/react-dom')) return 'vendor-react';
             if (id.includes('node_modules/react/')) return 'vendor-react';
             if (id.includes('node_modules/framer-motion')) return 'vendor-motion';
