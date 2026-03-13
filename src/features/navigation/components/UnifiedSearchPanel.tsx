@@ -4,10 +4,10 @@
  * Features:
  * - Desktop: centered modal with backdrop blur
  * - Mobile: fullscreen
- * - Full-text search via loadDocument → strips HTML → caches in module Map
- * - Content indexing starts eagerly on mount (not waiting for first keystroke)
+ * - Full-text search via loadDocument(slug) — reads .md files from Docs/
+ * - Content indexing starts eagerly on mount
  * - Filters: typename, category, tags, date
- * - "Load more" pagination
+ * - "Load more" pagination in BOTH recent-docs mode AND search-results mode
  * - Keyboard nav: ↑↓ Enter Esc
  */
 
@@ -59,8 +59,8 @@ interface IndexedDoc extends DocMeta {
 type DateFilter = 'all' | 'new' | 'updated';
 type SortOrder  = 'date-desc' | 'date-asc';
 
-const PAGE_SIZE    = 10; // initial results shown
-const LOAD_MORE_N  = 10; // how many more to show each time
+const PAGE_SIZE   = 10;
+const LOAD_MORE_N = 10;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -106,7 +106,8 @@ function getDocUrl(doc: DocMeta): string {
 }
 
 // ─── Module-level content cache (survives re-mounts) ─────────────────────────
-const contentCache = new Map<string, string>(); // slug → plain text
+// slug → plain text from loadDocument(slug).content (HTML from MD, stripped)
+const contentCache = new Map<string, string>();
 
 // ─── Highlight ────────────────────────────────────────────────────────────────
 
@@ -183,9 +184,9 @@ function makeColors(isDark: boolean) {
     resetBorder:      'rgba(239,68,68,0.3)',
     resetFg:          '#f87171',
     loadMoreBg:       'rgba(255,255,255,0.06)',
-    loadMoreBorder:   'rgba(255,255,255,0.12)',
-    loadMoreFg:       'rgba(255,255,255,0.6)',
-    loadMoreHover:    'rgba(255,255,255,0.1)',
+    loadMoreBorder:   'rgba(255,255,255,0.1)',
+    loadMoreFg:       'rgba(255,255,255,0.45)',
+    loadMoreHoverBg:  'rgba(255,255,255,0.1)',
   } : {
     overlay:          'rgba(0,0,0,0.28)',
     bg:               '#E1E0DC',
@@ -214,10 +215,10 @@ function makeColors(isDark: boolean) {
     resetBg:          'rgba(239,68,68,0.08)',
     resetBorder:      'rgba(239,68,68,0.25)',
     resetFg:          '#dc2626',
-    loadMoreBg:       'rgba(0,0,0,0.05)',
-    loadMoreBorder:   'rgba(0,0,0,0.12)',
-    loadMoreFg:       'rgba(0,0,0,0.55)',
-    loadMoreHover:    'rgba(0,0,0,0.08)',
+    loadMoreBg:       'rgba(0,0,0,0.04)',
+    loadMoreBorder:   'rgba(0,0,0,0.1)',
+    loadMoreFg:       'rgba(0,0,0,0.45)',
+    loadMoreHoverBg:  'rgba(0,0,0,0.07)',
   };
 }
 type C = ReturnType<typeof makeColors>;
@@ -234,18 +235,13 @@ const Pill: React.FC<{
     onClick={onClick}
     style={{
       display: 'inline-flex', alignItems: 'center', gap: '4px',
-      padding: '4px 11px',
-      borderRadius: '20px',
+      padding: '4px 11px', borderRadius: '20px',
       border: `1px solid ${active ? C.pillActiveBorder : C.pillBorder}`,
       background: active ? C.pillActive : C.pillBg,
       color: active ? C.fg : C.fgMuted,
-      fontSize: '12px',
-      fontWeight: active ? 600 : 400,
-      cursor: 'pointer',
-      transition: 'all 0.1s',
-      lineHeight: 1.5,
-      whiteSpace: 'nowrap',
-      flexShrink: 0,
+      fontSize: '12px', fontWeight: active ? 600 : 400,
+      cursor: 'pointer', transition: 'all 0.1s',
+      lineHeight: 1.5, whiteSpace: 'nowrap', flexShrink: 0,
     }}
   >
     {label}
@@ -264,8 +260,7 @@ const FilterSection: React.FC<{
     <div style={{
       display: 'flex', alignItems: 'center', gap: '5px',
       fontSize: '10px', fontWeight: 700, textTransform: 'uppercase',
-      letterSpacing: '0.07em', color: C.sectionLabel,
-      marginBottom: '7px',
+      letterSpacing: '0.07em', color: C.sectionLabel, marginBottom: '7px',
     }}>
       {icon}{label}
     </div>
@@ -312,24 +307,17 @@ const ResultItem = memo(function ResultItem({
       data-idx={idx}
       onMouseEnter={onHover}
       style={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: '10px',
-        padding: '9px 10px',
-        borderRadius: '10px',
-        textDecoration: 'none',
-        color: 'inherit',
+        display: 'flex', alignItems: 'flex-start', gap: '10px',
+        padding: '9px 10px', borderRadius: '10px',
+        textDecoration: 'none', color: 'inherit',
         background: isSelected ? C.itemActive : 'transparent',
         transition: 'background 0.07s',
-        marginBottom: '1px',
-        outline: 'none',
+        marginBottom: '1px', outline: 'none',
       }}
     >
       <div style={{
-        flexShrink: 0,
-        width: '32px', height: '32px',
-        borderRadius: '8px',
-        background: C.iconBg,
+        flexShrink: 0, width: '32px', height: '32px',
+        borderRadius: '8px', background: C.iconBg,
         border: `1px solid ${C.iconBorder}`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         marginTop: '1px',
@@ -452,12 +440,13 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     };
   }, [onClose]);
 
-  // ── EAGER full-text index — starts immediately when docs are loaded ────────
-  // No waiting for keystroke. contentCache survives re-mounts.
+  // ── EAGER full-text index ─────────────────────────────────────────────────
+  // loadDocument(slug) reads the .md file from Docs/ via the existing hook.
+  // Returns { content: string } where content is rendered HTML.
+  // We strip tags to get plain text for full-text search.
   useEffect(() => {
     if (docs.length === 0 || indexed || indexing) return;
 
-    // If all docs are already in cache, use them immediately
     const allCached = (docs as DocMeta[]).every(d => contentCache.has(d.slug));
     if (allCached) {
       const map = new Map<string, string>();
@@ -478,20 +467,11 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
             map.set(doc.slug, contentCache.get(doc.slug)!);
             return;
           }
-
           let text = '';
           try {
             const full = await loadDocument(doc.slug);
             if (full?.content) text = stripHtml(full.content);
-          } catch {
-            try {
-              const res = await fetch(`/data/docs/${doc.slug}.json`);
-              if (res.ok) {
-                const json = await res.json();
-                if (json?.content) text = stripHtml(json.content);
-              }
-            } catch { /* ignore */ }
-          }
+          } catch { /* skip — search will still work on title/desc/tags */ }
 
           contentCache.set(doc.slug, text);
           map.set(doc.slug, text);
@@ -530,7 +510,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const hasUpdatedDocs = useMemo(() =>
     (docs as DocMeta[]).some(d => d.updated), [docs]);
 
-  // ── Search + filter (full result list, no slice here) ─────────────────────
+  // ── allResults: full sorted/filtered list (no pagination here) ────────────
   const allResults = useMemo<IndexedDoc[]>(() => {
     let list = (docs as DocMeta[]).map(d => ({
       ...d,
@@ -539,10 +519,8 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
 
     if (filterTypename !== 'all')
       list = list.filter(d => d.typename === filterTypename);
-
     if (filterCategory !== 'all')
       list = list.filter(d => d.categoryPath?.some(cp => cp.slug === filterCategory));
-
     if (activeTags.size > 0)
       list = list.filter(d => d.tags?.some(t => activeTags.has(t)));
 
@@ -575,9 +553,21 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     setVisibleCount(PAGE_SIZE);
   }, [allResults]);
 
-  // Visible slice
-  const results = useMemo(() => allResults.slice(0, visibleCount), [allResults, visibleCount]);
-  const hasMore = visibleCount < allResults.length;
+  // Paginated slice — same for both modes
+  const results  = useMemo(() => allResults.slice(0, visibleCount), [allResults, visibleCount]);
+  const hasMore  = visibleCount < allResults.length;
+  const remaining = allResults.length - visibleCount;
+
+  const activeFiltersCount = [
+    filterTypename !== 'all',
+    filterCategory !== 'all',
+    activeTags.size > 0,
+    dateFilter !== 'all',
+  ].filter(Boolean).length;
+  const hasActiveFilters = activeFiltersCount > 0;
+
+  // recent-docs mode = no query AND no active filters
+  const showResults = debouncedQ.trim().length > 0 || hasActiveFilters;
 
   // ── Keyboard navigation ───────────────────────────────────────────────────
   const handleInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -614,16 +604,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     setDateFilter('all');
   }, []);
 
-  const activeFiltersCount = [
-    filterTypename !== 'all',
-    filterCategory !== 'all',
-    activeTags.size > 0,
-    dateFilter !== 'all',
-  ].filter(Boolean).length;
-
-  const hasActiveFilters = activeFiltersCount > 0;
-  const showResults = debouncedQ.trim().length > 0 || hasActiveFilters;
-
   // ── Layout ────────────────────────────────────────────────────────────────
   const panelStyle: React.CSSProperties = isMobile
     ? {
@@ -634,11 +614,9 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
       }
     : {
         position: 'fixed',
-        top: '10vh',
-        left: '50%',
+        top: '10vh', left: '50%',
         transform: 'translateX(-50%)',
-        width: 'min(680px, 92vw)',
-        maxHeight: '78vh',
+        width: 'min(680px, 92vw)', maxHeight: '78vh',
         zIndex: 62,
         background: C.bg,
         border: `1px solid ${C.border}`,
@@ -679,10 +657,9 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
         />
       )}
 
-      {/* ── Panel ─────────────────────────────────────────────────────────── */}
       <div style={panelStyle}>
 
-        {/* Search row */}
+        {/* ── Search row ──────────────────────────────────────────────────── */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: '10px',
           padding: '0 14px',
@@ -690,7 +667,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
           borderBottom: `1px solid ${C.border}`,
           flexShrink: 0,
         }}>
-          {/* Search / spinner icon */}
           {indexing
             ? <Loader2 size={17} style={{ color: C.fgMuted, flexShrink: 0, animation: 'sp-spin 0.9s linear infinite' }} />
             : <Search size={17} style={{ color: C.fgMuted, flexShrink: 0 }} />
@@ -710,7 +686,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
             }}
           />
 
-          {/* Clear query */}
           {query && (
             <button
               onClick={() => { setQuery(''); inputRef.current?.focus(); }}
@@ -724,7 +699,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
             </button>
           )}
 
-          {/* Filters toggle */}
           <button
             onClick={() => setShowFilters(v => !v)}
             style={{
@@ -752,15 +726,13 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
             )}
           </button>
 
-          {/* Close button — всегда крестик (X) */}
           <button
             onClick={onClose}
             title="Закрыть"
             style={{
               border: 'none', background: 'none', cursor: 'pointer',
               color: C.fgMuted, padding: '4px', borderRadius: '6px',
-              display: 'flex', flexShrink: 0,
-              transition: 'color 0.15s',
+              display: 'flex', flexShrink: 0, transition: 'color 0.15s',
             }}
             onMouseEnter={e => (e.currentTarget.style.color = C.fg)}
             onMouseLeave={e => (e.currentTarget.style.color = C.fgMuted)}
@@ -778,12 +750,9 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
               background: C.surface,
               padding: '12px 14px',
               display: 'flex', flexDirection: 'column', gap: '14px',
-              flexShrink: 0,
-              overflowY: 'auto',
-              maxHeight: '260px',
+              flexShrink: 0, overflowY: 'auto', maxHeight: '260px',
             }}
           >
-            {/* Date */}
             <FilterSection icon={<CalendarDays size={10} />} label="Дата публикации" C={C}>
               <Pill label="Все" active={dateFilter === 'all'} C={C} onClick={() => setDateFilter('all')} />
               <Pill
@@ -800,7 +769,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
               )}
             </FilterSection>
 
-            {/* Sort */}
             <FilterSection icon={<ArrowUpDown size={10} />} label="Сортировка" C={C}>
               <Pill
                 label={<><ArrowDown size={10} />Сначала новые</>}
@@ -814,7 +782,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
               />
             </FilterSection>
 
-            {/* Typename */}
             {allTypenames.length > 0 && (
               <FilterSection icon={<Layers size={10} />} label="Тип" C={C}>
                 <Pill label="Все" active={filterTypename === 'all'} C={C}
@@ -826,7 +793,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
               </FilterSection>
             )}
 
-            {/* Category */}
             {allCategories.length > 0 && (
               <FilterSection icon={<Layers size={10} />} label="Категория" C={C}>
                 <Pill label="Все" active={filterCategory === 'all'} C={C}
@@ -838,7 +804,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
               </FilterSection>
             )}
 
-            {/* Tags */}
             {allTags.length > 0 && (
               <FilterSection icon={<Tag size={10} />} label="Теги" C={C}>
                 {allTags.map(tag => (
@@ -861,7 +826,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
               </FilterSection>
             )}
 
-            {/* Reset */}
             {hasActiveFilters && (
               <button
                 onClick={resetFilters}
@@ -880,27 +844,47 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
           </div>
         )}
 
-        {/* ── Results list ──────────────────────────────────────────────── */}
+        {/* ── Results / Recent docs list ────────────────────────────────── */}
         <div
           ref={listRef}
           className="sp-scroll"
           style={{ flex: 1, overflowY: 'auto', padding: '6px 6px 10px' }}
         >
-          {/* Status */}
+          {/* Search results mode */}
           {showResults && (
-            <div style={{
-              padding: '3px 10px 5px', fontSize: '11px', color: C.fgSub,
-              display: 'flex', gap: '6px', alignItems: 'center',
-            }}>
-              <span>
-                {allResults.length} результат{allResults.length === 1 ? '' : allResults.length < 5 ? 'а' : 'ов'}
-              </span>
-              {indexed  && debouncedQ && <span style={{ opacity: 0.7 }}>· с поиском по содержимому</span>}
-              {indexing && <span style={{ opacity: 0.7 }}>· индексируем…</span>}
-            </div>
+            <>
+              <div style={{
+                padding: '3px 10px 5px', fontSize: '11px', color: C.fgSub,
+                display: 'flex', gap: '6px', alignItems: 'center',
+              }}>
+                <span>
+                  {allResults.length} результат{allResults.length === 1 ? '' : allResults.length < 5 ? 'а' : 'ов'}
+                </span>
+                {indexed  && debouncedQ && <span style={{ opacity: 0.7 }}>· с поиском по содержимому</span>}
+                {indexing && <span style={{ opacity: 0.7 }}>· индексируем…</span>}
+              </div>
+
+              {allResults.length === 0 && (
+                <div style={{ padding: '48px 16px', textAlign: 'center' }}>
+                  <Search size={26} style={{ color: C.fgSub, margin: '0 auto 10px' }} />
+                  <p style={{ color: C.fgMuted, fontSize: '14px', margin: 0 }}>Ничего не найдено</p>
+                  <p style={{ color: C.fgSub, fontSize: '12px', margin: '4px 0 0' }}>
+                    Попробуйте другой запрос или сбросьте фильтры
+                  </p>
+                </div>
+              )}
+
+              {results.map((doc, i) => (
+                <ResultItem
+                  key={doc.id} doc={doc} query={debouncedQ}
+                  isSelected={i === selectedIdx} idx={i} C={C}
+                  onHover={() => setSelectedIdx(i)}
+                />
+              ))}
+            </>
           )}
 
-          {/* Empty state — recent docs */}
+          {/* Recent docs mode */}
           {!showResults && (
             <>
               <div style={{
@@ -910,58 +894,37 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
               }}>
                 <Clock size={10} /> Последние документы
               </div>
-              {results.slice(0, 6).map((doc, i) => (
-                <ResultItem key={doc.id} doc={doc} query="" isSelected={i === selectedIdx}
-                  idx={i} C={C} onHover={() => setSelectedIdx(i)} />
+
+              {results.map((doc, i) => (
+                <ResultItem
+                  key={doc.id} doc={doc} query=""
+                  isSelected={i === selectedIdx} idx={i} C={C}
+                  onHover={() => setSelectedIdx(i)}
+                />
               ))}
-              <p style={{ textAlign: 'center', fontSize: '12px', color: C.fgSub, padding: '10px 0 4px', margin: 0 }}>
-                Начните вводить запрос для полнотекстового поиска
-              </p>
             </>
           )}
 
-          {/* No results */}
-          {showResults && allResults.length === 0 && (
-            <div style={{ padding: '48px 16px', textAlign: 'center' }}>
-              <Search size={26} style={{ color: C.fgSub, margin: '0 auto 10px' }} />
-              <p style={{ color: C.fgMuted, fontSize: '14px', margin: 0 }}>Ничего не найдено</p>
-              <p style={{ color: C.fgSub, fontSize: '12px', margin: '4px 0 0' }}>
-                Попробуйте другой запрос или сбросьте фильтры
-              </p>
-            </div>
-          )}
-
-          {/* Result items */}
-          {showResults && results.map((doc, i) => (
-            <ResultItem
-              key={doc.id} doc={doc} query={debouncedQ}
-              isSelected={i === selectedIdx} idx={i} C={C}
-              onHover={() => setSelectedIdx(i)}
-            />
-          ))}
-
-          {/* Load more button */}
-          {showResults && hasMore && (
+          {/* "Load more" — shown in BOTH modes whenever there are more items */}
+          {hasMore && (
             <div style={{ padding: '8px 6px 4px', display: 'flex', justifyContent: 'center' }}>
               <button
                 onClick={() => setVisibleCount(v => v + LOAD_MORE_N)}
                 onMouseEnter={() => setLoadMoreHover(true)}
                 onMouseLeave={() => setLoadMoreHover(false)}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                  padding: '8px 20px',
-                  borderRadius: '10px',
+                  display: 'inline-flex', alignItems: 'center', gap: '6px',
+                  padding: '7px 20px', borderRadius: '10px',
                   border: `1px solid ${C.loadMoreBorder}`,
-                  background: loadMoreHover ? C.loadMoreHover : C.loadMoreBg,
+                  background: loadMoreHover ? C.loadMoreHoverBg : C.loadMoreBg,
                   color: C.loadMoreFg,
-                  fontSize: '13px', fontWeight: 500,
-                  cursor: 'pointer',
-                  transition: 'background 0.15s',
+                  fontSize: '12px', fontWeight: 500,
+                  cursor: 'pointer', transition: 'background 0.15s',
                   fontFamily: 'inherit',
                 }}
               >
-                <ArrowDown size={13} />
-                Показать ещё ({Math.min(LOAD_MORE_N, allResults.length - visibleCount)})
+                <ArrowDown size={12} />
+                Показать ещё {Math.min(LOAD_MORE_N, remaining)}
               </button>
             </div>
           )}
