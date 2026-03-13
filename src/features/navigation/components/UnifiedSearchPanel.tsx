@@ -1,16 +1,3 @@
-/**
- * UnifiedSearchPanel — Command Palette style search
- *
- * Features:
- * - Desktop: centered modal with backdrop blur
- * - Mobile: fullscreen
- * - Full-text search via loadDocument(slug) — reads .md files from Docs/
- * - Content indexing starts eagerly on mount
- * - Filters: typename, category, tags, date
- * - "Load more" pagination in BOTH recent-docs mode AND search-results mode
- * - Keyboard nav: ↑↓ Enter Esc
- */
-
 import React, {
   useState, useMemo, useEffect, useCallback, useRef, memo,
 } from 'react';
@@ -19,7 +6,7 @@ import { useDebounce } from '@/shared/hooks/useDebounce';
 import { useDocuments } from '@/features/docs/hooks/useDocuments';
 import {
   Search, X, Hash, Clock, ChevronRight,
-  Loader2, RefreshCw, CalendarDays, SlidersHorizontal,
+  CalendarDays, SlidersHorizontal,
   ArrowUpDown, Layers, Tag, ArrowDown, ArrowUp,
 } from 'lucide-react';
 
@@ -52,10 +39,6 @@ interface DocMeta {
   categoryPath?: CategoryPathItem[];
 }
 
-interface IndexedDoc extends DocMeta {
-  plainText: string;
-}
-
 type DateFilter = 'all' | 'new' | 'updated';
 type SortOrder  = 'date-desc' | 'date-asc';
 
@@ -63,15 +46,6 @@ const PAGE_SIZE   = 10;
 const LOAD_MORE_N = 10;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function stripHtml(html: string): string {
-  return html
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
-}
 
 function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -85,14 +59,13 @@ function getSnippet(text: string, query: string, radius = 100): string {
   return (start > 0 ? '…' : '') + text.slice(start, end).trim() + (end < text.length ? '…' : '');
 }
 
-function scoreDoc(doc: IndexedDoc, q: string): number {
+function scoreDoc(doc: DocMeta, q: string): number {
   const lq = q.toLowerCase();
   let s = 0;
   if (doc.title.toLowerCase().includes(lq))              s += 12;
   if (doc.typename?.toLowerCase().includes(lq))          s +=  4;
   if (doc.description.toLowerCase().includes(lq))        s +=  3;
   if (doc.tags?.some(t => t.toLowerCase().includes(lq))) s +=  2;
-  if (doc.plainText.toLowerCase().includes(lq))          s +=  1;
   return s;
 }
 
@@ -104,10 +77,6 @@ function getDocUrl(doc: DocMeta): string {
   if (doc.slug === 'welcome') return '/';
   return `/${doc.slug}`;
 }
-
-// ─── Module-level content cache (survives re-mounts) ─────────────────────────
-// slug → plain text from loadDocument(slug).content (HTML from MD, stripped)
-const contentCache = new Map<string, string>();
 
 // ─── Highlight ────────────────────────────────────────────────────────────────
 
@@ -176,9 +145,6 @@ function makeColors(isDark: boolean) {
     divider:          'rgba(255,255,255,0.07)',
     iconBg:           'rgba(255,255,255,0.06)',
     iconBorder:       'rgba(255,255,255,0.09)',
-    contentBadge:     'rgba(59,130,246,0.15)',
-    contentBadgeFg:   'rgba(147,197,253,0.9)',
-    filterActiveBg:   'rgba(255,255,255,0.09)',
     sectionLabel:     'rgba(255,255,255,0.2)',
     resetBg:          'rgba(239,68,68,0.1)',
     resetBorder:      'rgba(239,68,68,0.3)',
@@ -208,9 +174,6 @@ function makeColors(isDark: boolean) {
     divider:          'rgba(0,0,0,0.07)',
     iconBg:           'rgba(0,0,0,0.05)',
     iconBorder:       'rgba(0,0,0,0.08)',
-    contentBadge:     'rgba(37,99,235,0.1)',
-    contentBadgeFg:   'rgba(37,99,235,0.85)',
-    filterActiveBg:   'rgba(0,0,0,0.08)',
     sectionLabel:     'rgba(0,0,0,0.25)',
     resetBg:          'rgba(239,68,68,0.08)',
     resetBorder:      'rgba(239,68,68,0.25)',
@@ -273,7 +236,7 @@ const FilterSection: React.FC<{
 // ─── ResultItem ───────────────────────────────────────────────────────────────
 
 interface ResultItemProps {
-  doc: IndexedDoc;
+  doc: DocMeta;
   query: string;
   isSelected: boolean;
   idx: number;
@@ -285,20 +248,14 @@ const ResultItem = memo(function ResultItem({
   doc, query, isSelected, idx, C, onHover,
 }: ResultItemProps) {
   const q = query.toLowerCase();
-  const inTitle   = Boolean(q && doc.title.toLowerCase().includes(q));
-  const inDesc    = Boolean(q && doc.description.toLowerCase().includes(q));
-  const inContent = Boolean(q && doc.plainText.toLowerCase().includes(q));
+  const inTitle = Boolean(q && doc.title.toLowerCase().includes(q));
+  const inDesc  = Boolean(q && doc.description.toLowerCase().includes(q));
 
   let snippet = doc.description.slice(0, 140) + (doc.description.length > 140 ? '…' : '');
-  if (query) {
-    if (inContent && !inTitle && !inDesc) {
-      snippet = getSnippet(doc.plainText, query);
-    } else if (inDesc) {
-      snippet = getSnippet(doc.description, query);
-    }
+  if (query && inDesc) {
+    snippet = getSnippet(doc.description, query);
   }
 
-  const showContentBadge = Boolean(query && inContent && !inTitle && !inDesc);
   const url = getDocUrl(doc);
 
   return (
@@ -343,14 +300,6 @@ const ResultItem = memo(function ResultItem({
               {doc.typename}
             </span>
           )}
-          {showContentBadge && (
-            <span style={{
-              fontSize: '10px', padding: '1px 6px', borderRadius: '8px',
-              background: C.contentBadge, color: C.contentBadgeFg, flexShrink: 0,
-            }}>
-              в тексте
-            </span>
-          )}
         </div>
 
         <p style={{
@@ -373,15 +322,11 @@ const ResultItem = memo(function ResultItem({
               </span>
             ))}
             <span style={{ flex: 1 }} />
-            {doc.updated ? (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '10px', color: C.fgSub }}>
-                <RefreshCw size={8} />{fmtDate(doc.updated)}
-              </span>
-            ) : doc.date ? (
+            {doc.date && (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '10px', color: C.fgSub }}>
                 <CalendarDays size={8} />{fmtDate(doc.date)}
               </span>
-            ) : null}
+            )}
           </div>
         )}
       </div>
@@ -398,7 +343,7 @@ const ResultItem = memo(function ResultItem({
 
 const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const { isDark } = useTheme();
-  const { manifest: docs, loadDocument } = useDocuments();
+  const { manifest: docs } = useDocuments();
   const C = useMemo(() => makeColors(isDark), [isDark]);
 
   const [query, setQuery]                   = useState('');
@@ -408,9 +353,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const [dateFilter, setDateFilter]         = useState<DateFilter>('all');
   const [sortOrder, setSortOrder]           = useState<SortOrder>('date-desc');
   const [showFilters, setShowFilters]       = useState(false);
-  const [indexing, setIndexing]             = useState(false);
-  const [indexed, setIndexed]               = useState(false);
-  const [contentIndex, setContentIndex]     = useState<Map<string, string>>(new Map());
   const [selectedIdx, setSelectedIdx]       = useState(0);
   const [isMobile, setIsMobile]             = useState(false);
   const [visibleCount, setVisibleCount]     = useState(PAGE_SIZE);
@@ -440,52 +382,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     };
   }, [onClose]);
 
-  // ── EAGER full-text index ─────────────────────────────────────────────────
-  // loadDocument(slug) reads the .md file from Docs/ via the existing hook.
-  // Returns { content: string } where content is rendered HTML.
-  // We strip tags to get plain text for full-text search.
-  useEffect(() => {
-    if (docs.length === 0 || indexed || indexing) return;
-
-    const allCached = (docs as DocMeta[]).every(d => contentCache.has(d.slug));
-    if (allCached) {
-      const map = new Map<string, string>();
-      (docs as DocMeta[]).forEach(d => map.set(d.slug, contentCache.get(d.slug)!));
-      setContentIndex(map);
-      setIndexed(true);
-      return;
-    }
-
-    setIndexing(true);
-
-    const build = async () => {
-      const map = new Map<string, string>();
-
-      await Promise.allSettled(
-        (docs as DocMeta[]).map(async (doc) => {
-          if (contentCache.has(doc.slug)) {
-            map.set(doc.slug, contentCache.get(doc.slug)!);
-            return;
-          }
-          let text = '';
-          try {
-            const full = await loadDocument(doc.slug);
-            if (full?.content) text = stripHtml(full.content);
-          } catch { /* skip — search will still work on title/desc/tags */ }
-
-          contentCache.set(doc.slug, text);
-          map.set(doc.slug, text);
-        })
-      );
-
-      setContentIndex(map);
-      setIndexed(true);
-      setIndexing(false);
-    };
-
-    build();
-  }, [docs, indexed, indexing, loadDocument]);
-
   // ── Derived filter options ─────────────────────────────────────────────────
   const allTypenames = useMemo(() => {
     const s = new Set<string>();
@@ -511,11 +407,8 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     (docs as DocMeta[]).some(d => d.updated), [docs]);
 
   // ── allResults: full sorted/filtered list (no pagination here) ────────────
-  const allResults = useMemo<IndexedDoc[]>(() => {
-    let list = (docs as DocMeta[]).map(d => ({
-      ...d,
-      plainText: contentIndex.get(d.slug) ?? '',
-    }));
+  const allResults = useMemo<DocMeta[]>(() => {
+    let list = [...(docs as DocMeta[])];
 
     if (filterTypename !== 'all')
       list = list.filter(d => d.typename === filterTypename);
@@ -545,7 +438,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     }
 
     return list;
-  }, [debouncedQ, docs, contentIndex, filterTypename, filterCategory, activeTags, dateFilter, sortOrder]);
+  }, [debouncedQ, docs, filterTypename, filterCategory, activeTags, dateFilter, sortOrder]);
 
   // Reset pagination when results change
   useEffect(() => {
@@ -637,7 +530,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
           to   { opacity:1; transform:translateX(-50%) translateY(0) scale(1); }
         }
         @keyframes sp-overlay-in { from{opacity:0;} to{opacity:1;} }
-        @keyframes sp-spin { to { transform:rotate(360deg); } }
         .sp-scroll::-webkit-scrollbar       { width:4px; }
         .sp-scroll::-webkit-scrollbar-track { background:transparent; }
         .sp-scroll::-webkit-scrollbar-thumb { background:rgba(128,128,128,0.25); border-radius:4px; }
@@ -667,10 +559,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
           borderBottom: `1px solid ${C.border}`,
           flexShrink: 0,
         }}>
-          {indexing
-            ? <Loader2 size={17} style={{ color: C.fgMuted, flexShrink: 0, animation: 'sp-spin 0.9s linear infinite' }} />
-            : <Search size={17} style={{ color: C.fgMuted, flexShrink: 0 }} />
-          }
+          <Search size={17} style={{ color: C.fgMuted, flexShrink: 0 }} />
 
           <input
             ref={inputRef}
@@ -704,7 +593,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
             style={{
               display: 'flex', alignItems: 'center', gap: '5px',
               border: `1px solid ${showFilters || hasActiveFilters ? C.borderStrong : C.border}`,
-              background: showFilters || hasActiveFilters ? C.filterActiveBg : C.kbd,
+              background: showFilters || hasActiveFilters ? C.pillActive : C.kbd,
               borderRadius: '8px',
               color: showFilters || hasActiveFilters ? C.fg : C.fgMuted,
               fontSize: '12px', padding: '5px 10px',
@@ -762,7 +651,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
               />
               {hasUpdatedDocs && (
                 <Pill
-                  label={<><RefreshCw size={10} />Обновлённые (30д)</>}
+                  label="Обновлённые (30д)"
                   active={dateFilter === 'updated'} C={C}
                   onClick={() => setDateFilter(v => v === 'updated' ? 'all' : 'updated')}
                 />
@@ -860,8 +749,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
                 <span>
                   {allResults.length} результат{allResults.length === 1 ? '' : allResults.length < 5 ? 'а' : 'ов'}
                 </span>
-                {indexed  && debouncedQ && <span style={{ opacity: 0.7 }}>· с поиском по содержимому</span>}
-                {indexing && <span style={{ opacity: 0.7 }}>· индексируем…</span>}
               </div>
 
               {allResults.length === 0 && (
@@ -956,11 +843,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
                 <span>{label}</span>
               </span>
             ))}
-            {indexed && (
-              <span style={{ marginLeft: 'auto', fontSize: '10px', color: C.fgSub, opacity: 0.6 }}>
-                full-text ✓
-              </span>
-            )}
           </div>
         )}
       </div>
