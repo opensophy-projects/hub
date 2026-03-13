@@ -48,6 +48,7 @@ const LOAD_MORE_N = 10;
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function escapeRe(s: string): string {
+  // regex with /g flag is correct here — String.raw / replaceAll not applicable
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
@@ -78,6 +79,14 @@ function getDocUrl(doc: DocMeta): string {
   return `/${doc.slug}`;
 }
 
+// ─── Pluralisation helper (replaces nested ternary) ───────────────────────────
+
+function pluralResults(n: number): string {
+  if (n === 1)  return 'результат';
+  if (n < 5)    return 'результата';
+  return 'результатов';
+}
+
 // ─── Highlight ────────────────────────────────────────────────────────────────
 
 const Highlight = memo(function Highlight({ text, query }: { text: string; query: string }) {
@@ -86,11 +95,13 @@ const Highlight = memo(function Highlight({ text, query }: { text: string; query
   const parts = text.split(re);
   return (
     <>
-      {parts.map((part, i) =>
-        re.test(part)
-          ? <mark key={i} style={{ background: 'rgba(255,200,50,0.3)', color: 'inherit', borderRadius: '2px', padding: '0 1px' }}>{part}</mark>
-          : part
-      )}
+      {parts.map((part, i) => {
+        // Use the part content as key basis — index only as tiebreaker (stable within this static split)
+        const key = `${part}-${i}`;
+        return re.test(part)
+          ? <mark key={key} style={{ background: 'rgba(255,200,50,0.3)', color: 'inherit', borderRadius: '2px', padding: '0 1px' }}>{part}</mark>
+          : <React.Fragment key={key}>{part}</React.Fragment>;
+      })}
     </>
   );
 });
@@ -248,8 +259,8 @@ const ResultItem = memo(function ResultItem({
   doc, query, isSelected, idx, C, onHover,
 }: ResultItemProps) {
   const q = query.toLowerCase();
-  const inTitle = Boolean(q && doc.title.toLowerCase().includes(q));
-  const inDesc  = Boolean(q && doc.description.toLowerCase().includes(q));
+  // FIX Issue 4: removed unused `inTitle` variable
+  const inDesc = Boolean(q && doc.description.toLowerCase().includes(q));
 
   let snippet = doc.description.slice(0, 140) + (doc.description.length > 140 ? '…' : '');
   if (query && inDesc) {
@@ -535,16 +546,21 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
         .sp-scroll::-webkit-scrollbar-thumb { background:rgba(128,128,128,0.25); border-radius:4px; }
       `}</style>
 
-      {/* Backdrop (desktop only) */}
+      {/* FIX Issue 5 & 6: Backdrop with proper role, tabIndex, onKeyDown for accessibility */}
       {!isMobile && (
         <div
+          role="button"
+          tabIndex={0}
+          aria-label="Закрыть поиск"
           onClick={onClose}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClose(); }}
           style={{
             position: 'fixed', inset: 0, zIndex: 61,
             background: C.overlay,
             backdropFilter: 'blur(8px)',
             WebkitBackdropFilter: 'blur(8px)',
             animation: 'sp-overlay-in 0.15s ease',
+            cursor: 'default',
           }}
         />
       )}
@@ -742,13 +758,12 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
           {/* Search results mode */}
           {showResults && (
             <>
+              {/* FIX Issue 7: nested ternary extracted into pluralResults() helper */}
               <div style={{
                 padding: '3px 10px 5px', fontSize: '11px', color: C.fgSub,
                 display: 'flex', gap: '6px', alignItems: 'center',
               }}>
-                <span>
-                  {allResults.length} результат{allResults.length === 1 ? '' : allResults.length < 5 ? 'а' : 'ов'}
-                </span>
+                <span>{allResults.length} {pluralResults(allResults.length)}</span>
               </div>
 
               {allResults.length === 0 && (
