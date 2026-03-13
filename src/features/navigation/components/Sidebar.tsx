@@ -82,7 +82,13 @@ const NavPopoverSwitcher: React.FC<{
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  const active = sections.find((s) => s.navSlug === activeSlug) ?? sections[0];
+  // FIX БАГ 1: useMemo гарантирует пересчёт active при каждом изменении activeSlug,
+  // даже внутри memo-компонента где sections могут не измениться
+  const active = useMemo(
+    () => sections.find((s) => s.navSlug === activeSlug) ?? sections[0],
+    [sections, activeSlug]
+  );
+
   const bg = isDark ? 'bg-[#0F0F0F]' : 'bg-[#E1E0DC]';
   const border = isDark ? 'border-white/10' : 'border-black/10';
   const hoverItem = isDark ? 'hover:bg-white/5 text-white/80' : 'hover:bg-black/5 text-black/80';
@@ -98,9 +104,11 @@ const NavPopoverSwitcher: React.FC<{
         style={borderStyle(isDark)}
       >
         <div className="flex items-center gap-2 min-w-0">
+          {/* FIX БАГ 1: key на иконке форсирует ремаунт при смене секции,
+              чтобы LucideIcon не брал устаревшее значение из своего внутреннего state */}
           {active.navSlug === ''
             ? <Home size={15} className={isDark ? 'text-white/50' : 'text-black/50'} />
-            : <LucideIcon name={active.navIcon} size={15} className={isDark ? 'text-white/50' : 'text-black/50'} />
+            : <LucideIcon key={active.navSlug} name={active.navIcon} size={15} className={isDark ? 'text-white/50' : 'text-black/50'} />
           }
           <span className="truncate">{active.navTitle}</span>
         </div>
@@ -401,7 +409,6 @@ function buildNavigationTree(docs: Doc[], searchQuery: string, activeNavSlug: st
     }
 
     const parts = slugForTree.split('/');
-    // categoryPath содержит точные данные каждой папки: {slug, title, icon}
     const catPath = doc.categoryPath ?? [];
 
     let current = root;
@@ -409,7 +416,6 @@ function buildNavigationTree(docs: Doc[], searchQuery: string, activeNavSlug: st
       const part = parts[i];
 
       if (!current.children[part]) {
-        // Берём title и icon напрямую из categoryPath[i] — точные данные папки без искажений
         const catInfo = catPath[i];
         current.children[part] = {
           title: catInfo?.title ?? part,
