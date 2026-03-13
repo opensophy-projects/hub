@@ -47,9 +47,11 @@ const LOAD_MORE_N = 10;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+// Special regex chars that need escaping
+const RE_SPECIAL = /[.*+?^${}()|[\]\\]/;
+
 function escapeRe(s: string): string {
-  // regex with /g flag is correct here — String.raw / replaceAll not applicable
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return Array.from(s).map(ch => (RE_SPECIAL.test(ch) ? `\\${ch}` : ch)).join('');
 }
 
 function getSnippet(text: string, query: string, radius = 100): string {
@@ -546,14 +548,11 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
         .sp-scroll::-webkit-scrollbar-thumb { background:rgba(128,128,128,0.25); border-radius:4px; }
       `}</style>
 
-      {/* FIX Issue 5 & 6: Backdrop with proper role, tabIndex, onKeyDown for accessibility */}
+      {/* Backdrop (desktop only) — real <button> for full a11y, visually reset to look like overlay */}
       {!isMobile && (
-        <div
-          role="button"
-          tabIndex={0}
+        <button
           aria-label="Закрыть поиск"
           onClick={onClose}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClose(); }}
           style={{
             position: 'fixed', inset: 0, zIndex: 61,
             background: C.overlay,
@@ -561,6 +560,8 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
             WebkitBackdropFilter: 'blur(8px)',
             animation: 'sp-overlay-in 0.15s ease',
             cursor: 'default',
+            border: 'none', padding: 0, margin: 0,
+            display: 'block', width: '100%',
           }}
         />
       )}
