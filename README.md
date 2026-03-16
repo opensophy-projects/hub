@@ -13,7 +13,7 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/opensophy-projects/hub/badge)](https://www.codefactor.io/repository/github/opensophy-projects/hub)
 [![License](https://img.shields.io/badge/code-Apache%202.0-blue)](./LICENSE)
 [![License: CC BY-ND 4.0](https://img.shields.io/badge/docs-CC%20BY--ND%204.0-lightgrey)](./LICENSE-DOCS)
-[![Version](https://img.shields.io/badge/version-3.1.0-purple)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.2.0-purple)](./package.json)
 
 [Демо](https://hub.opensophy.com) · [Документация](https://hub.opensophy.com/docs/markdown-guide) · [Opensophy](https://opensophy.com)
 
