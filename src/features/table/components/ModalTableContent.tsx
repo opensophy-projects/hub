@@ -14,8 +14,8 @@ const getRowBgColor = (isEvenRow: boolean, isDark: boolean): string => {
   return isEvenRow ? '#ffffff' : '#f9f9f9';
 };
 
-const getRowHoverBgColor = (isEvenRow: boolean, isDark: boolean): string => {
-  if (isDark) return isEvenRow ? '#2a2a2a' : '#202020';
+const getRowHoverBgColor = (_isEvenRow: boolean, isDark: boolean): string => {
+  if (isDark) return '#2a2a2a';
   return '#f0f0f0';
 };
 
@@ -55,10 +55,7 @@ const CellContent: React.FC<{ html: string; isDark: boolean; bgColor: string }> 
     <td
       ref={contentRef}
       className={`border p-2 ${isDark ? 'border-white/10 text-white/90' : 'border-black/10 text-black'}`}
-      style={{
-        backgroundColor: bgColor,
-        transition: 'background-color 0.12s ease',
-      }}
+      style={{ backgroundColor: bgColor, transition: 'background-color 0.12s ease' }}
     />
   );
 };
@@ -103,18 +100,21 @@ export const ModalTableContent: React.FC<ModalTableContentProps> = ({
   const visibleHeaders = headers.filter((h) => visibleColumns.has(h.text));
   const { scrollRef, dragStyle, dragHandlers } = useDragScroll();
 
-  const thumb = isDark ? 'rgba(150, 150, 150, 0.6)' : 'rgba(0, 0, 0, 0.2)';
-  const thumbHover = isDark ? 'rgba(190, 190, 190, 0.85)' : 'rgba(0, 0, 0, 0.35)';
-  const track = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
+  const thumb      = isDark ? 'rgba(150,150,150,0.6)'  : 'rgba(0,0,0,0.2)';
+  const thumbHover = isDark ? 'rgba(190,190,190,0.85)' : 'rgba(0,0,0,0.35)';
+  const track      = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
 
-  const thBg = isDark ? '#252525' : '#ffffff';
+  const thBg     = isDark ? '#252525' : '#ffffff';
   const thBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
 
   return (
     <div
       ref={scrollRef}
-      className="modal-table-scroll overflow-x-auto overflow-y-auto flex-1"
+      className="modal-table-scroll"
       style={{
+        overflowX: 'auto',
+        overflowY: 'auto',
+        flex:      1,         
         scrollbarColor: `${thumb} ${track}`,
         scrollbarWidth: 'thin',
         ...dragStyle,
@@ -124,25 +124,19 @@ export const ModalTableContent: React.FC<ModalTableContentProps> = ({
       <table
         className={`w-full border-collapse text-sm ${isDark ? 'text-white' : 'text-black'}`}
       >
-        <thead
-          style={{
-            position: 'sticky',
-            top: 0,
-            zIndex: 10,
-            backgroundColor: thBg,
-          }}
-        >
+        <thead style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: thBg }}>
           <tr>
             {visibleHeaders.map((header) => (
               <th
                 key={header.colIndex}
                 className="p-2 font-semibold text-left"
                 style={{
-                  border: `1px solid ${thBorder}`,
+                  border:          `1px solid ${thBorder}`,
                   backgroundColor: thBg,
-                  position: 'sticky',
-                  top: 0,
-                  zIndex: 10,
+                  position:        'sticky',
+                  top:             0,
+                  zIndex:          10,
+                  whiteSpace:      'nowrap',
                 }}
               >
                 {header.text}
@@ -175,24 +169,11 @@ export const ModalTableContent: React.FC<ModalTableContentProps> = ({
       </table>
 
       <style>{`
-        .modal-table-scroll::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
-        }
-        .modal-table-scroll::-webkit-scrollbar-track {
-          background: ${track};
-          border-radius: 4px;
-        }
-        .modal-table-scroll::-webkit-scrollbar-thumb {
-          background: ${thumb};
-          border-radius: 4px;
-        }
-        .modal-table-scroll::-webkit-scrollbar-thumb:hover {
-          background: ${thumbHover};
-        }
-        .modal-table-scroll::-webkit-scrollbar-corner {
-          background: transparent;
-        }
+        .modal-table-scroll::-webkit-scrollbar       { width: 8px; height: 8px; }
+        .modal-table-scroll::-webkit-scrollbar-track  { background: ${track}; border-radius: 4px; }
+        .modal-table-scroll::-webkit-scrollbar-thumb  { background: ${thumb}; border-radius: 4px; }
+        .modal-table-scroll::-webkit-scrollbar-thumb:hover { background: ${thumbHover}; }
+        .modal-table-scroll::-webkit-scrollbar-corner { background: transparent; }
       `}</style>
     </div>
   );
