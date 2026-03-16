@@ -46,6 +46,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
           activeFilterCount={activeFilterCount}
           onResetFilters={resetFilters}
           onFullscreen={() => onFullscreen(tableHtml)}
+          tableHtml={tableHtml}
         />
 
         {showFilters && (
@@ -66,11 +67,6 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
           </>
         )}
 
-        {/*
-          Без фиксированной высоты — контейнер адаптируется под контент.
-          maxHeight внутри TableView ограничивает рост при большом числе строк
-          и включает внутренний скролл + sticky thead.
-        */}
         <TableView
           isDark={isDark}
           headers={headers}
