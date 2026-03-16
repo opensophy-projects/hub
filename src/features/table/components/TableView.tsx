@@ -21,7 +21,6 @@ interface TableViewProps {
   sortDirection: SortDirection;
   onSort: (colIndex: number) => void;
   headerAlignments?: ColumnAlignment[];
-
   fullscreen?: boolean;
 }
 
