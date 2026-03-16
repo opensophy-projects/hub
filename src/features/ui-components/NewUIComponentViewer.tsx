@@ -29,20 +29,30 @@ const DEFAULT_UNIVERSAL_PROPS: UniversalProps = {
   opacity: 1, blur: 0, brightness: 1, contrast: 1, saturate: 1,
 };
 
-// animationSpeed убран — не работает
-const UNIVERSAL_FIELDS: Array<{
-  label: string; key: keyof UniversalProps;
-  min: number; max: number; step: number; default: number;
+// Группы полей для sidebar-layout — каждая группа отдельная секция
+const FIELD_GROUPS: Array<{
+  label: string;
+  fields: Array<{ label: string; key: keyof UniversalProps; min: number; max: number; step: number; default: number }>;
 }> = [
-  { label: 'Масштаб',      key: 'scale',      min: 0.1,  max: 3,   step: 0.05, default: 1 },
-  { label: 'Вращение X',   key: 'rotateX',    min: -180, max: 180, step: 1,    default: 0 },
-  { label: 'Яркость',      key: 'brightness', min: 0,    max: 2,   step: 0.05, default: 1 },
-  { label: 'Прозрачность', key: 'opacity',    min: 0,    max: 1,   step: 0.05, default: 1 },
-  { label: 'Вращение Y',   key: 'rotateY',    min: -180, max: 180, step: 1,    default: 0 },
-  { label: 'Контраст',     key: 'contrast',   min: 0,    max: 2,   step: 0.05, default: 1 },
-  { label: 'Размытие',     key: 'blur',       min: 0,    max: 20,  step: 0.5,  default: 0 },
-  { label: 'Вращение Z',   key: 'rotateZ',    min: -180, max: 180, step: 1,    default: 0 },
-  { label: 'Насыщенность', key: 'saturate',   min: 0,    max: 2,   step: 0.05, default: 1 },
+  {
+    label: 'Трансформация',
+    fields: [
+      { label: 'Масштаб',    key: 'scale',   min: 0.1,  max: 3,   step: 0.05, default: 1 },
+      { label: 'Вращение X', key: 'rotateX', min: -180, max: 180, step: 1,    default: 0 },
+      { label: 'Вращение Y', key: 'rotateY', min: -180, max: 180, step: 1,    default: 0 },
+      { label: 'Вращение Z', key: 'rotateZ', min: -180, max: 180, step: 1,    default: 0 },
+    ],
+  },
+  {
+    label: 'Внешний вид',
+    fields: [
+      { label: 'Прозрачность', key: 'opacity',    min: 0, max: 1, step: 0.05, default: 1 },
+      { label: 'Яркость',      key: 'brightness', min: 0, max: 2, step: 0.05, default: 1 },
+      { label: 'Контраст',     key: 'contrast',   min: 0, max: 2, step: 0.05, default: 1 },
+      { label: 'Насыщенность', key: 'saturate',   min: 0, max: 2, step: 0.05, default: 1 },
+      { label: 'Размытие',     key: 'blur',       min: 0, max: 20, step: 0.5, default: 0 },
+    ],
+  },
 ];
 
 const tc = (isDark: boolean, d: string, l: string) => (isDark ? d : l);
@@ -50,73 +60,47 @@ const tc = (isDark: boolean, d: string, l: string) => (isDark ? d : l);
 // ─── Color utils ──────────────────────────────────────────────────────────────
 
 function hsvToRgb(h: number, s: number, v: number): [number, number, number] {
-  const f = (n: number) => {
-    const k = (n + h / 60) % 6;
-    return v - v * s * Math.max(0, Math.min(k, 4 - k, 1));
-  };
+  const f = (n: number) => { const k = (n + h / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); };
   return [Math.round(f(5) * 255), Math.round(f(3) * 255), Math.round(f(1) * 255)];
 }
-
 function rgbToHsv(r: number, g: number, b: number): [number, number, number] {
   r /= 255; g /= 255; b /= 255;
   const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
   let h = 0;
-  if (d !== 0) {
-    if (max === r) h = ((g - b) / d + 6) % 6;
-    else if (max === g) h = (b - r) / d + 2;
-    else h = (r - g) / d + 4;
-    h *= 60;
-  }
+  if (d !== 0) { if (max === r) h = ((g - b) / d + 6) % 6; else if (max === g) h = (b - r) / d + 2; else h = (r - g) / d + 4; h *= 60; }
   return [h, max === 0 ? 0 : d / max, max];
 }
-
-function rgbToHex(r: number, g: number, b: number): string {
-  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
-}
-
+function rgbToHex(r: number, g: number, b: number): string { return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join(''); }
 function hexToRgb(hex: string): [number, number, number] | null {
-  const clean = hex.replace('#', '');
-  if (clean.length !== 6) return null;
-  const n = parseInt(clean, 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  const c = hex.replace('#', ''); if (c.length !== 6) return null;
+  const n = parseInt(c, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
-
 function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   r /= 255; g /= 255; b /= 255;
-  const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  const l = (max + min) / 2;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2;
   if (max === min) return [0, 0, Math.round(l * 100)];
-  const d = max - min;
-  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  const d = max - min, s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
   let h = 0;
-  if (max === r) h = ((g - b) / d + 6) % 6;
-  else if (max === g) h = (b - r) / d + 2;
-  else h = (r - g) / d + 4;
+  if (max === r) h = ((g - b) / d + 6) % 6; else if (max === g) h = (b - r) / d + 2; else h = (r - g) / d + 4;
   return [Math.round(h * 60), Math.round(s * 100), Math.round(l * 100)];
 }
 
 // ─── Color Picker ─────────────────────────────────────────────────────────────
 
-const ColorPicker: React.FC<{
-  value: string; onChange: (hex: string | undefined) => void; isDark: boolean;
-}> = ({ value, onChange, isDark }) => {
-  const [hue, setHue]     = useState(217);
-  const [sat, setSat]     = useState(0.73);
-  const [val, setVal]     = useState(0.96);
+const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined) => void; isDark: boolean }> = ({ value, onChange, isDark }) => {
+  const [hue, setHue]   = useState(217);
+  const [sat, setSat]   = useState(0.73);
+  const [val, setVal]   = useState(0.96);
   const [hexInput, setHexInput] = useState('4287f5');
   const [copied, setCopied]     = useState(false);
-
   const svRef  = useRef<HTMLDivElement>(null);
   const hueRef = useRef<HTMLDivElement>(null);
 
-  // Синхронизируем из внешнего value
   useEffect(() => {
-    if (!value) { return; }
-    const rgb = hexToRgb(value);
-    if (!rgb) return;
+    if (!value) return;
+    const rgb = hexToRgb(value); if (!rgb) return;
     const [h, s, v] = rgbToHsv(...rgb);
-    setHue(h); setSat(s); setVal(v);
-    setHexInput(value.replace('#', ''));
+    setHue(h); setSat(s); setVal(v); setHexInput(value.replace('#', ''));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -126,9 +110,7 @@ const ColorPicker: React.FC<{
   const hueColor   = useMemo(() => rgbToHex(...hsvToRgb(hue, 1, 1)), [hue]);
 
   const emit = useCallback((h: number, s: number, v: number) => {
-    const hex = rgbToHex(...hsvToRgb(h, s, v));
-    onChange(hex);
-    setHexInput(hex.replace('#', ''));
+    const hex = rgbToHex(...hsvToRgb(h, s, v)); onChange(hex); setHexInput(hex.replace('#', ''));
   }, [onChange]);
 
   const handleSvDrag = useCallback((e: MouseEvent | React.MouseEvent) => {
@@ -142,7 +124,7 @@ const ColorPicker: React.FC<{
   const handleSvMouseDown = useCallback((e: React.MouseEvent) => {
     handleSvDrag(e);
     const onMove = (ev: MouseEvent) => handleSvDrag(ev);
-    const onUp   = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+    const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
     window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
   }, [handleSvDrag]);
 
@@ -156,183 +138,83 @@ const ColorPicker: React.FC<{
   const handleHueMouseDown = useCallback((e: React.MouseEvent) => {
     handleHueDrag(e);
     const onMove = (ev: MouseEvent) => handleHueDrag(ev);
-    const onUp   = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+    const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
     window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
   }, [handleHueDrag]);
 
-  const handleHexInput = (raw: string) => {
-    setHexInput(raw);
-    const clean = raw.replace('#', '');
-    if (clean.length === 6) {
-      const rgb = hexToRgb('#' + clean);
-      if (rgb) { const [h, s, v] = rgbToHsv(...rgb); setHue(h); setSat(s); setVal(v); onChange('#' + clean); }
-    }
-    if (clean === '') onChange(undefined);
-  };
-
-  const border     = tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)');
-  const inputBg    = tc(isDark, '#0a0a0a', '#d4d3cf');
-  const labelColor = tc(isDark, 'rgba(255,255,255,0.4)', 'rgba(0,0,0,0.4)');
-  const textColor  = tc(isDark, 'rgba(255,255,255,0.85)', 'rgba(0,0,0,0.85)');
-  const metaBg     = tc(isDark, 'rgba(255,255,255,0.03)', 'rgba(0,0,0,0.03)');
+  const border    = tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)');
+  const inputBg   = tc(isDark, 'rgba(255,255,255,0.06)', 'rgba(0,0,0,0.06)');
+  const labelClr  = tc(isDark, 'rgba(255,255,255,0.35)', 'rgba(0,0,0,0.35)');
+  const textColor = tc(isDark, 'rgba(255,255,255,0.85)', 'rgba(0,0,0,0.85)');
+  const metaBg    = tc(isDark, 'rgba(255,255,255,0.03)', 'rgba(0,0,0,0.03)');
 
   return (
     <div style={{ userSelect: 'none' }}>
-      {/* SV поле */}
+      {/* SV */}
       <div ref={svRef} onMouseDown={handleSvMouseDown}
-        style={{ position:'relative', width:'100%', height:160, cursor:'crosshair', background:`linear-gradient(to bottom, transparent, #000), linear-gradient(to right, #fff, ${hueColor})` }}
+        style={{ position:'relative', width:'100%', height:140, cursor:'crosshair', background:`linear-gradient(to bottom, transparent, #000), linear-gradient(to right, #fff, ${hueColor})` }}
       >
-        <div style={{
-          position:'absolute', left:`${sat*100}%`, top:`${(1-val)*100}%`,
-          width:14, height:14, borderRadius:'50%',
-          border:'2px solid #fff', boxShadow:'0 0 0 1px rgba(0,0,0,0.4),0 2px 6px rgba(0,0,0,0.5)',
-          transform:'translate(-50%,-50%)', pointerEvents:'none',
-        }} />
+        <div style={{ position:'absolute', left:`${sat*100}%`, top:`${(1-val)*100}%`, width:13, height:13, borderRadius:'50%', border:'2px solid #fff', boxShadow:'0 0 0 1px rgba(0,0,0,0.4),0 1px 4px rgba(0,0,0,0.5)', transform:'translate(-50%,-50%)', pointerEvents:'none' }} />
       </div>
 
       {/* Hue */}
-      <div style={{ padding:'12px 12px 0' }}>
+      <div style={{ padding:'10px 12px 0' }}>
         <div ref={hueRef} onMouseDown={handleHueMouseDown}
-          style={{ position:'relative', height:12, borderRadius:6, cursor:'pointer', background:'linear-gradient(to right,#f00 0%,#ff0 16.67%,#0f0 33.33%,#0ff 50%,#00f 66.67%,#f0f 83.33%,#f00 100%)' }}
+          style={{ position:'relative', height:10, borderRadius:5, cursor:'pointer', background:'linear-gradient(to right,#f00 0%,#ff0 16.67%,#0f0 33.33%,#0ff 50%,#00f 66.67%,#f0f 83.33%,#f00 100%)' }}
         >
-          <div style={{
-            position:'absolute', top:'50%', left:`${(hue/360)*100}%`,
-            width:18, height:18, borderRadius:'50%', background:hueColor,
-            border:'2.5px solid #fff', boxShadow:'0 0 0 1px rgba(0,0,0,0.3),0 2px 4px rgba(0,0,0,0.4)',
-            transform:'translate(-50%,-50%)', pointerEvents:'none',
-          }} />
+          <div style={{ position:'absolute', top:'50%', left:`${(hue/360)*100}%`, width:16, height:16, borderRadius:'50%', background:hueColor, border:'2px solid #fff', boxShadow:'0 0 0 1px rgba(0,0,0,0.3)', transform:'translate(-50%,-50%)', pointerEvents:'none' }} />
         </div>
       </div>
 
-      {/* HEX */}
-      <div style={{ padding:'10px 12px 0' }}>
-        <div style={{ fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:labelColor, marginBottom:5 }}>HEX</div>
-        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-          <div style={{ width:26, height:26, borderRadius:6, flexShrink:0, background:currentHex, border:`1px solid ${border}` }} />
-          <input value={hexInput} onChange={e => handleHexInput(e.target.value)} placeholder="4287f5"
-            style={{ flex:1, padding:'4px 7px', borderRadius:6, border:`1px solid ${border}`, background:inputBg, color:textColor, fontSize:11, fontFamily:'ui-monospace,monospace', outline:'none' }}
+      {/* HEX row */}
+      <div style={{ padding:'10px 12px 0', display:'flex', alignItems:'center', gap:6 }}>
+        <div style={{ width:22, height:22, borderRadius:5, flexShrink:0, background:currentHex, border:`1px solid ${border}` }} />
+        <div style={{ flex:1 }}>
+          <div style={{ fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:labelClr, marginBottom:3 }}>HEX</div>
+          <input value={hexInput} onChange={e => {
+            const raw = e.target.value; setHexInput(raw);
+            const clean = raw.replace('#','');
+            if (clean.length===6) { const rgb=hexToRgb('#'+clean); if(rgb){const [h,s,v]=rgbToHsv(...rgb);setHue(h);setSat(s);setVal(v);onChange('#'+clean);} }
+            if (clean==='') onChange(undefined);
+          }} placeholder="4287f5"
+            style={{ width:'100%', padding:'3px 6px', borderRadius:5, border:`1px solid ${border}`, background:inputBg, color:textColor, fontSize:11, fontFamily:'ui-monospace,monospace', outline:'none', boxSizing:'border-box' }}
           />
-          <button onClick={async () => { await navigator.clipboard.writeText(currentHex); setCopied(true); setTimeout(()=>setCopied(false),1500); }}
-            style={{ width:26, height:26, borderRadius:6, flexShrink:0, border:`1px solid ${border}`, background:inputBg, color:copied?'#22c55e':textColor, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'color 0.15s' }}
-          >
-            {copied
-              ? <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              : <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="4" y="1" width="8" height="10" rx="2" stroke="currentColor" strokeWidth="1.3"/><rect x="1" y="3" width="8" height="10" rx="2" stroke="currentColor" strokeWidth="1.3" fill={inputBg}/></svg>
-            }
-          </button>
         </div>
+        <button onClick={async()=>{await navigator.clipboard.writeText(currentHex);setCopied(true);setTimeout(()=>setCopied(false),1500);}}
+          style={{ width:22, height:22, borderRadius:5, border:`1px solid ${border}`, background:inputBg, color:copied?'#22c55e':textColor, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, transition:'color 0.15s' }}
+        >
+          {copied
+            ? <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            : <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><rect x="4" y="1" width="8" height="10" rx="2" stroke="currentColor" strokeWidth="1.3"/><rect x="1" y="3" width="8" height="10" rx="2" stroke="currentColor" strokeWidth="1.3" fill={inputBg}/></svg>
+          }
+        </button>
       </div>
 
       {/* RGB / HSL */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:1, margin:'10px 0 0', background:border }}>
-        {[
-          { label:'RGB',  value:currentRgb.join(', ') },
-          { label:'HSL',  value:`${currentHsl[0]}°, ${currentHsl[1]}%, ${currentHsl[2]}%` },
-        ].map(({ label, value: v }) => (
-          <div key={label} style={{ background:metaBg, padding:'6px 12px' }}>
-            <div style={{ fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:labelColor, marginBottom:2 }}>{label}</div>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:1, margin:'8px 0 0', background:border }}>
+        {[{ label:'RGB', value:currentRgb.join(', ') },{ label:'HSL', value:`${currentHsl[0]}°, ${currentHsl[1]}%, ${currentHsl[2]}%` }].map(({label,value:v})=>(
+          <div key={label} style={{ background:metaBg, padding:'5px 12px' }}>
+            <div style={{ fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:labelClr, marginBottom:1 }}>{label}</div>
             <div style={{ fontSize:10, fontFamily:'ui-monospace,monospace', color:textColor }}>{v}</div>
           </div>
         ))}
       </div>
 
-      {/* Сброс */}
+      {/* Reset */}
       <div style={{ padding:'8px 12px' }}>
-        <button onClick={() => { onChange(undefined); setHexInput(''); }}
-          style={{ width:'100%', padding:'4px 10px', borderRadius:6, border:`1px solid ${border}`, background:'transparent', color:labelColor, fontSize:11, cursor:'pointer' }}
+        <button onClick={()=>{onChange(undefined);setHexInput('');}}
+          style={{ width:'100%', padding:'4px', borderRadius:5, border:`1px solid ${border}`, background:'transparent', color:labelClr, fontSize:10, cursor:'pointer' }}
           onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.background=tc(isDark,'rgba(255,255,255,0.06)','rgba(0,0,0,0.06)');}}
           onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.background='transparent';}}
-        >
-          Сбросить цвет
-        </button>
+        >Сбросить цвет</button>
       </div>
     </div>
   );
 };
 
-// ─── Color Section ────────────────────────────────────────────────────────────
+// ─── Sidebar NumberInput — компактный горизонтальный ─────────────────────────
 
-const ColorSection: React.FC<{
-  universalProps: UniversalProps;
-  onChange: (key: keyof UniversalProps, v: PropValue) => void;
-  isDark: boolean;
-}> = ({ universalProps, onChange, isDark }) => {
-  const [expanded, setExpanded] = useState(false);
-  const labelColor  = tc(isDark,'rgba(255,255,255,0.45)','rgba(0,0,0,0.45)');
-  const border      = tc(isDark,'rgba(255,255,255,0.07)','rgba(0,0,0,0.07)');
-  const bg          = tc(isDark,'rgba(255,255,255,0.025)','rgba(0,0,0,0.02)');
-  const textColor   = tc(isDark,'rgba(255,255,255,0.85)','rgba(0,0,0,0.85)');
-  const pickerBg    = tc(isDark,'#141414','#e0dfd9');
-  const colorMode   = universalProps.colorMode ?? 'original';
-  const currentColor = universalProps.color;
-
-  return (
-    <div style={{ marginBottom:8 }}>
-      <button onClick={() => setExpanded(v=>!v)} style={{
-        width:'100%', display:'flex', alignItems:'center', gap:8,
-        padding:'9px 11px', borderRadius: expanded ? '10px 10px 0 0' : 10,
-        border:`1px solid ${border}`, background:bg, cursor:'pointer',
-      }}>
-        <span style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.05em', color:labelColor, flex:1, textAlign:'left' }}>
-          Цвет
-        </span>
-        {currentColor && colorMode === 'solid' && (
-          <div style={{ width:12, height:12, borderRadius:3, background:currentColor, border:`1px solid ${border}`, flexShrink:0 }} />
-        )}
-        <span style={{ fontSize:10, color:labelColor, fontFamily:'ui-monospace,monospace' }}>
-          {colorMode === 'solid' && currentColor ? currentColor : 'оригинал'}
-        </span>
-        <svg width="10" height="10" viewBox="0 0 10 10" style={{ opacity:0.5, transform:expanded?'rotate(180deg)':'none', transition:'transform 0.15s', flexShrink:0 }}>
-          <path d="M2 3 L5 7 L8 3" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-        </svg>
-      </button>
-
-      {expanded && (
-        <div style={{ border:`1px solid ${border}`, borderTop:'none', borderRadius:'0 0 10px 10px', overflow:'hidden', background:pickerBg }}>
-          {/* Mode */}
-          <div style={{ display:'flex', gap:1, background:border, borderBottom:`1px solid ${border}` }}>
-            {(['original','solid'] as const).map(mode => (
-              <button key={mode} onClick={() => onChange('colorMode', mode)} style={{
-                flex:1, padding:'6px 8px', fontSize:11, fontWeight:colorMode===mode?600:400,
-                border:'none', cursor:'pointer', transition:'all 0.12s',
-                background:colorMode===mode?tc(isDark,'rgba(255,255,255,0.1)','rgba(0,0,0,0.08)'):pickerBg,
-                color:colorMode===mode?textColor:labelColor,
-              }}>
-                {mode==='original'?'Оригинал':'Цвет'}
-              </button>
-            ))}
-          </div>
-
-          {colorMode === 'solid' && (
-            <ColorPicker value={currentColor??'#4287f5'} onChange={hex => onChange('color', hex)} isDark={isDark} />
-          )}
-
-          {colorMode === 'original' && (
-            <div style={{ padding:'10px 12px', fontSize:11, color:labelColor }}>
-              Используются оригинальные цвета компонента
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ─── Responsive hook ──────────────────────────────────────────────────────────
-
-const useIsMobile = () => {
-  const [v, setV] = useState(() => globalThis.window === undefined ? false : globalThis.window.innerWidth < 640);
-  useEffect(() => {
-    const h = () => setV(globalThis.window.innerWidth < 640);
-    globalThis.window.addEventListener('resize', h);
-    return () => globalThis.window.removeEventListener('resize', h);
-  }, []);
-  return v;
-};
-
-// ─── NumberInput ──────────────────────────────────────────────────────────────
-
-const NumberInput: React.FC<{
+const SidebarNumberInput: React.FC<{
   value: number; onChange: (v: number) => void;
   min: number; max: number; step: number; isDark: boolean;
 }> = ({ value, onChange, min, max, step, isDark }) => {
@@ -340,25 +222,25 @@ const NumberInput: React.FC<{
   const [raw, setRaw] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const commit = () => { const n = Number.parseFloat(raw); if (!Number.isNaN(n)) onChange(Math.min(max, Math.max(min, n))); setEditing(false); };
-  const border = tc(isDark,'rgba(255,255,255,0.14)','rgba(0,0,0,0.14)');
-  const bg     = tc(isDark,'rgba(255,255,255,0.07)','rgba(0,0,0,0.06)');
-  const fg     = tc(isDark,'#fff','#000');
+  const border = tc(isDark, 'rgba(255,255,255,0.12)', 'rgba(0,0,0,0.12)');
+  const bg     = tc(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.06)');
+  const fg     = tc(isDark, '#fff', '#000');
   const places = step >= 1 ? 0 : step >= 0.1 ? 1 : 2;
   const numStr = places > 0 ? value.toFixed(places) : String(Math.round(value));
   return (
-    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+    <div style={{ display:'flex', alignItems:'center', gap:7 }}>
       <input type="range" min={min} max={max} step={step} value={value} onChange={e=>onChange(Number(e.target.value))}
-        style={{ flex:1, accentColor:tc(isDark,'#fff','#000'), cursor:'pointer', height:4, minWidth:0 }}
+        style={{ flex:1, accentColor:tc(isDark,'rgba(255,255,255,0.8)','rgba(0,0,0,0.6)'), cursor:'pointer', height:3, minWidth:0 }}
       />
       {editing ? (
         <input ref={inputRef} type="number" value={raw} min={min} max={max} step={step}
           onChange={e=>setRaw(e.target.value)} onBlur={commit}
           onKeyDown={e=>{if(e.key==='Enter')commit();if(e.key==='Escape')setEditing(false);}}
-          style={{ width:54, padding:'2px 5px', borderRadius:6, border:`1px solid ${border}`, background:bg, color:fg, fontSize:11, textAlign:'center', outline:'none', fontFamily:'ui-monospace,monospace', flexShrink:0 }}
+          style={{ width:46, padding:'2px 4px', borderRadius:5, border:`1px solid ${border}`, background:bg, color:fg, fontSize:11, textAlign:'center', outline:'none', fontFamily:'ui-monospace,monospace', flexShrink:0 }}
         />
       ) : (
         <button onClick={()=>{setRaw(String(value));setEditing(true);setTimeout(()=>inputRef.current?.select(),0);}}
-          style={{ width:54, padding:'2px 5px', borderRadius:6, border:`1px solid ${border}`, background:bg, color:fg, fontSize:11, textAlign:'center', cursor:'pointer', fontFamily:'ui-monospace,monospace', flexShrink:0 }}>
+          style={{ width:46, padding:'2px 4px', borderRadius:5, border:`1px solid ${border}`, background:bg, color:fg, fontSize:11, textAlign:'center', cursor:'pointer', fontFamily:'ui-monospace,monospace', flexShrink:0 }}>
           {numStr}
         </button>
       )}
@@ -366,31 +248,148 @@ const NumberInput: React.FC<{
   );
 };
 
-// ─── Universal Grid ───────────────────────────────────────────────────────────
+// ─── Sidebar Row — одна строка: label + слайдер ───────────────────────────────
 
-const UniversalGrid: React.FC<{
+const SidebarRow: React.FC<{
+  label: string; fieldKey: keyof UniversalProps;
+  min: number; max: number; step: number; defaultVal: number;
+  universalProps: UniversalProps;
+  onChange: (key: keyof UniversalProps, v: PropValue) => void;
+  isDark: boolean;
+}> = ({ label, fieldKey, min, max, step, defaultVal, universalProps, onChange, isDark }) => {
+  const labelColor = tc(isDark, 'rgba(255,255,255,0.5)', 'rgba(0,0,0,0.5)');
+  const val = (universalProps[fieldKey] as number) ?? defaultVal;
+  const isChanged = Math.abs(val - defaultVal) > 0.001;
+  return (
+    <div style={{ padding:'6px 12px' }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
+        <span style={{ fontSize:10, fontWeight:600, color:isChanged ? tc(isDark,'rgba(255,255,255,0.85)','rgba(0,0,0,0.85)') : labelColor, letterSpacing:'0.02em' }}>
+          {label}
+        </span>
+        {isChanged && (
+          <button onClick={()=>onChange(fieldKey, defaultVal)}
+            style={{ fontSize:9, color:tc(isDark,'rgba(255,255,255,0.3)','rgba(0,0,0,0.3)'), background:'none', border:'none', cursor:'pointer', padding:'0 2px' }}
+            title="Сбросить"
+          >↺</button>
+        )}
+      </div>
+      <SidebarNumberInput value={val} onChange={v=>onChange(fieldKey, v)} min={min} max={max} step={step} isDark={isDark} />
+    </div>
+  );
+};
+
+// ─── Sidebar Section — сворачиваемая группа полей ─────────────────────────────
+
+const SidebarSection: React.FC<{
+  label: string;
+  defaultOpen?: boolean;
+  isDark: boolean;
+  children: React.ReactNode;
+}> = ({ label, defaultOpen = true, isDark, children }) => {
+  const [open, setOpen] = useState(defaultOpen);
+  const border     = tc(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.07)');
+  const labelColor = tc(isDark, 'rgba(255,255,255,0.35)', 'rgba(0,0,0,0.35)');
+  const bg         = tc(isDark, 'rgba(255,255,255,0.015)', 'rgba(0,0,0,0.015)');
+  return (
+    <div style={{ borderBottom:`1px solid ${border}` }}>
+      <button onClick={()=>setOpen(v=>!v)} style={{
+        width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between',
+        padding:'7px 12px', background:bg, border:'none', cursor:'pointer',
+      }}>
+        <span style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:labelColor }}>
+          {label}
+        </span>
+        <svg width="9" height="9" viewBox="0 0 10 10" style={{ opacity:0.35, transform:open?'rotate(180deg)':'none', transition:'transform 0.15s', flexShrink:0 }}>
+          <path d="M2 3 L5 7 L8 3" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+        </svg>
+      </button>
+      {open && <div>{children}</div>}
+    </div>
+  );
+};
+
+// ─── Color Section — секция цвета в sidebar ───────────────────────────────────
+
+const ColorSection: React.FC<{
   universalProps: UniversalProps;
   onChange: (key: keyof UniversalProps, v: PropValue) => void;
   isDark: boolean;
 }> = ({ universalProps, onChange, isDark }) => {
-  const isMobile    = useIsMobile();
-  const borderColor = tc(isDark,'rgba(255,255,255,0.07)','rgba(0,0,0,0.07)');
-  const cellBg      = tc(isDark,'rgba(255,255,255,0.025)','rgba(0,0,0,0.02)');
-  const labelColor  = tc(isDark,'rgba(255,255,255,0.45)','rgba(0,0,0,0.45)');
+  const border      = tc(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.07)');
+  const labelColor  = tc(isDark, 'rgba(255,255,255,0.35)', 'rgba(0,0,0,0.35)');
+  const textColor   = tc(isDark, 'rgba(255,255,255,0.75)', 'rgba(0,0,0,0.75)');
+  const bg          = tc(isDark, 'rgba(255,255,255,0.015)', 'rgba(0,0,0,0.015)');
+  const activeBg    = tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.08)');
+  const [open, setOpen] = useState(true);
+  const colorMode   = universalProps.colorMode ?? 'original';
+  const currentColor = universalProps.color;
+
   return (
-    <>
-      <ColorSection universalProps={universalProps} onChange={onChange} isDark={isDark} />
-      <div style={{ display:'grid', gridTemplateColumns:`repeat(${isMobile?1:3},1fr)`, gap:1, background:borderColor, border:`1px solid ${borderColor}`, borderRadius:10, overflow:'hidden' }}>
-        {UNIVERSAL_FIELDS.map(f => (
-          <div key={f.key} style={{ background:cellBg, padding:'9px 11px', display:'flex', flexDirection:'column', gap:5 }}>
-            <span style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.05em', color:labelColor }}>{f.label}</span>
-            <NumberInput value={(universalProps[f.key] as number)??f.default} onChange={v=>onChange(f.key,v)} min={f.min} max={f.max} step={f.step} isDark={isDark} />
+    <div style={{ borderBottom:`1px solid ${border}` }}>
+      {/* Header */}
+      <button onClick={()=>setOpen(v=>!v)} style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'7px 12px', background:bg, border:'none', cursor:'pointer' }}>
+        <span style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:labelColor, flex:1, textAlign:'left' }}>Цвет</span>
+        {colorMode==='solid' && currentColor && (
+          <div style={{ width:12, height:12, borderRadius:3, background:currentColor, border:`1px solid ${border}`, flexShrink:0 }} />
+        )}
+        <span style={{ fontSize:10, color:labelColor, fontFamily:'ui-monospace,monospace', flexShrink:0 }}>
+          {colorMode==='solid' && currentColor ? currentColor : 'оригинал'}
+        </span>
+        <svg width="9" height="9" viewBox="0 0 10 10" style={{ opacity:0.35, transform:open?'rotate(180deg)':'none', transition:'transform 0.15s', flexShrink:0 }}>
+          <path d="M2 3 L5 7 L8 3" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+        </svg>
+      </button>
+
+      {open && (
+        <div>
+          {/* Mode toggle */}
+          <div style={{ display:'flex', margin:'0 12px 8px', borderRadius:7, overflow:'hidden', border:`1px solid ${border}` }}>
+            {(['original','solid'] as const).map(mode => (
+              <button key={mode} onClick={()=>onChange('colorMode', mode)} style={{
+                flex:1, padding:'5px 6px', fontSize:10, fontWeight:colorMode===mode?700:400,
+                border:'none', cursor:'pointer', transition:'all 0.12s',
+                background:colorMode===mode?activeBg:bg,
+                color:colorMode===mode?textColor:labelColor,
+              }}>
+                {mode==='original'?'Оригинал':'Цвет'}
+              </button>
+            ))}
           </div>
-        ))}
-      </div>
-    </>
+
+          {colorMode==='solid' && (
+            <ColorPicker value={currentColor??'#4287f5'} onChange={hex=>onChange('color',hex)} isDark={isDark} />
+          )}
+          {colorMode==='original' && (
+            <div style={{ padding:'6px 12px 10px', fontSize:10, color:labelColor }}>Оригинальные цвета компонента</div>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
+
+// ─── Universal Sidebar ── sidebar-style layout ────────────────────────────────
+
+const UniversalSidebar: React.FC<{
+  universalProps: UniversalProps;
+  onChange: (key: keyof UniversalProps, v: PropValue) => void;
+  isDark: boolean;
+}> = ({ universalProps, onChange, isDark }) => (
+  <div>
+    <ColorSection universalProps={universalProps} onChange={onChange} isDark={isDark} />
+    {FIELD_GROUPS.map((group, gi) => (
+      <SidebarSection key={gi} label={group.label} defaultOpen={gi===0} isDark={isDark}>
+        {group.fields.map(f => (
+          <SidebarRow
+            key={f.key} label={f.label} fieldKey={f.key}
+            min={f.min} max={f.max} step={f.step} defaultVal={f.default}
+            universalProps={universalProps} onChange={onChange} isDark={isDark}
+          />
+        ))}
+      </SidebarSection>
+    ))}
+  </div>
+);
 
 // ─── AiSelect ────────────────────────────────────────────────────────────────
 
@@ -402,61 +401,55 @@ const AiSelect: React.FC<{
   const [hov, setHov]   = useState<string | null>(null);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [dropUp, setDropUp] = useState(false);
-  const [w, setW]       = useState(0);
-  const ref    = useRef<HTMLDivElement>(null);
+  const [w, setW] = useState(0);
+  const ref   = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const pRef   = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    const h = (e: MouseEvent) => { const t = e.target as Node; if (!ref.current?.contains(t) && !pRef.current?.contains(t)) setOpen(false); };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
+    const h = (e: MouseEvent) => { const t=e.target as Node; if(!ref.current?.contains(t)&&!pRef.current?.contains(t)) setOpen(false); };
+    document.addEventListener('mousedown',h); return ()=>document.removeEventListener('mousedown',h);
   }, [open]);
 
-  const computeDropUp = (r: DOMRect) => { const h = Math.min(options.length*34+48,240); return globalThis.window.innerHeight-r.bottom<h && r.top>h; };
+  const computeDropUp = (r: DOMRect) => { const h=Math.min(options.length*34+48,240); return globalThis.window.innerHeight-r.bottom<h && r.top>h; };
 
   useEffect(() => {
     if (!open||!btnRef.current) return;
-    const upd = () => { if (!btnRef.current) return; const r=btnRef.current.getBoundingClientRect(); setRect(r); setW(r.width); setDropUp(computeDropUp(r)); };
-    upd();
-    globalThis.window.addEventListener('scroll',upd,true); globalThis.window.addEventListener('resize',upd);
-    return () => { globalThis.window.removeEventListener('scroll',upd,true); globalThis.window.removeEventListener('resize',upd); };
+    const upd=()=>{ if(!btnRef.current)return; const r=btnRef.current.getBoundingClientRect(); setRect(r);setW(r.width);setDropUp(computeDropUp(r)); };
+    upd(); globalThis.window.addEventListener('scroll',upd,true); globalThis.window.addEventListener('resize',upd);
+    return ()=>{ globalThis.window.removeEventListener('scroll',upd,true); globalThis.window.removeEventListener('resize',upd); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, options.length]);
+  }, [open,options.length]);
 
-  const tC = tc(isDark,'rgba(255,255,255,0.85)','rgba(0,0,0,0.85)');
-  const lC = tc(isDark,'rgba(255,255,255,0.3)','rgba(0,0,0,0.35)');
-  const bB = tc(isDark,'#1a1a1a','#d4d3cf');
-  const bd = tc(isDark,'rgba(255,255,255,0.1)','rgba(0,0,0,0.1)');
-  const rH = tc(isDark,'rgba(255,255,255,0.06)','rgba(0,0,0,0.06)');
-  const cB = tc(isDark,'rgba(255,255,255,0.025)','rgba(0,0,0,0.02)');
-  const bC = tc(isDark,'rgba(255,255,255,0.07)','rgba(0,0,0,0.07)');
-  const lColor = tc(isDark,'rgba(255,255,255,0.45)','rgba(0,0,0,0.45)');
-  const aOB = tc(isDark,'rgba(255,255,255,0.08)','rgba(0,0,0,0.08)');
+  const border     = tc(isDark,'rgba(255,255,255,0.1)','rgba(0,0,0,0.1)');
+  const bg         = tc(isDark,'rgba(255,255,255,0.07)','rgba(0,0,0,0.06)');
+  const labelColor = tc(isDark,'rgba(255,255,255,0.5)','rgba(0,0,0,0.5)');
+  const textColor  = tc(isDark,'rgba(255,255,255,0.85)','rgba(0,0,0,0.85)');
+  const rowHov     = tc(isDark,'rgba(255,255,255,0.06)','rgba(0,0,0,0.06)');
+  const activeOptBg = tc(isDark,'rgba(255,255,255,0.08)','rgba(0,0,0,0.08)');
 
   return (
-    <div style={{ background:cB, border:`1px solid ${bC}`, borderRadius:10, padding:'9px 11px' }}>
-      <span style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.05em', color:lColor, display:'block', marginBottom:5 }}>{label}</span>
+    <div style={{ padding:'6px 12px' }}>
+      <div style={{ fontSize:10, fontWeight:600, color:labelColor, marginBottom:4, letterSpacing:'0.02em' }}>{label}</div>
       <div ref={ref} style={{ position:'relative' }}>
-        <button ref={btnRef} onClick={() => { if (!btnRef.current) return; const r=btnRef.current.getBoundingClientRect(); setRect(r); setW(r.width); setDropUp(computeDropUp(r)); setOpen(v=>!v); }}
-          style={{ width:'100%', display:'inline-flex', alignItems:'center', justifyContent:'space-between', padding:'5px 9px', borderRadius:7, border:`1px solid ${bd}`, background:bB, color:tC, fontSize:12, fontWeight:500, cursor:'pointer' }}
+        <button ref={btnRef} onClick={()=>{ if(!btnRef.current)return; const r=btnRef.current.getBoundingClientRect(); setRect(r);setW(r.width);setDropUp(computeDropUp(r));setOpen(v=>!v); }}
+          style={{ width:'100%', display:'inline-flex', alignItems:'center', justifyContent:'space-between', padding:'5px 8px', borderRadius:6, border:`1px solid ${border}`, background:bg, color:textColor, fontSize:12, fontWeight:500, cursor:'pointer' }}
         >
           <span>{value}</span>
-          <svg width="9" height="9" viewBox="0 0 10 10" style={{ opacity:0.5, transform:open?'rotate(180deg)':'none', transition:'transform 0.15s' }}>
+          <svg width="9" height="9" viewBox="0 0 10 10" style={{ opacity:0.4, transform:open?'rotate(180deg)':'none', transition:'transform 0.15s' }}>
             <path d="M2 3 L5 7 L8 3" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
           </svg>
         </button>
         {open && rect && createPortal(
           <>
-            <style>{`@keyframes aiSelectIn{from{opacity:0;transform:translateY(-4px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}`}</style>
-            <div ref={pRef} style={{ position:'fixed', left:rect.left, width:w, zIndex:99999, background:tc(isDark,'#0a0a0a','#E8E7E3'), border:`1px solid ${bd}`, borderRadius:10, boxShadow:isDark?'0 8px 32px rgba(0,0,0,0.7)':'0 8px 32px rgba(0,0,0,0.12)', overflow:'auto', maxHeight:240, animation:'aiSelectIn 0.13s ease', ...(dropUp?{bottom:globalThis.window.innerHeight-rect.top+4}:{top:rect.bottom+4}) }}>
-              <div style={{ padding:'7px 11px 3px', fontSize:10, fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:lC }}>Выбери вариант</div>
-              {options.map(opt => (
-                <button key={opt} onClick={() => { onChange(opt); setOpen(false); }} onMouseEnter={()=>setHov(opt)} onMouseLeave={()=>setHov(null)}
-                  style={{ display:'flex', alignItems:'center', width:'100%', padding:'5px 11px', fontSize:12, textAlign:'left', cursor:'pointer', border:'none', color:tC, background:hov===opt?rH:opt===value?aOB:'transparent' }}
+            <style>{`@keyframes aiIn{from{opacity:0;transform:translateY(-4px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}`}</style>
+            <div ref={pRef} style={{ position:'fixed', left:rect.left, width:w, zIndex:99999, background:tc(isDark,'#111','#e8e7e3'), border:`1px solid ${border}`, borderRadius:8, boxShadow:isDark?'0 8px 32px rgba(0,0,0,0.7)':'0 8px 32px rgba(0,0,0,0.12)', overflow:'auto', maxHeight:240, animation:'aiIn 0.13s ease', ...(dropUp?{bottom:globalThis.window.innerHeight-rect.top+4}:{top:rect.bottom+4}) }}>
+              {options.map(opt=>(
+                <button key={opt} onClick={()=>{onChange(opt);setOpen(false);}} onMouseEnter={()=>setHov(opt)} onMouseLeave={()=>setHov(null)}
+                  style={{ display:'flex', alignItems:'center', width:'100%', padding:'6px 11px', fontSize:12, textAlign:'left', cursor:'pointer', border:'none', color:textColor, background:hov===opt?rowHov:opt===value?activeOptBg:'transparent' }}
                 >
-                  {opt===value && <span style={{ marginRight:6, opacity:0.6 }}>✓</span>}
+                  {opt===value&&<span style={{ marginRight:6, opacity:0.5 }}>✓</span>}
                   {opt}
                 </button>
               ))}
@@ -469,18 +462,17 @@ const AiSelect: React.FC<{
   );
 };
 
-// ─── Specific Grid ────────────────────────────────────────────────────────────
+// ─── Specific Sidebar ─────────────────────────────────────────────────────────
 
-const SpecificGrid: React.FC<{
+const SpecificSidebar: React.FC<{
   config: ComponentConfig; componentProps: ComponentPropsMap;
   onChange: (name: string, v: PropValue) => void; isDark: boolean;
 }> = ({ config, componentProps, onChange, isDark }) => {
-  const borderColor = tc(isDark,'rgba(255,255,255,0.07)','rgba(0,0,0,0.07)');
-  const cellBg      = tc(isDark,'rgba(255,255,255,0.025)','rgba(0,0,0,0.02)');
-  const labelColor  = tc(isDark,'rgba(255,255,255,0.45)','rgba(0,0,0,0.45)');
-  const border      = tc(isDark,'rgba(255,255,255,0.1)','rgba(0,0,0,0.1)');
-  const textColor   = tc(isDark,'rgba(255,255,255,0.85)','rgba(0,0,0,0.85)');
-  const inputBg     = tc(isDark,'#1a1a1a','#d4d3cf');
+  const labelColor = tc(isDark,'rgba(255,255,255,0.5)','rgba(0,0,0,0.5)');
+  const border     = tc(isDark,'rgba(255,255,255,0.1)','rgba(0,0,0,0.1)');
+  const bg         = tc(isDark,'rgba(255,255,255,0.07)','rgba(0,0,0,0.06)');
+  const textColor  = tc(isDark,'rgba(255,255,255,0.85)','rgba(0,0,0,0.85)');
+  const sectionBdr = tc(isDark,'rgba(255,255,255,0.07)','rgba(0,0,0,0.07)');
 
   const visibleProps = useMemo(() =>
     config.specificProps?.length
@@ -488,46 +480,59 @@ const SpecificGrid: React.FC<{
       : config.props,
   [config]);
 
-  if (!visibleProps.length) return <div style={{ padding:20, textAlign:'center', fontSize:13, color:labelColor }}>Нет специфических настроек</div>;
+  if (!visibleProps.length) return <div style={{ padding:'20px 12px', textAlign:'center', fontSize:12, color:labelColor }}>Нет специфических настроек</div>;
 
   return (
-    <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(180px, 1fr))', gap:1, background:borderColor, border:`1px solid ${borderColor}`, borderRadius:10, overflow:'visible' }}>
-      {visibleProps.map((prop: PropDefinition) => {
-        const val = componentProps[prop.name];
-        if (prop.control==='select') return <AiSelect key={prop.name} label={prop.description} value={typeof val==='string'?val:(prop.default as string??'')} options={prop.options??[]} onChange={v=>onChange(prop.name,v)} isDark={isDark} />;
-        if (prop.control==='number') return (
-          <div key={prop.name} style={{ background:cellBg, padding:'9px 11px', display:'flex', flexDirection:'column', gap:5 }}>
-            <span style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.05em', color:labelColor }}>{prop.description}</span>
-            <NumberInput value={typeof val==='number'?val:(prop.default as number??0)} onChange={v=>onChange(prop.name,v)} min={prop.min??0} max={prop.max??100} step={prop.step??1} isDark={isDark} />
-          </div>
-        );
-        return (
-          <div key={prop.name} style={{ background:cellBg, padding:'9px 11px', display:'flex', flexDirection:'column', gap:5 }}>
-            <span style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.05em', color:labelColor }}>{prop.description}</span>
-            <input type="text" value={typeof val==='string'?val:(prop.default as string??'')} onChange={e=>onChange(prop.name,e.target.value)}
-              style={{ width:'100%', padding:'4px 7px', borderRadius:6, border:`1px solid ${border}`, background:inputBg, color:textColor, fontSize:12, outline:'none', boxSizing:'border-box' }}
-            />
-          </div>
-        );
-      })}
+    <div>
+      {visibleProps.map((prop: PropDefinition, i) => (
+        <div key={prop.name} style={{ borderBottom: i < visibleProps.length-1 ? `1px solid ${sectionBdr}` : 'none' }}>
+          {prop.control==='select' && (
+            <AiSelect label={prop.description} value={typeof componentProps[prop.name]==='string'?componentProps[prop.name] as string:(prop.default as string??'')} options={prop.options??[]} onChange={v=>onChange(prop.name,v)} isDark={isDark} />
+          )}
+          {prop.control==='number' && (
+            <div style={{ padding:'6px 12px' }}>
+              <div style={{ fontSize:10, fontWeight:600, color:labelColor, marginBottom:4, letterSpacing:'0.02em' }}>{prop.description}</div>
+              <SidebarNumberInput value={typeof componentProps[prop.name]==='number'?componentProps[prop.name] as number:(prop.default as number??0)} onChange={v=>onChange(prop.name,v)} min={prop.min??0} max={prop.max??100} step={prop.step??1} isDark={isDark} />
+            </div>
+          )}
+          {prop.control!=='select' && prop.control!=='number' && (
+            <div style={{ padding:'6px 12px' }}>
+              <div style={{ fontSize:10, fontWeight:600, color:labelColor, marginBottom:4, letterSpacing:'0.02em' }}>{prop.description}</div>
+              <input type="text" value={typeof componentProps[prop.name]==='string'?componentProps[prop.name] as string:(prop.default as string??'')} onChange={e=>onChange(prop.name,e.target.value)}
+                style={{ width:'100%', padding:'4px 7px', borderRadius:6, border:`1px solid ${border}`, background:bg, color:textColor, fontSize:12, outline:'none', boxSizing:'border-box' }}
+              />
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 };
 
 // ─── Tab bar ──────────────────────────────────────────────────────────────────
 
-const TabBar: React.FC<{ active: TabType; onSelect: (t: TabType) => void; isDark: boolean }> = ({ active, onSelect, isDark }) => (
-  <div style={{ display:'flex', gap:4, padding:'7px 11px', borderBottom:`1px solid ${tc(isDark,'rgba(255,255,255,0.09)','rgba(0,0,0,0.09)')}`, background:tc(isDark,'rgba(255,255,255,0.02)','rgba(0,0,0,0.02)'), flexWrap:'wrap' }}>
-    {(['universal','specific'] as TabType[]).map(tab => {
-      const a = active===tab;
-      return (
-        <button key={tab} onClick={()=>onSelect(tab)} style={{ padding:'5px 13px', borderRadius:8, border:`1px solid ${a?tc(isDark,'rgba(255,255,255,0.14)','rgba(0,0,0,0.14)'):'transparent'}`, background:a?tc(isDark,'rgba(255,255,255,0.09)','rgba(0,0,0,0.09)'):'transparent', color:a?tc(isDark,'#fff','#000'):tc(isDark,'rgba(255,255,255,0.5)','rgba(0,0,0,0.5)'), fontSize:12, fontWeight:a?600:400, cursor:'pointer', transition:'all 0.14s', whiteSpace:'nowrap' }}>
-          {tab==='universal'?'Общие':'Специфические'}
-        </button>
-      );
-    })}
-  </div>
-);
+const TabBar: React.FC<{ active: TabType; onSelect: (t: TabType) => void; isDark: boolean }> = ({ active, onSelect, isDark }) => {
+  const border = tc(isDark,'rgba(255,255,255,0.08)','rgba(0,0,0,0.08)');
+  const bg     = tc(isDark,'rgba(255,255,255,0.015)','rgba(0,0,0,0.015)');
+  return (
+    <div style={{ display:'flex', padding:'6px 12px', gap:4, borderBottom:`1px solid ${border}`, background:bg, flexShrink:0 }}>
+      {(['universal','specific'] as TabType[]).map(tab => {
+        const a = active===tab;
+        return (
+          <button key={tab} onClick={()=>onSelect(tab)} style={{
+            flex:1, padding:'5px 8px', borderRadius:7,
+            border:`1px solid ${a?tc(isDark,'rgba(255,255,255,0.15)','rgba(0,0,0,0.15)'):'transparent'}`,
+            background:a?tc(isDark,'rgba(255,255,255,0.1)','rgba(0,0,0,0.08)'):'transparent',
+            color:a?tc(isDark,'#fff','#000'):tc(isDark,'rgba(255,255,255,0.45)','rgba(0,0,0,0.45)'),
+            fontSize:11, fontWeight:a?600:400, cursor:'pointer', transition:'all 0.14s', whiteSpace:'nowrap',
+          }}>
+            {tab==='universal'?'Общие':'Специфические'}
+          </button>
+        );
+      })}
+    </div>
+  );
+};
 
 // ─── Icon button ──────────────────────────────────────────────────────────────
 
@@ -535,10 +540,10 @@ const IconBtn: React.FC<{
   onClick: () => void; title: string; label: string;
   isDark: boolean; children: React.ReactNode; active?: boolean;
 }> = ({ onClick, title, label, isDark, children, active }) => {
-  const border  = active?tc(isDark,'rgba(255,255,255,0.2)','rgba(0,0,0,0.2)'):tc(isDark,'rgba(255,255,255,0.1)','rgba(0,0,0,0.14)');
-  const bg      = active?tc(isDark,'rgba(255,255,255,0.1)','rgba(0,0,0,0.08)'):tc(isDark,'rgba(255,255,255,0.05)','rgba(0,0,0,0.04)');
-  const bgHov   = tc(isDark,'rgba(255,255,255,0.12)','rgba(0,0,0,0.1)');
-  const color   = active?tc(isDark,'#fff','#000'):tc(isDark,'rgba(255,255,255,0.65)','rgba(0,0,0,0.55)');
+  const border = active?tc(isDark,'rgba(255,255,255,0.2)','rgba(0,0,0,0.2)'):tc(isDark,'rgba(255,255,255,0.1)','rgba(0,0,0,0.14)');
+  const bg     = active?tc(isDark,'rgba(255,255,255,0.1)','rgba(0,0,0,0.08)'):tc(isDark,'rgba(255,255,255,0.05)','rgba(0,0,0,0.04)');
+  const bgHov  = tc(isDark,'rgba(255,255,255,0.12)','rgba(0,0,0,0.1)');
+  const color  = active?tc(isDark,'#fff','#000'):tc(isDark,'rgba(255,255,255,0.65)','rgba(0,0,0,0.55)');
   return (
     <button onClick={onClick} title={title} style={{ display:'inline-flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2, padding:'5px 8px', minWidth:44, borderRadius:8, border:`1px solid ${border}`, background:bg, color, cursor:'pointer', transition:'all 0.14s', flexShrink:0 }}
       onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.background=bgHov;(e.currentTarget as HTMLButtonElement).style.color=tc(isDark,'#fff','#000');}}
@@ -565,7 +570,7 @@ const ComponentRender: React.FC<ComponentRenderProps> = ({ Component, componentP
   </ComponentWrapper>
 );
 
-// ─── Settings Content (переиспользуется везде) ────────────────────────────────
+// ─── Settings Content ─────────────────────────────────────────────────────────
 
 const SettingsContent: React.FC<{
   activeTab: TabType; onTabSelect: (t: TabType) => void;
@@ -577,10 +582,10 @@ const SettingsContent: React.FC<{
 }> = ({ activeTab, onTabSelect, config, componentProps, universalProps, onPropChange, onUniversalChange, isDark }) => (
   <div style={{ display:'flex', flexDirection:'column', flex:1, overflow:'hidden' }}>
     <TabBar active={activeTab} onSelect={onTabSelect} isDark={isDark} />
-    <div style={{ flex:1, overflowY:'auto', overflowX:'hidden', padding:'14px 14px 10px', WebkitOverflowScrolling:'touch' }}>
+    <div style={{ flex:1, overflowY:'auto', overflowX:'hidden', WebkitOverflowScrolling:'touch' }}>
       {activeTab==='universal'
-        ? <UniversalGrid universalProps={universalProps} onChange={onUniversalChange} isDark={isDark} />
-        : <SpecificGrid config={config} componentProps={componentProps} onChange={onPropChange} isDark={isDark} />
+        ? <UniversalSidebar universalProps={universalProps} onChange={onUniversalChange} isDark={isDark} />
+        : <SpecificSidebar config={config} componentProps={componentProps} onChange={onPropChange} isDark={isDark} />
       }
     </div>
   </div>
@@ -644,7 +649,7 @@ const SettingsPanel: React.FC<ComponentRenderProps & {
   );
 };
 
-// ─── Fullscreen — весь экран + правая панель настроек ─────────────────────────
+// ─── Fullscreen с правой панелью ──────────────────────────────────────────────
 
 const FullscreenModal: React.FC<ComponentRenderProps & {
   config: ComponentConfig; onClose: () => void; onRefresh: () => void;
@@ -662,15 +667,14 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
     return () => { document.body.style.overflow=''; document.removeEventListener('keydown', onKey); };
   }, [onClose]);
 
-  const border   = tc(isDark,'rgba(255,255,255,0.1)','rgba(0,0,0,0.1)');
+  const border   = tc(isDark,'rgba(255,255,255,0.08)','rgba(0,0,0,0.08)');
   const bg       = tc(isDark,'#0a0a0a','#E8E7E3');
   const headerBg = tc(isDark,'rgba(255,255,255,0.02)','rgba(0,0,0,0.02)');
   const panelBg  = tc(isDark,'#0d0d0d','#dddcd8');
-  const PANEL_W  = 300;
+  const PANEL_W  = 280;
 
   return createPortal(
     <div style={{ position:'fixed', inset:0, zIndex:9999, background:bg, display:'flex', flexDirection:'column' }}>
-
       {/* Header */}
       <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', flexShrink:0, borderBottom:`1px solid ${border}`, background:headerBg }}>
         <div style={{ fontSize:13, fontWeight:600, color:tc(isDark,'rgba(255,255,255,0.7)','rgba(0,0,0,0.7)'), padding:'3px 9px', borderRadius:7, background:tc(isDark,'rgba(255,255,255,0.06)','rgba(0,0,0,0.06)'), border:`1px solid ${border}` }}>
@@ -678,23 +682,22 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
         </div>
         <div style={{ flex:1 }} />
         <IconBtn onClick={onRefresh} title="Перезапустить" label="Заново" isDark={isDark}><Play size={13} /></IconBtn>
-        <IconBtn onClick={onReset} title="Сбросить настройки" label="Сбросить" isDark={isDark}><RefreshCcw size={13} /></IconBtn>
-        <div style={{ width:1, height:24, background:border, margin:'0 2px', flexShrink:0 }} />
+        <IconBtn onClick={onReset} title="Сбросить" label="Сбросить" isDark={isDark}><RefreshCcw size={13} /></IconBtn>
+        <div style={{ width:1, height:22, background:border, margin:'0 2px', flexShrink:0 }} />
         <IconBtn onClick={()=>setPanelOpen(v=>!v)} title={panelOpen?'Скрыть панель':'Показать панель'} label={panelOpen?'Скрыть':'Панель'} isDark={isDark} active={panelOpen}>
-          {panelOpen ? <PanelRightClose size={13} /> : <PanelRight size={13} />}
+          {panelOpen?<PanelRightClose size={13}/>:<PanelRight size={13}/>}
         </IconBtn>
         <IconBtn onClick={onClose} title="Свернуть (Esc)" label="Свернуть" isDark={isDark}><Minimize2 size={13} /></IconBtn>
       </div>
 
       {/* Body */}
       <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
-
-        {/* Область компонента */}
+        {/* Canvas */}
         <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:48, overflow:'auto' }}>
           <ComponentRender Component={Component} componentProps={componentProps} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} />
         </div>
 
-        {/* Правая панель */}
+        {/* Правая панель — sidebar-style */}
         {panelOpen && (
           <div style={{ width:PANEL_W, flexShrink:0, borderLeft:`1px solid ${border}`, background:panelBg, display:'flex', flexDirection:'column', overflow:'hidden' }}>
             <SettingsContent
