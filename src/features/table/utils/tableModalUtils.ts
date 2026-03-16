@@ -6,7 +6,10 @@ export interface ParsedTable {
 function stripHtmlNormalize(html: string): string {
   const div = document.createElement('div');
   div.innerHTML = html;
-  return (div.textContent || div.innerText || '').replace(/\s+/g, ' ').trim();
+  return (div.textContent || div.innerText || '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .join(' ');
 }
 
 export function parseTableFromHTML(html: string): ParsedTable {
@@ -57,14 +60,8 @@ export function filterRows(
 
     for (const [col, values] of activeFilters) {
       if (values.size === 0) continue;
-
       const cellText = stripHtmlNormalize(row[col] || '');
-
-      let matchedAny = false;
-      for (const v of values) {
-        if (cellText === v) { matchedAny = true; break; }
-      }
-      if (!matchedAny) return false;
+      if (!values.has(cellText)) return false;
     }
 
     return true;
