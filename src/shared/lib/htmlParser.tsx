@@ -106,6 +106,20 @@ const processListElement = (element: Element, tagName: string, key: string, elem
 };
 
 const processLinkElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  // If the link wraps a single image — render the image with lightbox instead
+  const children = Array.from(element.childNodes).filter(
+    (n) => !(n.nodeType === Node.TEXT_NODE && !n.textContent?.trim())
+  );
+  if (children.length === 1 && (children[0] as Element).tagName?.toLowerCase() === 'img') {
+    const img = children[0] as Element;
+    elements.push(React.createElement(ImageCard, {
+      key,
+      src:   img.getAttribute('src')   || '',
+      alt:   img.getAttribute('alt')   || 'Image',
+      title: img.getAttribute('title') || undefined,
+    }));
+    return;
+  }
   elements.push(
     React.createElement('a', {
       key,
@@ -134,7 +148,6 @@ const processBlockquoteElement = (element: Element, key: string, elements: React
     })
   );
 };
-
 
 const processTableElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const tableHtml = element.outerHTML;
@@ -204,7 +217,6 @@ const processCardGridElement = (element: Element, key: string, elements: React.R
 };
 
 const processColumnsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
-  
   const layout = (element.dataset.layout || 'equal') as ColumnsLayout;
   const colElements: React.ReactNode[] = [];
   for (const [i, col] of Array.from(element.children).entries()) {
@@ -244,7 +256,7 @@ const processDiagramElement = (element: Element, key: string, elements: React.Re
     }
     code = new TextDecoder('utf-8').decode(bytes);
   } catch {
-   
+    // leave as-is if not base64
   }
 
   if (!code.trim()) return;
@@ -272,6 +284,38 @@ const processUIComponent = (
 const processTextNode = (node: ChildNode, key: string, elements: React.ReactNode[]) => {
   const text = node.textContent || '';
   if (text.trim()) elements.push(React.createElement('span', { key }, text));
+};
+
+// ── Figure processor ──────────────────────────────────────────────────────────
+
+/**
+ * <figure> can contain an <img> (or <img> inside <a>) and an optional
+ * <figcaption>. We render it as an ImageCard, using the figcaption text as
+ * the title so the caption appears inside the card's styled footer.
+ */
+const processFigureElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  const img        = element.querySelector('img');
+  const figcaption = element.querySelector('figcaption');
+
+  if (img) {
+    // Prefer figcaption text over img title attribute for the caption
+    const title =
+      figcaption?.textContent?.trim() ||
+      img.getAttribute('title') ||
+      undefined;
+
+    elements.push(React.createElement(ImageCard, {
+      key,
+      src:   img.getAttribute('src')  || '',
+      alt:   img.getAttribute('alt')  || 'Image',
+      title,
+    }));
+    return;
+  }
+
+  // Fallback: figure without an image — render children recursively
+  const children = parseHtmlToReact(sanitizeInnerHTML(element.innerHTML));
+  elements.push(React.createElement('figure', { key }, ...children));
 };
 
 // ── Div dispatcher ────────────────────────────────────────────────────────────
@@ -302,22 +346,61 @@ const processDivElement = (
 
 // ── Paragraph dispatcher ──────────────────────────────────────────────────────
 
+/**
+ * Returns true if every non-empty child node is an <img> or an <a> wrapping
+ * a single <img>. In that case the paragraph is treated as a pure image
+ * container and each image is rendered as an ImageCard.
+ */
+function isPureImageParagraph(element: Element): boolean {
+  const nonEmpty = Array.from(element.childNodes).filter(
+    (n) => !(n.nodeType === Node.TEXT_NODE && !n.textContent?.trim())
+  );
+  if (nonEmpty.length === 0) return false;
+  return nonEmpty.every((n) => {
+    const el = n as Element;
+    if (!el.tagName) return false;
+    const tag = el.tagName.toLowerCase();
+    if (tag === 'img') return true;
+    if (tag === 'a') {
+      const innerNonEmpty = Array.from(el.childNodes).filter(
+        (c) => !(c.nodeType === Node.TEXT_NODE && !c.textContent?.trim())
+      );
+      return (
+        innerNonEmpty.length === 1 &&
+        (innerNonEmpty[0] as Element).tagName?.toLowerCase() === 'img'
+      );
+    }
+    return false;
+  });
+}
+
 const processParagraphElement = (
   element: Element,
   key: string,
   elements: React.ReactNode[]
 ): void => {
-  const children = Array.from(element.childNodes).filter(
-    (n) => !(n.nodeType === Node.TEXT_NODE && !n.textContent?.trim())
-  );
-  if (
-    children.length === 1 &&
-    (children[0] as Element).tagName?.toLowerCase() === 'img'
-  ) {
-    processImageElement(children[0] as Element, key, elements);
+  if (processUIComponent(element, key, element.textContent || '', elements)) return;
+
+  // Pure image paragraph — render every image as an ImageCard
+  if (isPureImageParagraph(element)) {
+    const nonEmpty = Array.from(element.childNodes).filter(
+      (n) => !(n.nodeType === Node.TEXT_NODE && !n.textContent?.trim())
+    );
+    nonEmpty.forEach((n, i) => {
+      const el  = n as Element;
+      const tag = el.tagName.toLowerCase();
+      const imgEl = tag === 'img' ? el : el.querySelector('img');
+      if (!imgEl) return;
+      elements.push(React.createElement(ImageCard, {
+        key: `${key}-img-${i}`,
+        src:   imgEl.getAttribute('src')   || '',
+        alt:   imgEl.getAttribute('alt')   || 'Image',
+        title: imgEl.getAttribute('title') || undefined,
+      }));
+    });
     return;
   }
-  if (processUIComponent(element, key, element.textContent || '', elements)) return;
+
   elements.push(
     React.createElement('p', {
       key,
@@ -348,6 +431,7 @@ const processElement = (
     case 'ol':         return processListElement(element, tagName, key, elements);
     case 'a':          return processLinkElement(element, key, elements);
     case 'img':        return processImageElement(element, key, elements);
+    case 'figure':     return processFigureElement(element, key, elements);
     case 'blockquote': return processBlockquoteElement(element, key, elements);
     case 'table':      return processTableElement(element, key, elements);
     case 'hr':         elements.push(React.createElement('hr', { key })); return;
