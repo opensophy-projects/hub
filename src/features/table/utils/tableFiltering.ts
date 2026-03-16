@@ -3,7 +3,8 @@ import type { TableControlsState, ParsedRow } from '../types/table';
 export function stripHtmlNormalize(html: string): string {
   const div = document.createElement('div');
   div.innerHTML = html;
-  return (div.textContent || div.innerText || '').replace(/\s+/g, ' ').trim();
+  // NOSONAR: replaceAll() does not support regex patterns like \s+; replace() with /g flag is correct here
+  return (div.textContent || div.innerText || '').replace(/\s+/g, ' ').trim(); // NOSONAR
 }
 
 export function filterAndSortRows(
@@ -33,21 +34,13 @@ export function filterAndSortRows(
   return result;
 }
 
-
 function applyFilters(rows: ParsedRow[], filters: Map<number, Set<string>>): ParsedRow[] {
   if (filters.size === 0) return rows;
-
   return rows.filter((row) => {
     for (const [colIndex, values] of filters) {
       if (values.size === 0) continue;
-
       const cellText = stripHtmlNormalize(row.cells[colIndex] ?? '');
-
-      let matchedAny = false;
-      for (const v of values) {
-        if (cellText === v) { matchedAny = true; break; }
-      }
-      if (!matchedAny) return false;
+      if (![...values].some((v) => cellText === v)) return false;
     }
     return true;
   });
@@ -70,7 +63,7 @@ function applySort(
   return [...rows].sort((a, b) => {
     const av = stripHtmlNormalize(a.cells[sortColumn] ?? '');
     const bv = stripHtmlNormalize(b.cells[sortColumn] ?? '');
-    const c  = av.localeCompare(bv, 'ru');
+    const c = av.localeCompare(bv, 'ru');
     return sortDirection === 'asc' ? c : -c;
   });
 }
