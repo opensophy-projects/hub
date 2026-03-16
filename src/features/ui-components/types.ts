@@ -1,8 +1,5 @@
 import type React from 'react';
 
-// ─── Shared primitive ─────────────────────────────────────────────────────────
-
-/** Возможные значения пропсов компонента */
 export type PropValue = string | number | boolean | string[] | undefined;
 
 // ─── Component Config ─────────────────────────────────────────────────────────
@@ -11,16 +8,27 @@ export interface ComponentConfig {
   id: string;
   name: string;
   description: string;
-  files: Array<{
+
+  // Главный файл компонента (опционально, авто-discovery найдёт без него)
+  // Пример: "main": "BlurText.tsx"
+  main?: string;
+
+  // files — опционально, только для отображения исходников в UI
+  files?: Array<{
     name: string;
     path: string;
     language: string;
   }>;
+
   props: PropDefinition[];
-  /** Какие пропсы показывать в «Специфические настройки».
-   *  Если не указано — показываем все из props[]. */
+
+  // Какие пропсы показывать в "Специфические настройки"
   specificProps?: string[];
-  category?: 'text' | 'button' | 'card' | 'background' | 'animation' | 'other';
+
+  // Категория — просто строка, не enum. Новая категория = новое значение здесь.
+  // Примеры: 'text' | 'button' | 'card' | 'background' | 'shader' | 'animation' | 'other'
+  category?: string;
+
   tags?: string[];
   author?: string;
   version?: string;
@@ -51,46 +59,30 @@ export interface LoadedComponent {
 
 // ─── Universal Props ──────────────────────────────────────────────────────────
 
-/**
- * Общие пропсы для всех компонентов.
- * Применяются через ComponentWrapper.
- */
 export interface UniversalProps {
-  // Цвет
   color?: string;
   colorMode?: 'solid' | 'gradient' | 'original';
   gradientFrom?: string;
   gradientTo?: string;
   gradientAngle?: number;
-  // Размер
   scale?: number;
   width?: string;
   height?: string;
-  // Вращение (3D)
   rotateX?: number;
   rotateY?: number;
   rotateZ?: number;
   perspective?: number;
-  // Позиционирование
   justifyContent?: 'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around';
   alignItems?: 'flex-start' | 'center' | 'flex-end' | 'stretch';
-  // Анимация
   animationSpeed?: number;
-  // Прозрачность
   opacity?: number;
-  // Фильтры
   blur?: number;
   brightness?: number;
   contrast?: number;
   saturate?: number;
-  // Включение/выключение кастомизации
   enableUniversalProps?: boolean;
 }
 
-/**
- * Комбинированные пропсы: универсальные + специфические.
- * T ограничен object, чтобы избежать any.
- */
 export interface ComponentWithUniversalProps<T extends object = Record<string, PropValue>>
   extends UniversalProps {
   componentProps?: T;
