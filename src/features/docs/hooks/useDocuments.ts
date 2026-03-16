@@ -21,27 +21,29 @@ export interface DocMetadata {
   navIcon?: string;
 }
 
-export function useDocuments() {
+export function useManifest() {
   const [manifest, setManifest] = useState<DocMetadata[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/data/docs/manifest.json')
       .then(res => {
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        return res.json();
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<DocMetadata[]>;
       })
       .then(data => {
         setManifest(data);
         setLoading(false);
       })
       .catch(err => {
-        console.error('Failed to load manifest:', err);
-        setError(err.message);
+        console.error('[useManifest] Failed to load manifest:', err);
+        setError(String(err));
         setLoading(false);
       });
   }, []);
 
   return { manifest, loading, error };
 }
+
+export const useDocuments = useManifest;
