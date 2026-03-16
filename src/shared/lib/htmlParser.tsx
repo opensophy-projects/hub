@@ -389,8 +389,8 @@ function splitParagraphIntoRuns(element: Element): ParagraphRun[] {
     // Strip leading/trailing <br> tags using DOM — avoids regex ReDoS (S5852)
     const tmp = document.createElement('div');
     tmp.innerHTML = textBuffer.trim();
-    while (tmp.firstChild && isBrOrEmpty(tmp.firstChild)) tmp.removeChild(tmp.firstChild);
-    while (tmp.lastChild  && isBrOrEmpty(tmp.lastChild))  tmp.removeChild(tmp.lastChild);
+    while (tmp.firstChild && isBrOrEmpty(tmp.firstChild)) tmp.firstChild.remove();
+    while (tmp.lastChild  && isBrOrEmpty(tmp.lastChild))  tmp.lastChild.remove();
     const cleaned = tmp.innerHTML.trim();
     if (cleaned) result.push({ type: 'text', html: cleaned });
     textBuffer = '';
