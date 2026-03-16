@@ -4,13 +4,13 @@
   "version": "3.2.1",
   "type": "module",
   "scripts": {
-    "dev": "npm run generate:docs && npm run generate:sitemap && astro dev",
-    "build": "npm run generate:docs && npm run generate:sitemap && astro build",
+    "dev": "npm run generate && astro dev",
+    "build": "npm run generate && astro build",
     "preview": "astro preview",
     "lint": "eslint .",
+    "generate": "node scripts/generate.mjs",
     "generate:docs": "node scripts/generateDocs.mjs",
-    "generate:sitemap": "node scripts/generateSitemap.mjs",
-    "generate": "npm run generate:docs && npm run generate:sitemap"
+    "generate:sitemap": "node scripts/generateSitemap.mjs"
   },
   "dependencies": {
     "astro": "^6.0.4",
@@ -19,7 +19,7 @@
     "highlight.js": "^11.11.1",
     "isomorphic-dompurify": "^2.16.0",
     "lucide-react": "^0.563.0",
-    "marked": "^16.4.1",
+    "marked": "^16.4.2",
     "mermaid": "^11.12.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
