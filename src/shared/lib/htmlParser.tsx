@@ -47,7 +47,7 @@ function slugifyHeading(text: string): string {
 }
 
 const TAG_STYLES: Record<number, React.CSSProperties> = {
-  1: { fontSize: 'clamp(1.4rem,3vw,2.25rem)',   fontWeight: 700, marginTop: '2rem',    marginBottom: '1rem',    lineHeight: 1.2,  scrollMarginTop: '5rem' },
+  1: { fontSize: 'clamp(1.4rem,3vw,2.25rem)',    fontWeight: 700, marginTop: '2rem',    marginBottom: '1rem',    lineHeight: 1.2,  scrollMarginTop: '5rem' },
   2: { fontSize: 'clamp(1.2rem,2.5vw,1.875rem)', fontWeight: 700, marginTop: '2rem',    marginBottom: '1rem',    lineHeight: 1.25, scrollMarginTop: '5rem' },
   3: { fontSize: 'clamp(1.05rem,2vw,1.5rem)',    fontWeight: 700, marginTop: '1.5rem',  marginBottom: '0.75rem', lineHeight: 1.3,  scrollMarginTop: '5rem' },
   4: { fontSize: 'clamp(1rem,1.8vw,1.25rem)',    fontWeight: 700, marginTop: '1.5rem',  marginBottom: '0.75rem',                   scrollMarginTop: '5rem' },
@@ -106,7 +106,6 @@ const processListElement = (element: Element, tagName: string, key: string, elem
 };
 
 const processLinkElement = (element: Element, key: string, elements: React.ReactNode[]) => {
-  // If the link wraps a single image — render as ImageCard with lightbox
   const children = Array.from(element.childNodes).filter(
     (n) => !(n.nodeType === Node.TEXT_NODE && !n.textContent?.trim())
   );
@@ -352,6 +351,20 @@ function getImgFromLink(el: Element): Element | null {
 }
 
 /**
+ * Returns true if a node is a <br> element or a whitespace-only text node.
+ * Used to trim leading/trailing <br> tags from paragraph runs without regex.
+ */
+function isBrOrEmpty(node: ChildNode): boolean {
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    return (node as Element).tagName.toLowerCase() === 'br';
+  }
+  if (node.nodeType === Node.TEXT_NODE) {
+    return !node.textContent?.trim();
+  }
+  return false;
+}
+
+/**
  * Splits a paragraph's child nodes into "runs":
  *   { type: 'img',  el }   — a single image node (renders as ImageCard)
  *   { type: 'text', html } — one or more non-image nodes (renders as <p>)
@@ -369,12 +382,16 @@ function splitParagraphIntoRuns(element: Element): ParagraphRun[] {
   let textBuffer = '';
 
   const flushText = () => {
-    // Strip leading/trailing <br> tags before committing text run
-    const cleaned = textBuffer
-      .trim()
-      .replace(/^(<br\s*\/?>\s*)+/gi, '')
-      .replace(/(\s*<br\s*\/?>)+$/gi, '')
-      .trim();
+    if (!textBuffer.trim()) {
+      textBuffer = '';
+      return;
+    }
+    // Strip leading/trailing <br> tags using DOM — avoids regex ReDoS (S5852)
+    const tmp = document.createElement('div');
+    tmp.innerHTML = textBuffer.trim();
+    while (tmp.firstChild && isBrOrEmpty(tmp.firstChild)) tmp.removeChild(tmp.firstChild);
+    while (tmp.lastChild  && isBrOrEmpty(tmp.lastChild))  tmp.removeChild(tmp.lastChild);
+    const cleaned = tmp.innerHTML.trim();
     if (cleaned) result.push({ type: 'text', html: cleaned });
     textBuffer = '';
   };
