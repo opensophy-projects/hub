@@ -1,5 +1,5 @@
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { motion, type Transition } from 'framer-motion';
-import { useEffect, useRef, useState, useMemo } from 'react';
 import type { BlurTextProps } from './types';
 
 const buildKeyframes = (
@@ -14,7 +14,6 @@ const buildKeyframes = (
   return keyframes;
 };
 
-// Генерируем уникальный ID для компонента при первом рендере
 let componentIdCounter = 0;
 
 const BlurText: React.FC<BlurTextProps> = ({
@@ -34,8 +33,7 @@ const BlurText: React.FC<BlurTextProps> = ({
   const elements = animateBy === 'words' ? text.split(' ') : text.split('');
   const [inView, setInView] = useState(false);
   const ref = useRef<HTMLParagraphElement>(null);
-  
-  // Создаем стабильный ID для компонента при первом рендере
+
   const componentId = useRef<number>();
   if (componentId.current === undefined) {
     componentId.current = componentIdCounter++;
@@ -91,7 +89,6 @@ const BlurText: React.FC<BlurTextProps> = ({
           ease: easing as any,
         };
 
-        
         const stableKey = `blur-text-${componentId.current}-${index}`;
 
         return (
