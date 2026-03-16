@@ -106,7 +106,7 @@ const processListElement = (element: Element, tagName: string, key: string, elem
 };
 
 const processLinkElement = (element: Element, key: string, elements: React.ReactNode[]) => {
-  // If the link wraps a single image — render the image with lightbox instead
+  // If the link wraps a single image — render as ImageCard with lightbox
   const children = Array.from(element.childNodes).filter(
     (n) => !(n.nodeType === Node.TEXT_NODE && !n.textContent?.trim())
   );
@@ -288,22 +288,15 @@ const processTextNode = (node: ChildNode, key: string, elements: React.ReactNode
 
 // ── Figure processor ──────────────────────────────────────────────────────────
 
-/**
- * <figure> can contain an <img> (or <img> inside <a>) and an optional
- * <figcaption>. We render it as an ImageCard, using the figcaption text as
- * the title so the caption appears inside the card's styled footer.
- */
 const processFigureElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const img        = element.querySelector('img');
   const figcaption = element.querySelector('figcaption');
 
   if (img) {
-    // Prefer figcaption text over img title attribute for the caption
     const title =
       figcaption?.textContent?.trim() ||
       img.getAttribute('title') ||
       undefined;
-
     elements.push(React.createElement(ImageCard, {
       key,
       src:   img.getAttribute('src')  || '',
@@ -313,7 +306,6 @@ const processFigureElement = (element: Element, key: string, elements: React.Rea
     return;
   }
 
-  // Fallback: figure without an image — render children recursively
   const children = parseHtmlToReact(sanitizeInnerHTML(element.innerHTML));
   elements.push(React.createElement('figure', { key }, ...children));
 };
@@ -347,31 +339,74 @@ const processDivElement = (
 // ── Paragraph dispatcher ──────────────────────────────────────────────────────
 
 /**
- * Returns true if every non-empty child node is an <img> or an <a> wrapping
- * a single <img>. In that case the paragraph is treated as a pure image
- * container and each image is rendered as an ImageCard.
+ * If an <a> tag wraps a single <img>, return that <img>. Otherwise null.
  */
-function isPureImageParagraph(element: Element): boolean {
-  const nonEmpty = Array.from(element.childNodes).filter(
+function getImgFromLink(el: Element): Element | null {
+  const nonEmpty = Array.from(el.childNodes).filter(
     (n) => !(n.nodeType === Node.TEXT_NODE && !n.textContent?.trim())
   );
-  if (nonEmpty.length === 0) return false;
-  return nonEmpty.every((n) => {
-    const el = n as Element;
-    if (!el.tagName) return false;
-    const tag = el.tagName.toLowerCase();
-    if (tag === 'img') return true;
-    if (tag === 'a') {
-      const innerNonEmpty = Array.from(el.childNodes).filter(
-        (c) => !(c.nodeType === Node.TEXT_NODE && !c.textContent?.trim())
-      );
-      return (
-        innerNonEmpty.length === 1 &&
-        (innerNonEmpty[0] as Element).tagName?.toLowerCase() === 'img'
-      );
+  if (nonEmpty.length === 1 && (nonEmpty[0] as Element).tagName?.toLowerCase() === 'img') {
+    return nonEmpty[0] as Element;
+  }
+  return null;
+}
+
+/**
+ * Splits a paragraph's child nodes into "runs":
+ *   { type: 'img',  el }   — a single image node (renders as ImageCard)
+ *   { type: 'text', html } — one or more non-image nodes (renders as <p>)
+ *
+ * This correctly handles the case where marked with breaks:true puts an image
+ * inside a mixed paragraph together with text and <br> tags:
+ *
+ *   <p>some text<br><img src="..."><br><em>caption</em></p>
+ *   →  <p>some text</p>  +  <ImageCard/>  +  <p><em>caption</em></p>
+ */
+type ParagraphRun = { type: 'img'; el: Element } | { type: 'text'; html: string };
+
+function splitParagraphIntoRuns(element: Element): ParagraphRun[] {
+  const result: ParagraphRun[] = [];
+  let textBuffer = '';
+
+  const flushText = () => {
+    // Strip leading/trailing <br> tags before committing text run
+    const cleaned = textBuffer
+      .trim()
+      .replace(/^(<br\s*\/?>\s*)+/gi, '')
+      .replace(/(\s*<br\s*\/?>)+$/gi, '')
+      .trim();
+    if (cleaned) result.push({ type: 'text', html: cleaned });
+    textBuffer = '';
+  };
+
+  for (const node of Array.from(element.childNodes)) {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el  = node as Element;
+      const tag = el.tagName.toLowerCase();
+
+      if (tag === 'img') {
+        flushText();
+        result.push({ type: 'img', el });
+        continue;
+      }
+
+      if (tag === 'a') {
+        const img = getImgFromLink(el);
+        if (img) {
+          flushText();
+          result.push({ type: 'img', el: img });
+          continue;
+        }
+      }
+
+      textBuffer += el.outerHTML;
+    } else if (node.nodeType === Node.TEXT_NODE) {
+      textBuffer += node.textContent ?? '';
     }
-    return false;
-  });
+  }
+
+  flushText();
+  return result;
 }
 
 const processParagraphElement = (
@@ -381,32 +416,37 @@ const processParagraphElement = (
 ): void => {
   if (processUIComponent(element, key, element.textContent || '', elements)) return;
 
-  // Pure image paragraph — render every image as an ImageCard
-  if (isPureImageParagraph(element)) {
-    const nonEmpty = Array.from(element.childNodes).filter(
-      (n) => !(n.nodeType === Node.TEXT_NODE && !n.textContent?.trim())
+  // Fast path: no images inside — plain paragraph
+  if (!element.querySelector('img')) {
+    elements.push(
+      React.createElement('p', {
+        key,
+        dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(element.innerHTML) },
+      })
     );
-    nonEmpty.forEach((n, i) => {
-      const el  = n as Element;
-      const tag = el.tagName.toLowerCase();
-      const imgEl = tag === 'img' ? el : el.querySelector('img');
-      if (!imgEl) return;
-      elements.push(React.createElement(ImageCard, {
-        key: `${key}-img-${i}`,
-        src:   imgEl.getAttribute('src')   || '',
-        alt:   imgEl.getAttribute('alt')   || 'Image',
-        title: imgEl.getAttribute('title') || undefined,
-      }));
-    });
     return;
   }
 
-  elements.push(
-    React.createElement('p', {
-      key,
-      dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(element.innerHTML) },
-    })
-  );
+  // Split into image and text runs, emit each as the appropriate element
+  const runs = splitParagraphIntoRuns(element);
+  runs.forEach((run, i) => {
+    const runKey = `${key}-r${i}`;
+    if (run.type === 'img') {
+      elements.push(React.createElement(ImageCard, {
+        key: runKey,
+        src:   run.el.getAttribute('src')   || '',
+        alt:   run.el.getAttribute('alt')   || 'Image',
+        title: run.el.getAttribute('title') || undefined,
+      }));
+    } else {
+      elements.push(
+        React.createElement('p', {
+          key: runKey,
+          dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(run.html) },
+        })
+      );
+    }
+  });
 };
 
 // ── Main element dispatcher ───────────────────────────────────────────────────
