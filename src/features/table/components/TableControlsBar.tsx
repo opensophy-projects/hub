@@ -12,52 +12,50 @@ interface TableControlsBarProps {
   readonly activeFilterCount: number;
   readonly onResetFilters: () => void;
   readonly onFullscreen: () => void;
-  // raw HTML of the table — used for copy
   readonly tableHtml: string;
 }
 
-// ─── ToolbarButton ────────────────────────────────────────────────────────────
+// ─── Theme tokens ─────────────────────────────────────────────────────────────
 
-interface ToolbarButtonProps {
-  readonly onClick: () => void;
-  readonly title: string;
-  readonly label: string;
-  readonly icon: React.ReactNode;
-  readonly isDark: boolean;
-  readonly active?: boolean;
-  readonly btnRef?: React.RefObject<HTMLButtonElement>;
+interface ThemeTokens {
+  border:      string;
+  bg:          string;
+  bgHover:     string;
+  color:       string;
+  activeBg:    string;
+  activeColor: string;
+  menuBg:      string;
+  menuBorder:  string;
+  itemHover:   string;
+  itemColor:   string;
 }
 
-function getToolbarButtonBg(isDark: boolean, active: boolean): string {
-  if (active) return isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)';
-  return isDark ? 'rgba(255,255,255,0.07)' : '#E8E7E3';
-}
-
-function getToolbarButtonColor(isDark: boolean, active: boolean): string {
-  if (active) return isDark ? '#ffffff' : '#000000';
-  return isDark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.75)';
-}
-
-function ToolbarButton({ onClick, title, label, icon, isDark, active = false, btnRef }: ToolbarButtonProps) {
-  const border  = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.15)';
-  const bg      = getToolbarButtonBg(isDark, active);
-  const bgHover = isDark ? 'rgba(255,255,255,0.18)' : '#ddd8cd';
-  const color   = getToolbarButtonColor(isDark, active);
-
-  return (
-    <button
-      ref={btnRef}
-      onClick={onClick}
-      title={title}
-      style={{ background: bg, color, border: `1px solid ${border}` }}
-      className="flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors flex-shrink-0"
-      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = bgHover; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = bg; }}
-    >
-      {icon}
-      <span className="leading-none whitespace-nowrap" style={{ fontSize: '10px' }}>{label}</span>
-    </button>
-  );
+function getThemeTokens(isDark: boolean): ThemeTokens {
+  return isDark
+    ? {
+        border:      'rgba(255,255,255,0.1)',
+        bg:          'rgba(255,255,255,0.07)',
+        bgHover:     'rgba(255,255,255,0.18)',
+        color:       'rgba(255,255,255,0.75)',
+        activeBg:    'rgba(255,255,255,0.15)',
+        activeColor: '#ffffff',
+        menuBg:      '#1a1a1a',
+        menuBorder:  'rgba(255,255,255,0.12)',
+        itemHover:   'rgba(255,255,255,0.08)',
+        itemColor:   'rgba(255,255,255,0.85)',
+      }
+    : {
+        border:      'rgba(0,0,0,0.15)',
+        bg:          '#E8E7E3',
+        bgHover:     '#ddd8cd',
+        color:       'rgba(0,0,0,0.75)',
+        activeBg:    'rgba(0,0,0,0.12)',
+        activeColor: '#000000',
+        menuBg:      '#f5f4f0',
+        menuBorder:  'rgba(0,0,0,0.12)',
+        itemHover:   'rgba(0,0,0,0.06)',
+        itemColor:   'rgba(0,0,0,0.8)',
+      };
 }
 
 // ─── Copy helpers ─────────────────────────────────────────────────────────────
@@ -70,102 +68,110 @@ function parseTableForCopy(html: string): { headers: string[]; rows: string[][] 
   const headers = Array.from(table.querySelectorAll('thead th')).map(
     (th) => (th.textContent ?? '').trim()
   );
-
   const rows = Array.from(table.querySelectorAll('tbody tr')).map((tr) =>
     Array.from(tr.querySelectorAll('td')).map((td) => (td.textContent ?? '').trim())
   );
-
   return { headers, rows };
 }
 
+// FIX S7781: replaceAll instead of replace with global regex
+// FIX S7780: String.raw to avoid escaped backslash
+// FIX S4624: no nested template literals — build rows array first, then join
 function toMarkdownTable(headers: string[], rows: string[][]): string {
   if (!headers.length) return '';
-  const escape = (s: string) => s.replace(/\|/g, '\\|');
-  const sep    = headers.map(() => '---').join(' | ');
-  const head   = headers.map(escape).join(' | ');
-  const body   = rows.map((r) => r.map(escape).join(' | ')).join('\n');
-  return `| ${head} |\n| ${sep} |\n${body.split('\n').map(r => `| ${r} |`).join('\n')}`;
+
+  const escPipe = (s: string) => s.replaceAll('|', String.raw`\|`); // S7781 + S7780
+  const sep     = headers.map(() => '---').join(' | ');
+  const head    = `| ${headers.map(escPipe).join(' | ')} |`;
+  const divider = `| ${sep} |`;
+  // FIX S4624: pre-compute each row string, then join — no nested template literals
+  const bodyLines = rows.map((r) => `| ${r.map(escPipe).join(' | ')} |`);
+
+  return [head, divider, ...bodyLines].join('\n');
 }
 
 function toExcelTsv(headers: string[], rows: string[][]): string {
   if (!headers.length) return '';
-  const lines = [headers.join('\t'), ...rows.map((r) => r.join('\t'))];
-  return lines.join('\n');
+  return [headers.join('\t'), ...rows.map((r) => r.join('\t'))].join('\n');
 }
 
-// ─── CopyButton — dropdown with two options ───────────────────────────────────
+// ─── useCopyState — extracts copy logic out of CopyButton (FIX S3776) ────────
+
+type CopyFormat = 'md' | 'excel';
+
+function useCopyState(tableHtml: string) {
+  const [copied, setCopied] = useState<CopyFormat | null>(null);
+
+  const doCopy = async (format: CopyFormat) => {
+    const { headers, rows } = parseTableForCopy(tableHtml);
+    const text = format === 'md' ? toMarkdownTable(headers, rows) : toExcelTsv(headers, rows);
+    await navigator.clipboard.writeText(text);
+    setCopied(format);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  return { copied, doCopy };
+}
+
+// ─── CopyButton ───────────────────────────────────────────────────────────────
+
+const COPY_OPTIONS: Array<{ format: CopyFormat; label: string; sub: string }> = [
+  { format: 'md',    label: 'Markdown',        sub: 'Для документов'     },
+  { format: 'excel', label: 'Excel / таблица', sub: 'TSV (Tab-separated)' },
+];
 
 const CopyButton: React.FC<{ isDark: boolean; tableHtml: string }> = ({ isDark, tableHtml }) => {
-  const [open,   setOpen]   = useState(false);
-  const [copied, setCopied] = useState<'md' | 'excel' | null>(null);
+  const [open, setOpen] = useState(false);
   const btnRef  = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const t = getThemeTokens(isDark);
 
+  // Close dropdown on outside click
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (
-        menuRef.current && !menuRef.current.contains(e.target as Node) &&
-        btnRef.current  && !btnRef.current.contains(e.target as Node)
-      ) setOpen(false);
+      const target = e.target as Node;
+      if (!menuRef.current?.contains(target) && !btnRef.current?.contains(target)) {
+        setOpen(false);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  const doCopy = async (format: 'md' | 'excel') => {
-    const { headers, rows } = parseTableForCopy(tableHtml);
-    const text = format === 'md' ? toMarkdownTable(headers, rows) : toExcelTsv(headers, rows);
-    await navigator.clipboard.writeText(text);
-    setCopied(format);
-    setOpen(false);
-    setTimeout(() => setCopied(null), 2000);
-  };
-
-  const border    = isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.15)';
-  const bg        = isDark ? 'rgba(255,255,255,0.07)' : '#E8E7E3';
-  const bgHover   = isDark ? 'rgba(255,255,255,0.18)' : '#ddd8cd';
-  const color     = isDark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.75)';
-  const menuBg    = isDark ? '#1a1a1a'                : '#f5f4f0';
-  const menuBorder= isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
-  const itemHov   = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
-  const itemColor = isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.8)';
-
+  const { copied, doCopy } = useCopyState(tableHtml);
   const isCopied = copied !== null;
+
+  // FIX S3358: extract nested ternary into a helper
+  const copyBg = getCopyButtonBg(isCopied, isDark, t.bg);
+
+  const handleOptionClick = async (format: CopyFormat) => {
+    await doCopy(format);
+    setOpen(false);
+  };
 
   return (
     <div style={{ position: 'relative', flexShrink: 0 }}>
-      {/* Main button */}
       <button
         ref={btnRef}
         title="Копировать таблицу"
         onClick={() => setOpen((v) => !v)}
         style={{
-          display:       'flex',
-          flexDirection: 'column',
-          alignItems:    'center',
-          gap:           '2px',
-          padding:       '6px 10px',
-          borderRadius:  '8px',
-          border:        `1px solid ${border}`,
-          background:    isCopied ? (isDark ? 'rgba(34,197,94,0.15)' : 'rgba(34,197,94,0.12)') : bg,
-          color:         isCopied ? '#22c55e' : color,
-          cursor:        'pointer',
-          transition:    'all 0.15s',
-          fontSize:      '12px',
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          gap: '2px', padding: '6px 10px', borderRadius: '8px',
+          border: `1px solid ${t.border}`,
+          background: copyBg,
+          color: isCopied ? '#22c55e' : t.color,
+          cursor: 'pointer', transition: 'all 0.15s', fontSize: '12px',
         }}
-        onMouseEnter={e => { if (!isCopied) (e.currentTarget as HTMLButtonElement).style.background = bgHover; }}
-        onMouseLeave={e => { if (!isCopied) (e.currentTarget as HTMLButtonElement).style.background = bg; }}
+        onMouseEnter={(e) => { if (!isCopied) (e.currentTarget as HTMLButtonElement).style.background = t.bgHover; }}
+        onMouseLeave={(e) => { if (!isCopied) (e.currentTarget as HTMLButtonElement).style.background = t.bg; }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
           {isCopied ? <Check size={14} /> : <Copy size={14} />}
           <ChevronDown
             size={11}
-            style={{
-              opacity:   0.6,
-              transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
-              transition:'transform 0.15s',
-            }}
+            style={{ opacity: 0.6, transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}
           />
         </div>
         <span style={{ fontSize: '10px', lineHeight: 1, whiteSpace: 'nowrap' }}>
@@ -173,55 +179,37 @@ const CopyButton: React.FC<{ isDark: boolean; tableHtml: string }> = ({ isDark, 
         </span>
       </button>
 
-      {/* Dropdown */}
       {open && (
         <div
           ref={menuRef}
           style={{
-            position:     'absolute',
-            top:          'calc(100% + 5px)',
-            right:        0,
-            minWidth:     '160px',
-            background:   menuBg,
-            border:       `1px solid ${menuBorder}`,
+            position: 'absolute', top: 'calc(100% + 5px)', right: 0,
+            minWidth: '160px', background: t.menuBg,
+            border: `1px solid ${t.menuBorder}`,
             borderRadius: '10px',
-            boxShadow:    isDark
-              ? '0 8px 24px rgba(0,0,0,0.7)'
-              : '0 8px 24px rgba(0,0,0,0.14)',
-            zIndex:       200,
-            overflow:     'hidden',
-            animation:    'copyMenuIn 0.12s ease',
+            boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.7)' : '0 8px 24px rgba(0,0,0,0.14)',
+            zIndex: 200, overflow: 'hidden', animation: 'copyMenuIn 0.12s ease',
           }}
         >
           <style>{`
             @keyframes copyMenuIn {
-              from { opacity:0; transform:translateY(-4px) scale(0.97); }
-              to   { opacity:1; transform:translateY(0) scale(1); }
+              from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+              to   { opacity: 1; transform: translateY(0) scale(1); }
             }
           `}</style>
-
-          {[
-            { format: 'md'    as const, label: 'Markdown',        sub: 'Для документов' },
-            { format: 'excel' as const, label: 'Excel / таблица', sub: 'TSV (Tab-separated)' },
-          ].map(({ format, label, sub }) => (
+          {COPY_OPTIONS.map(({ format, label, sub }) => (
             <button
               key={format}
-              onClick={() => doCopy(format)}
+              onClick={() => handleOptionClick(format)}
               style={{
-                display:    'flex',
-                flexDirection:'column',
-                gap:        '1px',
-                width:      '100%',
-                padding:    '9px 13px',
-                border:     'none',
-                background: 'transparent',
-                cursor:     'pointer',
-                textAlign:  'left',
-                transition: 'background 0.1s',
-                color:      itemColor,
+                display: 'flex', flexDirection: 'column', gap: '1px',
+                width: '100%', padding: '9px 13px',
+                border: 'none', background: 'transparent',
+                cursor: 'pointer', textAlign: 'left',
+                transition: 'background 0.1s', color: t.itemColor,
               }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = itemHov; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = t.itemHover; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
             >
               <span style={{ fontSize: '13px', fontWeight: 500 }}>{label}</span>
               <span style={{ fontSize: '10px', opacity: 0.5 }}>{sub}</span>
@@ -230,6 +218,45 @@ const CopyButton: React.FC<{ isDark: boolean; tableHtml: string }> = ({ isDark, 
         </div>
       )}
     </div>
+  );
+};
+
+// FIX S3358: extracted from nested ternary inside JSX style prop
+function getCopyButtonBg(isCopied: boolean, isDark: boolean, defaultBg: string): string {
+  if (!isCopied) return defaultBg;
+  return isDark ? 'rgba(34,197,94,0.15)' : 'rgba(34,197,94,0.12)';
+}
+
+// ─── ToolbarButton ────────────────────────────────────────────────────────────
+
+interface ToolbarButtonProps {
+  readonly onClick: () => void;
+  readonly title: string;
+  readonly label: string;
+  readonly icon: React.ReactNode;
+  readonly isDark: boolean;
+  readonly active?: boolean;
+}
+
+const ToolbarButton: React.FC<ToolbarButtonProps> = ({
+  onClick, title, label, icon, isDark, active = false,
+}) => {
+  const t = getThemeTokens(isDark);
+  const bg    = active ? t.activeBg    : t.bg;
+  const color = active ? t.activeColor : t.color;
+
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      style={{ background: bg, color, border: `1px solid ${t.border}` }}
+      className="flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors flex-shrink-0"
+      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = t.bgHover; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = bg; }}
+    >
+      {icon}
+      <span className="leading-none whitespace-nowrap" style={{ fontSize: '10px' }}>{label}</span>
+    </button>
   );
 };
 
