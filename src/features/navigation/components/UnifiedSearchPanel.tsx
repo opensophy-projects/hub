@@ -42,12 +42,12 @@ interface DocMeta {
 type DateFilter = 'all' | 'new' | 'updated';
 type SortOrder  = 'date-desc' | 'date-asc';
 
-const PAGE_SIZE   = 10;
-const LOAD_MORE_N = 10;
+const PAGE_SIZE        = 10;
+const LOAD_MORE_N      = 10;
+const THIRTY_DAYS_MS   = 30 * 24 * 60 * 60 * 1000; // FIX #1: moved out of render to avoid "impure Date.now()" lint error
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-// Special regex chars that need escaping
 const RE_SPECIAL = /[.*+?^${}()|[\]\\]/;
 
 function escapeRe(s: string): string {
@@ -77,15 +77,12 @@ function fmtDate(d: string): string {
 }
 
 function getDocUrl(doc: DocMeta): string {
-  if (doc.slug === 'welcome') return '/';
-  return `/${doc.slug}`;
+  return doc.slug === 'welcome' ? '/' : `/${doc.slug}`;
 }
 
-// ─── Pluralisation helper (replaces nested ternary) ───────────────────────────
-
 function pluralResults(n: number): string {
-  if (n === 1)  return 'результат';
-  if (n < 5)    return 'результата';
+  if (n === 1) return 'результат';
+  if (n < 5)   return 'результата';
   return 'результатов';
 }
 
@@ -98,7 +95,6 @@ const Highlight = memo(function Highlight({ text, query }: { text: string; query
   return (
     <>
       {parts.map((part, i) => {
-        // Use the part content as key basis — index only as tiebreaker (stable within this static split)
         const key = `${part}-${i}`;
         return re.test(part)
           ? <mark key={key} style={{ background: 'rgba(255,200,50,0.3)', color: 'inherit', borderRadius: '2px', padding: '0 1px' }}>{part}</mark>
@@ -260,20 +256,16 @@ interface ResultItemProps {
 const ResultItem = memo(function ResultItem({
   doc, query, isSelected, idx, C, onHover,
 }: ResultItemProps) {
-  const q = query.toLowerCase();
-  // FIX Issue 4: removed unused `inTitle` variable
+  const q      = query.toLowerCase();
   const inDesc = Boolean(q && doc.description.toLowerCase().includes(q));
 
-  let snippet = doc.description.slice(0, 140) + (doc.description.length > 140 ? '…' : '');
-  if (query && inDesc) {
-    snippet = getSnippet(doc.description, query);
-  }
-
-  const url = getDocUrl(doc);
+  const snippet = (query && inDesc)
+    ? getSnippet(doc.description, query)
+    : doc.description.slice(0, 140) + (doc.description.length > 140 ? '…' : '');
 
   return (
     <a
-      href={url}
+      href={getDocUrl(doc)}
       data-idx={idx}
       onMouseEnter={onHover}
       style={{
@@ -352,6 +344,84 @@ const ResultItem = memo(function ResultItem({
   );
 });
 
+// ─── useSearchFilters — extracts filter logic to reduce main component complexity ──
+
+function useSearchFilters(docs: DocMeta[]) {
+  const allTypenames = useMemo(() => {
+    const s = new Set<string>();
+    docs.forEach(d => { if (d.typename?.trim()) s.add(d.typename.trim()); });
+    return Array.from(s).sort();
+  }, [docs]);
+
+  const allCategories = useMemo(() => {
+    const m = new Map<string, string>();
+    docs.forEach(d => {
+      d.categoryPath?.forEach(cp => { m.set(cp.slug, cp.title); });
+    });
+    return Array.from(m.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [docs]);
+
+  const allTags = useMemo(() => {
+    const s = new Set<string>();
+    docs.forEach(d => d.tags?.forEach(t => s.add(t)));
+    return Array.from(s).sort();
+  }, [docs]);
+
+  const hasUpdatedDocs = useMemo(() => docs.some(d => d.updated), [docs]);
+
+  return { allTypenames, allCategories, allTags, hasUpdatedDocs };
+}
+
+// ─── useSearchResults — extracts search/sort/filter logic ────────────────────
+
+function useSearchResults(
+  docs: DocMeta[],
+  debouncedQ: string,
+  filterTypename: string,
+  filterCategory: string,
+  activeTags: Set<string>,
+  dateFilter: DateFilter,
+  sortOrder: SortOrder,
+) {
+  return useMemo<DocMeta[]>(() => {
+    let list = [...docs];
+
+    if (filterTypename !== 'all')
+      list = list.filter(d => d.typename === filterTypename);
+    if (filterCategory !== 'all')
+      list = list.filter(d => d.categoryPath?.some(cp => cp.slug === filterCategory));
+    if (activeTags.size > 0)
+      list = list.filter(d => d.tags?.some(t => activeTags.has(t)));
+
+    // FIX #1: Date.now() moved to here inside useMemo (no render-level call)
+    // CodeFactor flagged Date.now() as "impure during render" — it was already
+    // inside useMemo so it was a false positive, but explicit placement makes intent clear.
+    if (dateFilter !== 'all') {
+      const cutoff = Date.now() - THIRTY_DAYS_MS;
+      if (dateFilter === 'new')
+        list = list.filter(d => d.date && new Date(d.date).getTime() >= cutoff);
+      else
+        list = list.filter(d => d.updated && new Date(d.updated).getTime() >= cutoff);
+    }
+
+    const q = debouncedQ.trim();
+    if (q) {
+      list = list
+        .map(d => ({ d, score: scoreDoc(d, q) }))
+        .filter(({ score }) => score > 0)
+        .sort((a, b) => b.score - a.score)
+        .map(({ d }) => d);
+    } else {
+      list = list.sort((a, b) => {
+        const diff = new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime();
+        return sortOrder === 'date-desc' ? diff : -diff;
+      });
+    }
+
+    return list;
+  }, [debouncedQ, docs, filterTypename, filterCategory, activeTags, dateFilter, sortOrder]);
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
@@ -371,11 +441,22 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const [visibleCount, setVisibleCount]     = useState(PAGE_SIZE);
   const [loadMoreHover, setLoadMoreHover]   = useState(false);
 
-  const inputRef = useRef<HTMLInputElement>(null);
-  const listRef  = useRef<HTMLDivElement>(null);
+  const inputRef   = useRef<HTMLInputElement>(null);
+  const listRef    = useRef<HTMLDivElement>(null);
   const debouncedQ = useDebounce(query, 200);
 
-  // ── Mobile detection ──────────────────────────────────────────────────────
+  const typedDocs = docs as DocMeta[];
+
+  // ── Derived options & results via extracted hooks ────────────────────────
+  const { allTypenames, allCategories, allTags, hasUpdatedDocs } = useSearchFilters(typedDocs);
+
+  const allResults = useSearchResults(
+    typedDocs, debouncedQ,
+    filterTypename, filterCategory,
+    activeTags, dateFilter, sortOrder,
+  );
+
+  // ── Mobile detection ────────────────────────────────────────────────────
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
@@ -383,7 +464,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // ── Mount: focus + scroll lock + Esc ──────────────────────────────────────
+  // ── Mount: focus + scroll lock + Esc ────────────────────────────────────
   useEffect(() => {
     inputRef.current?.focus();
     document.body.style.overflow = 'hidden';
@@ -395,73 +476,20 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     };
   }, [onClose]);
 
-  // ── Derived filter options ─────────────────────────────────────────────────
-  const allTypenames = useMemo(() => {
-    const s = new Set<string>();
-    (docs as DocMeta[]).forEach(d => { if (d.typename?.trim()) s.add(d.typename.trim()); });
-    return Array.from(s).sort();
-  }, [docs]);
-
-  const allCategories = useMemo(() => {
-    const m = new Map<string, string>();
-    (docs as DocMeta[]).forEach(d => {
-      d.categoryPath?.forEach(cp => { m.set(cp.slug, cp.title); });
-    });
-    return Array.from(m.entries()).sort((a, b) => a[1].localeCompare(b[1]));
-  }, [docs]);
-
-  const allTags = useMemo(() => {
-    const s = new Set<string>();
-    (docs as DocMeta[]).forEach(d => d.tags?.forEach(t => s.add(t)));
-    return Array.from(s).sort();
-  }, [docs]);
-
-  const hasUpdatedDocs = useMemo(() =>
-    (docs as DocMeta[]).some(d => d.updated), [docs]);
-
-  // ── allResults: full sorted/filtered list (no pagination here) ────────────
-  const allResults = useMemo<DocMeta[]>(() => {
-    let list = [...(docs as DocMeta[])];
-
-    if (filterTypename !== 'all')
-      list = list.filter(d => d.typename === filterTypename);
-    if (filterCategory !== 'all')
-      list = list.filter(d => d.categoryPath?.some(cp => cp.slug === filterCategory));
-    if (activeTags.size > 0)
-      list = list.filter(d => d.tags?.some(t => activeTags.has(t)));
-
-    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    if (dateFilter === 'new')
-      list = list.filter(d => d.date && new Date(d.date).getTime() >= cutoff);
-    else if (dateFilter === 'updated')
-      list = list.filter(d => d.updated && new Date(d.updated).getTime() >= cutoff);
-
-    const q = debouncedQ.trim();
-    if (q) {
-      list = list
-        .map(d => ({ d, score: scoreDoc(d, q) }))
-        .filter(({ score }) => score > 0)
-        .sort((a, b) => b.score - a.score)
-        .map(({ d }) => d);
-    } else {
-      list = list.sort((a, b) => {
-        const diff = new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime();
-        return sortOrder === 'date-desc' ? diff : -diff;
-      });
-    }
-
-    return list;
-  }, [debouncedQ, docs, filterTypename, filterCategory, activeTags, dateFilter, sortOrder]);
-
-  // Reset pagination when results change
+  // ── Reset pagination on results change ──────────────────────────────────
   useEffect(() => {
     setSelectedIdx(0);
     setVisibleCount(PAGE_SIZE);
   }, [allResults]);
 
-  // Paginated slice — same for both modes
-  const results  = useMemo(() => allResults.slice(0, visibleCount), [allResults, visibleCount]);
-  const hasMore  = visibleCount < allResults.length;
+  // ── Scroll selected item into view ──────────────────────────────────────
+  useEffect(() => {
+    const el = listRef.current?.querySelector(`[data-idx="${selectedIdx}"]`) as HTMLElement | null;
+    el?.scrollIntoView({ block: 'nearest' });
+  }, [selectedIdx]);
+
+  const results   = useMemo(() => allResults.slice(0, visibleCount), [allResults, visibleCount]);
+  const hasMore   = visibleCount < allResults.length;
   const remaining = allResults.length - visibleCount;
 
   const activeFiltersCount = [
@@ -472,10 +500,9 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   ].filter(Boolean).length;
   const hasActiveFilters = activeFiltersCount > 0;
 
-  // recent-docs mode = no query AND no active filters
   const showResults = debouncedQ.trim().length > 0 || hasActiveFilters;
 
-  // ── Keyboard navigation ───────────────────────────────────────────────────
+  // ── Keyboard navigation ─────────────────────────────────────────────────
   const handleInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -490,15 +517,15 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     }
   }, [results, selectedIdx]);
 
-  useEffect(() => {
-    const el = listRef.current?.querySelector(`[data-idx="${selectedIdx}"]`) as HTMLElement | null;
-    el?.scrollIntoView({ block: 'nearest' });
-  }, [selectedIdx]);
-
+  // FIX #2: ternary-as-statement → if/else (was: next.has(tag) ? next.delete(tag) : next.add(tag))
   const toggleTag = useCallback((tag: string) => {
     setActiveTags(prev => {
       const next = new Set(prev);
-      next.has(tag) ? next.delete(tag) : next.add(tag);
+      if (next.has(tag)) {
+        next.delete(tag);
+      } else {
+        next.add(tag);
+      }
       return next;
     });
   }, []);
@@ -510,7 +537,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     setDateFilter('all');
   }, []);
 
-  // ── Layout ────────────────────────────────────────────────────────────────
+  // ── Layout ──────────────────────────────────────────────────────────────
   const panelStyle: React.CSSProperties = isMobile
     ? {
         position: 'fixed', inset: 0, zIndex: 62,
@@ -548,7 +575,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
         .sp-scroll::-webkit-scrollbar-thumb { background:rgba(128,128,128,0.25); border-radius:4px; }
       `}</style>
 
-      {/* Backdrop (desktop only) — real <button> for full a11y, visually reset to look like overlay */}
       {!isMobile && (
         <button
           aria-label="Закрыть поиск"
@@ -568,7 +594,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
 
       <div style={panelStyle}>
 
-        {/* ── Search row ──────────────────────────────────────────────────── */}
+        {/* ── Search row ────────────────────────────────────────────────── */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: '10px',
           padding: '0 14px',
@@ -647,7 +673,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
           </button>
         </div>
 
-        {/* ── Filter panel (collapsible) ─────────────────────────────────── */}
+        {/* ── Filter panel ────────────────────────────────────────────── */}
         {showFilters && (
           <div
             className="sp-scroll"
@@ -750,16 +776,14 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
           </div>
         )}
 
-        {/* ── Results / Recent docs list ────────────────────────────────── */}
+        {/* ── Results / Recent docs list ──────────────────────────────── */}
         <div
           ref={listRef}
           className="sp-scroll"
           style={{ flex: 1, overflowY: 'auto', padding: '6px 6px 10px' }}
         >
-          {/* Search results mode */}
-          {showResults && (
+          {showResults ? (
             <>
-              {/* FIX Issue 7: nested ternary extracted into pluralResults() helper */}
               <div style={{
                 padding: '3px 10px 5px', fontSize: '11px', color: C.fgSub,
                 display: 'flex', gap: '6px', alignItems: 'center',
@@ -785,10 +809,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
                 />
               ))}
             </>
-          )}
-
-          {/* Recent docs mode */}
-          {!showResults && (
+          ) : (
             <>
               <div style={{
                 padding: '8px 10px 4px', fontSize: '10px', color: C.fgSub,
@@ -808,7 +829,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
             </>
           )}
 
-          {/* "Load more" — shown in BOTH modes whenever there are more items */}
           {hasMore && (
             <div style={{ padding: '8px 6px 4px', display: 'flex', justifyContent: 'center' }}>
               <button
@@ -833,7 +853,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
           )}
         </div>
 
-        {/* ── Footer (desktop only) ─────────────────────────────────────── */}
+        {/* ── Footer (desktop only) ──────────────────────────────────── */}
         {!isMobile && (
           <div style={{
             borderTop: `1px solid ${C.divider}`,
