@@ -10,7 +10,7 @@ interface TableModalProps {
   onClose: () => void;
 }
 
-// ─── Copy helpers (same as in TableControlsBar) ───────────────────────────────
+// ─── Copy helpers ─────────────────────────────────────────────────────────────
 
 function parseTableForCopy(html: string): { headers: string[]; rows: string[][] } {
   const doc   = new DOMParser().parseFromString(html, 'text/html');
@@ -27,14 +27,28 @@ function toMarkdownTable(headers: string[], rows: string[][]): string {
   if (!headers.length) return '';
   const e   = (s: string) => s.replace(/\|/g, '\\|');
   const sep  = headers.map(() => '---').join(' | ');
-  const head = headers.map(e).join(' | ');
   const body = rows.map(r => `| ${r.map(e).join(' | ')} |`).join('\n');
-  return `| ${head} |\n| ${sep} |\n${body}`;
+  return `| ${headers.map(e).join(' | ')} |\n| ${sep} |\n${body}`;
 }
 
 function toExcelTsv(headers: string[], rows: string[][]): string {
   if (!headers.length) return '';
   return [headers.join('\t'), ...rows.map(r => r.join('\t'))].join('\n');
+}
+
+// ─── Shared button styles ─────────────────────────────────────────────────────
+
+function getBtnStyle(isDark: boolean, active = false): React.CSSProperties {
+  return {
+    display: 'flex', flexDirection: 'column', alignItems: 'center',
+    gap: '2px', padding: '5px 10px', borderRadius: '7px',
+    border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.15)'}`,
+    background: active
+      ? (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)')
+      : (isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)'),
+    color: isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.75)',
+    cursor: 'pointer', flexShrink: 0,
+  };
 }
 
 // ─── ModalToolbar ─────────────────────────────────────────────────────────────
@@ -49,12 +63,9 @@ const ModalToolbar: React.FC<{
   activeFilterCount: number;
   onResetFilters: () => void;
   onClose: () => void;
-}> = ({
-  isDark, tableHtml, searchQuery, onSearchChange,
-  showFilters, onToggleFilters, activeFilterCount, onResetFilters, onClose,
-}) => {
-  const [copyOpen,   setCopyOpen]   = useState(false);
-  const [copied,     setCopied]     = useState<'md'|'excel'|null>(null);
+}> = ({ isDark, tableHtml, searchQuery, onSearchChange, showFilters, onToggleFilters, activeFilterCount, onResetFilters, onClose }) => {
+  const [copyOpen, setCopyOpen] = useState(false);
+  const [copied,   setCopied]   = useState<'md' | 'excel' | null>(null);
   const copyMenuRef = useRef<HTMLDivElement>(null);
   const copyBtnRef  = useRef<HTMLButtonElement>(null);
 
@@ -79,54 +90,20 @@ const ModalToolbar: React.FC<{
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const border    = isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.15)';
-  const btnBg     = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
-  const btnHov    = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)';
-  const btnColor  = isDark ? 'rgba(255,255,255,0.8)'  : 'rgba(0,0,0,0.75)';
-  const menuBg    = isDark ? '#1f1f1f'                : '#f5f4f0';
-  const menuBorder= isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
-  const itemHov   = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
-  const isCopied  = copied !== null;
-
-  const Btn = ({
-    onClick, title, children, active = false,
-  }: { onClick: () => void; title: string; children: React.ReactNode; active?: boolean }) => (
-    <button
-      onClick={onClick}
-      title={title}
-      style={{
-        display:       'flex',
-        flexDirection: 'column',
-        alignItems:    'center',
-        gap:           '2px',
-        padding:       '5px 10px',
-        borderRadius:  '7px',
-        border:        `1px solid ${border}`,
-        background:    active ? btnHov : btnBg,
-        color:         btnColor,
-        cursor:        'pointer',
-        fontSize:      '12px',
-        flexShrink:    0,
-      }}
-      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = btnHov; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = active ? btnHov : btnBg; }}
-    >
-      {children}
-    </button>
-  );
+  const isCopied = copied !== null;
+  const menuBg   = isDark ? '#1f1f1f' : '#f5f4f0';
+  const menuBdr  = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
+  const itemHov  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+  const itemC    = isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.8)';
+  const hov      = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)';
+  const base     = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
 
   return (
-    <div
-      style={{
-        display:      'flex',
-        flexWrap:     'wrap',
-        alignItems:   'center',
-        gap:          '8px',
-        padding:      '10px 14px',
-        borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
-        flexShrink:   0,
-      }}
-    >
+    <div style={{
+      display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px',
+      padding: '10px 14px', flexShrink: 0,
+      borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+    }}>
       {/* Search */}
       <input
         type="text"
@@ -134,36 +111,25 @@ const ModalToolbar: React.FC<{
         value={searchQuery}
         onChange={e => onSearchChange(e.target.value)}
         style={{
-          flex:         1,
-          minWidth:     '180px',
-          padding:      '7px 12px',
-          borderRadius: '8px',
-          border:       `1px solid ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}`,
-          background:   isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-          color:        isDark ? '#fff' : '#000',
-          fontSize:     '13px',
-          outline:      'none',
+          flex: 1, minWidth: '180px', padding: '7px 12px', borderRadius: '8px',
+          border: `1px solid ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}`,
+          background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+          color: isDark ? '#fff' : '#000', fontSize: '13px', outline: 'none',
         }}
       />
 
-      {/* Copy button with dropdown */}
+      {/* Copy dropdown */}
       <div style={{ position: 'relative', flexShrink: 0 }}>
         <button
           ref={copyBtnRef}
           onClick={() => setCopyOpen(v => !v)}
           style={{
-            display:       'flex',
-            flexDirection: 'column',
-            alignItems:    'center',
-            gap:           '2px',
-            padding:       '5px 10px',
-            borderRadius:  '7px',
-            border:        `1px solid ${border}`,
-            background:    isCopied ? (isDark ? 'rgba(34,197,94,0.15)' : 'rgba(34,197,94,0.12)') : btnBg,
-            color:         isCopied ? '#22c55e' : btnColor,
-            cursor:        'pointer',
-            flexShrink:    0,
+            ...getBtnStyle(isDark),
+            background: isCopied ? (isDark ? 'rgba(34,197,94,0.15)' : 'rgba(34,197,94,0.12)') : base,
+            color: isCopied ? '#22c55e' : (isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.75)'),
           }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = isCopied ? (isDark ? 'rgba(34,197,94,0.2)' : 'rgba(34,197,94,0.18)') : hov; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = isCopied ? (isDark ? 'rgba(34,197,94,0.15)' : 'rgba(34,197,94,0.12)') : base; }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
             {isCopied ? <Check size={14} /> : <Copy size={14} />}
@@ -175,30 +141,19 @@ const ModalToolbar: React.FC<{
         </button>
 
         {copyOpen && (
-          <div
-            ref={copyMenuRef}
-            style={{
-              position: 'absolute', top: 'calc(100% + 5px)', right: 0,
-              minWidth: '160px', background: menuBg, border: `1px solid ${menuBorder}`,
-              borderRadius: '10px', boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.7)' : '0 8px 24px rgba(0,0,0,0.14)',
-              zIndex: 300, overflow: 'hidden', animation: 'cmIn 0.12s ease',
-            }}
-          >
-            <style>{`@keyframes cmIn { from{opacity:0;transform:translateY(-4px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }`}</style>
-            {[
+          <div ref={copyMenuRef} style={{
+            position: 'absolute', top: 'calc(100% + 5px)', right: 0,
+            minWidth: '160px', background: menuBg, border: `1px solid ${menuBdr}`,
+            borderRadius: '10px', boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.7)' : '0 8px 24px rgba(0,0,0,0.14)',
+            zIndex: 300, overflow: 'hidden', animation: 'cmIn 0.12s ease',
+          }}>
+            <style>{`@keyframes cmIn{from{opacity:0;transform:translateY(-4px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}`}</style>
+            {([
               { format: 'md'    as const, label: 'Markdown',        sub: 'Для документов' },
               { format: 'excel' as const, label: 'Excel / таблица', sub: 'TSV (Tab-separated)' },
-            ].map(({ format, label, sub }) => (
-              <button
-                key={format}
-                onClick={() => doCopy(format)}
-                style={{
-                  display: 'flex', flexDirection: 'column', gap: '1px',
-                  width: '100%', padding: '9px 13px', border: 'none',
-                  background: 'transparent', cursor: 'pointer', textAlign: 'left',
-                  color: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.8)',
-                  transition: 'background 0.1s',
-                }}
+            ]).map(({ format, label, sub }) => (
+              <button key={format} onClick={() => doCopy(format)}
+                style={{ display: 'flex', flexDirection: 'column', gap: '1px', width: '100%', padding: '9px 13px', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', color: itemC, transition: 'background 0.1s' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = itemHov; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
               >
@@ -210,31 +165,42 @@ const ModalToolbar: React.FC<{
         )}
       </div>
 
-      {/* Filters toggle */}
-      <Btn onClick={onToggleFilters} title="Фильтры" active={showFilters || activeFilterCount > 0}>
+      {/* Filters */}
+      <button
+        onClick={onToggleFilters}
+        style={{ ...getBtnStyle(isDark, showFilters || activeFilterCount > 0) }}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = hov; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = (showFilters || activeFilterCount > 0) ? (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)') : base; }}
+      >
         <Filter size={14} />
         <span style={{ fontSize: '10px', lineHeight: 1, whiteSpace: 'nowrap' }}>
           {activeFilterCount > 0 ? `Фильтры (${activeFilterCount})` : 'Фильтры'}
         </span>
-      </Btn>
+      </button>
 
       {activeFilterCount > 0 && (
-        <Btn onClick={onResetFilters} title="Сбросить фильтры">
+        <button onClick={onResetFilters} style={getBtnStyle(isDark)}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = hov; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = base; }}
+        >
           <RotateCcw size={14} />
           <span style={{ fontSize: '10px', lineHeight: 1 }}>Сбросить</span>
-        </Btn>
+        </button>
       )}
 
       {/* Close */}
-      <Btn onClick={onClose} title="Закрыть">
+      <button onClick={onClose} style={getBtnStyle(isDark)}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = hov; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = base; }}
+      >
         <X size={14} />
         <span style={{ fontSize: '10px', lineHeight: 1 }}>Закрыть</span>
-      </Btn>
+      </button>
     </div>
   );
 };
 
-// ─── FilterPanel (modal) ──────────────────────────────────────────────────────
+// ─── ModalFilterPanel ─────────────────────────────────────────────────────────
 
 const ModalFilterPanel: React.FC<{
   isDark: boolean;
@@ -247,23 +213,14 @@ const ModalFilterPanel: React.FC<{
 }> = ({ isDark, headers, activeFilters, uniqueValues, onFilterChange, visibleColumns, onColumnToggle }) => {
   const bg      = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
   const border  = isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
-  const labelC  = isDark ? 'rgba(255,255,255,0.5)'  : 'rgba(0,0,0,0.5)';
-  const activeItemBg = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)';
-  const itemBorder   = isDark ? 'rgba(255,255,255,0.2)'  : 'rgba(0,0,0,0.2)';
-  const itemC        = isDark ? 'rgba(255,255,255,0.8)'  : 'rgba(0,0,0,0.75)';
-  const itemActiveC  = isDark ? '#fff' : '#000';
+  const labelC  = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)';
+  const activeItemBg  = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)';
+  const activeItemBdr = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)';
+  const itemC         = isDark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.7)';
+  const itemActiveC   = isDark ? '#fff' : '#000';
 
   return (
-    <div
-      style={{
-        background:   bg,
-        borderBottom: `1px solid ${border}`,
-        padding:      '12px 14px',
-        maxHeight:    '220px',
-        overflowY:    'auto',
-        flexShrink:   0,
-      }}
-    >
+    <div style={{ background: bg, borderBottom: `1px solid ${border}`, padding: '12px 14px', maxHeight: '220px', overflowY: 'auto', flexShrink: 0 }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
         {/* Column visibility */}
         <div>
@@ -274,17 +231,13 @@ const ModalFilterPanel: React.FC<{
             {headers.map(h => {
               const visible = visibleColumns.has(h.text);
               return (
-                <label
-                  key={h.colIndex}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '5px',
-                    padding: '3px 8px', borderRadius: '6px', cursor: 'pointer',
-                    background: visible ? activeItemBg : 'transparent',
-                    border: `1px solid ${visible ? itemBorder : 'transparent'}`,
-                    color: visible ? itemActiveC : itemC,
-                    fontSize: '12px',
-                  }}
-                >
+                <label key={h.colIndex} style={{
+                  display: 'flex', alignItems: 'center', gap: '5px', padding: '3px 8px',
+                  borderRadius: '6px', cursor: 'pointer', fontSize: '12px',
+                  background: visible ? activeItemBg : 'transparent',
+                  border: `1px solid ${visible ? activeItemBdr : 'transparent'}`,
+                  color: visible ? itemActiveC : itemC,
+                }}>
                   <input type="checkbox" checked={visible} onChange={() => onColumnToggle(h.text)} style={{ cursor: 'pointer' }} />
                   {h.text}
                 </label>
@@ -293,7 +246,7 @@ const ModalFilterPanel: React.FC<{
           </div>
         </div>
 
-        {/* Value filters per column */}
+        {/* Per-column value filters */}
         {headers.map(h => {
           const values = uniqueValues.get(h.text) ?? [];
           if (values.length === 0) return null;
@@ -303,27 +256,18 @@ const ModalFilterPanel: React.FC<{
               <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: labelC, marginBottom: '6px' }}>
                 {h.text}
               </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', maxHeight: '120px', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', maxHeight: '130px', overflowY: 'auto' }}>
                 {values.map(val => {
                   const active = activeSet.has(val);
                   return (
-                    <label
-                      key={val}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: '5px',
-                        padding: '3px 8px', borderRadius: '6px', cursor: 'pointer',
-                        background: active ? activeItemBg : 'transparent',
-                        border: `1px solid ${active ? itemBorder : 'transparent'}`,
-                        color: active ? itemActiveC : itemC,
-                        fontSize: '12px', whiteSpace: 'nowrap',
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={active}
-                        onChange={e => onFilterChange(h.text, val, e.target.checked)}
-                        style={{ cursor: 'pointer' }}
-                      />
+                    <label key={val} style={{
+                      display: 'flex', alignItems: 'center', gap: '5px', padding: '3px 8px',
+                      borderRadius: '6px', cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap',
+                      background: active ? activeItemBg : 'transparent',
+                      border: `1px solid ${active ? activeItemBdr : 'transparent'}`,
+                      color: active ? itemActiveC : itemC,
+                    }}>
+                      <input type="checkbox" checked={active} onChange={e => onFilterChange(h.text, val, e.target.checked)} style={{ cursor: 'pointer' }} />
                       {val}
                     </label>
                   );
@@ -354,6 +298,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
   const headersKey = parsedTable.headers.map(h => h.text).join(',');
   useEffect(() => {
     setVisibleColumns(new Set(parsedTable.headers.map(h => h.text)));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [headersKey]);
 
   useEffect(() => {
@@ -371,8 +316,8 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
 
   const uniqueValues = useMemo(() => {
     const map = new Map<string, string[]>();
-    parsedTable.headers.forEach(header => {
-      map.set(header.text, getUniqueValuesForColumn(parsedTable.rows, header.text));
+    parsedTable.headers.forEach(h => {
+      map.set(h.text, getUniqueValuesForColumn(parsedTable.rows, h.text));
     });
     return map;
   }, [parsedTable]);
@@ -392,10 +337,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
     });
   };
 
-  const handleResetFilters = () => {
-    setActiveFilters(new Map());
-    setSearchQuery('');
-  };
+  const handleResetFilters = () => { setActiveFilters(new Map()); setSearchQuery(''); };
 
   const handleColumnToggle = (col: string) => {
     setVisibleColumns(prev => {
@@ -409,20 +351,20 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
 
   useEffect(() => {
     if (!isOpen) return;
-    const onKey      = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    const dialog     = dialogRef.current;
-    const onBackdrop = (e: MouseEvent) => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const dialog = dialogRef.current;
+    const onBdClick = (e: MouseEvent) => {
       if (!dialog) return;
       const r = dialog.getBoundingClientRect();
-      const inside = r.top <= e.clientY && e.clientY <= r.top + r.height &&
-                     r.left <= e.clientX && e.clientX <= r.left + r.width;
-      if (!inside) onClose();
+      if (!(r.top <= e.clientY && e.clientY <= r.top + r.height && r.left <= e.clientX && e.clientX <= r.left + r.width)) {
+        onClose();
+      }
     };
     document.addEventListener('keydown', onKey);
-    dialog?.addEventListener('click', onBackdrop);
+    dialog?.addEventListener('click', onBdClick);
     return () => {
       document.removeEventListener('keydown', onKey);
-      dialog?.removeEventListener('click', onBackdrop);
+      dialog?.removeEventListener('click', onBdClick);
     };
   }, [isOpen, onClose]);
 
@@ -433,16 +375,17 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
       ref={dialogRef}
       aria-label="Модальное окно таблицы"
       aria-modal="true"
-      className={`fixed inset-0 z-[100] flex items-center justify-center w-full h-full max-w-none max-h-none p-0 border-0 ${
-        isDark ? 'bg-black/80' : 'bg-white/80'
-      }`}
+      className={`fixed inset-0 z-[100] flex items-center justify-center w-full h-full max-w-none max-h-none p-0 border-0 ${isDark ? 'bg-black/80' : 'bg-white/80'}`}
     >
-      {/* Container fills 95 % of the viewport; flex-col so table takes remaining height */}
       <div
-        className={`relative rounded-lg shadow-2xl flex flex-col overflow-hidden ${
-          isDark ? 'bg-[#1a1a1a]' : 'bg-[#E8E7E3]'
-        }`}
-        style={{ width: '95vw', height: '95vh' }}
+        className={`relative rounded-lg shadow-2xl flex flex-col overflow-hidden ${isDark ? 'bg-[#1a1a1a]' : 'bg-[#E8E7E3]'}`}
+        style={{
+          width:     'fit-content',
+          minWidth:  '40vw',
+          maxWidth:  '95vw',
+          height:    'auto',
+          maxHeight: '95vh',
+        }}
       >
         <ModalToolbar
           isDark={isDark}
@@ -468,7 +411,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
           />
         )}
 
-        {/* ModalTableContent uses flex:1 internally to fill remaining space */}
+        {/* Table content — scrollable, fills remaining height */}
         <ModalTableContent
           isDark={isDark}
           headers={parsedTable.headers}
