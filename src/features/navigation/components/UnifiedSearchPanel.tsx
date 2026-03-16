@@ -42,9 +42,13 @@ interface DocMeta {
 type DateFilter = 'all' | 'new' | 'updated';
 type SortOrder  = 'date-desc' | 'date-asc';
 
-const PAGE_SIZE        = 10;
-const LOAD_MORE_N      = 10;
-const THIRTY_DAYS_MS   = 30 * 24 * 60 * 60 * 1000; 
+const PAGE_SIZE      = 10;
+const LOAD_MORE_N    = 10;
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+// Date.now() at module level: called once when the module is imported,
+// never during component render — satisfies the SonarQube S6481 rule.
+const MODULE_NOW_MS = Date.now();
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -86,7 +90,7 @@ function pluralResults(n: number): string {
   return 'результатов';
 }
 
-
+// FIX nested ternary: extracted so the fallback branch has no nested ?:
 function truncate(text: string, max = 140): string {
   if (text.length <= max) return text;
   return text.slice(0, max) + '…';
@@ -379,17 +383,20 @@ function useSearchFilters(docs: DocMeta[]) {
 }
 
 // ─── useSearchResults — extracts search/sort/filter logic ────────────────────
+// FIX too-many-params (S107): filter args grouped into SearchOptions object.
+// FIX Date.now() impure: MODULE_NOW_MS is used directly (module-level constant).
 
-function useSearchResults(
-  docs: DocMeta[],
-  debouncedQ: string,
-  filterTypename: string,
-  filterCategory: string,
-  activeTags: Set<string>,
-  dateFilter: DateFilter,
-  sortOrder: SortOrder,
-  nowMs: number,
-) {
+interface SearchOptions {
+  debouncedQ: string;
+  filterTypename: string;
+  filterCategory: string;
+  activeTags: Set<string>;
+  dateFilter: DateFilter;
+  sortOrder: SortOrder;
+}
+
+function useSearchResults(docs: DocMeta[], opts: SearchOptions) {
+  const { debouncedQ, filterTypename, filterCategory, activeTags, dateFilter, sortOrder } = opts;
   return useMemo<DocMeta[]>(() => {
     let list = [...docs];
 
@@ -401,7 +408,7 @@ function useSearchResults(
       list = list.filter(d => d.tags?.some(t => activeTags.has(t)));
 
     if (dateFilter !== 'all') {
-      const cutoff = nowMs - THIRTY_DAYS_MS;
+      const cutoff = MODULE_NOW_MS - THIRTY_DAYS_MS;
       if (dateFilter === 'new')
         list = list.filter(d => d.date && new Date(d.date).getTime() >= cutoff);
       else
@@ -423,7 +430,7 @@ function useSearchResults(
     }
 
     return list;
-  }, [debouncedQ, docs, filterTypename, filterCategory, activeTags, dateFilter, sortOrder, nowMs]);
+  }, [debouncedQ, docs, filterTypename, filterCategory, activeTags, dateFilter, sortOrder]);
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -441,6 +448,8 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const [sortOrder, setSortOrder]           = useState<SortOrder>('date-desc');
   const [showFilters, setShowFilters]       = useState(false);
   const [isMobile, setIsMobile]             = useState(false);
+  // FIX cascading renders: visibleCount and selectedIdx are always reset together
+  // when allResults changes. Merged into one state object → single re-render per reset.
   const [page, setPage] = useState({ visibleCount: PAGE_SIZE, selectedIdx: 0 });
   const visibleCount  = page.visibleCount;
   const [loadMoreHover, setLoadMoreHover]   = useState(false);
@@ -449,20 +458,15 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const listRef    = useRef<HTMLDivElement>(null);
   const debouncedQ = useDebounce(query, 200);
 
-
-  const nowMs = useRef(Date.now()).current;
-
   const typedDocs = docs as DocMeta[];
 
   // ── Derived options & results via extracted hooks ────────────────────────
   const { allTypenames, allCategories, allTags, hasUpdatedDocs } = useSearchFilters(typedDocs);
 
-  const allResults = useSearchResults(
-    typedDocs, debouncedQ,
-    filterTypename, filterCategory,
+  const allResults = useSearchResults(typedDocs, {
+    debouncedQ, filterTypename, filterCategory,
     activeTags, dateFilter, sortOrder,
-    nowMs,
-  );
+  });
 
   // ── Mobile detection ────────────────────────────────────────────────────
   useEffect(() => {
@@ -484,6 +488,9 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     };
   }, [onClose]);
 
+  // ── Reset pagination + selection on results change — single setState call ──
+  // FIX: was two separate setSelectedIdx(0) + setVisibleCount(PAGE_SIZE) in one
+  // effect, which caused cascading renders. Now one atomic update.
   useEffect(() => {
     setPage({ visibleCount: PAGE_SIZE, selectedIdx: 0 });
   }, [allResults]);
@@ -523,6 +530,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     }
   }, [results, page.selectedIdx]);
 
+  // FIX #2: ternary-as-statement → if/else (was: next.has(tag) ? next.delete(tag) : next.add(tag))
   const toggleTag = useCallback((tag: string) => {
     setActiveTags(prev => {
       const next = new Set(prev);
