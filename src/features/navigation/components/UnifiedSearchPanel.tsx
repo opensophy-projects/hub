@@ -44,7 +44,7 @@ type SortOrder  = 'date-desc' | 'date-asc';
 
 const PAGE_SIZE        = 10;
 const LOAD_MORE_N      = 10;
-const THIRTY_DAYS_MS   = 30 * 24 * 60 * 60 * 1000; // FIX #1: moved out of render to avoid "impure Date.now()" lint error
+const THIRTY_DAYS_MS   = 30 * 24 * 60 * 60 * 1000; 
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -84,6 +84,12 @@ function pluralResults(n: number): string {
   if (n === 1) return 'результат';
   if (n < 5)   return 'результата';
   return 'результатов';
+}
+
+
+function truncate(text: string, max = 140): string {
+  if (text.length <= max) return text;
+  return text.slice(0, max) + '…';
 }
 
 // ─── Highlight ────────────────────────────────────────────────────────────────
@@ -261,7 +267,7 @@ const ResultItem = memo(function ResultItem({
 
   const snippet = (query && inDesc)
     ? getSnippet(doc.description, query)
-    : doc.description.slice(0, 140) + (doc.description.length > 140 ? '…' : '');
+    : truncate(doc.description);
 
   return (
     <a
@@ -382,6 +388,7 @@ function useSearchResults(
   activeTags: Set<string>,
   dateFilter: DateFilter,
   sortOrder: SortOrder,
+  nowMs: number,
 ) {
   return useMemo<DocMeta[]>(() => {
     let list = [...docs];
@@ -393,11 +400,8 @@ function useSearchResults(
     if (activeTags.size > 0)
       list = list.filter(d => d.tags?.some(t => activeTags.has(t)));
 
-    // FIX #1: Date.now() moved to here inside useMemo (no render-level call)
-    // CodeFactor flagged Date.now() as "impure during render" — it was already
-    // inside useMemo so it was a false positive, but explicit placement makes intent clear.
     if (dateFilter !== 'all') {
-      const cutoff = Date.now() - THIRTY_DAYS_MS;
+      const cutoff = nowMs - THIRTY_DAYS_MS;
       if (dateFilter === 'new')
         list = list.filter(d => d.date && new Date(d.date).getTime() >= cutoff);
       else
@@ -419,7 +423,7 @@ function useSearchResults(
     }
 
     return list;
-  }, [debouncedQ, docs, filterTypename, filterCategory, activeTags, dateFilter, sortOrder]);
+  }, [debouncedQ, docs, filterTypename, filterCategory, activeTags, dateFilter, sortOrder, nowMs]);
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -436,14 +440,17 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const [dateFilter, setDateFilter]         = useState<DateFilter>('all');
   const [sortOrder, setSortOrder]           = useState<SortOrder>('date-desc');
   const [showFilters, setShowFilters]       = useState(false);
-  const [selectedIdx, setSelectedIdx]       = useState(0);
   const [isMobile, setIsMobile]             = useState(false);
-  const [visibleCount, setVisibleCount]     = useState(PAGE_SIZE);
+  const [page, setPage] = useState({ visibleCount: PAGE_SIZE, selectedIdx: 0 });
+  const visibleCount  = page.visibleCount;
   const [loadMoreHover, setLoadMoreHover]   = useState(false);
 
   const inputRef   = useRef<HTMLInputElement>(null);
   const listRef    = useRef<HTMLDivElement>(null);
   const debouncedQ = useDebounce(query, 200);
+
+
+  const nowMs = useRef(Date.now()).current;
 
   const typedDocs = docs as DocMeta[];
 
@@ -454,6 +461,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     typedDocs, debouncedQ,
     filterTypename, filterCategory,
     activeTags, dateFilter, sortOrder,
+    nowMs,
   );
 
   // ── Mobile detection ────────────────────────────────────────────────────
@@ -476,17 +484,15 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     };
   }, [onClose]);
 
-  // ── Reset pagination on results change ──────────────────────────────────
   useEffect(() => {
-    setSelectedIdx(0);
-    setVisibleCount(PAGE_SIZE);
+    setPage({ visibleCount: PAGE_SIZE, selectedIdx: 0 });
   }, [allResults]);
 
   // ── Scroll selected item into view ──────────────────────────────────────
   useEffect(() => {
-    const el = listRef.current?.querySelector(`[data-idx="${selectedIdx}"]`) as HTMLElement | null;
+    const el = listRef.current?.querySelector(`[data-idx="${page.selectedIdx}"]`) as HTMLElement | null;
     el?.scrollIntoView({ block: 'nearest' });
-  }, [selectedIdx]);
+  }, [page.selectedIdx]);
 
   const results   = useMemo(() => allResults.slice(0, visibleCount), [allResults, visibleCount]);
   const hasMore   = visibleCount < allResults.length;
@@ -506,18 +512,17 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const handleInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIdx(i => Math.min(i + 1, results.length - 1));
+      setPage(p => ({ ...p, selectedIdx: Math.min(p.selectedIdx + 1, results.length - 1) }));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setSelectedIdx(i => Math.max(i - 1, 0));
-    } else if (e.key === 'Enter' && results[selectedIdx]) {
+      setPage(p => ({ ...p, selectedIdx: Math.max(p.selectedIdx - 1, 0) }));
+    } else if (e.key === 'Enter' && results[page.selectedIdx]) {
       e.preventDefault();
-      const el = listRef.current?.querySelector<HTMLAnchorElement>(`[data-idx="${selectedIdx}"]`);
+      const el = listRef.current?.querySelector<HTMLAnchorElement>(`[data-idx="${page.selectedIdx}"]`);
       if (el) el.click();
     }
-  }, [results, selectedIdx]);
+  }, [results, page.selectedIdx]);
 
-  // FIX #2: ternary-as-statement → if/else (was: next.has(tag) ? next.delete(tag) : next.add(tag))
   const toggleTag = useCallback((tag: string) => {
     setActiveTags(prev => {
       const next = new Set(prev);
@@ -804,8 +809,8 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
               {results.map((doc, i) => (
                 <ResultItem
                   key={doc.id} doc={doc} query={debouncedQ}
-                  isSelected={i === selectedIdx} idx={i} C={C}
-                  onHover={() => setSelectedIdx(i)}
+                  isSelected={i === page.selectedIdx} idx={i} C={C}
+                  onHover={() => setPage(p => ({ ...p, selectedIdx: i }))}
                 />
               ))}
             </>
@@ -822,8 +827,8 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
               {results.map((doc, i) => (
                 <ResultItem
                   key={doc.id} doc={doc} query=""
-                  isSelected={i === selectedIdx} idx={i} C={C}
-                  onHover={() => setSelectedIdx(i)}
+                  isSelected={i === page.selectedIdx} idx={i} C={C}
+                  onHover={() => setPage(p => ({ ...p, selectedIdx: i }))}
                 />
               ))}
             </>
@@ -832,7 +837,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
           {hasMore && (
             <div style={{ padding: '8px 6px 4px', display: 'flex', justifyContent: 'center' }}>
               <button
-                onClick={() => setVisibleCount(v => v + LOAD_MORE_N)}
+                onClick={() => setPage(p => ({ ...p, visibleCount: p.visibleCount + LOAD_MORE_N }))}
                 onMouseEnter={() => setLoadMoreHover(true)}
                 onMouseLeave={() => setLoadMoreHover(false)}
                 style={{
