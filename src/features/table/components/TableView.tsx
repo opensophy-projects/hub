@@ -21,6 +21,8 @@ interface TableViewProps {
   sortDirection: SortDirection;
   onSort: (colIndex: number) => void;
   headerAlignments?: ColumnAlignment[];
+
+  fullscreen?: boolean;
 }
 
 export const TableView: React.FC<TableViewProps> = ({
@@ -33,6 +35,7 @@ export const TableView: React.FC<TableViewProps> = ({
   sortDirection,
   onSort,
   headerAlignments = [],
+  fullscreen = false,
 }) => {
   const styles          = useMemo(() => getTableStyles(isDark), [isDark]);
   const scrollbarStyles = useMemo(() => getScrollbarStyles(isDark), [isDark]);
@@ -43,7 +46,14 @@ export const TableView: React.FC<TableViewProps> = ({
       <div
         ref={scrollRef}
         className="table-scroll-container"
-        style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '480px', position: 'relative', ...dragStyle }}
+        style={{
+          overflowX: 'auto',
+          overflowY: 'auto',
+          maxHeight:  fullscreen ? undefined : '480px',
+          height:     fullscreen ? '100%'    : undefined,
+          position:  'relative',
+          ...dragStyle,
+        }}
         {...dragHandlers}
       >
         <table className="border-collapse text-sm" style={{ width: 'auto', minWidth: '100%' }}>
@@ -59,7 +69,7 @@ export const TableView: React.FC<TableViewProps> = ({
           <tbody>
             {rows.map((row, rowIndex) => (
               <TableRow
-                key={`row-${rowIndex}-${row.cells.join('-')}`}
+                key={`row-${rowIndex}-${row.cells.join('-').slice(0, 60)}`}
                 isDark={isDark}
                 row={row}
                 rowIndex={rowIndex}
@@ -116,11 +126,11 @@ const TableHead: React.FC<TableHeadProps> = ({
             onClick={() => onSort(colIndex)}
             style={{
               backgroundColor: isDark ? '#1a1a1a' : '#E8E7E3',
-              whiteSpace: 'nowrap',
-              textAlign: headerAlignments[colIndex] || 'left',
-              position: 'sticky',
-              top: 0,
-              zIndex: 20,
+              whiteSpace:      'nowrap',
+              textAlign:       headerAlignments[colIndex] || 'left',
+              position:        'sticky',
+              top:             0,
+              zIndex:          20,
             }}
             title="Нажмите для сортировки"
           >
@@ -156,8 +166,8 @@ const getRowBgColor = (isEvenRow: boolean, isDark: boolean): string => {
   return isEvenRow ? '#E8E7E3' : '#f1f0ec';
 };
 
-const getRowHoverBgColor = (isEvenRow: boolean, isDark: boolean): string => {
-  if (isDark) return isEvenRow ? '#2a2a2a' : '#202020';
+const getRowHoverBgColor = (_isEvenRow: boolean, isDark: boolean): string => {
+  if (isDark) return '#2a2a2a';
   return '#ddd8cd';
 };
 
@@ -188,20 +198,18 @@ const splitTextByQuery = (text: string, lowerQuery: string): TextPart[] => {
 
 const buildHighlightFragment = (parts: TextPart[]): DocumentFragment => {
   const fragment = document.createDocumentFragment();
-
   for (const { text, isMatch } of parts) {
     if (!text) continue;
     if (isMatch) {
       const mark = document.createElement('mark');
       mark.textContent = text;
       mark.style.cssText =
-        'background-color: rgb(59, 130, 246); color: white; padding: 2px 4px; border-radius: 2px; font-weight: 600;';
+        'background-color: rgb(59,130,246); color: white; padding: 2px 4px; border-radius: 2px; font-weight: 600;';
       fragment.appendChild(mark);
     } else {
       fragment.appendChild(document.createTextNode(text));
     }
   }
-
   return fragment;
 };
 
@@ -213,14 +221,12 @@ const highlightTextNode = (node: Node, lowerQuery: string): void => {
 
 const highlightInElement = (element: HTMLElement, query: string): void => {
   const lowerQuery = query.toLowerCase();
-
   const walk = (node: Node): void => {
-    if (node.nodeType === Node.TEXT_NODE) { highlightTextNode(node, lowerQuery); return; }
+    if (node.nodeType === Node.TEXT_NODE)  { highlightTextNode(node, lowerQuery); return; }
     if (node.nodeType === Node.ELEMENT_NODE && node.nodeName !== 'MARK') {
       Array.from(node.childNodes).forEach(walk);
     }
   };
-
   Array.from(element.childNodes).forEach(walk);
 };
 
@@ -256,7 +262,7 @@ const CellContent: React.FC<{ html: string; searchQuery: string }> = ({ html, se
 const TableRow: React.FC<TableRowProps> = ({ isDark, row, rowIndex, visibleColumns, searchQuery }) => {
   const isEvenRow   = rowIndex % 2 === 0;
   const [isHovered, setIsHovered] = useState(false);
-  const bgColor     = isHovered
+  const bgColor = isHovered
     ? getRowHoverBgColor(isEvenRow, isDark)
     : getRowBgColor(isEvenRow, isDark);
 
@@ -273,10 +279,10 @@ const TableRow: React.FC<TableRowProps> = ({ isDark, row, rowIndex, visibleColum
             key={`cell-${rowIndex}-${colIndex}`}
             className={`px-4 py-3 ${isDark ? 'text-white/90' : 'text-black'}`}
             style={{
-              whiteSpace: 'nowrap',
-              textAlign: row.alignments[colIndex] || 'left',
-              backgroundColor: bgColor,
-              transition: 'background-color 0.12s ease',
+              whiteSpace:       'nowrap',
+              textAlign:        row.alignments[colIndex] || 'left',
+              backgroundColor:  bgColor,
+              transition:       'background-color 0.12s ease',
             }}
           >
             <CellContent html={cell} searchQuery={searchQuery} />
@@ -287,12 +293,12 @@ const TableRow: React.FC<TableRowProps> = ({ isDark, row, rowIndex, visibleColum
   );
 };
 
-// ─── Scrollbar styles (internal only) ────────────────────────────────────────
+// ─── Scrollbar styles ─────────────────────────────────────────────────────────
 
 function getScrollbarStyles(isDark: boolean): string {
-  const thumb      = isDark ? 'rgba(150, 150, 150, 0.6)'  : 'rgba(0, 0, 0, 0.2)';
-  const thumbHover = isDark ? 'rgba(190, 190, 190, 0.85)' : 'rgba(0, 0, 0, 0.35)';
-  const track      = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
+  const thumb      = isDark ? 'rgba(150,150,150,0.6)'  : 'rgba(0,0,0,0.2)';
+  const thumbHover = isDark ? 'rgba(190,190,190,0.85)' : 'rgba(0,0,0,0.35)';
+  const track      = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
 
   return `
     .table-scroll-container::-webkit-scrollbar       { width: 8px; height: 8px; }
