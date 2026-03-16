@@ -1,31 +1,27 @@
 import type { TableControlsState, ParsedRow } from '../types/table';
 
-function stripHtmlTags(html: string): string {
+export function stripHtmlNormalize(html: string): string {
   const div = document.createElement('div');
   div.innerHTML = html;
-  return div.textContent || div.innerText || '';
+  return (div.textContent || div.innerText || '').replace(/\s+/g, ' ').trim();
 }
 
 export function filterAndSortRows(
   rows: Element[],
   state: TableControlsState
 ): ParsedRow[] {
-  let result = rows.map((row) => {
+  let result: ParsedRow[] = rows.map((row) => {
     const cellElements = Array.from(row.querySelectorAll('td'));
     return {
       element: row,
       cells: cellElements.map((td) => td.innerHTML?.trim() || ''),
       alignments: cellElements.map((td) => {
-        const alignAttr = td.getAttribute('align');
-        if (alignAttr === 'left' || alignAttr === 'center' || alignAttr === 'right') {
-          return alignAttr;
-        }
-        const style = td.getAttribute('style');
-        if (style) {
-          if (style.includes('text-align: left') || style.includes('text-align:left')) return 'left';
-          if (style.includes('text-align: center') || style.includes('text-align:center')) return 'center';
-          if (style.includes('text-align: right') || style.includes('text-align:right')) return 'right';
-        }
+        const a = td.getAttribute('align');
+        if (a === 'left' || a === 'center' || a === 'right') return a;
+        const s = td.getAttribute('style') || '';
+        if (s.includes('text-align: left')   || s.includes('text-align:left'))   return 'left';
+        if (s.includes('text-align: center') || s.includes('text-align:center')) return 'center';
+        if (s.includes('text-align: right')  || s.includes('text-align:right'))  return 'right';
         return null;
       }),
     };
@@ -34,28 +30,24 @@ export function filterAndSortRows(
   result = applyFilters(result, state.filters);
   result = applySearch(result, state.searchQuery);
   result = applySort(result, state.sortColumn, state.sortDirection);
-
   return result;
 }
 
-function applyFilters(
-  rows: ParsedRow[],
-  filters: Map<number, Set<string>>
-): ParsedRow[] {
+
+function applyFilters(rows: ParsedRow[], filters: Map<number, Set<string>>): ParsedRow[] {
   if (filters.size === 0) return rows;
 
   return rows.filter((row) => {
     for (const [colIndex, values] of filters) {
-      if (values.size === 0) continue; 
+      if (values.size === 0) continue;
 
-      const cellText = stripHtmlTags(row.cells[colIndex] ?? '').trim();
+      const cellText = stripHtmlNormalize(row.cells[colIndex] ?? '');
 
       let matchedAny = false;
       for (const v of values) {
         if (cellText === v) { matchedAny = true; break; }
       }
-
-      if (!matchedAny) return false; 
+      if (!matchedAny) return false;
     }
     return true;
   });
@@ -63,9 +55,9 @@ function applyFilters(
 
 function applySearch(rows: ParsedRow[], searchQuery: string): ParsedRow[] {
   if (!searchQuery) return rows;
-  const query = searchQuery.toLowerCase();
+  const q = searchQuery.toLowerCase();
   return rows.filter((row) =>
-    row.cells.some((cellHTML) => stripHtmlTags(cellHTML).toLowerCase().includes(query))
+    row.cells.some((html) => stripHtmlNormalize(html).toLowerCase().includes(q))
   );
 }
 
@@ -75,11 +67,10 @@ function applySort(
   sortDirection: 'asc' | 'desc' | 'none'
 ): ParsedRow[] {
   if (sortColumn === null || sortDirection === 'none') return rows;
-
   return [...rows].sort((a, b) => {
-    const aVal = stripHtmlTags(a.cells[sortColumn] ?? '');
-    const bVal = stripHtmlTags(b.cells[sortColumn] ?? '');
-    const cmp  = aVal.localeCompare(bVal, 'ru');
-    return sortDirection === 'asc' ? cmp : -cmp;
+    const av = stripHtmlNormalize(a.cells[sortColumn] ?? '');
+    const bv = stripHtmlNormalize(b.cells[sortColumn] ?? '');
+    const c  = av.localeCompare(bv, 'ru');
+    return sortDirection === 'asc' ? c : -c;
   });
 }
