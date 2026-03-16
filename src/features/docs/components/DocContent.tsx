@@ -1,4 +1,4 @@
-import React, { useState, useMemo, Suspense, lazy } from 'react';
+import React, { useState, useMemo, Suspense, lazy, useEffect } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
 import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
@@ -11,7 +11,6 @@ import { scrollToElement } from '../utils/scrollUtils';
 import { Clock, CalendarDays, ArrowUp, ChevronRight, RefreshCw } from 'lucide-react';
 import DotWaveBackground from './DotWaveBackground';
 import AskAIButton from './AskAIButton';
-import { useEffect } from 'react';
 
 const LazyTableModal = lazy(() => import('@/features/table/components/TableModal'));
 
@@ -32,8 +31,6 @@ interface DocContentProps {
     navTitle?: string;
   };
 }
-
-export { SANITIZE_TAGS, SANITIZE_ATTR } from '@/shared/lib/htmlParser';
 
 const SANITIZE_TAGS = [
   'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
@@ -103,11 +100,9 @@ function useActiveHeading(toc: ReturnType<typeof useTableOfContents>): string {
   return activeId;
 }
 
-// ─── TOC item style helpers ───────────────────────────────────────────────────
+// ─── TOC helpers ─────────────────────────────────────────────────────────────
 
-interface TocItemVisuals { opacity: number; glowOpacity: number; }
-
-function getTocItemVisuals(isActive: boolean, absDist: number, hasActive: boolean): TocItemVisuals {
+function getTocItemVisuals(isActive: boolean, absDist: number, hasActive: boolean) {
   if (!hasActive) return { opacity: 0.6, glowOpacity: 0 };
   if (isActive)   return { opacity: 1,   glowOpacity: 1 };
   return {
@@ -138,14 +133,9 @@ function getTocBoxShadow(isActive: boolean, isDark: boolean, glowOpacity: number
   return 'none';
 }
 
-// ─── DocHero sub-components ───────────────────────────────────────────────────
+// ─── Hero colors ──────────────────────────────────────────────────────────────
 
-interface HeroColors {
-  heroBg: string; borderColor: string; metaTextColor: string;
-  metaBadgeBg: string; metaBadgeBorder: string; textPrimary: string;
-}
-
-function useHeroColors(isDark: boolean): HeroColors {
+function useHeroColors(isDark: boolean) {
   return {
     heroBg:          isDark ? '#0a0a0a' : '#E8E7E3',
     borderColor:     isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
@@ -156,13 +146,15 @@ function useHeroColors(isDark: boolean): HeroColors {
   };
 }
 
+// ─── Hero sub-components ──────────────────────────────────────────────────────
+
 const HeroBreadcrumbs: React.FC<{ typename?: string; textPrimary: string }> = ({ typename, textPrimary }) => {
   if (!typename?.trim()) return null;
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap', fontSize: '0.8rem' }}>
-      <a href="/" style={{ color: textPrimary, textDecoration: 'none', transition: 'opacity 0.2s', opacity: 0.7 }}
-        onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-        onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}>
+      <a href="/" style={{ color: textPrimary, textDecoration: 'none', opacity: 0.7 }}
+        onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+        onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}>
         Главная
       </a>
       <ChevronRight size={14} style={{ opacity: 0.4, color: textPrimary }} />
@@ -176,7 +168,7 @@ const HeroMeta: React.FC<{
   date?: string; updated?: string; typename?: string;
   metaTextColor: string; metaBadgeBg: string; metaBadgeBorder: string;
 }> = ({ date, updated, typename, metaTextColor, metaBadgeBg, metaBadgeBorder }) => {
-  const locale      = 'ru-RU';
+  const locale = 'ru-RU';
   const opts: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
   const formattedDate    = date    ? new Date(date).toLocaleDateString(locale, opts)    : null;
   const formattedUpdated = updated ? new Date(updated).toLocaleDateString(locale, opts) : null;
@@ -225,7 +217,12 @@ const HeroAuthors: React.FC<{ author?: string; metaTextColor: string; textPrimar
   );
 };
 
-const DocHero: React.FC<{ doc: DocContentProps['doc']; isDark: boolean; readTime: number; markdownContent?: string }> = ({ doc, isDark, readTime, markdownContent }) => {
+const DocHero: React.FC<{
+  doc: DocContentProps['doc'];
+  isDark: boolean;
+  readTime: number;
+  markdownContent?: string;
+}> = ({ doc, isDark, readTime, markdownContent }) => {
   const colors = useHeroColors(isDark);
   return (
     <div style={{ background: colors.heroBg, borderBottom: `1px solid ${colors.borderColor}`, padding: '3rem 2rem 2.5rem', position: 'relative' }}>
@@ -258,7 +255,7 @@ const DocHero: React.FC<{ doc: DocContentProps['doc']; isDark: boolean; readTime
   );
 };
 
-// ─── Layout helpers ───────────────────────────────────────────────────────────
+// ─── Layout ───────────────────────────────────────────────────────────────────
 
 function getMainMargins(isDesktop: boolean, hasToc: boolean, tocWidth: string) {
   return {
@@ -273,6 +270,9 @@ function getMainMargins(isDesktop: boolean, hasToc: boolean, tocWidth: string) {
 const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const { isDark } = useTheme();
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
+
+  // FIX [🔴-01]: content comes via Astro props at build time — no runtime fetch needed.
+
   const toc            = useTableOfContents(doc);
   const scrollProgress = useScrollProgress();
   const activeId       = useActiveHeading(toc);
@@ -292,7 +292,10 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
     return parseHtmlToReact(htmlContent);
   }, [htmlContent]);
 
-  const readTime = useMemo(() => estimateReadTime(doc.content || htmlContent), [doc.content, htmlContent]);
+  const readTime = useMemo(
+    () => estimateReadTime(doc.content || htmlContent),
+    [doc.content, htmlContent]
+  );
 
   const tableContextValue = useMemo(
     () => ({ onTableClick: (html: string) => setFullscreenTableHtml(html), isDark }),
@@ -312,10 +315,10 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
       <TopNavbar />
       <Sidebar currentDocSlug={doc.slug} />
 
-      {toc.length > 0 && isDesktop && (
+      {hasToc && isDesktop && (
         <aside
           className={`hidden md:flex flex-col fixed right-0 z-40 border-l overflow-hidden ${isDark ? 'bg-[#0F0F0F] border-white/10' : 'bg-[#E1E0DC] border-black/10'}`}
-          style={{ top: '0', width: TOC_WIDTH, height: '100vh' }}
+          style={{ top: 0, width: TOC_WIDTH, height: '100vh' }}
         >
           <div className={`flex-shrink-0 px-4 py-4 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
             <div className="flex items-center justify-between gap-2">
@@ -335,25 +338,27 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
           <div className="flex-1 overflow-y-auto py-3">
             <nav className="space-y-0.5">
               {toc.map((item, index) => {
-                const activeIndex  = toc.findIndex((t) => t.id === activeId);
+                const activeIndex  = toc.findIndex(t => t.id === activeId);
                 const distance     = index - activeIndex;
                 const isActive     = distance === 0 && activeId !== '';
                 const absDist      = Math.abs(distance);
                 const accentColor  = isDark ? '#ffffff' : '#000000';
                 const hasActive    = activeId !== '';
-
                 const { opacity, glowOpacity } = getTocItemVisuals(isActive, absDist, hasActive);
-                const color           = getTocItemColor(isActive, isDark, opacity);
-                const borderLeftColor = getTocBorderColor(isActive, isDark, glowOpacity, accentColor);
-                const boxShadow       = getTocBoxShadow(isActive, isDark, glowOpacity, accentColor);
-                const textShadow      = isActive ? `0 0 12px ${accentColor}66` : 'none';
-
                 return (
                   <button
                     key={item.id}
                     onClick={() => scrollToElement(item.id)}
                     className="w-full text-left py-2 pr-3 text-sm leading-snug"
-                    style={{ paddingLeft: `${14 + (item.level - 2) * 14}px`, color, transition: 'color 0.5s ease, box-shadow 0.5s ease, border-color 0.5s ease, text-shadow 0.5s ease', borderLeft: '2px solid', borderLeftColor, boxShadow, textShadow }}
+                    style={{
+                      paddingLeft: `${14 + (item.level - 2) * 14}px`,
+                      color:           getTocItemColor(isActive, isDark, opacity),
+                      transition:      'color 0.5s ease, box-shadow 0.5s ease, border-color 0.5s ease',
+                      borderLeft:      '2px solid',
+                      borderLeftColor: getTocBorderColor(isActive, isDark, glowOpacity, accentColor),
+                      boxShadow:       getTocBoxShadow(isActive, isDark, glowOpacity, accentColor),
+                      textShadow:      isActive ? `0 0 12px ${accentColor}66` : 'none',
+                    }}
                   >
                     {item.text}
                   </button>
@@ -370,13 +375,14 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
       >
         <DocHero doc={doc} isDark={isDark} readTime={readTime} markdownContent={doc.content} />
         <article className="flex-1 pb-12 w-full" style={{ paddingLeft: '2rem', paddingRight: '2rem', paddingTop: '2rem' }}>
-          <div className="w-full">
-            <TableContext.Provider value={tableContextValue}>
-              <div data-article-content className={`prose max-w-none w-full overflow-x-auto ${isDark ? 'text-white' : 'text-black'}`}>
-                {contentNodes}
-              </div>
-            </TableContext.Provider>
-          </div>
+          <TableContext.Provider value={tableContextValue}>
+            <div
+              data-article-content
+              className={`prose max-w-none w-full overflow-x-auto ${isDark ? 'text-white' : 'text-black'}`}
+            >
+              {contentNodes}
+            </div>
+          </TableContext.Provider>
         </article>
       </main>
 
