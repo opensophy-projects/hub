@@ -3,8 +3,10 @@ import type { TableControlsState, ParsedRow } from '../types/table';
 export function stripHtmlNormalize(html: string): string {
   const div = document.createElement('div');
   div.innerHTML = html;
-  // NOSONAR: replaceAll() does not support regex patterns like \s+; replace() with /g flag is correct here
-  return (div.textContent || div.innerText || '').replace(/\s+/g, ' ').trim(); // NOSONAR
+  return (div.textContent || div.innerText || '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .join(' ');
 }
 
 export function filterAndSortRows(
@@ -40,7 +42,7 @@ function applyFilters(rows: ParsedRow[], filters: Map<number, Set<string>>): Par
     for (const [colIndex, values] of filters) {
       if (values.size === 0) continue;
       const cellText = stripHtmlNormalize(row.cells[colIndex] ?? '');
-      if (![...values].some((v) => cellText === v)) return false;
+      if (!values.has(cellText)) return false;
     }
     return true;
   });
