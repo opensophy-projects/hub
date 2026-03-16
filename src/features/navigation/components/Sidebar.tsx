@@ -52,7 +52,8 @@ const LucideIcon: React.FC<{ name: string; size?: number; className?: string }> 
     });
   }, [name]);
 
-  if (!Icon) return <span style={{ width: size, height: size, display: 'inline-block' }} />;
+  // Placeholder keeps the same dimensions while icon loads — no layout shift
+  if (!Icon) return <span style={{ width: size, height: size, display: 'inline-block', flexShrink: 0 }} />;
   return <Icon size={size} className={className} />;
 });
 
@@ -82,8 +83,6 @@ const NavPopoverSwitcher: React.FC<{
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  // FIX БАГ 1: useMemo гарантирует пересчёт active при каждом изменении activeSlug,
-  // даже внутри memo-компонента где sections могут не измениться
   const active = useMemo(
     () => sections.find((s) => s.navSlug === activeSlug) ?? sections[0],
     [sections, activeSlug]
@@ -104,8 +103,6 @@ const NavPopoverSwitcher: React.FC<{
         style={borderStyle(isDark)}
       >
         <div className="flex items-center gap-2 min-w-0">
-          {/* FIX БАГ 1: key на иконке форсирует ремаунт при смене секции,
-              чтобы LucideIcon не брал устаревшее значение из своего внутреннего state */}
           {active.navSlug === ''
             ? <Home size={15} className={isDark ? 'text-white/50' : 'text-black/50'} />
             : <LucideIcon key={active.navSlug} name={active.navIcon} size={15} className={isDark ? 'text-white/50' : 'text-black/50'} />
@@ -303,9 +300,16 @@ const DocLink: React.FC<{
         fontWeight: isActive ? 600 : 400,
       }}
     >
-      {doc.icon && (
-        <LucideIcon name={doc.icon} size={20} className={isDark ? 'text-white/60' : 'text-black/60'} />
-      )}
+      {/*
+        Fixed-width icon slot (w-4 h-4 = 16px).
+        Always rendered so text always starts at the same indent,
+        regardless of whether the doc has an icon or while the icon is loading.
+      */}
+      <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
+        {doc.icon && (
+          <LucideIcon name={doc.icon} size={15} className={isDark ? 'text-white/60' : 'text-black/60'} />
+        )}
+      </span>
       <span>{doc.title}</span>
     </a>
   );
@@ -339,18 +343,27 @@ const CategoryNode: React.FC<{
         }`}
       >
         <div className="flex items-center gap-2">
-          {hasChildren && (
-            isExpanded
-              ? <ChevronDown size={16} className={isDark ? 'text-white/60' : 'text-black/60'} />
-              : <ChevronRight size={16} className={isDark ? 'text-white/60' : 'text-black/60'} />
-          )}
-          {node.icon && (
-            <LucideIcon
-              name={node.icon}
-              size={15}
-              className={isDark ? 'text-white/60' : 'text-black/60'}
-            />
-          )}
+          {/*
+            Fixed-width chevron slot — always takes up space so category icon
+            aligns consistently whether or not there are sub-categories.
+          */}
+          <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
+            {hasChildren && (
+              isExpanded
+                ? <ChevronDown size={15} className={isDark ? 'text-white/60' : 'text-black/60'} />
+                : <ChevronRight size={15} className={isDark ? 'text-white/60' : 'text-black/60'} />
+            )}
+          </span>
+          {/* Fixed-width category icon slot */}
+          <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
+            {node.icon && (
+              <LucideIcon
+                name={node.icon}
+                size={15}
+                className={isDark ? 'text-white/60' : 'text-black/60'}
+              />
+            )}
+          </span>
           <span>{node.title}</span>
         </div>
         {totalDocs > 0 && (
