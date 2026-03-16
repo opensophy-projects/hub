@@ -33,7 +33,6 @@ interface DocContentProps {
   };
 }
 
-// Re-exported so DocContent.tsx consumers can import from one place
 export { SANITIZE_TAGS, SANITIZE_ATTR } from '@/shared/lib/htmlParser';
 
 const SANITIZE_TAGS = [
@@ -274,10 +273,6 @@ function getMainMargins(isDesktop: boolean, hasToc: boolean, tocWidth: string) {
 const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const { isDark } = useTheme();
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
-
-  // FIX [🔴-01]: content is always present via Astro props at build time.
-  // No runtime fetch needed — loadDocument removed entirely.
-
   const toc            = useTableOfContents(doc);
   const scrollProgress = useScrollProgress();
   const activeId       = useActiveHeading(toc);
