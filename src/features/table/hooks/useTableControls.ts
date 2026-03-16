@@ -1,19 +1,13 @@
 import { useState, useMemo, useCallback } from 'react';
 import type { TableControlsState } from '../types/table';
-import { filterAndSortRows } from '../utils/tableFiltering';
-
-function stripHtmlTags(html: string): string {
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  return div.textContent || div.innerText || '';
-}
+import { filterAndSortRows, stripHtmlNormalize } from '../utils/tableFiltering';
 
 export function useTableControls(rows: Element[], headers: string[]) {
   const [state, setState] = useState<TableControlsState>({
-    searchQuery: '',
-    sortColumn: null,
-    sortDirection: 'none',
-    filters: new Map(),
+    searchQuery:    '',
+    sortColumn:     null,
+    sortDirection:  'none',
+    filters:        new Map(),
     visibleColumns: new Set(Array.from({ length: headers.length }, (_, i) => i)),
   });
 
@@ -24,10 +18,9 @@ export function useTableControls(rows: Element[], headers: string[]) {
     return Array.from(
       new Set(
         rows.map((row) => {
-          const cells = Array.from(row.querySelectorAll('td'));
-          
-          const cellHTML = cells[colIndex]?.innerHTML || '';
-          return stripHtmlTags(cellHTML).trim();
+          const cells   = Array.from(row.querySelectorAll('td'));
+          const cellHtml = cells[colIndex]?.innerHTML || '';
+          return stripHtmlNormalize(cellHtml);
         })
       )
     )
@@ -42,33 +35,19 @@ export function useTableControls(rows: Element[], headers: string[]) {
 
   const toggleColumnVisibility = useCallback((colIndex: number) => {
     setState((prev) => {
-      const newVisible = new Set(prev.visibleColumns);
-      if (newVisible.has(colIndex)) {
-        newVisible.delete(colIndex);
-      } else {
-        newVisible.add(colIndex);
-      }
-      return { ...prev, visibleColumns: newVisible };
+      const next = new Set(prev.visibleColumns);
+      next.has(colIndex) ? next.delete(colIndex) : next.add(colIndex);
+      return { ...prev, visibleColumns: next };
     });
   }, []);
 
   const toggleFilter = useCallback((colIndex: number, value: string) => {
     setState((prev) => {
       const newFilters = new Map(prev.filters);
-      const colFilters = new Set(newFilters.get(colIndex) || []);
-      
-      if (colFilters.has(value)) {
-        colFilters.delete(value);
-      } else {
-        colFilters.add(value);
-      }
-      
-      if (colFilters.size === 0) {
-        newFilters.delete(colIndex);
-      } else {
-        newFilters.set(colIndex, colFilters);
-      }
-      
+      const colFilters = new Set(newFilters.get(colIndex) ?? []);
+      colFilters.has(value) ? colFilters.delete(value) : colFilters.add(value);
+      if (colFilters.size === 0) newFilters.delete(colIndex);
+      else newFilters.set(colIndex, colFilters);
       return { ...prev, filters: newFilters };
     });
   }, []);
@@ -76,10 +55,9 @@ export function useTableControls(rows: Element[], headers: string[]) {
   const handleSort = useCallback((colIndex: number) => {
     setState((prev) => {
       if (prev.sortColumn === colIndex) {
-        const directions: ('asc' | 'desc' | 'none')[] = ['asc', 'desc', 'none'];
-        const currentIndex = directions.indexOf(prev.sortDirection);
-        const nextDir = directions[(currentIndex + 1) % directions.length];
-        return { ...prev, sortDirection: nextDir };
+        const dirs = ['asc', 'desc', 'none'] as const;
+        const next = dirs[(dirs.indexOf(prev.sortDirection) + 1) % dirs.length];
+        return { ...prev, sortDirection: next };
       }
       return { ...prev, sortColumn: colIndex, sortDirection: 'asc' };
     });
@@ -88,16 +66,14 @@ export function useTableControls(rows: Element[], headers: string[]) {
   const resetFilters = useCallback(() => {
     setState((prev) => ({
       ...prev,
-      searchQuery: '',
-      sortColumn: null,
+      searchQuery:   '',
+      sortColumn:    null,
       sortDirection: 'none',
-      filters: new Map(),
+      filters:       new Map(),
     }));
   }, []);
 
-  const activeFilterCount = Array.from(state.filters.values()).filter(
-    (set) => set.size > 0
-  ).length;
+  const activeFilterCount = Array.from(state.filters.values()).filter((s) => s.size > 0).length;
 
   return {
     state,
