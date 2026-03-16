@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
+import React, { useState, useMemo, Suspense, lazy } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
 import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
@@ -8,10 +8,10 @@ import { parseHtmlToReact, TableContext } from '@/shared/lib/htmlParser';
 import { useTableOfContents } from '../hooks/useTableOfContents';
 import { useScrollProgress } from '../hooks/useScrollProgress';
 import { scrollToElement } from '../utils/scrollUtils';
-import { useDocuments } from '../hooks/useDocuments';
 import { Clock, CalendarDays, ArrowUp, ChevronRight, RefreshCw } from 'lucide-react';
 import DotWaveBackground from './DotWaveBackground';
 import AskAIButton from './AskAIButton';
+import { useEffect } from 'react';
 
 const LazyTableModal = lazy(() => import('@/features/table/components/TableModal'));
 
@@ -33,6 +33,9 @@ interface DocContentProps {
   };
 }
 
+// Re-exported so DocContent.tsx consumers can import from one place
+export { SANITIZE_TAGS, SANITIZE_ATTR } from '@/shared/lib/htmlParser';
+
 const SANITIZE_TAGS = [
   'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
   'p', 'br', 'strong', 'em', 'u', 'a',
@@ -51,7 +54,6 @@ const SANITIZE_ATTR = [
   'type', 'checked', 'disabled', 'open', 'style', 'align',
 ];
 
-
 function stripHtmlTags(html: string): string {
   return html
     .split('<')
@@ -61,8 +63,8 @@ function stripHtmlTags(html: string): string {
 
 function estimateReadTime(content: string): number {
   if (!content) return 1;
-  const text = stripHtmlTags(content).replaceAll(/\s+/g, ' ').trim();
-  const words = text.split(' ').filter(Boolean).length;
+  const text  = stripHtmlTags(content).replaceAll(/\s+/g, ' ').trim();
+  const words = text.split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.round(words / 200));
 }
 
@@ -70,28 +72,23 @@ function estimateReadTime(content: string): number {
 
 function useIsDesktop(): boolean {
   const [isDesktop, setIsDesktop] = useState(
-    globalThis.window === undefined ? true : globalThis.window.innerWidth >= 768
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : true
   );
-
   useEffect(() => {
-    const check = () => setIsDesktop(globalThis.window.innerWidth >= 768);
-    check();
-    globalThis.window.addEventListener('resize', check);
-    return () => globalThis.window.removeEventListener('resize', check);
+    const check = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener('resize', check, { passive: true });
+    return () => window.removeEventListener('resize', check);
   }, []);
-
   return isDesktop;
 }
 
 function useActiveHeading(toc: ReturnType<typeof useTableOfContents>): string {
   const [activeId, setActiveId] = useState('');
-
   useEffect(() => {
     if (toc.length === 0) return;
     const headingEls = toc
       .map(({ id }) => document.getElementById(id))
       .filter((el): el is HTMLElement => el !== null);
-
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries
@@ -104,20 +101,16 @@ function useActiveHeading(toc: ReturnType<typeof useTableOfContents>): string {
     headingEls.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
   }, [toc]);
-
   return activeId;
 }
 
 // ─── TOC item style helpers ───────────────────────────────────────────────────
 
-interface TocItemVisuals {
-  opacity: number;
-  glowOpacity: number;
-}
+interface TocItemVisuals { opacity: number; glowOpacity: number; }
 
 function getTocItemVisuals(isActive: boolean, absDist: number, hasActive: boolean): TocItemVisuals {
   if (!hasActive) return { opacity: 0.6, glowOpacity: 0 };
-  if (isActive)  return { opacity: 1,   glowOpacity: 1 };
+  if (isActive)   return { opacity: 1,   glowOpacity: 1 };
   return {
     opacity:     Math.max(0.35, 0.8  - absDist * 0.2),
     glowOpacity: Math.max(0,    0.55 - absDist * 0.18),
@@ -149,12 +142,8 @@ function getTocBoxShadow(isActive: boolean, isDark: boolean, glowOpacity: number
 // ─── DocHero sub-components ───────────────────────────────────────────────────
 
 interface HeroColors {
-  heroBg: string;
-  borderColor: string;
-  metaTextColor: string;
-  metaBadgeBg: string;
-  metaBadgeBorder: string;
-  textPrimary: string;
+  heroBg: string; borderColor: string; metaTextColor: string;
+  metaBadgeBg: string; metaBadgeBorder: string; textPrimary: string;
 }
 
 function useHeroColors(isDark: boolean): HeroColors {
@@ -168,20 +157,13 @@ function useHeroColors(isDark: boolean): HeroColors {
   };
 }
 
-const HeroBreadcrumbs: React.FC<{
-  typename?: string;
-  textPrimary: string;
-}> = ({ typename, textPrimary }) => {
+const HeroBreadcrumbs: React.FC<{ typename?: string; textPrimary: string }> = ({ typename, textPrimary }) => {
   if (!typename?.trim()) return null;
-
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap', fontSize: '0.8rem' }}>
-      <a
-        href="/"
-        style={{ color: textPrimary, textDecoration: 'none', transition: 'opacity 0.2s', opacity: 0.7 }}
+      <a href="/" style={{ color: textPrimary, textDecoration: 'none', transition: 'opacity 0.2s', opacity: 0.7 }}
         onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-        onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
-      >
+        onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}>
         Главная
       </a>
       <ChevronRight size={14} style={{ opacity: 0.4, color: textPrimary }} />
@@ -192,41 +174,30 @@ const HeroBreadcrumbs: React.FC<{
 };
 
 const HeroMeta: React.FC<{
-  date?: string;
-  updated?: string;
-  typename?: string;
-  metaTextColor: string;
-  metaBadgeBg: string;
-  metaBadgeBorder: string;
+  date?: string; updated?: string; typename?: string;
+  metaTextColor: string; metaBadgeBg: string; metaBadgeBorder: string;
 }> = ({ date, updated, typename, metaTextColor, metaBadgeBg, metaBadgeBorder }) => {
-  const locale = 'ru-RU';
-  const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-  const formattedDate    = date    ? new Date(date).toLocaleDateString(locale, dateOptions)    : null;
-  const formattedUpdated = updated ? new Date(updated).toLocaleDateString(locale, dateOptions) : null;
+  const locale      = 'ru-RU';
+  const opts: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+  const formattedDate    = date    ? new Date(date).toLocaleDateString(locale, opts)    : null;
+  const formattedUpdated = updated ? new Date(updated).toLocaleDateString(locale, opts) : null;
   const dot = <span style={{ color: metaTextColor, fontSize: '0.7rem' }}>·</span>;
-
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
       {formattedDate && (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: metaTextColor, fontVariantNumeric: 'tabular-nums' }}>
-          <CalendarDays size={13} style={{ opacity: 0.7 }} />
-          {formattedDate}
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: metaTextColor }}>
+          <CalendarDays size={13} style={{ opacity: 0.7 }} />{formattedDate}
         </span>
       )}
-
       {formattedUpdated && (
-        <>
-          {formattedDate && dot}
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: metaTextColor, fontVariantNumeric: 'tabular-nums' }}>
-            <RefreshCw size={13} style={{ opacity: 0.7 }} />
-            Обновлено: {formattedUpdated}
+        <>{formattedDate && dot}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: metaTextColor }}>
+            <RefreshCw size={13} style={{ opacity: 0.7 }} />Обновлено: {formattedUpdated}
           </span>
         </>
       )}
-
       {typename?.trim() && (
-        <>
-          {(formattedDate || formattedUpdated) && dot}
+        <>{(formattedDate || formattedUpdated) && dot}
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: metaTextColor, background: metaBadgeBg, border: `1px solid ${metaBadgeBorder}`, borderRadius: '6px', padding: '2px 8px' }}>
             {typename}
           </span>
@@ -236,17 +207,9 @@ const HeroMeta: React.FC<{
   );
 };
 
-const HeroAuthors: React.FC<{
-  author?: string;
-  metaTextColor: string;
-  textPrimary: string;
-}> = ({ author, metaTextColor, textPrimary }) => {
-  const authors = author
-    ? author.split(',').map((a) => a.trim()).filter(Boolean)
-    : [];
-
+const HeroAuthors: React.FC<{ author?: string; metaTextColor: string; textPrimary: string }> = ({ author, metaTextColor, textPrimary }) => {
+  const authors = author ? author.split(',').map(a => a.trim()).filter(Boolean) : [];
   if (authors.length === 0) return null;
-
   return (
     <>
       <span style={{ color: metaTextColor, fontSize: '0.75rem' }}>·</span>
@@ -263,59 +226,30 @@ const HeroAuthors: React.FC<{
   );
 };
 
-// ─── DocHero ──────────────────────────────────────────────────────────────────
-
-const DocHero: React.FC<{
-  doc: DocContentProps['doc'];
-  isDark: boolean;
-  readTime: number;
-  markdownContent?: string;
-}> = ({ doc, isDark, readTime, markdownContent }) => {
+const DocHero: React.FC<{ doc: DocContentProps['doc']; isDark: boolean; readTime: number; markdownContent?: string }> = ({ doc, isDark, readTime, markdownContent }) => {
   const colors = useHeroColors(isDark);
-
   return (
-    <div
-      style={{
-        background: colors.heroBg,
-        borderBottom: `1px solid ${colors.borderColor}`,
-        padding: '3rem 2rem 2.5rem',
-        position: 'relative',
-      }}
-    >
+    <div style={{ background: colors.heroBg, borderBottom: `1px solid ${colors.borderColor}`, padding: '3rem 2rem 2.5rem', position: 'relative' }}>
       <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
         <DotWaveBackground isDark={isDark} />
       </div>
-
       <div style={{ position: 'relative', zIndex: 1 }}>
         <HeroBreadcrumbs typename={doc.typename} textPrimary={colors.textPrimary} />
-
-        <HeroMeta
-          date={doc.date}
-          updated={doc.updated}
-          typename={doc.typename}
-          metaTextColor={colors.metaTextColor}
-          metaBadgeBg={colors.metaBadgeBg}
-          metaBadgeBorder={colors.metaBadgeBorder}
-        />
-
+        <HeroMeta date={doc.date} updated={doc.updated} typename={doc.typename}
+          metaTextColor={colors.metaTextColor} metaBadgeBg={colors.metaBadgeBg} metaBadgeBorder={colors.metaBadgeBorder} />
         <h1 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.8rem)', fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.02em', color: isDark ? '#ffffff' : '#0a0a0a', margin: '0 0 1rem 0', fontFamily: 'system-ui, -apple-system, sans-serif', maxWidth: '820px' }}>
           {doc.title}
         </h1>
-
         {doc.description && (
           <p style={{ fontSize: 'clamp(0.9rem, 1.5vw, 1.05rem)', lineHeight: 1.65, color: colors.textPrimary, margin: '0 0 1.75rem 0', maxWidth: '680px' }}>
             {doc.description}
           </p>
         )}
-
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', paddingTop: '1rem' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: colors.metaTextColor }}>
-            <Clock size={13} style={{ opacity: 0.7 }} />
-            {readTime} мин чтения
+            <Clock size={13} style={{ opacity: 0.7 }} />{readTime} мин чтения
           </span>
-
           <HeroAuthors author={doc.author} metaTextColor={colors.metaTextColor} textPrimary={colors.textPrimary} />
-
           <div style={{ marginLeft: 'auto' }}>
             <AskAIButton isDark={isDark} pageTitle={doc.title} pageSlug={doc.slug} markdownContent={markdownContent} />
           </div>
@@ -335,51 +269,19 @@ function getMainMargins(isDesktop: boolean, hasToc: boolean, tocWidth: string) {
   };
 }
 
-const DocLoadingScreen: React.FC<{
-  isDark: boolean;
-  isDesktop: boolean;
-  tocWidth: string;
-  hasToc: boolean;
-}> = ({ isDark, isDesktop, tocWidth, hasToc }) => (
-  <div style={{ minHeight: '100vh' }}>
-    <TopNavbar />
-    <Sidebar />
-    <main
-      className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}
-      style={getMainMargins(isDesktop, hasToc, tocWidth)}
-    >
-      <p className={`text-lg ${isDark ? 'text-white/60' : 'text-black/60'}`}>
-        Загрузка документа...
-      </p>
-    </main>
-  </div>
-);
-
 // ─── DocContentMain ───────────────────────────────────────────────────────────
 
-const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
+const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const { isDark } = useTheme();
-  const { loadDocument } = useDocuments();
-  const [doc, setDoc] = useState(initialDoc);
-  const [loading, setLoading] = useState(!initialDoc.content);
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (initialDoc.content) return;
-    loadDocument(initialDoc.slug).then((fullDoc) => {
-      if (fullDoc) {
-        setDoc(fullDoc);
-        setLoading(false);
-      }
-    });
-  }, [initialDoc.slug, initialDoc.content, loadDocument]);
+  // FIX [🔴-01]: content is always present via Astro props at build time.
+  // No runtime fetch needed — loadDocument removed entirely.
 
   const toc            = useTableOfContents(doc);
   const scrollProgress = useScrollProgress();
   const activeId       = useActiveHeading(toc);
   const isDesktop      = useIsDesktop();
-
-  const handleTableClick = (tableHtml: string) => setFullscreenTableHtml(tableHtml);
 
   const htmlContent = useMemo(() => {
     if (!doc.content) return '';
@@ -398,18 +300,12 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
   const readTime = useMemo(() => estimateReadTime(doc.content || htmlContent), [doc.content, htmlContent]);
 
   const tableContextValue = useMemo(
-    () => ({ onTableClick: handleTableClick, isDark }),
+    () => ({ onTableClick: (html: string) => setFullscreenTableHtml(html), isDark }),
     [isDark]
   );
 
   const TOC_WIDTH = toc.length > 0 ? '18rem' : '0';
   const hasToc    = toc.length > 0;
-
-  const handleScrollTop = () => globalThis.window.scrollTo({ top: 0, behavior: 'smooth' });
-
-  if (loading) {
-    return <DocLoadingScreen isDark={isDark} isDesktop={isDesktop} tocWidth={TOC_WIDTH} hasToc={hasToc} />;
-  }
 
   return (
     <div style={{ minHeight: '100vh' }}>
@@ -432,12 +328,8 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
                 На этой странице
               </h2>
               <button
-                onClick={handleScrollTop}
-                className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-lg border transition-colors ${
-                  isDark
-                    ? 'text-white/60 hover:bg-white/5 hover:text-white border-white/10'
-                    : 'text-black/60 hover:bg-black/5 hover:text-black border-black/10'
-                }`}
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-lg border transition-colors ${isDark ? 'text-white/60 hover:bg-white/5 hover:text-white border-white/10' : 'text-black/60 hover:bg-black/5 hover:text-black border-black/10'}`}
                 title="Наверх"
               >
                 <ArrowUp size={15} />
@@ -445,7 +337,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
               </button>
             </div>
           </div>
-
           <div className="flex-1 overflow-y-auto py-3">
             <nav className="space-y-0.5">
               {toc.map((item, index) => {
@@ -467,15 +358,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
                     key={item.id}
                     onClick={() => scrollToElement(item.id)}
                     className="w-full text-left py-2 pr-3 text-sm leading-snug"
-                    style={{
-                      paddingLeft: `${14 + (item.level - 2) * 14}px`,
-                      color,
-                      transition: 'color 0.5s ease, box-shadow 0.5s ease, border-color 0.5s ease, text-shadow 0.5s ease',
-                      borderLeft: '2px solid',
-                      borderLeftColor,
-                      boxShadow,
-                      textShadow,
-                    }}
+                    style={{ paddingLeft: `${14 + (item.level - 2) * 14}px`, color, transition: 'color 0.5s ease, box-shadow 0.5s ease, border-color 0.5s ease, text-shadow 0.5s ease', borderLeft: '2px solid', borderLeftColor, boxShadow, textShadow }}
                   >
                     {item.text}
                   </button>
@@ -491,14 +374,10 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc: initialDoc }) => {
         style={{ ...getMainMargins(isDesktop, hasToc, TOC_WIDTH), transition: 'margin-left 0.3s ease' }}
       >
         <DocHero doc={doc} isDark={isDark} readTime={readTime} markdownContent={doc.content} />
-
         <article className="flex-1 pb-12 w-full" style={{ paddingLeft: '2rem', paddingRight: '2rem', paddingTop: '2rem' }}>
           <div className="w-full">
             <TableContext.Provider value={tableContextValue}>
-              <div
-                data-article-content
-                className={`prose max-w-none w-full overflow-x-auto ${isDark ? 'text-white' : 'text-black'}`}
-              >
+              <div data-article-content className={`prose max-w-none w-full overflow-x-auto ${isDark ? 'text-white' : 'text-black'}`}>
                 {contentNodes}
               </div>
             </TableContext.Provider>
