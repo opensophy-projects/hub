@@ -3,11 +3,15 @@ export interface ParsedTable {
   rows: Array<Record<string, string>>;
 }
 
-export function parseTableFromHTML(html: string): ParsedTable {
-  const parser = new DOMParser();
-  const doc    = parser.parseFromString(html, 'text/html');
-  const table  = doc.querySelector('table');
+function stripHtmlNormalize(html: string): string {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return (div.textContent || div.innerText || '').replace(/\s+/g, ' ').trim();
+}
 
+export function parseTableFromHTML(html: string): ParsedTable {
+  const doc   = new DOMParser().parseFromString(html, 'text/html');
+  const table = doc.querySelector('table');
   if (!table) return { headers: [], rows: [] };
 
   const headers = Array.from(table.querySelectorAll('thead th')).map((th, colIndex) => ({
@@ -31,23 +35,10 @@ export function getUniqueValuesForColumn(
   rows: Array<Record<string, string>>,
   columnName: string,
 ): string[] {
-  const values = rows
-    .map((row) => {
-      const html = row[columnName] || '';
-      const div  = document.createElement('div');
-      div.innerHTML = html;
-      return (div.textContent || div.innerText || '').trim();
-    })
-    .filter(Boolean);
-  return Array.from(new Set(values)).sort();
+  return Array.from(
+    new Set(rows.map((row) => stripHtmlNormalize(row[columnName] || '')).filter(Boolean))
+  ).sort();
 }
-
-function stripHtml(html: string): string {
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  return (div.textContent || div.innerText || '').trim();
-}
-
 
 export function filterRows(
   rows: Array<Record<string, string>>,
@@ -56,25 +47,23 @@ export function filterRows(
   visibleColumns: Set<string>,
 ): Array<Record<string, string>> {
   return rows.filter((row) => {
-
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      const matchesSearch = Array.from(visibleColumns).some((col) =>
-        stripHtml(row[col] || '').toLowerCase().includes(q)
+      const found = Array.from(visibleColumns).some((col) =>
+        stripHtmlNormalize(row[col] || '').toLowerCase().includes(q)
       );
-      if (!matchesSearch) return false;
+      if (!found) return false;
     }
 
     for (const [col, values] of activeFilters) {
       if (values.size === 0) continue;
 
-      const cellText = stripHtml(row[col] || '');
+      const cellText = stripHtmlNormalize(row[col] || '');
 
       let matchedAny = false;
       for (const v of values) {
         if (cellText === v) { matchedAny = true; break; }
       }
-
       if (!matchedAny) return false;
     }
 
