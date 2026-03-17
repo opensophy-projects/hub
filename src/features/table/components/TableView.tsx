@@ -25,13 +25,13 @@ interface TableViewProps {
 
 function tok(isDark: boolean) {
   return isDark ? {
-    thBg:       '#111113',
+    thBg:       '#111111',
     thColor:    'rgba(255,255,255,0.35)',
     thBorder:   'rgba(255,255,255,0.07)',
     thActColor: 'rgba(255,255,255,0.82)',
     // Exact app colors
     rowEven:    '#0a0a0a',
-    rowOdd:     '#111113',
+    rowOdd:     '#111111',
     rowHover:   '#1a1a1a',
     cellBorder: 'rgba(255,255,255,0.05)',
     cellColor:  'rgba(255,255,255,0.82)',
