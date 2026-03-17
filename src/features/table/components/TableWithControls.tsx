@@ -12,6 +12,12 @@ interface TableWithControlsProps {
   onFullscreen: (html: string) => void;
 }
 
+function pluralRow(n: number): string {
+  if (n % 10 === 1 && n % 100 !== 11) return 'строка';
+  if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) return 'строки';
+  return 'строк';
+}
+
 const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark, onFullscreen }) => {
   const { headers, rows, headerAlignments } = parseTableHtml(tableHtml);
   const {
@@ -28,25 +34,21 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
 
   if (!headers.length) return null;
 
-  // Exact app palette colors
+  // Exact app palette — pure warm neutrals
   const outerBg     = isDark ? '#0a0a0a' : '#E8E7E3';
-  const outerBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,15,20,0.1)';
+  const outerBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)';
   const outerShadow = isDark
-    ? '0 2px 8px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)'
-    : '0 1px 4px rgba(15,15,20,0.08), 0 0 0 1px rgba(15,15,20,0.06)';
-  const footerBorder = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,15,20,0.07)';
-  const footerClr    = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(15,15,20,0.3)';
+    ? '0 2px 12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)'
+    : '0 1px 6px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.07)';
+  const footerBorder = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)';
+  const footerClr    = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.32)';
 
   return (
     <div className="not-prose" style={{ margin: '1.25rem 0' }}>
       <div style={{
-        borderRadius: 12,
-        border: `1px solid ${outerBorder}`,
-        background: outerBg,
-        boxShadow: outerShadow,
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
+        borderRadius: 12, border: `1px solid ${outerBorder}`,
+        background: outerBg, boxShadow: outerShadow,
+        overflow: 'hidden', display: 'flex', flexDirection: 'column',
       }}>
         <TableControlsBar
           isDark={isDark}
@@ -90,7 +92,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
           headerAlignments={headerAlignments}
         />
 
-        {/* Footer: row count */}
+        {/* Footer */}
         <div style={{
           padding: '6px 12px',
           borderTop: `1px solid ${footerBorder}`,
@@ -101,8 +103,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
           <span>
             {filteredAndSortedRows.length === rows.length
               ? `${rows.length} ${pluralRow(rows.length)}`
-              : `${filteredAndSortedRows.length} из ${rows.length} ${pluralRow(rows.length)}`
-            }
+              : `${filteredAndSortedRows.length} из ${rows.length} ${pluralRow(rows.length)}`}
           </span>
           {activeFilterCount > 0 && (
             <span>{activeFilterCount} {activeFilterCount === 1 ? 'фильтр' : 'фильтра'} активно</span>
@@ -112,11 +113,5 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
     </div>
   );
 };
-
-function pluralRow(n: number): string {
-  if (n % 10 === 1 && n % 100 !== 11) return 'строка';
-  if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) return 'строки';
-  return 'строк';
-}
 
 export default TableWithControls;
