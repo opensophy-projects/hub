@@ -66,72 +66,110 @@ export const TableView: React.FC<TableViewProps> = ({
 
   return (
     <>
-      {/* Wrapper with both left and right fade masks */}
-      <div style={{ position: 'relative' }}>
-        <div ref={scrollRef} className="tb-scroll"
+      <style>{getTableStyles(isDark)}</style>
+      <style>{`
+        .tb-scroll {
+          overflow-x: auto;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: thin;
+          scrollbar-color: ${t.thumb} ${t.track};
+          /* Full width — no position:relative wrapper that could constrain */
+          width: 100%;
+          display: block;
+        }
+        .tb-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .tb-scroll::-webkit-scrollbar-track { background: ${t.track}; }
+        .tb-scroll::-webkit-scrollbar-thumb { background: ${t.thumb}; border-radius: 99px; }
+        .tb-scroll::-webkit-scrollbar-thumb:hover { background: ${t.thumbHov}; }
+        .tb-scroll::-webkit-scrollbar-corner { background: transparent; }
+
+        /* Right fade: pseudo-element so no wrapper div needed */
+        .tb-scroll-wrap { position: relative; }
+        .tb-scroll-wrap::after {
+          content: '';
+          position: absolute;
+          top: 0; right: 0; bottom: 0;
+          width: 20px;
+          background: linear-gradient(to right, transparent, ${t.fadeTo});
+          pointer-events: none;
+          opacity: 0.8;
+          z-index: 1;
+        }
+        .tb-scroll-wrap::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; bottom: 0;
+          width: 20px;
+          background: linear-gradient(to left, transparent, ${t.fadeTo});
+          pointer-events: none;
+          opacity: 0.8;
+          z-index: 1;
+        }
+      `}</style>
+
+      <div className="tb-scroll-wrap">
+        <div
+          ref={scrollRef}
+          className="tb-scroll"
           style={{
-            overflowX: 'auto',
-            WebkitOverflowScrolling: 'touch' as const,
-            overflowY: 'auto',
             maxHeight: fullscreen ? undefined : 480,
             height:    fullscreen ? '100%'    : undefined,
-            width: '100%',
-            display: 'block',
             ...dragStyle,
           }}
           {...dragHandlers}
         >
-          <table style={{ borderCollapse: 'separate', borderSpacing: 0, width: '100%', minWidth: 'max-content' }}>
-            <TableHead t={t} isDark={isDark} headers={headers} visibleColumns={visibleColumns}
-              sortColumn={sortColumn} sortDirection={sortDirection}
-              onSort={onSort} headerAlignments={headerAlignments}
+          {/*
+            table width:100% fills container.
+            No minWidth:max-content — that shrinks it.
+            Cells with long content wrap naturally.
+          */}
+          <table style={{
+            borderCollapse: 'separate',
+            borderSpacing: 0,
+            width: '100%',
+            tableLayout: 'auto',
+          }}>
+            <TableHead
+              t={t} isDark={isDark}
+              headers={headers}
+              visibleColumns={visibleColumns}
+              sortColumn={sortColumn}
+              sortDirection={sortDirection}
+              onSort={onSort}
+              headerAlignments={headerAlignments}
             />
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={headers.filter((_, i) => visibleColumns.has(i)).length}
-                    style={{ textAlign: 'center', padding: '2.5rem 1rem', color: t.thColor, fontSize: 13, fontStyle: 'italic', background: t.rowEven }}>
+                  <td
+                    colSpan={headers.filter((_, i) => visibleColumns.has(i)).length}
+                    style={{ textAlign: 'center', padding: '2.5rem 1rem', color: t.thColor, fontSize: 13, fontStyle: 'italic', background: t.rowEven }}
+                  >
                     Нет результатов
                   </td>
                 </tr>
               ) : rows.map((row, idx) => (
-                <TableRow key={`r${idx}-${row.cells[0]?.slice(0, 20)}`}
-                  t={t} row={row} rowIndex={idx} visibleColumns={visibleColumns} searchQuery={searchQuery} />
+                <TableRow
+                  key={`r${idx}-${row.cells[0]?.slice(0, 20)}`}
+                  t={t} row={row} rowIndex={idx}
+                  visibleColumns={visibleColumns}
+                  searchQuery={searchQuery}
+                />
               ))}
             </tbody>
           </table>
         </div>
-
-        {/* Left fade — scroll hint */}
-        <div className="tb-fade-left" style={{
-          position: 'absolute', top: 0, left: 0, bottom: 0, width: 20,
-          background: `linear-gradient(to left, transparent, ${t.fadeTo})`,
-          pointerEvents: 'none', opacity: 0.8,
-          // Only show when scrolled — JS adds class, but CSS default visible is fine as hint
-        }} />
-        {/* Right fade — scroll hint */}
-        <div style={{
-          position: 'absolute', top: 0, right: 0, bottom: 0, width: 20,
-          background: `linear-gradient(to right, transparent, ${t.fadeTo})`,
-          pointerEvents: 'none', opacity: 0.8,
-        }} />
       </div>
-
-      <style>{getTableStyles(isDark)}</style>
-      <style>{`
-        .tb-scroll{scrollbar-width:thin;scrollbar-color:${t.thumb} ${t.track};-webkit-overflow-scrolling:touch}
-        .tb-scroll::-webkit-scrollbar{width:6px;height:6px}
-        .tb-scroll::-webkit-scrollbar-track{background:${t.track}}
-        .tb-scroll::-webkit-scrollbar-thumb{background:${t.thumb};border-radius:99px}
-        .tb-scroll::-webkit-scrollbar-thumb:hover{background:${t.thumbHov}}
-        .tb-scroll::-webkit-scrollbar-corner{background:transparent}
-      `}</style>
     </>
   );
 };
 
+// ─── TableHead ────────────────────────────────────────────────────────────────
+
 const TableHead: React.FC<{
-  t: Tok; isDark: boolean; headers: string[]; visibleColumns: Set<number>;
+  t: Tok; isDark: boolean;
+  headers: string[]; visibleColumns: Set<number>;
   sortColumn: number | null; sortDirection: SortDirection;
   onSort: (i: number) => void; headerAlignments: ColumnAlignment[];
 }> = ({ t, isDark, headers, visibleColumns, sortColumn, sortDirection, onSort, headerAlignments }) => (
@@ -151,8 +189,13 @@ const TableHead: React.FC<{
           borderTop: 'none', borderLeft: 'none', borderRight: 'none',
           boxShadow: 'none',
           transition: 'color 0.14s',
+          whiteSpace: 'nowrap',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, justifyContent: headerAlignments[i] === 'center' ? 'center' : headerAlignments[i] === 'right' ? 'flex-end' : 'flex-start' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 5,
+            justifyContent: headerAlignments[i] === 'center' ? 'center'
+              : headerAlignments[i] === 'right' ? 'flex-end' : 'flex-start',
+          }}>
             <span>{header}</span>
             <SortIcon direction={sortColumn === i ? sortDirection : 'none'} isDark={isDark} />
           </div>
@@ -162,8 +205,11 @@ const TableHead: React.FC<{
   </thead>
 );
 
+// ─── Search highlight ─────────────────────────────────────────────────────────
+
 const splitByQ = (text: string, q: string) => {
-  const low = text.toLowerCase(); const parts: { text: string; match: boolean }[] = [];
+  const low = text.toLowerCase();
+  const parts: { text: string; match: boolean }[] = [];
   let cur = 0, idx = low.indexOf(q);
   while (idx !== -1) {
     if (idx > cur) parts.push({ text: text.slice(cur, idx), match: false });
@@ -180,8 +226,14 @@ const highlightNode = (node: Node, q: string) => {
   const frag = document.createDocumentFragment();
   for (const { text: t, match } of splitByQ(text, q)) {
     if (!t) continue;
-    if (match) { const m = document.createElement('mark'); m.textContent = t; m.style.cssText = 'background:#f59e0b;color:#000;padding:1px 3px;border-radius:3px;font-weight:600;'; frag.appendChild(m); }
-    else frag.appendChild(document.createTextNode(t));
+    if (match) {
+      const m = document.createElement('mark');
+      m.textContent = t;
+      m.style.cssText = 'background:#f59e0b;color:#000;padding:1px 3px;border-radius:3px;font-weight:600;';
+      frag.appendChild(m);
+    } else {
+      frag.appendChild(document.createTextNode(t));
+    }
   }
   node.parentNode?.replaceChild(frag, node);
 };
@@ -189,7 +241,8 @@ const highlightNode = (node: Node, q: string) => {
 const highlightIn = (el: HTMLElement, q: string) => {
   const walk = (n: Node) => {
     if (n.nodeType === Node.TEXT_NODE) { highlightNode(n, q); return; }
-    if (n.nodeType === Node.ELEMENT_NODE && n.nodeName !== 'MARK') Array.from(n.childNodes).forEach(walk);
+    if (n.nodeType === Node.ELEMENT_NODE && n.nodeName !== 'MARK')
+      Array.from(n.childNodes).forEach(walk);
   };
   Array.from(el.childNodes).forEach(walk);
 };
@@ -210,6 +263,8 @@ const CellContent: React.FC<{ html: string; searchQuery: string }> = ({ html, se
   return <div ref={ref} />;
 };
 
+// ─── TableRow ─────────────────────────────────────────────────────────────────
+
 const TableRow: React.FC<{
   t: Tok; row: ParsedRow; rowIndex: number;
   visibleColumns: Set<number>; searchQuery: string;
@@ -219,8 +274,10 @@ const TableRow: React.FC<{
   const bg   = hov ? t.rowHover : even ? t.rowEven : t.rowOdd;
 
   return (
-    <tr style={{ background: bg, transition: 'background 0.1s ease' }}
-      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+    <tr
+      style={{ background: bg, transition: 'background 0.1s ease' }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
     >
       {row.cells.map((cell, i) => visibleColumns.has(i) ? (
         <td key={i} style={{
@@ -228,8 +285,6 @@ const TableRow: React.FC<{
           textAlign: row.alignments[i] || 'left',
           borderBottom: `1px solid ${t.cellBorder}`,
           borderTop: 'none', borderLeft: 'none', borderRight: 'none',
-          // Remove whiteSpace:nowrap so cells stretch to fill table width
-          // Keep it only if content is genuinely unwrappable
           color: t.cellColor, fontSize: 13.5,
           background: bg, transition: 'background 0.1s ease',
         }}>
