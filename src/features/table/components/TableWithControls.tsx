@@ -28,15 +28,17 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
 
   if (!headers.length) return null;
 
-  // Design tokens
-  const outerBorder  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,15,20,0.09)';
-  const outerBg      = isDark ? '#0e0e10'                : '#ffffff';
-  const outerShadow  = isDark
-    ? '0 1px 3px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)'
+  // Exact app palette colors
+  const outerBg     = isDark ? '#0a0a0a' : '#E8E7E3';
+  const outerBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,15,20,0.1)';
+  const outerShadow = isDark
+    ? '0 2px 8px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)'
     : '0 1px 4px rgba(15,15,20,0.08), 0 0 0 1px rgba(15,15,20,0.06)';
+  const footerBorder = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,15,20,0.07)';
+  const footerClr    = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(15,15,20,0.3)';
 
   return (
-    <div className="not-prose" style={{ margin: '1.5rem 0' }}>
+    <div className="not-prose" style={{ margin: '1.25rem 0' }}>
       <div style={{
         borderRadius: 12,
         border: `1px solid ${outerBorder}`,
@@ -88,16 +90,13 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
           headerAlignments={headerAlignments}
         />
 
-        {/* Row count footer */}
+        {/* Footer: row count */}
         <div style={{
-          padding: '7px 12px',
-          borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(15,15,20,0.06)'}`,
-          fontSize: 11,
-          color: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(15,15,20,0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          userSelect: 'none',
+          padding: '6px 12px',
+          borderTop: `1px solid ${footerBorder}`,
+          fontSize: 11, color: footerClr,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          userSelect: 'none', background: outerBg,
         }}>
           <span>
             {filteredAndSortedRows.length === rows.length
@@ -106,9 +105,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
             }
           </span>
           {activeFilterCount > 0 && (
-            <span style={{ color: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(15,15,20,0.4)' }}>
-              {activeFilterCount} {activeFilterCount === 1 ? 'фильтр' : 'фильтра'} активно
-            </span>
+            <span>{activeFilterCount} {activeFilterCount === 1 ? 'фильтр' : 'фильтра'} активно</span>
           )}
         </div>
       </div>
