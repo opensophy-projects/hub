@@ -74,17 +74,13 @@ function parseTableForCopy(html: string): { headers: string[]; rows: string[][] 
   return { headers, rows };
 }
 
-// FIX S7781: replaceAll instead of replace with global regex
-// FIX S7780: String.raw to avoid escaped backslash
-// FIX S4624: no nested template literals — build rows array first, then join
 function toMarkdownTable(headers: string[], rows: string[][]): string {
   if (!headers.length) return '';
 
-  const escPipe = (s: string) => s.replaceAll('|', String.raw`\|`); // S7781 + S7780
+  const escPipe = (s: string) => s.replaceAll('|', String.raw`\|`);
   const sep     = headers.map(() => '---').join(' | ');
   const head    = `| ${headers.map(escPipe).join(' | ')} |`;
   const divider = `| ${sep} |`;
-  // FIX S4624: pre-compute each row string, then join — no nested template literals
   const bodyLines = rows.map((r) => `| ${r.map(escPipe).join(' | ')} |`);
 
   return [head, divider, ...bodyLines].join('\n');
@@ -95,7 +91,7 @@ function toExcelTsv(headers: string[], rows: string[][]): string {
   return [headers.join('\t'), ...rows.map((r) => r.join('\t'))].join('\n');
 }
 
-// ─── useCopyState — extracts copy logic out of CopyButton (FIX S3776) ────────
+// ─── useCopyState ─────────────────────────────────────────────────────────────
 
 type CopyFormat = 'md' | 'excel';
 
@@ -122,6 +118,7 @@ const COPY_OPTIONS: Array<{ format: CopyFormat; label: string; sub: string }> = 
 
 const CopyButton: React.FC<{ isDark: boolean; tableHtml: string }> = ({ isDark, tableHtml }) => {
   const [open, setOpen] = useState(false);
+  const [dropLeft, setDropLeft] = useState(false);
   const btnRef  = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const t = getThemeTokens(isDark);
@@ -139,10 +136,21 @@ const CopyButton: React.FC<{ isDark: boolean; tableHtml: string }> = ({ isDark, 
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
+  // Determine if dropdown should open to the left or right
+  const handleToggle = () => {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      const menuWidth = 180;
+      // If not enough space on the right, open to the left
+      const spaceOnRight = window.innerWidth - rect.right;
+      setDropLeft(spaceOnRight < menuWidth);
+    }
+    setOpen((v) => !v);
+  };
+
   const { copied, doCopy } = useCopyState(tableHtml);
   const isCopied = copied !== null;
 
-  // FIX S3358: extract nested ternary into a helper
   const copyBg = getCopyButtonBg(isCopied, isDark, t.bg);
 
   const handleOptionClick = async (format: CopyFormat) => {
@@ -155,7 +163,7 @@ const CopyButton: React.FC<{ isDark: boolean; tableHtml: string }> = ({ isDark, 
       <button
         ref={btnRef}
         title="Копировать таблицу"
-        onClick={() => setOpen((v) => !v)}
+        onClick={handleToggle}
         style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           gap: '2px', padding: '6px 10px', borderRadius: '8px',
@@ -183,8 +191,10 @@ const CopyButton: React.FC<{ isDark: boolean; tableHtml: string }> = ({ isDark, 
         <div
           ref={menuRef}
           style={{
-            position: 'absolute', top: 'calc(100% + 5px)', right: 0,
-            minWidth: '160px', background: t.menuBg,
+            position: 'absolute', top: 'calc(100% + 5px)',
+            // Dynamically position: right-align by default, left-align if near right edge
+            ...(dropLeft ? { left: 0 } : { right: 0 }),
+            minWidth: '180px', background: t.menuBg,
             border: `1px solid ${t.menuBorder}`,
             borderRadius: '10px',
             boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.7)' : '0 8px 24px rgba(0,0,0,0.14)',
@@ -221,7 +231,6 @@ const CopyButton: React.FC<{ isDark: boolean; tableHtml: string }> = ({ isDark, 
   );
 };
 
-// FIX S3358: extracted from nested ternary inside JSX style prop
 function getCopyButtonBg(isCopied: boolean, isDark: boolean, defaultBg: string): string {
   if (!isCopied) return defaultBg;
   return isDark ? 'rgba(34,197,94,0.15)' : 'rgba(34,197,94,0.12)';
@@ -282,41 +291,44 @@ export const TableControlsBar: React.FC<TableControlsBarProps> = ({
         placeholder="Поиск в таблице..."
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
-        className={`flex-1 min-w-[200px] px-3 py-2 rounded-lg text-sm transition-colors focus:outline-none ${
+        className={`flex-1 min-w-0 px-3 py-2 rounded-lg text-sm transition-colors focus:outline-none ${
           isDark
             ? 'bg-white/10 border border-white/20 text-white placeholder-white/50 focus:bg-white/15 focus:border-white/40'
             : 'bg-[#E8E7E3] border border-black/20 text-black placeholder-black/50 focus:border-black/40'
         }`}
       />
 
-      <CopyButton isDark={isDark} tableHtml={tableHtml} />
+      {/* Buttons row — wrapped tightly, copy button first so dropdown goes right */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <CopyButton isDark={isDark} tableHtml={tableHtml} />
 
-      <ToolbarButton
-        onClick={onToggleFilters}
-        title="Фильтрация и колонки"
-        label={filterLabel}
-        icon={<Filter size={14} />}
-        isDark={isDark}
-        active={showFilters || activeFilterCount > 0}
-      />
-
-      {activeFilterCount > 0 && (
         <ToolbarButton
-          onClick={onResetFilters}
-          title="Сбросить фильтры"
-          label="Сбросить"
-          icon={<X size={14} />}
+          onClick={onToggleFilters}
+          title="Фильтрация и колонки"
+          label={filterLabel}
+          icon={<Filter size={14} />}
+          isDark={isDark}
+          active={showFilters || activeFilterCount > 0}
+        />
+
+        {activeFilterCount > 0 && (
+          <ToolbarButton
+            onClick={onResetFilters}
+            title="Сбросить фильтры"
+            label="Сбросить"
+            icon={<X size={14} />}
+            isDark={isDark}
+          />
+        )}
+
+        <ToolbarButton
+          onClick={onFullscreen}
+          title="Открыть в полном размере"
+          label="Развернуть"
+          icon={<Maximize2 size={14} />}
           isDark={isDark}
         />
-      )}
-
-      <ToolbarButton
-        onClick={onFullscreen}
-        title="Открыть в полном размере"
-        label="Развернуть"
-        icon={<Maximize2 size={14} />}
-        isDark={isDark}
-      />
+      </div>
     </div>
   );
 };
