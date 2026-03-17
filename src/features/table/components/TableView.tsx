@@ -70,17 +70,18 @@ export const TableView: React.FC<TableViewProps> = ({
       <div style={{ position: 'relative' }}>
         <div ref={scrollRef} className="tb-scroll"
           style={{
-            overflowX: 'auto', WebkitOverflowScrolling: 'touch' as const,
+            overflowX: 'auto',
+            WebkitOverflowScrolling: 'touch' as const,
             overflowY: 'auto',
             maxHeight: fullscreen ? undefined : 480,
             height:    fullscreen ? '100%'    : undefined,
-            // Crucial for mobile: don't constrain width
             width: '100%',
+            display: 'block',
             ...dragStyle,
           }}
           {...dragHandlers}
         >
-          <table style={{ borderCollapse: 'separate', borderSpacing: 0, width: 'auto', minWidth: '100%' }}>
+          <table style={{ borderCollapse: 'separate', borderSpacing: 0, width: '100%', minWidth: 'max-content' }}>
             <TableHead t={t} isDark={isDark} headers={headers} visibleColumns={visibleColumns}
               sortColumn={sortColumn} sortDirection={sortDirection}
               onSort={onSort} headerAlignments={headerAlignments}
@@ -144,7 +145,7 @@ const TableHead: React.FC<{
           color: sortColumn === i ? t.thActColor : t.thColor,
           fontSize: '0.69rem', fontWeight: 700,
           letterSpacing: '0.06em', textTransform: 'uppercase',
-          whiteSpace: 'nowrap', cursor: 'pointer', userSelect: 'none',
+          cursor: 'pointer', userSelect: 'none',
           position: 'sticky', top: 0, zIndex: 20,
           borderBottom: `1px solid ${t.thBorder}`,
           borderTop: 'none', borderLeft: 'none', borderRight: 'none',
@@ -227,7 +228,9 @@ const TableRow: React.FC<{
           textAlign: row.alignments[i] || 'left',
           borderBottom: `1px solid ${t.cellBorder}`,
           borderTop: 'none', borderLeft: 'none', borderRight: 'none',
-          whiteSpace: 'nowrap', color: t.cellColor, fontSize: 13.5,
+          // Remove whiteSpace:nowrap so cells stretch to fill table width
+          // Keep it only if content is genuinely unwrappable
+          color: t.cellColor, fontSize: 13.5,
           background: bg, transition: 'background 0.1s ease',
         }}>
           <CellContent html={cell} searchQuery={searchQuery} />
