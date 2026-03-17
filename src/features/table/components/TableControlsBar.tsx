@@ -14,135 +14,105 @@ interface TableControlsBarProps {
   readonly tableHtml: string;
 }
 
-// ─── Design tokens matching app palette ──────────────────────────────────────
-
+// ─── Tokens: pure neutral, no blue tints ─────────────────────────────────────
 function tk(isDark: boolean) {
-  return {
-    // App exact colors
-    bg:        isDark ? '#0a0a0a' : '#E8E7E3',
-    // Toolbar strip bg — slightly lifted from surface
-    barBg:     isDark ? '#111113' : '#dddcd8',
-    border:    isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,15,20,0.09)',
-    // Buttons
-    btnBg:     isDark ? 'rgba(255,255,255,0.07)' : 'rgba(15,15,20,0.07)',
-    btnBdr:    isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(15,15,20,0.12)',
-    btnHov:    isDark ? 'rgba(255,255,255,0.13)' : 'rgba(15,15,20,0.12)',
-    btnClr:    isDark ? 'rgba(255,255,255,0.75)' : 'rgba(15,15,20,0.7)',
-    btnActBg:  isDark ? 'rgba(255,255,255,0.14)' : 'rgba(15,15,20,0.11)',
-    btnActBdr: isDark ? 'rgba(255,255,255,0.2)'  : 'rgba(15,15,20,0.2)',
-    btnActClr: isDark ? '#ffffff'                : '#0f0f14',
-    // Input
-    inpBg:     isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,15,20,0.05)',
-    inpBdr:    isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(15,15,20,0.1)',
-    inpClr:    isDark ? 'rgba(255,255,255,0.85)' : 'rgba(15,15,20,0.85)',
-    plhClr:    isDark ? 'rgba(255,255,255,0.28)' : 'rgba(15,15,20,0.3)',
-    // Menu
-    menuBg:    isDark ? '#181818' : '#f0efeb',
-    menuBdr:   isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(15,15,20,0.1)',
-    menuItmHov:isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,15,20,0.06)',
-    menuItmClr:isDark ? 'rgba(255,255,255,0.8)'  : 'rgba(15,15,20,0.8)',
-    menuSubClr:isDark ? 'rgba(255,255,255,0.35)' : 'rgba(15,15,20,0.4)',
+  return isDark ? {
+    // Dark: pure black/grey — no blue
+    barBg:      '#111113',
+    border:     'rgba(255,255,255,0.08)',
+    btnBg:      'rgba(255,255,255,0.08)',
+    btnBdr:     'rgba(255,255,255,0.12)',
+    btnHov:     'rgba(255,255,255,0.14)',
+    btnClr:     'rgba(255,255,255,0.72)',
+    btnActBg:   'rgba(255,255,255,0.15)',
+    btnActBdr:  'rgba(255,255,255,0.22)',
+    btnActClr:  '#ffffff',
+    inpBg:      '#1a1a1c',
+    inpBdr:     'rgba(255,255,255,0.12)',
+    inpFocBdr:  'rgba(255,255,255,0.28)',
+    inpClr:     'rgba(255,255,255,0.88)',
+    plhClr:     'rgba(255,255,255,0.28)',
+    menuBg:     '#1a1a1c',
+    menuBdr:    'rgba(255,255,255,0.1)',
+    menuHov:    'rgba(255,255,255,0.07)',
+    menuClr:    'rgba(255,255,255,0.82)',
+    menuSub:    'rgba(255,255,255,0.35)',
+    dangerClr:  '#f87171',
+  } : {
+    // Light: warm grey, not blue-grey
+    barBg:      '#d8d7d3',
+    border:     'rgba(0,0,0,0.09)',
+    btnBg:      'rgba(0,0,0,0.07)',
+    btnBdr:     'rgba(0,0,0,0.12)',
+    btnHov:     'rgba(0,0,0,0.12)',
+    btnClr:     'rgba(0,0,0,0.68)',
+    btnActBg:   'rgba(0,0,0,0.12)',
+    btnActBdr:  'rgba(0,0,0,0.22)',
+    btnActClr:  '#000000',
+    inpBg:      '#c8c7c3',
+    inpBdr:     'rgba(0,0,0,0.12)',
+    inpFocBdr:  'rgba(0,0,0,0.28)',
+    inpClr:     'rgba(0,0,0,0.88)',
+    plhClr:     'rgba(0,0,0,0.32)',
+    menuBg:     '#eeecea',
+    menuBdr:    'rgba(0,0,0,0.1)',
+    menuHov:    'rgba(0,0,0,0.06)',
+    menuClr:    'rgba(0,0,0,0.82)',
+    menuSub:    'rgba(0,0,0,0.38)',
+    dangerClr:  '#dc2626',
   };
 }
 
-// ─── Pill button: icon on top, label below ────────────────────────────────────
-
-interface PillBtnProps {
-  onClick: () => void;
-  title: string;
-  label: string;
-  icon: React.ReactNode;
-  isDark: boolean;
-  active?: boolean;
-  danger?: boolean;
-}
-
-const PillBtn: React.FC<PillBtnProps> = ({ onClick, title, label, icon, isDark, active, danger }) => {
-  const t = tk(isDark);
-  const bg    = active ? t.btnActBg  : t.btnBg;
-  const bdr   = active ? t.btnActBdr : t.btnBdr;
-  const color = danger ? '#f87171' : active ? t.btnActClr : t.btnClr;
-
-  return (
-    <button
-      onClick={onClick}
-      title={title}
-      style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center', gap: 3,
-        padding: '6px 11px', minWidth: 52, height: 46,
-        borderRadius: 9, border: `1px solid ${bdr}`,
-        background: bg, color,
-        cursor: 'pointer', flexShrink: 0,
-        transition: 'all 0.14s', whiteSpace: 'nowrap',
-      }}
-      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = bg; }}
-    >
-      {icon}
-      <span style={{ fontSize: 10, fontWeight: active ? 600 : 400, lineHeight: 1 }}>{label}</span>
-    </button>
-  );
-};
-
-// ─── Copy helpers ─────────────────────────────────────────────────────────────
+type CopyFormat = 'md' | 'excel';
 
 function parseTableForCopy(html: string): { headers: string[]; rows: string[][] } {
   const doc   = new DOMParser().parseFromString(html, 'text/html');
   const table = doc.querySelector('table');
   if (!table) return { headers: [], rows: [] };
-  const headers = Array.from(table.querySelectorAll('thead th')).map(th => (th.textContent ?? '').trim());
-  const rows    = Array.from(table.querySelectorAll('tbody tr')).map(tr =>
-    Array.from(tr.querySelectorAll('td')).map(td => (td.textContent ?? '').trim())
-  );
-  return { headers, rows };
+  return {
+    headers: Array.from(table.querySelectorAll('thead th')).map(th => (th.textContent ?? '').trim()),
+    rows:    Array.from(table.querySelectorAll('tbody tr')).map(tr =>
+      Array.from(tr.querySelectorAll('td')).map(td => (td.textContent ?? '').trim())
+    ),
+  };
 }
 
-function toMarkdownTable(headers: string[], rows: string[][]): string {
-  if (!headers.length) return '';
-  const esc  = (s: string) => s.replaceAll('|', String.raw`\|`);
-  return [`| ${headers.map(esc).join(' | ')} |`, `| ${headers.map(() => '---').join(' | ')} |`,
-    ...rows.map(r => `| ${r.map(esc).join(' | ')} |`)].join('\n');
+function toMd(h: string[], rows: string[][]): string {
+  if (!h.length) return '';
+  const e = (s: string) => s.replaceAll('|', String.raw`\|`);
+  return [`| ${h.map(e).join(' | ')} |`, `| ${h.map(() => '---').join(' | ')} |`,
+    ...rows.map(r => `| ${r.map(e).join(' | ')} |`)].join('\n');
+}
+function toTsv(h: string[], rows: string[][]): string {
+  if (!h.length) return '';
+  return [h.join('\t'), ...rows.map(r => r.join('\t'))].join('\n');
 }
 
-function toExcelTsv(headers: string[], rows: string[][]): string {
-  if (!headers.length) return '';
-  return [headers.join('\t'), ...rows.map(r => r.join('\t'))].join('\n');
-}
+// ─── Portal menu ─────────────────────────────────────────────────────────────
 
-type CopyFormat = 'md' | 'excel';
-
-// ─── Portal menu (shared for copy dropdown + mobile overflow) ─────────────────
-
-interface PortalMenuProps {
-  pos: { top: number; left: number };
-  isDark: boolean;
-  onClose: () => void;
-  children: React.ReactNode;
-}
-
-const PortalMenu: React.FC<PortalMenuProps> = ({ pos, isDark, onClose, children }) => {
+const PortalMenu: React.FC<{
+  pos: { top: number; left: number }; isDark: boolean;
+  onClose: () => void; children: React.ReactNode; minWidth?: number;
+}> = ({ pos, isDark, onClose, children, minWidth = 190 }) => {
   const t = tk(isDark);
   const ref = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     const h = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) onClose(); };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, [onClose]);
-
   return createPortal(
     <>
-      <style>{`@keyframes tbMenuIn{from{opacity:0;transform:translateY(-6px) scale(0.96)}to{opacity:1;transform:none}}`}</style>
+      <style>{`@keyframes tbIn{from{opacity:0;transform:translateY(-5px) scale(0.97)}to{opacity:1;transform:none}}`}</style>
       <div ref={ref} style={{
         position: 'fixed', top: pos.top, left: pos.left,
-        minWidth: 190, zIndex: 9999,
-        background: t.menuBg,
-        border: `1px solid ${t.menuBdr}`,
+        minWidth, zIndex: 9999,
+        background: t.menuBg, border: `1px solid ${t.menuBdr}`,
         borderRadius: 10,
-        boxShadow: isDark ? '0 12px 40px rgba(0,0,0,0.65)' : '0 8px 32px rgba(0,0,0,0.14)',
-        overflow: 'hidden',
-        animation: 'tbMenuIn 0.13s cubic-bezier(0.2,0,0,1)',
+        boxShadow: isDark
+          ? '0 8px 32px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05)'
+          : '0 8px 28px rgba(0,0,0,0.18)',
+        overflow: 'hidden', animation: 'tbIn 0.13s cubic-bezier(0.2,0,0,1)',
       }}>
         {children}
       </div>
@@ -151,75 +121,94 @@ const PortalMenu: React.FC<PortalMenuProps> = ({ pos, isDark, onClose, children 
   );
 };
 
+// ─── Pill button — icon top, label bottom ────────────────────────────────────
+
+const Pill: React.FC<{
+  onClick: () => void; title: string; label: string;
+  icon: React.ReactNode; isDark: boolean;
+  active?: boolean; danger?: boolean; customBg?: string; customClr?: string;
+}> = ({ onClick, title, label, icon, isDark, active, danger, customBg, customClr }) => {
+  const t = tk(isDark);
+  const bg    = customBg  ?? (active ? t.btnActBg  : t.btnBg);
+  const bdr   = active ? t.btnActBdr : t.btnBdr;
+  const color = customClr ?? (danger ? t.dangerClr : active ? t.btnActClr : t.btnClr);
+  return (
+    <button onClick={onClick} title={title} style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      justifyContent: 'center', gap: 3,
+      padding: '5px 12px', minWidth: 52, height: 44,
+      borderRadius: 8, border: `1px solid ${bdr}`,
+      background: bg, color, cursor: 'pointer', flexShrink: 0,
+      transition: 'background 0.13s',
+    }}
+      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = bg; }}
+    >
+      {icon}
+      <span style={{ fontSize: 10, fontWeight: active ? 600 : 400, lineHeight: 1, whiteSpace: 'nowrap' }}>{label}</span>
+    </button>
+  );
+};
+
 // ─── CopyButton ───────────────────────────────────────────────────────────────
 
 const CopyButton: React.FC<{ isDark: boolean; tableHtml: string }> = ({ isDark, tableHtml }) => {
-  const [open,   setOpen]   = useState(false);
+  const [open, setOpen]     = useState(false);
   const [copied, setCopied] = useState<CopyFormat | null>(null);
-  const [pos,    setPos]    = useState({ top: 0, left: 0 });
-  const btnRef = useRef<HTMLButtonElement>(null);
+  const [pos, setPos]       = useState({ top: 0, left: 0 });
+  const ref = useRef<HTMLButtonElement>(null);
   const t = tk(isDark);
-  const isCopied = copied !== null;
+  const isCopied = !!copied;
 
   const toggle = () => {
     if (open) { setOpen(false); return; }
-    if (!btnRef.current) return;
-    const r = btnRef.current.getBoundingClientRect();
-    setPos({ top: r.bottom + 6, left: Math.min(r.left, window.innerWidth - 200) });
+    const r = ref.current?.getBoundingClientRect();
+    if (!r) return;
+    setPos({ top: r.bottom + 6, left: Math.min(r.left, window.innerWidth - 202) });
     setOpen(true);
   };
 
   const doCopy = async (fmt: CopyFormat) => {
     const { headers, rows } = parseTableForCopy(tableHtml);
-    const text = fmt === 'md' ? toMarkdownTable(headers, rows) : toExcelTsv(headers, rows);
-    await navigator.clipboard.writeText(text);
+    await navigator.clipboard.writeText(fmt === 'md' ? toMd(headers, rows) : toTsv(headers, rows));
     setCopied(fmt); setOpen(false);
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const bg    = isCopied ? (isDark ? 'rgba(34,197,94,0.12)' : 'rgba(34,197,94,0.1)') : t.btnBg;
+  const bg    = isCopied ? (isDark ? 'rgba(34,197,94,0.14)' : 'rgba(34,197,94,0.12)') : t.btnBg;
   const color = isCopied ? '#22c55e' : t.btnClr;
 
   return (
     <>
-      <button
-        ref={btnRef}
-        onClick={toggle}
-        title="Копировать"
-        style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          justifyContent: 'center', gap: 3,
-          padding: '6px 11px', minWidth: 64, height: 46,
-          borderRadius: 9, border: `1px solid ${t.btnBdr}`,
-          background: bg, color,
-          cursor: 'pointer', flexShrink: 0, transition: 'all 0.14s',
-        }}
+      <button ref={ref} onClick={toggle} title="Копировать" style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center', gap: 3,
+        padding: '5px 12px', minWidth: 68, height: 44,
+        borderRadius: 8, border: `1px solid ${t.btnBdr}`,
+        background: bg, color, cursor: 'pointer', flexShrink: 0, transition: 'background 0.13s',
+      }}
         onMouseEnter={e => { if (!isCopied) (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
         onMouseLeave={e => { if (!isCopied) (e.currentTarget as HTMLButtonElement).style.background = bg; }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           {isCopied ? <Check size={13} strokeWidth={2.5} /> : <Copy size={13} />}
-          <ChevronDown size={10} style={{ opacity: 0.5, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
+          <ChevronDown size={10} style={{ opacity: 0.45, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.13s' }} />
         </div>
         <span style={{ fontSize: 10, lineHeight: 1 }}>{isCopied ? 'Скопировано' : 'Копировать'}</span>
       </button>
-
       {open && (
         <PortalMenu pos={pos} isDark={isDark} onClose={() => setOpen(false)}>
-          {[
-            { fmt: 'md'    as CopyFormat, label: 'Markdown',    sub: 'Для документов' },
-            { fmt: 'excel' as CopyFormat, label: 'Excel / TSV', sub: 'Tab-separated'  },
-          ].map(({ fmt, label, sub }) => (
-            <button key={fmt} onClick={() => doCopy(fmt)} style={{
+          {([['md','Markdown','Для документов'],['excel','Excel / TSV','Tab-separated']] as const).map(([fmt, label, sub]) => (
+            <button key={fmt} onClick={() => doCopy(fmt as CopyFormat)} style={{
               width: '100%', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 2,
               border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left',
-              color: t.menuItmClr, transition: 'background 0.1s',
+              color: t.menuClr, transition: 'background 0.1s',
             }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.menuItmHov; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.menuHov; }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
             >
               <span style={{ fontSize: 13, fontWeight: 500 }}>{label}</span>
-              <span style={{ fontSize: 11, color: t.menuSubClr }}>{sub}</span>
+              <span style={{ fontSize: 11, color: t.menuSub }}>{sub}</span>
             </button>
           ))}
         </PortalMenu>
@@ -228,140 +217,88 @@ const CopyButton: React.FC<{ isDark: boolean; tableHtml: string }> = ({ isDark, 
   );
 };
 
-// ─── Mobile overflow menu (⋯ button) ─────────────────────────────────────────
+// ─── Mobile ⋯ menu ────────────────────────────────────────────────────────────
 
-interface MobileMenuProps {
-  isDark: boolean;
-  tableHtml: string;
-  showFilters: boolean;
-  onToggleFilters: () => void;
-  activeFilterCount: number;
-  onResetFilters: () => void;
+const MobileMenu: React.FC<{
+  isDark: boolean; tableHtml: string;
+  showFilters: boolean; onToggleFilters: () => void;
+  activeFilterCount: number; onResetFilters: () => void;
   onFullscreen: () => void;
-}
-
-const MobileMenu: React.FC<MobileMenuProps> = ({
-  isDark, tableHtml, showFilters, onToggleFilters,
-  activeFilterCount, onResetFilters, onFullscreen,
-}) => {
-  const [open,   setOpen]   = useState(false);
+}> = ({ isDark, tableHtml, showFilters, onToggleFilters, activeFilterCount, onResetFilters, onFullscreen }) => {
+  const [open, setOpen]     = useState(false);
   const [copied, setCopied] = useState<CopyFormat | null>(null);
-  const [pos,    setPos]    = useState({ top: 0, left: 0 });
-  const btnRef = useRef<HTMLButtonElement>(null);
+  const [pos, setPos]       = useState({ top: 0, left: 0 });
+  const ref = useRef<HTMLButtonElement>(null);
   const t = tk(isDark);
-  const isCopied = copied !== null;
 
   const toggle = () => {
     if (open) { setOpen(false); return; }
-    if (!btnRef.current) return;
-    const r = btnRef.current.getBoundingClientRect();
-    // Align menu to right edge of button, clamped to viewport
-    const menuW = 210;
-    const left  = Math.min(r.right - menuW, window.innerWidth - menuW - 8);
-    setPos({ top: r.bottom + 6, left: Math.max(8, left) });
+    const r = ref.current?.getBoundingClientRect();
+    if (!r) return;
+    const mw = 210;
+    setPos({ top: r.bottom + 6, left: Math.max(8, Math.min(r.right - mw, window.innerWidth - mw - 8)) });
     setOpen(true);
   };
 
   const doCopy = async (fmt: CopyFormat) => {
     const { headers, rows } = parseTableForCopy(tableHtml);
-    const text = fmt === 'md' ? toMarkdownTable(headers, rows) : toExcelTsv(headers, rows);
-    await navigator.clipboard.writeText(text);
-    setCopied(fmt); setOpen(false);
-    setTimeout(() => setCopied(null), 2000);
+    await navigator.clipboard.writeText(fmt === 'md' ? toMd(headers, rows) : toTsv(headers, rows));
+    setCopied(fmt); setOpen(false); setTimeout(() => setCopied(null), 2000);
   };
 
-  const sepStyle: React.CSSProperties = {
-    height: 1, margin: '4px 0',
-    background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(15,15,20,0.07)',
-  };
+  const row = (onClick: () => void, icon: React.ReactNode, label: string, sub?: string, danger?: boolean): React.ReactElement => (
+    <button onClick={onClick} style={{
+      width: '100%', padding: sub ? '10px 14px' : '11px 14px',
+      display: 'flex', flexDirection: sub ? 'column' : 'row',
+      alignItems: sub ? 'flex-start' : 'center',
+      gap: sub ? 2 : 10,
+      border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left',
+      color: danger ? t.dangerClr : t.menuClr,
+      fontSize: 13, fontWeight: 400, transition: 'background 0.1s',
+    }}
+      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.menuHov; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+    >
+      {!sub && <span style={{ opacity: 0.6, flexShrink: 0 }}>{icon}</span>}
+      <span style={{ flex: 1, fontWeight: 500 }}>{label}</span>
+      {sub && <span style={{ fontSize: 11, color: t.menuSub }}>{sub}</span>}
+    </button>
+  );
 
-  const itemStyle: React.CSSProperties = {
-    width: '100%', padding: '11px 14px',
-    display: 'flex', alignItems: 'center', gap: 10,
-    border: 'none', background: 'transparent', cursor: 'pointer',
-    textAlign: 'left', color: t.menuItmClr,
-    fontSize: 13, fontWeight: 400, transition: 'background 0.1s',
-  };
+  const sep = <div style={{ height: 1, margin: '3px 0', background: t.menuBdr }} />;
+  const sectionLabel = (label: string) => (
+    <div style={{ padding: '7px 14px 3px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: t.menuSub }}>
+      {label}
+    </div>
+  );
 
   return (
     <>
-      <button
-        ref={btnRef}
-        onClick={toggle}
-        title="Ещё"
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 36, height: 36, borderRadius: 8,
-          border: `1px solid ${open ? t.btnActBdr : t.btnBdr}`,
-          background: open ? t.btnActBg : t.btnBg,
-          color: open ? t.btnActClr : t.btnClr,
-          cursor: 'pointer', flexShrink: 0, transition: 'all 0.14s',
-        }}
+      <button ref={ref} onClick={toggle} title="Ещё" style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width: 36, height: 36, borderRadius: 8,
+        border: `1px solid ${open ? t.btnActBdr : t.btnBdr}`,
+        background: open ? t.btnActBg : t.btnBg,
+        color: open ? t.btnActClr : t.btnClr,
+        cursor: 'pointer', flexShrink: 0, transition: 'all 0.13s',
+      }}
         onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
         onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = open ? t.btnActBg : t.btnBg; }}
       >
         <MoreHorizontal size={16} />
       </button>
-
       {open && (
-        <PortalMenu pos={pos} isDark={isDark} onClose={() => setOpen(false)}>
-          {/* Copy options */}
-          <div style={{ padding: '6px 14px 4px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: t.menuSubClr }}>
-            Копировать
-          </div>
-          {[
-            { fmt: 'md'    as CopyFormat, label: isCopied ? 'Скопировано ✓' : 'Markdown',    sub: 'Для документов' },
-            { fmt: 'excel' as CopyFormat, label: 'Excel / TSV', sub: 'Tab-separated' },
-          ].map(({ fmt, label, sub }) => (
-            <button key={fmt} onClick={() => doCopy(fmt)} style={itemStyle}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.menuItmHov; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
-            >
-              <Copy size={14} style={{ opacity: 0.6, flexShrink: 0 }} />
-              <span style={{ flex: 1 }}>{label}</span>
-              <span style={{ fontSize: 11, color: t.menuSubClr, flexShrink: 0 }}>{sub}</span>
-            </button>
-          ))}
-
-          <div style={sepStyle} />
-
-          {/* Filter */}
-          <button
-            onClick={() => { onToggleFilters(); setOpen(false); }}
-            style={{ ...itemStyle, color: showFilters ? t.btnActClr : t.menuItmClr, fontWeight: showFilters ? 600 : 400 }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.menuItmHov; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
-          >
-            <Filter size={14} style={{ opacity: 0.6, flexShrink: 0 }} />
-            <span style={{ flex: 1 }}>
-              {activeFilterCount > 0 ? `Фильтры · ${activeFilterCount}` : 'Фильтры'}
-            </span>
-          </button>
-
-          {activeFilterCount > 0 && (
-            <button
-              onClick={() => { onResetFilters(); setOpen(false); }}
-              style={{ ...itemStyle, color: '#f87171' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.menuItmHov; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
-            >
-              <X size={14} style={{ flexShrink: 0 }} />
-              Сбросить фильтры
-            </button>
-          )}
-
-          <div style={sepStyle} />
-
-          {/* Fullscreen */}
-          <button
-            onClick={() => { onFullscreen(); setOpen(false); }}
-            style={itemStyle}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.menuItmHov; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
-          >
-            <Maximize2 size={14} style={{ opacity: 0.6, flexShrink: 0 }} />
-            На весь экран
-          </button>
+        <PortalMenu pos={pos} isDark={isDark} onClose={() => setOpen(false)} minWidth={210}>
+          {sectionLabel('Копировать')}
+          {row(() => doCopy('md'),    <Copy size={14} />, copied === 'md' ? 'Скопировано ✓' : 'Markdown', 'Для документов')}
+          {row(() => doCopy('excel'), <Copy size={14} />, 'Excel / TSV',  'Tab-separated')}
+          {sep}
+          {row(() => { onToggleFilters(); setOpen(false); }, <Filter size={14} />,
+            activeFilterCount > 0 ? `Фильтры · ${activeFilterCount}` : 'Фильтры',
+            undefined, false)}
+          {activeFilterCount > 0 && row(() => { onResetFilters(); setOpen(false); }, <X size={14} />, 'Сбросить фильтры', undefined, true)}
+          {sep}
+          {row(() => { onFullscreen(); setOpen(false); }, <Maximize2 size={14} />, 'На весь экран')}
           <div style={{ height: 4 }} />
         </PortalMenu>
       )}
@@ -369,7 +306,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
   );
 };
 
-// ─── TableControlsBar ─────────────────────────────────────────────────────────
+// ─── TableControlsBar ────────────────────────────────────────────────────────
 
 export const TableControlsBar: React.FC<TableControlsBarProps> = ({
   isDark, searchQuery, onSearchChange,
@@ -381,19 +318,18 @@ export const TableControlsBar: React.FC<TableControlsBarProps> = ({
 
   return (
     <>
-      {/* Inject responsive style once */}
       <style>{`
-        .tb-desktop-btns { display: flex; }
-        .tb-mobile-btn   { display: none; }
-        @media (max-width: 600px) {
-          .tb-desktop-btns { display: none !important; }
-          .tb-mobile-btn   { display: flex !important; }
+        .tb-desk { display: flex !important; }
+        .tb-mob  { display: none !important; }
+        @media (max-width: 580px) {
+          .tb-desk { display: none !important; }
+          .tb-mob  { display: flex !important; }
         }
       `}</style>
 
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8,
-        padding: '10px 12px',
+        padding: '8px 10px',
         borderBottom: `1px solid ${t.border}`,
         background: t.barBg,
         flexWrap: 'nowrap', minWidth: 0,
@@ -401,77 +337,57 @@ export const TableControlsBar: React.FC<TableControlsBarProps> = ({
         {/* Search */}
         <div style={{ position: 'relative', flex: '1 1 0', minWidth: 0 }}>
           <Search size={13} style={{
-            position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
+            position: 'absolute', left: 10, top: '50%',
+            transform: 'translateY(-50%)',
             color: t.plhClr, pointerEvents: 'none',
           }} />
           <input
-            type="text"
-            placeholder="Поиск..."
-            value={searchQuery}
+            type="text" placeholder="Поиск..." value={searchQuery}
             onChange={e => onSearchChange(e.target.value)}
             style={{
-              width: '100%', padding: '0 32px 0 30px', height: 36,
+              width: '100%', padding: '0 30px 0 30px', height: 36,
               borderRadius: 8, border: `1px solid ${t.inpBdr}`,
               background: t.inpBg, color: t.inpClr,
               fontSize: 13, outline: 'none', boxSizing: 'border-box',
               transition: 'border-color 0.15s',
             }}
-            onFocus={e => { (e.target as HTMLInputElement).style.borderColor = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(15,15,20,0.22)'; }}
+            onFocus={e => { (e.target as HTMLInputElement).style.borderColor = t.inpFocBdr; }}
             onBlur={e  => { (e.target as HTMLInputElement).style.borderColor = t.inpBdr; }}
           />
           {searchQuery && (
             <button onClick={() => onSearchChange('')} style={{
               position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
               background: 'none', border: 'none', cursor: 'pointer', padding: 2,
-              color: t.plhClr, display: 'flex', alignItems: 'center',
+              color: t.plhClr, display: 'flex',
             }}>
               <X size={12} />
             </button>
           )}
         </div>
 
-        {/* Desktop buttons — icon top, label bottom */}
-        <div className="tb-desktop-btns" style={{ alignItems: 'center', gap: 6, flexShrink: 0 }}>
+        {/* Desktop: icon-top pill buttons */}
+        <div className="tb-desk" style={{ alignItems: 'center', gap: 6, flexShrink: 0 }}>
           <CopyButton isDark={isDark} tableHtml={tableHtml} />
-
-          <PillBtn
-            onClick={onToggleFilters}
-            title="Фильтры и колонки"
-            label={filterLabel}
-            icon={<Filter size={14} />}
-            isDark={isDark}
+          <Pill onClick={onToggleFilters} title="Фильтры" label={filterLabel}
+            icon={<Filter size={14} />} isDark={isDark}
             active={showFilters || activeFilterCount > 0}
           />
-
           {activeFilterCount > 0 && (
-            <PillBtn
-              onClick={onResetFilters}
-              title="Сбросить фильтры"
-              label="Сбросить"
-              icon={<X size={14} />}
-              isDark={isDark}
-              danger
+            <Pill onClick={onResetFilters} title="Сбросить" label="Сбросить"
+              icon={<X size={14} />} isDark={isDark} danger
             />
           )}
-
-          <PillBtn
-            onClick={onFullscreen}
-            title="Развернуть таблицу"
-            label="Развернуть"
-            icon={<Maximize2 size={14} />}
-            isDark={isDark}
+          <Pill onClick={onFullscreen} title="На весь экран" label="Развернуть"
+            icon={<Maximize2 size={14} />} isDark={isDark}
           />
         </div>
 
-        {/* Mobile — single ⋯ button */}
-        <div className="tb-mobile-btn" style={{ flexShrink: 0 }}>
+        {/* Mobile: ⋯ */}
+        <div className="tb-mob" style={{ flexShrink: 0 }}>
           <MobileMenu
-            isDark={isDark}
-            tableHtml={tableHtml}
-            showFilters={showFilters}
-            onToggleFilters={onToggleFilters}
-            activeFilterCount={activeFilterCount}
-            onResetFilters={onResetFilters}
+            isDark={isDark} tableHtml={tableHtml}
+            showFilters={showFilters} onToggleFilters={onToggleFilters}
+            activeFilterCount={activeFilterCount} onResetFilters={onResetFilters}
             onFullscreen={onFullscreen}
           />
         </div>
