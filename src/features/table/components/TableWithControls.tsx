@@ -34,7 +34,6 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
 
   if (!headers.length) return null;
 
-  // Exact app palette — pure warm neutrals
   const outerBg     = isDark ? '#0a0a0a' : '#E8E7E3';
   const outerBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)';
   const outerShadow = isDark
@@ -46,9 +45,17 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
   return (
     <div className="not-prose" style={{ margin: '1.25rem 0' }}>
       <div style={{
-        borderRadius: 12, border: `1px solid ${outerBorder}`,
-        background: outerBg, boxShadow: outerShadow,
-        overflow: 'hidden', display: 'flex', flexDirection: 'column',
+        borderRadius: 12,
+        border: `1px solid ${outerBorder}`,
+        background: outerBg,
+        boxShadow: outerShadow,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        // Critical for mobile: allow table to be wider than container
+        minWidth: 0,
+        // Don't set max-width — let parent constrain
+        width: '100%',
       }}>
         <TableControlsBar
           isDark={isDark}
@@ -92,7 +99,6 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
           headerAlignments={headerAlignments}
         />
 
-        {/* Footer */}
         <div style={{
           padding: '6px 12px',
           borderTop: `1px solid ${footerBorder}`,
