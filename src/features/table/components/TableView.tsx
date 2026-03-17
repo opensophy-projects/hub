@@ -70,7 +70,7 @@ export const TableView: React.FC<TableViewProps> = ({
       <div style={{ position: 'relative' }}>
         <div ref={scrollRef} className="tb-scroll"
           style={{
-            overflowX: 'auto',
+            overflowX: 'auto', WebkitOverflowScrolling: 'touch' as const,
             overflowY: 'auto',
             maxHeight: fullscreen ? undefined : 480,
             height:    fullscreen ? '100%'    : undefined,
