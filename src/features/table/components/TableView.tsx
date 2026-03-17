@@ -23,38 +23,36 @@ interface TableViewProps {
   fullscreen?: boolean;
 }
 
-// Pure neutral tokens — zero blue tint
 function tok(isDark: boolean) {
   return isDark ? {
     thBg:       '#111113',
     thColor:    'rgba(255,255,255,0.35)',
     thBorder:   'rgba(255,255,255,0.07)',
     thActColor: 'rgba(255,255,255,0.82)',
+    // Exact app colors
     rowEven:    '#0a0a0a',
-    rowOdd:     '#0f0f11',
-    rowHover:   '#181819',
+    rowOdd:     '#111113',
+    rowHover:   '#1a1a1a',
     cellBorder: 'rgba(255,255,255,0.05)',
     cellColor:  'rgba(255,255,255,0.82)',
     fadeTo:     '#0a0a0a',
     thumb:      'rgba(255,255,255,0.14)',
     thumbHov:   'rgba(255,255,255,0.26)',
     track:      'rgba(255,255,255,0.04)',
-    sortAccent: 'rgba(255,255,255,0.32)',
   } : {
-    thBg:       '#d0cfc9',
+    thBg:       '#d8d7d3',
     thColor:    'rgba(0,0,0,0.38)',
     thBorder:   'rgba(0,0,0,0.08)',
     thActColor: 'rgba(0,0,0,0.85)',
     rowEven:    '#E8E7E3',
-    rowOdd:     '#e2e1dc',
-    rowHover:   '#d4d3ce',
+    rowOdd:     '#d8d7d3',
+    rowHover:   '#cccbc6',
     cellBorder: 'rgba(0,0,0,0.06)',
     cellColor:  'rgba(0,0,0,0.85)',
     fadeTo:     '#E8E7E3',
     thumb:      'rgba(0,0,0,0.16)',
     thumbHov:   'rgba(0,0,0,0.28)',
     track:      'rgba(0,0,0,0.04)',
-    sortAccent: 'rgba(0,0,0,0.28)',
   };
 }
 
@@ -71,7 +69,8 @@ export const TableView: React.FC<TableViewProps> = ({
     <>
       <div style={{ position: 'relative' }}>
         <div ref={scrollRef} className="tb-scroll"
-          style={{ overflowX: 'auto', overflowY: 'auto',
+          style={{
+            overflowX: 'auto', overflowY: 'auto',
             maxHeight: fullscreen ? undefined : 480,
             height:    fullscreen ? '100%'    : undefined,
             ...dragStyle,
@@ -79,7 +78,8 @@ export const TableView: React.FC<TableViewProps> = ({
           {...dragHandlers}
         >
           <table style={{ borderCollapse: 'separate', borderSpacing: 0, width: 'auto', minWidth: '100%' }}>
-            <TableHead t={t} isDark={isDark} headers={headers} visibleColumns={visibleColumns}
+            <TableHead t={t} isDark={isDark}
+              headers={headers} visibleColumns={visibleColumns}
               sortColumn={sortColumn} sortDirection={sortDirection}
               onSort={onSort} headerAlignments={headerAlignments}
             />
@@ -87,14 +87,16 @@ export const TableView: React.FC<TableViewProps> = ({
               {rows.length === 0 ? (
                 <tr>
                   <td colSpan={headers.filter((_, i) => visibleColumns.has(i)).length}
-                    style={{ textAlign: 'center', padding: '2.5rem 1rem',
-                      color: t.thColor, fontSize: 13, fontStyle: 'italic', background: t.rowEven }}
-                  >
-                    Нет результатов
-                  </td>
+                    style={{
+                      textAlign: 'center', padding: '2.5rem 1rem',
+                      color: t.thColor, fontSize: 13, fontStyle: 'italic',
+                      background: t.rowEven,
+                    }}
+                  >Нет результатов</td>
                 </tr>
               ) : rows.map((row, idx) => (
-                <TableRow key={`r${idx}-${row.cells[0]?.slice(0, 20)}`}
+                <TableRow
+                  key={`r${idx}-${row.cells[0]?.slice(0, 20)}`}
                   t={t} row={row} rowIndex={idx}
                   visibleColumns={visibleColumns} searchQuery={searchQuery}
                 />
@@ -102,13 +104,14 @@ export const TableView: React.FC<TableViewProps> = ({
             </tbody>
           </table>
         </div>
-        {/* Horizontal scroll fade hint */}
+        {/* Scroll fade hint */}
         <div style={{
           position: 'absolute', top: 0, right: 0, bottom: 0, width: 24,
           background: `linear-gradient(to right, transparent, ${t.fadeTo})`,
           pointerEvents: 'none', opacity: 0.8,
         }} />
       </div>
+
       <style>{getTableStyles(isDark)}</style>
       <style>{`
         .tb-scroll{scrollbar-width:thin;scrollbar-color:${t.thumb} ${t.track}}
@@ -139,11 +142,12 @@ const TableHead: React.FC<{
           letterSpacing: '0.06em', textTransform: 'uppercase',
           whiteSpace: 'nowrap', cursor: 'pointer', userSelect: 'none',
           position: 'sticky', top: 0, zIndex: 20,
-          // Only bottom border — no left/right/top lines
+          // Only bottom border — NO left inset / accent line
           borderBottom: `1px solid ${t.thBorder}`,
           borderTop: 'none', borderLeft: 'none', borderRight: 'none',
-          boxShadow: sortColumn === i ? `inset 3px 0 0 ${t.sortAccent}` : 'none',
-          transition: 'color 0.14s, box-shadow 0.14s',
+          // No boxShadow at all — removes the "палка"
+          boxShadow: 'none',
+          transition: 'color 0.14s',
         }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 5,
@@ -159,33 +163,44 @@ const TableHead: React.FC<{
   </thead>
 );
 
-// Search highlight
+// ─── Search highlight ─────────────────────────────────────────────────────────
+
 const splitByQ = (text: string, q: string) => {
-  const low = text.toLowerCase(); const parts: {text: string; match: boolean}[] = [];
+  const low = text.toLowerCase();
+  const parts: { text: string; match: boolean }[] = [];
   let cur = 0, idx = low.indexOf(q);
   while (idx !== -1) {
-    if (idx > cur) parts.push({text: text.slice(cur, idx), match: false});
-    parts.push({text: text.slice(idx, idx + q.length), match: true});
+    if (idx > cur) parts.push({ text: text.slice(cur, idx), match: false });
+    parts.push({ text: text.slice(idx, idx + q.length), match: true });
     cur = idx + q.length; idx = low.indexOf(q, cur);
   }
-  if (cur < text.length) parts.push({text: text.slice(cur), match: false});
+  if (cur < text.length) parts.push({ text: text.slice(cur), match: false });
   return parts;
 };
+
 const highlightNode = (node: Node, q: string) => {
   const text = node.textContent || '';
   if (!text.toLowerCase().includes(q)) return;
   const frag = document.createDocumentFragment();
-  for (const {text: t, match} of splitByQ(text, q)) {
+  for (const { text: t, match } of splitByQ(text, q)) {
     if (!t) continue;
-    if (match) { const m = document.createElement('mark'); m.textContent = t; m.style.cssText='background:#f59e0b;color:#000;padding:1px 3px;border-radius:3px;font-weight:600;'; frag.appendChild(m); }
-    else frag.appendChild(document.createTextNode(t));
+    if (match) {
+      const m = document.createElement('mark');
+      m.textContent = t;
+      m.style.cssText = 'background:#f59e0b;color:#000;padding:1px 3px;border-radius:3px;font-weight:600;';
+      frag.appendChild(m);
+    } else {
+      frag.appendChild(document.createTextNode(t));
+    }
   }
   node.parentNode?.replaceChild(frag, node);
 };
+
 const highlightIn = (el: HTMLElement, q: string) => {
   const walk = (n: Node) => {
     if (n.nodeType === Node.TEXT_NODE) { highlightNode(n, q); return; }
-    if (n.nodeType === Node.ELEMENT_NODE && n.nodeName !== 'MARK') Array.from(n.childNodes).forEach(walk);
+    if (n.nodeType === Node.ELEMENT_NODE && n.nodeName !== 'MARK')
+      Array.from(n.childNodes).forEach(walk);
   };
   Array.from(el.childNodes).forEach(walk);
 };
@@ -193,12 +208,12 @@ const highlightIn = (el: HTMLElement, q: string) => {
 const TAGS = ['strong','b','em','i','code','a','br','u','del','s','strike','sub','sup','mark','span','div','p'];
 const ATTR = ['href','target','rel','class','style'];
 
-const CellContent: React.FC<{html: string; searchQuery: string}> = ({html, searchQuery}) => {
+const CellContent: React.FC<{ html: string; searchQuery: string }> = ({ html, searchQuery }) => {
   const ref = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
     if (!ref.current) return;
-    const safe = DOMPurify.sanitize(html, {ALLOWED_TAGS: TAGS, ALLOWED_ATTR: ATTR, ALLOW_DATA_ATTR: false});
-    const doc = new DOMParser().parseFromString(safe, 'text/html');
+    const safe = DOMPurify.sanitize(html, { ALLOWED_TAGS: TAGS, ALLOWED_ATTR: ATTR, ALLOW_DATA_ATTR: false });
+    const doc  = new DOMParser().parseFromString(safe, 'text/html');
     ref.current.innerHTML = '';
     while (doc.body.firstChild) ref.current.appendChild(doc.body.firstChild);
     if (searchQuery) highlightIn(ref.current, searchQuery.toLowerCase());
@@ -209,13 +224,16 @@ const CellContent: React.FC<{html: string; searchQuery: string}> = ({html, searc
 const TableRow: React.FC<{
   t: Tok; row: ParsedRow; rowIndex: number;
   visibleColumns: Set<number>; searchQuery: string;
-}> = ({t, row, rowIndex, visibleColumns, searchQuery}) => {
+}> = ({ t, row, rowIndex, visibleColumns, searchQuery }) => {
   const [hov, setHov] = useState(false);
   const even = rowIndex % 2 === 0;
-  const bg = hov ? t.rowHover : even ? t.rowEven : t.rowOdd;
+  const bg   = hov ? t.rowHover : even ? t.rowEven : t.rowOdd;
+
   return (
-    <tr style={{background: bg, transition: 'background 0.1s ease'}}
-      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+    <tr
+      style={{ background: bg, transition: 'background 0.1s ease' }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
     >
       {row.cells.map((cell, i) => visibleColumns.has(i) ? (
         <td key={i} style={{
