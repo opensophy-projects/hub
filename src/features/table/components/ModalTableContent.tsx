@@ -9,137 +9,99 @@ interface ModalTableContentProps {
   visibleColumns: Set<string>;
 }
 
-const getRowBgColor = (isEvenRow: boolean, isDark: boolean): string => {
-  if (isDark) return isEvenRow ? '#1e1e1e' : '#141414';
-  return isEvenRow ? '#ffffff' : '#f9f9f9';
-};
+function tokens(isDark: boolean) {
+  return {
+    thBg:       isDark ? '#161618'                : '#f5f4f0',
+    thColor:    isDark ? 'rgba(255,255,255,0.4)'  : 'rgba(15,15,20,0.4)',
+    thBorder:   isDark ? 'rgba(255,255,255,0.07)' : 'rgba(15,15,20,0.07)',
+    rowEven:    isDark ? '#0e0e10'                : '#ffffff',
+    rowOdd:     isDark ? '#111113'                : '#f9f9f7',
+    rowHover:   isDark ? '#1a1a1d'                : '#f1f0eb',
+    cellBorder: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(15,15,20,0.06)',
+    cellColor:  isDark ? 'rgba(255,255,255,0.82)' : 'rgba(15,15,20,0.88)',
+    thumb:      isDark ? 'rgba(255,255,255,0.15)' : 'rgba(15,15,20,0.15)',
+    thumbHov:   isDark ? 'rgba(255,255,255,0.28)' : 'rgba(15,15,20,0.28)',
+    track:      isDark ? 'rgba(255,255,255,0.04)' : 'rgba(15,15,20,0.04)',
+  };
+}
 
-const getRowHoverBgColor = (_isEvenRow: boolean, isDark: boolean): string => {
-  if (isDark) return '#2a2a2a';
-  return '#f0f0f0';
-};
+const ALLOWED_TAGS = ['strong','b','em','i','code','a','br','u','del','s','strike','sub','sup','mark','span','div','p'];
+const ALLOWED_ATTR = ['href','target','rel','class','style'];
 
-const generateRowKey = (
-  row: Record<string, string>,
-  index: number,
-  headers: Array<{ text: string; colIndex: number }>,
-): string => {
-  const rowContent = headers.map((h) => row[h.text] || '').join('|');
-  return `row-${index}-${rowContent.substring(0, 50)}`;
-};
-
-const CellContent: React.FC<{ html: string; isDark: boolean; bgColor: string }> = ({
-  html,
-  isDark,
-  bgColor,
-}) => {
-  const contentRef = React.useRef<HTMLTableCellElement>(null);
-
+const CellContent: React.FC<{ html: string; isDark: boolean; bg: string }> = ({ html, bg }) => {
+  const ref = React.useRef<HTMLTableCellElement>(null);
   React.useEffect(() => {
-    if (!contentRef.current) return;
-
-    const sanitizedHtml = DOMPurify.sanitize(html, {
-      ALLOWED_TAGS: [
-        'strong', 'b', 'em', 'i', 'code', 'a', 'br',
-        'u', 'del', 's', 'strike', 'sub', 'sup', 'mark',
-        'span', 'div', 'p',
-      ],
-      ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style'],
-      ALLOW_DATA_ATTR: false,
-    });
-
-    contentRef.current.innerHTML = sanitizedHtml;
+    if (!ref.current) return;
+    ref.current.innerHTML = DOMPurify.sanitize(html, { ALLOWED_TAGS, ALLOWED_ATTR, ALLOW_DATA_ATTR: false });
   }, [html]);
-
   return (
     <td
-      ref={contentRef}
-      className={`border p-2 ${isDark ? 'border-white/10 text-white/90' : 'border-black/10 text-black'}`}
-      style={{ backgroundColor: bgColor, transition: 'background-color 0.12s ease' }}
+      ref={ref}
+      style={{ padding: '0.65rem 1rem', fontSize: 13.5, background: bg, transition: 'background 0.12s ease' }}
     />
   );
 };
 
-const ModalTableRow: React.FC<{
+const ModalRow: React.FC<{
   row: Record<string, string>;
-  rowIndex: number;
+  idx: number;
   visibleHeaders: Array<{ text: string; colIndex: number }>;
   isDark: boolean;
-}> = ({ row, rowIndex, visibleHeaders, isDark }) => {
-  const isEvenRow = rowIndex % 2 === 0;
-  const [isHovered, setIsHovered] = useState(false);
-
-  const bgColor = isHovered
-    ? getRowHoverBgColor(isEvenRow, isDark)
-    : getRowBgColor(isEvenRow, isDark);
+  tk: ReturnType<typeof tokens>;
+}> = ({ row, idx, visibleHeaders, isDark, tk }) => {
+  const [hov, setHov] = useState(false);
+  const bg = hov ? tk.rowHover : idx % 2 === 0 ? tk.rowEven : tk.rowOdd;
 
   return (
     <tr
-      style={{ backgroundColor: bgColor, transition: 'background-color 0.12s ease' }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      style={{ background: bg, transition: 'background 0.12s ease' }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
     >
-      {visibleHeaders.map((header) => (
-        <CellContent
-          key={`cell-${rowIndex}-${header.colIndex}`}
-          html={row[header.text] || '-'}
-          isDark={isDark}
-          bgColor={bgColor}
-        />
+      {visibleHeaders.map(h => (
+        <CellContent key={h.colIndex} html={row[h.text] || '—'} isDark={isDark} bg={bg} />
       ))}
     </tr>
   );
 };
 
 export const ModalTableContent: React.FC<ModalTableContentProps> = ({
-  isDark,
-  headers,
-  filteredRows,
-  visibleColumns,
+  isDark, headers, filteredRows, visibleColumns,
 }) => {
-  const visibleHeaders = headers.filter((h) => visibleColumns.has(h.text));
+  const visibleHeaders = headers.filter(h => visibleColumns.has(h.text));
   const { scrollRef, dragStyle, dragHandlers } = useDragScroll();
-
-  const thumb      = isDark ? 'rgba(150,150,150,0.6)'  : 'rgba(0,0,0,0.2)';
-  const thumbHover = isDark ? 'rgba(190,190,190,0.85)' : 'rgba(0,0,0,0.35)';
-  const track      = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
-
-  const thBg     = isDark ? '#252525' : '#ffffff';
-  const thBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+  const tk = tokens(isDark);
 
   return (
     <div
       ref={scrollRef}
-      className="modal-table-scroll"
+      className="modal-tb-scroll"
       style={{
-        overflowX: 'auto',
-        overflowY: 'auto',
-        flex:      1,         
-        scrollbarColor: `${thumb} ${track}`,
-        scrollbarWidth: 'thin',
+        overflowX: 'auto', overflowY: 'auto', flex: 1,
+        scrollbarWidth: 'thin', scrollbarColor: `${tk.thumb} ${tk.track}`,
         ...dragStyle,
       }}
       {...dragHandlers}
     >
-      <table
-        className={`w-full border-collapse text-sm ${isDark ? 'text-white' : 'text-black'}`}
-      >
-        <thead style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: thBg }}>
+      <table style={{ borderCollapse: 'separate', borderSpacing: 0, width: 'auto', minWidth: '100%' }}>
+        <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
           <tr>
-            {visibleHeaders.map((header) => (
+            {visibleHeaders.map(h => (
               <th
-                key={header.colIndex}
-                className="p-2 font-semibold text-left"
+                key={h.colIndex}
                 style={{
-                  border:          `1px solid ${thBorder}`,
-                  backgroundColor: thBg,
-                  position:        'sticky',
-                  top:             0,
-                  zIndex:          10,
-                  whiteSpace:      'nowrap',
+                  padding: '0.7rem 1rem',
+                  background: tk.thBg,
+                  color: tk.thColor,
+                  fontSize: '0.7rem', fontWeight: 700,
+                  letterSpacing: '0.06em', textTransform: 'uppercase',
+                  whiteSpace: 'nowrap', textAlign: 'left',
+                  borderBottom: `1px solid ${tk.thBorder}`,
+                  borderTop: 'none', borderLeft: 'none', borderRight: 'none',
+                  position: 'sticky', top: 0, zIndex: 10,
                 }}
               >
-                {header.text}
+                {h.text}
               </th>
             ))}
           </tr>
@@ -149,31 +111,29 @@ export const ModalTableContent: React.FC<ModalTableContentProps> = ({
             <tr>
               <td
                 colSpan={visibleHeaders.length}
-                className={`text-center p-4 italic ${isDark ? 'text-white/50' : 'text-black/50'}`}
+                style={{
+                  textAlign: 'center', padding: '3rem',
+                  color: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(15,15,20,0.3)',
+                  fontSize: 13, fontStyle: 'italic', background: tk.rowEven,
+                }}
               >
                 Нет результатов
               </td>
             </tr>
           ) : (
-            filteredRows.map((row, idx) => (
-              <ModalTableRow
-                key={generateRowKey(row, idx, visibleHeaders)}
-                row={row}
-                rowIndex={idx}
-                visibleHeaders={visibleHeaders}
-                isDark={isDark}
-              />
+            filteredRows.map((row, i) => (
+              <ModalRow key={i} row={row} idx={i} visibleHeaders={visibleHeaders} isDark={isDark} tk={tk} />
             ))
           )}
         </tbody>
       </table>
 
       <style>{`
-        .modal-table-scroll::-webkit-scrollbar       { width: 8px; height: 8px; }
-        .modal-table-scroll::-webkit-scrollbar-track  { background: ${track}; border-radius: 4px; }
-        .modal-table-scroll::-webkit-scrollbar-thumb  { background: ${thumb}; border-radius: 4px; }
-        .modal-table-scroll::-webkit-scrollbar-thumb:hover { background: ${thumbHover}; }
-        .modal-table-scroll::-webkit-scrollbar-corner { background: transparent; }
+        .modal-tb-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .modal-tb-scroll::-webkit-scrollbar-track { background: ${tk.track}; }
+        .modal-tb-scroll::-webkit-scrollbar-thumb { background: ${tk.thumb}; border-radius: 99px; }
+        .modal-tb-scroll::-webkit-scrollbar-thumb:hover { background: ${tk.thumbHov}; }
+        .modal-tb-scroll::-webkit-scrollbar-corner { background: transparent; }
       `}</style>
     </div>
   );
