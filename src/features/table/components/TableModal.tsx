@@ -36,11 +36,11 @@ function tk(isDark: boolean) {
     plhClr:   'rgba(255,255,255,0.28)',
     dangerClr:'#f87171',
     footerClr:'rgba(255,255,255,0.22)',
-    dropBg:   '#1a1a1a',
-    dropBdr:  'rgba(255,255,255,0.1)',
-    dropHov:  'rgba(255,255,255,0.07)',
-    dropClr:  'rgba(255,255,255,0.82)',
-    dropSub:  'rgba(255,255,255,0.35)',
+    dropBg:   '#222222',
+    dropBdr:  'rgba(255,255,255,0.12)',
+    dropHov:  'rgba(255,255,255,0.08)',
+    dropClr:  'rgba(255,255,255,0.85)',
+    dropSub:  'rgba(255,255,255,0.38)',
   } : {
     modalBg:  '#E8E7E3',
     barBg:    '#d8d7d3',
@@ -60,10 +60,10 @@ function tk(isDark: boolean) {
     dangerClr:'#dc2626',
     footerClr:'rgba(0,0,0,0.32)',
     dropBg:   '#eceae6',
-    dropBdr:  'rgba(0,0,0,0.1)',
-    dropHov:  'rgba(0,0,0,0.06)',
-    dropClr:  'rgba(0,0,0,0.82)',
-    dropSub:  'rgba(0,0,0,0.38)',
+    dropBdr:  'rgba(0,0,0,0.12)',
+    dropHov:  'rgba(0,0,0,0.07)',
+    dropClr:  'rgba(0,0,0,0.85)',
+    dropSub:  'rgba(0,0,0,0.4)',
   };
 }
 
@@ -88,17 +88,70 @@ function toTsv(h: string[], rows: string[][]) {
   return !h.length ? '' : [h.join('\t'), ...rows.map(r => r.join('\t'))].join('\n');
 }
 
+// ─── Dropdown menu rendered in body — bypasses any stacking context ───────────
+const BodyDropdown: React.FC<{
+  anchorRef: React.RefObject<HTMLButtonElement>;
+  isDark: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+}> = ({ anchorRef, isDark, onClose, children }) => {
+  const t = tk(isDark);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    const r = anchorRef.current?.getBoundingClientRect();
+    if (!r) return;
+    setPos({ top: r.bottom + 6, left: Math.min(r.left, window.innerWidth - 202) });
+  }, [anchorRef]);
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node) && !anchorRef.current?.contains(e.target as Node))
+        onClose();
+    };
+    // Use capture to fire before dialog intercepts
+    document.addEventListener('mousedown', h, true);
+    return () => document.removeEventListener('mousedown', h, true);
+  }, [anchorRef, onClose]);
+
+  return createPortal(
+    <>
+      <style>{`@keyframes mdIn{from{opacity:0;transform:translateY(-5px) scale(0.97)}to{opacity:1;transform:none}}`}</style>
+      <div ref={menuRef} style={{
+        position: 'fixed',
+        top: pos.top,
+        left: pos.left,
+        minWidth: 192,
+        // Must be above dialog top-layer — use very high z-index
+        zIndex: 2147483647,
+        background: t.dropBg,
+        border: `1px solid ${t.dropBdr}`,
+        borderRadius: 10,
+        boxShadow: isDark
+          ? '0 12px 40px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.05)'
+          : '0 12px 32px rgba(0,0,0,0.2)',
+        overflow: 'hidden',
+        animation: 'mdIn 0.13s cubic-bezier(0.2,0,0,1)',
+        // Force above everything
+        isolation: 'isolate',
+      }}>
+        {children}
+      </div>
+    </>,
+    document.body,
+  );
+};
+
 // ─── Pill button ─────────────────────────────────────────────────────────────
 const Pill: React.FC<{
   onClick: () => void; title: string; label: string;
   icon: React.ReactNode; t: ReturnType<typeof tk>;
-  active?: boolean; danger?: boolean; green?: boolean;
-}> = ({ onClick, title, label, icon, t, active, danger, green }) => {
-  const bg    = green ? (t.modalBg === '#0a0a0a' ? 'rgba(34,197,94,0.16)' : 'rgba(34,197,94,0.14)')
-              : active ? t.btnActBg : t.btnBg;
-  const bdr   = green ? (t.modalBg === '#0a0a0a' ? 'rgba(34,197,94,0.4)' : 'rgba(34,197,94,0.5)')
-              : active ? t.btnActBdr : t.btnBdr;
-  const color = green ? '#22c55e' : danger ? t.dangerClr : active ? t.btnActClr : t.btnClr;
+  active?: boolean; danger?: boolean;
+}> = ({ onClick, title, label, icon, t, active, danger }) => {
+  const bg    = active ? t.btnActBg  : t.btnBg;
+  const bdr   = active ? t.btnActBdr : t.btnBdr;
+  const color = danger ? t.dangerClr : active ? t.btnActClr : t.btnClr;
   return (
     <button onClick={onClick} title={title} style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -107,41 +160,21 @@ const Pill: React.FC<{
       borderRadius: 8, border: `1px solid ${bdr}`,
       background: bg, color, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s',
     }}
-      onMouseEnter={e => { if (!green) (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
-      onMouseLeave={e => { if (!green) (e.currentTarget as HTMLButtonElement).style.background = bg; }}
+      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = bg; }}
     >
       {icon}
-      <span style={{ fontSize: 10, fontWeight: active || green ? 600 : 400, lineHeight: 1, whiteSpace: 'nowrap' }}>{label}</span>
+      <span style={{ fontSize: 10, fontWeight: active ? 600 : 400, lineHeight: 1, whiteSpace: 'nowrap' }}>{label}</span>
     </button>
   );
 };
 
-// ─── Copy button — portal dropdown ───────────────────────────────────────────
+// ─── Copy button ─────────────────────────────────────────────────────────────
 const CopyBtn: React.FC<{ isDark: boolean; tableHtml: string; t: ReturnType<typeof tk> }> = ({ isDark, tableHtml, t }) => {
   const [open, setOpen]     = useState(false);
   const [copied, setCopied] = useState<CopyFormat | null>(null);
-  const [pos, setPos]       = useState({ top: 0, left: 0 });
-  const btnRef  = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
   const isCopied = !!copied;
-
-  useEffect(() => {
-    if (!open) return;
-    const h = (e: MouseEvent) => {
-      if (!menuRef.current?.contains(e.target as Node) && !btnRef.current?.contains(e.target as Node))
-        setOpen(false);
-    };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, [open]);
-
-  const toggle = () => {
-    if (open) { setOpen(false); return; }
-    const r = btnRef.current?.getBoundingClientRect();
-    if (!r) return;
-    setPos({ top: r.bottom + 6, left: Math.min(r.left, window.innerWidth - 202) });
-    setOpen(true);
-  };
 
   const doCopy = async (fmt: CopyFormat) => {
     const { headers, rows } = parseForCopy(tableHtml);
@@ -156,13 +189,17 @@ const CopyBtn: React.FC<{ isDark: boolean; tableHtml: string; t: ReturnType<type
 
   return (
     <>
-      <button ref={btnRef} onClick={toggle} title="Копировать" style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center', gap: 3,
-        padding: '5px 12px', minWidth: 68, height: 44,
-        borderRadius: 8, border: `1px solid ${bdr}`,
-        background: bg, color, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s',
-      }}
+      <button
+        ref={btnRef}
+        onClick={() => setOpen(v => !v)}
+        title="Копировать"
+        style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', gap: 3,
+          padding: '5px 12px', minWidth: 68, height: 44,
+          borderRadius: 8, border: `1px solid ${bdr}`,
+          background: bg, color, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s',
+        }}
         onMouseEnter={e => { if (!isCopied) (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
         onMouseLeave={e => { if (!isCopied) (e.currentTarget as HTMLButtonElement).style.background = bg; }}
       >
@@ -175,44 +212,32 @@ const CopyBtn: React.FC<{ isDark: boolean; tableHtml: string; t: ReturnType<type
         </span>
       </button>
 
-      {open && createPortal(
-        <>
-          <style>{`@keyframes mdIn{from{opacity:0;transform:translateY(-5px) scale(0.97)}to{opacity:1;transform:none}}`}</style>
-          <div ref={menuRef} style={{
-            position: 'fixed', top: pos.top, left: pos.left,
-            minWidth: 190, zIndex: 99999,
-            background: t.dropBg, border: `1px solid ${t.dropBdr}`,
-            borderRadius: 10,
-            boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.8)' : '0 8px 28px rgba(0,0,0,0.16)',
-            overflow: 'hidden', animation: 'mdIn 0.13s cubic-bezier(0.2,0,0,1)',
-          }}>
-            {(['md','excel'] as CopyFormat[]).map(fmt => (
-              <button key={fmt} onClick={() => doCopy(fmt)} style={{
-                width: '100%', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 2,
-                border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left',
-                color: t.dropClr, transition: 'background 0.1s',
-              }}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.dropHov; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
-              >
-                <span style={{ fontSize: 13, fontWeight: 500 }}>{fmt === 'md' ? 'Markdown' : 'Excel / TSV'}</span>
-                <span style={{ fontSize: 11, color: t.dropSub }}>{fmt === 'md' ? 'Для документов' : 'Tab-separated'}</span>
-              </button>
-            ))}
-          </div>
-        </>,
-        document.body,
+      {open && (
+        <BodyDropdown anchorRef={btnRef} isDark={isDark} onClose={() => setOpen(false)}>
+          {(['md', 'excel'] as CopyFormat[]).map(fmt => (
+            <button key={fmt} onClick={() => doCopy(fmt)} style={{
+              width: '100%', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 2,
+              border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left',
+              color: t.dropClr, transition: 'background 0.1s',
+            }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.dropHov; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+            >
+              <span style={{ fontSize: 13, fontWeight: 500 }}>{fmt === 'md' ? 'Markdown' : 'Excel / TSV'}</span>
+              <span style={{ fontSize: 11, color: t.dropSub }}>{fmt === 'md' ? 'Для документов' : 'Tab-separated'}</span>
+            </button>
+          ))}
+        </BodyDropdown>
       )}
     </>
   );
 };
 
 // ─── TableModal ───────────────────────────────────────────────────────────────
+// Uses a plain div portal instead of <dialog> to avoid top-layer stacking issues
 const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onClose }) => {
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const t = tk(isDark);
 
-  // Parse table using the same parser as inline (supports sort)
   const { headers, rows, headerAlignments } = useMemo(() => parseTableHtml(tableHtml), [tableHtml]);
 
   const [state, setState] = useState<TableControlsState>({
@@ -224,7 +249,6 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
   });
   const [showFilters, setShowFilters] = useState(false);
 
-  // Re-init when table changes
   useEffect(() => {
     setState({
       searchQuery: '',
@@ -233,12 +257,12 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
       filters: new Map(),
       visibleColumns: new Set(Array.from({ length: headers.length }, (_, i) => i)),
     });
+    setShowFilters(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tableHtml]);
 
   const filteredAndSorted = useMemo(() => filterAndSortRows(rows, state), [rows, state]);
 
-  // Unique values for FiltersPanel
   const getUniqueForCol = (colIndex: number): string[] =>
     Array.from(new Set(
       rows.map(row => {
@@ -280,55 +304,67 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
     setState(prev => ({ ...prev, searchQuery: '', sortColumn: null, sortDirection: 'none', filters: new Map() }));
   };
 
+  // Lock body scroll
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isOpen]);
+
+  // Esc to close
+  useEffect(() => {
+    if (!isOpen) return;
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', h);
+    return () => document.removeEventListener('keydown', h);
+  }, [isOpen, onClose]);
+
   const activeFilterCount = Array.from(state.filters.values()).filter(s => s.size > 0).length;
   const filterLabel = activeFilterCount > 0 ? `Фильтры · ${activeFilterCount}` : 'Фильтры';
 
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (isOpen) { dialog.showModal(); document.body.style.overflow = 'hidden'; }
-    else { dialog.close(); document.body.style.overflow = 'unset'; }
-    return () => { document.body.style.overflow = 'unset'; };
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [isOpen, onClose]);
-
   if (!isOpen) return null;
 
-  return (
-    <dialog ref={dialogRef} aria-label="Таблица — полный экран" aria-modal="true"
-      style={{ position: 'fixed', inset: 0, zIndex: 100, width: '100%', height: '100%', maxWidth: 'none', maxHeight: 'none', padding: 0, margin: 0, border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-    >
-      {/* Blur backdrop */}
-      <div onClick={onClose} style={{
-        position: 'fixed', inset: 0,
-        background: isDark ? 'rgba(0,0,0,0.45)' : 'rgba(180,178,174,0.55)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        zIndex: 0,
-      }} />
+  // Render as portal into body — no <dialog>, no top-layer stacking context
+  return createPortal(
+    <div style={{
+      position: 'fixed', inset: 0,
+      zIndex: 10000,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{
+          position: 'absolute', inset: 0,
+          background: isDark ? 'rgba(0,0,0,0.55)' : 'rgba(160,158,154,0.55)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+        }}
+      />
 
-      {/* Modal */}
+      {/* Modal panel */}
       <div style={{
-        position: 'relative', zIndex: 1,
+        position: 'relative',
         width: 'min(95vw, 1400px)',
         maxHeight: '90vh',
         borderRadius: 14,
         border: `1px solid ${t.border}`,
         background: t.modalBg,
-        boxShadow: isDark ? '0 24px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.05)' : '0 24px 80px rgba(0,0,0,0.2)',
-        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        boxShadow: isDark
+          ? '0 24px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.05)'
+          : '0 24px 80px rgba(0,0,0,0.2)',
+        display: 'flex', flexDirection: 'column',
+        overflow: 'hidden',
       }}>
         {/* Toolbar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderBottom: `1px solid ${t.border}`, background: t.barBg, flexWrap: 'nowrap', minWidth: 0, flexShrink: 0 }}>
           <div style={{ position: 'relative', flex: '1 1 0', minWidth: 0 }}>
             <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: t.plhClr, pointerEvents: 'none' }} />
-            <input type="text" placeholder="Поиск..." value={state.searchQuery}
+            <input
+              type="text" placeholder="Поиск..." value={state.searchQuery}
               onChange={e => setState(p => ({ ...p, searchQuery: e.target.value }))}
               style={{ width: '100%', padding: '0 30px 0 30px', height: 36, borderRadius: 8, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: t.inpClr, fontSize: 13, outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s' }}
               onFocus={e => { (e.target as HTMLInputElement).style.borderColor = t.inpFoc; }}
@@ -340,10 +376,13 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
               </button>
             )}
           </div>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
             <CopyBtn isDark={isDark} tableHtml={tableHtml} t={t} />
             <Pill onClick={() => setShowFilters(v => !v)} title="Фильтры" label={filterLabel} icon={<Filter size={14} />} t={t} active={showFilters || activeFilterCount > 0} />
-            {activeFilterCount > 0 && <Pill onClick={handleReset} title="Сбросить" label="Сбросить" icon={<RotateCcw size={14} />} t={t} danger />}
+            {activeFilterCount > 0 && (
+              <Pill onClick={handleReset} title="Сбросить" label="Сбросить" icon={<RotateCcw size={14} />} t={t} danger />
+            )}
             <Pill onClick={onClose} title="Закрыть (Esc)" label="Закрыть" icon={<X size={14} />} t={t} />
           </div>
         </div>
@@ -357,7 +396,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
           </>
         )}
 
-        {/* Table — uses TableView with full sort support */}
+        {/* Table */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
           <TableView
             isDark={isDark}
@@ -379,7 +418,8 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
           {activeFilterCount > 0 && <span>{activeFilterCount} фильтра активно</span>}
         </div>
       </div>
-    </dialog>
+    </div>,
+    document.body,
   );
 };
 
