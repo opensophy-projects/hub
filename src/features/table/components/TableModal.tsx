@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Copy, Check, ChevronDown, X, Filter, RotateCcw } from 'lucide-react';
+import { X, Filter, RotateCcw, Copy, Check, ChevronDown, Search, Maximize2 } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import { ModalTableContent } from './ModalTableContent';
 import { parseTableFromHTML, filterRows, getUniqueValuesForColumn } from '../utils/tableModalUtils';
+import { FiltersPanel } from './FiltersPanel';
+import { ColumnsPanel } from './ColumnsPanel';
 
 interface TableModalProps {
   isOpen:    boolean;
@@ -12,461 +15,197 @@ interface TableModalProps {
 
 type CopyFormat = 'md' | 'excel';
 
-// ─── Theme tokens ─────────────────────────────────────────────────────────────
-
-interface ModalTheme {
-  border:     string;
-  base:       string;
-  hov:        string;
-  activeBg:   string;
-  color:      string;
-  menuBg:     string;
-  menuBorder: string;
-  itemHov:    string;
-  itemColor:  string;
-  inputBg:    string;
-  inputBorder:string;
-  inputColor: string;
-}
-
-function getModalTheme(isDark: boolean): ModalTheme {
-  return isDark
-    ? {
-        border:      'rgba(255,255,255,0.1)',
-        base:        'rgba(255,255,255,0.07)',
-        hov:         'rgba(255,255,255,0.15)',
-        activeBg:    'rgba(255,255,255,0.15)',
-        color:       'rgba(255,255,255,0.8)',
-        menuBg:      '#1f1f1f',
-        menuBorder:  'rgba(255,255,255,0.12)',
-        itemHov:     'rgba(255,255,255,0.08)',
-        itemColor:   'rgba(255,255,255,0.85)',
-        inputBg:     'rgba(255,255,255,0.1)',
-        inputBorder: 'rgba(255,255,255,0.2)',
-        inputColor:  '#fff',
-      }
-    : {
-        border:      'rgba(0,0,0,0.15)',
-        base:        'rgba(0,0,0,0.06)',
-        hov:         'rgba(0,0,0,0.12)',
-        activeBg:    'rgba(0,0,0,0.12)',
-        color:       'rgba(0,0,0,0.75)',
-        menuBg:      '#f5f4f0',
-        menuBorder:  'rgba(0,0,0,0.12)',
-        itemHov:     'rgba(0,0,0,0.06)',
-        itemColor:   'rgba(0,0,0,0.8)',
-        inputBg:     'rgba(0,0,0,0.05)',
-        inputBorder: 'rgba(0,0,0,0.2)',
-        inputColor:  '#000',
-      };
+// ─── Tokens ───────────────────────────────────────────────────────────────────
+function tk(isDark: boolean) {
+  return isDark ? {
+    // Exact app palette
+    modalBg:    '#0a0a0a',
+    barBg:      '#111113',
+    border:     'rgba(255,255,255,0.08)',
+    btnBg:      'rgba(255,255,255,0.08)',
+    btnBdr:     'rgba(255,255,255,0.12)',
+    btnHov:     'rgba(255,255,255,0.14)',
+    btnClr:     'rgba(255,255,255,0.72)',
+    btnActBg:   'rgba(255,255,255,0.15)',
+    btnActBdr:  'rgba(255,255,255,0.22)',
+    btnActClr:  '#ffffff',
+    inpBg:      '#1a1a1c',
+    inpBdr:     'rgba(255,255,255,0.12)',
+    inpFocBdr:  'rgba(255,255,255,0.28)',
+    inpClr:     'rgba(255,255,255,0.9)',
+    plhClr:     'rgba(255,255,255,0.28)',
+    dangerClr:  '#f87171',
+    // Backdrop: blur instead of dark overlay
+    backdropBg: 'rgba(0,0,0,0.35)',
+    backdropBlur: 'blur(12px)',
+  } : {
+    modalBg:    '#E8E7E3',
+    barBg:      '#d8d7d3',
+    border:     'rgba(0,0,0,0.09)',
+    btnBg:      'rgba(0,0,0,0.07)',
+    btnBdr:     'rgba(0,0,0,0.12)',
+    btnHov:     'rgba(0,0,0,0.12)',
+    btnClr:     'rgba(0,0,0,0.68)',
+    btnActBg:   'rgba(0,0,0,0.12)',
+    btnActBdr:  'rgba(0,0,0,0.22)',
+    btnActClr:  '#000000',
+    inpBg:      '#E8E7E3',
+    inpBdr:     'rgba(0,0,0,0.12)',
+    inpFocBdr:  'rgba(0,0,0,0.28)',
+    inpClr:     '#000000',
+    plhClr:     'rgba(0,0,0,0.35)',
+    dangerClr:  '#dc2626',
+    backdropBg: 'rgba(200,199,195,0.5)',
+    backdropBlur: 'blur(12px)',
+  };
 }
 
 // ─── Copy helpers ─────────────────────────────────────────────────────────────
-
-function parseTableForCopy(html: string): { headers: string[]; rows: string[][] } {
-  const doc   = new DOMParser().parseFromString(html, 'text/html');
-  const table = doc.querySelector('table');
-  if (!table) return { headers: [], rows: [] };
-  const headers = Array.from(table.querySelectorAll('thead th')).map(
-    (th) => (th.textContent ?? '').trim()
-  );
-  const rows = Array.from(table.querySelectorAll('tbody tr')).map((tr) =>
-    Array.from(tr.querySelectorAll('td')).map((td) => (td.textContent ?? '').trim())
-  );
-  return { headers, rows };
-}
-
-// FIX S7781: replaceAll instead of replace with global regex
-// FIX S7780: String.raw to avoid escaped backslash
-// FIX S4624: no nested template literals
-function toMarkdownTable(headers: string[], rows: string[][]): string {
-  if (!headers.length) return '';
-  const escPipe  = (s: string) => s.replaceAll('|', String.raw`\|`); // S7781 + S7780
-  const sep      = headers.map(() => '---').join(' | ');
-  const head     = `| ${headers.map(escPipe).join(' | ')} |`;
-  const divider  = `| ${sep} |`;
-  const bodyLines = rows.map((r) => `| ${r.map(escPipe).join(' | ')} |`); // S4624
-  return [head, divider, ...bodyLines].join('\n');
-}
-
-function toExcelTsv(headers: string[], rows: string[][]): string {
-  if (!headers.length) return '';
-  return [headers.join('\t'), ...rows.map((r) => r.join('\t'))].join('\n');
-}
-
-// ─── Shared button style ──────────────────────────────────────────────────────
-// FIX S3358: extracted nested ternaries into getModalTheme; active/base resolved before use
-
-function getBtnStyle(t: ModalTheme, active = false): React.CSSProperties {
+function parseForCopy(html: string) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const tbl = doc.querySelector('table');
+  if (!tbl) return { headers: [] as string[], rows: [] as string[][] };
   return {
-    display:       'flex',
-    flexDirection: 'column',
-    alignItems:    'center',
-    gap:           '2px',
-    padding:       '5px 10px',
-    borderRadius:  '7px',
-    border:        `1px solid ${t.border}`,
-    background:    active ? t.activeBg : t.base,  // no nested ternary — values come from theme
-    color:         t.color,
-    cursor:        'pointer',
-    flexShrink:    0,
+    headers: Array.from(tbl.querySelectorAll('thead th')).map(th => (th.textContent ?? '').trim()),
+    rows:    Array.from(tbl.querySelectorAll('tbody tr')).map(tr =>
+      Array.from(tr.querySelectorAll('td')).map(td => (td.textContent ?? '').trim())
+    ),
   };
 }
-
-// ─── Copy button state + helpers (extracted to reduce ModalToolbar complexity) ─
-
-// FIX S3776: copy-specific state and event handlers pulled out of ModalToolbar
-
-function getCopyBg(isCopied: boolean, isDark: boolean, base: string): string {
-  // FIX S3358: flatten nested ternary
-  if (!isCopied) return base;
-  return isDark ? 'rgba(34,197,94,0.15)' : 'rgba(34,197,94,0.12)';
+function toMd(h: string[], rows: string[][]) {
+  if (!h.length) return '';
+  const e = (s: string) => s.replaceAll('|', String.raw`\|`);
+  return [`| ${h.map(e).join(' | ')} |`, `| ${h.map(() => '---').join(' | ')} |`,
+    ...rows.map(r => `| ${r.map(e).join(' | ')} |`)].join('\n');
+}
+function toTsv(h: string[], rows: string[][]) {
+  return !h.length ? '' : [h.join('\t'), ...rows.map(r => r.join('\t'))].join('\n');
 }
 
-function getCopyHoverBg(isCopied: boolean, isDark: boolean, hov: string): string {
-  // FIX S3358: flatten nested ternary
-  if (!isCopied) return hov;
-  return isDark ? 'rgba(34,197,94,0.2)' : 'rgba(34,197,94,0.18)';
-}
+// ─── Pill button — icon top, label bottom ─────────────────────────────────────
+const Pill: React.FC<{
+  onClick: () => void; title: string; label: string;
+  icon: React.ReactNode; isDark: boolean;
+  active?: boolean; danger?: boolean; green?: boolean;
+}> = ({ onClick, title, label, icon, isDark, active, danger, green }) => {
+  const t = tk(isDark);
+  const bg    = green  ? (isDark ? 'rgba(34,197,94,0.16)' : 'rgba(34,197,94,0.14)')
+              : active ? t.btnActBg : t.btnBg;
+  const bdr   = green  ? (isDark ? 'rgba(34,197,94,0.4)' : 'rgba(34,197,94,0.5)')
+              : active ? t.btnActBdr : t.btnBdr;
+  const color = green ? '#22c55e' : danger ? t.dangerClr : active ? t.btnActClr : t.btnClr;
+  return (
+    <button onClick={onClick} title={title} style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      justifyContent: 'center', gap: 3,
+      padding: '5px 12px', minWidth: 52, height: 44,
+      borderRadius: 8, border: `1px solid ${bdr}`,
+      background: bg, color, cursor: 'pointer', flexShrink: 0,
+      transition: 'all 0.15s',
+    }}
+      onMouseEnter={e => { if (!green) (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
+      onMouseLeave={e => { if (!green) (e.currentTarget as HTMLButtonElement).style.background = bg; }}
+    >
+      {icon}
+      <span style={{ fontSize: 10, fontWeight: active || green ? 600 : 400, lineHeight: 1, whiteSpace: 'nowrap' }}>{label}</span>
+    </button>
+  );
+};
 
-function getCopyLeaveBg(isCopied: boolean, isDark: boolean, base: string): string {
-  // FIX S3358: flatten nested ternary
-  if (!isCopied) return base;
-  return isDark ? 'rgba(34,197,94,0.15)' : 'rgba(34,197,94,0.12)';
-}
-
-function getCopyColor(isCopied: boolean, t: ModalTheme): string {
-  // FIX S3358: flatten nested ternary in color prop
-  return isCopied ? '#22c55e' : t.color;
-}
-
-// FIX S3776: extract filter-button leave bg into a helper
-function getFilterLeaveBg(isActive: boolean, t: ModalTheme): string {
-  return isActive ? t.activeBg : t.base;
-}
-
-const COPY_OPTIONS: Array<{ format: CopyFormat; label: string; sub: string }> = [
-  { format: 'md',    label: 'Markdown',        sub: 'Для документов'      },
-  { format: 'excel', label: 'Excel / таблица', sub: 'TSV (Tab-separated)' },
-];
-
-// ─── CopyDropdown — isolated so ModalToolbar stays under complexity limit ─────
-// FIX S3776: copy dropdown fully extracted from ModalToolbar
-
-interface CopyDropdownProps {
-  isDark:    boolean;
-  tableHtml: string;
-  t:         ModalTheme;
-}
-
-const CopyDropdown: React.FC<CopyDropdownProps> = ({ isDark, tableHtml, t }) => {
-  const [open,   setOpen]   = useState(false);
+// ─── Copy button (same as inline) ─────────────────────────────────────────────
+const CopyBtn: React.FC<{ isDark: boolean; tableHtml: string }> = ({ isDark, tableHtml }) => {
+  const [open, setOpen]     = useState(false);
   const [copied, setCopied] = useState<CopyFormat | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const btnRef  = useRef<HTMLButtonElement>(null);
+  const [pos, setPos]       = useState({ top: 0, left: 0 });
+  const ref = useRef<HTMLButtonElement>(null);
+  const t = tk(isDark);
+  const isCopied = !!copied;
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (!menuRef.current?.contains(target) && !btnRef.current?.contains(target)) {
-        setOpen(false);
-      }
+    const h = (e: MouseEvent) => {
+      const tgt = e.target as Node;
+      if (!ref.current?.contains(tgt)) setOpen(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
   }, [open]);
 
-  const doCopy = async (format: CopyFormat) => {
-    const { headers, rows } = parseTableForCopy(tableHtml);
-    const text = format === 'md' ? toMarkdownTable(headers, rows) : toExcelTsv(headers, rows);
-    await navigator.clipboard.writeText(text);
-    setCopied(format);
-    setOpen(false);
+  const toggle = () => {
+    if (open) { setOpen(false); return; }
+    const r = ref.current?.getBoundingClientRect();
+    if (!r) return;
+    setPos({ top: r.bottom + 6, left: Math.min(r.left, window.innerWidth - 202) });
+    setOpen(true);
+  };
+
+  const doCopy = async (fmt: CopyFormat) => {
+    const { headers, rows } = parseForCopy(tableHtml);
+    await navigator.clipboard.writeText(fmt === 'md' ? toMd(headers, rows) : toTsv(headers, rows));
+    setCopied(fmt); setOpen(false);
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const isCopied = copied !== null;
-  const copyBg   = getCopyBg(isCopied, isDark, t.base);
-  const copyColor = getCopyColor(isCopied, t);
+  const bg    = isCopied ? (isDark ? 'rgba(34,197,94,0.16)' : 'rgba(34,197,94,0.14)') : t.btnBg;
+  const bdr   = isCopied ? (isDark ? 'rgba(34,197,94,0.4)'  : 'rgba(34,197,94,0.5)')  : t.btnBdr;
+  const color = isCopied ? '#22c55e' : t.btnClr;
 
   return (
-    <div style={{ position: 'relative', flexShrink: 0 }}>
-      <button
-        ref={btnRef}
-        onClick={() => setOpen((v) => !v)}
-        style={{ ...getBtnStyle(t), background: copyBg, color: copyColor }}
-        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = getCopyHoverBg(isCopied, isDark, t.hov); }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = getCopyLeaveBg(isCopied, isDark, t.base); }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-          {isCopied ? <Check size={14} /> : <Copy size={14} />}
-          <ChevronDown
-            size={11}
-            style={{
-              opacity:    0.6,
-              transform:  open ? 'rotate(180deg)' : 'rotate(0deg)',
-              transition: 'transform 0.15s',
-            }}
-          />
-        </div>
-        <span style={{ fontSize: '10px', lineHeight: 1, whiteSpace: 'nowrap' }}>
-          {isCopied ? 'Скопировано!' : 'Копировать'}
-        </span>
-      </button>
-
-      {open && (
-        <div
-          ref={menuRef}
-          style={{
-            position:     'absolute',
-            top:          'calc(100% + 5px)',
-            right:        0,
-            minWidth:     '160px',
-            background:   t.menuBg,
-            border:       `1px solid ${t.menuBorder}`,
-            borderRadius: '10px',
-            boxShadow:    isDark ? '0 8px 24px rgba(0,0,0,0.7)' : '0 8px 24px rgba(0,0,0,0.14)',
-            zIndex:       300,
-            overflow:     'hidden',
-            animation:    'cmIn 0.12s ease',
-          }}
-        >
-          <style>{`@keyframes cmIn{from{opacity:0;transform:translateY(-4px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}`}</style>
-          {COPY_OPTIONS.map(({ format, label, sub }) => (
-            <button
-              key={format}
-              onClick={() => doCopy(format)}
-              style={{
-                display:       'flex',
-                flexDirection: 'column',
-                gap:           '1px',
-                width:         '100%',
-                padding:       '9px 13px',
-                border:        'none',
-                background:    'transparent',
-                cursor:        'pointer',
-                textAlign:     'left',
-                color:         t.itemColor,
-                transition:    'background 0.1s',
-              }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = t.itemHov; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
-            >
-              <span style={{ fontSize: '13px', fontWeight: 500 }}>{label}</span>
-              <span style={{ fontSize: '10px', opacity: 0.5 }}>{sub}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ─── ModalToolbar ─────────────────────────────────────────────────────────────
-// FIX S3776: complexity reduced by extracting CopyDropdown and helper functions
-
-interface ModalToolbarProps {
-  isDark:            boolean;
-  tableHtml:         string;
-  searchQuery:       string;
-  onSearchChange:    (v: string) => void;
-  showFilters:       boolean;
-  onToggleFilters:   () => void;
-  activeFilterCount: number;
-  onResetFilters:    () => void;
-  onClose:           () => void;
-}
-
-const ModalToolbar: React.FC<ModalToolbarProps> = ({
-  isDark, tableHtml, searchQuery, onSearchChange,
-  showFilters, onToggleFilters, activeFilterCount, onResetFilters, onClose,
-}) => {
-  const t = getModalTheme(isDark);
-  const filtersActive = showFilters || activeFilterCount > 0;
-
-  return (
-    <div
-      style={{
-        display:      'flex',
-        flexWrap:     'wrap',
-        alignItems:   'center',
-        gap:          '8px',
-        padding:      '10px 14px',
-        flexShrink:   0,
-        borderBottom: `1px solid ${t.border}`,
+    <>
+      <button ref={ref} onClick={toggle} title="Копировать" style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center', gap: 3,
+        padding: '5px 12px', minWidth: 68, height: 44,
+        borderRadius: 8, border: `1px solid ${bdr}`,
+        background: bg, color, cursor: 'pointer', flexShrink: 0,
+        transition: 'all 0.15s',
       }}
-    >
-      {/* Search */}
-      <input
-        type="text"
-        placeholder="Поиск в таблице..."
-        value={searchQuery}
-        onChange={(e) => onSearchChange(e.target.value)}
-        style={{
-          flex:         1,
-          minWidth:     '180px',
-          padding:      '7px 12px',
-          borderRadius: '8px',
-          border:       `1px solid ${t.inputBorder}`,
-          background:   t.inputBg,
-          color:        t.inputColor,
-          fontSize:     '13px',
-          outline:      'none',
-        }}
-      />
-
-      {/* Copy (extracted component) */}
-      <CopyDropdown isDark={isDark} tableHtml={tableHtml} t={t} />
-
-      {/* Filters toggle */}
-      <button
-        onClick={onToggleFilters}
-        style={getBtnStyle(t, filtersActive)}
-        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = t.hov; }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = getFilterLeaveBg(filtersActive, t); }}
+        onMouseEnter={e => { if (!isCopied) (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
+        onMouseLeave={e => { if (!isCopied) (e.currentTarget as HTMLButtonElement).style.background = bg; }}
       >
-        <Filter size={14} />
-        <span style={{ fontSize: '10px', lineHeight: 1, whiteSpace: 'nowrap' }}>
-          {activeFilterCount > 0 ? `Фильтры (${activeFilterCount})` : 'Фильтры'}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          {isCopied ? <Check size={13} strokeWidth={2.5} /> : <Copy size={13} />}
+          <ChevronDown size={10} style={{ opacity: 0.45, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.13s' }} />
+        </div>
+        <span style={{ fontSize: 10, lineHeight: 1, fontWeight: isCopied ? 600 : 400 }}>
+          {isCopied ? 'Скопировано' : 'Копировать'}
         </span>
       </button>
 
-      {/* Reset filters */}
-      {activeFilterCount > 0 && (
-        <button
-          onClick={onResetFilters}
-          style={getBtnStyle(t)}
-          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = t.hov; }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = t.base; }}
-        >
-          <RotateCcw size={14} />
-          <span style={{ fontSize: '10px', lineHeight: 1 }}>Сбросить</span>
-        </button>
-      )}
-
-      {/* Close */}
-      <button
-        onClick={onClose}
-        style={getBtnStyle(t)}
-        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = t.hov; }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = t.base; }}
-      >
-        <X size={14} />
-        <span style={{ fontSize: '10px', lineHeight: 1 }}>Закрыть</span>
-      </button>
-    </div>
-  );
-};
-
-// ─── ModalFilterPanel ─────────────────────────────────────────────────────────
-
-interface ModalFilterPanelProps {
-  isDark:          boolean;
-  headers:         Array<{ text: string; colIndex: number }>;
-  activeFilters:   Map<string, Set<string>>;
-  uniqueValues:    Map<string, string[]>;
-  onFilterChange:  (col: string, val: string, checked: boolean) => void;
-  visibleColumns:  Set<string>;
-  onColumnToggle:  (col: string) => void;
-}
-
-const ModalFilterPanel: React.FC<ModalFilterPanelProps> = ({
-  isDark, headers, activeFilters, uniqueValues, onFilterChange, visibleColumns, onColumnToggle,
-}) => {
-  const bg           = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
-  const border       = isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
-  const labelColor   = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)';
-  const activeItemBg = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)';
-  const activeItemBr = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)';
-  const itemColor    = isDark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.7)';
-  const itemActiveC  = isDark ? '#fff'                   : '#000';
-
-  const labelStyle: React.CSSProperties = {
-    fontSize: '10px', fontWeight: 700, textTransform: 'uppercase',
-    letterSpacing: '0.07em', color: labelColor, marginBottom: '6px',
-  };
-
-  const getItemStyle = (active: boolean): React.CSSProperties => ({
-    display:      'flex',
-    alignItems:   'center',
-    gap:          '5px',
-    padding:      '3px 8px',
-    borderRadius: '6px',
-    cursor:       'pointer',
-    fontSize:     '12px',
-    whiteSpace:   'nowrap',
-    background:   active ? activeItemBg : 'transparent',
-    border:       `1px solid ${active ? activeItemBr : 'transparent'}`,
-    color:        active ? itemActiveC : itemColor,
-  });
-
-  return (
-    <div style={{
-      background:   bg,
-      borderBottom: `1px solid ${border}`,
-      padding:      '12px 14px',
-      maxHeight:    '220px',
-      overflowY:    'auto',
-      flexShrink:   0,
-    }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
-
-        {/* Column visibility */}
-        <div>
-          <p style={labelStyle}>Колонки</p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-            {headers.map((h) => {
-              const visible = visibleColumns.has(h.text);
-              return (
-                <label key={h.colIndex} style={getItemStyle(visible)}>
-                  <input
-                    type="checkbox"
-                    checked={visible}
-                    onChange={() => onColumnToggle(h.text)}
-                    style={{ cursor: 'pointer' }}
-                  />
-                  {h.text}
-                </label>
-              );
-            })}
+      {open && createPortal(
+        <>
+          <style>{`@keyframes tbIn2{from{opacity:0;transform:translateY(-5px) scale(0.97)}to{opacity:1;transform:none}}`}</style>
+          <div style={{
+            position: 'fixed', top: pos.top, left: pos.left,
+            minWidth: 190, zIndex: 99999,
+            background: t.inpBg, border: `1px solid ${t.btnBdr}`,
+            borderRadius: 10,
+            boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.7)' : '0 8px 28px rgba(0,0,0,0.18)',
+            overflow: 'hidden', animation: 'tbIn2 0.13s cubic-bezier(0.2,0,0,1)',
+          }}>
+            {(['md', 'excel'] as CopyFormat[]).map(fmt => (
+              <button key={fmt} onClick={() => doCopy(fmt)} style={{
+                width: '100%', padding: '10px 14px',
+                display: 'flex', flexDirection: 'column', gap: 2,
+                border: 'none', background: 'transparent', cursor: 'pointer',
+                textAlign: 'left', color: t.inpClr, transition: 'background 0.1s',
+              }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+              >
+                <span style={{ fontSize: 13, fontWeight: 500 }}>{fmt === 'md' ? 'Markdown' : 'Excel / TSV'}</span>
+                <span style={{ fontSize: 11, color: t.plhClr }}>{fmt === 'md' ? 'Для документов' : 'Tab-separated'}</span>
+              </button>
+            ))}
           </div>
-        </div>
-
-        {/* Per-column value filters */}
-        {headers.map((h) => {
-          const values    = uniqueValues.get(h.text) ?? [];
-          if (values.length === 0) return null;
-          const activeSet = activeFilters.get(h.text) ?? new Set<string>();
-          return (
-            <div key={h.colIndex}>
-              <p style={labelStyle}>{h.text}</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', maxHeight: '130px', overflowY: 'auto' }}>
-                {values.map((val) => {
-                  const active = activeSet.has(val);
-                  return (
-                    <label key={val} style={getItemStyle(active)}>
-                      <input
-                        type="checkbox"
-                        checked={active}
-                        onChange={(e) => onFilterChange(h.text, val, e.target.checked)}
-                        style={{ cursor: 'pointer' }}
-                      />
-                      {val}
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+        </>,
+        document.body,
+      )}
+    </>
   );
 };
 
 // ─── TableModal ───────────────────────────────────────────────────────────────
-
 const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onClose }) => {
   const [searchQuery,   setSearchQuery]   = useState('');
   const [showFilters,   setShowFilters]   = useState(false);
@@ -474,33 +213,34 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   const parsedTable = useMemo(() => parseTableFromHTML(tableHtml), [tableHtml]);
-
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
-    () => new Set(parsedTable.headers.map((h) => h.text))
+    () => new Set(parsedTable.headers.map(h => h.text))
   );
 
-  const headersKey = parsedTable.headers.map((h) => h.text).join(',');
+  const headersKey = parsedTable.headers.map(h => h.text).join(',');
   useEffect(() => {
-    setVisibleColumns(new Set(parsedTable.headers.map((h) => h.text)));
+    setVisibleColumns(new Set(parsedTable.headers.map(h => h.text)));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [headersKey]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    if (isOpen) {
-      dialog.showModal();
-      document.body.style.overflow = 'hidden';
-    } else {
-      dialog.close();
-      document.body.style.overflow = 'unset';
-    }
+    if (isOpen) { dialog.showModal(); document.body.style.overflow = 'hidden'; }
+    else { dialog.close(); document.body.style.overflow = 'unset'; }
     return () => { document.body.style.overflow = 'unset'; };
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
+
   const uniqueValues = useMemo(() => {
     const map = new Map<string, string[]>();
-    parsedTable.headers.forEach((h) => {
+    parsedTable.headers.forEach(h => {
       map.set(h.text, getUniqueValuesForColumn(parsedTable.rows, h.text));
     });
     return map;
@@ -512,99 +252,211 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
   );
 
   const handleFilterChange = (column: string, value: string, checked: boolean) => {
-    setActiveFilters((prev) => {
+    setActiveFilters(prev => {
       const next = new Map(prev);
       const set  = new Set(next.get(column) ?? []);
-      if (checked) { set.add(value); } else { set.delete(value); }
-      if (set.size === 0) { next.delete(column); } else { next.set(column, set); }
+      if (checked) set.add(value); else set.delete(value);
+      if (set.size === 0) next.delete(column); else next.set(column, set);
       return next;
     });
-  };
-
-  const handleResetFilters = () => {
-    setActiveFilters(new Map());
-    setSearchQuery('');
   };
 
   const handleColumnToggle = (col: string) => {
-    setVisibleColumns((prev) => {
+    setVisibleColumns(prev => {
       const next = new Set(prev);
-      if (next.has(col)) { next.delete(col); } else { next.add(col); }
+      if (next.has(col)) next.delete(col); else next.add(col);
       return next;
     });
   };
 
-  const activeFilterCount = Array.from(activeFilters.values()).filter((s) => s.size > 0).length;
+  const handleReset = () => { setActiveFilters(new Map()); setSearchQuery(''); };
+  const activeFilterCount = Array.from(activeFilters.values()).filter(s => s.size > 0).length;
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const onKey     = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    const dialog    = dialogRef.current;
-    const onBdClick = (e: MouseEvent) => {
-      if (!dialog) return;
-      const r = dialog.getBoundingClientRect();
-      const inside =
-        r.top  <= e.clientY && e.clientY <= r.top  + r.height &&
-        r.left <= e.clientX && e.clientX <= r.left + r.width;
-      if (!inside) onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    dialog?.addEventListener('click', onBdClick);
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      dialog?.removeEventListener('click', onBdClick);
-    };
-  }, [isOpen, onClose]);
+  // Convert activeFilters (Map<string, Set<string>>) to FiltersPanel format (Map<number, Set<string>>)
+  const filtersForPanel = useMemo(() => {
+    const m = new Map<number, Set<string>>();
+    parsedTable.headers.forEach((h, i) => {
+      const s = activeFilters.get(h.text);
+      if (s && s.size > 0) m.set(i, s);
+    });
+    return m;
+  }, [activeFilters, parsedTable.headers]);
+
+  const modalHeaders = parsedTable.headers.map(h => h.text);
+
+  const getUniqueForCol = (colIndex: number) => {
+    const header = parsedTable.headers[colIndex];
+    return header ? (uniqueValues.get(header.text) ?? []) : [];
+  };
+
+  const toggleFilterByIndex = (colIndex: number, value: string) => {
+    const header = parsedTable.headers[colIndex];
+    if (!header) return;
+    const current = activeFilters.get(header.text) ?? new Set<string>();
+    handleFilterChange(header.text, value, !current.has(value));
+  };
+
+  const t = tk(isDark);
+  const filterLabel = activeFilterCount > 0 ? `Фильтры · ${activeFilterCount}` : 'Фильтры';
 
   if (!isOpen) return null;
 
   return (
     <dialog
       ref={dialogRef}
-      aria-label="Модальное окно таблицы"
+      aria-label="Таблица — полный экран"
       aria-modal="true"
-      className={`fixed inset-0 z-[100] flex items-center justify-center w-full h-full max-w-none max-h-none p-0 border-0 ${isDark ? 'bg-black/80' : 'bg-white/80'}`}
+      style={{
+        // Blur backdrop — 50% opacity blur instead of dark overlay
+        position: 'fixed', inset: 0, zIndex: 100,
+        width: '100%', height: '100%',
+        maxWidth: 'none', maxHeight: 'none',
+        padding: 0, margin: 0, border: 'none',
+        background: 'transparent',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
     >
+      {/* Blur backdrop */}
       <div
-        className={`relative rounded-lg shadow-2xl flex flex-col overflow-hidden ${isDark ? 'bg-[#1a1a1a]' : 'bg-[#E8E7E3]'}`}
+        onClick={onClose}
         style={{
-          width:     'fit-content',
-          minWidth:  '40vw',
-          maxWidth:  '95vw',
-          height:    'auto',
-          maxHeight: '95vh',
+          position: 'fixed', inset: 0,
+          background: t.backdropBg,
+          backdropFilter: t.backdropBlur,
+          WebkitBackdropFilter: t.backdropBlur,
+          zIndex: 0,
         }}
-      >
-        <ModalToolbar
-          isDark={isDark}
-          tableHtml={tableHtml}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          showFilters={showFilters}
-          onToggleFilters={() => setShowFilters((v) => !v)}
-          activeFilterCount={activeFilterCount}
-          onResetFilters={handleResetFilters}
-          onClose={onClose}
-        />
+      />
 
+      {/* Modal panel */}
+      <div style={{
+        position: 'relative', zIndex: 1,
+        width: 'min(95vw, 1400px)',
+        height: 'min(90vh, 900px)',
+        borderRadius: 14,
+        border: `1px solid ${t.border}`,
+        background: t.modalBg,
+        boxShadow: isDark
+          ? '0 24px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.06)'
+          : '0 24px 80px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.08)',
+        display: 'flex', flexDirection: 'column',
+        overflow: 'hidden',
+      }}>
+        {/* Toolbar — same style as inline table */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '8px 10px',
+          borderBottom: `1px solid ${t.border}`,
+          background: t.barBg,
+          flexWrap: 'nowrap', minWidth: 0, flexShrink: 0,
+        }}>
+          {/* Search */}
+          <div style={{ position: 'relative', flex: '1 1 0', minWidth: 0 }}>
+            <Search size={13} style={{
+              position: 'absolute', left: 10, top: '50%',
+              transform: 'translateY(-50%)',
+              color: t.plhClr, pointerEvents: 'none',
+            }} />
+            <input
+              type="text" placeholder="Поиск..." value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%', padding: '0 30px 0 30px', height: 36,
+                borderRadius: 8, border: `1px solid ${t.inpBdr}`,
+                background: t.inpBg, color: t.inpClr,
+                fontSize: 13, outline: 'none', boxSizing: 'border-box',
+                transition: 'border-color 0.15s',
+              }}
+              onFocus={e => { (e.target as HTMLInputElement).style.borderColor = t.inpFocBdr; }}
+              onBlur={e  => { (e.target as HTMLInputElement).style.borderColor = t.inpBdr; }}
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} style={{
+                position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', cursor: 'pointer', padding: 2,
+                color: t.plhClr, display: 'flex',
+              }}>
+                <X size={12} />
+              </button>
+            )}
+          </div>
+
+          {/* Same pill buttons as inline */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            <CopyBtn isDark={isDark} tableHtml={tableHtml} />
+
+            <Pill
+              onClick={() => setShowFilters(v => !v)}
+              title="Фильтры" label={filterLabel}
+              icon={<Filter size={14} />} isDark={isDark}
+              active={showFilters || activeFilterCount > 0}
+            />
+
+            {activeFilterCount > 0 && (
+              <Pill onClick={handleReset} title="Сбросить" label="Сбросить"
+                icon={<RotateCcw size={14} />} isDark={isDark} danger
+              />
+            )}
+
+            <Pill onClick={onClose} title="Закрыть (Esc)" label="Закрыть"
+              icon={<X size={14} />} isDark={isDark}
+            />
+          </div>
+        </div>
+
+        {/* Filters panel — same component as inline */}
         {showFilters && (
-          <ModalFilterPanel
-            isDark={isDark}
-            headers={parsedTable.headers}
-            activeFilters={activeFilters}
-            uniqueValues={uniqueValues}
-            onFilterChange={handleFilterChange}
-            visibleColumns={visibleColumns}
-            onColumnToggle={handleColumnToggle}
-          />
+          <>
+            <FiltersPanel
+              isDark={isDark}
+              headers={modalHeaders}
+              filters={filtersForPanel}
+              onToggleFilter={toggleFilterByIndex}
+              getUniqueValuesForColumn={getUniqueForCol}
+            />
+            <ColumnsPanel
+              isDark={isDark}
+              headers={modalHeaders}
+              visibleColumns={new Set(
+                parsedTable.headers
+                  .map((h, i) => visibleColumns.has(h.text) ? i : -1)
+                  .filter(i => i >= 0)
+              )}
+              onToggleColumn={i => {
+                const h = parsedTable.headers[i];
+                if (h) handleColumnToggle(h.text);
+              }}
+            />
+          </>
         )}
 
+        {/* Table */}
         <ModalTableContent
           isDark={isDark}
           headers={parsedTable.headers}
           filteredRows={filteredRows}
           visibleColumns={visibleColumns}
         />
+
+        {/* Footer */}
+        <div style={{
+          padding: '6px 12px', flexShrink: 0,
+          borderTop: `1px solid ${t.border}`,
+          fontSize: 11,
+          color: isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.32)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          userSelect: 'none', background: t.modalBg,
+        }}>
+          <span>
+            {filteredRows.length === parsedTable.rows.length
+              ? `${parsedTable.rows.length} строк`
+              : `${filteredRows.length} из ${parsedTable.rows.length} строк`
+            }
+          </span>
+          {activeFilterCount > 0 && (
+            <span>{activeFilterCount} фильтра активно</span>
+          )}
+        </div>
       </div>
     </dialog>
   );
