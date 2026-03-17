@@ -75,7 +75,7 @@ export const ModalTableContent: React.FC<ModalTableContentProps> = ({ isDark, he
       style={{ overflowX: 'auto', overflowY: 'auto', flex: 1, scrollbarWidth: 'thin', scrollbarColor: `${t.thumb} ${t.track}`, ...dragStyle }}
       {...dragHandlers}
     >
-      <table style={{ borderCollapse: 'separate', borderSpacing: 0, width: 'auto', minWidth: '100%', color: t.cellColor }}>
+      <table style={{ borderCollapse: 'separate', borderSpacing: 0, width: '100%', minWidth: 'max-content', color: t.cellColor }}>
         <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
           <tr>
             {visible.map(h => (
