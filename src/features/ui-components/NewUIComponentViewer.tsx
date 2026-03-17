@@ -3,7 +3,7 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTheme } from '@/shared/contexts/ThemeContext';
-import { X, Maximize2, Minimize2, Play, RefreshCcw, Settings, PanelRight, PanelRightClose } from 'lucide-react';
+import { X, Maximize2, Minimize2, Play, RefreshCcw, Settings, PanelRight, PanelRightClose, ChevronUp, ChevronDown } from 'lucide-react';
 import { loadComponent, getDefaultProps } from './loader';
 import { ComponentWrapper } from './ComponentWrapper';
 import type { UniversalProps, ComponentConfig, PropDefinition } from './types';
@@ -29,7 +29,6 @@ const DEFAULT_UNIVERSAL_PROPS: UniversalProps = {
   opacity: 1, blur: 0, brightness: 1, contrast: 1, saturate: 1,
 };
 
-// Группы полей для sidebar-layout — каждая группа отдельная секция
 const FIELD_GROUPS: Array<{
   label: string;
   fields: Array<{ label: string; key: keyof UniversalProps; min: number; max: number; step: number; default: number }>;
@@ -56,6 +55,18 @@ const FIELD_GROUPS: Array<{
 ];
 
 const tc = (isDark: boolean, d: string, l: string) => (isDark ? d : l);
+
+// ─── useIsMobile ──────────────────────────────────────────────────────────────
+
+function useIsMobile(): boolean {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  return isMobile;
+}
 
 // ─── Color utils ──────────────────────────────────────────────────────────────
 
@@ -150,14 +161,12 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
 
   return (
     <div style={{ userSelect: 'none' }}>
-      {/* SV */}
       <div ref={svRef} onMouseDown={handleSvMouseDown}
         style={{ position:'relative', width:'100%', height:140, cursor:'crosshair', background:`linear-gradient(to bottom, transparent, #000), linear-gradient(to right, #fff, ${hueColor})` }}
       >
         <div style={{ position:'absolute', left:`${sat*100}%`, top:`${(1-val)*100}%`, width:13, height:13, borderRadius:'50%', border:'2px solid #fff', boxShadow:'0 0 0 1px rgba(0,0,0,0.4),0 1px 4px rgba(0,0,0,0.5)', transform:'translate(-50%,-50%)', pointerEvents:'none' }} />
       </div>
 
-      {/* Hue */}
       <div style={{ padding:'10px 12px 0' }}>
         <div ref={hueRef} onMouseDown={handleHueMouseDown}
           style={{ position:'relative', height:10, borderRadius:5, cursor:'pointer', background:'linear-gradient(to right,#f00 0%,#ff0 16.67%,#0f0 33.33%,#0ff 50%,#00f 66.67%,#f0f 83.33%,#f00 100%)' }}
@@ -166,7 +175,6 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
         </div>
       </div>
 
-      {/* HEX row */}
       <div style={{ padding:'10px 12px 0', display:'flex', alignItems:'center', gap:6 }}>
         <div style={{ width:22, height:22, borderRadius:5, flexShrink:0, background:currentHex, border:`1px solid ${border}` }} />
         <div style={{ flex:1 }}>
@@ -190,7 +198,6 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
         </button>
       </div>
 
-      {/* RGB / HSL */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:1, margin:'8px 0 0', background:border }}>
         {[{ label:'RGB', value:currentRgb.join(', ') },{ label:'HSL', value:`${currentHsl[0]}°, ${currentHsl[1]}%, ${currentHsl[2]}%` }].map(({label,value:v})=>(
           <div key={label} style={{ background:metaBg, padding:'5px 12px' }}>
@@ -200,7 +207,6 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
         ))}
       </div>
 
-      {/* Reset */}
       <div style={{ padding:'8px 12px' }}>
         <button onClick={()=>{onChange(undefined);setHexInput('');}}
           style={{ width:'100%', padding:'4px', borderRadius:5, border:`1px solid ${border}`, background:'transparent', color:labelClr, fontSize:10, cursor:'pointer' }}
@@ -212,7 +218,7 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
   );
 };
 
-// ─── Sidebar NumberInput — компактный горизонтальный ─────────────────────────
+// ─── Sidebar NumberInput ───────────────────────────────────────────────────────
 
 const SidebarNumberInput: React.FC<{
   value: number; onChange: (v: number) => void;
@@ -248,7 +254,7 @@ const SidebarNumberInput: React.FC<{
   );
 };
 
-// ─── Sidebar Row — одна строка: label + слайдер ───────────────────────────────
+// ─── Sidebar Row ───────────────────────────────────────────────────────────────
 
 const SidebarRow: React.FC<{
   label: string; fieldKey: keyof UniversalProps;
@@ -278,7 +284,7 @@ const SidebarRow: React.FC<{
   );
 };
 
-// ─── Sidebar Section — сворачиваемая группа полей ─────────────────────────────
+// ─── Sidebar Section ───────────────────────────────────────────────────────────
 
 const SidebarSection: React.FC<{
   label: string;
@@ -308,7 +314,7 @@ const SidebarSection: React.FC<{
   );
 };
 
-// ─── Color Section — секция цвета в sidebar ───────────────────────────────────
+// ─── Color Section ─────────────────────────────────────────────────────────────
 
 const ColorSection: React.FC<{
   universalProps: UniversalProps;
@@ -326,7 +332,6 @@ const ColorSection: React.FC<{
 
   return (
     <div style={{ borderBottom:`1px solid ${border}` }}>
-      {/* Header */}
       <button onClick={()=>setOpen(v=>!v)} style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'7px 12px', background:bg, border:'none', cursor:'pointer' }}>
         <span style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:labelColor, flex:1, textAlign:'left' }}>Цвет</span>
         {colorMode==='solid' && currentColor && (
@@ -342,7 +347,6 @@ const ColorSection: React.FC<{
 
       {open && (
         <div>
-          {/* Mode toggle */}
           <div style={{ display:'flex', margin:'0 12px 8px', borderRadius:7, overflow:'hidden', border:`1px solid ${border}` }}>
             {(['original','solid'] as const).map(mode => (
               <button key={mode} onClick={()=>onChange('colorMode', mode)} style={{
@@ -368,7 +372,7 @@ const ColorSection: React.FC<{
   );
 };
 
-// ─── Universal Sidebar ── sidebar-style layout ────────────────────────────────
+// ─── Universal Sidebar ─────────────────────────────────────────────────────────
 
 const UniversalSidebar: React.FC<{
   universalProps: UniversalProps;
@@ -391,7 +395,7 @@ const UniversalSidebar: React.FC<{
   </div>
 );
 
-// ─── AiSelect ────────────────────────────────────────────────────────────────
+// ─── AiSelect ─────────────────────────────────────────────────────────────────
 
 const AiSelect: React.FC<{
   label: string; value: string; options: string[];
@@ -462,7 +466,7 @@ const AiSelect: React.FC<{
   );
 };
 
-// ─── Specific Sidebar ─────────────────────────────────────────────────────────
+// ─── Specific Sidebar ──────────────────────────────────────────────────────────
 
 const SpecificSidebar: React.FC<{
   config: ComponentConfig; componentProps: ComponentPropsMap;
@@ -509,7 +513,7 @@ const SpecificSidebar: React.FC<{
   );
 };
 
-// ─── Tab bar ──────────────────────────────────────────────────────────────────
+// ─── Tab bar ───────────────────────────────────────────────────────────────────
 
 const TabBar: React.FC<{ active: TabType; onSelect: (t: TabType) => void; isDark: boolean }> = ({ active, onSelect, isDark }) => {
   const border = tc(isDark,'rgba(255,255,255,0.08)','rgba(0,0,0,0.08)');
@@ -534,7 +538,7 @@ const TabBar: React.FC<{ active: TabType; onSelect: (t: TabType) => void; isDark
   );
 };
 
-// ─── Icon button ──────────────────────────────────────────────────────────────
+// ─── Icon button ───────────────────────────────────────────────────────────────
 
 const IconBtn: React.FC<{
   onClick: () => void; title: string; label: string;
@@ -555,7 +559,7 @@ const IconBtn: React.FC<{
   );
 };
 
-// ─── Component render ─────────────────────────────────────────────────────────
+// ─── Component render ──────────────────────────────────────────────────────────
 
 interface ComponentRenderProps {
   Component: AnyComponent; componentProps: ComponentPropsMap;
@@ -570,7 +574,7 @@ const ComponentRender: React.FC<ComponentRenderProps> = ({ Component, componentP
   </ComponentWrapper>
 );
 
-// ─── Settings Content ─────────────────────────────────────────────────────────
+// ─── Settings Content ──────────────────────────────────────────────────────────
 
 const SettingsContent: React.FC<{
   activeTab: TabType; onTabSelect: (t: TabType) => void;
@@ -591,7 +595,7 @@ const SettingsContent: React.FC<{
   </div>
 );
 
-// ─── Preview panel ────────────────────────────────────────────────────────────
+// ─── Preview panel ─────────────────────────────────────────────────────────────
 
 const PreviewPanel: React.FC<ComponentRenderProps & {
   config: ComponentConfig;
@@ -620,7 +624,7 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
   );
 };
 
-// ─── Settings panel ───────────────────────────────────────────────────────────
+// ─── Settings panel ────────────────────────────────────────────────────────────
 
 const SettingsPanel: React.FC<ComponentRenderProps & {
   config: ComponentConfig; onClose: () => void;
@@ -649,7 +653,136 @@ const SettingsPanel: React.FC<ComponentRenderProps & {
   );
 };
 
-// ─── Fullscreen с правой панелью ──────────────────────────────────────────────
+// ─── Mobile Bottom Sheet ───────────────────────────────────────────────────────
+// Nav-bar style: fixed tabs at bottom, sheet slides up on demand
+
+interface MobileBottomSheetProps {
+  config: ComponentConfig;
+  componentProps: ComponentPropsMap;
+  universalProps: UniversalProps;
+  onPropChange: (name: string, v: PropValue) => void;
+  onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
+  isDark: boolean;
+}
+
+const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
+  config, componentProps, universalProps, onPropChange, onUniversalPropChange, isDark,
+}) => {
+  const [activeTab, setActiveTab] = useState<TabType | null>(null);
+  const border  = tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)');
+  const bg      = tc(isDark, '#0d0d0d', '#dddcd8');
+  const navBg   = tc(isDark, '#111', '#e0dfdb');
+  const labelClr = tc(isDark, 'rgba(255,255,255,0.5)', 'rgba(0,0,0,0.5)');
+
+  const SHEET_HEIGHT = '65dvh';
+
+  const tabs: Array<{ id: TabType; label: string }> = [
+    { id: 'universal', label: 'Общие' },
+    { id: 'specific',  label: 'Специфические' },
+  ];
+
+  const isOpen = activeTab !== null;
+
+  return (
+    <>
+      {/* Sheet overlay — closes sheet when tapping canvas */}
+      {isOpen && (
+        <div
+          onClick={() => setActiveTab(null)}
+          style={{ position:'absolute', inset:0, zIndex:10 }}
+        />
+      )}
+
+      {/* Sliding sheet */}
+      <div style={{
+        position: 'absolute',
+        bottom: 52, // above nav bar
+        left: 0, right: 0,
+        height: isOpen ? SHEET_HEIGHT : 0,
+        overflow: 'hidden',
+        transition: 'height 0.3s cubic-bezier(0.4,0,0.2,1)',
+        zIndex: 20,
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
+        <div style={{
+          flex: 1,
+          background: bg,
+          borderTop: `1px solid ${border}`,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}>
+          {/* Sheet drag handle */}
+          <div style={{ display:'flex', justifyContent:'center', padding:'8px 0 4px', flexShrink:0 }}>
+            <div style={{ width:36, height:4, borderRadius:2, background:tc(isDark,'rgba(255,255,255,0.2)','rgba(0,0,0,0.15)') }} />
+          </div>
+
+          {/* Tab label */}
+          <div style={{ padding:'0 16px 8px', fontSize:12, fontWeight:600, color:labelClr, flexShrink:0 }}>
+            {activeTab === 'universal' ? 'Общие настройки' : 'Специфические настройки'}
+          </div>
+
+          {/* Content */}
+          <div style={{ flex:1, overflowY:'auto', WebkitOverflowScrolling:'touch' }}>
+            {activeTab === 'universal' && (
+              <UniversalSidebar universalProps={universalProps} onChange={onUniversalPropChange} isDark={isDark} />
+            )}
+            {activeTab === 'specific' && (
+              <SpecificSidebar config={config} componentProps={componentProps} onChange={onPropChange} isDark={isDark} />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile nav bar */}
+      <div style={{
+        position: 'absolute',
+        bottom: 0, left: 0, right: 0,
+        height: 52,
+        background: navBg,
+        borderTop: `1px solid ${border}`,
+        display: 'flex',
+        alignItems: 'stretch',
+        zIndex: 30,
+      }}>
+        {tabs.map(tab => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(isActive ? null : tab.id)}
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 2,
+                border: 'none',
+                background: isActive ? tc(isDark,'rgba(255,255,255,0.07)','rgba(0,0,0,0.06)') : 'transparent',
+                color: isActive ? tc(isDark,'#fff','#000') : labelClr,
+                cursor: 'pointer',
+                fontSize: 10,
+                fontWeight: isActive ? 600 : 400,
+                transition: 'all 0.14s',
+                borderTop: isActive ? `2px solid ${tc(isDark,'rgba(255,255,255,0.6)','rgba(0,0,0,0.5)')}` : '2px solid transparent',
+              }}
+            >
+              {tab.id === 'universal'
+                ? (isOpen && isActive ? <ChevronDown size={15} /> : <Settings size={15} />)
+                : (isOpen && isActive ? <ChevronDown size={15} /> : <PanelRight size={15} />)
+              }
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+};
+
+// ─── Fullscreen modal — desktop sidebar + mobile bottom sheet ─────────────────
 
 const FullscreenModal: React.FC<ComponentRenderProps & {
   config: ComponentConfig; onClose: () => void; onRefresh: () => void;
@@ -659,6 +792,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
 }> = ({ Component, componentProps, universalProps, refreshKey, isDark, config, onClose, onRefresh, onPropChange, onUniversalPropChange, onReset }) => {
   const [activeTab, setActiveTab] = useState<TabType>('universal');
   const [panelOpen, setPanelOpen] = useState(true);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -677,28 +811,45 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
     <div style={{ position:'fixed', inset:0, zIndex:9999, background:bg, display:'flex', flexDirection:'column' }}>
       {/* Header */}
       <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', flexShrink:0, borderBottom:`1px solid ${border}`, background:headerBg }}>
-        <div style={{ fontSize:13, fontWeight:600, color:tc(isDark,'rgba(255,255,255,0.7)','rgba(0,0,0,0.7)'), padding:'3px 9px', borderRadius:7, background:tc(isDark,'rgba(255,255,255,0.06)','rgba(0,0,0,0.06)'), border:`1px solid ${border}` }}>
+        <div style={{ fontSize:13, fontWeight:600, color:tc(isDark,'rgba(255,255,255,0.7)','rgba(0,0,0,0.7)'), padding:'3px 9px', borderRadius:7, background:tc(isDark,'rgba(255,255,255,0.06)','rgba(0,0,0,0.06)'), border:`1px solid ${border}`, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:140 }}>
           {config.name}
         </div>
         <div style={{ flex:1 }} />
         <IconBtn onClick={onRefresh} title="Перезапустить" label="Заново" isDark={isDark}><Play size={13} /></IconBtn>
         <IconBtn onClick={onReset} title="Сбросить" label="Сбросить" isDark={isDark}><RefreshCcw size={13} /></IconBtn>
-        <div style={{ width:1, height:22, background:border, margin:'0 2px', flexShrink:0 }} />
-        <IconBtn onClick={()=>setPanelOpen(v=>!v)} title={panelOpen?'Скрыть панель':'Показать панель'} label={panelOpen?'Скрыть':'Панель'} isDark={isDark} active={panelOpen}>
-          {panelOpen?<PanelRightClose size={13}/>:<PanelRight size={13}/>}
-        </IconBtn>
+
+        {/* Desktop-only: panel toggle */}
+        {!isMobile && (
+          <>
+            <div style={{ width:1, height:22, background:border, margin:'0 2px', flexShrink:0 }} />
+            <IconBtn onClick={()=>setPanelOpen(v=>!v)} title={panelOpen?'Скрыть панель':'Показать панель'} label={panelOpen?'Скрыть':'Панель'} isDark={isDark} active={panelOpen}>
+              {panelOpen?<PanelRightClose size={13}/>:<PanelRight size={13}/>}
+            </IconBtn>
+          </>
+        )}
+
         <IconBtn onClick={onClose} title="Свернуть (Esc)" label="Свернуть" isDark={isDark}><Minimize2 size={13} /></IconBtn>
       </div>
 
       {/* Body */}
-      <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
+      <div style={{ flex:1, display:'flex', overflow:'hidden', position:'relative' }}>
+
         {/* Canvas */}
-        <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:48, overflow:'auto' }}>
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: isMobile ? '24px 16px' : 48,
+          overflow: 'auto',
+          // On mobile, leave room for bottom sheet nav bar
+          paddingBottom: isMobile ? 68 : undefined,
+        }}>
           <ComponentRender Component={Component} componentProps={componentProps} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} />
         </div>
 
-        {/* Правая панель — sidebar-style */}
-        {panelOpen && (
+        {/* Desktop: right sidebar */}
+        {!isMobile && panelOpen && (
           <div style={{ width:PANEL_W, flexShrink:0, borderLeft:`1px solid ${border}`, background:panelBg, display:'flex', flexDirection:'column', overflow:'hidden' }}>
             <SettingsContent
               activeTab={activeTab} onTabSelect={setActiveTab}
@@ -710,13 +861,25 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
             />
           </div>
         )}
+
+        {/* Mobile: bottom sheet nav */}
+        {isMobile && (
+          <MobileBottomSheet
+            config={config}
+            componentProps={componentProps}
+            universalProps={universalProps}
+            onPropChange={onPropChange}
+            onUniversalPropChange={onUniversalPropChange}
+            isDark={isDark}
+          />
+        )}
       </div>
     </div>,
     document.body,
   );
 };
 
-// ─── Root ─────────────────────────────────────────────────────────────────────
+// ─── Root ──────────────────────────────────────────────────────────────────────
 
 const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) => {
   const { isDark } = useTheme();
