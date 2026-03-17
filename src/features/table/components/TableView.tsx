@@ -8,7 +8,6 @@ import { getTableStyles } from './tableStyles';
 export { getTableStyles } from './tableStyles';
 
 export type ColumnAlignment = 'left' | 'center' | 'right' | null;
-
 type SortDirection = 'asc' | 'desc' | 'none';
 
 interface TableViewProps {
@@ -24,127 +23,167 @@ interface TableViewProps {
   fullscreen?: boolean;
 }
 
+// ─── Design tokens ────────────────────────────────────────────────────────────
+
+function tokens(isDark: boolean) {
+  return {
+    // Table surface
+    thBg:         isDark ? '#161618'                   : '#f5f4f0',
+    thColor:      isDark ? 'rgba(255,255,255,0.45)'    : 'rgba(15,15,20,0.45)',
+    thBorder:     isDark ? 'rgba(255,255,255,0.07)'    : 'rgba(15,15,20,0.07)',
+    // Left accent on header
+    accentLine:   isDark ? 'rgba(255,255,255,0.15)'    : 'rgba(15,15,20,0.12)',
+    // Rows
+    rowEven:      isDark ? '#0e0e10'                   : '#ffffff',
+    rowOdd:       isDark ? '#111113'                   : '#f9f9f7',
+    rowHover:     isDark ? '#1a1a1d'                   : '#f1f0eb',
+    // Cell border
+    cellBorder:   isDark ? 'rgba(255,255,255,0.05)'    : 'rgba(15,15,20,0.06)',
+    // Scrollbar
+    thumb:        isDark ? 'rgba(255,255,255,0.15)'    : 'rgba(15,15,20,0.15)',
+    thumbHov:     isDark ? 'rgba(255,255,255,0.28)'    : 'rgba(15,15,20,0.28)',
+    track:        isDark ? 'rgba(255,255,255,0.04)'    : 'rgba(15,15,20,0.04)',
+  };
+}
+
+// ─── TableView ────────────────────────────────────────────────────────────────
+
 export const TableView: React.FC<TableViewProps> = ({
-  isDark,
-  headers,
-  rows,
-  visibleColumns,
-  searchQuery,
-  sortColumn,
-  sortDirection,
-  onSort,
-  headerAlignments = [],
-  fullscreen = false,
+  isDark, headers, rows, visibleColumns, searchQuery,
+  sortColumn, sortDirection, onSort, headerAlignments = [], fullscreen = false,
 }) => {
-  const styles          = useMemo(() => getTableStyles(isDark), [isDark]);
-  const scrollbarStyles = useMemo(() => getScrollbarStyles(isDark), [isDark]);
+  const tk = useMemo(() => tokens(isDark), [isDark]);
   const { scrollRef, dragStyle, dragHandlers } = useDragScroll();
 
   return (
     <>
-      <div
-        ref={scrollRef}
-        className="table-scroll-container"
-        style={{
-          overflowX: 'auto',
-          overflowY: 'auto',
-          maxHeight:  fullscreen ? undefined : '480px',
-          height:     fullscreen ? '100%'    : undefined,
-          position:  'relative',
-          ...dragStyle,
-        }}
-        {...dragHandlers}
-      >
-        <table className="border-collapse text-sm" style={{ width: 'auto', minWidth: '100%' }}>
-          <TableHead
-            isDark={isDark}
-            headers={headers}
-            visibleColumns={visibleColumns}
-            sortColumn={sortColumn}
-            sortDirection={sortDirection}
-            onSort={onSort}
-            headerAlignments={headerAlignments}
-          />
-          <tbody>
-            {rows.map((row, rowIndex) => (
-              <TableRow
-                key={`row-${rowIndex}-${row.cells.join('-').slice(0, 60)}`}
-                isDark={isDark}
-                row={row}
-                rowIndex={rowIndex}
-                visibleColumns={visibleColumns}
-                searchQuery={searchQuery}
-              />
-            ))}
-          </tbody>
-        </table>
+      {/* Scroll wrapper with fade edges on mobile */}
+      <div style={{ position: 'relative' }}>
+        <div
+          ref={scrollRef}
+          className="tb-scroll"
+          style={{
+            overflowX: 'auto',
+            overflowY: 'auto',
+            maxHeight:  fullscreen ? undefined : 480,
+            height:     fullscreen ? '100%'    : undefined,
+            position: 'relative',
+            ...dragStyle,
+          }}
+          {...dragHandlers}
+        >
+          <table style={{ borderCollapse: 'separate', borderSpacing: 0, width: 'auto', minWidth: '100%' }}>
+            <TableHead
+              isDark={isDark} tk={tk}
+              headers={headers} visibleColumns={visibleColumns}
+              sortColumn={sortColumn} sortDirection={sortDirection}
+              onSort={onSort} headerAlignments={headerAlignments}
+            />
+            <tbody>
+              {rows.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={headers.filter((_, i) => visibleColumns.has(i)).length}
+                    style={{
+                      textAlign: 'center', padding: '2.5rem 1rem',
+                      color: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(15,15,20,0.3)',
+                      fontSize: 13, fontStyle: 'italic',
+                      background: tk.rowEven,
+                    }}
+                  >
+                    Нет результатов
+                  </td>
+                </tr>
+              ) : (
+                rows.map((row, idx) => (
+                  <TableRow
+                    key={`r${idx}-${row.cells.slice(0,2).join('')}`}
+                    isDark={isDark} tk={tk}
+                    row={row} rowIndex={idx}
+                    visibleColumns={visibleColumns} searchQuery={searchQuery}
+                  />
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
-        {rows.length === 0 && (
-          <div className={`p-6 text-center ${isDark ? 'text-white/50' : 'text-black/50'}`}>
-            Нет результатов
-          </div>
-        )}
+        {/* Right fade mask — hint for horizontal scroll */}
+        <div style={{
+          position: 'absolute', top: 0, right: 0, bottom: 0, width: 32,
+          background: `linear-gradient(to right, transparent, ${isDark ? '#0e0e10' : '#ffffff'})`,
+          pointerEvents: 'none',
+          opacity: 0.7,
+        }} />
       </div>
 
-      <style>{styles}</style>
-      <style>{scrollbarStyles}</style>
+      <style>{getTableStyles(isDark)}</style>
+      <style>{`
+        .tb-scroll { scrollbar-width: thin; scrollbar-color: ${tk.thumb} ${tk.track}; }
+        .tb-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .tb-scroll::-webkit-scrollbar-track { background: ${tk.track}; }
+        .tb-scroll::-webkit-scrollbar-thumb { background: ${tk.thumb}; border-radius: 99px; }
+        .tb-scroll::-webkit-scrollbar-thumb:hover { background: ${tk.thumbHov}; }
+        .tb-scroll::-webkit-scrollbar-corner { background: transparent; }
+      `}</style>
     </>
   );
 };
 
 // ─── TableHead ────────────────────────────────────────────────────────────────
 
-interface TableHeadProps {
-  isDark: boolean;
-  headers: string[];
-  visibleColumns: Set<number>;
-  sortColumn: number | null;
-  sortDirection: SortDirection;
-  onSort: (colIndex: number) => void;
-  headerAlignments: ColumnAlignment[];
-}
+interface Tk { thBg: string; thColor: string; thBorder: string; accentLine: string; [k: string]: string; }
 
-function getJustifyContent(alignment: ColumnAlignment): string {
-  if (alignment === 'center') return 'center';
-  if (alignment === 'right')  return 'flex-end';
-  return 'flex-start';
-}
-
-const TableHead: React.FC<TableHeadProps> = ({
-  isDark, headers, visibleColumns, sortColumn, sortDirection, onSort, headerAlignments,
-}) => (
+const TableHead: React.FC<{
+  isDark: boolean; tk: Tk;
+  headers: string[]; visibleColumns: Set<number>;
+  sortColumn: number | null; sortDirection: SortDirection;
+  onSort: (i: number) => void; headerAlignments: ColumnAlignment[];
+}> = ({ isDark, tk, headers, visibleColumns, sortColumn, sortDirection, onSort, headerAlignments }) => (
   <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
-    <tr className={`${isDark ? 'border-white/10' : 'border-black/10'} border-b`}>
-      {headers.map((header, colIndex) =>
-        visibleColumns.has(colIndex) ? (
+    <tr>
+      {headers.map((header, i) =>
+        visibleColumns.has(i) ? (
           <th
             key={header}
-            className={`px-4 py-3 text-left font-semibold cursor-pointer transition-colors select-none ${
-              isDark ? 'text-white hover:bg-white/20' : 'text-black hover:bg-[#ddd8cd]'
-            }`}
-            onClick={() => onSort(colIndex)}
+            onClick={() => onSort(i)}
             style={{
-              backgroundColor: isDark ? '#1a1a1a' : '#E8E7E3',
-              whiteSpace:      'nowrap',
-              textAlign:       headerAlignments[colIndex] || 'left',
-              position:        'sticky',
-              top:             0,
-              zIndex:          20,
+              padding: '0.7rem 1rem',
+              textAlign: headerAlignments[i] || 'left',
+              background: tk.thBg,
+              color: sortColumn === i ? (isDark ? 'rgba(255,255,255,0.85)' : 'rgba(15,15,20,0.85)') : tk.thColor,
+              fontSize: '0.7rem',
+              fontWeight: 700,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              whiteSpace: 'nowrap',
+              cursor: 'pointer',
+              userSelect: 'none',
+              position: 'sticky',
+              top: 0,
+              zIndex: 20,
+              // Bottom border only
+              borderBottom: `1px solid ${tk.thBorder}`,
+              borderTop: 'none',
+              borderLeft: 'none',
+              borderRight: 'none',
+              // Subtle left accent on active sort
+              boxShadow: sortColumn === i
+                ? `inset 3px 0 0 ${isDark ? 'rgba(255,255,255,0.4)' : 'rgba(15,15,20,0.35)'}`
+                : 'none',
+              transition: 'color 0.15s, box-shadow 0.15s',
             }}
-            title="Нажмите для сортировки"
           >
-            <div
-              className="flex items-center gap-2 whitespace-nowrap"
-              style={{ justifyContent: getJustifyContent(headerAlignments[colIndex]) }}
-            >
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              justifyContent: headerAlignments[i] === 'center' ? 'center'
+                : headerAlignments[i] === 'right'  ? 'flex-end' : 'flex-start',
+            }}>
               <span>{header}</span>
-              <SortIcon
-                direction={sortColumn === colIndex ? sortDirection : 'none'}
-                isDark={isDark}
-              />
+              <SortIcon direction={sortColumn === i ? sortDirection : 'none'} isDark={isDark} />
             </div>
           </th>
-        ) : null,
+        ) : null
       )}
     </tr>
   </thead>
@@ -152,162 +191,105 @@ const TableHead: React.FC<TableHeadProps> = ({
 
 // ─── TableRow / CellContent ───────────────────────────────────────────────────
 
-interface TableRowProps {
-  isDark: boolean;
-  row: ParsedRow;
-  rowIndex: number;
-  visibleColumns: Set<number>;
-  searchQuery: string;
+interface TkFull {
+  rowEven: string; rowOdd: string; rowHover: string;
+  cellBorder: string; [k: string]: string;
 }
 
-const getRowBgColor = (isEvenRow: boolean, isDark: boolean): string => {
-  if (isDark) return isEvenRow ? '#1e1e1e' : '#141414';
-  return isEvenRow ? '#E8E7E3' : '#f1f0ec';
-};
+const ALLOWED_TAGS = ['strong','b','em','i','code','a','br','u','del','s','strike','sub','sup','mark','span','div','p'];
+const ALLOWED_ATTR = ['href','target','rel','class','style'];
 
-const getRowHoverBgColor = (_isEvenRow: boolean, isDark: boolean): string => {
-  if (isDark) return '#2a2a2a';
-  return '#ddd8cd';
-};
-
+// Search highlight
 interface TextPart { text: string; isMatch: boolean; }
 
-const splitTextByQuery = (text: string, lowerQuery: string): TextPart[] => {
-  const lowerText  = text.toLowerCase();
-  const queryLen   = lowerQuery.length;
-  const parts: TextPart[] = [];
-  let currentIndex = 0;
-  let searchIndex  = lowerText.indexOf(lowerQuery);
-
-  while (searchIndex !== -1) {
-    if (searchIndex > currentIndex) {
-      parts.push({ text: text.substring(currentIndex, searchIndex), isMatch: false });
-    }
-    parts.push({ text: text.substring(searchIndex, searchIndex + queryLen), isMatch: true });
-    currentIndex = searchIndex + queryLen;
-    searchIndex  = lowerText.indexOf(lowerQuery, currentIndex);
+const splitByQuery = (text: string, q: string): TextPart[] => {
+  const low = text.toLowerCase(), parts: TextPart[] = [];
+  let cur = 0, idx = low.indexOf(q);
+  while (idx !== -1) {
+    if (idx > cur) parts.push({ text: text.slice(cur, idx), isMatch: false });
+    parts.push({ text: text.slice(idx, idx + q.length), isMatch: true });
+    cur = idx + q.length;
+    idx = low.indexOf(q, cur);
   }
-
-  if (currentIndex < text.length) {
-    parts.push({ text: text.substring(currentIndex), isMatch: false });
-  }
-
+  if (cur < text.length) parts.push({ text: text.slice(cur), isMatch: false });
   return parts;
 };
 
-const buildHighlightFragment = (parts: TextPart[]): DocumentFragment => {
-  const fragment = document.createDocumentFragment();
-  for (const { text, isMatch } of parts) {
-    if (!text) continue;
+const highlightNode = (node: Node, q: string): void => {
+  const text = node.textContent || '';
+  if (!text.toLowerCase().includes(q)) return;
+  const frag = document.createDocumentFragment();
+  for (const { text: t, isMatch } of splitByQuery(text, q)) {
+    if (!t) continue;
     if (isMatch) {
       const mark = document.createElement('mark');
-      mark.textContent = text;
-      mark.style.cssText =
-        'background-color: rgb(59,130,246); color: white; padding: 2px 4px; border-radius: 2px; font-weight: 600;';
-      fragment.appendChild(mark);
+      mark.textContent = t;
+      mark.style.cssText = 'background:#3b82f6;color:#fff;padding:1px 3px;border-radius:3px;font-weight:600;';
+      frag.appendChild(mark);
     } else {
-      fragment.appendChild(document.createTextNode(text));
+      frag.appendChild(document.createTextNode(t));
     }
   }
-  return fragment;
+  node.parentNode?.replaceChild(frag, node);
 };
 
-const highlightTextNode = (node: Node, lowerQuery: string): void => {
-  const text = node.textContent || '';
-  if (!text.toLowerCase().includes(lowerQuery)) return;
-  node.parentNode?.replaceChild(buildHighlightFragment(splitTextByQuery(text, lowerQuery)), node);
-};
-
-const highlightInElement = (element: HTMLElement, query: string): void => {
-  const lowerQuery = query.toLowerCase();
-  const walk = (node: Node): void => {
-    if (node.nodeType === Node.TEXT_NODE)  { highlightTextNode(node, lowerQuery); return; }
-    if (node.nodeType === Node.ELEMENT_NODE && node.nodeName !== 'MARK') {
-      Array.from(node.childNodes).forEach(walk);
-    }
+const highlightIn = (el: HTMLElement, q: string): void => {
+  const walk = (n: Node) => {
+    if (n.nodeType === Node.TEXT_NODE) { highlightNode(n, q); return; }
+    if (n.nodeType === Node.ELEMENT_NODE && n.nodeName !== 'MARK')
+      Array.from(n.childNodes).forEach(walk);
   };
-  Array.from(element.childNodes).forEach(walk);
+  Array.from(el.childNodes).forEach(walk);
 };
-
-const CELL_ALLOWED_TAGS = [
-  'strong', 'b', 'em', 'i', 'code', 'a', 'br',
-  'u', 'del', 's', 'strike', 'sub', 'sup', 'mark',
-  'span', 'div', 'p',
-];
-const CELL_ALLOWED_ATTR = ['href', 'target', 'rel', 'class', 'style'];
 
 const CellContent: React.FC<{ html: string; searchQuery: string }> = ({ html, searchQuery }) => {
-  const contentRef = React.useRef<HTMLDivElement>(null);
-
+  const ref = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
-    if (!contentRef.current) return;
-
-    const sanitizedHtml = DOMPurify.sanitize(html, {
-      ALLOWED_TAGS: CELL_ALLOWED_TAGS,
-      ALLOWED_ATTR: CELL_ALLOWED_ATTR,
-      ALLOW_DATA_ATTR: false,
-    });
-
-    const doc = new DOMParser().parseFromString(sanitizedHtml, 'text/html');
-    contentRef.current.innerHTML = '';
-    while (doc.body.firstChild) contentRef.current.appendChild(doc.body.firstChild);
-
-    if (searchQuery) highlightInElement(contentRef.current, searchQuery);
+    if (!ref.current) return;
+    const safe = DOMPurify.sanitize(html, { ALLOWED_TAGS, ALLOWED_ATTR, ALLOW_DATA_ATTR: false });
+    const doc  = new DOMParser().parseFromString(safe, 'text/html');
+    ref.current.innerHTML = '';
+    while (doc.body.firstChild) ref.current.appendChild(doc.body.firstChild);
+    if (searchQuery) highlightIn(ref.current, searchQuery.toLowerCase());
   }, [html, searchQuery]);
-
-  return <div ref={contentRef} />;
+  return <div ref={ref} />;
 };
 
-const TableRow: React.FC<TableRowProps> = ({ isDark, row, rowIndex, visibleColumns, searchQuery }) => {
-  const isEvenRow   = rowIndex % 2 === 0;
-  const [isHovered, setIsHovered] = useState(false);
-  const bgColor = isHovered
-    ? getRowHoverBgColor(isEvenRow, isDark)
-    : getRowBgColor(isEvenRow, isDark);
+const TableRow: React.FC<{
+  isDark: boolean; tk: TkFull;
+  row: ParsedRow; rowIndex: number;
+  visibleColumns: Set<number>; searchQuery: string;
+}> = ({ isDark, tk, row, rowIndex, visibleColumns, searchQuery }) => {
+  const [hov, setHov] = useState(false);
+  const isEven = rowIndex % 2 === 0;
+  const bg = hov ? tk.rowHover : isEven ? tk.rowEven : tk.rowOdd;
 
   return (
     <tr
-      className={`border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}
-      style={{ backgroundColor: bgColor, transition: 'background-color 0.12s ease' }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      style={{ background: bg, transition: 'background 0.12s ease' }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
     >
-      {row.cells.map((cell, colIndex) =>
-        visibleColumns.has(colIndex) ? (
+      {row.cells.map((cell, i) =>
+        visibleColumns.has(i) ? (
           <td
-            key={`cell-${rowIndex}-${colIndex}`}
-            className={`px-4 py-3 ${isDark ? 'text-white/90' : 'text-black'}`}
+            key={i}
             style={{
-              whiteSpace:       'nowrap',
-              textAlign:        row.alignments[colIndex] || 'left',
-              backgroundColor:  bgColor,
-              transition:       'background-color 0.12s ease',
+              padding: '0.65rem 1rem',
+              textAlign: row.alignments[i] || 'left',
+              borderBottom: `1px solid ${tk.cellBorder}`,
+              borderTop: 'none', borderLeft: 'none', borderRight: 'none',
+              whiteSpace: 'nowrap',
+              color: isDark ? 'rgba(255,255,255,0.82)' : 'rgba(15,15,20,0.88)',
+              fontSize: 13.5,
+              background: bg,
+              transition: 'background 0.12s ease',
             }}
           >
             <CellContent html={cell} searchQuery={searchQuery} />
           </td>
-        ) : null,
+        ) : null
       )}
     </tr>
   );
 };
-
-// ─── Scrollbar styles ─────────────────────────────────────────────────────────
-
-function getScrollbarStyles(isDark: boolean): string {
-  const thumb      = isDark ? 'rgba(150,150,150,0.6)'  : 'rgba(0,0,0,0.2)';
-  const thumbHover = isDark ? 'rgba(190,190,190,0.85)' : 'rgba(0,0,0,0.35)';
-  const track      = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
-
-  return `
-    .table-scroll-container::-webkit-scrollbar       { width: 8px; height: 8px; }
-    .table-scroll-container::-webkit-scrollbar-track  { background: ${track}; border-radius: 4px; }
-    .table-scroll-container::-webkit-scrollbar-thumb  { background: ${thumb}; border-radius: 4px; }
-    .table-scroll-container::-webkit-scrollbar-thumb:hover { background: ${thumbHover}; }
-    .table-scroll-container::-webkit-scrollbar-corner { background: transparent; }
-    .table-scroll-container {
-      scrollbar-color: ${thumb} ${track};
-      scrollbar-width: thin;
-    }
-  `;
-}
