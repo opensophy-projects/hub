@@ -154,8 +154,10 @@ function pluralErrors(count) {
 }
 
 function buildDocsStr(okCount, errCount) {
-  if (errCount === 0) return clr(c.green, `${okCount} articles`);
-  return `${clr(c.green, `${okCount} ok`)} ${clr(c.dim, '·')} ${clr(c.red, `${errCount} ${pluralErrors(errCount)}`)}`;
+  if (errCount === 0) return clr(c.green, okCount + ' articles');
+  const okPart  = clr(c.green, okCount + ' ok');
+  const errPart = clr(c.red, errCount + ' ' + pluralErrors(errCount));
+  return okPart + ' ' + clr(c.dim, '·') + ' ' + errPart;
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
