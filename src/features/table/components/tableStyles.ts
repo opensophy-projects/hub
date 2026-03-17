@@ -1,5 +1,5 @@
 export function getTableStyles(isDark: boolean): string {
-  const cellColor    = isDark ? 'rgba(255,255,255,0.82)' : 'rgba(15,15,20,0.88)';
+  const cellColor    = isDark ? 'rgba(255,255,255,0.82)' : 'rgba(0,0,0,0.88)';
   const codeBg       = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
   const codeBorder   = isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.12)';
   const strongColor  = isDark ? '#ffffff'                : '#0f0f14';
