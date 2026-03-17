@@ -4,21 +4,20 @@ export function stripHtmlNormalize(html: string): string {
   const div = document.createElement('div');
   div.innerHTML = html;
   return (div.textContent || div.innerText || '')
-    .split(/\s+/)
-    .filter(Boolean)
-    .join(' ');
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 export function filterAndSortRows(
   rows: Element[],
   state: TableControlsState
 ): ParsedRow[] {
-  let result: ParsedRow[] = rows.map((row) => {
-    const cellElements = Array.from(row.querySelectorAll('td'));
+  const result: ParsedRow[] = rows.map((row) => {
+    const cells = Array.from(row.querySelectorAll('td'));
     return {
       element: row,
-      cells: cellElements.map((td) => td.innerHTML?.trim() || ''),
-      alignments: cellElements.map((td) => {
+      cells: cells.map((td) => td.innerHTML?.trim() || ''),
+      alignments: cells.map((td) => {
         const a = td.getAttribute('align');
         if (a === 'left' || a === 'center' || a === 'right') return a;
         const s = td.getAttribute('style') || '';
@@ -30,28 +29,40 @@ export function filterAndSortRows(
     };
   });
 
-  result = applyFilters(result, state.filters);
-  result = applySearch(result, state.searchQuery);
-  result = applySort(result, state.sortColumn, state.sortDirection);
-  return result;
+  let filtered = applyFilters(result, state.filters);
+  filtered = applySearch(filtered, state.searchQuery);
+  filtered = applySort(filtered, state.sortColumn, state.sortDirection);
+  return filtered;
 }
 
 function applyFilters(rows: ParsedRow[], filters: Map<number, Set<string>>): ParsedRow[] {
   if (filters.size === 0) return rows;
+
   return rows.filter((row) => {
-    for (const [colIndex, values] of filters) {
-      if (values.size === 0) continue;
-      const cellText = stripHtmlNormalize(row.cells[colIndex] ?? '');
-      // OR within a column's selected values — if none match, exclude row
-      if (!values.has(cellText)) return false;
+    // AND between columns: every filtered column must match at least one selected value (OR)
+    for (const [colIndex, selectedValues] of filters) {
+      if (selectedValues.size === 0) continue;
+
+      const rawHtml  = row.cells[colIndex] ?? '';
+      const cellText = stripHtmlNormalize(rawHtml);
+
+      // OR: does any selected value match this cell?
+      let matched = false;
+      for (const sel of selectedValues) {
+        // Compare normalized — both stripped the same way
+        if (cellText === sel) { matched = true; break; }
+        // Fallback: partial match in case of minor whitespace differences
+        if (cellText.includes(sel) || sel.includes(cellText)) { matched = true; break; }
+      }
+      if (!matched) return false;
     }
     return true;
   });
 }
 
 function applySearch(rows: ParsedRow[], searchQuery: string): ParsedRow[] {
-  if (!searchQuery) return rows;
-  const q = searchQuery.toLowerCase();
+  if (!searchQuery.trim()) return rows;
+  const q = searchQuery.toLowerCase().trim();
   return rows.filter((row) =>
     row.cells.some((html) => stripHtmlNormalize(html).toLowerCase().includes(q))
   );
@@ -66,7 +77,7 @@ function applySort(
   return [...rows].sort((a, b) => {
     const av = stripHtmlNormalize(a.cells[sortColumn] ?? '');
     const bv = stripHtmlNormalize(b.cells[sortColumn] ?? '');
-    const c = av.localeCompare(bv, 'ru');
+    const c  = av.localeCompare(bv, 'ru');
     return sortDirection === 'asc' ? c : -c;
   });
 }
