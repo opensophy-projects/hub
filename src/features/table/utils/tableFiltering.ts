@@ -42,6 +42,7 @@ function applyFilters(rows: ParsedRow[], filters: Map<number, Set<string>>): Par
     for (const [colIndex, values] of filters) {
       if (values.size === 0) continue;
       const cellText = stripHtmlNormalize(row.cells[colIndex] ?? '');
+      // OR within a column's selected values — if none match, exclude row
       if (!values.has(cellText)) return false;
     }
     return true;
