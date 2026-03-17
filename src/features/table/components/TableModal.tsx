@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { X, Filter, RotateCcw, Copy, Check, ChevronDown, Search } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { ModalTableContent } from './ModalTableContent';
-import { parseTableFromHTML, filterRows, getUniqueValuesForColumn } from '../utils/tableModalUtils';
 import { FiltersPanel } from './FiltersPanel';
 import { ColumnsPanel } from './ColumnsPanel';
+import { TableView } from './TableView';
+import { parseTableHtml } from '../utils/tableParser';
+import { filterAndSortRows, stripHtmlNormalize } from '../utils/tableFiltering';
+import type { TableControlsState } from '../types/table';
 
 interface TableModalProps {
   isOpen: boolean;
@@ -17,8 +19,8 @@ type CopyFormat = 'md' | 'excel';
 
 function tk(isDark: boolean) {
   return isDark ? {
-    modalBg:  '#0a0a0a',    // exact app color
-    barBg:    '#111111',    // pure neutral
+    modalBg:  '#0a0a0a',
+    barBg:    '#111111',
     border:   'rgba(255,255,255,0.08)',
     btnBg:    'rgba(255,255,255,0.08)',
     btnBdr:   'rgba(255,255,255,0.12)',
@@ -27,7 +29,7 @@ function tk(isDark: boolean) {
     btnActBg: 'rgba(255,255,255,0.15)',
     btnActBdr:'rgba(255,255,255,0.22)',
     btnActClr:'#ffffff',
-    inpBg:    '#1a1a1a',    // pure neutral, no blue
+    inpBg:    '#1a1a1a',
     inpBdr:   'rgba(255,255,255,0.12)',
     inpFoc:   'rgba(255,255,255,0.26)',
     inpClr:   'rgba(255,255,255,0.88)',
@@ -40,7 +42,7 @@ function tk(isDark: boolean) {
     dropClr:  'rgba(255,255,255,0.82)',
     dropSub:  'rgba(255,255,255,0.35)',
   } : {
-    modalBg:  '#E8E7E3',    // exact app color
+    modalBg:  '#E8E7E3',
     barBg:    '#d8d7d3',
     border:   'rgba(0,0,0,0.09)',
     btnBg:    'rgba(0,0,0,0.07)',
@@ -114,19 +116,19 @@ const Pill: React.FC<{
   );
 };
 
-// ─── Copy button ─────────────────────────────────────────────────────────────
+// ─── Copy button — portal dropdown ───────────────────────────────────────────
 const CopyBtn: React.FC<{ isDark: boolean; tableHtml: string; t: ReturnType<typeof tk> }> = ({ isDark, tableHtml, t }) => {
   const [open, setOpen]     = useState(false);
   const [copied, setCopied] = useState<CopyFormat | null>(null);
   const [pos, setPos]       = useState({ top: 0, left: 0 });
-  const ref = useRef<HTMLButtonElement>(null);
+  const btnRef  = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const isCopied = !!copied;
 
-  // Close on outside click
   useEffect(() => {
     if (!open) return;
     const h = (e: MouseEvent) => {
-      if (!(e.target as Node)?.isEqualNode?.(ref.current) && !ref.current?.contains(e.target as Node))
+      if (!menuRef.current?.contains(e.target as Node) && !btnRef.current?.contains(e.target as Node))
         setOpen(false);
     };
     document.addEventListener('mousedown', h);
@@ -135,7 +137,7 @@ const CopyBtn: React.FC<{ isDark: boolean; tableHtml: string; t: ReturnType<type
 
   const toggle = () => {
     if (open) { setOpen(false); return; }
-    const r = ref.current?.getBoundingClientRect();
+    const r = btnRef.current?.getBoundingClientRect();
     if (!r) return;
     setPos({ top: r.bottom + 6, left: Math.min(r.left, window.innerWidth - 202) });
     setOpen(true);
@@ -154,7 +156,7 @@ const CopyBtn: React.FC<{ isDark: boolean; tableHtml: string; t: ReturnType<type
 
   return (
     <>
-      <button ref={ref} onClick={toggle} title="Копировать" style={{
+      <button ref={btnRef} onClick={toggle} title="Копировать" style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'center', gap: 3,
         padding: '5px 12px', minWidth: 68, height: 44,
@@ -176,7 +178,7 @@ const CopyBtn: React.FC<{ isDark: boolean; tableHtml: string; t: ReturnType<type
       {open && createPortal(
         <>
           <style>{`@keyframes mdIn{from{opacity:0;transform:translateY(-5px) scale(0.97)}to{opacity:1;transform:none}}`}</style>
-          <div style={{
+          <div ref={menuRef} style={{
             position: 'fixed', top: pos.top, left: pos.left,
             minWidth: 190, zIndex: 99999,
             background: t.dropBg, border: `1px solid ${t.dropBdr}`,
@@ -184,7 +186,7 @@ const CopyBtn: React.FC<{ isDark: boolean; tableHtml: string; t: ReturnType<type
             boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.8)' : '0 8px 28px rgba(0,0,0,0.16)',
             overflow: 'hidden', animation: 'mdIn 0.13s cubic-bezier(0.2,0,0,1)',
           }}>
-            {(['md', 'excel'] as CopyFormat[]).map(fmt => (
+            {(['md','excel'] as CopyFormat[]).map(fmt => (
               <button key={fmt} onClick={() => doCopy(fmt)} style={{
                 width: '100%', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 2,
                 border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left',
@@ -207,22 +209,79 @@ const CopyBtn: React.FC<{ isDark: boolean; tableHtml: string; t: ReturnType<type
 
 // ─── TableModal ───────────────────────────────────────────────────────────────
 const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onClose }) => {
-  const [searchQuery,   setSearchQuery]   = useState('');
-  const [showFilters,   setShowFilters]   = useState(false);
-  const [activeFilters, setActiveFilters] = useState<Map<string, Set<string>>>(new Map());
   const dialogRef = useRef<HTMLDialogElement>(null);
   const t = tk(isDark);
 
-  const parsedTable = useMemo(() => parseTableFromHTML(tableHtml), [tableHtml]);
-  const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
-    () => new Set(parsedTable.headers.map(h => h.text))
-  );
+  // Parse table using the same parser as inline (supports sort)
+  const { headers, rows, headerAlignments } = useMemo(() => parseTableHtml(tableHtml), [tableHtml]);
 
-  const headersKey = parsedTable.headers.map(h => h.text).join(',');
+  const [state, setState] = useState<TableControlsState>({
+    searchQuery: '',
+    sortColumn: null,
+    sortDirection: 'none',
+    filters: new Map(),
+    visibleColumns: new Set(Array.from({ length: headers.length }, (_, i) => i)),
+  });
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Re-init when table changes
   useEffect(() => {
-    setVisibleColumns(new Set(parsedTable.headers.map(h => h.text)));
+    setState({
+      searchQuery: '',
+      sortColumn: null,
+      sortDirection: 'none',
+      filters: new Map(),
+      visibleColumns: new Set(Array.from({ length: headers.length }, (_, i) => i)),
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [headersKey]);
+  }, [tableHtml]);
+
+  const filteredAndSorted = useMemo(() => filterAndSortRows(rows, state), [rows, state]);
+
+  // Unique values for FiltersPanel
+  const getUniqueForCol = (colIndex: number): string[] =>
+    Array.from(new Set(
+      rows.map(row => {
+        const cells = Array.from(row.querySelectorAll('td'));
+        return stripHtmlNormalize(cells[colIndex]?.innerHTML || '');
+      }).filter(Boolean)
+    )).sort();
+
+  const toggleFilter = (colIndex: number, value: string) => {
+    setState(prev => {
+      const next = new Map(prev.filters);
+      const set  = new Set(next.get(colIndex) ?? []);
+      set.has(value) ? set.delete(value) : set.add(value);
+      if (set.size === 0) next.delete(colIndex); else next.set(colIndex, set);
+      return { ...prev, filters: next };
+    });
+  };
+
+  const handleSort = (colIndex: number) => {
+    setState(prev => {
+      if (prev.sortColumn === colIndex) {
+        const dirs = ['asc', 'desc', 'none'] as const;
+        const next = dirs[(dirs.indexOf(prev.sortDirection) + 1) % dirs.length];
+        return { ...prev, sortDirection: next };
+      }
+      return { ...prev, sortColumn: colIndex, sortDirection: 'asc' };
+    });
+  };
+
+  const toggleColumn = (colIndex: number) => {
+    setState(prev => {
+      const next = new Set(prev.visibleColumns);
+      next.has(colIndex) ? next.delete(colIndex) : next.add(colIndex);
+      return { ...prev, visibleColumns: next };
+    });
+  };
+
+  const handleReset = () => {
+    setState(prev => ({ ...prev, searchQuery: '', sortColumn: null, sortDirection: 'none', filters: new Map() }));
+  };
+
+  const activeFilterCount = Array.from(state.filters.values()).filter(s => s.size > 0).length;
+  const filterLabel = activeFilterCount > 0 ? `Фильтры · ${activeFilterCount}` : 'Фильтры';
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -239,54 +298,6 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
     return () => document.removeEventListener('keydown', onKey);
   }, [isOpen, onClose]);
 
-  const uniqueValues = useMemo(() => {
-    const map = new Map<string, string[]>();
-    parsedTable.headers.forEach(h => map.set(h.text, getUniqueValuesForColumn(parsedTable.rows, h.text)));
-    return map;
-  }, [parsedTable]);
-
-  const filteredRows = useMemo(
-    () => filterRows(parsedTable.rows, searchQuery, activeFilters, visibleColumns),
-    [parsedTable.rows, searchQuery, activeFilters, visibleColumns]
-  );
-
-  const handleFilterChange = (column: string, value: string, checked: boolean) => {
-    setActiveFilters(prev => {
-      const next = new Map(prev);
-      const set  = new Set(next.get(column) ?? []);
-      if (checked) set.add(value); else set.delete(value);
-      if (set.size === 0) next.delete(column); else next.set(column, set);
-      return next;
-    });
-  };
-
-  const handleReset = () => { setActiveFilters(new Map()); setSearchQuery(''); };
-  const activeFilterCount = Array.from(activeFilters.values()).filter(s => s.size > 0).length;
-
-  // Convert for FiltersPanel (Map<number, Set<string>>)
-  const filtersForPanel = useMemo(() => {
-    const m = new Map<number, Set<string>>();
-    parsedTable.headers.forEach((h, i) => {
-      const s = activeFilters.get(h.text);
-      if (s?.size) m.set(i, s);
-    });
-    return m;
-  }, [activeFilters, parsedTable.headers]);
-
-  const modalHeaders = parsedTable.headers.map(h => h.text);
-  const getUniqueForCol = (colIndex: number) => {
-    const h = parsedTable.headers[colIndex];
-    return h ? (uniqueValues.get(h.text) ?? []) : [];
-  };
-  const toggleByIndex = (colIndex: number, value: string) => {
-    const h = parsedTable.headers[colIndex];
-    if (!h) return;
-    const cur = activeFilters.get(h.text) ?? new Set<string>();
-    handleFilterChange(h.text, value, !cur.has(value));
-  };
-
-  const filterLabel = activeFilterCount > 0 ? `Фильтры · ${activeFilterCount}` : 'Фильтры';
-
   if (!isOpen) return null;
 
   return (
@@ -302,7 +313,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
         zIndex: 0,
       }} />
 
-      {/* Modal — flex column, no extra space */}
+      {/* Modal */}
       <div style={{
         position: 'relative', zIndex: 1,
         width: 'min(95vw, 1400px)',
@@ -310,26 +321,21 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
         borderRadius: 14,
         border: `1px solid ${t.border}`,
         background: t.modalBg,
-        boxShadow: isDark
-          ? '0 24px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.05)'
-          : '0 24px 80px rgba(0,0,0,0.2)',
-        display: 'flex',
-        flexDirection: 'column',
-        // height fits content — no fixed height causing empty space
-        overflow: 'hidden',
+        boxShadow: isDark ? '0 24px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.05)' : '0 24px 80px rgba(0,0,0,0.2)',
+        display: 'flex', flexDirection: 'column', overflow: 'hidden',
       }}>
         {/* Toolbar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderBottom: `1px solid ${t.border}`, background: t.barBg, flexWrap: 'nowrap', minWidth: 0, flexShrink: 0 }}>
           <div style={{ position: 'relative', flex: '1 1 0', minWidth: 0 }}>
             <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: t.plhClr, pointerEvents: 'none' }} />
-            <input type="text" placeholder="Поиск..." value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+            <input type="text" placeholder="Поиск..." value={state.searchQuery}
+              onChange={e => setState(p => ({ ...p, searchQuery: e.target.value }))}
               style={{ width: '100%', padding: '0 30px 0 30px', height: 36, borderRadius: 8, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: t.inpClr, fontSize: 13, outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s' }}
               onFocus={e => { (e.target as HTMLInputElement).style.borderColor = t.inpFoc; }}
               onBlur={e  => { (e.target as HTMLInputElement).style.borderColor = t.inpBdr; }}
             />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: t.plhClr, display: 'flex' }}>
+            {state.searchQuery && (
+              <button onClick={() => setState(p => ({ ...p, searchQuery: '' }))} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: t.plhClr, display: 'flex' }}>
                 <X size={12} />
               </button>
             )}
@@ -342,25 +348,34 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
           </div>
         </div>
 
-        {/* Filters (only when open) */}
+        {/* Filters */}
         {showFilters && (
           <>
-            <FiltersPanel isDark={isDark} headers={modalHeaders} filters={filtersForPanel} onToggleFilter={toggleByIndex} getUniqueValuesForColumn={getUniqueForCol} />
-            <ColumnsPanel isDark={isDark} headers={modalHeaders}
-              visibleColumns={new Set(parsedTable.headers.map((h, i) => visibleColumns.has(h.text) ? i : -1).filter(i => i >= 0))}
-              onToggleColumn={i => { const h = parsedTable.headers[i]; if (h) { setVisibleColumns(prev => { const next = new Set(prev); if (next.has(h.text)) next.delete(h.text); else next.add(h.text); return next; }); } }}
-            />
+            <FiltersPanel isDark={isDark} headers={headers} filters={state.filters}
+              onToggleFilter={toggleFilter} getUniqueValuesForColumn={getUniqueForCol} />
+            <ColumnsPanel isDark={isDark} headers={headers} visibleColumns={state.visibleColumns} onToggleColumn={toggleColumn} />
           </>
         )}
 
-        {/* Table — flex: 1 so it fills remaining space */}
+        {/* Table — uses TableView with full sort support */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
-          <ModalTableContent isDark={isDark} headers={parsedTable.headers} filteredRows={filteredRows} visibleColumns={visibleColumns} />
+          <TableView
+            isDark={isDark}
+            headers={headers}
+            rows={filteredAndSorted}
+            visibleColumns={state.visibleColumns}
+            searchQuery={state.searchQuery}
+            sortColumn={state.sortColumn}
+            sortDirection={state.sortDirection}
+            onSort={handleSort}
+            headerAlignments={headerAlignments}
+            fullscreen
+          />
         </div>
 
         {/* Footer */}
         <div style={{ padding: '6px 12px', flexShrink: 0, borderTop: `1px solid ${t.border}`, fontSize: 11, color: t.footerClr, display: 'flex', alignItems: 'center', justifyContent: 'space-between', userSelect: 'none', background: t.modalBg }}>
-          <span>{filteredRows.length === parsedTable.rows.length ? `${parsedTable.rows.length} строк` : `${filteredRows.length} из ${parsedTable.rows.length} строк`}</span>
+          <span>{filteredAndSorted.length === rows.length ? `${rows.length} строк` : `${filteredAndSorted.length} из ${rows.length} строк`}</span>
           {activeFilterCount > 0 && <span>{activeFilterCount} фильтра активно</span>}
         </div>
       </div>
