@@ -306,8 +306,10 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
       position: 'fixed', inset: 0,
       zIndex: 10000,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
+      // KEY FIX: allow scroll inside children on mobile
+      WebkitOverflowScrolling: 'touch',
     }}>
-      {/* ── Unified backdrop: blur(12px) + rgba(0,0,0,0.6) ── */}
+      {/* Backdrop */}
       <div
         onClick={onClose}
         style={{
@@ -318,11 +320,13 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
         }}
       />
 
-      {/* Modal panel */}
+      {/* Modal panel — KEY FIX: use dvh units and proper overflow chain */}
       <div style={{
         position: 'relative',
         width: 'min(95vw, 1400px)',
-        maxHeight: '90vh',
+        // Use dvh for correct mobile viewport (excludes browser chrome)
+        maxHeight: '90dvh',
+        height: '90dvh',
         borderRadius: 14,
         border: `1px solid ${t.border}`,
         background: t.modalBg,
@@ -331,6 +335,8 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
           : '0 24px 80px rgba(0,0,0,0.2)',
         display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
+        // KEY FIX: isolate touch events
+        touchAction: 'none',
       }}>
         {/* Toolbar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderBottom: `1px solid ${t.border}`, background: t.barBg, flexWrap: 'nowrap', minWidth: 0, flexShrink: 0 }}>
@@ -360,17 +366,25 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
           </div>
         </div>
 
-        {/* Filters */}
+        {/* Filters — scrollable independently */}
         {showFilters && (
-          <>
+          <div style={{ flexShrink: 0, overflowY: 'auto', maxHeight: '40%', touchAction: 'pan-y' }}>
             <FiltersPanel isDark={isDark} headers={headers} filters={state.filters}
               onToggleFilter={toggleFilter} getUniqueValuesForColumn={getUniqueForCol} />
             <ColumnsPanel isDark={isDark} headers={headers} visibleColumns={state.visibleColumns} onToggleColumn={toggleColumn} />
-          </>
+          </div>
         )}
 
-        {/* Table */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
+        {/* Table — KEY FIX: flex:1 + overflow hidden + inner scroll with touch-action */}
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          minHeight: 0,
+          // Allow touch scroll inside the table area
+          touchAction: 'pan-x pan-y',
+        }}>
           <TableView
             isDark={isDark}
             headers={headers}
