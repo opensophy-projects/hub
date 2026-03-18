@@ -12,7 +12,6 @@ export function useTableControls(rows: Element[], headers: string[]) {
   });
 
   const [showFilters, setShowFilters] = useState(false);
-  const [showColumns, setShowColumns] = useState(false);
 
   const getUniqueValuesForColumn = useCallback((colIndex: number): string[] => {
     return Array.from(
@@ -80,8 +79,6 @@ export function useTableControls(rows: Element[], headers: string[]) {
     setState,
     showFilters,
     setShowFilters,
-    showColumns,
-    setShowColumns,
     filteredAndSortedRows,
     getUniqueValuesForColumn,
     toggleColumnVisibility,
