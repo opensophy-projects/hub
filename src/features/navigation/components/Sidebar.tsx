@@ -6,6 +6,7 @@ import {
   Mail, X, Home, SlidersHorizontal,
 } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
+import LucideIcon from '@/shared/components/LucideIcon';
 
 const LazyUnifiedSearchPanel = lazy(() => import('./UnifiedSearchPanel'));
 
@@ -32,30 +33,6 @@ interface NavNode {
 }
 
 interface NavSection { navSlug: string; navTitle: string; navIcon: string; }
-
-const iconCache = new Map<string, React.FC<{ size?: number; className?: string }>>();
-
-const LucideIcon: React.FC<{ name: string; size?: number; className?: string }> = memo(({ name, size = 16, className }) => {
-  const [Icon, setIcon] = useState<React.FC<{ size?: number; className?: string }> | null>(
-    () => iconCache.get(name) ?? null
-  );
-
-  useEffect(() => {
-    if (!name || iconCache.has(name)) return;
-    const pascal = name.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('');
-    import('lucide-react').then((mod) => {
-      const ic = (mod as Record<string, unknown>)[pascal] as React.FC<{ size?: number; className?: string }> | undefined;
-      if (ic) {
-        iconCache.set(name, ic);
-        setIcon(() => ic);
-      }
-    });
-  }, [name]);
-
-  // Placeholder keeps the same dimensions while icon loads — no layout shift
-  if (!Icon) return <span style={{ width: size, height: size, display: 'inline-block', flexShrink: 0 }} />;
-  return <Icon size={size} className={className} />;
-});
 
 const borderStyle = (isDark: boolean) => ({
   borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
