@@ -226,19 +226,18 @@ const CodeBody = React.forwardRef<HTMLDivElement, BodyProps>(
     return (
       <>
         <style>{`
-          .cb-pre::-webkit-scrollbar{width:6px;height:6px}
-          .cb-pre::-webkit-scrollbar-track{background:${track}}
-          .cb-pre::-webkit-scrollbar-thumb{background:${thumb};border-radius:99px}
-          .cb-pre::-webkit-scrollbar-thumb:hover{background:${thumbHov}}
-          .cb-pre::-webkit-scrollbar-corner{background:transparent}
+          .cb-scroll::-webkit-scrollbar{width:6px;height:6px}
+          .cb-scroll::-webkit-scrollbar-track{background:${track}}
+          .cb-scroll::-webkit-scrollbar-thumb{background:${thumb};border-radius:99px}
+          .cb-scroll::-webkit-scrollbar-thumb:hover{background:${thumbHov}}
+          .cb-scroll::-webkit-scrollbar-corner{background:transparent}
         `}</style>
+        {/* Outer div: handles scroll + drag */}
         <div
           ref={scrollRef}
-          className="cb-pre"
+          className="cb-scroll"
           style={{
             background: codeBg,
-            margin: 0,
-            padding: '10px 14px',
             overflowX: 'auto',
             overflowY: 'auto',
             scrollbarWidth: 'thin',
@@ -246,22 +245,41 @@ const CodeBody = React.forwardRef<HTMLDivElement, BodyProps>(
             maxHeight: maxHeight === 'none' ? undefined : maxHeight,
             height: maxHeight === 'none' ? '100%' : undefined,
             flex: maxHeight === 'none' ? 1 : undefined,
-            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-            fontSize: '0.875rem',
-            lineHeight: '1.5',
             ...dragStyle,
           }}
           {...dragHandlers}
         >
-          {highlightedHtml
-            ? <code dangerouslySetInnerHTML={{ __html: highlightedHtml }} className="language-code hljs" style={{ color: fg, display: 'block' }} />
-            : lines.map((line, i) => (
-              <div key={`${i}-${line.slice(0, 8)}`} style={{ whiteSpace: 'pre', color: fg }}>
-                <span style={{ color: lineNum, display: 'inline-block', width: '28px', marginRight: '14px', textAlign: 'right', userSelect: 'none', fontSize: '11px' }}>{i + 1}</span>
-                {matchedLines.has(i) ? <HighlightedText text={line} query={searchQuery} /> : <span>{line}</span>}
-              </div>
-            ))
-          }
+          {/* Inner pre: preserves whitespace/newlines — must NOT be the scroll container */}
+          <pre
+            className="not-prose hljs"
+            style={{
+              margin: 0,
+              padding: '10px 14px',
+              background: 'transparent',
+              color: fg,
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+              fontSize: '0.875rem',
+              lineHeight: '1.5',
+              // pre must NOT overflow — the outer div scrolls
+              overflow: 'visible',
+              whiteSpace: 'pre',
+              minWidth: 'max-content',
+            }}
+          >
+            {highlightedHtml
+              ? <code
+                  dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+                  className="language-code"
+                  style={{ color: fg, display: 'block', whiteSpace: 'pre' }}
+                />
+              : lines.map((line, i) => (
+                <div key={`${i}-${line.slice(0, 8)}`} style={{ whiteSpace: 'pre' }}>
+                  <span style={{ color: lineNum, display: 'inline-block', width: '28px', marginRight: '14px', textAlign: 'right', userSelect: 'none', fontSize: '11px' }}>{i + 1}</span>
+                  {matchedLines.has(i) ? <HighlightedText text={line} query={searchQuery} /> : <span>{line}</span>}
+                </div>
+              ))
+            }
+          </pre>
         </div>
       </>
     );
