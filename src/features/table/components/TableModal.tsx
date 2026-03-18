@@ -320,13 +320,11 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
         }}
       />
 
-      {/* Modal panel — KEY FIX: use dvh units and proper overflow chain */}
+      {/* Modal panel */}
       <div style={{
         position: 'relative',
         width: 'min(95vw, 1400px)',
-        // Use dvh for correct mobile viewport (excludes browser chrome)
-        maxHeight: '90dvh',
-        height: '90dvh',
+        maxHeight: '90vh',
         borderRadius: 14,
         border: `1px solid ${t.border}`,
         background: t.modalBg,
@@ -335,8 +333,6 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
           : '0 24px 80px rgba(0,0,0,0.2)',
         display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
-        // KEY FIX: isolate touch events
-        touchAction: 'none',
       }}>
         {/* Toolbar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderBottom: `1px solid ${t.border}`, background: t.barBg, flexWrap: 'nowrap', minWidth: 0, flexShrink: 0 }}>
