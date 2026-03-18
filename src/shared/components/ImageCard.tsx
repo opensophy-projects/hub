@@ -1,95 +1,6 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import { TableContext } from '../lib/htmlParser';
-
-// ─── Lightbox ─────────────────────────────────────────────────────────────────
-
-const ImageLightbox: React.FC<{
-  src: string;
-  alt: string;
-  onClose: () => void;
-}> = ({ src, alt, onClose }) => {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', onKey);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
-    };
-  }, [onClose]);
-
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 9999,
-        background: 'rgba(0,0,0,0.92)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1.5rem',
-      }}
-    >
-      {/* Backdrop — native button, closes on click */}
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Закрыть лайтбокс"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          border: 'none',
-          background: 'transparent',
-          cursor: 'zoom-out',
-        }}
-      />
-
-      {/* Image sits above the backdrop via zIndex */}
-      <img
-        src={src}
-        alt={alt}
-        style={{
-          position: 'relative',
-          zIndex: 1,
-          maxWidth: '90vw',
-          maxHeight: '90vh',
-          objectFit: 'contain',
-          borderRadius: '10px',
-          boxShadow: '0 8px 60px rgba(0,0,0,0.8)',
-          userSelect: 'none',
-          pointerEvents: 'none',
-        }}
-      />
-
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Закрыть"
-        style={{
-          position: 'fixed',
-          top: '1.25rem',
-          right: '1.25rem',
-          background: 'rgba(255,255,255,0.12)',
-          border: '1px solid rgba(255,255,255,0.2)',
-          borderRadius: '8px',
-          color: '#fff',
-          width: '36px',
-          height: '36px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          fontSize: '18px',
-          lineHeight: 1,
-          zIndex: 2,
-        }}
-      >
-        ✕
-      </button>
-    </div>
-  );
-};
+import Overlay from './Overlay';
 
 // ─── ImageCard ────────────────────────────────────────────────────────────────
 
@@ -177,13 +88,59 @@ const ImageCard: React.FC<ImageCardProps> = ({ src, alt, title, isDark = false }
       </span>
 
       {lightboxOpen && (
-        <ImageLightbox src={src} alt={alt} onClose={() => setLightboxOpen(false)} />
+        <Overlay
+          onClose={() => setLightboxOpen(false)}
+          isDark
+          zIndex={9999}
+        >
+          {/* cursor:zoom-out on the backdrop is handled by Overlay's backdrop button */}
+          <div style={{ position: 'relative' }}>
+            <img
+              src={src}
+              alt={alt}
+              style={{
+                maxWidth: '90vw',
+                maxHeight: '90vh',
+                objectFit: 'contain',
+                borderRadius: '10px',
+                boxShadow: '0 8px 60px rgba(0,0,0,0.8)',
+                userSelect: 'none',
+                display: 'block',
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setLightboxOpen(false)}
+              aria-label="Закрыть"
+              style={{
+                position: 'fixed',
+                top: '1.25rem',
+                right: '1.25rem',
+                background: 'rgba(255,255,255,0.12)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: '8px',
+                color: '#fff',
+                width: '36px',
+                height: '36px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                fontSize: '18px',
+                lineHeight: 1,
+                zIndex: 1,
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        </Overlay>
       )}
     </>
   );
 };
 
-// ─── Обёртка с контекстом темы ────────────────────────────────────────────────
+// ─── Context wrapper ──────────────────────────────────────────────────────────
 
 const ImageCardWithContext: React.FC<Omit<ImageCardProps, 'isDark'>> = (props) => {
   const { isDark } = useContext(TableContext);
