@@ -5,6 +5,7 @@ import {
   ChevronDown, ChevronUp, Search, X, Code2,
 } from 'lucide-react';
 import { TableContext } from '../lib/htmlParser';
+import Overlay from './Overlay';
 import hljs from 'highlight.js/lib/core';
 
 // ---------------------------------------------------------------------------
@@ -87,42 +88,20 @@ async function loadLanguage(lang: string): Promise<void> {
 // ---------------------------------------------------------------------------
 
 function escapeHtml(str: string): string {
-  // replaceAll is correct here: we want every occurrence replaced (S7781)
   return str
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;');
 }
 
-// Escapes all regex special characters in a string.
-// The replacement string '\\$&' uses double-backslash intentionally —
-// this is required by RegExp.replace() semantics and is NOT a candidate
-// for String.raw. NOSONAR: typescript:S7780, typescript:S7781
 function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // NOSONAR typescript:S7780 typescript:S7781
 }
 
-// Injects search highlight <mark> tags into already-HTML-escaped content.
-//
-// WHY .replace() and not .replaceAll() here (S7781 false positive):
-//   The outer regex splits the string into HTML tags vs text nodes so we
-//   can skip tag attributes. replaceAll() does not accept a callback with
-//   capture-group splitting, so .replace() with a RegExp + callback is the
-//   only correct approach. NOSONAR: typescript:S7781
-//
-// WHY the inner regex is safe from ReDoS (S5852):
-//   `escapeRegex` sanitises every special character in `query` before it is
-//   inserted into the RegExp, so there are no nested quantifiers or ambiguous
-//   alternations that could cause super-linear backtracking.
 function injectSearchHighlight(html: string, query: string): string {
   if (!query) return html;
-
   const safeQuery = escapeRegex(query);
   const searchRegex = new RegExp(`(${safeQuery})`, 'gi');
-
-  // Split on HTML tags to avoid matching inside attributes/tag names.
-  // .replace with callback is required — replaceAll does not support this pattern.
-  // NOSONAR typescript:S7781 typescript:S5852
   return html.replace(/(<[^>]*>)|([^<]+)/g, (match, tag, text) => { // NOSONAR typescript:S5852
     if (tag) return tag;
     return text.replace(searchRegex, '<mark style="background:#854d0e;color:#fff;border-radius:2px;padding:0 1px;">$1</mark>'); // NOSONAR typescript:S7781
@@ -256,8 +235,6 @@ const CodeBody = React.forwardRef<HTMLPreElement, CodeBodyProps>(
 );
 CodeBody.displayName = 'CodeBody';
 
-// ── ToolbarButton ──────────────────────────────────────────────────────────
-
 interface ToolbarButtonProps {
   readonly onClick: () => void;
   readonly title: string;
@@ -286,8 +263,6 @@ function ToolbarButton({ onClick, title, label, icon, color, borderCls, hoverCls
     </button>
   );
 }
-
-// ── SearchBox ──────────────────────────────────────────────────────────────
 
 interface SearchBoxProps {
   readonly value: string;
@@ -323,8 +298,6 @@ function SearchBox({ value, onChange, matchCount, bg, fg, borderCls }: SearchBox
     </div>
   );
 }
-
-// ── LangPicker — rendered into document.body via portal ───────────────────
 
 interface LangPickerProps {
   readonly currentLang: string;
@@ -432,11 +405,6 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
 
   const highlightedHtml = useHighlightedHtml(code, activeLang, isDark, searchQuery);
 
-  useEffect(() => {
-    document.body.style.overflow = isFullscreen ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
-  }, [isFullscreen]);
-
   const matchedLines = useMemo(() => {
     if (!searchQuery) return new Set<number>();
     const lowerQ = searchQuery.toLowerCase();
@@ -526,13 +494,19 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
     />
   );
 
-  // ── Fullscreen overlay ──────────────────────────────────────────────────
+  // ── Fullscreen overlay — uses shared Overlay (blur(12px) backdrop) ──────
   if (isFullscreen) {
     return (
-      <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+      <Overlay onClose={() => setIsFullscreen(false)} zIndex={50} backdropCursor="default">
         <div
-          className={`w-full max-w-4xl max-h-screen flex flex-col rounded-lg border ${borderCls} not-prose`}
-          style={{ background: bg }}
+          className={`rounded-lg border ${borderCls} not-prose`}
+          style={{
+            background: bg,
+            width: 'min(900px, 92vw)',
+            maxHeight: '90vh',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
         >
           <div className={`border-b px-3 py-2 flex flex-wrap items-center gap-2 ${borderCls}`} style={{ background: bg }}>
             {searchBoxEl}
@@ -555,7 +529,7 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
             <CodeBody {...bodyProps} />
           </div>
         </div>
-      </div>
+      </Overlay>
     );
   }
 
