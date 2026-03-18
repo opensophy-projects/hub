@@ -8,6 +8,7 @@ import { parseHtmlToReact, TableContext } from '@/shared/lib/htmlParser';
 import { useTableOfContents } from '../hooks/useTableOfContents';
 import { useScrollProgress } from '../hooks/useScrollProgress';
 import { scrollToElement } from '../utils/scrollUtils';
+import { useIsDesktop } from '@/shared/hooks/useBreakpoint';
 import { Clock, CalendarDays, ArrowUp, ChevronRight, RefreshCw } from 'lucide-react';
 import DotWaveBackground from './DotWaveBackground';
 import AskAIButton from './AskAIButton';
@@ -65,18 +66,6 @@ function estimateReadTime(content: string): number {
 }
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
-
-function useIsDesktop(): boolean {
-  const [isDesktop, setIsDesktop] = useState(
-    typeof window !== 'undefined' ? window.innerWidth >= 768 : true
-  );
-  useEffect(() => {
-    const check = () => setIsDesktop(window.innerWidth >= 768);
-    window.addEventListener('resize', check, { passive: true });
-    return () => window.removeEventListener('resize', check);
-  }, []);
-  return isDesktop;
-}
 
 function useActiveHeading(toc: ReturnType<typeof useTableOfContents>): string {
   const [activeId, setActiveId] = useState('');
@@ -271,12 +260,10 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const { isDark } = useTheme();
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
 
-  // FIX [🔴-01]: content comes via Astro props at build time — no runtime fetch needed.
-
   const toc            = useTableOfContents(doc);
   const scrollProgress = useScrollProgress();
   const activeId       = useActiveHeading(toc);
-  const isDesktop      = useIsDesktop();
+  const isDesktop      = useIsDesktop(); // ← shared hook
 
   const htmlContent = useMemo(() => {
     if (!doc.content) return '';
