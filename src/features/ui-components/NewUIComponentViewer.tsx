@@ -3,10 +3,12 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTheme } from '@/shared/contexts/ThemeContext';
-import { X, Maximize2, Minimize2, Play, RefreshCcw, Settings, PanelRight, PanelRightClose, ChevronUp, ChevronDown } from 'lucide-react';
+import {
+  X, Maximize2, Minimize2, Play, RefreshCcw,
+  Settings, PanelRight, PanelRightClose, ChevronDown, ChevronUp,
+} from 'lucide-react';
 import { loadComponent, getDefaultProps } from './loader';
 import { ComponentWrapper } from './ComponentWrapper';
-import { tc } from '@/shared/lib/themeUtils';
 import { useIsMobile } from '@/shared/hooks/useBreakpoint';
 import type { UniversalProps, ComponentConfig, PropDefinition } from './types';
 
@@ -19,6 +21,131 @@ interface LoadedComponentData {
   config: ComponentConfig;
   Component: AnyComponent;
   fileContents: Record<string, string>;
+}
+
+// ─── Design tokens — unified with CodeBlock / TableControlsBar ────────────────
+
+function tk(isDark: boolean) {
+  return isDark ? {
+    outerBg:      '#0a0a0a',
+    barBg:        '#111111',
+    panelBg:      '#0d0d0d',
+    outerBorder:  'rgba(255,255,255,0.08)',
+    barBorder:    'rgba(255,255,255,0.08)',
+    btnBg:        'rgba(255,255,255,0.08)',
+    btnBdr:       'rgba(255,255,255,0.12)',
+    btnHov:       'rgba(255,255,255,0.14)',
+    btnClr:       'rgba(255,255,255,0.72)',
+    btnActBg:     'rgba(255,255,255,0.15)',
+    btnActBdr:    'rgba(255,255,255,0.22)',
+    btnActClr:    '#ffffff',
+    inpBg:        '#1a1a1a',
+    inpBdr:       'rgba(255,255,255,0.12)',
+    inpFoc:       'rgba(255,255,255,0.26)',
+    inpClr:       'rgba(255,255,255,0.88)',
+    plhClr:       'rgba(255,255,255,0.28)',
+    fg:           '#e8e8e8',
+    fgMuted:      'rgba(255,255,255,0.35)',
+    fgSub:        'rgba(255,255,255,0.22)',
+    footerClr:    'rgba(255,255,255,0.22)',
+    sectionBdr:   'rgba(255,255,255,0.07)',
+    outerShadow:  '0 2px 12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)',
+    modalShadow:  '0 24px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.05)',
+    tabActBg:     'rgba(255,255,255,0.1)',
+    tabActBdr:    'rgba(255,255,255,0.15)',
+    tabActClr:    '#ffffff',
+    tabClr:       'rgba(255,255,255,0.45)',
+  } : {
+    outerBg:      '#E8E7E3',
+    barBg:        '#d8d7d3',
+    panelBg:      '#dddcd8',
+    outerBorder:  'rgba(0,0,0,0.1)',
+    barBorder:    'rgba(0,0,0,0.09)',
+    btnBg:        'rgba(0,0,0,0.07)',
+    btnBdr:       'rgba(0,0,0,0.12)',
+    btnHov:       'rgba(0,0,0,0.12)',
+    btnClr:       'rgba(0,0,0,0.68)',
+    btnActBg:     'rgba(0,0,0,0.12)',
+    btnActBdr:    'rgba(0,0,0,0.22)',
+    btnActClr:    '#000000',
+    inpBg:        '#E8E7E3',
+    inpBdr:       'rgba(0,0,0,0.12)',
+    inpFoc:       'rgba(0,0,0,0.28)',
+    inpClr:       '#000000',
+    plhClr:       'rgba(0,0,0,0.35)',
+    fg:           '#1a1a1a',
+    fgMuted:      'rgba(0,0,0,0.38)',
+    fgSub:        'rgba(0,0,0,0.28)',
+    footerClr:    'rgba(0,0,0,0.32)',
+    sectionBdr:   'rgba(0,0,0,0.07)',
+    outerShadow:  '0 1px 6px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.07)',
+    modalShadow:  '0 24px 80px rgba(0,0,0,0.2)',
+    tabActBg:     'rgba(0,0,0,0.1)',
+    tabActBdr:    'rgba(0,0,0,0.18)',
+    tabActClr:    '#000000',
+    tabClr:       'rgba(0,0,0,0.45)',
+  };
+}
+
+type T = ReturnType<typeof tk>;
+
+// ─── Pill button — same as CodeBlock / TableControlsBar ───────────────────────
+
+interface PillProps {
+  onClick: () => void;
+  title: string;
+  label: string;
+  icon: React.ReactNode;
+  t: T;
+  active?: boolean;
+  danger?: boolean;
+}
+
+function Pill({ onClick, title, label, icon, t, active, danger }: PillProps) {
+  const bg    = active ? t.btnActBg  : t.btnBg;
+  const bdr   = active ? t.btnActBdr : t.btnBdr;
+  const color = danger ? (document.body.classList.contains('dark') ? '#f87171' : '#dc2626') : active ? t.btnActClr : t.btnClr;
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center', gap: 3,
+        padding: '5px 12px', minWidth: 52, height: 44,
+        borderRadius: 8, border: `1px solid ${bdr}`,
+        background: bg, color, cursor: 'pointer', flexShrink: 0,
+        transition: 'background 0.13s',
+      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = bg; }}
+    >
+      {icon}
+      <span style={{ fontSize: 10, fontWeight: active ? 600 : 400, whiteSpace: 'nowrap', lineHeight: 1 }}>
+        {label}
+      </span>
+    </button>
+  );
+}
+
+// ─── Divider ──────────────────────────────────────────────────────────────────
+
+function Divider({ t }: { t: T }) {
+  return <div style={{ width: 1, height: 22, background: t.barBorder, margin: '0 2px', flexShrink: 0 }} />;
+}
+
+// ─── Section label ────────────────────────────────────────────────────────────
+
+function SectionLabel({ label, t }: { label: string; t: T }) {
+  return (
+    <div style={{
+      padding: '9px 12px 3px',
+      fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+      letterSpacing: '0.07em', color: t.fgMuted,
+    }}>
+      {label}
+    </div>
+  );
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -47,11 +174,11 @@ const FIELD_GROUPS: Array<{
   {
     label: 'Внешний вид',
     fields: [
-      { label: 'Прозрачность', key: 'opacity',    min: 0, max: 1, step: 0.05, default: 1 },
-      { label: 'Яркость',      key: 'brightness', min: 0, max: 2, step: 0.05, default: 1 },
-      { label: 'Контраст',     key: 'contrast',   min: 0, max: 2, step: 0.05, default: 1 },
-      { label: 'Насыщенность', key: 'saturate',   min: 0, max: 2, step: 0.05, default: 1 },
-      { label: 'Размытие',     key: 'blur',       min: 0, max: 20, step: 0.5, default: 0 },
+      { label: 'Прозрачность', key: 'opacity',    min: 0, max: 1,  step: 0.05, default: 1 },
+      { label: 'Яркость',      key: 'brightness', min: 0, max: 2,  step: 0.05, default: 1 },
+      { label: 'Контраст',     key: 'contrast',   min: 0, max: 2,  step: 0.05, default: 1 },
+      { label: 'Насыщенность', key: 'saturate',   min: 0, max: 2,  step: 0.05, default: 1 },
+      { label: 'Размытие',     key: 'blur',       min: 0, max: 20, step: 0.5,  default: 0 },
     ],
   },
 ];
@@ -86,7 +213,7 @@ function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
 
 // ─── Color Picker ─────────────────────────────────────────────────────────────
 
-const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined) => void; isDark: boolean }> = ({ value, onChange, isDark }) => {
+const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined) => void; t: T }> = ({ value, onChange, t }) => {
   const [hue, setHue]   = useState(217);
   const [sat, setSat]   = useState(0.73);
   const [val, setVal]   = useState(0.96);
@@ -141,100 +268,90 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
     window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
   }, [handleHueDrag]);
 
-  const border    = tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)');
-  const inputBg   = tc(isDark, 'rgba(255,255,255,0.06)', 'rgba(0,0,0,0.06)');
-  const labelClr  = tc(isDark, 'rgba(255,255,255,0.35)', 'rgba(0,0,0,0.35)');
-  const textColor = tc(isDark, 'rgba(255,255,255,0.85)', 'rgba(0,0,0,0.85)');
-  const metaBg    = tc(isDark, 'rgba(255,255,255,0.03)', 'rgba(0,0,0,0.03)');
-
   return (
     <div style={{ userSelect: 'none' }}>
       <div ref={svRef} onMouseDown={handleSvMouseDown}
-        style={{ position:'relative', width:'100%', height:140, cursor:'crosshair', background:`linear-gradient(to bottom, transparent, #000), linear-gradient(to right, #fff, ${hueColor})` }}
-      >
-        <div style={{ position:'absolute', left:`${sat*100}%`, top:`${(1-val)*100}%`, width:13, height:13, borderRadius:'50%', border:'2px solid #fff', boxShadow:'0 0 0 1px rgba(0,0,0,0.4),0 1px 4px rgba(0,0,0,0.5)', transform:'translate(-50%,-50%)', pointerEvents:'none' }} />
+        style={{ position: 'relative', width: '100%', height: 140, cursor: 'crosshair', background: `linear-gradient(to bottom, transparent, #000), linear-gradient(to right, #fff, ${hueColor})` }}>
+        <div style={{ position: 'absolute', left: `${sat * 100}%`, top: `${(1 - val) * 100}%`, width: 13, height: 13, borderRadius: '50%', border: '2px solid #fff', boxShadow: '0 0 0 1px rgba(0,0,0,0.4),0 1px 4px rgba(0,0,0,0.5)', transform: 'translate(-50%,-50%)', pointerEvents: 'none' }} />
       </div>
 
-      <div style={{ padding:'10px 12px 0' }}>
+      <div style={{ padding: '10px 12px 0' }}>
         <div ref={hueRef} onMouseDown={handleHueMouseDown}
-          style={{ position:'relative', height:10, borderRadius:5, cursor:'pointer', background:'linear-gradient(to right,#f00 0%,#ff0 16.67%,#0f0 33.33%,#0ff 50%,#00f 66.67%,#f0f 83.33%,#f00 100%)' }}
-        >
-          <div style={{ position:'absolute', top:'50%', left:`${(hue/360)*100}%`, width:16, height:16, borderRadius:'50%', background:hueColor, border:'2px solid #fff', boxShadow:'0 0 0 1px rgba(0,0,0,0.3)', transform:'translate(-50%,-50%)', pointerEvents:'none' }} />
+          style={{ position: 'relative', height: 10, borderRadius: 5, cursor: 'pointer', background: 'linear-gradient(to right,#f00 0%,#ff0 16.67%,#0f0 33.33%,#0ff 50%,#00f 66.67%,#f0f 83.33%,#f00 100%)' }}>
+          <div style={{ position: 'absolute', top: '50%', left: `${(hue / 360) * 100}%`, width: 16, height: 16, borderRadius: '50%', background: hueColor, border: '2px solid #fff', boxShadow: '0 0 0 1px rgba(0,0,0,0.3)', transform: 'translate(-50%,-50%)', pointerEvents: 'none' }} />
         </div>
       </div>
 
-      <div style={{ padding:'10px 12px 0', display:'flex', alignItems:'center', gap:6 }}>
-        <div style={{ width:22, height:22, borderRadius:5, flexShrink:0, background:currentHex, border:`1px solid ${border}` }} />
-        <div style={{ flex:1 }}>
-          <div style={{ fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:labelClr, marginBottom:3 }}>HEX</div>
+      <div style={{ padding: '10px 12px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ width: 22, height: 22, borderRadius: 5, flexShrink: 0, background: currentHex, border: `1px solid ${t.barBorder}` }} />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: t.fgMuted, marginBottom: 3 }}>HEX</div>
           <input value={hexInput} onChange={e => {
             const raw = e.target.value; setHexInput(raw);
-            const clean = raw.replace('#','');
-            if (clean.length===6) { const rgb=hexToRgb('#'+clean); if(rgb){const [h,s,v]=rgbToHsv(...rgb);setHue(h);setSat(s);setVal(v);onChange('#'+clean);} }
-            if (clean==='') onChange(undefined);
+            const clean = raw.replace('#', '');
+            if (clean.length === 6) { const rgb = hexToRgb('#' + clean); if (rgb) { const [h, s, v] = rgbToHsv(...rgb); setHue(h); setSat(s); setVal(v); onChange('#' + clean); } }
+            if (clean === '') onChange(undefined);
           }} placeholder="4287f5"
-            style={{ width:'100%', padding:'3px 6px', borderRadius:5, border:`1px solid ${border}`, background:inputBg, color:textColor, fontSize:11, fontFamily:'ui-monospace,monospace', outline:'none', boxSizing:'border-box' }}
+            style={{ width: '100%', padding: '3px 6px', borderRadius: 5, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: t.inpClr, fontSize: 11, fontFamily: 'ui-monospace,monospace', outline: 'none', boxSizing: 'border-box' }}
           />
         </div>
-        <button onClick={async()=>{await navigator.clipboard.writeText(currentHex);setCopied(true);setTimeout(()=>setCopied(false),1500);}}
-          style={{ width:22, height:22, borderRadius:5, border:`1px solid ${border}`, background:inputBg, color:copied?'#22c55e':textColor, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, transition:'color 0.15s' }}
-        >
+        <button onClick={async () => { await navigator.clipboard.writeText(currentHex); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+          style={{ width: 22, height: 22, borderRadius: 5, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: copied ? '#22c55e' : t.fg, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'color 0.15s' }}>
           {copied
-            ? <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            : <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><rect x="4" y="1" width="8" height="10" rx="2" stroke="currentColor" strokeWidth="1.3"/><rect x="1" y="3" width="8" height="10" rx="2" stroke="currentColor" strokeWidth="1.3" fill={inputBg}/></svg>
+            ? <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            : <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><rect x="4" y="1" width="8" height="10" rx="2" stroke="currentColor" strokeWidth="1.3" /><rect x="1" y="3" width="8" height="10" rx="2" stroke="currentColor" strokeWidth="1.3" fill={t.inpBg} /></svg>
           }
         </button>
       </div>
 
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:1, margin:'8px 0 0', background:border }}>
-        {[{ label:'RGB', value:currentRgb.join(', ') },{ label:'HSL', value:`${currentHsl[0]}°, ${currentHsl[1]}%, ${currentHsl[2]}%` }].map(({label,value:v})=>(
-          <div key={label} style={{ background:metaBg, padding:'5px 12px' }}>
-            <div style={{ fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:labelClr, marginBottom:1 }}>{label}</div>
-            <div style={{ fontSize:10, fontFamily:'ui-monospace,monospace', color:textColor }}>{v}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, margin: '8px 0 0', background: t.barBorder }}>
+        {[{ label: 'RGB', value: currentRgb.join(', ') }, { label: 'HSL', value: `${currentHsl[0]}°, ${currentHsl[1]}%, ${currentHsl[2]}%` }].map(({ label, value: v }) => (
+          <div key={label} style={{ background: t.outerBg, padding: '5px 12px' }}>
+            <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: t.fgMuted, marginBottom: 1 }}>{label}</div>
+            <div style={{ fontSize: 10, fontFamily: 'ui-monospace,monospace', color: t.fg }}>{v}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ padding:'8px 12px' }}>
-        <button onClick={()=>{onChange(undefined);setHexInput('');}}
-          style={{ width:'100%', padding:'4px', borderRadius:5, border:`1px solid ${border}`, background:'transparent', color:labelClr, fontSize:10, cursor:'pointer' }}
-          onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.background=tc(isDark,'rgba(255,255,255,0.06)','rgba(0,0,0,0.06)');}}
-          onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.background='transparent';}}
-        >Сбросить цвет</button>
+      <div style={{ padding: '8px 12px' }}>
+        <button onClick={() => { onChange(undefined); setHexInput(''); }}
+          style={{ width: '100%', padding: '4px', borderRadius: 5, border: `1px solid ${t.inpBdr}`, background: 'transparent', color: t.fgMuted, fontSize: 10, cursor: 'pointer' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnBg; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+        >
+          Сбросить цвет
+        </button>
       </div>
     </div>
   );
 };
 
-// ─── Sidebar NumberInput ───────────────────────────────────────────────────────
+// ─── Number input with range slider ──────────────────────────────────────────
 
-const SidebarNumberInput: React.FC<{
+const NumberInput: React.FC<{
   value: number; onChange: (v: number) => void;
-  min: number; max: number; step: number; isDark: boolean;
-}> = ({ value, onChange, min, max, step, isDark }) => {
+  min: number; max: number; step: number; t: T;
+}> = ({ value, onChange, min, max, step, t }) => {
   const [editing, setEditing] = useState(false);
   const [raw, setRaw] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const commit = () => { const n = Number.parseFloat(raw); if (!Number.isNaN(n)) onChange(Math.min(max, Math.max(min, n))); setEditing(false); };
-  const border = tc(isDark, 'rgba(255,255,255,0.12)', 'rgba(0,0,0,0.12)');
-  const bg     = tc(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.06)');
-  const fg     = tc(isDark, '#fff', '#000');
   const places = step >= 1 ? 0 : step >= 0.1 ? 1 : 2;
   const numStr = places > 0 ? value.toFixed(places) : String(Math.round(value));
   return (
-    <div style={{ display:'flex', alignItems:'center', gap:7 }}>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={e=>onChange(Number(e.target.value))}
-        style={{ flex:1, accentColor:tc(isDark,'rgba(255,255,255,0.8)','rgba(0,0,0,0.6)'), cursor:'pointer', height:3, minWidth:0 }}
+    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+      <input type="range" min={min} max={max} step={step} value={value} onChange={e => onChange(Number(e.target.value))}
+        style={{ flex: 1, accentColor: t.fg, cursor: 'pointer', height: 3, minWidth: 0 }}
       />
       {editing ? (
         <input ref={inputRef} type="number" value={raw} min={min} max={max} step={step}
-          onChange={e=>setRaw(e.target.value)} onBlur={commit}
-          onKeyDown={e=>{if(e.key==='Enter')commit();if(e.key==='Escape')setEditing(false);}}
-          style={{ width:46, padding:'2px 4px', borderRadius:5, border:`1px solid ${border}`, background:bg, color:fg, fontSize:11, textAlign:'center', outline:'none', fontFamily:'ui-monospace,monospace', flexShrink:0 }}
+          onChange={e => setRaw(e.target.value)} onBlur={commit}
+          onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false); }}
+          style={{ width: 46, padding: '2px 4px', borderRadius: 5, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: t.inpClr, fontSize: 11, textAlign: 'center', outline: 'none', fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}
         />
       ) : (
-        <button onClick={()=>{setRaw(String(value));setEditing(true);setTimeout(()=>inputRef.current?.select(),0);}}
-          style={{ width:46, padding:'2px 4px', borderRadius:5, border:`1px solid ${border}`, background:bg, color:fg, fontSize:11, textAlign:'center', cursor:'pointer', fontFamily:'ui-monospace,monospace', flexShrink:0 }}>
+        <button onClick={() => { setRaw(String(value)); setEditing(true); setTimeout(() => inputRef.current?.select(), 0); }}
+          style={{ width: 46, padding: '2px 4px', borderRadius: 5, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: t.inpClr, fontSize: 11, textAlign: 'center', cursor: 'pointer', fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
           {numStr}
         </button>
       )}
@@ -242,59 +359,52 @@ const SidebarNumberInput: React.FC<{
   );
 };
 
-// ─── Sidebar Row ───────────────────────────────────────────────────────────────
+// ─── Sidebar field row ────────────────────────────────────────────────────────
 
-const SidebarRow: React.FC<{
+const FieldRow: React.FC<{
   label: string; fieldKey: keyof UniversalProps;
   min: number; max: number; step: number; defaultVal: number;
   universalProps: UniversalProps;
   onChange: (key: keyof UniversalProps, v: PropValue) => void;
-  isDark: boolean;
-}> = ({ label, fieldKey, min, max, step, defaultVal, universalProps, onChange, isDark }) => {
-  const labelColor = tc(isDark, 'rgba(255,255,255,0.5)', 'rgba(0,0,0,0.5)');
+  t: T;
+}> = ({ label, fieldKey, min, max, step, defaultVal, universalProps, onChange, t }) => {
   const val = (universalProps[fieldKey] as number) ?? defaultVal;
   const isChanged = Math.abs(val - defaultVal) > 0.001;
   return (
-    <div style={{ padding:'6px 12px' }}>
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
-        <span style={{ fontSize:10, fontWeight:600, color:isChanged ? tc(isDark,'rgba(255,255,255,0.85)','rgba(0,0,0,0.85)') : labelColor, letterSpacing:'0.02em' }}>
+    <div style={{ padding: '6px 12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+        <span style={{ fontSize: 10, fontWeight: 600, color: isChanged ? t.fg : t.fgMuted, letterSpacing: '0.02em' }}>
           {label}
         </span>
         {isChanged && (
-          <button onClick={()=>onChange(fieldKey, defaultVal)}
-            style={{ fontSize:9, color:tc(isDark,'rgba(255,255,255,0.3)','rgba(0,0,0,0.3)'), background:'none', border:'none', cursor:'pointer', padding:'0 2px' }}
+          <button onClick={() => onChange(fieldKey, defaultVal)}
+            style={{ fontSize: 9, color: t.fgSub, background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}
             title="Сбросить"
           >↺</button>
         )}
       </div>
-      <SidebarNumberInput value={val} onChange={v=>onChange(fieldKey, v)} min={min} max={max} step={step} isDark={isDark} />
+      <NumberInput value={val} onChange={v => onChange(fieldKey, v)} min={min} max={max} step={step} t={t} />
     </div>
   );
 };
 
-// ─── Sidebar Section ───────────────────────────────────────────────────────────
+// ─── Sidebar accordion section ────────────────────────────────────────────────
 
-const SidebarSection: React.FC<{
-  label: string;
-  defaultOpen?: boolean;
-  isDark: boolean;
-  children: React.ReactNode;
-}> = ({ label, defaultOpen = true, isDark, children }) => {
+const AccordionSection: React.FC<{
+  label: string; defaultOpen?: boolean; t: T; children: React.ReactNode;
+}> = ({ label, defaultOpen = true, t, children }) => {
   const [open, setOpen] = useState(defaultOpen);
-  const border     = tc(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.07)');
-  const labelColor = tc(isDark, 'rgba(255,255,255,0.35)', 'rgba(0,0,0,0.35)');
-  const bg         = tc(isDark, 'rgba(255,255,255,0.015)', 'rgba(0,0,0,0.015)');
   return (
-    <div style={{ borderBottom:`1px solid ${border}` }}>
-      <button onClick={()=>setOpen(v=>!v)} style={{
-        width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between',
-        padding:'7px 12px', background:bg, border:'none', cursor:'pointer',
+    <div style={{ borderBottom: `1px solid ${t.sectionBdr}` }}>
+      <button onClick={() => setOpen(v => !v)} style={{
+        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '7px 12px', background: `${t.barBg}88`, border: 'none', cursor: 'pointer',
       }}>
-        <span style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:labelColor }}>
+        <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: t.fgMuted }}>
           {label}
         </span>
-        <svg width="9" height="9" viewBox="0 0 10 10" style={{ opacity:0.35, transform:open?'rotate(180deg)':'none', transition:'transform 0.15s', flexShrink:0 }}>
-          <path d="M2 3 L5 7 L8 3" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+        <svg width="9" height="9" viewBox="0 0 10 10" style={{ opacity: 0.35, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0 }}>
+          <path d="M2 3 L5 7 L8 3" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" />
         </svg>
       </button>
       {open && <div>{children}</div>}
@@ -302,57 +412,58 @@ const SidebarSection: React.FC<{
   );
 };
 
-// ─── Color Section ─────────────────────────────────────────────────────────────
+// ─── Color mode section ───────────────────────────────────────────────────────
 
 const ColorSection: React.FC<{
   universalProps: UniversalProps;
   onChange: (key: keyof UniversalProps, v: PropValue) => void;
-  isDark: boolean;
-}> = ({ universalProps, onChange, isDark }) => {
-  const border      = tc(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.07)');
-  const labelColor  = tc(isDark, 'rgba(255,255,255,0.35)', 'rgba(0,0,0,0.35)');
-  const textColor   = tc(isDark, 'rgba(255,255,255,0.75)', 'rgba(0,0,0,0.75)');
-  const bg          = tc(isDark, 'rgba(255,255,255,0.015)', 'rgba(0,0,0,0.015)');
-  const activeBg    = tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.08)');
+  t: T;
+}> = ({ universalProps, onChange, t }) => {
   const [open, setOpen] = useState(true);
-  const colorMode   = universalProps.colorMode ?? 'original';
+  const colorMode    = universalProps.colorMode ?? 'original';
   const currentColor = universalProps.color;
 
   return (
-    <div style={{ borderBottom:`1px solid ${border}` }}>
-      <button onClick={()=>setOpen(v=>!v)} style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'7px 12px', background:bg, border:'none', cursor:'pointer' }}>
-        <span style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:labelColor, flex:1, textAlign:'left' }}>Цвет</span>
-        {colorMode==='solid' && currentColor && (
-          <div style={{ width:12, height:12, borderRadius:3, background:currentColor, border:`1px solid ${border}`, flexShrink:0 }} />
+    <div style={{ borderBottom: `1px solid ${t.sectionBdr}` }}>
+      <button onClick={() => setOpen(v => !v)} style={{
+        width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+        padding: '7px 12px', background: `${t.barBg}88`, border: 'none', cursor: 'pointer',
+      }}>
+        <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: t.fgMuted, flex: 1, textAlign: 'left' }}>Цвет</span>
+        {colorMode === 'solid' && currentColor && (
+          <div style={{ width: 12, height: 12, borderRadius: 3, background: currentColor, border: `1px solid ${t.barBorder}`, flexShrink: 0 }} />
         )}
-        <span style={{ fontSize:10, color:labelColor, fontFamily:'ui-monospace,monospace', flexShrink:0 }}>
-          {colorMode==='solid' && currentColor ? currentColor : 'оригинал'}
+        <span style={{ fontSize: 10, color: t.fgMuted, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
+          {colorMode === 'solid' && currentColor ? currentColor : 'оригинал'}
         </span>
-        <svg width="9" height="9" viewBox="0 0 10 10" style={{ opacity:0.35, transform:open?'rotate(180deg)':'none', transition:'transform 0.15s', flexShrink:0 }}>
-          <path d="M2 3 L5 7 L8 3" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+        <svg width="9" height="9" viewBox="0 0 10 10" style={{ opacity: 0.35, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0 }}>
+          <path d="M2 3 L5 7 L8 3" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" />
         </svg>
       </button>
 
       {open && (
         <div>
-          <div style={{ display:'flex', margin:'0 12px 8px', borderRadius:7, overflow:'hidden', border:`1px solid ${border}` }}>
-            {(['original','solid'] as const).map(mode => (
-              <button key={mode} onClick={()=>onChange('colorMode', mode)} style={{
-                flex:1, padding:'5px 6px', fontSize:10, fontWeight:colorMode===mode?700:400,
-                border:'none', cursor:'pointer', transition:'all 0.12s',
-                background:colorMode===mode?activeBg:bg,
-                color:colorMode===mode?textColor:labelColor,
+          {/* Mode toggle */}
+          <div style={{ display: 'flex', margin: '0 12px 8px', borderRadius: 7, overflow: 'hidden', border: `1px solid ${t.barBorder}` }}>
+            {(['original', 'solid'] as const).map(mode => (
+              <button key={mode} onClick={() => onChange('colorMode', mode)} style={{
+                flex: 1, padding: '5px 6px', fontSize: 10, fontWeight: colorMode === mode ? 700 : 400,
+                border: 'none', cursor: 'pointer', transition: 'all 0.12s',
+                background: colorMode === mode ? t.tabActBg : t.barBg,
+                color: colorMode === mode ? t.tabActClr : t.fgMuted,
               }}>
-                {mode==='original'?'Оригинал':'Цвет'}
+                {mode === 'original' ? 'Оригинал' : 'Цвет'}
               </button>
             ))}
           </div>
 
-          {colorMode==='solid' && (
-            <ColorPicker value={currentColor??'#4287f5'} onChange={hex=>onChange('color',hex)} isDark={isDark} />
+          {colorMode === 'solid' && (
+            <ColorPicker value={currentColor ?? '#4287f5'} onChange={hex => onChange('color', hex)} t={t} />
           )}
-          {colorMode==='original' && (
-            <div style={{ padding:'6px 12px 10px', fontSize:10, color:labelColor }}>Оригинальные цвета компонента</div>
+          {colorMode === 'original' && (
+            <div style={{ padding: '6px 12px 10px', fontSize: 10, color: t.fgMuted }}>
+              Оригинальные цвета компонента
+            </div>
           )}
         </div>
       )}
@@ -360,88 +471,108 @@ const ColorSection: React.FC<{
   );
 };
 
-// ─── Universal Sidebar ─────────────────────────────────────────────────────────
+// ─── Universal sidebar panel ──────────────────────────────────────────────────
 
 const UniversalSidebar: React.FC<{
   universalProps: UniversalProps;
   onChange: (key: keyof UniversalProps, v: PropValue) => void;
-  isDark: boolean;
-}> = ({ universalProps, onChange, isDark }) => (
+  t: T;
+}> = ({ universalProps, onChange, t }) => (
   <div>
-    <ColorSection universalProps={universalProps} onChange={onChange} isDark={isDark} />
+    <ColorSection universalProps={universalProps} onChange={onChange} t={t} />
     {FIELD_GROUPS.map((group, gi) => (
-      <SidebarSection key={gi} label={group.label} defaultOpen={gi===0} isDark={isDark}>
+      <AccordionSection key={gi} label={group.label} defaultOpen={gi === 0} t={t}>
         {group.fields.map(f => (
-          <SidebarRow
+          <FieldRow
             key={f.key} label={f.label} fieldKey={f.key}
             min={f.min} max={f.max} step={f.step} defaultVal={f.default}
-            universalProps={universalProps} onChange={onChange} isDark={isDark}
+            universalProps={universalProps} onChange={onChange} t={t}
           />
         ))}
-      </SidebarSection>
+      </AccordionSection>
     ))}
   </div>
 );
 
-// ─── AiSelect ─────────────────────────────────────────────────────────────────
+// ─── AiSelect (portal dropdown) ───────────────────────────────────────────────
 
 const AiSelect: React.FC<{
   label: string; value: string; options: string[];
-  onChange: (v: string) => void; isDark: boolean;
-}> = ({ label, value, options, onChange, isDark }) => {
+  onChange: (v: string) => void; t: T;
+}> = ({ label, value, options, onChange, t }) => {
   const [open, setOpen] = useState(false);
   const [hov, setHov]   = useState<string | null>(null);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [dropUp, setDropUp] = useState(false);
   const [w, setW] = useState(0);
-  const ref   = useRef<HTMLDivElement>(null);
+  const ref    = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const pRef   = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    const h = (e: MouseEvent) => { const t=e.target as Node; if(!ref.current?.contains(t)&&!pRef.current?.contains(t)) setOpen(false); };
-    document.addEventListener('mousedown',h); return ()=>document.removeEventListener('mousedown',h);
+    const h = (e: MouseEvent) => { const tgt = e.target as Node; if (!ref.current?.contains(tgt) && !pRef.current?.contains(tgt)) setOpen(false); };
+    document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h);
   }, [open]);
 
-  const computeDropUp = (r: DOMRect) => { const h=Math.min(options.length*34+48,240); return globalThis.window.innerHeight-r.bottom<h && r.top>h; };
+  const computeDropUp = (r: DOMRect) => {
+    const h = Math.min(options.length * 34 + 48, 240);
+    return window.innerHeight - r.bottom < h && r.top > h;
+  };
 
   useEffect(() => {
-    if (!open||!btnRef.current) return;
-    const upd=()=>{ if(!btnRef.current)return; const r=btnRef.current.getBoundingClientRect(); setRect(r);setW(r.width);setDropUp(computeDropUp(r)); };
-    upd(); globalThis.window.addEventListener('scroll',upd,true); globalThis.window.addEventListener('resize',upd);
-    return ()=>{ globalThis.window.removeEventListener('scroll',upd,true); globalThis.window.removeEventListener('resize',upd); };
+    if (!open || !btnRef.current) return;
+    const upd = () => {
+      if (!btnRef.current) return;
+      const r = btnRef.current.getBoundingClientRect();
+      setRect(r); setW(r.width); setDropUp(computeDropUp(r));
+    };
+    upd();
+    window.addEventListener('scroll', upd, true);
+    window.addEventListener('resize', upd);
+    return () => { window.removeEventListener('scroll', upd, true); window.removeEventListener('resize', upd); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open,options.length]);
-
-  const border     = tc(isDark,'rgba(255,255,255,0.1)','rgba(0,0,0,0.1)');
-  const bg         = tc(isDark,'rgba(255,255,255,0.07)','rgba(0,0,0,0.06)');
-  const labelColor = tc(isDark,'rgba(255,255,255,0.5)','rgba(0,0,0,0.5)');
-  const textColor  = tc(isDark,'rgba(255,255,255,0.85)','rgba(0,0,0,0.85)');
-  const rowHov     = tc(isDark,'rgba(255,255,255,0.06)','rgba(0,0,0,0.06)');
-  const activeOptBg = tc(isDark,'rgba(255,255,255,0.08)','rgba(0,0,0,0.08)');
+  }, [open, options.length]);
 
   return (
-    <div style={{ padding:'6px 12px' }}>
-      <div style={{ fontSize:10, fontWeight:600, color:labelColor, marginBottom:4, letterSpacing:'0.02em' }}>{label}</div>
-      <div ref={ref} style={{ position:'relative' }}>
-        <button ref={btnRef} onClick={()=>{ if(!btnRef.current)return; const r=btnRef.current.getBoundingClientRect(); setRect(r);setW(r.width);setDropUp(computeDropUp(r));setOpen(v=>!v); }}
-          style={{ width:'100%', display:'inline-flex', alignItems:'center', justifyContent:'space-between', padding:'5px 8px', borderRadius:6, border:`1px solid ${border}`, background:bg, color:textColor, fontSize:12, fontWeight:500, cursor:'pointer' }}
-        >
+    <div style={{ padding: '6px 12px' }}>
+      <div style={{ fontSize: 10, fontWeight: 600, color: t.fgMuted, marginBottom: 4, letterSpacing: '0.02em' }}>{label}</div>
+      <div ref={ref} style={{ position: 'relative' }}>
+        <button ref={btnRef} onClick={() => {
+          if (!btnRef.current) return;
+          const r = btnRef.current.getBoundingClientRect();
+          setRect(r); setW(r.width); setDropUp(computeDropUp(r)); setOpen(v => !v);
+        }}
+          style={{
+            width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '5px 8px', borderRadius: 6, border: `1px solid ${t.inpBdr}`,
+            background: t.inpBg, color: t.fg, fontSize: 12, fontWeight: 500, cursor: 'pointer',
+          }}>
           <span>{value}</span>
-          <svg width="9" height="9" viewBox="0 0 10 10" style={{ opacity:0.4, transform:open?'rotate(180deg)':'none', transition:'transform 0.15s' }}>
-            <path d="M2 3 L5 7 L8 3" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+          <svg width="9" height="9" viewBox="0 0 10 10" style={{ opacity: 0.4, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
+            <path d="M2 3 L5 7 L8 3" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" />
           </svg>
         </button>
         {open && rect && createPortal(
           <>
             <style>{`@keyframes aiIn{from{opacity:0;transform:translateY(-4px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}`}</style>
-            <div ref={pRef} style={{ position:'fixed', left:rect.left, width:w, zIndex:99999, background:tc(isDark,'#111','#e8e7e3'), border:`1px solid ${border}`, borderRadius:8, boxShadow:isDark?'0 8px 32px rgba(0,0,0,0.7)':'0 8px 32px rgba(0,0,0,0.12)', overflow:'auto', maxHeight:240, animation:'aiIn 0.13s ease', ...(dropUp?{bottom:globalThis.window.innerHeight-rect.top+4}:{top:rect.bottom+4}) }}>
-              {options.map(opt=>(
-                <button key={opt} onClick={()=>{onChange(opt);setOpen(false);}} onMouseEnter={()=>setHov(opt)} onMouseLeave={()=>setHov(null)}
-                  style={{ display:'flex', alignItems:'center', width:'100%', padding:'6px 11px', fontSize:12, textAlign:'left', cursor:'pointer', border:'none', color:textColor, background:hov===opt?rowHov:opt===value?activeOptBg:'transparent' }}
-                >
-                  {opt===value&&<span style={{ marginRight:6, opacity:0.5 }}>✓</span>}
+            <div ref={pRef} style={{
+              position: 'fixed', left: rect.left, width: w, zIndex: 99999,
+              background: t.barBg, border: `1px solid ${t.inpBdr}`,
+              borderRadius: 8, boxShadow: t.modalShadow,
+              overflow: 'auto', maxHeight: 240, animation: 'aiIn 0.13s ease',
+              ...(dropUp ? { bottom: window.innerHeight - rect.top + 4 } : { top: rect.bottom + 4 }),
+            }}>
+              {options.map(opt => (
+                <button key={opt} onClick={() => { onChange(opt); setOpen(false); }}
+                  onMouseEnter={() => setHov(opt)} onMouseLeave={() => setHov(null)}
+                  style={{
+                    display: 'flex', alignItems: 'center', width: '100%',
+                    padding: '6px 11px', fontSize: 12, textAlign: 'left', cursor: 'pointer',
+                    border: 'none', color: t.fg,
+                    background: hov === opt ? t.btnHov : opt === value ? t.btnBg : 'transparent',
+                  }}>
+                  {opt === value && <span style={{ marginRight: 6, opacity: 0.5 }}>✓</span>}
                   {opt}
                 </button>
               ))}
@@ -454,44 +585,44 @@ const AiSelect: React.FC<{
   );
 };
 
-// ─── Specific Sidebar ──────────────────────────────────────────────────────────
+// ─── Specific sidebar panel ───────────────────────────────────────────────────
 
 const SpecificSidebar: React.FC<{
   config: ComponentConfig; componentProps: ComponentPropsMap;
-  onChange: (name: string, v: PropValue) => void; isDark: boolean;
-}> = ({ config, componentProps, onChange, isDark }) => {
-  const labelColor = tc(isDark,'rgba(255,255,255,0.5)','rgba(0,0,0,0.5)');
-  const border     = tc(isDark,'rgba(255,255,255,0.1)','rgba(0,0,0,0.1)');
-  const bg         = tc(isDark,'rgba(255,255,255,0.07)','rgba(0,0,0,0.06)');
-  const textColor  = tc(isDark,'rgba(255,255,255,0.85)','rgba(0,0,0,0.85)');
-  const sectionBdr = tc(isDark,'rgba(255,255,255,0.07)','rgba(0,0,0,0.07)');
-
+  onChange: (name: string, v: PropValue) => void; t: T;
+}> = ({ config, componentProps, onChange, t }) => {
   const visibleProps = useMemo(() =>
     config.specificProps?.length
       ? config.props.filter((p: PropDefinition) => config.specificProps!.includes(p.name))
       : config.props,
   [config]);
 
-  if (!visibleProps.length) return <div style={{ padding:'20px 12px', textAlign:'center', fontSize:12, color:labelColor }}>Нет специфических настроек</div>;
+  if (!visibleProps.length) {
+    return (
+      <div style={{ padding: '20px 12px', textAlign: 'center', fontSize: 12, color: t.fgMuted }}>
+        Нет специфических настроек
+      </div>
+    );
+  }
 
   return (
     <div>
-      {visibleProps.map((prop: PropDefinition, i) => (
-        <div key={prop.name} style={{ borderBottom: i < visibleProps.length-1 ? `1px solid ${sectionBdr}` : 'none' }}>
-          {prop.control==='select' && (
-            <AiSelect label={prop.description} value={typeof componentProps[prop.name]==='string'?componentProps[prop.name] as string:(prop.default as string??'')} options={prop.options??[]} onChange={v=>onChange(prop.name,v)} isDark={isDark} />
+      {visibleProps.map((prop: PropDefinition, i: number) => (
+        <div key={prop.name} style={{ borderBottom: i < visibleProps.length - 1 ? `1px solid ${t.sectionBdr}` : 'none' }}>
+          {prop.control === 'select' && (
+            <AiSelect label={prop.description} value={typeof componentProps[prop.name] === 'string' ? componentProps[prop.name] as string : (prop.default as string ?? '')} options={prop.options ?? []} onChange={v => onChange(prop.name, v)} t={t} />
           )}
-          {prop.control==='number' && (
-            <div style={{ padding:'6px 12px' }}>
-              <div style={{ fontSize:10, fontWeight:600, color:labelColor, marginBottom:4, letterSpacing:'0.02em' }}>{prop.description}</div>
-              <SidebarNumberInput value={typeof componentProps[prop.name]==='number'?componentProps[prop.name] as number:(prop.default as number??0)} onChange={v=>onChange(prop.name,v)} min={prop.min??0} max={prop.max??100} step={prop.step??1} isDark={isDark} />
+          {prop.control === 'number' && (
+            <div style={{ padding: '6px 12px' }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: t.fgMuted, marginBottom: 4, letterSpacing: '0.02em' }}>{prop.description}</div>
+              <NumberInput value={typeof componentProps[prop.name] === 'number' ? componentProps[prop.name] as number : (prop.default as number ?? 0)} onChange={v => onChange(prop.name, v)} min={prop.min ?? 0} max={prop.max ?? 100} step={prop.step ?? 1} t={t} />
             </div>
           )}
-          {prop.control!=='select' && prop.control!=='number' && (
-            <div style={{ padding:'6px 12px' }}>
-              <div style={{ fontSize:10, fontWeight:600, color:labelColor, marginBottom:4, letterSpacing:'0.02em' }}>{prop.description}</div>
-              <input type="text" value={typeof componentProps[prop.name]==='string'?componentProps[prop.name] as string:(prop.default as string??'')} onChange={e=>onChange(prop.name,e.target.value)}
-                style={{ width:'100%', padding:'4px 7px', borderRadius:6, border:`1px solid ${border}`, background:bg, color:textColor, fontSize:12, outline:'none', boxSizing:'border-box' }}
+          {prop.control !== 'select' && prop.control !== 'number' && (
+            <div style={{ padding: '6px 12px' }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: t.fgMuted, marginBottom: 4, letterSpacing: '0.02em' }}>{prop.description}</div>
+              <input type="text" value={typeof componentProps[prop.name] === 'string' ? componentProps[prop.name] as string : (prop.default as string ?? '')} onChange={e => onChange(prop.name, e.target.value)}
+                style={{ width: '100%', padding: '4px 7px', borderRadius: 6, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: t.inpClr, fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
               />
             </div>
           )}
@@ -501,68 +632,32 @@ const SpecificSidebar: React.FC<{
   );
 };
 
-// ─── Tab bar ───────────────────────────────────────────────────────────────────
+// ─── Tab bar ──────────────────────────────────────────────────────────────────
 
-const TabBar: React.FC<{ active: TabType; onSelect: (t: TabType) => void; isDark: boolean }> = ({ active, onSelect, isDark }) => {
-  const border = tc(isDark,'rgba(255,255,255,0.08)','rgba(0,0,0,0.08)');
-  const bg     = tc(isDark,'rgba(255,255,255,0.015)','rgba(0,0,0,0.015)');
-  return (
-    <div style={{ display:'flex', padding:'6px 12px', gap:4, borderBottom:`1px solid ${border}`, background:bg, flexShrink:0 }}>
-      {(['universal','specific'] as TabType[]).map(tab => {
-        const a = active===tab;
-        return (
-          <button key={tab} onClick={()=>onSelect(tab)} style={{
-            flex:1, padding:'5px 8px', borderRadius:7,
-            border:`1px solid ${a?tc(isDark,'rgba(255,255,255,0.15)','rgba(0,0,0,0.15)'):'transparent'}`,
-            background:a?tc(isDark,'rgba(255,255,255,0.1)','rgba(0,0,0,0.08)'):'transparent',
-            color:a?tc(isDark,'#fff','#000'):tc(isDark,'rgba(255,255,255,0.45)','rgba(0,0,0,0.45)'),
-            fontSize:11, fontWeight:a?600:400, cursor:'pointer', transition:'all 0.14s', whiteSpace:'nowrap',
-          }}>
-            {tab==='universal'?'Общие':'Специфические'}
-          </button>
-        );
-      })}
-    </div>
-  );
-};
-
-// ─── Icon button ───────────────────────────────────────────────────────────────
-
-const IconBtn: React.FC<{
-  onClick: () => void; title: string; label: string;
-  isDark: boolean; children: React.ReactNode; active?: boolean;
-}> = ({ onClick, title, label, isDark, children, active }) => {
-  const border = active?tc(isDark,'rgba(255,255,255,0.2)','rgba(0,0,0,0.2)'):tc(isDark,'rgba(255,255,255,0.1)','rgba(0,0,0,0.14)');
-  const bg     = active?tc(isDark,'rgba(255,255,255,0.1)','rgba(0,0,0,0.08)'):tc(isDark,'rgba(255,255,255,0.05)','rgba(0,0,0,0.04)');
-  const bgHov  = tc(isDark,'rgba(255,255,255,0.12)','rgba(0,0,0,0.1)');
-  const color  = active?tc(isDark,'#fff','#000'):tc(isDark,'rgba(255,255,255,0.65)','rgba(0,0,0,0.55)');
-  return (
-    <button onClick={onClick} title={title} style={{ display:'inline-flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2, padding:'5px 8px', minWidth:44, borderRadius:8, border:`1px solid ${border}`, background:bg, color, cursor:'pointer', transition:'all 0.14s', flexShrink:0 }}
-      onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.background=bgHov;(e.currentTarget as HTMLButtonElement).style.color=tc(isDark,'#fff','#000');}}
-      onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.background=bg;(e.currentTarget as HTMLButtonElement).style.color=color;}}
-    >
-      {children}
-      <span style={{ fontSize:9, fontWeight:500, lineHeight:1, whiteSpace:'nowrap' }}>{label}</span>
-    </button>
-  );
-};
-
-// ─── Component render ──────────────────────────────────────────────────────────
-
-interface ComponentRenderProps {
-  Component: AnyComponent; componentProps: ComponentPropsMap;
-  universalProps: UniversalProps; refreshKey: number; isDark: boolean;
-}
-
-const ComponentRender: React.FC<ComponentRenderProps> = ({ Component, componentProps, universalProps, refreshKey, isDark }) => (
-  <ComponentWrapper {...universalProps} className="w-full h-full">
-    <Suspense fallback={<div style={{ color:tc(isDark,'rgba(255,255,255,0.4)','rgba(0,0,0,0.4)'), fontSize:13 }}>Загрузка...</div>}>
-      <Component key={refreshKey} {...componentProps} />
-    </Suspense>
-  </ComponentWrapper>
+const TabBar: React.FC<{ active: TabType; onSelect: (t: TabType) => void; t: T }> = ({ active, onSelect, t }) => (
+  <div style={{
+    display: 'flex', padding: '6px 12px', gap: 4,
+    borderBottom: `1px solid ${t.barBorder}`,
+    background: `${t.barBg}88`, flexShrink: 0,
+  }}>
+    {(['universal', 'specific'] as TabType[]).map(tab => {
+      const a = active === tab;
+      return (
+        <button key={tab} onClick={() => onSelect(tab)} style={{
+          flex: 1, padding: '5px 8px', borderRadius: 7,
+          border: `1px solid ${a ? t.tabActBdr : 'transparent'}`,
+          background: a ? t.tabActBg : 'transparent',
+          color: a ? t.tabActClr : t.tabClr,
+          fontSize: 11, fontWeight: a ? 600 : 400, cursor: 'pointer', transition: 'all 0.14s',
+        }}>
+          {tab === 'universal' ? 'Общие' : 'Специфические'}
+        </button>
+      );
+    })}
+  </div>
 );
 
-// ─── Settings Content ──────────────────────────────────────────────────────────
+// ─── Settings panel content ───────────────────────────────────────────────────
 
 const SettingsContent: React.FC<{
   activeTab: TabType; onTabSelect: (t: TabType) => void;
@@ -570,78 +665,42 @@ const SettingsContent: React.FC<{
   universalProps: UniversalProps;
   onPropChange: (name: string, v: PropValue) => void;
   onUniversalChange: (key: keyof UniversalProps, v: PropValue) => void;
-  isDark: boolean;
-}> = ({ activeTab, onTabSelect, config, componentProps, universalProps, onPropChange, onUniversalChange, isDark }) => (
-  <div style={{ display:'flex', flexDirection:'column', flex:1, overflow:'hidden' }}>
-    <TabBar active={activeTab} onSelect={onTabSelect} isDark={isDark} />
-    <div style={{ flex:1, overflowY:'auto', overflowX:'hidden', WebkitOverflowScrolling:'touch' }}>
-      {activeTab==='universal'
-        ? <UniversalSidebar universalProps={universalProps} onChange={onUniversalChange} isDark={isDark} />
-        : <SpecificSidebar config={config} componentProps={componentProps} onChange={onPropChange} isDark={isDark} />
+  t: T;
+}> = ({ activeTab, onTabSelect, config, componentProps, universalProps, onPropChange, onUniversalChange, t }) => (
+  <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+    <TabBar active={activeTab} onSelect={onTabSelect} t={t} />
+    <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
+      {activeTab === 'universal'
+        ? <UniversalSidebar universalProps={universalProps} onChange={onUniversalChange} t={t} />
+        : <SpecificSidebar config={config} componentProps={componentProps} onChange={onPropChange} t={t} />
       }
     </div>
   </div>
 );
 
-// ─── Preview panel ─────────────────────────────────────────────────────────────
+// ─── Component render ─────────────────────────────────────────────────────────
 
-const PreviewPanel: React.FC<ComponentRenderProps & {
-  config: ComponentConfig;
-  onRefresh: () => void; onFullscreen: () => void; onOpenSettings: () => void;
-}> = ({ config, Component, componentProps, universalProps, refreshKey, isDark, onRefresh, onFullscreen, onOpenSettings }) => {
-  const border   = tc(isDark,'rgba(255,255,255,0.09)','rgba(0,0,0,0.09)');
-  const bg       = tc(isDark,'#0a0a0a','#E8E7E3');
-  const headerBg = tc(isDark,'rgba(255,255,255,0.025)','rgba(0,0,0,0.025)');
-  return (
-    <div style={{ borderRadius:12, border:`1px solid ${border}`, background:bg, overflow:'hidden', margin:'1.5rem 0' }}>
-      <div style={{ display:'flex', alignItems:'center', padding:'7px 11px', borderBottom:`1px solid ${border}`, background:headerBg, gap:6, flexWrap:'wrap', rowGap:4 }}>
-        <div style={{ fontSize:13, fontWeight:600, color:tc(isDark,'rgba(255,255,255,0.85)','rgba(0,0,0,0.85)'), padding:'3px 9px', borderRadius:7, background:tc(isDark,'rgba(255,255,255,0.06)','rgba(0,0,0,0.06)'), border:`1px solid ${border}`, flexShrink:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', minWidth:0, maxWidth:200 }}>
-          {config.name}
-        </div>
-        <div style={{ flex:1, minWidth:8 }} />
-        <div style={{ display:'flex', gap:4, flexShrink:0 }}>
-          <IconBtn onClick={onRefresh} title="Перезапустить" label="Заново" isDark={isDark}><Play size={13} /></IconBtn>
-          <IconBtn onClick={onFullscreen} title="Полный экран с редактором" label="Развернуть" isDark={isDark}><Maximize2 size={13} /></IconBtn>
-          <IconBtn onClick={onOpenSettings} title="Настройки" label="Настройки" isDark={isDark}><Settings size={13} /></IconBtn>
-        </div>
-      </div>
-      <div style={{ minHeight:380, display:'flex', alignItems:'center', justifyContent:'center', padding:32 }}>
-        <ComponentRender Component={Component} componentProps={componentProps} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} />
-      </div>
-    </div>
-  );
-};
+interface ComponentRenderProps {
+  Component: AnyComponent;
+  componentProps: ComponentPropsMap;
+  universalProps: UniversalProps;
+  refreshKey: number;
+  isDark: boolean;
+}
 
-// ─── Settings panel ────────────────────────────────────────────────────────────
-
-const SettingsPanel: React.FC<ComponentRenderProps & {
-  config: ComponentConfig; onClose: () => void;
-  onPropChange: (name: string, v: PropValue) => void;
-  onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
-  onRefresh: () => void; onReset: () => void;
-}> = (props) => {
-  const { isDark, config, onClose, onRefresh, onReset } = props;
-  const [activeTab, setActiveTab] = useState<TabType>('universal');
-  const border   = tc(isDark,'rgba(255,255,255,0.09)','rgba(0,0,0,0.09)');
-  const bg       = tc(isDark,'#0a0a0a','#E8E7E3');
-  const footerBg = tc(isDark,'rgba(255,255,255,0.025)','rgba(0,0,0,0.025)');
-  return (
-    <div style={{ borderRadius:12, border:`1px solid ${border}`, background:bg, display:'flex', flexDirection:'column', margin:'1.5rem 0', maxHeight:'calc(100dvh - 3rem)', overflow:'hidden' }}>
-      <div style={{ minHeight:220, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', padding:20, borderBottom:`1px solid ${border}` }}>
-        <ComponentRender Component={props.Component} componentProps={props.componentProps} universalProps={props.universalProps} refreshKey={props.refreshKey} isDark={isDark} />
+const ComponentRender: React.FC<ComponentRenderProps> = ({ Component, componentProps, universalProps, refreshKey, isDark }) => (
+  <ComponentWrapper {...universalProps} className="w-full h-full">
+    <Suspense fallback={
+      <div style={{ color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)', fontSize: 13 }}>
+        Загрузка…
       </div>
-      <SettingsContent activeTab={activeTab} onTabSelect={setActiveTab} config={config} componentProps={props.componentProps} universalProps={props.universalProps} onPropChange={props.onPropChange} onUniversalChange={props.onUniversalPropChange} isDark={isDark} />
-      <div style={{ flexShrink:0, display:'flex', alignItems:'center', gap:6, padding:'8px 14px', borderTop:`1px solid ${border}`, background:footerBg, flexWrap:'wrap', rowGap:6 }}>
-        <IconBtn onClick={onRefresh} title="Перезапустить" label="Заново" isDark={isDark}><Play size={13} /></IconBtn>
-        <IconBtn onClick={onReset} title="Сбросить всё" label="Сбросить" isDark={isDark}><RefreshCcw size={13} /></IconBtn>
-        <div style={{ flex:1 }} />
-        <IconBtn onClick={onClose} title="Закрыть" label="Закрыть" isDark={isDark}><X size={13} /></IconBtn>
-      </div>
-    </div>
-  );
-};
+    }>
+      <Component key={refreshKey} {...componentProps} />
+    </Suspense>
+  </ComponentWrapper>
+);
 
-// ─── Mobile Bottom Sheet ───────────────────────────────────────────────────────
+// ─── Mobile bottom sheet ──────────────────────────────────────────────────────
 
 interface MobileBottomSheetProps {
   config: ComponentConfig;
@@ -649,112 +708,65 @@ interface MobileBottomSheetProps {
   universalProps: UniversalProps;
   onPropChange: (name: string, v: PropValue) => void;
   onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
-  isDark: boolean;
+  t: T;
 }
 
 const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
-  config, componentProps, universalProps, onPropChange, onUniversalPropChange, isDark,
+  config, componentProps, universalProps, onPropChange, onUniversalPropChange, t,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType | null>(null);
-  const border  = tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)');
-  const bg      = tc(isDark, '#0d0d0d', '#dddcd8');
-  const navBg   = tc(isDark, '#111', '#e0dfdb');
-  const labelClr = tc(isDark, 'rgba(255,255,255,0.5)', 'rgba(0,0,0,0.5)');
-
-  const SHEET_HEIGHT = '65dvh';
-
-  const tabs: Array<{ id: TabType; label: string }> = [
-    { id: 'universal', label: 'Общие' },
-    { id: 'specific',  label: 'Специфические' },
-  ];
-
   const isOpen = activeTab !== null;
+  const SHEET_HEIGHT = '65dvh';
 
   return (
     <>
       {isOpen && (
-        <div
-          onClick={() => setActiveTab(null)}
-          style={{ position:'absolute', inset:0, zIndex:10 }}
-        />
+        <div onClick={() => setActiveTab(null)} style={{ position: 'absolute', inset: 0, zIndex: 10 }} />
       )}
 
       <div style={{
-        position: 'absolute',
-        bottom: 52,
-        left: 0, right: 0,
+        position: 'absolute', bottom: 52, left: 0, right: 0,
         height: isOpen ? SHEET_HEIGHT : 0,
-        overflow: 'hidden',
-        transition: 'height 0.3s cubic-bezier(0.4,0,0.2,1)',
-        zIndex: 20,
-        display: 'flex',
-        flexDirection: 'column',
+        overflow: 'hidden', transition: 'height 0.3s cubic-bezier(0.4,0,0.2,1)',
+        zIndex: 20, display: 'flex', flexDirection: 'column',
       }}>
-        <div style={{
-          flex: 1,
-          background: bg,
-          borderTop: `1px solid ${border}`,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}>
-          <div style={{ display:'flex', justifyContent:'center', padding:'8px 0 4px', flexShrink:0 }}>
-            <div style={{ width:36, height:4, borderRadius:2, background:tc(isDark,'rgba(255,255,255,0.2)','rgba(0,0,0,0.15)') }} />
+        <div style={{ flex: 1, background: t.panelBg, borderTop: `1px solid ${t.barBorder}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 4px', flexShrink: 0 }}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: t.fgSub }} />
           </div>
-
-          <div style={{ padding:'0 16px 8px', fontSize:12, fontWeight:600, color:labelClr, flexShrink:0 }}>
-            {activeTab === 'universal' ? 'Общие настройки' : 'Специфические настройки'}
-          </div>
-
-          <div style={{ flex:1, overflowY:'auto', WebkitOverflowScrolling:'touch' }}>
+          <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
             {activeTab === 'universal' && (
-              <UniversalSidebar universalProps={universalProps} onChange={onUniversalPropChange} isDark={isDark} />
+              <UniversalSidebar universalProps={universalProps} onChange={onUniversalPropChange} t={t} />
             )}
             {activeTab === 'specific' && (
-              <SpecificSidebar config={config} componentProps={componentProps} onChange={onPropChange} isDark={isDark} />
+              <SpecificSidebar config={config} componentProps={componentProps} onChange={onPropChange} t={t} />
             )}
           </div>
         </div>
       </div>
 
       <div style={{
-        position: 'absolute',
-        bottom: 0, left: 0, right: 0,
-        height: 52,
-        background: navBg,
-        borderTop: `1px solid ${border}`,
-        display: 'flex',
-        alignItems: 'stretch',
-        zIndex: 30,
+        position: 'absolute', bottom: 0, left: 0, right: 0, height: 52,
+        background: t.barBg, borderTop: `1px solid ${t.barBorder}`,
+        display: 'flex', alignItems: 'stretch', zIndex: 30,
       }}>
-        {tabs.map(tab => {
-          const isActive = activeTab === tab.id;
+        {([
+          { id: 'universal' as TabType, label: 'Общие',          Icon: isOpen ? ChevronDown : Settings },
+          { id: 'specific'  as TabType, label: 'Специфические',  Icon: isOpen ? ChevronDown : PanelRight },
+        ]).map(({ id, label, Icon }) => {
+          const isActive = activeTab === id;
           return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(isActive ? null : tab.id)}
-              style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 2,
-                border: 'none',
-                background: isActive ? tc(isDark,'rgba(255,255,255,0.07)','rgba(0,0,0,0.06)') : 'transparent',
-                color: isActive ? tc(isDark,'#fff','#000') : labelClr,
-                cursor: 'pointer',
-                fontSize: 10,
-                fontWeight: isActive ? 600 : 400,
-                transition: 'all 0.14s',
-                borderTop: isActive ? `2px solid ${tc(isDark,'rgba(255,255,255,0.6)','rgba(0,0,0,0.5)')}` : '2px solid transparent',
-              }}
-            >
-              {tab.id === 'universal'
-                ? (isOpen && isActive ? <ChevronDown size={15} /> : <Settings size={15} />)
-                : (isOpen && isActive ? <ChevronDown size={15} /> : <PanelRight size={15} />)
-              }
-              {tab.label}
+            <button key={id} onClick={() => setActiveTab(isActive ? null : id)} style={{
+              flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+              justifyContent: 'center', gap: 2, border: 'none',
+              background: isActive ? t.tabActBg : 'transparent',
+              color: isActive ? t.tabActClr : t.tabClr,
+              cursor: 'pointer', fontSize: 10, fontWeight: isActive ? 600 : 400,
+              transition: 'all 0.14s',
+              borderTop: isActive ? `2px solid ${t.btnActBdr}` : '2px solid transparent',
+            }}>
+              <Icon size={15} />
+              {label}
             </button>
           );
         })}
@@ -770,52 +782,66 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
   onPropChange: (name: string, v: PropValue) => void;
   onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
   onReset: () => void;
-}> = ({ Component, componentProps, universalProps, refreshKey, isDark, config, onClose, onRefresh, onPropChange, onUniversalPropChange, onReset }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('universal');
-  const [panelOpen, setPanelOpen] = useState(true);
-  const isMobile = useIsMobile(); // ← shared hook
+  t: T;
+}> = ({ Component, componentProps, universalProps, refreshKey, isDark, config, onClose, onRefresh, onPropChange, onUniversalPropChange, onReset, t }) => {
+  const [activeTab, setActiveTab]   = useState<TabType>('universal');
+  const [panelOpen, setPanelOpen]   = useState(true);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => { if (e.key==='Escape') onClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
-    return () => { document.body.style.overflow=''; document.removeEventListener('keydown', onKey); };
+    return () => { document.body.style.overflow = ''; document.removeEventListener('keydown', onKey); };
   }, [onClose]);
 
-  const border   = tc(isDark,'rgba(255,255,255,0.08)','rgba(0,0,0,0.08)');
-  const bg       = tc(isDark,'#0a0a0a','#E8E7E3');
-  const headerBg = tc(isDark,'rgba(255,255,255,0.02)','rgba(0,0,0,0.02)');
-  const panelBg  = tc(isDark,'#0d0d0d','#dddcd8');
-  const PANEL_W  = 280;
+  const PANEL_W = 280;
 
   return createPortal(
-    <div style={{ position:'fixed', inset:0, zIndex:9999, background:bg, display:'flex', flexDirection:'column' }}>
-      <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', flexShrink:0, borderBottom:`1px solid ${border}`, background:headerBg }}>
-        <div style={{ fontSize:13, fontWeight:600, color:tc(isDark,'rgba(255,255,255,0.7)','rgba(0,0,0,0.7)'), padding:'3px 9px', borderRadius:7, background:tc(isDark,'rgba(255,255,255,0.06)','rgba(0,0,0,0.06)'), border:`1px solid ${border}`, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:140 }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: t.outerBg, display: 'flex', flexDirection: 'column' }}>
+
+      {/* Toolbar */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', flexShrink: 0,
+        borderBottom: `1px solid ${t.barBorder}`, background: t.barBg,
+      }}>
+        {/* Component name badge */}
+        <div style={{
+          fontSize: 13, fontWeight: 600, color: t.fgMuted,
+          padding: '3px 9px', borderRadius: 7, background: t.btnBg,
+          border: `1px solid ${t.barBorder}`,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          maxWidth: 160, flexShrink: 1,
+        }}>
           {config.name}
         </div>
-        <div style={{ flex:1 }} />
-        <IconBtn onClick={onRefresh} title="Перезапустить" label="Заново" isDark={isDark}><Play size={13} /></IconBtn>
-        <IconBtn onClick={onReset} title="Сбросить" label="Сбросить" isDark={isDark}><RefreshCcw size={13} /></IconBtn>
+
+        <div style={{ flex: 1 }} />
+
+        <Pill onClick={onRefresh} title="Перезапустить" label="Заново"  icon={<Play      size={14} />} t={t} />
+        <Pill onClick={onReset}   title="Сбросить"      label="Сбросить" icon={<RefreshCcw size={14} />} t={t} />
 
         {!isMobile && (
           <>
-            <div style={{ width:1, height:22, background:border, margin:'0 2px', flexShrink:0 }} />
-            <IconBtn onClick={()=>setPanelOpen(v=>!v)} title={panelOpen?'Скрыть панель':'Показать панель'} label={panelOpen?'Скрыть':'Панель'} isDark={isDark} active={panelOpen}>
-              {panelOpen?<PanelRightClose size={13}/>:<PanelRight size={13}/>}
-            </IconBtn>
+            <Divider t={t} />
+            <Pill
+              onClick={() => setPanelOpen(v => !v)}
+              title={panelOpen ? 'Скрыть панель' : 'Показать панель'}
+              label={panelOpen ? 'Скрыть' : 'Панель'}
+              icon={panelOpen ? <PanelRightClose size={14} /> : <PanelRight size={14} />}
+              t={t} active={panelOpen}
+            />
           </>
         )}
 
-        <IconBtn onClick={onClose} title="Свернуть (Esc)" label="Свернуть" isDark={isDark}><Minimize2 size={13} /></IconBtn>
+        <Pill onClick={onClose} title="Свернуть (Esc)" label="Свернуть" icon={<Minimize2 size={14} />} t={t} />
       </div>
 
-      <div style={{ flex:1, display:'flex', overflow:'hidden', position:'relative' }}>
+      {/* Body */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
+        {/* Preview area */}
         <div style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: isMobile ? '24px 16px' : 48,
           overflow: 'auto',
           paddingBottom: isMobile ? 68 : undefined,
@@ -823,27 +849,33 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
           <ComponentRender Component={Component} componentProps={componentProps} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} />
         </div>
 
+        {/* Desktop side panel */}
         {!isMobile && panelOpen && (
-          <div style={{ width:PANEL_W, flexShrink:0, borderLeft:`1px solid ${border}`, background:panelBg, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+          <div style={{
+            width: PANEL_W, flexShrink: 0,
+            borderLeft: `1px solid ${t.barBorder}`,
+            background: t.panelBg,
+            display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          }}>
             <SettingsContent
               activeTab={activeTab} onTabSelect={setActiveTab}
               config={config} componentProps={componentProps}
               universalProps={universalProps}
               onPropChange={onPropChange}
               onUniversalChange={onUniversalPropChange}
-              isDark={isDark}
+              t={t}
             />
           </div>
         )}
 
+        {/* Mobile bottom sheet */}
         {isMobile && (
           <MobileBottomSheet
-            config={config}
-            componentProps={componentProps}
+            config={config} componentProps={componentProps}
             universalProps={universalProps}
             onPropChange={onPropChange}
             onUniversalPropChange={onUniversalPropChange}
-            isDark={isDark}
+            t={t}
           />
         )}
       </div>
@@ -852,16 +884,124 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
   );
 };
 
-// ─── Root ──────────────────────────────────────────────────────────────────────
+// ─── Preview panel (inline) ───────────────────────────────────────────────────
+
+const PreviewPanel: React.FC<ComponentRenderProps & {
+  config: ComponentConfig;
+  onRefresh: () => void;
+  onFullscreen: () => void;
+  onOpenSettings: () => void;
+  t: T;
+}> = ({ config, Component, componentProps, universalProps, refreshKey, isDark, onRefresh, onFullscreen, onOpenSettings, t }) => (
+  <div style={{
+    borderRadius: 12,
+    border: `1px solid ${t.outerBorder}`,
+    background: t.outerBg,
+    boxShadow: t.outerShadow,
+    overflow: 'clip',
+    display: 'flex', flexDirection: 'column',
+    width: '100%', minWidth: 0,
+  }}>
+    {/* Toolbar */}
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px',
+      borderBottom: `1px solid ${t.barBorder}`, background: t.barBg,
+      flexWrap: 'nowrap', minWidth: 0,
+    }}>
+      <div style={{
+        fontSize: 13, fontWeight: 600, color: t.fgMuted,
+        padding: '3px 9px', borderRadius: 7, background: t.btnBg,
+        border: `1px solid ${t.barBorder}`,
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        maxWidth: 200, flexShrink: 1,
+      }}>
+        {config.name}
+      </div>
+      <div style={{ flex: 1 }} />
+      <Pill onClick={onRefresh}      title="Перезапустить"  label="Заново"    icon={<Play      size={14} />} t={t} />
+      <Pill onClick={onFullscreen}   title="Развернуть"     label="Развернуть" icon={<Maximize2 size={14} />} t={t} />
+      <Pill onClick={onOpenSettings} title="Настройки"      label="Настройки"  icon={<Settings  size={14} />} t={t} />
+    </div>
+
+    {/* Preview area */}
+    <div style={{ minHeight: 380, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+      <ComponentRender Component={Component} componentProps={componentProps} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} />
+    </div>
+
+    {/* Footer */}
+    <div style={{
+      padding: '6px 12px', borderTop: `1px solid ${t.barBorder}`,
+      fontSize: 11, color: t.footerClr,
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      userSelect: 'none', background: t.outerBg, flexShrink: 0,
+    }}>
+      <span>Компонент</span>
+      <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 10, opacity: 0.7 }}>{config.id}</span>
+    </div>
+  </div>
+);
+
+// ─── Settings panel (inline, replaces preview) ────────────────────────────────
+
+const SettingsPanel: React.FC<ComponentRenderProps & {
+  config: ComponentConfig; onClose: () => void;
+  onPropChange: (name: string, v: PropValue) => void;
+  onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
+  onRefresh: () => void; onReset: () => void;
+  t: T;
+}> = (props) => {
+  const { isDark, config, onClose, onRefresh, onReset, t } = props;
+  const [activeTab, setActiveTab] = useState<TabType>('universal');
+
+  return (
+    <div style={{
+      borderRadius: 12, border: `1px solid ${t.outerBorder}`, background: t.outerBg,
+      boxShadow: t.outerShadow,
+      display: 'flex', flexDirection: 'column',
+      maxHeight: 'calc(100dvh - 3rem)', overflow: 'hidden',
+    }}>
+      {/* Mini preview */}
+      <div style={{ minHeight: 220, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, borderBottom: `1px solid ${t.barBorder}` }}>
+        <ComponentRender Component={props.Component} componentProps={props.componentProps} universalProps={props.universalProps} refreshKey={props.refreshKey} isDark={isDark} />
+      </div>
+
+      {/* Settings */}
+      <SettingsContent
+        activeTab={activeTab} onTabSelect={setActiveTab}
+        config={config} componentProps={props.componentProps}
+        universalProps={props.universalProps}
+        onPropChange={props.onPropChange}
+        onUniversalChange={props.onUniversalPropChange}
+        t={t}
+      />
+
+      {/* Footer toolbar */}
+      <div style={{
+        flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
+        padding: '8px 10px', borderTop: `1px solid ${t.barBorder}`, background: t.barBg,
+        flexWrap: 'wrap', rowGap: 6,
+      }}>
+        <Pill onClick={onRefresh} title="Перезапустить" label="Заново"  icon={<Play      size={14} />} t={t} />
+        <Pill onClick={onReset}   title="Сбросить всё"  label="Сбросить" icon={<RefreshCcw size={14} />} t={t} />
+        <div style={{ flex: 1 }} />
+        <Pill onClick={onClose}   title="Закрыть"        label="Закрыть"  icon={<X         size={14} />} t={t} />
+      </div>
+    </div>
+  );
+};
+
+// ─── Root ─────────────────────────────────────────────────────────────────────
 
 const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) => {
   const { isDark } = useTheme();
-  const [settingsOpen, setSettingsOpen]     = useState(false);
-  const [isFullscreen, setIsFullscreen]     = useState(false);
-  const [refreshKey, setRefreshKey]         = useState(0);
-  const [componentProps, setComponentProps] = useState<ComponentPropsMap>({});
-  const [universalProps, setUniversalProps] = useState<UniversalProps>(DEFAULT_UNIVERSAL_PROPS);
-  const [componentData, setComponentData]   = useState<LoadedComponentData | null>(null);
+  const t = tk(isDark);
+
+  const [settingsOpen,    setSettingsOpen]    = useState(false);
+  const [isFullscreen,    setIsFullscreen]    = useState(false);
+  const [refreshKey,      setRefreshKey]      = useState(0);
+  const [componentProps,  setComponentProps]  = useState<ComponentPropsMap>({});
+  const [universalProps,  setUniversalProps]  = useState<UniversalProps>(DEFAULT_UNIVERSAL_PROPS);
+  const [componentData,   setComponentData]   = useState<LoadedComponentData | null>(null);
 
   useEffect(() => {
     loadComponent(componentId).then(data => {
@@ -869,53 +1009,60 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
     });
   }, [componentId]);
 
-  const handleRefresh         = useCallback(() => setRefreshKey(k=>k+1), []);
-  const handlePropChange      = useCallback((name: string, value: PropValue) => setComponentProps(prev=>({...prev,[name]:value})), []);
-  const handleUniversalChange = useCallback((key: keyof UniversalProps, value: PropValue) => setUniversalProps(prev=>({...prev,[key]:value})), []);
+  const handleRefresh         = useCallback(() => setRefreshKey(k => k + 1), []);
+  const handlePropChange      = useCallback((name: string, value: PropValue) => setComponentProps(prev => ({ ...prev, [name]: value })), []);
+  const handleUniversalChange = useCallback((key: keyof UniversalProps, value: PropValue) => setUniversalProps(prev => ({ ...prev, [key]: value })), []);
   const handleReset           = useCallback(() => {
     if (!componentData) return;
     setComponentProps(getDefaultProps(componentData.config));
     setUniversalProps(DEFAULT_UNIVERSAL_PROPS);
-    setRefreshKey(k=>k+1);
+    setRefreshKey(k => k + 1);
   }, [componentData]);
 
   if (!componentData) {
     return (
-      <div style={{ padding:'18px 24px', borderRadius:10, margin:'1.5rem 0', border:`1px solid ${tc(isDark,'rgba(255,255,255,0.09)','rgba(0,0,0,0.09)')}`, color:tc(isDark,'rgba(255,255,255,0.35)','rgba(0,0,0,0.35)'), fontSize:13, textAlign:'center' }}>
+      <div style={{
+        padding: '18px 24px', borderRadius: 10, margin: '1.5rem 0',
+        border: `1px solid ${t.outerBorder}`,
+        color: t.fgMuted, fontSize: 13, textAlign: 'center',
+      }}>
         Загрузка компонента…
       </div>
     );
   }
 
-  const shared = { Component:componentData.Component, componentProps, universalProps, refreshKey, isDark };
+  const shared = { Component: componentData.Component, componentProps, universalProps, refreshKey, isDark };
 
   return (
-    <>
+    <div className="not-prose" style={{ margin: '1.25rem 0' }}>
       {settingsOpen ? (
         <SettingsPanel {...shared} config={componentData.config}
-          onClose={()=>setSettingsOpen(false)}
+          onClose={() => setSettingsOpen(false)}
           onPropChange={handlePropChange}
           onUniversalPropChange={handleUniversalChange}
           onRefresh={handleRefresh} onReset={handleReset}
+          t={t}
         />
       ) : (
         <PreviewPanel {...shared} config={componentData.config}
           onRefresh={handleRefresh}
-          onFullscreen={()=>setIsFullscreen(true)}
-          onOpenSettings={()=>setSettingsOpen(true)}
+          onFullscreen={() => setIsFullscreen(true)}
+          onOpenSettings={() => setSettingsOpen(true)}
+          t={t}
         />
       )}
 
       {isFullscreen && (
         <FullscreenModal {...shared} config={componentData.config}
-          onClose={()=>setIsFullscreen(false)}
+          onClose={() => setIsFullscreen(false)}
           onRefresh={handleRefresh}
           onPropChange={handlePropChange}
           onUniversalPropChange={handleUniversalChange}
           onReset={handleReset}
+          t={t}
         />
       )}
-    </>
+    </div>
   );
 };
 
