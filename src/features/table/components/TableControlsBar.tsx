@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Filter, X, Maximize2, Copy, Check, ChevronDown, Search, MoreHorizontal } from 'lucide-react';
+import { parseTableForCopy, toMd, toTsv, type CopyFormat } from '@/features/table/utils/copyUtils';
 
 interface TableControlsBarProps {
   readonly isDark: boolean;
@@ -17,7 +18,7 @@ interface TableControlsBarProps {
 // Strictly neutral — no blue/green channel offset
 function tk(isDark: boolean) {
   return isDark ? {
-    barBg:     '#111111',   // pure grey, not #111113
+    barBg:     '#111111',
     border:    'rgba(255,255,255,0.08)',
     btnBg:     'rgba(255,255,255,0.08)',
     btnBdr:    'rgba(255,255,255,0.12)',
@@ -26,7 +27,7 @@ function tk(isDark: boolean) {
     btnActBg:  'rgba(255,255,255,0.15)',
     btnActBdr: 'rgba(255,255,255,0.22)',
     btnActClr: '#ffffff',
-    inpBg:     '#1a1a1a',   // pure, not #1a1a1c
+    inpBg:     '#1a1a1a',
     inpBdr:    'rgba(255,255,255,0.12)',
     inpFoc:    'rgba(255,255,255,0.26)',
     inpClr:    'rgba(255,255,255,0.88)',
@@ -59,30 +60,6 @@ function tk(isDark: boolean) {
     menuSub:   'rgba(0,0,0,0.38)',
     dangerClr: '#dc2626',
   };
-}
-
-type CopyFormat = 'md' | 'excel';
-
-function parseTableForCopy(html: string) {
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  const tbl = doc.querySelector('table');
-  if (!tbl) return { headers: [] as string[], rows: [] as string[][] };
-  return {
-    headers: Array.from(tbl.querySelectorAll('thead th')).map(th => (th.textContent ?? '').trim()),
-    rows: Array.from(tbl.querySelectorAll('tbody tr')).map(tr =>
-      Array.from(tr.querySelectorAll('td')).map(td => (td.textContent ?? '').trim())
-    ),
-  };
-}
-function toMd(h: string[], rows: string[][]) {
-  if (!h.length) return '';
-  const e = (s: string) => s.replaceAll('|', String.raw`\|`);
-  return [`| ${h.map(e).join(' | ')} |`, `| ${h.map(() => '---').join(' | ')} |`,
-    ...rows.map(r => `| ${r.map(e).join(' | ')} |`)].join('\n');
-}
-function toTsv(h: string[], rows: string[][]) {
-  if (!h.length) return '';
-  return [h.join('\t'), ...rows.map(r => r.join('\t'))].join('\n');
 }
 
 // ─── Portal menu ─────────────────────────────────────────────────────────────
