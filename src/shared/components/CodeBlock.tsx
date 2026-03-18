@@ -326,9 +326,15 @@ const PortalMenu: React.FC<{
 }> = ({ pos, t, onClose, children, minWidth = 190 }) => {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const h = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) onClose(); };
-    document.addEventListener('mousedown', h, true);
-    return () => document.removeEventListener('mousedown', h, true);
+    const onMouse = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) onClose(); };
+    // Close on any scroll — menu is position:fixed but page scroll makes it look detached
+    const onScroll = () => onClose();
+    document.addEventListener('mousedown', onMouse, true);
+    window.addEventListener('scroll', onScroll, { capture: true, passive: true });
+    return () => {
+      document.removeEventListener('mousedown', onMouse, true);
+      window.removeEventListener('scroll', onScroll, true);
+    };
   }, [onClose]);
   return ReactDOM.createPortal(
     <>
