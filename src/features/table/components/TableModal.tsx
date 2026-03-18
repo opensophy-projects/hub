@@ -66,7 +66,7 @@ function tk(isDark: boolean) {
   };
 }
 
-// ─── Dropdown menu rendered in body — bypasses any stacking context ───────────
+// ─── Dropdown menu rendered in body ──────────────────────────────────────────
 const BodyDropdown: React.FC<{
   anchorRef: React.RefObject<HTMLButtonElement>;
   isDark: boolean;
@@ -307,12 +307,12 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
       zIndex: 10000,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
-      {/* Backdrop */}
+      {/* ── Unified backdrop: blur(12px) + rgba(0,0,0,0.6) ── */}
       <div
         onClick={onClose}
         style={{
           position: 'absolute', inset: 0,
-          background: isDark ? 'rgba(0,0,0,0.55)' : 'rgba(160,158,154,0.55)',
+          background: 'rgba(0,0,0,0.6)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
         }}
