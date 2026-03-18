@@ -4,23 +4,21 @@ import { createPortal } from 'react-dom';
 interface OverlayProps {
   onClose: () => void;
   children: ReactNode;
-  /** Apply backdrop-filter: blur on the backdrop. Default: false */
-  blur?: boolean;
-  isDark?: boolean;
   zIndex?: number;
+  /** Override backdrop cursor. Default: zoom-out */
+  backdropCursor?: React.CSSProperties['cursor'];
 }
 
 /**
- * Shared fullscreen overlay.
+ * Shared fullscreen overlay — unified backdrop across ImageCard, CodeBlock, TableModal.
+ * Backdrop: rgba(0,0,0,0.6) + blur(12px) everywhere.
  * Handles: createPortal, Esc keydown, body overflow:hidden, backdrop button.
- * Content is rendered above the backdrop via z-index.
  */
 const Overlay: React.FC<OverlayProps> = ({
   onClose,
   children,
-  blur = false,
-  isDark = false,
   zIndex = 9999,
+  backdropCursor = 'zoom-out',
 }) => {
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -37,8 +35,6 @@ const Overlay: React.FC<OverlayProps> = ({
     };
   }, [onClose]);
 
-  const backdropBg = isDark ? 'rgba(0,0,0,0.92)' : 'rgba(0,0,0,0.55)';
-
   return createPortal(
     <div
       style={{
@@ -50,7 +46,7 @@ const Overlay: React.FC<OverlayProps> = ({
         justifyContent: 'center',
       }}
     >
-      {/* Backdrop — closes overlay on click */}
+      {/* Unified backdrop: blur(12px) + rgba(0,0,0,0.6) everywhere */}
       <button
         type="button"
         aria-label="Закрыть"
@@ -58,12 +54,12 @@ const Overlay: React.FC<OverlayProps> = ({
         style={{
           position: 'absolute',
           inset: 0,
-          background: backdropBg,
-          backdropFilter: blur ? 'blur(8px)' : undefined,
-          WebkitBackdropFilter: blur ? 'blur(8px)' : undefined,
+          background: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
           border: 'none',
           padding: 0,
-          cursor: 'zoom-out',
+          cursor: backdropCursor,
           display: 'block',
           width: '100%',
         }}
