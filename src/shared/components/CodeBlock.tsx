@@ -2,10 +2,11 @@ import React, { useState, useRef, useContext, useMemo, useEffect, useCallback } 
 import ReactDOM from 'react-dom';
 import {
   Copy, Check, Maximize2, Minimize2,
-  ChevronDown, ChevronUp, Search, X, Code2,
+  ChevronDown, ChevronUp, Search, X, Code2, MoreHorizontal,
 } from 'lucide-react';
 import { TableContext } from '../lib/htmlParser';
 import Overlay from './Overlay';
+import { useDragScroll } from '@/features/table/hooks/useDragScroll';
 import hljs from 'highlight.js/lib/core';
 
 // ---------------------------------------------------------------------------
@@ -38,6 +39,11 @@ function tk(isDark: boolean) {
     thumb:       'rgba(255,255,255,0.14)',
     thumbHov:    'rgba(255,255,255,0.26)',
     track:       'rgba(255,255,255,0.04)',
+    menuBg:      '#1a1a1a',
+    menuBdr:     'rgba(255,255,255,0.1)',
+    menuHov:     'rgba(255,255,255,0.07)',
+    menuClr:     'rgba(255,255,255,0.82)',
+    menuSub:     'rgba(255,255,255,0.35)',
   } : {
     outerBg:     '#E8E7E3',
     barBg:       '#d8d7d3',
@@ -63,6 +69,11 @@ function tk(isDark: boolean) {
     thumb:       'rgba(0,0,0,0.16)',
     thumbHov:    'rgba(0,0,0,0.28)',
     track:       'rgba(0,0,0,0.04)',
+    menuBg:      '#eceae6',
+    menuBdr:     'rgba(0,0,0,0.1)',
+    menuHov:     'rgba(0,0,0,0.06)',
+    menuClr:     'rgba(0,0,0,0.82)',
+    menuSub:     'rgba(0,0,0,0.38)',
   };
 }
 
@@ -198,7 +209,7 @@ function useHighlightedHtml(code: string, language: string, lineNumColor: string
 }
 
 // ---------------------------------------------------------------------------
-// CodeBody
+// CodeBody with drag-scroll
 // ---------------------------------------------------------------------------
 
 interface BodyProps {
@@ -208,45 +219,58 @@ interface BodyProps {
   maxHeight?: number | 'none';
 }
 
-const CodeBody = React.forwardRef<HTMLPreElement, BodyProps>(
-  ({ lines, matchedLines, searchQuery, fg, codeBg, lineNum, highlightedHtml, thumb, track, thumbHov, maxHeight }, ref) => (
-    <>
-      <style>{`
-        .cb-pre::-webkit-scrollbar{width:6px;height:6px}
-        .cb-pre::-webkit-scrollbar-track{background:${track}}
-        .cb-pre::-webkit-scrollbar-thumb{background:${thumb};border-radius:99px}
-        .cb-pre::-webkit-scrollbar-thumb:hover{background:${thumbHov}}
-        .cb-pre::-webkit-scrollbar-corner{background:transparent}
-      `}</style>
-      <pre
-        ref={ref}
-        className="cb-pre text-sm font-mono not-prose hljs"
-        style={{
-          background: codeBg, color: fg, margin: 0, padding: '10px 14px',
-          overflowX: 'auto', overflowY: 'auto',
-          scrollbarWidth: 'thin', scrollbarColor: `${thumb} ${track}`,
-          maxHeight: maxHeight === 'none' ? undefined : maxHeight,
-          height: maxHeight === 'none' ? '100%' : undefined,
-          flex: maxHeight === 'none' ? 1 : undefined,
-        }}
-      >
-        {highlightedHtml
-          ? <code dangerouslySetInnerHTML={{ __html: highlightedHtml }} className="language-code" style={{ color: fg }} />
-          : lines.map((line, i) => (
-            <div key={`${i}-${line.slice(0, 8)}`} className="whitespace-pre" style={{ color: fg }}>
-              <span className="inline-block text-right select-none" style={{ color: lineNum, width: '28px', marginRight: '14px', fontSize: '11px' }}>{i + 1}</span>
-              {matchedLines.has(i) ? <HighlightedText text={line} query={searchQuery} /> : <span>{line}</span>}
-            </div>
-          ))
-        }
-      </pre>
-    </>
-  )
+const CodeBody = React.forwardRef<HTMLDivElement, BodyProps>(
+  ({ lines, matchedLines, searchQuery, fg, codeBg, lineNum, highlightedHtml, thumb, track, thumbHov, maxHeight }, _ref) => {
+    const { scrollRef, dragStyle, dragHandlers } = useDragScroll();
+
+    return (
+      <>
+        <style>{`
+          .cb-pre::-webkit-scrollbar{width:6px;height:6px}
+          .cb-pre::-webkit-scrollbar-track{background:${track}}
+          .cb-pre::-webkit-scrollbar-thumb{background:${thumb};border-radius:99px}
+          .cb-pre::-webkit-scrollbar-thumb:hover{background:${thumbHov}}
+          .cb-pre::-webkit-scrollbar-corner{background:transparent}
+        `}</style>
+        <div
+          ref={scrollRef}
+          className="cb-pre"
+          style={{
+            background: codeBg,
+            margin: 0,
+            padding: '10px 14px',
+            overflowX: 'auto',
+            overflowY: 'auto',
+            scrollbarWidth: 'thin',
+            scrollbarColor: `${thumb} ${track}`,
+            maxHeight: maxHeight === 'none' ? undefined : maxHeight,
+            height: maxHeight === 'none' ? '100%' : undefined,
+            flex: maxHeight === 'none' ? 1 : undefined,
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+            fontSize: '0.875rem',
+            lineHeight: '1.5',
+            ...dragStyle,
+          }}
+          {...dragHandlers}
+        >
+          {highlightedHtml
+            ? <code dangerouslySetInnerHTML={{ __html: highlightedHtml }} className="language-code hljs" style={{ color: fg, display: 'block' }} />
+            : lines.map((line, i) => (
+              <div key={`${i}-${line.slice(0, 8)}`} style={{ whiteSpace: 'pre', color: fg }}>
+                <span style={{ color: lineNum, display: 'inline-block', width: '28px', marginRight: '14px', textAlign: 'right', userSelect: 'none', fontSize: '11px' }}>{i + 1}</span>
+                {matchedLines.has(i) ? <HighlightedText text={line} query={searchQuery} /> : <span>{line}</span>}
+              </div>
+            ))
+          }
+        </div>
+      </>
+    );
+  }
 );
 CodeBody.displayName = 'CodeBody';
 
 // ---------------------------------------------------------------------------
-// Pill — identical to TableControlsBar Pill
+// Pill button
 // ---------------------------------------------------------------------------
 
 function Pill({ onClick, title, label, icon, t, active, success, btnRef }: {
@@ -254,8 +278,8 @@ function Pill({ onClick, title, label, icon, t, active, success, btnRef }: {
   t: ReturnType<typeof tk>; active?: boolean; success?: boolean;
   btnRef?: React.RefObject<HTMLButtonElement>;
 }) {
-  const bg    = success ? (window.matchMedia('(prefers-color-scheme:dark)').matches ? 'rgba(34,197,94,0.16)' : 'rgba(34,197,94,0.14)') : t.btnBg;
-  const bdr   = success ? (window.matchMedia('(prefers-color-scheme:dark)').matches ? 'rgba(34,197,94,0.4)' : 'rgba(34,197,94,0.5)') : active ? 'rgba(255,255,255,0.2)' : t.btnBdr;
+  const bg    = success ? (document.documentElement.classList.contains('dark') ? 'rgba(34,197,94,0.16)' : 'rgba(34,197,94,0.14)') : t.btnBg;
+  const bdr   = success ? (document.documentElement.classList.contains('dark') ? 'rgba(34,197,94,0.4)' : 'rgba(34,197,94,0.5)') : active ? 'rgba(255,255,255,0.2)' : t.btnBdr;
   const color = success ? '#22c55e' : t.btnClr;
   return (
     <button ref={btnRef} onClick={onClick} title={title} style={{
@@ -275,49 +299,205 @@ function Pill({ onClick, title, label, icon, t, active, success, btnRef }: {
 }
 
 // ---------------------------------------------------------------------------
-// LangPicker portal
+// Portal menu (shared by LangPicker and MobileMenu)
+// ---------------------------------------------------------------------------
+
+const PortalMenu: React.FC<{
+  pos: { top: number; left: number }; t: ReturnType<typeof tk>;
+  onClose: () => void; children: React.ReactNode; minWidth?: number;
+}> = ({ pos, t, onClose, children, minWidth = 190 }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) onClose(); };
+    document.addEventListener('mousedown', h, true);
+    return () => document.removeEventListener('mousedown', h, true);
+  }, [onClose]);
+  return ReactDOM.createPortal(
+    <>
+      <style>{`@keyframes cbMenuIn{from{opacity:0;transform:translateY(-5px) scale(0.97)}to{opacity:1;transform:none}}`}</style>
+      <div ref={ref} style={{
+        position: 'fixed', top: pos.top, left: pos.left, minWidth, zIndex: 99999,
+        background: t.menuBg, border: `1px solid ${t.menuBdr}`,
+        borderRadius: 10,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        overflow: 'hidden', animation: 'cbMenuIn 0.13s cubic-bezier(0.2,0,0,1)',
+      }}>
+        {children}
+      </div>
+    </>,
+    document.body,
+  );
+};
+
+// ---------------------------------------------------------------------------
+// LangPicker
 // ---------------------------------------------------------------------------
 
 function LangPicker({ currentLang, onSelect, onClose, anchorRect, t }: {
   currentLang: string; onSelect: (l: string) => void; onClose: () => void;
   anchorRect: DOMRect; t: ReturnType<typeof tk>;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
-    document.addEventListener('mousedown', h, true);
-    return () => document.removeEventListener('mousedown', h, true);
-  }, [onClose]);
-  return ReactDOM.createPortal(
-    <div ref={ref} style={{
-      position: 'fixed', top: anchorRect.bottom + 4,
-      left: Math.max(8, anchorRect.right - 150),
-      background: t.barBg, border: `1px solid ${t.barBorder}`,
-      borderRadius: 10, minWidth: 150, maxHeight: 240, overflowY: 'auto',
-      zIndex: 99999, boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-    }}>
-      {SUPPORTED_LANGUAGES.map(lang => (
-        <button key={lang} onClick={() => { onSelect(lang); onClose(); }} style={{
-          width: '100%', padding: '7px 12px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          border: 'none', background: lang === currentLang ? t.btnBg : 'transparent',
-          color: t.fg, fontSize: 12, cursor: 'pointer', textAlign: 'left',
-          transition: 'background 0.1s',
-        }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = lang === currentLang ? t.btnBg : 'transparent'; }}
-        >
-          <span>{lang}</span>
-          {lang === currentLang && <Check size={11} style={{ opacity: 0.6 }} />}
-        </button>
-      ))}
-    </div>,
-    document.body,
+  const pos = {
+    top: anchorRect.bottom + 4,
+    left: Math.max(8, anchorRect.right - 160),
+  };
+  return (
+    <PortalMenu pos={pos} t={t} onClose={onClose} minWidth={160}>
+      <div style={{ maxHeight: 240, overflowY: 'auto' }}>
+        {SUPPORTED_LANGUAGES.map(lang => (
+          <button key={lang} onClick={() => { onSelect(lang); onClose(); }} style={{
+            width: '100%', padding: '7px 12px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            border: 'none', background: lang === currentLang ? t.btnBg : 'transparent',
+            color: t.menuClr, fontSize: 12, cursor: 'pointer', textAlign: 'left',
+            transition: 'background 0.1s',
+          }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.menuHov; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = lang === currentLang ? t.btnBg : 'transparent'; }}
+          >
+            <span>{lang}</span>
+            {lang === currentLang && <Check size={11} style={{ opacity: 0.6 }} />}
+          </button>
+        ))}
+      </div>
+    </PortalMenu>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Main
+// MobileMenu — ⋯ button with portal dropdown (copy, lang, fullscreen)
+// ---------------------------------------------------------------------------
+
+function MobileMenu({ t, code, activeLang, onSelectLang, onFullscreen }: {
+  t: ReturnType<typeof tk>;
+  code: string;
+  activeLang: string;
+  onSelectLang: (l: string) => void;
+  onFullscreen: () => void;
+}) {
+  const [open, setOpen]     = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [showLang, setShowLang] = useState(false);
+  const [pos, setPos]       = useState({ top: 0, left: 0 });
+  const [langPos, setLangPos] = useState({ top: 0, left: 0 });
+  const ref = useRef<HTMLButtonElement>(null);
+  const langBtnRef = useRef<HTMLButtonElement>(null);
+
+  const toggle = () => {
+    if (open) { setOpen(false); setShowLang(false); return; }
+    const r = ref.current?.getBoundingClientRect();
+    if (!r) return;
+    const mw = 210;
+    setPos({ top: r.bottom + 4, left: Math.max(8, Math.min(r.right - mw, window.innerWidth - mw - 8)) });
+    setOpen(true);
+  };
+
+  const doCopy = async () => {
+    await navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => { setCopied(false); }, 2000);
+  };
+
+  const openLangPicker = () => {
+    // Position lang submenu to the left of the main menu
+    const r = ref.current?.getBoundingClientRect();
+    if (!r) return;
+    const mw = 160;
+    setLangPos({ top: pos.top, left: Math.max(8, pos.left - mw - 4) });
+    setShowLang(v => !v);
+  };
+
+  const sLabel = (s: string) => (
+    <div style={{ padding: '7px 12px 3px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: t.menuSub }}>{s}</div>
+  );
+
+  const sep = <div style={{ height: 1, margin: '3px 0', background: t.menuBdr }} />;
+
+  const mRow = (
+    onClick: () => void,
+    icon: React.ReactNode,
+    label: string,
+    sub?: string,
+    green?: boolean,
+    danger?: boolean,
+  ) => (
+    <button onClick={onClick} style={{
+      width: '100%', padding: sub ? '10px 14px' : '11px 14px',
+      display: 'flex', flexDirection: sub ? 'column' : 'row',
+      alignItems: sub ? 'flex-start' : 'center', gap: sub ? 2 : 10,
+      border: 'none',
+      background: green ? 'rgba(34,197,94,0.12)' : 'transparent',
+      cursor: 'pointer', textAlign: 'left',
+      color: green ? '#22c55e' : danger ? '#f87171' : t.menuClr,
+      fontSize: 13, fontWeight: green ? 600 : 400, transition: 'background 0.1s',
+    }}
+      onMouseEnter={e => { if (!green) (e.currentTarget as HTMLButtonElement).style.background = t.menuHov; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = green ? 'rgba(34,197,94,0.12)' : 'transparent'; }}
+    >
+      {!sub && <span style={{ opacity: green ? 1 : 0.6, flexShrink: 0, display: 'flex' }}>{icon}</span>}
+      <span style={{ flex: 1, fontWeight: 500 }}>{label}</span>
+      {sub && <span style={{ fontSize: 11, color: green ? 'rgba(34,197,94,0.7)' : t.menuSub }}>{sub}</span>}
+    </button>
+  );
+
+  return (
+    <>
+      <button ref={ref} onClick={toggle} style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width: 36, height: 36, borderRadius: 8,
+        border: `1px solid ${open ? t.btnBdr : t.btnBdr}`,
+        background: open ? t.btnHov : t.btnBg,
+        color: t.btnClr, cursor: 'pointer', flexShrink: 0, transition: 'all 0.13s',
+      }}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = open ? t.btnHov : t.btnBg; }}
+      >
+        <MoreHorizontal size={16} />
+      </button>
+
+      {open && (
+        <PortalMenu pos={pos} t={t} onClose={() => { setOpen(false); setShowLang(false); }} minWidth={210}>
+          {sLabel('Копировать')}
+          {mRow(doCopy, copied ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />,
+            copied ? 'Скопировано!' : 'Скопировать код', undefined, copied)}
+
+          {sep}
+          {sLabel('Подсветка')}
+          {mRow(openLangPicker, <Code2 size={14} />, activeLang || 'markdown', 'Сменить язык')}
+
+          {sep}
+          {mRow(() => { onFullscreen(); setOpen(false); }, <Maximize2 size={14} />, 'Развернуть')}
+          <div style={{ height: 4 }} />
+        </PortalMenu>
+      )}
+
+      {open && showLang && (
+        <PortalMenu pos={langPos} t={t} onClose={() => setShowLang(false)} minWidth={160}>
+          <div style={{ maxHeight: 240, overflowY: 'auto' }}>
+            {SUPPORTED_LANGUAGES.map(lang => (
+              <button key={lang} onClick={() => { onSelectLang(lang); setShowLang(false); setOpen(false); }} style={{
+                width: '100%', padding: '7px 12px',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                border: 'none', background: lang === activeLang ? t.btnBg : 'transparent',
+                color: t.menuClr, fontSize: 12, cursor: 'pointer', textAlign: 'left',
+                transition: 'background 0.1s',
+              }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.menuHov; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = lang === activeLang ? t.btnBg : 'transparent'; }}
+              >
+                <span>{lang}</span>
+                {lang === activeLang && <Check size={11} style={{ opacity: 0.6 }} />}
+              </button>
+            ))}
+          </div>
+        </PortalMenu>
+      )}
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main CodeBlock
 // ---------------------------------------------------------------------------
 
 interface CodeBlockProps {
@@ -342,9 +522,17 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
   const [showLangPick,  setShowLangPick]  = useState(false);
   const [langBtnRect,   setLangBtnRect]   = useState<DOMRect | null>(null);
   const [activeLang,    setActiveLang]    = useState(language);
+  const [isMobile,      setIsMobile]      = useState(false);
   const langBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => { setActiveLang(language); }, [language]);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 580);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   const lines = useMemo(() => {
     const raw = code.split('\n');
@@ -380,14 +568,14 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
     thumb: t.thumb, track: t.track, thumbHov: t.thumbHov,
   };
 
-  // ── Toolbar — identical structure to TableControlsBar ────────────────────
+  // ── Toolbar ───────────────────────────────────────────────────────────────
   const renderToolbar = (isModal: boolean) => (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px',
       borderBottom: `1px solid ${t.barBorder}`,
       background: t.barBg, flexWrap: 'nowrap', minWidth: 0, flexShrink: 0,
     }}>
-      {/* Search input — matches table search exactly */}
+      {/* Search input */}
       <div style={{ position: 'relative', flex: '1 1 0', minWidth: 0 }}>
         <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: t.plhClr, pointerEvents: 'none' }} />
         <input
@@ -414,28 +602,57 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
         )}
       </div>
 
-      {/* Copy */}
-      <Pill onClick={handleCopy} title={isCopied ? 'Скопировано!' : 'Копировать'} label={isCopied ? 'Скопировано' : 'Копировать'} icon={isCopied ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />} t={t} success={isCopied} />
+      {/* Desktop buttons */}
+      {!isMobile && (
+        <>
+          {/* Copy */}
+          <Pill
+            onClick={handleCopy}
+            title={isCopied ? 'Скопировано!' : 'Копировать'}
+            label={isCopied ? 'Скопировано' : 'Копировать'}
+            icon={isCopied ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />}
+            t={t} success={isCopied}
+          />
 
-      {/* Language */}
-      <Pill btnRef={langBtnRef} onClick={handleLangClick} title="Сменить подсветку" label={activeLang || 'markdown'} icon={<Code2 size={14} />} t={t} active={showLangPick} />
+          {/* Language picker */}
+          <Pill
+            btnRef={langBtnRef}
+            onClick={handleLangClick}
+            title="Сменить подсветку"
+            label={activeLang || 'markdown'}
+            icon={<Code2 size={14} />}
+            t={t} active={showLangPick}
+          />
 
-      {/* Fullscreen toggle */}
-      <Pill
-        onClick={() => isModal ? setIsFullscreen(false) : setIsFullscreen(true)}
-        title={isModal ? 'Свернуть' : 'Развернуть'}
-        label={isModal ? 'Свернуть' : 'Развернуть'}
-        icon={isModal ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-        t={t}
-      />
+          {/* Fullscreen toggle */}
+          <Pill
+            onClick={() => isModal ? setIsFullscreen(false) : setIsFullscreen(true)}
+            title={isModal ? 'Свернуть' : 'Развернуть'}
+            label={isModal ? 'Свернуть' : 'Развернуть'}
+            icon={isModal ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            t={t}
+          />
 
-      {showLangPick && langBtnRect && (
-        <LangPicker currentLang={activeLang} onSelect={setActiveLang} onClose={() => setShowLangPick(false)} anchorRect={langBtnRect} t={t} />
+          {showLangPick && langBtnRect && (
+            <LangPicker currentLang={activeLang} onSelect={setActiveLang} onClose={() => setShowLangPick(false)} anchorRect={langBtnRect} t={t} />
+          )}
+        </>
+      )}
+
+      {/* Mobile ⋯ menu */}
+      {isMobile && (
+        <MobileMenu
+          t={t}
+          code={code}
+          activeLang={activeLang}
+          onSelectLang={setActiveLang}
+          onFullscreen={() => setIsFullscreen(true)}
+        />
       )}
     </div>
   );
 
-  // ── Footer — mirrors TableWithControls footer ────────────────────────────
+  // ── Footer ────────────────────────────────────────────────────────────────
   const renderFooter = () => (
     <div style={{
       padding: '6px 12px', borderTop: `1px solid ${t.barBorder}`,
@@ -448,7 +665,7 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
     </div>
   );
 
-  // ── Fullscreen — modal matching TableModal ───────────────────────────────
+  // ── Fullscreen modal ──────────────────────────────────────────────────────
   if (isFullscreen) {
     return (
       <Overlay onClose={() => setIsFullscreen(false)} zIndex={10000} backdropCursor="default">
@@ -473,7 +690,7 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
     );
   }
 
-  // ── Normal view — mirrors TableWithControls wrapper ──────────────────────
+  // ── Normal view ───────────────────────────────────────────────────────────
   return (
     <div className="not-prose" style={{ margin: '1.25rem 0' }}>
       <div style={{
@@ -500,7 +717,7 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
           )}
         </div>
 
-        {/* Expand/collapse — matches table footer button style */}
+        {/* Expand/collapse */}
         {isLong && (
           <button
             onClick={() => setIsExpanded(p => !p)}
