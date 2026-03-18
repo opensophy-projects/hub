@@ -9,24 +9,75 @@ import Overlay from './Overlay';
 import hljs from 'highlight.js/lib/core';
 
 // ---------------------------------------------------------------------------
-// Language aliases & lazy loader
+// Design tokens — mirror TableControlsBar / TableModal / TableWithControls
+// ---------------------------------------------------------------------------
+
+function tk(isDark: boolean) {
+  return isDark ? {
+    outerBg:     '#0a0a0a',
+    barBg:       '#111111',
+    codeBg:      '#0d0d0d',
+    outerBorder: 'rgba(255,255,255,0.08)',
+    barBorder:   'rgba(255,255,255,0.08)',
+    btnBg:       'rgba(255,255,255,0.08)',
+    btnBdr:      'rgba(255,255,255,0.12)',
+    btnHov:      'rgba(255,255,255,0.14)',
+    btnClr:      'rgba(255,255,255,0.72)',
+    inpBg:       '#1a1a1a',
+    inpBdr:      'rgba(255,255,255,0.12)',
+    inpFoc:      'rgba(255,255,255,0.26)',
+    inpClr:      'rgba(255,255,255,0.88)',
+    plhClr:      'rgba(255,255,255,0.28)',
+    fg:          '#e8e8e8',
+    fgMuted:     'rgba(255,255,255,0.35)',
+    lineNum:     '#555',
+    footerClr:   'rgba(255,255,255,0.22)',
+    outerShadow: '0 2px 12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)',
+    modalShadow: '0 24px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.05)',
+    fadeTo:      '#0d0d0d',
+    thumb:       'rgba(255,255,255,0.14)',
+    thumbHov:    'rgba(255,255,255,0.26)',
+    track:       'rgba(255,255,255,0.04)',
+  } : {
+    outerBg:     '#E8E7E3',
+    barBg:       '#d8d7d3',
+    codeBg:      '#ECEAE5',
+    outerBorder: 'rgba(0,0,0,0.1)',
+    barBorder:   'rgba(0,0,0,0.09)',
+    btnBg:       'rgba(0,0,0,0.07)',
+    btnBdr:      'rgba(0,0,0,0.12)',
+    btnHov:      'rgba(0,0,0,0.12)',
+    btnClr:      'rgba(0,0,0,0.68)',
+    inpBg:       '#E8E7E3',
+    inpBdr:      'rgba(0,0,0,0.12)',
+    inpFoc:      'rgba(0,0,0,0.28)',
+    inpClr:      '#000000',
+    plhClr:      'rgba(0,0,0,0.35)',
+    fg:          '#1a1a1a',
+    fgMuted:     'rgba(0,0,0,0.38)',
+    lineNum:     '#999',
+    footerClr:   'rgba(0,0,0,0.32)',
+    outerShadow: '0 1px 6px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.07)',
+    modalShadow: '0 24px 80px rgba(0,0,0,0.2)',
+    fadeTo:      '#ECEAE5',
+    thumb:       'rgba(0,0,0,0.16)',
+    thumbHov:    'rgba(0,0,0,0.28)',
+    track:       'rgba(0,0,0,0.04)',
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Language support
 // ---------------------------------------------------------------------------
 
 const LANG_ALIASES: Record<string, string> = {
-  jsx: 'javascript',
-  tsx: 'typescript',
-  shell: 'bash',
-  sh: 'bash',
-  yml: 'yaml',
-  md: 'markdown',
-  'c++': 'cpp',
-  cs: 'csharp',
+  jsx: 'javascript', tsx: 'typescript', shell: 'bash', sh: 'bash',
+  yml: 'yaml', md: 'markdown', 'c++': 'cpp', cs: 'csharp',
 };
 
 const SUPPORTED_LANGUAGES = [
-  'javascript', 'typescript', 'python', 'bash',
-  'sql', 'json', 'xml', 'html', 'css', 'yaml',
-  'dockerfile', 'markdown', 'go', 'rust', 'php',
+  'javascript', 'typescript', 'python', 'bash', 'sql', 'json', 'xml',
+  'html', 'css', 'yaml', 'dockerfile', 'markdown', 'go', 'rust', 'php',
   'cpp', 'csharp', 'java',
 ] as const;
 
@@ -38,7 +89,6 @@ async function loadLanguage(lang: string): Promise<void> {
   if (loadedLanguages.has(normalized)) return;
   const existing = pendingLanguages.get(normalized);
   if (existing) return existing;
-
   const promise = (async () => {
     try {
       const loaders: Record<string, () => Promise<{ default: unknown }>> = {
@@ -75,293 +125,199 @@ async function loadLanguage(lang: string): Promise<void> {
     } catch (e) {
       console.warn(`Failed to load highlight.js language: ${normalized}`, e);
       loadedLanguages.add(normalized);
-    } finally {
-      pendingLanguages.delete(normalized);
-    }
+    } finally { pendingLanguages.delete(normalized); }
   })();
   pendingLanguages.set(normalized, promise);
   return promise;
 }
 
 // ---------------------------------------------------------------------------
-// Highlight builder
+// Highlight helpers
 // ---------------------------------------------------------------------------
 
 function escapeHtml(str: string): string {
-  return str
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;');
+  return str.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
 function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // NOSONAR typescript:S7780 typescript:S7781
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // NOSONAR
 }
 
 function injectSearchHighlight(html: string, query: string): string {
   if (!query) return html;
-  const safeQuery = escapeRegex(query);
-  const searchRegex = new RegExp(`(${safeQuery})`, 'gi');
-  return html.replace(/(<[^>]*>)|([^<]+)/g, (match, tag, text) => { // NOSONAR typescript:S5852
+  const re = new RegExp(`(${escapeRegex(query)})`, 'gi');
+  return html.replace(/(<[^>]*>)|([^<]+)/g, (_, tag, text) => { // NOSONAR
     if (tag) return tag;
-    return text.replace(searchRegex, '<mark style="background:#854d0e;color:#fff;border-radius:2px;padding:0 1px;">$1</mark>'); // NOSONAR typescript:S7781
+    return text.replace(re, '<mark style="background:#854d0e;color:#fff;border-radius:2px;padding:0 1px;">$1</mark>'); // NOSONAR
   });
 }
 
-function buildHighlightedHtml(code: string, lang: string, isDark: boolean, searchQuery: string): string {
-  const lineColor = isDark ? '#555' : '#999';
+function buildHighlightedHtml(code: string, lang: string, lineNumColor: string, query: string): string {
   const lineStyle = [
-    `color:${lineColor}`,
-    'display:inline-block',
-    'width:28px',
-    'margin-right:14px',
-    'text-align:right',
-    'user-select:none',
-    'font-size:11px',
+    `color:${lineNumColor}`, 'display:inline-block', 'width:28px',
+    'margin-right:14px', 'text-align:right', 'user-select:none', 'font-size:11px',
   ].join(';');
-
   let highlighted: string;
-  try {
-    highlighted = hljs.highlight(code, { language: lang }).value;
-  } catch {
-    highlighted = escapeHtml(code);
-  }
-
-  return highlighted
-    .replace(/\n$/, '')
-    .split('\n')
-    .map((line, i) => {
-      const withSearch = injectSearchHighlight(line, searchQuery);
-      return `<span class="line-number" style="${lineStyle}">${i + 1}</span>${withSearch}`;
-    })
-    .join('\n');
+  try { highlighted = hljs.highlight(code, { language: lang }).value; }
+  catch { highlighted = escapeHtml(code); }
+  return highlighted.replace(/\n$/, '').split('\n').map((line, i) =>
+    `<span style="${lineStyle}">${i + 1}</span>${injectSearchHighlight(line, query)}`
+  ).join('\n');
 }
 
-// ---------------------------------------------------------------------------
-// HighlightedText — plain-text fallback
-// ---------------------------------------------------------------------------
-
-function HighlightedText({ text, query }: Readonly<{ text: string; query: string }>): JSX.Element {
+function HighlightedText({ text, query }: { text: string; query: string }): JSX.Element {
   if (!query) return <>{text}</>;
-  const lower = text.toLowerCase();
-  const lowerQ = query.toLowerCase();
-  const qLen = lowerQ.length;
+  const lower = text.toLowerCase(), lq = query.toLowerCase(), qLen = lq.length;
   const parts: JSX.Element[] = [];
-  let cursor = 0, key = 0;
-  while (cursor < text.length) {
-    const idx = lower.indexOf(lowerQ, cursor);
-    if (idx === -1) { parts.push(<span key={key++}>{text.slice(cursor)}</span>); break; }
-    if (idx > cursor) parts.push(<span key={key++}>{text.slice(cursor, idx)}</span>);
-    parts.push(
-      <span key={key++} style={{ background: '#854d0e', color: '#fff', borderRadius: '2px', padding: '0 1px' }}>
-        {text.slice(idx, idx + qLen)}
-      </span>,
-    );
-    cursor = idx + qLen;
+  let cur = 0, k = 0;
+  while (cur < text.length) {
+    const idx = lower.indexOf(lq, cur);
+    if (idx === -1) { parts.push(<span key={k++}>{text.slice(cur)}</span>); break; }
+    if (idx > cur) parts.push(<span key={k++}>{text.slice(cur, idx)}</span>);
+    parts.push(<span key={k++} style={{ background: '#854d0e', color: '#fff', borderRadius: '2px', padding: '0 1px' }}>{text.slice(idx, idx + qLen)}</span>);
+    cur = idx + qLen;
   }
   return <>{parts}</>;
 }
 
-// ---------------------------------------------------------------------------
-// useHighlightedHtml
-// ---------------------------------------------------------------------------
-
-function useHighlightedHtml(code: string, language: string, isDark: boolean, searchQuery: string): string {
+function useHighlightedHtml(code: string, language: string, lineNumColor: string, query: string): string {
   const [html, setHtml] = useState('');
   useEffect(() => {
-    const normalizedLang = language?.trim()
-      ? (LANG_ALIASES[language.toLowerCase().trim()] ?? language.toLowerCase().trim())
-      : '';
+    const norm = language?.trim() ? (LANG_ALIASES[language.toLowerCase().trim()] ?? language.toLowerCase().trim()) : '';
     let cancelled = false;
     (async () => {
-      if (!normalizedLang) {
-        if (!cancelled) setHtml('');
-        return;
-      }
-      await loadLanguage(normalizedLang);
+      if (!norm) { if (!cancelled) setHtml(''); return; }
+      await loadLanguage(norm);
       if (cancelled) return;
-      try { setHtml(buildHighlightedHtml(code, normalizedLang, isDark, searchQuery)); }
+      try { setHtml(buildHighlightedHtml(code, norm, lineNumColor, query)); }
       catch { if (!cancelled) setHtml(''); }
     })();
     return () => { cancelled = true; };
-  }, [code, language, isDark, searchQuery]);
+  }, [code, language, lineNumColor, query]);
   return html;
 }
 
 // ---------------------------------------------------------------------------
-// Sub-components
+// CodeBody
 // ---------------------------------------------------------------------------
 
-interface CodeBodyProps {
-  readonly lines: string[];
-  readonly matchedLines: Set<number>;
-  readonly searchQuery: string;
-  readonly fg: string;
-  readonly bg: string;
-  readonly isDark: boolean;
-  readonly highlightedHtml: string;
+interface BodyProps {
+  lines: string[]; matchedLines: Set<number>; searchQuery: string;
+  fg: string; codeBg: string; lineNum: string; highlightedHtml: string;
+  thumb: string; track: string; thumbHov: string;
+  maxHeight?: number | 'none';
 }
 
-const CodeBody = React.forwardRef<HTMLPreElement, CodeBodyProps>(
-  ({ lines, matchedLines, searchQuery, fg, bg, isDark, highlightedHtml }, ref) => (
-    <pre
-      ref={ref}
-      className="text-sm font-mono not-prose hljs"
-      style={{ background: bg, color: fg, margin: 0, padding: '8px 12px' }}
-    >
-      {highlightedHtml ? (
-        <code
-          dangerouslySetInnerHTML={{ __html: highlightedHtml }}
-          className="language-code"
-          style={{ color: fg }}
-        />
-      ) : (
-        lines.map((line, i) => (
-          <div key={`${i}-${line.slice(0, 8)}`} className="whitespace-pre" style={{ color: fg }}>
-            <span
-              className="inline-block mr-3.5 text-right select-none"
-              style={{ color: isDark ? '#555' : '#999', width: '28px', fontSize: '11px' }}
-            >
-              {i + 1}
-            </span>
-            {matchedLines.has(i)
-              ? <HighlightedText text={line} query={searchQuery} />
-              : <span>{line}</span>}
-          </div>
-        ))
-      )}
-    </pre>
+const CodeBody = React.forwardRef<HTMLPreElement, BodyProps>(
+  ({ lines, matchedLines, searchQuery, fg, codeBg, lineNum, highlightedHtml, thumb, track, thumbHov, maxHeight }, ref) => (
+    <>
+      <style>{`
+        .cb-pre::-webkit-scrollbar{width:6px;height:6px}
+        .cb-pre::-webkit-scrollbar-track{background:${track}}
+        .cb-pre::-webkit-scrollbar-thumb{background:${thumb};border-radius:99px}
+        .cb-pre::-webkit-scrollbar-thumb:hover{background:${thumbHov}}
+        .cb-pre::-webkit-scrollbar-corner{background:transparent}
+      `}</style>
+      <pre
+        ref={ref}
+        className="cb-pre text-sm font-mono not-prose hljs"
+        style={{
+          background: codeBg, color: fg, margin: 0, padding: '10px 14px',
+          overflowX: 'auto', overflowY: 'auto',
+          scrollbarWidth: 'thin', scrollbarColor: `${thumb} ${track}`,
+          maxHeight: maxHeight === 'none' ? undefined : maxHeight,
+          height: maxHeight === 'none' ? '100%' : undefined,
+          flex: maxHeight === 'none' ? 1 : undefined,
+        }}
+      >
+        {highlightedHtml
+          ? <code dangerouslySetInnerHTML={{ __html: highlightedHtml }} className="language-code" style={{ color: fg }} />
+          : lines.map((line, i) => (
+            <div key={`${i}-${line.slice(0, 8)}`} className="whitespace-pre" style={{ color: fg }}>
+              <span className="inline-block text-right select-none" style={{ color: lineNum, width: '28px', marginRight: '14px', fontSize: '11px' }}>{i + 1}</span>
+              {matchedLines.has(i) ? <HighlightedText text={line} query={searchQuery} /> : <span>{line}</span>}
+            </div>
+          ))
+        }
+      </pre>
+    </>
   )
 );
 CodeBody.displayName = 'CodeBody';
 
-interface ToolbarButtonProps {
-  readonly onClick: () => void;
-  readonly title: string;
-  readonly label: string;
-  readonly icon: React.ReactNode;
-  readonly color?: string;
-  readonly borderCls: string;
-  readonly hoverCls: string;
-  readonly fg: string;
-  readonly active?: boolean;
-  readonly activeBg?: string;
-  readonly btnRef?: React.RefObject<HTMLButtonElement>;
-}
+// ---------------------------------------------------------------------------
+// Pill — identical to TableControlsBar Pill
+// ---------------------------------------------------------------------------
 
-function ToolbarButton({ onClick, title, label, icon, color, borderCls, hoverCls, fg, active, activeBg, btnRef }: ToolbarButtonProps) {
+function Pill({ onClick, title, label, icon, t, active, success, btnRef }: {
+  onClick: () => void; title: string; label: string; icon: React.ReactNode;
+  t: ReturnType<typeof tk>; active?: boolean; success?: boolean;
+  btnRef?: React.RefObject<HTMLButtonElement>;
+}) {
+  const bg    = success ? (window.matchMedia('(prefers-color-scheme:dark)').matches ? 'rgba(34,197,94,0.16)' : 'rgba(34,197,94,0.14)') : t.btnBg;
+  const bdr   = success ? (window.matchMedia('(prefers-color-scheme:dark)').matches ? 'rgba(34,197,94,0.4)' : 'rgba(34,197,94,0.5)') : active ? 'rgba(255,255,255,0.2)' : t.btnBdr;
+  const color = success ? '#22c55e' : t.btnClr;
   return (
-    <button
-      ref={btnRef}
-      onClick={onClick}
-      title={title}
-      className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg border transition-colors ${borderCls} ${hoverCls}`}
-      style={{ color: color ?? fg, lineHeight: 1, background: active && activeBg ? activeBg : undefined }}
+    <button ref={btnRef} onClick={onClick} title={title} style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      gap: 3, padding: '5px 12px', minWidth: 52, height: 44,
+      borderRadius: 8, border: `1px solid ${bdr}`,
+      background: active ? t.btnHov : bg, color, cursor: 'pointer', flexShrink: 0,
+      transition: 'background 0.13s',
+    }}
+      onMouseEnter={e => { if (!success) (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
+      onMouseLeave={e => { if (!success) (e.currentTarget as HTMLButtonElement).style.background = active ? t.btnHov : bg; }}
     >
       {icon}
-      <span style={{ fontSize: '10px', whiteSpace: 'nowrap' }}>{label}</span>
+      <span style={{ fontSize: 10, fontWeight: active || success ? 600 : 400, whiteSpace: 'nowrap' }}>{label}</span>
     </button>
   );
 }
 
-interface SearchBoxProps {
-  readonly value: string;
-  readonly onChange: (v: string) => void;
-  readonly matchCount: number;
-  readonly bg: string;
-  readonly fg: string;
-  readonly borderCls: string;
-}
+// ---------------------------------------------------------------------------
+// LangPicker portal
+// ---------------------------------------------------------------------------
 
-function SearchBox({ value, onChange, matchCount, bg, fg, borderCls }: SearchBoxProps) {
-  return (
-    <div className={`flex-1 flex items-center gap-1.5 px-2.5 py-1 rounded border ${borderCls}`}
-      style={{ background: bg, color: fg, minWidth: '120px' }}>
-      <Search size={13} opacity={0.5} className="flex-shrink-0" />
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Поиск..."
-        style={{ color: fg, fontSize: '12px' }}
-        className="flex-1 bg-transparent outline-none min-w-0"
-      />
-      {value && (
-        <button onClick={() => onChange('')} className="flex-shrink-0 opacity-60 hover:opacity-100">
-          <X size={12} />
-        </button>
-      )}
-      {matchCount > 0 && (
-        <span className="opacity-50 whitespace-nowrap flex-shrink-0" style={{ fontSize: '11px' }}>
-          {matchCount} найдено
-        </span>
-      )}
-    </div>
-  );
-}
-
-interface LangPickerProps {
-  readonly currentLang: string;
-  readonly onSelect: (lang: string) => void;
-  readonly onClose: () => void;
-  readonly anchorRect: DOMRect;
-  readonly bg: string;
-  readonly fg: string;
-  readonly borderCls: string;
-  readonly isDark: boolean;
-}
-
-function LangPicker({ currentLang, onSelect, onClose, anchorRect, bg, fg, borderCls, isDark }: LangPickerProps) {
+function LangPicker({ currentLang, onSelect, onClose, anchorRect, t }: {
+  currentLang: string; onSelect: (l: string) => void; onClose: () => void;
+  anchorRect: DOMRect; t: ReturnType<typeof tk>;
+}) {
   const ref = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    };
-    document.addEventListener('mousedown', handler, true);
-    return () => document.removeEventListener('mousedown', handler, true);
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
+    document.addEventListener('mousedown', h, true);
+    return () => document.removeEventListener('mousedown', h, true);
   }, [onClose]);
-
-  const top  = anchorRect.bottom + 4;
-  const left = anchorRect.right - 140;
-
   return ReactDOM.createPortal(
-    <div
-      ref={ref}
-      className={`rounded-lg border shadow-2xl overflow-y-auto ${borderCls}`}
-      style={{
-        position: 'fixed',
-        top,
-        left,
-        background: bg,
-        minWidth: '140px',
-        maxHeight: '240px',
-        zIndex: 99999,
-      }}
-    >
-      {SUPPORTED_LANGUAGES.map((lang) => {
-        const isActive = lang === currentLang;
-        const activeBgColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
-        const itemBg = isActive ? activeBgColor : 'transparent';
-
-        return (
-          <button
-            key={lang}
-            onClick={() => { onSelect(lang); onClose(); }}
-            className="w-full flex items-center justify-between px-3 py-1.5 text-left transition-opacity hover:opacity-70"
-            style={{ color: fg, background: itemBg, fontSize: '12px' }}
-          >
-            <span>{lang}</span>
-            {isActive && <Check size={11} className="opacity-60 flex-shrink-0" />}
-          </button>
-        );
-      })}
+    <div ref={ref} style={{
+      position: 'fixed', top: anchorRect.bottom + 4,
+      left: Math.max(8, anchorRect.right - 150),
+      background: t.barBg, border: `1px solid ${t.barBorder}`,
+      borderRadius: 10, minWidth: 150, maxHeight: 240, overflowY: 'auto',
+      zIndex: 99999, boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+    }}>
+      {SUPPORTED_LANGUAGES.map(lang => (
+        <button key={lang} onClick={() => { onSelect(lang); onClose(); }} style={{
+          width: '100%', padding: '7px 12px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          border: 'none', background: lang === currentLang ? t.btnBg : 'transparent',
+          color: t.fg, fontSize: 12, cursor: 'pointer', textAlign: 'left',
+          transition: 'background 0.1s',
+        }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = lang === currentLang ? t.btnBg : 'transparent'; }}
+        >
+          <span>{lang}</span>
+          {lang === currentLang && <Check size={11} style={{ opacity: 0.6 }} />}
+        </button>
+      ))}
     </div>,
     document.body,
   );
 }
 
 // ---------------------------------------------------------------------------
-// Main component
+// Main
 // ---------------------------------------------------------------------------
 
 interface CodeBlockProps {
@@ -369,31 +325,26 @@ interface CodeBlockProps {
   readonly language?: string;
 }
 
-const LINE_HEIGHT_PX   = 21;
-const PRE_PADDING_TOP  = 8;
 const VISIBLE_LINES    = 7;
-const COLLAPSED_HEIGHT = PRE_PADDING_TOP + VISIBLE_LINES * LINE_HEIGHT_PX + PRE_PADDING_TOP;
+const LINE_HEIGHT_PX   = 21;
+const PRE_PADDING      = 10;
+const COLLAPSED_HEIGHT = PRE_PADDING + VISIBLE_LINES * LINE_HEIGHT_PX + PRE_PADDING;
+const BORDER_RADIUS    = 12;
 
 export function CodeBlock({ code, language = '' }: CodeBlockProps) {
   const { isDark } = useContext(TableContext);
+  const t = tk(isDark);
 
-  const [isExpanded, setIsExpanded]         = useState(false);
-  const [isCopied, setIsCopied]             = useState(false);
-  const [isFullscreen, setIsFullscreen]     = useState(false);
-  const [searchQuery, setSearchQuery]       = useState('');
-  const [showLangPicker, setShowLangPicker] = useState(false);
-  const [langBtnRect, setLangBtnRect]       = useState<DOMRect | null>(null);
-  const [activeLang, setActiveLang]         = useState<string>(language);
-
+  const [isExpanded,    setIsExpanded]    = useState(false);
+  const [isCopied,      setIsCopied]      = useState(false);
+  const [isFullscreen,  setIsFullscreen]  = useState(false);
+  const [searchQuery,   setSearchQuery]   = useState('');
+  const [showLangPick,  setShowLangPick]  = useState(false);
+  const [langBtnRect,   setLangBtnRect]   = useState<DOMRect | null>(null);
+  const [activeLang,    setActiveLang]    = useState(language);
   const langBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => { setActiveLang(language); }, [language]);
-
-  const bg        = isDark ? '#0d0d0d' : '#ECEAE5';
-  const fg        = isDark ? '#e8e8e8' : '#1a1a1a';
-  const borderCls = isDark ? 'border-white/10' : 'border-black/10';
-  const hoverCls  = isDark ? 'hover:bg-white/10' : 'hover:bg-black/10';
-  const activeBg  = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
 
   const lines = useMemo(() => {
     const raw = code.split('\n');
@@ -401,17 +352,13 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
     return raw;
   }, [code]);
 
-  const isLongCode = lines.length > VISIBLE_LINES;
-
-  const highlightedHtml = useHighlightedHtml(code, activeLang, isDark, searchQuery);
+  const isLong = lines.length > VISIBLE_LINES;
+  const highlightedHtml = useHighlightedHtml(code, activeLang, t.lineNum, searchQuery);
 
   const matchedLines = useMemo(() => {
     if (!searchQuery) return new Set<number>();
-    const lowerQ = searchQuery.toLowerCase();
-    return new Set(lines.reduce<number[]>((acc, line, i) => {
-      if (line.toLowerCase().includes(lowerQ)) acc.push(i);
-      return acc;
-    }, []));
+    const lq = searchQuery.toLowerCase();
+    return new Set(lines.reduce<number[]>((acc, l, i) => { if (l.toLowerCase().includes(lq)) acc.push(i); return acc; }, []));
   }, [lines, searchQuery]);
 
   const handleCopy = useCallback(() => {
@@ -420,169 +367,162 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
     setTimeout(() => setIsCopied(false), 2000);
   }, [code]);
 
-  const handleLangBtnClick = useCallback(() => {
-    if (langBtnRef.current) {
-      setLangBtnRect(langBtnRef.current.getBoundingClientRect());
-    }
-    setShowLangPicker((p) => !p);
+  const handleLangClick = useCallback(() => {
+    if (langBtnRef.current) setLangBtnRect(langBtnRef.current.getBoundingClientRect());
+    setShowLangPick(p => !p);
   }, []);
 
-  const bodyProps: CodeBodyProps = {
-    lines,
-    matchedLines,
-    searchQuery,
-    fg,
-    bg,
-    isDark,
-    highlightedHtml,
+  const pluralLines = (n: number) => n === 1 ? 'строка' : n < 5 ? 'строки' : 'строк';
+
+  const bodyProps = {
+    lines, matchedLines, searchQuery,
+    fg: t.fg, codeBg: t.codeBg, lineNum: t.lineNum, highlightedHtml,
+    thumb: t.thumb, track: t.track, thumbHov: t.thumbHov,
   };
 
-  const fadeGradient = `linear-gradient(to bottom, transparent 0%, ${bg} 100%)`;
-
-  // ── Shared toolbar elements ─────────────────────────────────────────────
-
-  const copyBtn = (
-    <ToolbarButton
-      onClick={handleCopy}
-      title={isCopied ? 'Скопировано!' : 'Копировать'}
-      label={isCopied ? 'Готово' : 'Копировать'}
-      icon={isCopied ? <Check size={14} /> : <Copy size={14} />}
-      color={isCopied ? '#22c55e' : undefined}
-      borderCls={borderCls}
-      hoverCls={hoverCls}
-      fg={fg}
-    />
-  );
-
-  const langBtn = (
-    <>
-      <ToolbarButton
-        btnRef={langBtnRef}
-        onClick={handleLangBtnClick}
-        title="Сменить подсветку"
-        label={activeLang || 'Стандарт'}
-        icon={<Code2 size={14} />}
-        borderCls={borderCls}
-        hoverCls={hoverCls}
-        fg={fg}
-        active={showLangPicker}
-        activeBg={activeBg}
-      />
-      {showLangPicker && langBtnRect && (
-        <LangPicker
-          currentLang={activeLang}
-          onSelect={setActiveLang}
-          onClose={() => setShowLangPicker(false)}
-          anchorRect={langBtnRect}
-          bg={bg}
-          fg={fg}
-          borderCls={borderCls}
-          isDark={isDark}
+  // ── Toolbar — identical structure to TableControlsBar ────────────────────
+  const renderToolbar = (isModal: boolean) => (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px',
+      borderBottom: `1px solid ${t.barBorder}`,
+      background: t.barBg, flexWrap: 'nowrap', minWidth: 0, flexShrink: 0,
+    }}>
+      {/* Search input — matches table search exactly */}
+      <div style={{ position: 'relative', flex: '1 1 0', minWidth: 0 }}>
+        <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: t.plhClr, pointerEvents: 'none' }} />
+        <input
+          type="text" placeholder="Поиск..." value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          style={{
+            width: '100%', padding: '0 30px 0 30px', height: 36,
+            borderRadius: 8, border: `1px solid ${t.inpBdr}`,
+            background: t.inpBg, color: t.inpClr, fontSize: 13,
+            outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s',
+          }}
+          onFocus={e => { (e.target as HTMLInputElement).style.borderColor = t.inpFoc; }}
+          onBlur={e  => { (e.target as HTMLInputElement).style.borderColor = t.inpBdr; }}
         />
+        {searchQuery && (
+          <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: matchedLines.size > 0 ? 56 : 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: t.plhClr, display: 'flex' }}>
+            <X size={12} />
+          </button>
+        )}
+        {matchedLines.size > 0 && (
+          <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: t.fgMuted, whiteSpace: 'nowrap' }}>
+            {matchedLines.size} найдено
+          </span>
+        )}
+      </div>
+
+      {/* Copy */}
+      <Pill onClick={handleCopy} title={isCopied ? 'Скопировано!' : 'Копировать'} label={isCopied ? 'Скопировано' : 'Копировать'} icon={isCopied ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />} t={t} success={isCopied} />
+
+      {/* Language */}
+      <Pill btnRef={langBtnRef} onClick={handleLangClick} title="Сменить подсветку" label={activeLang || 'markdown'} icon={<Code2 size={14} />} t={t} active={showLangPick} />
+
+      {/* Fullscreen toggle */}
+      <Pill
+        onClick={() => isModal ? setIsFullscreen(false) : setIsFullscreen(true)}
+        title={isModal ? 'Свернуть' : 'Развернуть'}
+        label={isModal ? 'Свернуть' : 'Развернуть'}
+        icon={isModal ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+        t={t}
+      />
+
+      {showLangPick && langBtnRect && (
+        <LangPicker currentLang={activeLang} onSelect={setActiveLang} onClose={() => setShowLangPick(false)} anchorRect={langBtnRect} t={t} />
       )}
-    </>
+    </div>
   );
 
-  const searchBoxEl = (
-    <SearchBox
-      value={searchQuery}
-      onChange={setSearchQuery}
-      matchCount={matchedLines.size}
-      bg={bg}
-      fg={fg}
-      borderCls={borderCls}
-    />
+  // ── Footer — mirrors TableWithControls footer ────────────────────────────
+  const renderFooter = () => (
+    <div style={{
+      padding: '6px 12px', borderTop: `1px solid ${t.barBorder}`,
+      fontSize: 11, color: t.footerClr,
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      userSelect: 'none', background: t.outerBg, flexShrink: 0,
+    }}>
+      <span>{lines.length} {pluralLines(lines.length)}</span>
+      {activeLang && <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 10, opacity: 0.7 }}>{activeLang}</span>}
+    </div>
   );
 
-  // ── Fullscreen overlay — uses shared Overlay (blur(12px) backdrop) ──────
+  // ── Fullscreen — modal matching TableModal ───────────────────────────────
   if (isFullscreen) {
     return (
-      <Overlay onClose={() => setIsFullscreen(false)} zIndex={50} backdropCursor="default">
-        <div
-          className={`rounded-lg border ${borderCls} not-prose`}
-          style={{
-            background: bg,
-            width: 'min(900px, 92vw)',
-            maxHeight: '90vh',
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          <div className={`border-b px-3 py-2 flex flex-wrap items-center gap-2 ${borderCls}`} style={{ background: bg }}>
-            {searchBoxEl}
-            <span style={{ fontSize: '11px', color: fg, opacity: 0.4, whiteSpace: 'nowrap' }}>
-              {lines.length} строк
-            </span>
-            {copyBtn}
-            {langBtn}
-            <ToolbarButton
-              onClick={() => setIsFullscreen(false)}
-              title="Свернуть"
-              label="Свернуть"
-              icon={<Minimize2 size={14} />}
-              borderCls={borderCls}
-              hoverCls={hoverCls}
-              fg={fg}
-            />
+      <Overlay onClose={() => setIsFullscreen(false)} zIndex={10000} backdropCursor="default">
+        <div style={{
+          position: 'relative',
+          width: 'min(95vw, 1100px)',
+          maxHeight: '90vh',
+          borderRadius: 14,
+          border: `1px solid ${t.outerBorder}`,
+          background: t.outerBg,
+          boxShadow: t.modalShadow,
+          display: 'flex', flexDirection: 'column',
+          overflow: 'hidden',
+        }}>
+          {renderToolbar(true)}
+          <div style={{ flex: 1, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <CodeBody {...bodyProps} maxHeight="none" />
           </div>
-          <div className="flex-1 overflow-auto not-prose">
-            <CodeBody {...bodyProps} />
-          </div>
+          {renderFooter()}
         </div>
       </Overlay>
     );
   }
 
-  // ── Normal view ─────────────────────────────────────────────────────────
+  // ── Normal view — mirrors TableWithControls wrapper ──────────────────────
   return (
-    <div className="my-3 not-prose">
-      <div className={`rounded-lg overflow-hidden border ${borderCls} not-prose`} style={{ background: bg }}>
+    <div className="not-prose" style={{ margin: '1.25rem 0' }}>
+      <div style={{
+        borderRadius: BORDER_RADIUS,
+        border: `1px solid ${t.outerBorder}`,
+        background: t.outerBg,
+        boxShadow: t.outerShadow,
+        overflow: 'clip',
+        display: 'flex', flexDirection: 'column',
+        width: '100%', minWidth: 0,
+      }}>
+        {renderToolbar(false)}
 
-        {/* Toolbar */}
-        <div className={`border-b px-3 py-2 flex flex-wrap items-center gap-2 ${borderCls}`} style={{ background: bg }}>
-          {searchBoxEl}
-          <div className="flex gap-1.5 flex-shrink-0">
-            {copyBtn}
-            {langBtn}
-            <ToolbarButton
-              onClick={() => setIsFullscreen(true)}
-              title="Полноэкранный режим"
-              label="Развернуть"
-              icon={<Maximize2 size={14} />}
-              borderCls={borderCls}
-              hoverCls={hoverCls}
-              fg={fg}
-            />
-          </div>
-        </div>
-
-        {/* Code area */}
-        <div
-          className="not-prose relative overflow-hidden transition-[max-height] duration-300"
-          style={{ maxHeight: isExpanded ? 'none' : `${COLLAPSED_HEIGHT}px` }}
-        >
+        {/* Code area with collapse */}
+        <div style={{ position: 'relative', overflow: 'hidden', maxHeight: isExpanded ? 'none' : COLLAPSED_HEIGHT }}>
           <CodeBody {...bodyProps} />
-
-          {isLongCode && !isExpanded && (
-            <div
-              className="absolute bottom-0 left-0 right-0 pointer-events-none"
-              style={{ height: `${LINE_HEIGHT_PX * 2.5}px`, background: fadeGradient }}
-            />
+          {isLong && !isExpanded && (
+            <div style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0,
+              height: LINE_HEIGHT_PX * 2.5,
+              background: `linear-gradient(to bottom, transparent, ${t.fadeTo})`,
+              pointerEvents: 'none',
+            }} />
           )}
         </div>
 
-        {/* Expand / collapse */}
-        {isLongCode && (
+        {/* Expand/collapse — matches table footer button style */}
+        {isLong && (
           <button
-            onClick={() => setIsExpanded((p) => !p)}
-            className={`w-full border-t py-2 text-xs flex items-center justify-center gap-1.5 transition-colors ${borderCls} ${hoverCls}`}
-            style={{ background: bg, color: fg, opacity: 0.7 }}
+            onClick={() => setIsExpanded(p => !p)}
+            style={{
+              width: '100%', borderTop: `1px solid ${t.barBorder}`,
+              padding: '7px 12px', background: t.barBg,
+              border: 'none', borderTopWidth: 1, borderTopStyle: 'solid', borderTopColor: t.barBorder,
+              color: t.footerClr, fontSize: 11, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+              transition: 'background 0.13s',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = t.barBg; }}
           >
             {isExpanded
               ? <><ChevronUp size={13} /><span>Скрыть</span></>
-              : <><ChevronDown size={13} /><span>Открыть полностью ({lines.length} строк)</span></>}
+              : <><ChevronDown size={13} /><span>Открыть полностью ({lines.length} строк)</span></>
+            }
           </button>
         )}
+
+        {renderFooter()}
       </div>
     </div>
   );
