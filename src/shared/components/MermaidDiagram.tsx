@@ -7,6 +7,7 @@ import React, {
   startTransition,
 } from 'react';
 import { TableContext } from '../lib/htmlParser';
+import { tc } from '../lib/themeUtils';
 
 interface MermaidDiagramProps {
   code: string;
@@ -34,13 +35,10 @@ function cacheKey(code: string, isDark: boolean, color?: string) {
   return `${isDark ? 'dark' : 'light'}::${color ?? ''}::${code}`;
 }
 
-const tc = (isDark: boolean, d: string, l: string) => (isDark ? d : l);
-
 // ─── SVG attribute patcher ────────────────────────────────────────────────────
 
 function removeSvgAttr(svgTag: string, attr: string): string {
   let result = svgTag;
-  // Remove both attr="..." and attr='...' variants
   const patterns = [` ${attr}="`, ` ${attr}='`];
   for (const pattern of patterns) {
     let start = result.indexOf(pattern);
@@ -60,13 +58,10 @@ function patchSvg(svg: string): string {
   if (tagEnd === -1) return svg;
 
   let tag = svg.slice(0, tagEnd + 1);
-
-  // Strip width, height AND any existing style from the opening <svg> tag
   tag = removeSvgAttr(tag, 'width');
   tag = removeSvgAttr(tag, 'height');
   tag = removeSvgAttr(tag, 'style');
 
-  // Inject our own style — 800px max-width, responsive height
   const style = ' style="width:100%;max-width:800px;height:auto;display:block;overflow:visible;margin:0 auto;"';
   if (tag.startsWith('<svg')) tag = `<svg${style}${tag.slice(4)}`;
 
@@ -135,7 +130,6 @@ function getMermaidConfig(isDark: boolean, color?: string) {
     theme: isDark ? 'dark' as const : 'default' as const,
     securityLevel: 'loose' as const,
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-    // useMaxWidth:false lets the SVG expand to its natural size, we cap it via CSS
     flowchart: { useMaxWidth: false, htmlLabels: true, curve: 'basis', padding: 20 },
     sequence:  { useMaxWidth: false, boxMargin: 10 },
     gantt:     { useMaxWidth: false, leftPadding: 75, barHeight: 28, fontSize: 13 },
