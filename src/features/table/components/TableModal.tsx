@@ -6,6 +6,7 @@ import { ColumnsPanel } from './ColumnsPanel';
 import { TableView } from './TableView';
 import { parseTableHtml } from '../utils/tableParser';
 import { filterAndSortRows, stripHtmlNormalize } from '../utils/tableFiltering';
+import { parseTableForCopy, toMd, toTsv, type CopyFormat } from '../utils/copyUtils';
 import type { TableControlsState } from '../types/table';
 
 interface TableModalProps {
@@ -14,8 +15,6 @@ interface TableModalProps {
   isDark: boolean;
   onClose: () => void;
 }
-
-type CopyFormat = 'md' | 'excel';
 
 function tk(isDark: boolean) {
   return isDark ? {
@@ -67,27 +66,6 @@ function tk(isDark: boolean) {
   };
 }
 
-function parseForCopy(html: string) {
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  const tbl = doc.querySelector('table');
-  if (!tbl) return { headers: [] as string[], rows: [] as string[][] };
-  return {
-    headers: Array.from(tbl.querySelectorAll('thead th')).map(th => (th.textContent ?? '').trim()),
-    rows: Array.from(tbl.querySelectorAll('tbody tr')).map(tr =>
-      Array.from(tr.querySelectorAll('td')).map(td => (td.textContent ?? '').trim())
-    ),
-  };
-}
-function toMd(h: string[], rows: string[][]) {
-  if (!h.length) return '';
-  const e = (s: string) => s.replaceAll('|', String.raw`\|`);
-  return [`| ${h.map(e).join(' | ')} |`, `| ${h.map(() => '---').join(' | ')} |`,
-    ...rows.map(r => `| ${r.map(e).join(' | ')} |`)].join('\n');
-}
-function toTsv(h: string[], rows: string[][]) {
-  return !h.length ? '' : [h.join('\t'), ...rows.map(r => r.join('\t'))].join('\n');
-}
-
 // ─── Dropdown menu rendered in body — bypasses any stacking context ───────────
 const BodyDropdown: React.FC<{
   anchorRef: React.RefObject<HTMLButtonElement>;
@@ -110,7 +88,6 @@ const BodyDropdown: React.FC<{
       if (!menuRef.current?.contains(e.target as Node) && !anchorRef.current?.contains(e.target as Node))
         onClose();
     };
-    // Use capture to fire before dialog intercepts
     document.addEventListener('mousedown', h, true);
     return () => document.removeEventListener('mousedown', h, true);
   }, [anchorRef, onClose]);
@@ -123,7 +100,6 @@ const BodyDropdown: React.FC<{
         top: pos.top,
         left: pos.left,
         minWidth: 192,
-        // Must be above dialog top-layer — use very high z-index
         zIndex: 2147483647,
         background: t.dropBg,
         border: `1px solid ${t.dropBdr}`,
@@ -133,7 +109,6 @@ const BodyDropdown: React.FC<{
           : '0 12px 32px rgba(0,0,0,0.2)',
         overflow: 'hidden',
         animation: 'mdIn 0.13s cubic-bezier(0.2,0,0,1)',
-        // Force above everything
         isolation: 'isolate',
       }}>
         {children}
@@ -177,7 +152,7 @@ const CopyBtn: React.FC<{ isDark: boolean; tableHtml: string; t: ReturnType<type
   const isCopied = !!copied;
 
   const doCopy = async (fmt: CopyFormat) => {
-    const { headers, rows } = parseForCopy(tableHtml);
+    const { headers, rows } = parseTableForCopy(tableHtml);
     await navigator.clipboard.writeText(fmt === 'md' ? toMd(headers, rows) : toTsv(headers, rows));
     setCopied(fmt); setOpen(false);
     setTimeout(() => setCopied(null), 2000);
@@ -234,7 +209,6 @@ const CopyBtn: React.FC<{ isDark: boolean; tableHtml: string; t: ReturnType<type
 };
 
 // ─── TableModal ───────────────────────────────────────────────────────────────
-// Uses a plain div portal instead of <dialog> to avoid top-layer stacking issues
 const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onClose }) => {
   const t = tk(isDark);
 
@@ -327,7 +301,6 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
 
   if (!isOpen) return null;
 
-  // Render as portal into body — no <dialog>, no top-layer stacking context
   return createPortal(
     <div style={{
       position: 'fixed', inset: 0,
