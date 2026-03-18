@@ -36,10 +36,6 @@ export function parseNavPopoverFolder(folderName) {
   if (entry.type === 'N') {
     return { navIcon: entry.icon ?? '', navTitle: entry.title, navSlug: entry.slug };
   }
-
-  const match = folderName.match(/^\[([^\]]+)\]([^{]+)\{([^}]+)\}$/);
-  if (match) return { navIcon: match[1].trim(), navTitle: match[2].trim(), navSlug: match[3].trim() };
-
   return null;
 }
 
@@ -397,13 +393,14 @@ export function getDocInfo(fullPath, docsDir) {
   }
 
   const firstEntry   = parseEntryName(dirs[0]);
-  const oldNavDef    = parseNavPopoverFolder(dirs[0]);
-  const isNavPopover = firstEntry.type === 'N' || oldNavDef !== null;
+  const isNavPopover = firstEntry.type === 'N';
 
   if (isNavPopover) {
-    const navDef = firstEntry.type === 'N'
-      ? { navIcon: firstEntry.icon ?? '', navTitle: firstEntry.title, navSlug: firstEntry.slug }
-      : oldNavDef;
+    const navDef = {
+      navIcon:  firstEntry.icon ?? '',
+      navTitle: firstEntry.title,
+      navSlug:  firstEntry.slug,
+    };
 
     const categoryPath = dirs.slice(1).map((d) => {
       const info = parseCategoryName(d);
