@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
 import { TableContext } from '../lib/htmlParser';
+import LucideIcon from './LucideIcon';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -14,35 +15,9 @@ export interface CardProps {
 export interface CardGridProps {
   cols?: number;
   children?: React.ReactNode;
-  
 }
 
-// ─── Icon loader (lazy lucide) ────────────────────────────────────────────────
-
-const iconCache = new Map<string, React.FC<{ size?: number; color?: string }>>();
-
-const LucideIcon: React.FC<{ name: string; size?: number; color?: string }> = ({ name, size = 20, color }) => {
-  const [Icon, setIcon] = React.useState<React.FC<{ size?: number; color?: string }> | null>(
-    () => iconCache.get(name) ?? null
-  );
-
-  React.useEffect(() => {
-    if (!name || iconCache.has(name)) return;
-    const pascal = name.split('-').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join('');
-    import('lucide-react').then((mod) => {
-      const ic = (mod as Record<string, unknown>)[pascal] as React.FC<{ size?: number; color?: string }> | undefined;
-      if (ic) {
-        iconCache.set(name, ic);
-        setIcon(() => ic);
-      }
-    });
-  }, [name]);
-
-  if (!Icon) return <span style={{ width: size, height: size, display: 'inline-block' }} />;
-  return <Icon size={size} color={color} />;
-};
-
-// ─── Card styles ──────────────────────────────────────────────────────────────.
+// ─── Card styles ──────────────────────────────────────────────────────────────
 
 const CARD_HOVER_CLASS = 'sophy-card';
 
