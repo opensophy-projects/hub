@@ -9,6 +9,7 @@ import {
   CalendarDays, SlidersHorizontal,
   ArrowUpDown, Layers, Tag, ArrowDown, ArrowUp,
 } from 'lucide-react';
+import LucideIcon from '@/shared/components/LucideIcon';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -90,7 +91,6 @@ function pluralResults(n: number): string {
   return 'результатов';
 }
 
-// FIX nested ternary: extracted so the fallback branch has no nested ?:
 function truncate(text: string, max = 140): string {
   if (text.length <= max) return text;
   return text.slice(0, max) + '…';
@@ -112,32 +112,6 @@ const Highlight = memo(function Highlight({ text, query }: { text: string; query
       })}
     </>
   );
-});
-
-// ─── Dynamic Lucide icon ──────────────────────────────────────────────────────
-
-const lucideIconCache = new Map<string, React.FC<{ size?: number; style?: React.CSSProperties }>>();
-
-const LucideIcon = memo(function LucideIcon({
-  name, size = 14, style,
-}: {
-  name: string;
-  size?: number;
-  style?: React.CSSProperties;
-}) {
-  const [Icon, setIcon] = useState<React.FC<{ size?: number; style?: React.CSSProperties }> | null>(
-    () => lucideIconCache.get(name) ?? null
-  );
-  useEffect(() => {
-    if (!name || lucideIconCache.has(name)) return;
-    const pascal = name.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('');
-    import('lucide-react').then((mod) => {
-      const ic = (mod as Record<string, unknown>)[pascal] as React.FC<{ size?: number; style?: React.CSSProperties }> | undefined;
-      if (ic) { lucideIconCache.set(name, ic); setIcon(() => ic); }
-    });
-  }, [name]);
-  if (!Icon) return <span style={{ width: size, height: size, display: 'inline-block', flexShrink: 0 }} />;
-  return <Icon size={size} style={style} />;
 });
 
 // ─── Color theme ──────────────────────────────────────────────────────────────
@@ -354,7 +328,7 @@ const ResultItem = memo(function ResultItem({
   );
 });
 
-// ─── useSearchFilters — extracts filter logic to reduce main component complexity ──
+// ─── useSearchFilters ─────────────────────────────────────────────────────────
 
 function useSearchFilters(docs: DocMeta[]) {
   const allTypenames = useMemo(() => {
@@ -382,9 +356,7 @@ function useSearchFilters(docs: DocMeta[]) {
   return { allTypenames, allCategories, allTags, hasUpdatedDocs };
 }
 
-// ─── useSearchResults — extracts search/sort/filter logic ────────────────────
-// FIX too-many-params (S107): filter args grouped into SearchOptions object.
-// FIX Date.now() impure: MODULE_NOW_MS is used directly (module-level constant).
+// ─── useSearchResults ─────────────────────────────────────────────────────────
 
 interface SearchOptions {
   debouncedQ: string;
@@ -448,8 +420,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const [sortOrder, setSortOrder]           = useState<SortOrder>('date-desc');
   const [showFilters, setShowFilters]       = useState(false);
   const [isMobile, setIsMobile]             = useState(false);
-  // FIX cascading renders: visibleCount and selectedIdx are always reset together
-  // when allResults changes. Merged into one state object → single re-render per reset.
   const [page, setPage] = useState({ visibleCount: PAGE_SIZE, selectedIdx: 0 });
   const visibleCount  = page.visibleCount;
   const [loadMoreHover, setLoadMoreHover]   = useState(false);
@@ -460,7 +430,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
 
   const typedDocs = docs as DocMeta[];
 
-  // ── Derived options & results via extracted hooks ────────────────────────
   const { allTypenames, allCategories, allTags, hasUpdatedDocs } = useSearchFilters(typedDocs);
 
   const allResults = useSearchResults(typedDocs, {
@@ -468,7 +437,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     activeTags, dateFilter, sortOrder,
   });
 
-  // ── Mobile detection ────────────────────────────────────────────────────
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
@@ -476,7 +444,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // ── Mount: focus + scroll lock + Esc ────────────────────────────────────
   useEffect(() => {
     inputRef.current?.focus();
     document.body.style.overflow = 'hidden';
@@ -488,14 +455,10 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     };
   }, [onClose]);
 
-  // ── Reset pagination + selection on results change — single setState call ──
-  // FIX: was two separate setSelectedIdx(0) + setVisibleCount(PAGE_SIZE) in one
-  // effect, which caused cascading renders. Now one atomic update.
   useEffect(() => {
     setPage({ visibleCount: PAGE_SIZE, selectedIdx: 0 });
   }, [allResults]);
 
-  // ── Scroll selected item into view ──────────────────────────────────────
   useEffect(() => {
     const el = listRef.current?.querySelector(`[data-idx="${page.selectedIdx}"]`) as HTMLElement | null;
     el?.scrollIntoView({ block: 'nearest' });
@@ -515,7 +478,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
 
   const showResults = debouncedQ.trim().length > 0 || hasActiveFilters;
 
-  // ── Keyboard navigation ─────────────────────────────────────────────────
   const handleInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -530,7 +492,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     }
   }, [results, page.selectedIdx]);
 
-  // FIX #2: ternary-as-statement → if/else (was: next.has(tag) ? next.delete(tag) : next.add(tag))
   const toggleTag = useCallback((tag: string) => {
     setActiveTags(prev => {
       const next = new Set(prev);
@@ -550,7 +511,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
     setDateFilter('all');
   }, []);
 
-  // ── Layout ──────────────────────────────────────────────────────────────
   const panelStyle: React.CSSProperties = isMobile
     ? {
         position: 'fixed', inset: 0, zIndex: 62,
@@ -607,7 +567,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
 
       <div style={panelStyle}>
 
-        {/* ── Search row ────────────────────────────────────────────────── */}
+        {/* ── Search row ── */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: '10px',
           padding: '0 14px',
@@ -686,7 +646,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
           </button>
         </div>
 
-        {/* ── Filter panel ────────────────────────────────────────────── */}
+        {/* ── Filter panel ── */}
         {showFilters && (
           <div
             className="sp-scroll"
@@ -789,7 +749,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
           </div>
         )}
 
-        {/* ── Results / Recent docs list ──────────────────────────────── */}
+        {/* ── Results ── */}
         <div
           ref={listRef}
           className="sp-scroll"
@@ -866,7 +826,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
           )}
         </div>
 
-        {/* ── Footer (desktop only) ──────────────────────────────────── */}
+        {/* ── Footer (desktop only) ── */}
         {!isMobile && (
           <div style={{
             borderTop: `1px solid ${C.divider}`,
