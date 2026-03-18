@@ -2,8 +2,6 @@ import React, { useState, useContext } from 'react';
 import { TableContext } from '../lib/htmlParser';
 import Overlay from './Overlay';
 
-// ─── ImageCard ────────────────────────────────────────────────────────────────
-
 interface ImageCardProps {
   src: string;
   alt: string;
@@ -88,12 +86,7 @@ const ImageCard: React.FC<ImageCardProps> = ({ src, alt, title, isDark = false }
       </span>
 
       {lightboxOpen && (
-        <Overlay
-          onClose={() => setLightboxOpen(false)}
-          isDark
-          zIndex={9999}
-        >
-          {/* cursor:zoom-out on the backdrop is handled by Overlay's backdrop button */}
+        <Overlay onClose={() => setLightboxOpen(false)} backdropCursor="zoom-out">
           <div style={{ position: 'relative' }}>
             <img
               src={src}
@@ -139,8 +132,6 @@ const ImageCard: React.FC<ImageCardProps> = ({ src, alt, title, isDark = false }
     </>
   );
 };
-
-// ─── Context wrapper ──────────────────────────────────────────────────────────
 
 const ImageCardWithContext: React.FC<Omit<ImageCardProps, 'isDark'>> = (props) => {
   const { isDark } = useContext(TableContext);
