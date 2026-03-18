@@ -1,12 +1,13 @@
 import React, { useState, useMemo, useEffect, useRef, lazy, Suspense, memo, startTransition } from 'react';
 import { useTheme } from '@/shared/contexts/ThemeContext';
 import { useDocuments } from '@/features/docs/hooks/useDocuments';
+import { storageSet } from '@/shared/lib/storage';
+import { CONTACTS } from '@/shared/data/contacts';
 import {
   Search, Sun, Moon, ChevronDown, ChevronRight,
   Mail, X, Home, SlidersHorizontal,
 } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
-import LucideIcon from '@/shared/components/LucideIcon';
 
 const LazyUnifiedSearchPanel = lazy(() => import('./UnifiedSearchPanel'));
 
@@ -33,6 +34,29 @@ interface NavNode {
 }
 
 interface NavSection { navSlug: string; navTitle: string; navIcon: string; }
+
+const iconCache = new Map<string, React.FC<{ size?: number; className?: string }>>();
+
+const LucideIcon: React.FC<{ name: string; size?: number; className?: string }> = memo(({ name, size = 16, className }) => {
+  const [Icon, setIcon] = useState<React.FC<{ size?: number; className?: string }> | null>(
+    () => iconCache.get(name) ?? null
+  );
+
+  useEffect(() => {
+    if (!name || iconCache.has(name)) return;
+    const pascal = name.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('');
+    import('lucide-react').then((mod) => {
+      const ic = (mod as Record<string, unknown>)[pascal] as React.FC<{ size?: number; className?: string }> | undefined;
+      if (ic) {
+        iconCache.set(name, ic);
+        setIcon(() => ic);
+      }
+    });
+  }, [name]);
+
+  if (!Icon) return <span style={{ width: size, height: size, display: 'inline-block', flexShrink: 0 }} />;
+  return <Icon size={size} className={className} />;
+});
 
 const borderStyle = (isDark: boolean) => ({
   borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
@@ -277,11 +301,6 @@ const DocLink: React.FC<{
         fontWeight: isActive ? 600 : 400,
       }}
     >
-      {/*
-        Fixed-width icon slot (w-4 h-4 = 16px).
-        Always rendered so text always starts at the same indent,
-        regardless of whether the doc has an icon or while the icon is loading.
-      */}
       <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
         {doc.icon && (
           <LucideIcon name={doc.icon} size={15} className={isDark ? 'text-white/60' : 'text-black/60'} />
@@ -320,10 +339,6 @@ const CategoryNode: React.FC<{
         }`}
       >
         <div className="flex items-center gap-2">
-          {/*
-            Fixed-width chevron slot — always takes up space so category icon
-            aligns consistently whether or not there are sub-categories.
-          */}
           <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
             {hasChildren && (
               isExpanded
@@ -331,7 +346,6 @@ const CategoryNode: React.FC<{
                 : <ChevronRight size={15} className={isDark ? 'text-white/60' : 'text-black/60'} />
             )}
           </span>
-          {/* Fixed-width category icon slot */}
           <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
             {node.icon && (
               <LucideIcon
@@ -425,15 +439,7 @@ function buildNavigationTree(docs: Doc[], searchQuery: string, activeNavSlug: st
   return root;
 }
 
-// ─── Contacts ─────────────────────────────────────────────────────────────────
-
-const CONTACTS = [
-  { href: 'https://opensophy.com/',                 title: 'Сайт',     subtitle: 'opensophy.com',       external: true  },
-  { href: 'mailto:opensophy@gmail.com',             title: 'Email',    subtitle: 'opensophy@gmail.com', external: false },
-  { href: 'https://t.me/veilosophy',                title: 'Telegram', subtitle: '@veilosophy',         external: true  },
-  { href: 'https://github.com/opensophy-projects',  title: 'GitHub',   subtitle: 'opensophy',           external: true  },
-  { href: 'https://habr.com/ru/users/opensophy/',   title: 'Habr',     subtitle: 'opensophy',           external: true  },
-];
+// ─── ContactsSection ──────────────────────────────────────────────────────────
 
 const ContactLink: React.FC<{
   href: string; title: string; subtitle: string; external: boolean; isDark: boolean;
@@ -468,23 +474,13 @@ const ContactsSection: React.FC<{ isDark: boolean; isOpen: boolean; onClose: () 
         </button>
       </div>
       <div className="flex-1 overflow-y-auto p-3 space-y-1">
-        {CONTACTS.map((c) => (
+        {CONTACTS.map((c) => (  // ← из shared/data/contacts
           <ContactLink key={c.href} {...c} isDark={isDark} />
         ))}
       </div>
     </div>
   );
 });
-
-// ─── trySetStorage ────────────────────────────────────────────────────────────
-
-function trySetStorage(key: string, value: string): void {
-  try {
-    localStorage.setItem(key, value);
-  } catch (err) {
-    if (process.env.NODE_ENV !== 'production') console.warn('[Sidebar] localStorage unavailable:', err);
-  }
-}
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
@@ -531,7 +527,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
       .filter(s => s.navSlug !== '')
       .find(s => pathname === s.navSlug || pathname.startsWith(s.navSlug + '/'));
     const detected = matched?.navSlug ?? '';
-    trySetStorage('hub:activeNavSlug', detected);
+    storageSet('hub:activeNavSlug', detected); // ← shared storage wrapper
     startTransition(() => { setActiveNavSlug(detected); });
   }, [sections]);
 
@@ -601,7 +597,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
             sections={sections}
             activeSlug={activeNavSlug}
             onSelect={(slug) => {
-              trySetStorage('hub:activeNavSlug', slug);
+              storageSet('hub:activeNavSlug', slug); // ← shared storage wrapper
               setActiveNavSlug(slug);
               setExpandedPaths(new Set());
             }}
