@@ -249,8 +249,6 @@ const Toolbar: React.FC<{
 // ─── MermaidDiagram ───────────────────────────────────────────────────────────
 
 const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = false }) => {
-  // svgHtml starts as empty string — no 'loading' state on first paint.
-  // We only show the spinner when svgHtml is empty AND status === 'loading'.
   const [svgHtml,      setSvgHtml]      = useState('');
   const [status,       setStatus]       = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorMsg,     setErrorMsg]     = useState('');
@@ -259,59 +257,27 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
   const [scale,        setScale]        = useState(1);
   const [pos,          setPos]          = useState({ x: 0, y: 0 });
 
+  // KEY FIX: keep the previous SVG visible while re-rendering for theme change.
+  // This prevents the "blank rectangle" flash when isDark toggles.
+  const [displayHtml, setDisplayHtml]  = useState('');
+
   const resetView = useCallback(() => { setScale(1); setPos({ x: 0, y: 0 }); }, []);
 
-  // ─── Render logic ─────────────────────────────────────────────────────────
-  // We pass isDark + color + code as direct arguments so we don't need them
-  // in the useCallback deps — avoiding stale closure AND unnecessary re-renders.
-  const renderDiagram = useCallback(async (dark: boolean, src: string, clr?: string) => {
-    const key = cacheKey(src, dark, clr);
-
-    if (svgCache.has(key)) {
-      // FIX: instant swap from cache — never go through 'loading' state
-      startTransition(() => {
-        setSvgHtml(svgCache.get(key) ?? '');
-        setStatus('ready');
-      });
-      return;
-    }
-
-    // Only set loading when we actually need to call mermaid.render()
-    setStatus('loading');
-    setErrorMsg('');
-
-    try {
-      const mermaid = await getMermaid();
-      mermaid.initialize(getMermaidConfig(dark, clr));
-      const { svg } = await mermaid.render(nextId(), src.trim());
-      const patched = patchSvg(svg);
-      svgCache.set(key, patched);
-      startTransition(() => {
-        setSvgHtml(patched);
-        setStatus('ready');
-      });
-    } catch (e: unknown) {
-      startTransition(() => {
-        setErrorMsg(e instanceof Error ? e.message : 'Unknown error');
-        setStatus('error');
-      });
-    }
-  }, []); // no deps — all data passed as arguments
-
-  // Single unified effect: runs on mount AND whenever any input changes.
-  // Passes current values directly, avoiding stale closure / ref timing issues.
   useEffect(() => {
     let cancelled = false;
     const key = cacheKey(code, isDark, color);
 
     if (svgCache.has(key)) {
-      // Instant from cache — no async, no cancelled check needed
-      setSvgHtml(svgCache.get(key) ?? '');
+      // Instant from cache — no flash, no loading state
+      const cached = svgCache.get(key) ?? '';
+      setSvgHtml(cached);
+      setDisplayHtml(cached);
       setStatus('ready');
       return;
     }
 
-    // Async render — guard against race conditions (fast theme toggling)
+    // Don't clear displayHtml here — keep showing the old SVG (even wrong theme)
+    // while the new one loads. This eliminates the blank rectangle.
     setStatus('loading');
     setErrorMsg('');
 
@@ -326,6 +292,7 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
         svgCache.set(key, patched);
         startTransition(() => {
           setSvgHtml(patched);
+          setDisplayHtml(patched);
           setStatus('ready');
         });
       } catch (e: unknown) {
@@ -338,12 +305,16 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
     })();
 
     return () => { cancelled = true; };
-  }, [code, color, isDark]); // all three props as deps — clean and correct
+  }, [code, color, isDark]);
 
   const hasColor    = !!color;
   const borderColor = color || tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)');
-  // FIX: transparent background while loading so no coloured rectangle appears
   const bgColor     = tc(isDark, '#0a0a0a', '#E8E7E3');
+
+  // Show the diagram wrapper as soon as we have ANY svg to display
+  // (even if it's the old-theme version still loading the new one).
+  // Only show the blank/loading state on the very first render.
+  const hasAnyContent = displayHtml !== '';
 
   const toolbarProps = {
     isDark, scale, panMode, hasColor, color,
@@ -352,9 +323,8 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
     onTogglePan: () => setPanMode(v => !v),
     onReset:     resetView,
   };
-  const viewerProps = { svgHtml, panMode, scale, setScale, pos, setPos };
+  const viewerProps = { svgHtml: displayHtml, panMode, scale, setScale, pos, setPos };
 
-  // ─── FIX: fullscreen via createPortal — never in normal document flow ─────
   const fullscreenPortal = isFullscreen
     ? createPortal(
         <div style={{ position:'fixed', inset:0, zIndex:9999, background:bgColor, display:'flex', flexDirection:'column' }}>
@@ -374,26 +344,35 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
       {fullscreenPortal}
       <div style={{
         margin: '1.5rem 0', borderRadius: 12,
-        // FIX: only paint the background when content is ready — while loading,
-        // we use a minimal transparent wrapper so no blank block appears during
-        // the async render or between theme switches.
-        border: status === 'ready' || status === 'error'
+        // Show border/bg only when we have content OR on error.
+        // On the very first load (no content yet) stay invisible.
+        border: (hasAnyContent || status === 'error')
           ? `1px solid ${borderColor}`
-          : `1px solid ${tc(isDark,'rgba(255,255,255,0.06)','rgba(0,0,0,0.06)')}`,
-        background: status === 'ready' || status === 'error' ? bgColor : 'transparent',
+          : `1px solid transparent`,
+        background: (hasAnyContent || status === 'error') ? bgColor : 'transparent',
         overflow: 'hidden', position: 'relative',
+        // Smooth transition when the background appears for the first time
+        transition: 'background 0.15s, border-color 0.15s',
       }}>
-        {hasColor && (status === 'ready') && <div style={{ height:3, background:color }} />}
+        {hasColor && hasAnyContent && <div style={{ height:3, background:color }} />}
 
-        {/* Toolbar — only when ready */}
-        {status === 'ready' && (
-          <div style={{ display:'flex', alignItems:'center', gap:4, padding:'6px 10px', borderBottom:`1px solid ${tc(isDark,'rgba(255,255,255,0.07)','rgba(0,0,0,0.07)')}`, background: tc(isDark,'rgba(255,255,255,0.02)','rgba(0,0,0,0.02)'), flexWrap:'wrap', rowGap:4 }}>
+        {/* Toolbar — show when ready OR when re-rendering (has old SVG) */}
+        {(status === 'ready' || (status === 'loading' && hasAnyContent)) && (
+          <div style={{
+            display:'flex', alignItems:'center', gap:4, padding:'6px 10px',
+            borderBottom:`1px solid ${tc(isDark,'rgba(255,255,255,0.07)','rgba(0,0,0,0.07)')}`,
+            background: tc(isDark,'rgba(255,255,255,0.02)','rgba(0,0,0,0.02)'),
+            flexWrap:'wrap', rowGap:4,
+            // Fade toolbar slightly while re-rendering to hint loading
+            opacity: status === 'loading' ? 0.6 : 1,
+            transition: 'opacity 0.2s',
+          }}>
             <Toolbar {...toolbarProps} onFullscreenToggle={() => setIsFullscreen(true)} isFullscreen={false} />
           </div>
         )}
 
-        {/* Spinner — shown while loading. Uses theme-neutral colours. */}
-        {status === 'loading' && (
+        {/* First-load spinner — only when no SVG available yet */}
+        {status === 'loading' && !hasAnyContent && (
           <div style={{ padding:'32px 24px', textAlign:'center', fontSize:13, color: tc(isDark,'rgba(255,255,255,0.35)','rgba(0,0,0,0.35)') }}>
             <div style={{ display:'inline-block', width:16, height:16, borderRadius:'50%', border:`2px solid ${tc(isDark,'rgba(255,255,255,0.15)','rgba(0,0,0,0.12)')}`, borderTopColor: tc(isDark,'rgba(255,255,255,0.6)','rgba(0,0,0,0.5)'), animation:'mermaidSpin 0.7s linear infinite', marginBottom:10 }} />
             <style>{`@keyframes mermaidSpin{to{transform:rotate(360deg)}}`}</style>
@@ -410,9 +389,14 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
           </div>
         )}
 
-        {/* SVG — always in DOM when ready so pan/zoom state is preserved */}
-        {status === 'ready' && (
-          <div style={{ maxHeight:'480px', overflow:'hidden' }}>
+        {/* SVG viewer — show whenever we have any HTML to display */}
+        {hasAnyContent && status !== 'error' && (
+          <div style={{
+            maxHeight:'480px', overflow:'hidden',
+            // While loading new theme, slightly fade the old SVG
+            opacity: status === 'loading' ? 0.5 : 1,
+            transition: 'opacity 0.2s',
+          }}>
             <DiagramViewer {...viewerProps} />
           </div>
         )}
