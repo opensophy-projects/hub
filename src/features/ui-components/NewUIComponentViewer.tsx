@@ -6,6 +6,8 @@ import { useTheme } from '@/shared/contexts/ThemeContext';
 import { X, Maximize2, Minimize2, Play, RefreshCcw, Settings, PanelRight, PanelRightClose, ChevronUp, ChevronDown } from 'lucide-react';
 import { loadComponent, getDefaultProps } from './loader';
 import { ComponentWrapper } from './ComponentWrapper';
+import { tc } from '@/shared/lib/themeUtils';
+import { useIsMobile } from '@/shared/hooks/useBreakpoint';
 import type { UniversalProps, ComponentConfig, PropDefinition } from './types';
 
 type PropValue = string | number | boolean | string[] | undefined;
@@ -53,20 +55,6 @@ const FIELD_GROUPS: Array<{
     ],
   },
 ];
-
-const tc = (isDark: boolean, d: string, l: string) => (isDark ? d : l);
-
-// ─── useIsMobile ──────────────────────────────────────────────────────────────
-
-function useIsMobile(): boolean {
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
-  useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
-  }, []);
-  return isMobile;
-}
 
 // ─── Color utils ──────────────────────────────────────────────────────────────
 
@@ -654,7 +642,6 @@ const SettingsPanel: React.FC<ComponentRenderProps & {
 };
 
 // ─── Mobile Bottom Sheet ───────────────────────────────────────────────────────
-// Nav-bar style: fixed tabs at bottom, sheet slides up on demand
 
 interface MobileBottomSheetProps {
   config: ComponentConfig;
@@ -685,7 +672,6 @@ const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
 
   return (
     <>
-      {/* Sheet overlay — closes sheet when tapping canvas */}
       {isOpen && (
         <div
           onClick={() => setActiveTab(null)}
@@ -693,10 +679,9 @@ const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
         />
       )}
 
-      {/* Sliding sheet */}
       <div style={{
         position: 'absolute',
-        bottom: 52, // above nav bar
+        bottom: 52,
         left: 0, right: 0,
         height: isOpen ? SHEET_HEIGHT : 0,
         overflow: 'hidden',
@@ -713,17 +698,14 @@ const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
           flexDirection: 'column',
           overflow: 'hidden',
         }}>
-          {/* Sheet drag handle */}
           <div style={{ display:'flex', justifyContent:'center', padding:'8px 0 4px', flexShrink:0 }}>
             <div style={{ width:36, height:4, borderRadius:2, background:tc(isDark,'rgba(255,255,255,0.2)','rgba(0,0,0,0.15)') }} />
           </div>
 
-          {/* Tab label */}
           <div style={{ padding:'0 16px 8px', fontSize:12, fontWeight:600, color:labelClr, flexShrink:0 }}>
             {activeTab === 'universal' ? 'Общие настройки' : 'Специфические настройки'}
           </div>
 
-          {/* Content */}
           <div style={{ flex:1, overflowY:'auto', WebkitOverflowScrolling:'touch' }}>
             {activeTab === 'universal' && (
               <UniversalSidebar universalProps={universalProps} onChange={onUniversalPropChange} isDark={isDark} />
@@ -735,7 +717,6 @@ const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
         </div>
       </div>
 
-      {/* Mobile nav bar */}
       <div style={{
         position: 'absolute',
         bottom: 0, left: 0, right: 0,
@@ -782,7 +763,7 @@ const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
   );
 };
 
-// ─── Fullscreen modal — desktop sidebar + mobile bottom sheet ─────────────────
+// ─── Fullscreen modal ─────────────────────────────────────────────────────────
 
 const FullscreenModal: React.FC<ComponentRenderProps & {
   config: ComponentConfig; onClose: () => void; onRefresh: () => void;
@@ -792,7 +773,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
 }> = ({ Component, componentProps, universalProps, refreshKey, isDark, config, onClose, onRefresh, onPropChange, onUniversalPropChange, onReset }) => {
   const [activeTab, setActiveTab] = useState<TabType>('universal');
   const [panelOpen, setPanelOpen] = useState(true);
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobile(); // ← shared hook
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -809,7 +790,6 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
 
   return createPortal(
     <div style={{ position:'fixed', inset:0, zIndex:9999, background:bg, display:'flex', flexDirection:'column' }}>
-      {/* Header */}
       <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', flexShrink:0, borderBottom:`1px solid ${border}`, background:headerBg }}>
         <div style={{ fontSize:13, fontWeight:600, color:tc(isDark,'rgba(255,255,255,0.7)','rgba(0,0,0,0.7)'), padding:'3px 9px', borderRadius:7, background:tc(isDark,'rgba(255,255,255,0.06)','rgba(0,0,0,0.06)'), border:`1px solid ${border}`, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:140 }}>
           {config.name}
@@ -818,7 +798,6 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
         <IconBtn onClick={onRefresh} title="Перезапустить" label="Заново" isDark={isDark}><Play size={13} /></IconBtn>
         <IconBtn onClick={onReset} title="Сбросить" label="Сбросить" isDark={isDark}><RefreshCcw size={13} /></IconBtn>
 
-        {/* Desktop-only: panel toggle */}
         {!isMobile && (
           <>
             <div style={{ width:1, height:22, background:border, margin:'0 2px', flexShrink:0 }} />
@@ -831,10 +810,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
         <IconBtn onClick={onClose} title="Свернуть (Esc)" label="Свернуть" isDark={isDark}><Minimize2 size={13} /></IconBtn>
       </div>
 
-      {/* Body */}
       <div style={{ flex:1, display:'flex', overflow:'hidden', position:'relative' }}>
-
-        {/* Canvas */}
         <div style={{
           flex: 1,
           display: 'flex',
@@ -842,13 +818,11 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
           justifyContent: 'center',
           padding: isMobile ? '24px 16px' : 48,
           overflow: 'auto',
-          // On mobile, leave room for bottom sheet nav bar
           paddingBottom: isMobile ? 68 : undefined,
         }}>
           <ComponentRender Component={Component} componentProps={componentProps} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} />
         </div>
 
-        {/* Desktop: right sidebar */}
         {!isMobile && panelOpen && (
           <div style={{ width:PANEL_W, flexShrink:0, borderLeft:`1px solid ${border}`, background:panelBg, display:'flex', flexDirection:'column', overflow:'hidden' }}>
             <SettingsContent
@@ -862,7 +836,6 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
           </div>
         )}
 
-        {/* Mobile: bottom sheet nav */}
         {isMobile && (
           <MobileBottomSheet
             config={config}
