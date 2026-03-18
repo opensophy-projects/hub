@@ -6,6 +6,7 @@ import React, {
   useCallback,
   startTransition,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { TableContext } from '../lib/htmlParser';
 import { tc } from '../lib/themeUtils';
 
@@ -423,9 +424,18 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
 
   const resetView = useCallback(() => { setScale(1); setPos({ x: 0, y: 0 }); }, []);
 
-  const render = useCallback(async () => {
-    const key = cacheKey(code, isDark, color);
+  // ─── FIX 1: no loading flash on theme toggle ──────────────────────────────
+  // isDark is tracked via ref inside render so the useCallback doesn't need
+  // it as a dependency. This way code/color changes rebuild render, but
+  // isDark changes only trigger the separate effect below (not a new render fn).
+  const isDarkRef = useRef(isDark);
+  useEffect(() => { isDarkRef.current = isDark; }, [isDark]);
 
+  const render = useCallback(async () => {
+    const dark = isDarkRef.current;
+    const key  = cacheKey(code, dark, color);
+
+    // Cache hit → instant swap, no loading spinner
     if (svgCache.has(key)) {
       startTransition(() => {
         setSvgHtml(svgCache.get(key) ?? '');
@@ -434,16 +444,15 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
       return;
     }
 
+    // Only show spinner when we really need to call mermaid.render()
     setStatus('loading');
     setErrorMsg('');
 
     try {
       const mermaid = await getMermaid();
-      mermaid.initialize(getMermaidConfig(isDark, color));
-
+      mermaid.initialize(getMermaidConfig(dark, color));
       const { svg } = await mermaid.render(nextId(), code.trim());
       const patched = patchSvg(svg);
-
       svgCache.set(key, patched);
       startTransition(() => {
         setSvgHtml(patched);
@@ -456,12 +465,21 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
         setStatus('error');
       });
     }
-  }, [code, isDark, color]);
+  // isDark intentionally NOT in deps — handled via ref + separate effect
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code, color]);
 
+  // Re-render when code or color change
   useEffect(() => {
     const t = setTimeout(render, 0);
     return () => clearTimeout(t);
   }, [render]);
+
+  // Re-render when theme changes (different cache key)
+  // Using a plain callback ref instead of adding isDark to render's deps
+  // so we avoid recreating the whole render function on every theme toggle.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { render(); }, [isDark]);
 
   const hasColor    = !!color;
   const borderColor = color || tc(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)');
@@ -481,32 +499,39 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, color, isDark = f
 
   const viewerProps = { svgHtml, panMode, scale, setScale, pos, setPos };
 
-  const Fullscreen = isFullscreen && status === 'ready' ? (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 9999,
-      background: bgColor, display: 'flex', flexDirection: 'column',
-    }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px',
-        borderBottom: `1px solid ${borderColor}`,
-        background: tc(isDark, 'rgba(255,255,255,0.02)', 'rgba(0,0,0,0.02)'),
-        flexShrink: 0, flexWrap: 'wrap', rowGap: 4,
-      }}>
-        <ToolbarContent
-          {...toolbarCommonProps}
-          onFullscreenToggle={() => { setIsFullscreen(false); resetView(); }}
-          isFullscreen
-        />
-      </div>
-      <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-        <DiagramViewer {...viewerProps} isFullscreen />
-      </div>
-    </div>
-  ) : null;
+  // ─── FIX 2: fullscreen via createPortal ───────────────────────────────────
+  // Previously rendered as a child of <> which left the styled div in the
+  // normal document flow, producing a blank coloured rectangle at the bottom
+  // of the page whenever isFullscreen was (or had been) true.
+  const fullscreenPortal = isFullscreen
+    ? createPortal(
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: bgColor, display: 'flex', flexDirection: 'column',
+        }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px',
+            borderBottom: `1px solid ${borderColor}`,
+            background: tc(isDark, 'rgba(255,255,255,0.02)', 'rgba(0,0,0,0.02)'),
+            flexShrink: 0, flexWrap: 'wrap', rowGap: 4,
+          }}>
+            <ToolbarContent
+              {...toolbarCommonProps}
+              onFullscreenToggle={() => { setIsFullscreen(false); resetView(); }}
+              isFullscreen
+            />
+          </div>
+          <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+            <DiagramViewer {...viewerProps} isFullscreen />
+          </div>
+        </div>,
+        document.body,
+      )
+    : null;
 
   return (
     <>
-      {Fullscreen}
+      {fullscreenPortal}
       <div style={{
         margin: '1.5rem 0', borderRadius: 12,
         border: `1px solid ${borderColor}`,
