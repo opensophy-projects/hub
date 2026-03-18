@@ -192,27 +192,55 @@ function getMermaidConfig(isDark: boolean, color?: string) {
     taskBorderColor: color || 'rgba(255,255,255,0.25)',
     taskTextColor: '#e8e8e8', taskTextOutsideColor: '#e8e8e8',
   };
+  // Light theme: all node fills stay in the app's beige palette (#E8E7E3 family).
+  // We use theme:'base' so mermaid applies themeVariables without overriding with
+  // its own white defaults (which 'default' theme injects via hardcoded CSS).
   const lightVars = {
-    primaryColor: '#e8e7f0', primaryTextColor: '#1a1a2e',
-    primaryBorderColor: color || 'rgba(0,0,0,0.2)',
-    lineColor: 'rgba(0,0,0,0.5)', secondaryColor: '#f0eff8',
-    tertiaryColor: '#e0dff0', background: '#E8E7E3',
-    mainBkg: '#eeecf8', nodeBorder: color || 'rgba(0,0,0,0.25)',
-    clusterBkg: 'rgba(0,0,0,0.04)', clusterBorder: 'rgba(0,0,0,0.12)',
-    titleColor: '#1a1a2e', edgeLabelBackground: '#f5f4fc',
-    textColor: '#1a1a2e', labelTextColor: '#1a1a2e',
-    actorBkg: '#eeecf8', actorBorder: color || 'rgba(0,0,0,0.2)',
-    actorTextColor: '#1a1a2e', actorLineColor: 'rgba(0,0,0,0.4)',
-    signalColor: 'rgba(0,0,0,0.7)', signalTextColor: '#1a1a2e',
-    gridColor: 'rgba(0,0,0,0.1)',
-    section0: '#eeecf8', section1: '#e4e2f4',
-    taskBkgColor: color || '#c7d2fe',
-    taskBorderColor: color || 'rgba(0,0,0,0.18)',
-    taskTextColor: '#1a1a2e', taskTextOutsideColor: '#1a1a2e',
+    // Base palette — beige tones only, no white
+    primaryColor:       '#d8d7d0',   // node fill — slightly darker than app bg
+    primaryTextColor:   '#1a1a1a',
+    primaryBorderColor: color || '#a8a7a0',
+    lineColor:          '#7a7a72',
+    secondaryColor:     '#cecdC7',
+    tertiaryColor:      '#d0cfc9',
+    // Background / canvas
+    background:         '#E8E7E3',
+    mainBkg:            '#d8d7d0',   // same as primaryColor
+    nodeBorder:         color || '#a8a7a0',
+    // Clusters
+    clusterBkg:         '#e0dfd9',
+    clusterBorder:      '#b0afa8',
+    // Text & labels
+    titleColor:         '#1a1a1a',
+    edgeLabelBackground:'#E8E7E3',
+    textColor:          '#1a1a1a',
+    labelTextColor:     '#1a1a1a',
+    labelBoxBkgColor:   '#d8d7d0',
+    labelBoxBorderColor: color || '#a8a7a0',
+    // Sequence diagram actors
+    actorBkg:           '#d8d7d0',
+    actorBorder:        color || '#a8a7a0',
+    actorTextColor:     '#1a1a1a',
+    actorLineColor:     '#7a7a72',
+    signalColor:        '#4a4a44',
+    signalTextColor:    '#1a1a1a',
+    // Gantt
+    gridColor:          '#c8c7c0',
+    section0:           '#d8d7d0',
+    section1:           '#cecdC7',
+    taskBkgColor:       color || '#c8c7c0',
+    taskBorderColor:    color || '#a8a7a0',
+    taskTextColor:      '#1a1a1a',
+    taskTextOutsideColor: '#1a1a1a',
+    taskTextLightColor: '#1a1a1a',
+    // Pie / other
+    pie1: '#c8c7c0', pie2: '#b8b7b0', pie3: '#d0cfc9',
+    pie4: '#a8a7a0', pie5: '#c0bfb9', pie6: '#b0afa8',
+    // fontFamily already in root config
   };
   return {
     startOnLoad: false,
-    theme: isDark ? 'dark' as const : 'default' as const,
+    theme: isDark ? 'dark' as const : 'base' as const,
     securityLevel: 'loose' as const,
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     flowchart: { useMaxWidth: false, htmlLabels: true, curve: 'basis', padding: 20 },
