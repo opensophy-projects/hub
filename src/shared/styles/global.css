@@ -126,7 +126,6 @@ body {
 .prose figcaption { margin-top: 0.5rem; text-align: center; font-size: 0.8rem; font-style: italic; line-height: 1.4; color: rgba(0, 0, 0, 0.55); }
 .dark .prose figcaption { color: rgba(255, 255, 255, 0.55); }
 
-/* img — карточка управляет через inline styles, базовые стили минимальны */
 .prose img { max-width: 100%; height: auto; display: block; }
 
 /* ── HR ── */
@@ -144,9 +143,10 @@ body {
 .prose details { margin: 1rem 0; overflow: visible; border: 1px solid rgba(0, 0, 0, 0.12); border-radius: 0.5rem; background-color: rgba(0, 0, 0, 0.025); }
 .dark .prose details { border-color: rgba(255, 255, 255, 0.18) !important; background-color: rgba(255, 255, 255, 0.04) !important; }
 
-.prose details summary { cursor: pointer; font-weight: 600; padding: 0.75rem 1rem; border-radius: 0.5rem 0.5rem 0 0; user-select: none; list-style: none; display: flex; align-items: center; gap: 0.5rem; color: rgba(0, 0, 0, 0.85); transition: background-color 0.15s; }
+.prose details summary { cursor: pointer; font-weight: 600; padding: 0.75rem 1rem; border-radius: 0.5rem 0.5rem 0 0; user-select: none; list-style: none; display: flex; align-items: center; gap: 0.5rem; color: rgba(0, 0, 0, 0.85); }
 .dark .prose details summary { color: rgba(255, 255, 255, 0.92) !important; }
 .prose details summary::-webkit-details-marker { display: none; }
+/* Only transform transition — safe for theme switch */
 .prose details summary::before { content: '▶'; display: inline-block; flex-shrink: 0; transition: transform 0.2s; font-size: 0.7em; opacity: 0.55; }
 .prose details[open] summary::before { transform: rotate(90deg); }
 .prose details summary:hover { background-color: rgba(0, 0, 0, 0.05); }
@@ -234,8 +234,6 @@ html:not(.dark) .hljs-symbol, html:not(.dark) .hljs-bullet, html:not(.dark) .hlj
 html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .hljs-title { color: #4078f2; }
 
 /* ── KaTeX ── */
-/* katex.min.css подключается первым импортом в этом файле */
-
 .katex-block {
   display: block;
   overflow-x: auto;
@@ -259,7 +257,6 @@ html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .
 .katex-block::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
 .dark .katex-block::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); }
 
-/* Inline: no box, flows naturally in text */
 .katex-inline {
   display: inline;
   vertical-align: middle;
@@ -273,3 +270,44 @@ html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .
 .dark .katex-error {
   color: #f87171;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   INSTANT THEME SWITCHING — no color/background transitions anywhere.
+   Any `transition` that involves background-color, color, border-color,
+   or `all`/`transition-colors` will cause elements to lag 1 frame behind
+   the html.dark class change, creating a visible flash.
+
+   Rule: kill ALL transitions globally, then selectively restore ONLY
+   geometry transitions (transform, opacity) that are safe.
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* 1. Nuclear option: disable every transition on every element */
+*, *::before, *::after {
+  transition-property: none !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+}
+
+/* 2. Restore ONLY transform — used by chevrons, card hover lift, dropdown appear */
+.transition-transform,
+[class*="rotate-"] {
+  transition-property: transform !important;
+  transition-duration: 0.15s !important;
+  transition-timing-function: ease !important;
+}
+
+/* 3. Details summary arrow (only transform, not color) */
+.prose details summary::before {
+  transition-property: transform !important;
+  transition-duration: 0.2s !important;
+  transition-timing-function: ease !important;
+}
+
+/* 4. Card hover — lift only */
+.sophy-card {
+  transition-property: transform, box-shadow !important;
+  transition-duration: 0.15s !important;
+  transition-timing-function: ease !important;
+}
+
+/* 5. Progress bar width — direct DOM mutation, no transition needed anyway */
