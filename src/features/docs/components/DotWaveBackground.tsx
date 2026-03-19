@@ -81,25 +81,19 @@ function createShader(gl: WebGLRenderingContext, type: number, source: string): 
   gl.shaderSource(shader, source);
   gl.compileShader(shader);
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error('Shader compile error:', gl.getShaderInfoLog(shader));
     gl.deleteShader(shader);
     return null;
   }
   return shader;
 }
 
-function createProgram(
-  gl: WebGLRenderingContext,
-  vert: WebGLShader,
-  frag: WebGLShader
-): WebGLProgram | null {
+function createProgram(gl: WebGLRenderingContext, vert: WebGLShader, frag: WebGLShader): WebGLProgram | null {
   const program = gl.createProgram();
   if (!program) return null;
   gl.attachShader(program, vert);
   gl.attachShader(program, frag);
   gl.linkProgram(program);
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    console.error('Program link error:', gl.getProgramInfoLog(program));
     gl.deleteProgram(program);
     return null;
   }
@@ -107,10 +101,9 @@ function createProgram(
 }
 
 const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef    = useRef<number>(0);
-  const themeRef  = useRef(isDark);
-  // Track wall-clock time paused while tab is hidden, so animation doesn't jump
+  const canvasRef      = useRef<HTMLCanvasElement>(null);
+  const rafRef         = useRef<number>(0);
+  const themeRef       = useRef(isDark);
   const pausedAtRef    = useRef<number | null>(null);
   const totalPausedRef = useRef<number>(0);
 
@@ -122,26 +115,20 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // ── WebGL init ────────────────────────────────────────────────────────────
-    let gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: false });
+    let gl: WebGLRenderingContext | null = canvas.getContext('webgl', {
+      alpha: true,
+      premultipliedAlpha: false,
+    });
     if (!gl) return;
 
-    // Compile shaders helper — called on init and on context restore
-    function buildGL(ctx: WebGLRenderingContext): {
-      program: WebGLProgram;
-      buf: WebGLBuffer;
-      uTime: WebGLUniformLocation | null;
-      uResolution: WebGLUniformLocation | null;
-      uShadow: WebGLUniformLocation | null;
-      uHighlight: WebGLUniformLocation | null;
-    } | null {
-      const vert = createShader(ctx, ctx.VERTEX_SHADER, VERTEX_SHADER);
+    function buildGL(ctx: WebGLRenderingContext) {
+      const vert = createShader(ctx, ctx.VERTEX_SHADER,   VERTEX_SHADER);
       const frag = createShader(ctx, ctx.FRAGMENT_SHADER, FRAGMENT_SHADER);
       if (!vert || !frag) return null;
       const program = createProgram(ctx, vert, frag);
       if (!program) return null;
 
-      const positions = new Float32Array([-1, -1,  1, -1, -1,  1,  1,  1]);
+      const positions = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
       const buf = ctx.createBuffer()!;
       ctx.bindBuffer(ctx.ARRAY_BUFFER, buf);
       ctx.bufferData(ctx.ARRAY_BUFFER, positions, ctx.STATIC_DRAW);
@@ -150,7 +137,6 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
       ctx.enableVertexAttribArray(aPos);
       ctx.vertexAttribPointer(aPos, 2, ctx.FLOAT, false, 0, 0);
 
-      // Cleanup individual shaders — they're linked into program now
       ctx.deleteShader(vert);
       ctx.deleteShader(frag);
 
@@ -167,20 +153,20 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
     let gpu = buildGL(gl);
     if (!gpu) return;
 
-    // ── Resize ────────────────────────────────────────────────────────────────
     const resize = () => {
+      if (!gl) return;
       const dpr = window.devicePixelRatio || 1;
       canvas.width  = canvas.offsetWidth  * dpr;
       canvas.height = canvas.offsetHeight * dpr;
-      gl!.viewport(0, 0, canvas.width, canvas.height);
+      gl.viewport(0, 0, canvas.width, canvas.height);
     };
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
 
-    const startTime = performance.now();
+    const startTime   = performance.now();
+    let firstFrame    = true;
 
-    // ── Render loop ───────────────────────────────────────────────────────────
     const render = () => {
       if (!gl || !gpu) return;
 
@@ -196,23 +182,29 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
 
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      // Clear to fully transparent — the solid background color comes from
+      // the parent div in DocHero (heroBg), never from the canvas itself.
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+      // Reveal canvas only after first frame — eliminates the white rectangle
+      // that appears during the ~1 frame gap before WebGL first draws.
+      if (firstFrame) {
+        canvas.style.opacity = '1';
+        firstFrame = false;
+      }
 
       rafRef.current = requestAnimationFrame(render);
     };
 
     render();
 
-    // ── Pause when tab is hidden ──────────────────────────────────────────────
     const onVisibility = () => {
       if (document.hidden) {
-        // Tab hidden — stop loop and record when we paused
         cancelAnimationFrame(rafRef.current);
         pausedAtRef.current = performance.now();
       } else {
-        // Tab visible — accumulate paused duration and restart loop
         if (pausedAtRef.current !== null) {
           totalPausedRef.current += performance.now() - pausedAtRef.current;
           pausedAtRef.current = null;
@@ -222,27 +214,25 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
     };
     document.addEventListener('visibilitychange', onVisibility);
 
-    // ── WebGL context lost / restored ─────────────────────────────────────────
     const onContextLost = (e: Event) => {
       e.preventDefault();
       cancelAnimationFrame(rafRef.current);
     };
-
     const onContextRestored = () => {
-      // Re-acquire context reference and rebuild GPU objects
       const newCtx = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: false });
       if (!newCtx) return;
       gl = newCtx;
       gpu = buildGL(gl);
       if (!gpu) return;
       resize();
+      firstFrame = true;
+      canvas.style.opacity = '0';
       render();
     };
 
     canvas.addEventListener('webglcontextlost',     onContextLost);
     canvas.addEventListener('webglcontextrestored', onContextRestored);
 
-    // ── Cleanup ───────────────────────────────────────────────────────────────
     return () => {
       cancelAnimationFrame(rafRef.current);
       ro.disconnect();
@@ -254,7 +244,7 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
         gl.deleteProgram(gpu.program);
       }
     };
-  }, []); // only once — isDark handled via ref
+  }, []);
 
   return (
     <canvas
@@ -262,14 +252,14 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
       style={{
         position: 'absolute',
         inset: 0,
-        top: 0,
-        left: 0,
         width: '100%',
         height: '100%',
         display: 'block',
         pointerEvents: 'none',
-        // Prevent layout thrash: this canvas never affects surrounding layout
         contain: 'strict',
+        // Hidden until first WebGL frame is drawn (set to 1 in render loop above).
+        // The parent div already has the correct heroBg color, so no white flash.
+        opacity: 0,
       }}
     />
   );
