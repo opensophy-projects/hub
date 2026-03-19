@@ -1,4 +1,4 @@
-import React, { useState, useMemo, Suspense, lazy, useEffect, useRef } from 'react';
+import React, { useState, useMemo, Suspense, lazy, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
 import Sidebar from '@/features/navigation/components/Sidebar';
@@ -228,12 +228,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const activeId       = useActiveHeading(toc);
   const isDesktop      = useIsDesktop();
 
-  // hasToc latched via ref: once headings are found, we never hide the TOC panel again.
-  // This prevents the 100ms setTimeout in useTableOfContents from causing a visible
-  // layout shift where the panel appears after the page has already painted.
-  const hasTocRef = useRef(false);
-  if (toc.length > 0) hasTocRef.current = true;
-  const hasToc = hasTocRef.current;
+  const hasToc = toc.length > 0;
 
   const htmlContent = useMemo(() => doc.content || '', [doc.content]);
 
@@ -251,15 +246,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
     () => ({ onTableClick: (html: string) => setFullscreenTableHtml(html), isDark }),
     [isDark]
   );
-
-  // No transitions on margins at all — sidebar and TOC are both fixed panels,
-  // not drawers. They are either present or absent from the start.
-  const mainStyle: React.CSSProperties = {
-    marginLeft:   isDesktop ? '20rem' : '0',
-    marginRight:  hasToc && isDesktop ? TOC_PANEL_WIDTH : '0',
-    marginBottom: isDesktop ? '0' : '3.5rem',
-    transition:   'none',
-  };
 
   return (
     <div style={{ minHeight: '100vh' }}>
@@ -332,7 +318,12 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
 
       <main
         className={`min-h-screen ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}
-        style={mainStyle}
+        style={{
+          marginLeft:   isDesktop ? '20rem' : '0',
+          marginRight:  hasToc && isDesktop ? TOC_PANEL_WIDTH : '0',
+          marginBottom: isDesktop ? '0' : '3.5rem',
+          transition:   'none',
+        }}
       >
         <DocHero doc={doc} isDark={isDark} readTime={readTime} markdownContent={doc.content} />
         <article className="flex-1 pb-12 w-full" style={{ paddingLeft: '2rem', paddingRight: '2rem', paddingTop: '2rem' }}>
