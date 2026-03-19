@@ -493,22 +493,25 @@ const processElement = (
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export const parseHtmlToReact = (html: string): React.ReactNode[] => {
-  // Step 1: extract katex blocks BEFORE DOMPurify strips their SVG/MathML
-  const katexStore: Array<{ cls: string; inner: string }> = [];
-  const withPlaceholders = html
-    // div.katex-block
-    .replace(/<div[^>]*class="katex-block[^"]*"[^>]*>([\s\S]*?)<\/div>/g, (_match, inner) => {
-      katexStore.push({ cls: 'katex-block not-prose', inner });
-      return `<div data-katex-idx="${katexStore.length - 1}"></div>`;
-    })
-    // span.katex-inline (inside <p> tags)
-    .replace(/<span[^>]*class="katex-inline[^"]*"[^>]*>([\s\S]*?)<\/span>/g, (_match, inner) => {
-      katexStore.push({ cls: 'katex-inline', inner });
-      return `<span data-katex-idx="${katexStore.length - 1}"></span>`;
-    });
+  // Step 1: parse raw HTML into DOM to correctly extract nested katex elements
+  const rawDoc = new DOMParser().parseFromString(html, 'text/html');
 
-  // Step 2: sanitize the rest normally
-  const sanitized = DOMPurify.sanitize(withPlaceholders, {
+  // Step 2: replace katex elements with indexed placeholders before DOMPurify
+  const katexStore: Array<{ tag: 'div' | 'span'; cls: string; inner: string }> = [];
+
+  rawDoc.querySelectorAll('div.katex-block, span.katex-inline').forEach((el) => {
+    const tag = el.tagName.toLowerCase() as 'div' | 'span';
+    const cls = el.className;
+    const inner = el.innerHTML;
+    const idx = katexStore.push({ tag, cls, inner }) - 1;
+    // Replace element with a simple placeholder the sanitizer won't strip
+    const placeholder = rawDoc.createElement(tag);
+    placeholder.setAttribute('data-katex-idx', String(idx));
+    el.replaceWith(placeholder);
+  });
+
+  // Step 3: sanitize the placeholder-only HTML (no katex SVG/MathML inside)
+  const sanitized = DOMPurify.sanitize(rawDoc.body.innerHTML, {
     ALLOWED_TAGS: [...ALLOWED_TAGS],
     ALLOWED_ATTR: [...ALLOWED_ATTR, 'data-katex-idx'],
     ALLOW_DATA_ATTR: true,
@@ -527,14 +530,13 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       const element = node as Element;
       const tagName = element.tagName.toLowerCase();
 
-      // Step 3: restore katex placeholders with trusted innerHTML
+      // Step 4: restore katex from store using trusted innerHTML
       const katexIdx = element.getAttribute('data-katex-idx');
       if (katexIdx !== null) {
         const stored = katexStore[Number.parseInt(katexIdx, 10)];
         if (stored) {
-          const Tag = tagName as 'div' | 'span';
           elements.push(
-            React.createElement(Tag, {
+            React.createElement(stored.tag, {
               key,
               className: stored.cls,
               dangerouslySetInnerHTML: { __html: stored.inner },
