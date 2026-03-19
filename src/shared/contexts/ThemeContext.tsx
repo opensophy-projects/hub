@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect, useCallback } from 'react';
 
 interface ThemeContextType {
   isDark: boolean;
-  toggleTheme: () => void;
+  toggleTheme: (event?: React.MouseEvent) => void;
   isSidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   isSearchOpen: boolean;
@@ -12,27 +12,19 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const getInitialTheme = (): boolean => {
-  if (globalThis.window === undefined) return true;
-  return globalThis.localStorage.getItem('theme') !== 'light';
+  if (typeof window === 'undefined') return true;
+  // html element already has the class applied by the inline script in <head>
+  return document.documentElement.classList.contains('dark');
 };
 
-
-const EVENTS = {
-  SIDEBAR: 'hub:sidebar',
-  SEARCH: 'hub:search',
-  THEME: 'hub:theme',
-} as const;
-
-const dispatch = (event: string, detail: unknown) => {
-  globalThis.window?.dispatchEvent(new CustomEvent(event, { detail }));
-};
-
-const applyDarkClass = (isDark: boolean) => {
+const applyTheme = (isDark: boolean) => {
   if (typeof document === 'undefined') return;
   if (isDark) {
-    document.body.classList.add('dark');
+    document.documentElement.classList.add('dark');
+    document.documentElement.style.colorScheme = 'dark';
   } else {
-    document.body.classList.remove('dark');
+    document.documentElement.classList.remove('dark');
+    document.documentElement.style.colorScheme = 'light';
   }
 };
 
@@ -41,45 +33,67 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
+  // Sync html class whenever isDark changes
   useEffect(() => {
-    applyDarkClass(isDark);
+    applyTheme(isDark);
   }, [isDark]);
 
+  const toggleTheme = useCallback((event?: React.MouseEvent) => {
+    const next = !isDark;
+    localStorage.setItem('theme', next ? 'dark' : 'light');
 
-  useEffect(() => {
-    const onSidebar = (e: Event) => setIsSidebarOpen((e as CustomEvent<boolean>).detail);
-    const onSearch = (e: Event) => setIsSearchOpen((e as CustomEvent<boolean>).detail);
-    const onTheme = (e: Event) => setIsDark((e as CustomEvent<boolean>).detail);
+    // View Transitions API with circular reveal from click point
+    if (
+      typeof document !== 'undefined' &&
+      'startViewTransition' in document &&
+      event
+    ) {
+      const x = event.clientX;
+      const y = event.clientY;
+      const maxRadius = Math.hypot(
+        Math.max(x, window.innerWidth - x),
+        Math.max(y, window.innerHeight - y)
+      );
 
-    globalThis.window?.addEventListener(EVENTS.SIDEBAR, onSidebar);
-    globalThis.window?.addEventListener(EVENTS.SEARCH, onSearch);
-    globalThis.window?.addEventListener(EVENTS.THEME, onTheme);
+      (document as Document & { startViewTransition: (cb: () => void) => { ready: Promise<void> } })
+        .startViewTransition(() => {
+          setIsDark(next);
+          applyTheme(next);
+        })
+        .ready.then(() => {
+          const clipPath = [
+            `circle(0px at ${x}px ${y}px)`,
+            `circle(${maxRadius}px at ${x}px ${y}px)`,
+          ];
+          document.documentElement.animate(
+            { clipPath: next ? clipPath : [...clipPath].reverse() },
+            {
+              duration: 380,
+              easing: 'ease-in-out',
+              pseudoElement: next
+                ? '::view-transition-new(root)'
+                : '::view-transition-old(root)',
+            }
+          );
+        })
+        .catch(() => {
+          // View transition failed — apply immediately
+          setIsDark(next);
+          applyTheme(next);
+        });
+    } else {
+      setIsDark(next);
+      applyTheme(next);
+    }
+  }, [isDark]);
 
-    return () => {
-      globalThis.window?.removeEventListener(EVENTS.SIDEBAR, onSidebar);
-      globalThis.window?.removeEventListener(EVENTS.SEARCH, onSearch);
-      globalThis.window?.removeEventListener(EVENTS.THEME, onTheme);
-    };
+  const setSidebarOpen = useCallback((open: boolean) => {
+    setIsSidebarOpen(open);
   }, []);
 
-  const toggleTheme = () => {
-    setIsDark((prev) => {
-      const next = !prev;
-      globalThis.localStorage.setItem('theme', next ? 'dark' : 'light');
-      dispatch(EVENTS.THEME, next);
-      return next;
-    });
-  };
-
-  const setSidebarOpen = (open: boolean) => {
-    setIsSidebarOpen(open);
-    dispatch(EVENTS.SIDEBAR, open);
-  };
-
-  const setSearchOpen = (open: boolean) => {
+  const setSearchOpen = useCallback((open: boolean) => {
     setIsSearchOpen(open);
-    dispatch(EVENTS.SEARCH, open);
-  };
+  }, []);
 
   const value = useMemo<ThemeContextType>(
     () => ({
@@ -90,7 +104,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       isSearchOpen,
       setSearchOpen,
     }),
-    [isDark, isSidebarOpen, isSearchOpen]
+    [isDark, toggleTheme, isSidebarOpen, setSidebarOpen, isSearchOpen, setSearchOpen]
   );
 
   return (
