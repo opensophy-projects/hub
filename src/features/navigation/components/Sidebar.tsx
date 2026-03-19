@@ -5,7 +5,7 @@ import { storageSet } from '@/shared/lib/storage';
 import { CONTACTS } from '@/shared/data/contacts';
 import {
   Search, Sun, Moon, ChevronDown, ChevronRight,
-  Mail, X, Home, SlidersHorizontal,
+  Mail, X, Home, SlidersHorizontal, AlertTriangle,
 } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 
@@ -483,6 +483,49 @@ const ContactsSection: React.FC<{ isDark: boolean; isOpen: boolean; onClose: () 
   );
 });
 
+// ─── ManifestError ────────────────────────────────────────────────────────────
+
+// FIX: UI fallback shown in the sidebar when manifest.json fails to load,
+// instead of silently displaying an empty document list.
+const ManifestError: React.FC<{ isDark: boolean; error: string }> = ({ isDark, error }) => (
+  <div
+    style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: '0.75rem',
+      padding: '2rem 1.5rem',
+      textAlign: 'center',
+    }}
+  >
+    <AlertTriangle
+      size={28}
+      style={{ color: isDark ? 'rgba(251,191,36,0.7)' : 'rgba(180,130,0,0.8)', flexShrink: 0 }}
+    />
+    <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 600, color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)' }}>
+      Не удалось загрузить список документов
+    </p>
+    <p style={{ margin: 0, fontSize: '0.72rem', color: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.4)', wordBreak: 'break-all' }}>
+      {error}
+    </p>
+    <button
+      onClick={() => globalThis.window?.location?.reload()}
+      style={{
+        marginTop: '0.25rem',
+        padding: '0.35rem 0.9rem',
+        borderRadius: '7px',
+        border: `1px solid ${isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'}`,
+        background: 'transparent',
+        color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)',
+        fontSize: '0.75rem',
+        cursor: 'pointer',
+      }}
+    >
+      Обновить страницу
+    </button>
+  </div>
+);
+
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
 interface SidebarProps {
@@ -491,14 +534,14 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
   const { isDark, toggleTheme, isSidebarOpen, setSidebarOpen } = useTheme();
-  const { manifest: docs } = useDocuments();
+  // FIX: destructure error from useDocuments so we can display it in the sidebar
+  const { manifest: docs, loading, error } = useDocuments();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [showContacts, setShowContacts] = useState(false);
   const [activeNavSlug, setActiveNavSlug] = useState<string>('');
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
 
-  // isDesktop is computed once synchronously — no useState + useEffect to avoid flicker
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
 
   useEffect(() => {
@@ -571,8 +614,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
   const handleClose = () => setSidebarOpen(false);
   const handleToggleTheme = (e: React.MouseEvent) => { toggleTheme(e); };
 
-  // On desktop the sidebar is always rendered and visible — no overlay, no animation
-  // On mobile it's conditionally rendered with overlay
   if (!isSidebarOpen && !isDesktop) return null;
 
   return (
@@ -611,31 +652,47 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
         )}
 
         <div className="flex-1 overflow-y-auto p-3">
-          <nav className="space-y-2">
-            {navTree.docs.length > 0 && (
-              <div className="space-y-1 mb-4">
-                {[...navTree.docs].sort((a, b) => a.title.localeCompare(b.title)).map((doc) => (
-                  <DocLink
-                    key={doc.id}
-                    doc={doc}
+          {/* FIX: show error state instead of empty list when manifest fails */}
+          {error ? (
+            <ManifestError isDark={isDark} error={error} />
+          ) : loading ? (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '2rem',
+              fontSize: '0.8rem',
+              color: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
+            }}>
+              Загрузка...
+            </div>
+          ) : (
+            <nav className="space-y-2">
+              {navTree.docs.length > 0 && (
+                <div className="space-y-1 mb-4">
+                  {[...navTree.docs].sort((a, b) => a.title.localeCompare(b.title)).map((doc) => (
+                    <DocLink
+                      key={doc.id}
+                      doc={doc}
+                      isDark={isDark}
+                      isActive={currentDocSlug === doc.slug}
+                    />
+                  ))}
+                </div>
+              )}
+              {Object.entries(navTree.children)
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([key, node]) => (
+                  <CategoryNode
+                    key={key} node={node} path={key}
+                    expandedPaths={expandedPaths} onToggle={togglePath}
+                    onDocClick={() => {}}
                     isDark={isDark}
-                    isActive={currentDocSlug === doc.slug}
+                    currentDocSlug={currentDocSlug}
                   />
                 ))}
-              </div>
-            )}
-            {Object.entries(navTree.children)
-              .sort(([a], [b]) => a.localeCompare(b))
-              .map(([key, node]) => (
-                <CategoryNode
-                  key={key} node={node} path={key}
-                  expandedPaths={expandedPaths} onToggle={togglePath}
-                  onDocClick={() => {}}
-                  isDark={isDark}
-                  currentDocSlug={currentDocSlug}
-                />
-              ))}
-          </nav>
+            </nav>
+          )}
         </div>
       </aside>
 
