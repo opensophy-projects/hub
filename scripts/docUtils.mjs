@@ -322,15 +322,15 @@ function handleStepsBlock(trimmed, lines, i, codeBlocks, output) {
 }
 
 function handleMathBlock(trimmed, lines, i, output) {
-  // :::math          → inline / paragraph
-  // :::math[display] → display / block centered
+  // :::math          → inline style (smaller, left-aligned)
+  // :::math[display] → display style (centered, larger)
   const match = trimmed.match(/^:::math(?:\[([^\]]*)\])?\s*$/);
   if (!match) return null;
 
   const displayMode = (match[1] ?? '').trim() === 'display';
 
-  // Simple body collector: gather lines until a standalone ::: (depth-unaware,
-  // because LaTeX source never contains ::: as a meaningful token)
+  // Simple body collector: gather lines until standalone :::
+  // (LaTeX never uses ::: so no depth tracking needed)
   const bodyLines = [];
   let j = i + 1;
   while (j < lines.length && lines[j].trim() !== ':::') {
@@ -341,13 +341,16 @@ function handleMathBlock(trimmed, lines, i, output) {
   const tex      = bodyLines.join('\n').trim();
   const rendered = renderKatex(tex, displayMode);
 
-  if (displayMode) {
-    output.push(`<div class="katex-block not-prose">${rendered}</div>`);
-  } else {
-    output.push(`<p><span class="katex-inline">${rendered}</span></p>`);
-  }
+  // Both modes use div.katex-block so the DOM extractor in htmlParser
+  // can find and restore them before DOMPurify strips SVG/MathML.
+  // display=false gets an extra class for left-aligned inline styling.
+  const cls = displayMode
+    ? 'katex-block not-prose'
+    : 'katex-block katex-block--inline not-prose';
 
-  // j points at the closing :::, so next line is j+1
+  output.push(`<div class="${cls}">${rendered}</div>`);
+
+  // j points at closing :::, next line is j+1
   return j + 1;
 }
 
