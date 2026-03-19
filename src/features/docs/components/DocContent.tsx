@@ -46,8 +46,7 @@ const SANITIZE_ATTR = [
   'href', 'src', 'alt', 'title', 'class', 'id',
   'data-language', 'data-lang', 'data-alert-type',
   'data-cols', 'data-layout', 'data-status', 'data-title',
-  'data-color', 'data-icon', 'data-code',
-  'data-border-color',
+  'data-color', 'data-icon',
   'type', 'checked', 'disabled', 'open', 'style', 'align',
 ];
 
@@ -263,7 +262,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const toc            = useTableOfContents(doc);
   const scrollProgress = useScrollProgress();
   const activeId       = useActiveHeading(toc);
-  const isDesktop      = useIsDesktop(); // ← shared hook
+  const isDesktop      = useIsDesktop();
 
   const htmlContent = useMemo(() => {
     if (!doc.content) return '';
