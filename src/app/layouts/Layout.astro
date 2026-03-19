@@ -1,6 +1,7 @@
 ---
 import '@/shared/styles/global.css';
 import 'katex/dist/katex.min.css';
+import { ClientRouter } from 'astro:transitions';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import ErrorBoundary from '@/shared/components/ErrorBoundary';
 import TopNavbar from '@/features/navigation/components/MobileNavbar';
@@ -42,25 +43,19 @@ const imageUrl = image
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Theme + body background: must run before any paint to eliminate FOUC.
-         Sets both the html class AND the body background color immediately,
-         so there is never a white flash between page navigations. -->
     <script is:inline>
       (function () {
         var theme = localStorage.getItem('theme');
         if (!theme) theme = 'dark';
-
-        if (theme === 'dark') {
+        var dark = theme !== 'light';
+        if (dark) {
           document.documentElement.classList.add('dark');
           document.documentElement.style.colorScheme = 'dark';
-          // Match bg-[#0a0a0a] used by DocContent main in dark mode
-          document.documentElement.style.backgroundColor = '#0a0a0a';
         } else {
           document.documentElement.classList.remove('dark');
           document.documentElement.style.colorScheme = 'light';
-          // Match bg-[#E8E7E3] used by DocContent main in light mode
-          document.documentElement.style.backgroundColor = '#E8E7E3';
         }
+        document.documentElement.style.backgroundColor = dark ? '#0a0a0a' : '#E8E7E3';
       })();
     </script>
 
@@ -92,6 +87,9 @@ const imageUrl = image
     
     <link rel="canonical" href={fullUrl} />
     <link rel="icon" href="/favicon.png" />
+
+    <!-- Astro 6: ClientRouter replaces ViewTransitions -->
+    <ClientRouter />
     
     <style is:global>
       @font-face {
@@ -113,6 +111,13 @@ const imageUrl = image
         scroll-behavior: smooth;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+      }
+
+      html:not(.dark) {
+        background-color: #E8E7E3;
+      }
+      html.dark {
+        background-color: #0a0a0a;
       }
 
       body {
@@ -144,6 +149,30 @@ const imageUrl = image
     </ErrorBoundary>
 
     <script is:inline>
+      // Re-apply theme after each SPA navigation
+      document.addEventListener('astro:after-swap', function() {
+        var theme = localStorage.getItem('theme') || 'dark';
+        var dark = theme !== 'light';
+        if (dark) {
+          document.documentElement.classList.add('dark');
+          document.documentElement.style.colorScheme = 'dark';
+        } else {
+          document.documentElement.classList.remove('dark');
+          document.documentElement.style.colorScheme = 'light';
+        }
+        document.documentElement.style.backgroundColor = dark ? '#0a0a0a' : '#E8E7E3';
+      });
+
+      // Re-apply data-doc-hydrated after each navigation
+      document.addEventListener('astro:page-load', function() {
+        requestAnimationFrame(function() {
+          requestAnimationFrame(function() {
+            document.body.setAttribute('data-doc-hydrated', 'true');
+          });
+        });
+      });
+
+      // Initial hydration marker
       document.addEventListener('DOMContentLoaded', function() {
         requestAnimationFrame(function() {
           requestAnimationFrame(function() {
@@ -153,4 +182,4 @@ const imageUrl = image
       });
     </script>
   </body>
-</html
+</html>
