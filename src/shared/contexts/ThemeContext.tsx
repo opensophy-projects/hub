@@ -3,9 +3,8 @@
  * Astro with client:only="react" renders each island in an isolated React tree.
  * There is NO shared React context between TopNavbar, DocContent, SearchWrapper etc.
  *
- * Solution: each island wraps itself in ThemeProvider (as before).
- * Cross-island state sync uses localStorage + manually dispatched StorageEvent
- * so all islands stay in sync without CustomEvent hacks.
+ * Solution: each island wraps itself in ThemeProvider.
+ * Cross-island state sync uses localStorage + manually dispatched StorageEvent.
  */
 import React, { createContext, useContext, useState, useMemo, useEffect, useCallback } from 'react';
 
@@ -20,13 +19,9 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-// ─── Storage keys ─────────────────────────────────────────────────────────────
-
 const KEY_THEME   = 'theme';
 const KEY_SIDEBAR = 'hub:sidebar';
 const KEY_SEARCH  = 'hub:search';
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const getInitialTheme = (): boolean => {
   if (typeof window === 'undefined') return true;
@@ -44,11 +39,6 @@ const applyTheme = (isDark: boolean) => {
   }
 };
 
-/**
- * Write to localStorage and fire a synthetic StorageEvent so OTHER islands
- * on the same page pick it up (native storage events don't fire in the
- * originating window).
- */
 function broadcastStorage(key: string, value: string) {
   try {
     localStorage.setItem(key, value);
@@ -60,14 +50,11 @@ function broadcastStorage(key: string, value: string) {
   }
 }
 
-// ─── Provider ─────────────────────────────────────────────────────────────────
-
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isDark, setIsDark] = useState<boolean>(getInitialTheme);
   const [isSidebarOpen, setIsSidebarOpenState] = useState(false);
   const [isSearchOpen,  setIsSearchOpenState]  = useState(false);
 
-  // Apply theme to <html> whenever it changes
   useEffect(() => {
     applyTheme(isDark);
   }, [isDark]);
@@ -91,59 +78,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
-  // ── Actions ──────────────────────────────────────────────────────────────
-
-  const toggleTheme = useCallback((event?: React.MouseEvent) => {
+  // Simple instant toggle — no View Transitions, no circles, no animations
+  const toggleTheme = useCallback((_event?: React.MouseEvent) => {
     const next = !isDark;
     broadcastStorage(KEY_THEME, next ? 'dark' : 'light');
-
-    // View Transitions API — circular reveal from click point
-    if (
-      typeof document !== 'undefined' &&
-      'startViewTransition' in document &&
-      event
-    ) {
-      const x = event.clientX;
-      const y = event.clientY;
-      const maxRadius = Math.hypot(
-        Math.max(x, window.innerWidth - x),
-        Math.max(y, window.innerHeight - y)
-      );
-
-      type DocVT = Document & {
-        startViewTransition: (cb: () => void) => { ready: Promise<void> };
-      };
-
-      (document as DocVT)
-        .startViewTransition(() => {
-          setIsDark(next);
-          applyTheme(next);
-        })
-        .ready.then(() => {
-          const clipPath = [
-            `circle(0px at ${x}px ${y}px)`,
-            `circle(${maxRadius}px at ${x}px ${y}px)`,
-          ];
-          document.documentElement.animate(
-            { clipPath: next ? clipPath : [...clipPath].reverse() },
-            {
-              duration: 380,
-              easing: 'ease-in-out',
-              pseudoElement: next
-                ? '::view-transition-new(root)'
-                : '::view-transition-old(root)',
-            }
-          );
-        })
-        .catch(() => {
-          // View Transition failed — just apply
-          setIsDark(next);
-          applyTheme(next);
-        });
-    } else {
-      setIsDark(next);
-      applyTheme(next);
-    }
+    setIsDark(next);
+    applyTheme(next);
   }, [isDark]);
 
   const setSidebarOpen = useCallback((open: boolean) => {
