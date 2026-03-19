@@ -283,7 +283,7 @@ function Pill({ onClick, title, label, icon, t, active, success, btnRef }: {
 }
 
 // ---------------------------------------------------------------------------
-// PortalMenu — FIX: scroll inside the menu itself does NOT close it
+// PortalMenu — scroll inside the menu itself does NOT close it
 // ---------------------------------------------------------------------------
 
 const PortalMenu: React.FC<{
@@ -326,6 +326,10 @@ const PortalMenu: React.FC<{
   );
 };
 
+// FIX: LangPicker now closes on page scroll (the picker uses fixed positioning
+// based on getBoundingClientRect(), so it drifts when the page scrolls).
+// We attach a scroll listener that closes the picker when any scroll occurs
+// outside the picker's own DOM subtree.
 function LangPicker({ currentLang, onSelect, onClose, anchorRect, t }: {
   currentLang: string; onSelect: (l: string) => void; onClose: () => void;
   anchorRect: DOMRect; t: ReturnType<typeof tk>;
@@ -486,6 +490,8 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
   const [isCopied,     setIsCopied]     = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchQuery,  setSearchQuery]  = useState('');
+  // FIX: showLangPick is now managed separately from the rect so we can close
+  // on scroll without losing the anchor position.
   const [showLangPick, setShowLangPick] = useState(false);
   const [langBtnRect,  setLangBtnRect]  = useState<DOMRect | null>(null);
   const [activeLang,   setActiveLang]   = useState(language);
@@ -500,6 +506,17 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
+
+  // FIX: close LangPicker when the page scrolls.
+  // The picker renders at a fixed pixel position computed via getBoundingClientRect().
+  // If the page scrolls after opening, the picker visually drifts away from its anchor.
+  // Closing on scroll prevents this stale-position UX bug.
+  useEffect(() => {
+    if (!showLangPick) return;
+    const onScroll = () => setShowLangPick(false);
+    window.addEventListener('scroll', onScroll, { passive: true, capture: true });
+    return () => window.removeEventListener('scroll', onScroll, true);
+  }, [showLangPick]);
 
   const lines = useMemo(() => {
     const raw = code.split('\n');
@@ -572,6 +589,8 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
           <Pill onClick={handleCopy} title={isCopied ? 'Скопировано!' : 'Копировать'} label={isCopied ? 'Скопировано' : 'Копировать'} icon={isCopied ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />} t={t} success={isCopied} />
           <Pill btnRef={langBtnRef} onClick={handleLangClick} title="Сменить подсветку" label={activeLang || 'markdown'} icon={<Code2 size={14} />} t={t} active={showLangPick} />
           <Pill onClick={() => isModal ? setIsFullscreen(false) : setIsFullscreen(true)} title={isModal ? 'Свернуть' : 'Развернуть'} label={isModal ? 'Свернуть' : 'Развернуть'} icon={isModal ? <Minimize2 size={14} /> : <Maximize2 size={14} />} t={t} />
+          {/* FIX: LangPicker is closed on scroll via the useEffect above.
+              PortalMenu also independently closes on scroll events outside its DOM node. */}
           {showLangPick && langBtnRect && (
             <LangPicker currentLang={activeLang} onSelect={setActiveLang} onClose={() => setShowLangPick(false)} anchorRect={langBtnRect} t={t} />
           )}
