@@ -5,61 +5,53 @@ import katex from 'katex';
 
 marked.setOptions({ breaks: true, gfm: true });
 
-// ─── KaTeX preprocessor ───────────────────────────────────────────────────────
+// ─── KaTeX renderers ──────────────────────────────────────────────────────────
+
+function renderKatex(tex, displayMode) {
+  try {
+    return katex.renderToString(tex.trim(), {
+      displayMode,
+      throwOnError: false,
+      trust: false,
+      strict: 'ignore',
+    });
+  } catch {
+    const tag = displayMode ? 'div' : 'span';
+    return `<${tag} class="katex-error"><code>${tex}</code></${tag}>`;
+  }
+}
 
 /**
- * Renders $...$ (inline) and $$...$$ (block) math via KaTeX server-side.
- * Runs BEFORE marked so that markdown doesn't mangle the LaTeX syntax.
- * Code blocks (``` and `) are protected first.
+ * Renders $...$ (inline) and $$...$$ (block) math via KaTeX.
+ * Runs BEFORE marked so markdown doesn't mangle LaTeX syntax.
+ * Code blocks are protected first.
  */
 export function preprocessKatex(content) {
-  // Step 1: protect code blocks and inline code from being touched
   const protected_ = [];
 
-  // Protect fenced code blocks (``` ... ```)
+  // Protect fenced code blocks
   let result = content.replace(/```[\s\S]*?```/g, (match) => {
     protected_.push(match);
     return `___PROTECTED_${protected_.length - 1}___`;
   });
 
-  // Protect inline code (` ... `)
+  // Protect inline code
   result = result.replace(/`[^`\n]+`/g, (match) => {
     protected_.push(match);
     return `___PROTECTED_${protected_.length - 1}___`;
   });
 
-  // Step 2: render $$...$$ block math (must come before inline $)
+  // Block math $$...$$ — must come before inline $
   result = result.replace(/\$\$([\s\S]+?)\$\$/g, (_match, tex) => {
-    try {
-      const html = katex.renderToString(tex.trim(), {
-        displayMode: true,
-        throwOnError: false,
-        trust: false,
-        strict: 'ignore',
-      });
-      return `<div class="katex-block">${html}</div>`;
-    } catch {
-      return `<div class="katex-block katex-error"><code>$$${tex}$$</code></div>`;
-    }
+    return `<div class="katex-block not-prose">${renderKatex(tex, true)}</div>`;
   });
 
-  // Step 3: render $...$ inline math
-  // Avoid matching currency: require non-space after opening $ and non-space before closing $
+  // Inline math $...$ — non-greedy, avoid currency ($50, 100 $)
   result = result.replace(/\$([^\s$][^$\n]*?[^\s$]|\S)\$/g, (_match, tex) => {
-    try {
-      const html = katex.renderToString(tex.trim(), {
-        displayMode: false,
-        throwOnError: false,
-        trust: false,
-        strict: 'ignore',
-      });
-      return `<span class="katex-inline">${html}</span>`;
-    } catch {
-      return `<span class="katex-inline katex-error"><code>$${tex}$</code></span>`;
-    }
+    return `<span class="katex-inline">${renderKatex(tex, false)}</span>`;
   });
 
-  // Step 4: restore protected blocks
+  // Restore protected blocks
   result = result.replace(/___PROTECTED_(\d+)___/g, (_, i) => protected_[Number.parseInt(i, 10)]);
 
   return result;
@@ -329,6 +321,26 @@ function handleStepsBlock(trimmed, lines, i, codeBlocks, output) {
   return endIndex + 1;
 }
 
+function handleMathBlock(trimmed, lines, i, output) {
+  // :::math          → inline (katex-inline wrapper)
+  // :::math[display] → display / block mode
+  const match = trimmed.match(/^:::math(?:\[([^\]]*)\])?\s*$/);
+  if (!match) return null;
+
+  const displayMode = (match[1] ?? '').trim() === 'display';
+  const { body, endIndex } = collectBlockBody(lines, i + 1);
+  const tex = body.trim();
+
+  const rendered = renderKatex(tex, displayMode);
+  if (displayMode) {
+    output.push(`<div class="katex-block not-prose">${rendered}</div>`);
+  } else {
+    output.push(`<p><span class="katex-inline">${rendered}</span></p>`);
+  }
+
+  return endIndex + 1;
+}
+
 // ─── Custom block preprocessor ────────────────────────────────────────────────
 
 function preprocessCustomBlocks(content, codeBlocks) {
@@ -342,7 +354,8 @@ function preprocessCustomBlocks(content, codeBlocks) {
       handleCardsBlock(trimmed, lines, i, codeBlocks, output) ??
       handleCardBlock(trimmed, lines, i, codeBlocks, output) ??
       handleColumnsBlock(trimmed, lines, i, codeBlocks, output) ??
-      handleStepsBlock(trimmed, lines, i, codeBlocks, output);
+      handleStepsBlock(trimmed, lines, i, codeBlocks, output) ??
+      handleMathBlock(trimmed, lines, i, output);
 
     if (nextI == null) { output.push(lines[i]); i++; }
     else               { i = nextI; }
