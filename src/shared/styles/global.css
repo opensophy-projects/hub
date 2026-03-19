@@ -234,7 +234,6 @@ html:not(.dark) .hljs-symbol, html:not(.dark) .hljs-bullet, html:not(.dark) .hlj
 html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .hljs-title { color: #4078f2; }
 
 /* ── KaTeX ── */
-/* katex.min.css подключается первым импортом в этом файле */
 
 .katex-block {
   display: block;
