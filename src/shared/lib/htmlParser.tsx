@@ -300,9 +300,32 @@ const processFigureElement = (element: Element, key: string, elements: React.Rea
   elements.push(React.createElement('figure', { key }, ...children));
 };
 
+// ── Katex processors (bypass DOMPurify — HTML is server-generated, trusted) ──
+
+const processKatexBlock = (element: Element, key: string, elements: React.ReactNode[]) => {
+  elements.push(
+    React.createElement('div', {
+      key,
+      className: 'katex-block not-prose',
+      dangerouslySetInnerHTML: { __html: element.innerHTML },
+    })
+  );
+};
+
+const processKatexInline = (element: Element, key: string, elements: React.ReactNode[]) => {
+  elements.push(
+    React.createElement('span', {
+      key,
+      className: 'katex-inline',
+      dangerouslySetInnerHTML: { __html: element.innerHTML },
+    })
+  );
+};
+
 // ── Div dispatcher ────────────────────────────────────────────────────────────
 
 const DIV_CLASS_HANDLERS: Array<[string, (el: Element, key: string, els: React.ReactNode[]) => void]> = [
+  ['katex-block',     processKatexBlock],
   ['custom-alert',    processAlertElement],
   ['custom-cardgrid', processCardGridElement],
   ['custom-card',     processCardElement],
@@ -470,9 +493,24 @@ const processElement = (
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export const parseHtmlToReact = (html: string): React.ReactNode[] => {
-  const sanitized = DOMPurify.sanitize(html, {
+  // Step 1: extract katex blocks BEFORE DOMPurify strips their SVG/MathML
+  const katexStore: Array<{ cls: string; inner: string }> = [];
+  const withPlaceholders = html
+    // div.katex-block
+    .replace(/<div[^>]*class="katex-block[^"]*"[^>]*>([\s\S]*?)<\/div>/g, (_match, inner) => {
+      katexStore.push({ cls: 'katex-block not-prose', inner });
+      return `<div data-katex-idx="${katexStore.length - 1}"></div>`;
+    })
+    // span.katex-inline (inside <p> tags)
+    .replace(/<span[^>]*class="katex-inline[^"]*"[^>]*>([\s\S]*?)<\/span>/g, (_match, inner) => {
+      katexStore.push({ cls: 'katex-inline', inner });
+      return `<span data-katex-idx="${katexStore.length - 1}"></span>`;
+    });
+
+  // Step 2: sanitize the rest normally
+  const sanitized = DOMPurify.sanitize(withPlaceholders, {
     ALLOWED_TAGS: [...ALLOWED_TAGS],
-    ALLOWED_ATTR: [...ALLOWED_ATTR],
+    ALLOWED_ATTR: [...ALLOWED_ATTR, 'data-katex-idx'],
     ALLOW_DATA_ATTR: true,
   });
 
@@ -488,6 +526,23 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
 
       const element = node as Element;
       const tagName = element.tagName.toLowerCase();
+
+      // Step 3: restore katex placeholders with trusted innerHTML
+      const katexIdx = element.getAttribute('data-katex-idx');
+      if (katexIdx !== null) {
+        const stored = katexStore[Number.parseInt(katexIdx, 10)];
+        if (stored) {
+          const Tag = tagName as 'div' | 'span';
+          elements.push(
+            React.createElement(Tag, {
+              key,
+              className: stored.cls,
+              dangerouslySetInnerHTML: { __html: stored.inner },
+            })
+          );
+          return;
+        }
+      }
 
       if (tagName === 'div') { processDivElement(element, key, elements, processNodes); return; }
       if (tagName === 'p')   { processParagraphElement(element, key, elements); return; }
