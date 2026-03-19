@@ -8,7 +8,6 @@ import ImageCard from '../components/ImageCard';
 import { CardWithContext, CardGridWithContext } from '../components/Card';
 import { ColumnsWithContext } from '../components/Columns';
 import { StepperWithContext } from '../components/Stepper';
-import MermaidDiagramWithContext from '../components/MermaidDiagram';
 import type { StepData, StepStatus } from '../components/Stepper';
 import type { ColumnsLayout } from '../components/Columns';
 
@@ -30,7 +29,7 @@ const ALLOWED_ATTR = [
   'href', 'src', 'alt', 'title', 'class', 'id',
   'data-language', 'data-lang', 'data-alert-type',
   'data-cols', 'data-layout', 'data-status', 'data-title',
-  'data-color', 'data-icon', 'data-code',
+  'data-color', 'data-icon',
   'type', 'checked', 'disabled', 'open', 'style', 'align',
 ];
 
@@ -242,28 +241,6 @@ const processStepsElement = (element: Element, key: string, elements: React.Reac
   elements.push(React.createElement(StepperWithContext, { key, steps }));
 };
 
-const processDiagramElement = (element: Element, key: string, elements: React.ReactNode[]) => {
-  const encodedCode = element.dataset.code || '';
-  if (!encodedCode) return;
-
-  let code = encodedCode;
-  try {
-    const binaryStr = atob(encodedCode);
-    const bytes = new Uint8Array(binaryStr.length);
-    for (let i = 0; i < binaryStr.length; i++) {
-      bytes[i] = binaryStr.codePointAt(i) ?? 0;
-    }
-    code = new TextDecoder('utf-8').decode(bytes);
-  } catch {
-    // leave as-is if not base64
-  }
-
-  if (!code.trim()) return;
-  elements.push(
-    React.createElement(MermaidDiagramWithContext, { key, code, color: element.dataset.color })
-  );
-};
-
 const processUIComponent = (
   element: Element,
   key: string,
@@ -317,7 +294,6 @@ const DIV_CLASS_HANDLERS: Array<[string, (el: Element, key: string, els: React.R
   ['custom-card',     processCardElement],
   ['custom-columns',  processColumnsElement],
   ['custom-steps',    processStepsElement],
-  ['custom-diagram',  processDiagramElement],
 ];
 
 const processDivElement = (
@@ -337,9 +313,6 @@ const processDivElement = (
 
 // ── Paragraph dispatcher ──────────────────────────────────────────────────────
 
-/**
- * If an <a> tag wraps a single <img>, return that <img>. Otherwise null.
- */
 function getImgFromLink(el: Element): Element | null {
   const nonEmpty = Array.from(el.childNodes).filter(
     (n) => !(n.nodeType === Node.TEXT_NODE && !n.textContent?.trim())
@@ -350,10 +323,6 @@ function getImgFromLink(el: Element): Element | null {
   return null;
 }
 
-/**
- * Returns true if a node is a <br> element or a whitespace-only text node.
- * Used to trim leading/trailing <br> tags from paragraph runs without regex.
- */
 function isBrOrEmpty(node: ChildNode): boolean {
   if (node.nodeType === Node.ELEMENT_NODE) {
     return (node as Element).tagName.toLowerCase() === 'br';
@@ -364,17 +333,6 @@ function isBrOrEmpty(node: ChildNode): boolean {
   return false;
 }
 
-/**
- * Splits a paragraph's child nodes into "runs":
- *   { type: 'img',  el }   — a single image node (renders as ImageCard)
- *   { type: 'text', html } — one or more non-image nodes (renders as <p>)
- *
- * This correctly handles the case where marked with breaks:true puts an image
- * inside a mixed paragraph together with text and <br> tags:
- *
- *   <p>some text<br><img src="..."><br><em>caption</em></p>
- *   →  <p>some text</p>  +  <ImageCard/>  +  <p><em>caption</em></p>
- */
 type ParagraphRun = { type: 'img'; el: Element } | { type: 'text'; html: string };
 
 function splitParagraphIntoRuns(element: Element): ParagraphRun[] {
@@ -386,7 +344,6 @@ function splitParagraphIntoRuns(element: Element): ParagraphRun[] {
       textBuffer = '';
       return;
     }
-    // Strip leading/trailing <br> tags using DOM — avoids regex ReDoS (S5852)
     const tmp = document.createElement('div');
     tmp.innerHTML = textBuffer.trim();
     while (tmp.firstChild && isBrOrEmpty(tmp.firstChild)) tmp.firstChild.remove();
@@ -433,7 +390,6 @@ const processParagraphElement = (
 ): void => {
   if (processUIComponent(element, key, element.textContent || '', elements)) return;
 
-  // Fast path: no images inside — plain paragraph
   if (!element.querySelector('img')) {
     elements.push(
       React.createElement('p', {
@@ -444,7 +400,6 @@ const processParagraphElement = (
     return;
   }
 
-  // Split into image and text runs, emit each as the appropriate element
   const runs = splitParagraphIntoRuns(element);
   runs.forEach((run, i) => {
     const runKey = `${key}-r${i}`;
