@@ -314,7 +314,9 @@ function handleStepsBlock(trimmed, lines, i, codeBlocks, output) {
   for (const step of parseInnerBlocks(body, 'step')) {
     const status = escapeAttr(step.params.status ?? 'default');
     const title  = escapeAttr(step.inlineText ?? '');
-    html += `<div class="custom-step" data-status="${status}" data-title="${title}">${markedWithCodeBlocks(step.body.trim(), codeBlocks)}</div>`;
+    // FIX: save color param into data-color attribute
+    const color  = step.params.color ? escapeAttr(step.params.color) : '';
+    html += `<div class="custom-step" data-status="${status}" data-title="${title}" data-color="${color}">${markedWithCodeBlocks(step.body.trim(), codeBlocks)}</div>`;
   }
   html += '</div>';
   output.push(html);
@@ -322,14 +324,11 @@ function handleStepsBlock(trimmed, lines, i, codeBlocks, output) {
 }
 
 function handleMathBlock(trimmed, lines, i, output) {
-  // :::math          → inline span (no box, flows with text)
-  // :::math[display] → block div (centered, with border)
   const match = trimmed.match(/^:::math(?:\[([^\]]*)\])?\s*$/);
   if (!match) return null;
 
   const displayMode = (match[1] ?? '').trim() === 'display';
 
-  // Simple body collector: gather lines until standalone :::
   const bodyLines = [];
   let j = i + 1;
   while (j < lines.length && lines[j].trim() !== ':::') {
@@ -341,11 +340,8 @@ function handleMathBlock(trimmed, lines, i, output) {
   const rendered = renderKatex(tex, displayMode);
 
   if (displayMode) {
-    // Block: centered box with border, extracted by DOM before DOMPurify
     output.push(`<div class="katex-block not-prose">${rendered}</div>`);
   } else {
-    // Inline: wrap in paragraph so marked doesn't add extra p tags,
-    // use span.katex-inline so it flows naturally with surrounding text
     output.push(`<p><span class="katex-inline">${rendered}</span></p>`);
   }
 
