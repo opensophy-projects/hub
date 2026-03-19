@@ -423,11 +423,16 @@ function splitParagraphIntoRuns(element: Element): ParagraphRun[] {
 const processParagraphElement = (
   element: Element,
   key: string,
-  elements: React.ReactNode[]
+  elements: React.ReactNode[],
+  katexStore: Array<{ tag: 'div' | 'span'; cls: string; inner: string }>
 ): void => {
   if (processUIComponent(element, key, element.textContent || '', elements)) return;
 
-  if (!element.querySelector('img')) {
+  const hasKatex = element.querySelector('[data-katex-idx]');
+  const hasImg   = element.querySelector('img');
+
+  // Fast path: plain paragraph, no katex, no images
+  if (!hasKatex && !hasImg) {
     elements.push(
       React.createElement('p', {
         key,
@@ -437,6 +442,43 @@ const processParagraphElement = (
     return;
   }
 
+  // Has katex spans: build children array, restoring each katex placeholder
+  if (hasKatex && !hasImg) {
+    const kids: React.ReactNode[] = [];
+    Array.from(element.childNodes).forEach((child, ci) => {
+      const ckey = `${key}-k${ci}`;
+      if (child.nodeType === Node.TEXT_NODE) {
+        const text = child.textContent ?? '';
+        if (text) kids.push(text);
+      } else if (child.nodeType === Node.ELEMENT_NODE) {
+        const el  = child as Element;
+        const idx = el.getAttribute('data-katex-idx');
+        if (idx !== null) {
+          const stored = katexStore[Number.parseInt(idx, 10)];
+          if (stored) {
+            kids.push(
+              React.createElement(stored.tag, {
+                key: ckey,
+                className: stored.cls,
+                dangerouslySetInnerHTML: { __html: stored.inner },
+              })
+            );
+            return;
+          }
+        }
+        kids.push(
+          React.createElement('span', {
+            key: ckey,
+            dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(el.outerHTML) },
+          })
+        );
+      }
+    });
+    elements.push(React.createElement('p', { key }, ...kids));
+    return;
+  }
+
+  // Has images (existing split logic, no katex)
   const runs = splitParagraphIntoRuns(element);
   runs.forEach((run, i) => {
     const runKey = `${key}-r${i}`;
@@ -504,13 +546,12 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
     const cls = el.className;
     const inner = el.innerHTML;
     const idx = katexStore.push({ tag, cls, inner }) - 1;
-    // Replace element with a simple placeholder the sanitizer won't strip
     const placeholder = rawDoc.createElement(tag);
     placeholder.setAttribute('data-katex-idx', String(idx));
     el.replaceWith(placeholder);
   });
 
-  // Step 3: sanitize the placeholder-only HTML (no katex SVG/MathML inside)
+  // Step 3: sanitize placeholder-only HTML (no katex SVG/MathML inside)
   const sanitized = DOMPurify.sanitize(rawDoc.body.innerHTML, {
     ALLOWED_TAGS: [...ALLOWED_TAGS],
     ALLOWED_ATTR: [...ALLOWED_ATTR],
@@ -532,7 +573,7 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       const element = node as Element;
       const tagName = element.tagName.toLowerCase();
 
-      // Step 4: restore katex from store using trusted innerHTML
+      // Step 4: restore top-level katex divs from store
       const katexIdx = element.getAttribute('data-katex-idx');
       if (katexIdx !== null) {
         const stored = katexStore[Number.parseInt(katexIdx, 10)];
@@ -549,7 +590,8 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       }
 
       if (tagName === 'div') { processDivElement(element, key, elements, processNodes); return; }
-      if (tagName === 'p')   { processParagraphElement(element, key, elements); return; }
+      // Pass katexStore so paragraph handler can restore inline katex spans
+      if (tagName === 'p')   { processParagraphElement(element, key, elements, katexStore); return; }
 
       processElement(element, tagName, key, elements, processNodes);
     });
