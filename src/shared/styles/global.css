@@ -233,9 +233,31 @@ html:not(.dark) .hljs-symbol, html:not(.dark) .hljs-bullet, html:not(.dark) .hlj
 html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .hljs-title { color: #4078f2; }
 
 /* ── KaTeX ── */
-.katex { font-size: 1em; }
-.katex-display { margin: 1.5rem 0; overflow-x: auto; overflow-y: hidden; }
-.katex-display::-webkit-scrollbar { height: 8px; }
-.katex-display::-webkit-scrollbar-track { background: transparent; }
-.katex-display::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
-.dark .katex-display::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); }
+@import url('https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css');
+
+.katex-block {
+  display: block;
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin: 1.5rem 0;
+  padding: 0.25rem 0;
+  text-align: center;
+  -webkit-overflow-scrolling: touch;
+}
+
+.katex-block::-webkit-scrollbar { height: 6px; }
+.katex-block::-webkit-scrollbar-track { background: transparent; }
+.katex-block::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+.dark .katex-block::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
+
+.katex-inline {
+  display: inline;
+}
+
+.katex-error {
+  color: #e06c75;
+  font-size: 0.85em;
+}
+.dark .katex-error {
+  color: #f87171;
+}
