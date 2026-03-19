@@ -234,6 +234,7 @@ html:not(.dark) .hljs-symbol, html:not(.dark) .hljs-bullet, html:not(.dark) .hlj
 html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .hljs-title { color: #4078f2; }
 
 /* ── KaTeX ── */
+/* katex.min.css подключается первым импортом в этом файле */
 
 .katex-block {
   display: block;
@@ -246,6 +247,12 @@ html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .
   background: rgba(0, 0, 0, 0.02);
   text-align: center;
   -webkit-overflow-scrolling: touch;
+}
+
+.katex-block--inline {
+  text-align: left;
+  padding: 0.6rem 1rem;
+  font-size: 0.95em;
 }
 
 .dark .katex-block {
