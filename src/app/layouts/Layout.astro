@@ -112,20 +112,6 @@ const imageUrl = image
         padding: 0;
         overflow-x: hidden;
       }
-
-      /* View Transitions */
-      @keyframes fade-in {
-        from { opacity: 0; }
-      }
-      @keyframes fade-out {
-        to { opacity: 0; }
-      }
-      ::view-transition-old(root) {
-        animation: 180ms ease-out fade-out;
-      }
-      ::view-transition-new(root) {
-        animation: 180ms ease-in fade-in;
-      }
     </style>
 
     <title>{title}</title>
