@@ -188,7 +188,8 @@ const DocHero: React.FC<{
   const colors = useHeroColors(isDark);
   return (
     <div style={{ background: colors.heroBg, borderBottom: `1px solid ${colors.borderColor}`, padding: '3rem 2rem 2.5rem', position: 'relative' }}>
-      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+      {/* contain:strict on wrapper prevents canvas from causing layout recalcs during scroll */}
+      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', contain: 'strict' }}>
         <DotWaveBackground isDark={isDark} />
       </div>
       <div style={{ position: 'relative', zIndex: 1 }}>
@@ -223,10 +224,11 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const { isDark } = useTheme();
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
 
-  const toc            = useTableOfContents(doc);
-  const scrollProgress = useScrollProgress();
-  const activeId       = useActiveHeading(toc);
-  const isDesktop      = useIsDesktop();
+  const toc        = useTableOfContents(doc);
+  // New: ref-based scroll progress — no re-renders on scroll
+  const progressBarRef = useScrollProgress();
+  const activeId   = useActiveHeading(toc);
+  const isDesktop  = useIsDesktop();
 
   const hasToc = toc.length > 0;
 
@@ -249,9 +251,11 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
 
   return (
     <div style={{ minHeight: '100vh' }}>
+      {/* Progress bar: width is mutated directly via ref — zero re-renders */}
       <div
+        ref={progressBarRef}
         className={`fixed top-0 left-0 h-1 ${isDark ? 'bg-white' : 'bg-black'}`}
-        style={{ width: `${scrollProgress}%`, zIndex: 999 }}
+        style={{ width: '0%', zIndex: 999, transition: 'none' }}
       />
 
       <TopNavbar />
