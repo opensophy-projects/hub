@@ -217,6 +217,9 @@ const DocHero: React.FC<{
   );
 };
 
+// Compute sidebar/TOC margins without transition to avoid layout jump on mount.
+// We use a CSS class injected into <head> that sets the margin instantly,
+// and only enables transition AFTER first paint.
 function getMainMargins(isDesktop: boolean, hasToc: boolean, tocWidth: string) {
   return {
     marginLeft:   isDesktop ? '20rem' : '0',
@@ -228,11 +231,19 @@ function getMainMargins(isDesktop: boolean, hasToc: boolean, tocWidth: string) {
 const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const { isDark } = useTheme();
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
+  // Track whether we've mounted — suppress margin transition on first render
+  const [mounted, setMounted] = useState(false);
 
   const toc            = useTableOfContents(doc);
   const scrollProgress = useScrollProgress();
   const activeId       = useActiveHeading(toc);
   const isDesktop      = useIsDesktop();
+
+  useEffect(() => {
+    // Allow transition only after first paint to prevent layout jump
+    const raf = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   const htmlContent = useMemo(() => doc.content || '', [doc.content]);
 
@@ -320,7 +331,11 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
 
       <main
         className={`min-h-screen ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}
-        style={{ ...getMainMargins(isDesktop, hasToc, TOC_WIDTH), transition: 'margin-left 0.3s ease' }}
+        style={{
+          ...getMainMargins(isDesktop, hasToc, TOC_WIDTH),
+          // Only enable transition after mount to prevent initial layout jump
+          transition: mounted ? 'margin-left 0.3s ease, margin-right 0.3s ease' : 'none',
+        }}
       >
         <DocHero doc={doc} isDark={isDark} readTime={readTime} markdownContent={doc.content} />
         <article className="flex-1 pb-12 w-full" style={{ paddingLeft: '2rem', paddingRight: '2rem', paddingTop: '2rem' }}>
