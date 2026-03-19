@@ -64,17 +64,36 @@ const MobileNavbarInner: React.FC = () => {
     const items = scanHeadings();
     if (items.length > 0) { setToc(items); return; }
 
+    // Debounced MutationObserver — avoids firing on every individual DOM mutation
+    // when React renders many nodes at once (e.g. long article with many headings).
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
     const observer = new MutationObserver(() => {
-      const found = scanHeadings();
-      if (found.length > 0) { setToc(found); observer.disconnect(); }
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        const found = scanHeadings();
+        if (found.length > 0) {
+          setToc(found);
+          observer.disconnect();
+        }
+      }, 100);
     });
+
     observer.observe(document.body, { childList: true, subtree: true });
+
+    // Hard fallback — disconnect after 5s regardless
     const fallback = setTimeout(() => {
+      if (debounceTimer) clearTimeout(debounceTimer);
       const found = scanHeadings();
       if (found.length > 0) setToc(found);
       observer.disconnect();
-    }, 3000);
-    return () => { observer.disconnect(); clearTimeout(fallback); };
+    }, 5000);
+
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      clearTimeout(fallback);
+      observer.disconnect();
+    };
   }, []);
 
   const handleTocOpen = () => {
