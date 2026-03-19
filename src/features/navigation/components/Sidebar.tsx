@@ -498,7 +498,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
   const [activeNavSlug, setActiveNavSlug] = useState<string>('');
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
 
-  const isDesktop = globalThis.window !== undefined && globalThis.window.innerWidth >= 768;
+  // isDesktop is computed once synchronously — no useState + useEffect to avoid flicker
+  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
 
   useEffect(() => {
     if (!isDesktop && isSidebarOpen) {
@@ -568,17 +569,15 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
   };
 
   const handleClose = () => setSidebarOpen(false);
+  const handleToggleTheme = (e: React.MouseEvent) => { toggleTheme(e); };
 
-  // Pass mouse event to toggleTheme for View Transitions
-  const handleToggleTheme = (e: React.MouseEvent) => {
-    toggleTheme(e);
-  };
-
+  // On desktop the sidebar is always rendered and visible — no overlay, no animation
+  // On mobile it's conditionally rendered with overlay
   if (!isSidebarOpen && !isDesktop) return null;
 
   return (
     <>
-      {!isDesktop && <SidebarOverlay onClose={handleClose} />}
+      {!isDesktop && isSidebarOpen && <SidebarOverlay onClose={handleClose} />}
       <aside
         className={`fixed left-0 top-0 h-screen w-full md:w-80 border-r flex flex-col z-50 ${
           isDark ? 'bg-[#0F0F0F] border-white/10' : 'bg-[#E1E0DC] border-black/10'
