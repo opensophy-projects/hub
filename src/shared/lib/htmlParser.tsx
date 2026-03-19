@@ -16,7 +16,11 @@ export const TableContext = createContext<{
   isDark: boolean;
 }>({ isDark: false });
 
-const ALLOWED_TAGS = [
+// ─── Shared sanitizer config — single source of truth ────────────────────────
+// These are exported so DocContent and any other consumer can import them
+// instead of duplicating the arrays.
+
+export const SANITIZE_TAGS = [
   'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
   'p', 'br', 'strong', 'em', 'u', 'a',
   'ul', 'ol', 'li', 'blockquote', 'code',
@@ -31,7 +35,7 @@ const ALLOWED_TAGS = [
   'defs', 'clippath',
 ];
 
-const ALLOWED_ATTR = [
+export const SANITIZE_ATTR = [
   'href', 'src', 'alt', 'title', 'class', 'id',
   'data-language', 'data-lang', 'data-alert-type',
   'data-cols', 'data-layout', 'data-status', 'data-title',
@@ -47,8 +51,12 @@ const ALLOWED_ATTR = [
   'rowspacing', 'columnspacing', 'href', 'aria-hidden',
 ];
 
-const sanitizeInnerHTML = (html: string): string =>
-  DOMPurify.sanitize(html, { ALLOWED_TAGS, ALLOWED_ATTR, ALLOW_DATA_ATTR: true });
+// ─── Internal: used ONLY for table outerHTML re-sanitize before passing
+// to TableWithControls (the table HTML is extracted from already-sanitized DOM,
+// but we serialise it back to string, so a quick re-sanitize is needed).
+// All other handlers work directly with DOM nodes from the already-sanitized doc.
+const sanitizeHtml = (html: string): string =>
+  DOMPurify.sanitize(html, { ALLOWED_TAGS: SANITIZE_TAGS, ALLOWED_ATTR: SANITIZE_ATTR, ALLOW_DATA_ATTR: true });
 
 function slugifyHeading(text: string): string {
   return text
@@ -69,6 +77,10 @@ const TAG_STYLES: Record<number, React.CSSProperties> = {
 };
 
 // ── Element processors ────────────────────────────────────────────────────────
+// NOTE: All processors below receive DOM elements that were already sanitized
+// at the top of parseHtmlToReact. They do NOT need to re-sanitize innerHTML
+// before passing it to dangerouslySetInnerHTML — the DOM was already clean.
+// Exception: table outerHTML is re-serialised to string so it gets one pass.
 
 const processPreElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const codeElement = element.querySelector('code');
@@ -98,11 +110,12 @@ const processHeadingElement = (element: Element, tagName: string, key: string, e
   const id    = element.id || slugifyHeading(text);
   const level = Number.parseInt(tagName[1], 10);
   const Tag   = tagName as keyof JSX.IntrinsicElements;
+  // innerHTML is already sanitized — safe to use directly
   elements.push(
     React.createElement(Tag, {
       key, id,
       style: TAG_STYLES[level],
-      dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(element.innerHTML) },
+      dangerouslySetInnerHTML: { __html: element.innerHTML },
     })
   );
 };
@@ -112,7 +125,7 @@ const processListElement = (element: Element, tagName: string, key: string, elem
   elements.push(
     React.createElement(tagName, {
       key,
-      dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(element.innerHTML) },
+      dangerouslySetInnerHTML: { __html: element.innerHTML },
       className: hasTaskList ? 'task-list' : undefined,
     })
   );
@@ -138,7 +151,7 @@ const processLinkElement = (element: Element, key: string, elements: React.React
       href: element.getAttribute('href') || '#',
       target: '_blank',
       rel: 'noopener noreferrer',
-      dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(element.innerHTML) },
+      dangerouslySetInnerHTML: { __html: element.innerHTML },
     })
   );
 };
@@ -156,22 +169,24 @@ const processBlockquoteElement = (element: Element, key: string, elements: React
   elements.push(
     React.createElement('blockquote', {
       key,
-      dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(element.innerHTML) },
+      dangerouslySetInnerHTML: { __html: element.innerHTML },
     })
   );
 };
 
 const processTableElement = (element: Element, key: string, elements: React.ReactNode[]) => {
-  const tableHtml = element.outerHTML;
+  // Table HTML is re-serialised from DOM to string here, so one sanitize pass
+  // is appropriate before handing it off to the table component.
+  const tableHtml = sanitizeHtml(element.outerHTML);
   elements.push(
     React.createElement(
       TableContext.Consumer,
       { key },
       ({ onTableClick, isDark }: { onTableClick?: (html: string) => void; isDark: boolean }) =>
         React.createElement(TableWithControls, {
-          tableHtml: sanitizeInnerHTML(tableHtml),
+          tableHtml,
           isDark,
-          onFullscreen: (html: string) => onTableClick?.(sanitizeInnerHTML(html)),
+          onFullscreen: (html: string) => onTableClick?.(sanitizeHtml(html)),
         })
     )
   );
@@ -181,7 +196,7 @@ const processInlineElement = (tag: string, element: Element, key: string, elemen
   elements.push(
     React.createElement(tag, {
       key,
-      dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(element.innerHTML) },
+      dangerouslySetInnerHTML: { __html: element.innerHTML },
     })
   );
 };
@@ -190,7 +205,7 @@ const processDetailsElement = (element: Element, key: string, elements: React.Re
   const summary     = element.querySelector('summary');
   const summaryText = summary?.textContent || 'Подробности';
   const contentHTML = summary ? element.innerHTML.replace(summary.outerHTML, '') : element.innerHTML;
-  const contentElements = parseHtmlToReact(sanitizeInnerHTML(contentHTML));
+  const contentElements = parseHtmlToReact(contentHTML);
   elements.push(
     React.createElement(
       'details',
@@ -204,12 +219,12 @@ const processDetailsElement = (element: Element, key: string, elements: React.Re
 const processAlertElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const alertType = element.dataset.alertType as 'note' | 'tip' | 'important' | 'warning' | 'caution';
   if (!alertType) return;
-  const contentElements = parseHtmlToReact(sanitizeInnerHTML(element.innerHTML));
+  const contentElements = parseHtmlToReact(element.innerHTML);
   elements.push(React.createElement(Alert, { key, type: alertType }, ...contentElements));
 };
 
 const processCardElement = (element: Element, key: string, elements: React.ReactNode[]) => {
-  const contentElements = parseHtmlToReact(sanitizeInnerHTML(element.innerHTML));
+  const contentElements = parseHtmlToReact(element.innerHTML);
   elements.push(
     React.createElement(
       CardWithContext,
@@ -233,23 +248,21 @@ const processColumnsElement = (element: Element, key: string, elements: React.Re
   const colElements: React.ReactNode[] = [];
   for (const [i, col] of Array.from(element.children).entries()) {
     if (col.classList.contains('custom-col')) {
-      const colContent = parseHtmlToReact(sanitizeInnerHTML(col.innerHTML));
+      const colContent = parseHtmlToReact(col.innerHTML);
       colElements.push(React.createElement('div', { key: `${key}-col-${i}` }, ...colContent));
     }
   }
   elements.push(React.createElement(ColumnsWithContext, { key, layout }, ...colElements));
 };
 
-// FIX: read data-color from each step element and pass it to StepData
 const processStepsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const steps: StepData[] = [];
   for (const stepEl of Array.from(element.children)) {
     if (stepEl.classList.contains('custom-step')) {
-      const contentNodes = parseHtmlToReact(sanitizeInnerHTML(stepEl.innerHTML));
+      const contentNodes = parseHtmlToReact(stepEl.innerHTML);
       steps.push({
         title:   stepEl.dataset.title || '',
         status:  (stepEl.dataset.status || 'default') as StepStatus,
-        // Read custom color from data-color attribute (set by docUtils.mjs handleStepsBlock)
         color:   stepEl.dataset.color || undefined,
         content: React.createElement(React.Fragment, null, ...contentNodes),
       });
@@ -299,7 +312,7 @@ const processFigureElement = (element: Element, key: string, elements: React.Rea
     return;
   }
 
-  const children = parseHtmlToReact(sanitizeInnerHTML(element.innerHTML));
+  const children = parseHtmlToReact(element.innerHTML);
   elements.push(React.createElement('figure', { key }, ...children));
 };
 
@@ -424,7 +437,7 @@ const processParagraphElement = (
     elements.push(
       React.createElement('p', {
         key,
-        dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(element.innerHTML) },
+        dangerouslySetInnerHTML: { __html: element.innerHTML },
       })
     );
     return;
@@ -456,7 +469,7 @@ const processParagraphElement = (
         kids.push(
           React.createElement('span', {
             key: ckey,
-            dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(el.outerHTML) },
+            dangerouslySetInnerHTML: { __html: el.outerHTML },
           })
         );
       }
@@ -479,7 +492,7 @@ const processParagraphElement = (
       elements.push(
         React.createElement('p', {
           key: runKey,
-          dangerouslySetInnerHTML: { __html: sanitizeInnerHTML(run.html) },
+          dangerouslySetInnerHTML: { __html: run.html },
         })
       );
     }
@@ -523,6 +536,7 @@ const processElement = (
 export const parseHtmlToReact = (html: string): React.ReactNode[] => {
   const rawDoc = new DOMParser().parseFromString(html, 'text/html');
 
+  // Step 1: protect KaTeX nodes from DOMPurify mangling
   const katexStore: Array<{ tag: 'div' | 'span'; cls: string; inner: string }> = [];
 
   rawDoc.querySelectorAll('div.katex-block, span.katex-inline').forEach((el) => {
@@ -535,9 +549,11 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
     el.replaceWith(placeholder);
   });
 
+  // Step 2: single sanitize pass on the full HTML — all processors below
+  // work with DOM nodes from this sanitized document and do NOT re-sanitize.
   const sanitized = DOMPurify.sanitize(rawDoc.body.innerHTML, {
-    ALLOWED_TAGS: [...ALLOWED_TAGS],
-    ALLOWED_ATTR: [...ALLOWED_ATTR],
+    ALLOWED_TAGS: [...SANITIZE_TAGS],
+    ALLOWED_ATTR: [...SANITIZE_ATTR],
     ADD_ATTR: ['data-katex-idx'],
     ALLOW_DATA_ATTR: true,
     FORCE_BODY: false,
