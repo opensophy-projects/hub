@@ -1,3 +1,12 @@
+/**
+ * ARCHITECTURE NOTE:
+ * Astro with client:only="react" renders each island in an isolated React tree.
+ * There is NO shared React context between TopNavbar, DocContent, SearchWrapper etc.
+ *
+ * Solution: each island wraps itself in ThemeProvider (as before).
+ * Cross-island state sync uses localStorage + manually dispatched StorageEvent
+ * so all islands stay in sync without CustomEvent hacks.
+ */
 import React, { createContext, useContext, useState, useMemo, useEffect, useCallback } from 'react';
 
 interface ThemeContextType {
@@ -11,10 +20,17 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+// ─── Storage keys ─────────────────────────────────────────────────────────────
+
+const KEY_THEME   = 'theme';
+const KEY_SIDEBAR = 'hub:sidebar';
+const KEY_SEARCH  = 'hub:search';
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 const getInitialTheme = (): boolean => {
   if (typeof window === 'undefined') return true;
-  // html element already has the class applied by the inline script in <head>
-  return document.documentElement.classList.contains('dark');
+  return localStorage.getItem(KEY_THEME) !== 'light';
 };
 
 const applyTheme = (isDark: boolean) => {
@@ -28,21 +44,60 @@ const applyTheme = (isDark: boolean) => {
   }
 };
 
+/**
+ * Write to localStorage and fire a synthetic StorageEvent so OTHER islands
+ * on the same page pick it up (native storage events don't fire in the
+ * originating window).
+ */
+function broadcastStorage(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+    window.dispatchEvent(
+      new StorageEvent('storage', { key, newValue: value, storageArea: localStorage })
+    );
+  } catch {
+    // SSR / private browsing — ignore
+  }
+}
+
+// ─── Provider ─────────────────────────────────────────────────────────────────
+
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isDark, setIsDark] = useState<boolean>(getInitialTheme);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpenState] = useState(false);
+  const [isSearchOpen,  setIsSearchOpenState]  = useState(false);
 
-  // Sync html class whenever isDark changes
+  // Apply theme to <html> whenever it changes
   useEffect(() => {
     applyTheme(isDark);
   }, [isDark]);
 
+  // Listen for cross-island changes via StorageEvent
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === KEY_THEME && e.newValue !== null) {
+        const next = e.newValue !== 'light';
+        setIsDark(next);
+        applyTheme(next);
+      }
+      if (e.key === KEY_SIDEBAR && e.newValue !== null) {
+        setIsSidebarOpenState(e.newValue === 'true');
+      }
+      if (e.key === KEY_SEARCH && e.newValue !== null) {
+        setIsSearchOpenState(e.newValue === 'true');
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  // ── Actions ──────────────────────────────────────────────────────────────
+
   const toggleTheme = useCallback((event?: React.MouseEvent) => {
     const next = !isDark;
-    localStorage.setItem('theme', next ? 'dark' : 'light');
+    broadcastStorage(KEY_THEME, next ? 'dark' : 'light');
 
-    // View Transitions API with circular reveal from click point
+    // View Transitions API — circular reveal from click point
     if (
       typeof document !== 'undefined' &&
       'startViewTransition' in document &&
@@ -55,7 +110,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         Math.max(y, window.innerHeight - y)
       );
 
-      (document as Document & { startViewTransition: (cb: () => void) => { ready: Promise<void> } })
+      type DocVT = Document & {
+        startViewTransition: (cb: () => void) => { ready: Promise<void> };
+      };
+
+      (document as DocVT)
         .startViewTransition(() => {
           setIsDark(next);
           applyTheme(next);
@@ -77,7 +136,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           );
         })
         .catch(() => {
-          // View transition failed — apply immediately
+          // View Transition failed — just apply
           setIsDark(next);
           applyTheme(next);
         });
@@ -88,11 +147,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [isDark]);
 
   const setSidebarOpen = useCallback((open: boolean) => {
-    setIsSidebarOpen(open);
+    setIsSidebarOpenState(open);
+    broadcastStorage(KEY_SIDEBAR, String(open));
   }, []);
 
   const setSearchOpen = useCallback((open: boolean) => {
-    setIsSearchOpen(open);
+    setIsSearchOpenState(open);
+    broadcastStorage(KEY_SEARCH, String(open));
   }, []);
 
   const value = useMemo<ThemeContextType>(
