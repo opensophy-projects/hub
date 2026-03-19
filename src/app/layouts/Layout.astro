@@ -1,7 +1,7 @@
 ---
 import '@/shared/styles/global.css';
 import 'katex/dist/katex.min.css';
-import { ViewTransitions } from 'astro:transitions';
+import { ClientRouter } from 'astro:transitions';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import ErrorBoundary from '@/shared/components/ErrorBoundary';
 import TopNavbar from '@/features/navigation/components/MobileNavbar';
@@ -43,7 +43,6 @@ const imageUrl = image
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Theme: must run before any paint to eliminate FOUC -->
     <script is:inline>
       (function () {
         var theme = localStorage.getItem('theme');
@@ -89,12 +88,8 @@ const imageUrl = image
     <link rel="canonical" href={fullUrl} />
     <link rel="icon" href="/favicon.png" />
 
-    <!--
-      View Transitions: перехваты все клики по ссылкам и делает SPA-навигацию.
-      Вместо полного page reload браузер плавно меняет только изменившийся контент.
-      Это убирает белый flash — старая страница остаётся видимой пока грузится новая.
-    -->
-    <ViewTransitions />
+    <!-- Astro 6: ClientRouter replaces ViewTransitions -->
+    <ClientRouter />
     
     <style is:global>
       @font-face {
@@ -154,15 +149,7 @@ const imageUrl = image
     </ErrorBoundary>
 
     <script is:inline>
-      document.addEventListener('DOMContentLoaded', function() {
-        requestAnimationFrame(function() {
-          requestAnimationFrame(function() {
-            document.body.setAttribute('data-doc-hydrated', 'true');
-          });
-        });
-      });
-
-      // Re-apply theme and hydrated state after each View Transition
+      // Re-apply theme after each SPA navigation
       document.addEventListener('astro:after-swap', function() {
         var theme = localStorage.getItem('theme') || 'dark';
         var dark = theme !== 'light';
@@ -176,7 +163,17 @@ const imageUrl = image
         document.documentElement.style.backgroundColor = dark ? '#0a0a0a' : '#E8E7E3';
       });
 
+      // Re-apply data-doc-hydrated after each navigation
       document.addEventListener('astro:page-load', function() {
+        requestAnimationFrame(function() {
+          requestAnimationFrame(function() {
+            document.body.setAttribute('data-doc-hydrated', 'true');
+          });
+        });
+      });
+
+      // Initial hydration marker
+      document.addEventListener('DOMContentLoaded', function() {
         requestAnimationFrame(function() {
           requestAnimationFrame(function() {
             document.body.setAttribute('data-doc-hydrated', 'true');
