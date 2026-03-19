@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect } from 'react';
+import { useState, useLayoutEffect, useEffect } from 'react';
 
 interface TableOfContentsItem {
   id: string;
@@ -60,25 +60,27 @@ const useIsomorphicLayoutEffect =
 export function useTableOfContents<T>(dependency: T): TableOfContentsItem[] {
   const [toc, setToc] = useState<TableOfContentsItem[]>([]);
 
-  // Synchronous scan after DOM paint — no setTimeout, no delay, no flash
   useIsomorphicLayoutEffect(() => {
-    // First attempt: synchronous, runs before browser paint
+    // First attempt: synchronous scan before browser paint
     const items = scanHeadings();
     if (items.length > 0) {
       setToc(items);
       return;
     }
 
-    // Fallback: content not yet in DOM (e.g. lazy-loaded), use MutationObserver
+    // Fallback: watch [data-article-content] specifically, not entire body.
+    // Disconnect immediately after first successful scan to avoid leaking.
+    const container = document.querySelector('[data-article-content]') ?? document.body;
+
     const observer = new MutationObserver(() => {
       const found = scanHeadings();
       if (found.length > 0) {
         setToc(found);
-        observer.disconnect();
+        observer.disconnect(); // stop watching — we have what we need
       }
     });
 
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(container, { childList: true, subtree: true });
 
     return () => observer.disconnect();
   }, [dependency]);
