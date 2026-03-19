@@ -322,23 +322,33 @@ function handleStepsBlock(trimmed, lines, i, codeBlocks, output) {
 }
 
 function handleMathBlock(trimmed, lines, i, output) {
-  // :::math          → inline (katex-inline wrapper)
-  // :::math[display] → display / block mode
+  // :::math          → inline / paragraph
+  // :::math[display] → display / block centered
   const match = trimmed.match(/^:::math(?:\[([^\]]*)\])?\s*$/);
   if (!match) return null;
 
   const displayMode = (match[1] ?? '').trim() === 'display';
-  const { body, endIndex } = collectBlockBody(lines, i + 1);
-  const tex = body.trim();
 
+  // Simple body collector: gather lines until a standalone ::: (depth-unaware,
+  // because LaTeX source never contains ::: as a meaningful token)
+  const bodyLines = [];
+  let j = i + 1;
+  while (j < lines.length && lines[j].trim() !== ':::') {
+    bodyLines.push(lines[j]);
+    j++;
+  }
+
+  const tex      = bodyLines.join('\n').trim();
   const rendered = renderKatex(tex, displayMode);
+
   if (displayMode) {
     output.push(`<div class="katex-block not-prose">${rendered}</div>`);
   } else {
     output.push(`<p><span class="katex-inline">${rendered}</span></p>`);
   }
 
-  return endIndex + 1;
+  // j points at the closing :::, so next line is j+1
+  return j + 1;
 }
 
 // ─── Custom block preprocessor ────────────────────────────────────────────────
