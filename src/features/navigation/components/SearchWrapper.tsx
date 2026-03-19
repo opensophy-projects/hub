@@ -1,9 +1,13 @@
 import React from 'react';
-import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
+import { useTheme } from '@/shared/contexts/ThemeContext';
 import UnifiedSearchPanel from './UnifiedSearchPanel';
 import { AnimatePresence } from 'framer-motion';
 
-const SearchWrapperInner: React.FC = () => {
+/**
+ * SearchWrapper no longer wraps itself in ThemeProvider.
+ * Uses useTheme() directly — context is provided by Layout.astro.
+ */
+const SearchWrapper: React.FC = () => {
   const { isSearchOpen, setSearchOpen } = useTheme();
   return (
     <AnimatePresence>
@@ -13,11 +17,5 @@ const SearchWrapperInner: React.FC = () => {
     </AnimatePresence>
   );
 };
-
-const SearchWrapper: React.FC = () => (
-  <ThemeProvider>
-    <SearchWrapperInner />
-  </ThemeProvider>
-);
 
 export default SearchWrapper;
