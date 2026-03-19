@@ -58,10 +58,6 @@ const LucideIcon: React.FC<{ name: string; size?: number; className?: string }> 
   return <Icon size={size} className={className} />;
 });
 
-const borderStyle = (isDark: boolean) => ({
-  borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-});
-
 const createCloseKeyHandler = (onClose: () => void) => (e: React.KeyboardEvent) => {
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); }
 };
@@ -89,48 +85,65 @@ const NavPopoverSwitcher: React.FC<{
     [sections, activeSlug]
   );
 
-  const bg = isDark ? 'bg-[#0F0F0F]' : 'bg-[#E1E0DC]';
-  const border = isDark ? 'border-white/10' : 'border-black/10';
-  const hoverItem = isDark ? 'hover:bg-white/5 text-white/80' : 'hover:bg-black/5 text-black/80';
-  const activeItem = isDark ? 'bg-white/10 text-white font-medium' : 'bg-black/10 text-black font-medium';
+  const popBg = isDark ? '#0F0F0F' : '#E1E0DC';
+  const borderClr = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+  const textClr = isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.8)';
+  const hoverBg = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+  const activeBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+  const mutedClr = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
+  const chevClr = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
 
   return (
-    <div className="flex-shrink-0 px-3 py-2" ref={ref}>
+    <div className="flex-shrink-0 px-3 py-2" ref={ref} style={{ position: 'relative' }}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm border transition-colors ${border} ${
-          isDark ? 'hover:bg-white/5 text-white/80' : 'hover:bg-black/5 text-black/80'
-        }`}
-        style={borderStyle(isDark)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '0.5rem',
+          fontSize: '0.875rem', border: `1px solid ${borderClr}`,
+          background: 'transparent', color: textClr, cursor: 'pointer',
+        }}
       >
-        <div className="flex items-center gap-2 min-w-0">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
           {active.navSlug === ''
-            ? <Home size={15} className={isDark ? 'text-white/50' : 'text-black/50'} />
+            ? <Home size={15} style={{ color: mutedClr }} />
             : <LucideIcon key={active.navSlug} name={active.navIcon} size={15} className={isDark ? 'text-white/50' : 'text-black/50'} />
           }
-          <span className="truncate">{active.navTitle}</span>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{active.navTitle}</span>
         </div>
         <ChevronDown
           size={14}
-          className={`flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''} ${isDark ? 'text-white/40' : 'text-black/40'}`}
+          style={{
+            flexShrink: 0,
+            color: chevClr,
+            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 0.15s ease',
+          }}
         />
       </button>
 
       {open && (
-        <div
-          className={`absolute left-3 right-3 mt-1 rounded-xl border shadow-xl z-50 overflow-hidden ${bg} ${border}`}
-          style={{ borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)' }}
-        >
+        <div style={{
+          position: 'absolute', left: '0.75rem', right: '0.75rem', marginTop: '0.25rem',
+          borderRadius: '0.75rem', border: `1px solid ${borderClr}`,
+          boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.7)' : '0 8px 24px rgba(0,0,0,0.15)',
+          zIndex: 50, overflow: 'hidden', background: popBg,
+        }}>
           {sections.map((section) => (
             <button
               key={section.navSlug}
               onClick={() => { onSelect(section.navSlug); setOpen(false); }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm transition-colors ${
-                section.navSlug === activeSlug ? activeItem : hoverItem
-              }`}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: '0.625rem',
+                padding: '0.625rem 0.75rem', fontSize: '0.875rem',
+                border: 'none', cursor: 'pointer', textAlign: 'left',
+                background: section.navSlug === activeSlug ? activeBg : 'transparent',
+                color: section.navSlug === activeSlug ? (isDark ? '#fff' : '#000') : textClr,
+                fontWeight: section.navSlug === activeSlug ? 600 : 400,
+              }}
             >
               {section.navSlug === ''
-                ? <Home size={15} className={isDark ? 'text-white/50' : 'text-black/50'} />
+                ? <Home size={15} style={{ color: mutedClr }} />
                 : <LucideIcon name={section.navIcon} size={15} className={isDark ? 'text-white/50' : 'text-black/50'} />
               }
               <span>{section.navTitle}</span>
@@ -154,7 +167,11 @@ const SidebarOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   return (
     <button
       type="button"
-      className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 cursor-default"
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+        backdropFilter: 'blur(4px)', zIndex: 40, cursor: 'default',
+        border: 'none', padding: 0,
+      }}
       onClick={onClose}
       onKeyDown={createCloseKeyHandler(onClose)}
       aria-label="Закрыть боковую панель"
@@ -174,14 +191,18 @@ const IconButton: React.FC<{
   <button
     onClick={onClick}
     title={title}
-    className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-lg border transition-colors ${
-      isDark
-        ? 'text-white/70 hover:bg-white/5 hover:text-white border-white/10'
-        : 'text-black/70 hover:bg-black/5 hover:text-black border-black/10'
-    }`}
+    style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      justifyContent: 'center', gap: '2px', padding: '6px 8px',
+      borderRadius: '0.5rem',
+      border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+      background: 'transparent',
+      color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)',
+      cursor: 'pointer',
+    }}
   >
-    <div className="w-5 h-5 flex items-center justify-center">{icon}</div>
-    <span className="text-[9px] font-medium leading-none">{label}</span>
+    <div style={{ width: '1.25rem', height: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
+    <span style={{ fontSize: '9px', fontWeight: 500, lineHeight: 1 }}>{label}</span>
   </button>
 );
 
@@ -193,19 +214,21 @@ const SidebarHeader: React.FC<{
   onToggleContacts: () => void; isDesktop: boolean;
 }> = memo(({ onClose, isDark, onToggleTheme, onToggleContacts, isDesktop }) => (
   <div
-    className="flex-shrink-0 px-4 py-3 border-b flex items-center justify-between sticky top-0 z-20"
     style={{
-      borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+      flexShrink: 0, padding: '0.75rem 1rem',
+      borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      position: 'sticky', top: 0, zIndex: 20,
       backgroundColor: isDark ? 'rgba(15,15,15,0.95)' : 'rgba(225,224,220,0.95)',
       backdropFilter: 'blur(10px)',
     }}
   >
-    <a href="/" className="flex items-center gap-2">
-      <img src="/favicon.png" alt="Opensophy" className="w-7 h-7 object-contain" />
-      <h1 className="text-xl font-bold font-customfont" style={{ color: '#7234ff' }}>hub</h1>
+    <a href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}>
+      <img src="/favicon.png" alt="Opensophy" style={{ width: '1.75rem', height: '1.75rem', objectFit: 'contain' }} />
+      <h1 style={{ fontSize: '1.25rem', fontWeight: 700, fontFamily: 'customfont', color: '#7234ff', margin: 0 }}>hub</h1>
     </a>
 
-    <div className="flex items-center gap-0.5">
+    <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
       <IconButton
         icon={isDark ? <Sun size={17} /> : <Moon size={17} />}
         label={isDark ? 'Светлая' : 'Тёмная'}
@@ -223,7 +246,11 @@ const SidebarHeader: React.FC<{
       {!isDesktop && (
         <button
           onClick={onClose}
-          className={`p-2 rounded-lg transition-colors ${isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black'}`}
+          style={{
+            padding: '0.5rem', borderRadius: '0.5rem', border: 'none',
+            background: 'transparent', cursor: 'pointer',
+            color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)',
+          }}
           aria-label="Закрыть меню"
         >
           <X size={18} />
@@ -240,43 +267,54 @@ const SidebarSearch: React.FC<{
   onChange: (value: string) => void;
   isDark: boolean;
   onOpenAdvanced: () => void;
-}> = memo(({ value, onChange, isDark, onOpenAdvanced }) => (
-  <div className="flex-shrink-0 p-3" style={borderStyle(isDark)}>
-    <div className="flex gap-2">
-      <div className="relative flex-1">
-        <Search
-          size={15}
-          className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-white/40' : 'text-black/40'}`}
-        />
-        <input
-          type="text"
-          placeholder="Поиск по названию..."
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className={`w-full pl-8 pr-3 py-2 rounded-lg text-sm border transition-colors outline-none ${
-            isDark
-              ? 'bg-[#0F0F0F] border-white/10 text-white placeholder-white/40 focus:border-white/20'
-              : 'bg-[#E1E0DC] border-black/10 text-black placeholder-black/40 focus:border-black/20'
-          }`}
-        />
-      </div>
+}> = memo(({ value, onChange, isDark, onOpenAdvanced }) => {
+  const borderClr = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+  const inputBg = isDark ? '#0F0F0F' : '#E1E0DC';
+  const inputClr = isDark ? '#fff' : '#000';
+  const plhClr = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
+  const iconClr = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
+  const btnClr = isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)';
 
-      <button
-        onClick={onOpenAdvanced}
-        title="Расширенный поиск"
-        className={`flex flex-col items-center justify-center gap-0.5 px-2.5 rounded-lg border transition-colors flex-shrink-0 ${
-          isDark
-            ? 'border-white/10 text-white/60 hover:bg-white/5 hover:text-white hover:border-white/20'
-            : 'border-black/10 text-black/60 hover:bg-black/5 hover:text-black hover:border-black/20'
-        }`}
-        style={{ minHeight: '38px' }}
-      >
-        <SlidersHorizontal size={15} />
-        <span className="text-[9px] font-medium leading-none">Расширенный</span>
-      </button>
+  return (
+    <div style={{ flexShrink: 0, padding: '0.75rem', borderBottom: `1px solid ${borderClr}` }}>
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ position: 'relative', flex: 1 }}>
+          <Search size={15} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: iconClr, pointerEvents: 'none' }} />
+          <input
+            type="text"
+            placeholder="Поиск по названию..."
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            style={{
+              width: '100%', paddingLeft: '2rem', paddingRight: '0.75rem',
+              paddingTop: '0.5rem', paddingBottom: '0.5rem',
+              borderRadius: '0.5rem', fontSize: '0.875rem',
+              border: `1px solid ${borderClr}`,
+              background: inputBg, color: inputClr, outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+        </div>
+
+        <button
+          onClick={onOpenAdvanced}
+          title="Расширенный поиск"
+          style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', gap: '2px', padding: '0 10px',
+            borderRadius: '0.5rem',
+            border: `1px solid ${borderClr}`,
+            background: 'transparent', color: btnClr, cursor: 'pointer',
+            minHeight: '38px', flexShrink: 0,
+          }}
+        >
+          <SlidersHorizontal size={15} />
+          <span style={{ fontSize: '9px', fontWeight: 500, lineHeight: 1 }}>Расширенный</span>
+        </button>
+      </div>
     </div>
-  </div>
-));
+  );
+});
 
 // ─── DocLink ──────────────────────────────────────────────────────────────────
 
@@ -286,23 +324,25 @@ const DocLink: React.FC<{
   isActive: boolean;
 }> = memo(({ doc, isDark, isActive }) => {
   const accentColor = isDark ? '#ffffff' : '#000000';
+  const baseClr = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)';
 
   return (
     <a
       href={`/${doc.slug}`}
-      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all ${
-        isDark ? 'text-white/70 hover:text-white hover:bg-white/5' : 'text-black/70 hover:text-black hover:bg-black/5'
-      }`}
       style={{
+        display: 'flex', alignItems: 'center', gap: '0.5rem',
+        padding: '6px 12px', borderRadius: '0.5rem', fontSize: '0.875rem',
+        textDecoration: 'none',
         borderLeft: '2px solid',
         borderLeftColor: isActive ? accentColor : 'transparent',
         boxShadow: isActive ? `inset 3px 0 10px -2px ${accentColor}88` : 'none',
         textShadow: isActive ? `0 0 12px ${accentColor}66` : 'none',
-        color: isActive ? accentColor : undefined,
+        color: isActive ? accentColor : baseClr,
         fontWeight: isActive ? 600 : 400,
+        background: 'transparent',
       }}
     >
-      <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
+      <span style={{ flexShrink: 0, width: '1rem', height: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {doc.icon && (
           <LucideIcon name={doc.icon} size={15} className={isDark ? 'text-white/60' : 'text-black/60'} />
         )}
@@ -330,45 +370,50 @@ const CategoryNode: React.FC<{
   const isExpanded = expandedPaths.has(path);
   const hasChildren = Object.keys(node.children).length > 0;
   const totalDocs = countDocsInNode(node);
+  const textClr = isDark ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.9)';
+  const mutedClr = isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)';
+  const badgeBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
 
   return (
     <div>
       <button
         onClick={() => onToggle(path)}
-        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
-          isDark ? 'text-white/90 hover:bg-white/5' : 'text-black/90 hover:bg-black/5'
-        }`}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '8px 12px', borderRadius: '0.5rem', fontSize: '0.875rem', fontWeight: 600,
+          border: 'none', background: 'transparent', color: textClr, cursor: 'pointer',
+          textAlign: 'left',
+        }}
       >
-        <div className="flex items-center gap-2">
-          <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ flexShrink: 0, width: '1rem', height: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {hasChildren && (
               isExpanded
-                ? <ChevronDown size={15} className={isDark ? 'text-white/60' : 'text-black/60'} />
-                : <ChevronRight size={15} className={isDark ? 'text-white/60' : 'text-black/60'} />
+                ? <ChevronDown size={15} style={{ color: mutedClr }} />
+                : <ChevronRight size={15} style={{ color: mutedClr }} />
             )}
           </span>
-          <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
+          <span style={{ flexShrink: 0, width: '1rem', height: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {node.icon && (
-              <LucideIcon
-                name={node.icon}
-                size={15}
-                className={isDark ? 'text-white/60' : 'text-black/60'}
-              />
+              <LucideIcon name={node.icon} size={15} className={isDark ? 'text-white/60' : 'text-black/60'} />
             )}
           </span>
           <span>{node.title}</span>
         </div>
         {totalDocs > 0 && (
-          <span className={`text-xs px-2 py-0.5 rounded ${isDark ? 'bg-white/10 text-white/70' : 'bg-black/10 text-black/70'}`}>
+          <span style={{
+            fontSize: '0.75rem', padding: '1px 8px', borderRadius: '4px',
+            background: badgeBg, color: mutedClr,
+          }}>
             {totalDocs}
           </span>
         )}
       </button>
 
       {isExpanded && (
-        <div className="ml-4 mt-1 space-y-1">
+        <div style={{ marginLeft: '1rem', marginTop: '0.25rem' }}>
           {node.docs.length > 0 && (
-            <div className="space-y-1">
+            <div>
               {[...node.docs].sort((a, b) => a.title.localeCompare(b.title)).map((doc) => (
                 <DocLink
                   key={doc.id}
@@ -419,7 +464,6 @@ function buildNavigationTree(docs: Doc[], searchQuery: string, activeNavSlug: st
     let current = root;
     for (let i = 0; i < parts.length - 1; i++) {
       const part = parts[i];
-
       if (!current.children[part]) {
         const catInfo = catPath[i];
         current.children[part] = {
@@ -431,7 +475,6 @@ function buildNavigationTree(docs: Doc[], searchQuery: string, activeNavSlug: st
           isCategory: true,
         };
       }
-
       current = current.children[part];
     }
     current.docs.push(doc);
@@ -449,12 +492,15 @@ const ContactLink: React.FC<{
     href={href}
     target={external ? '_blank' : undefined}
     rel={external ? 'noopener noreferrer' : undefined}
-    className={`block px-3 py-2 rounded-lg text-sm transition-colors ${
-      isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black'
-    }`}
+    style={{
+      display: 'block', padding: '8px 12px', borderRadius: '0.5rem',
+      fontSize: '0.875rem', textDecoration: 'none',
+      color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)',
+      background: 'transparent',
+    }}
   >
-    <div className="font-medium">{title}</div>
-    <div className="text-xs opacity-70">{subtitle}</div>
+    <div style={{ fontWeight: 500 }}>{title}</div>
+    <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>{subtitle}</div>
   </a>
 );
 
@@ -463,18 +509,27 @@ const ContactsSection: React.FC<{ isDark: boolean; isOpen: boolean; onClose: () 
 }) => {
   if (!isOpen) return null;
   return (
-    <div className={`fixed left-0 top-0 w-full md:w-80 h-screen border-r flex flex-col z-50 ${isDark ? 'bg-[#0F0F0F] border-white/10' : 'bg-[#E1E0DC] border-black/10'}`}>
-      <div className="flex items-center justify-between p-4">
-        <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-black'}`}>Контакты</h2>
+    <div style={{
+      position: 'fixed', left: 0, top: 0, width: '100%', maxWidth: '20rem',
+      height: '100vh', borderRight: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+      display: 'flex', flexDirection: 'column', zIndex: 50,
+      background: isDark ? '#0F0F0F' : '#E1E0DC',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem' }}>
+        <h2 style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0, color: isDark ? '#fff' : '#000' }}>Контакты</h2>
         <button
           onClick={onClose}
-          className={`p-2 rounded-lg transition-colors ${isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-black/70 hover:bg-black/5 hover:text-black'}`}
+          style={{
+            padding: '0.5rem', borderRadius: '0.5rem', border: 'none',
+            background: 'transparent', cursor: 'pointer',
+            color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)',
+          }}
           aria-label="Закрыть контакты"
         >
           <X size={20} />
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto p-3 space-y-1">
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0.75rem' }}>
         {CONTACTS.map((c) => (
           <ContactLink key={c.href} {...c} isDark={isDark} />
         ))}
@@ -485,23 +540,12 @@ const ContactsSection: React.FC<{ isDark: boolean; isOpen: boolean; onClose: () 
 
 // ─── ManifestError ────────────────────────────────────────────────────────────
 
-// FIX: UI fallback shown in the sidebar when manifest.json fails to load,
-// instead of silently displaying an empty document list.
 const ManifestError: React.FC<{ isDark: boolean; error: string }> = ({ isDark, error }) => (
-  <div
-    style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      gap: '0.75rem',
-      padding: '2rem 1.5rem',
-      textAlign: 'center',
-    }}
-  >
-    <AlertTriangle
-      size={28}
-      style={{ color: isDark ? 'rgba(251,191,36,0.7)' : 'rgba(180,130,0,0.8)', flexShrink: 0 }}
-    />
+  <div style={{
+    display: 'flex', flexDirection: 'column', alignItems: 'center',
+    gap: '0.75rem', padding: '2rem 1.5rem', textAlign: 'center',
+  }}>
+    <AlertTriangle size={28} style={{ color: isDark ? 'rgba(251,191,36,0.7)' : 'rgba(180,130,0,0.8)', flexShrink: 0 }} />
     <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 600, color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)' }}>
       Не удалось загрузить список документов
     </p>
@@ -511,14 +555,11 @@ const ManifestError: React.FC<{ isDark: boolean; error: string }> = ({ isDark, e
     <button
       onClick={() => globalThis.window?.location?.reload()}
       style={{
-        marginTop: '0.25rem',
-        padding: '0.35rem 0.9rem',
-        borderRadius: '7px',
+        padding: '0.35rem 0.9rem', borderRadius: '7px',
         border: `1px solid ${isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'}`,
         background: 'transparent',
         color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)',
-        fontSize: '0.75rem',
-        cursor: 'pointer',
+        fontSize: '0.75rem', cursor: 'pointer',
       }}
     >
       Обновить страницу
@@ -534,7 +575,6 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
   const { isDark, toggleTheme, isSidebarOpen, setSidebarOpen } = useTheme();
-  // FIX: destructure error from useDocuments so we can display it in the sidebar
   const { manifest: docs, loading, error } = useDocuments();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
@@ -578,17 +618,12 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
 
   useEffect(() => {
     if (!currentDocSlug) return;
-
     let slugForTree = currentDocSlug;
     if (activeNavSlug !== '' && currentDocSlug.startsWith(activeNavSlug + '/')) {
       slugForTree = currentDocSlug.slice(activeNavSlug.length + 1);
     }
-
     const parts = slugForTree.split('/');
-    const pathParts = parts
-      .slice(0, -1)
-      .map((_, i) => parts.slice(0, i + 1).join('/'));
-
+    const pathParts = parts.slice(0, -1).map((_, i) => parts.slice(0, i + 1).join('/'));
     if (pathParts.length > 0) {
       startTransition(() => { setExpandedPaths(new Set(pathParts)); });
     }
@@ -602,32 +637,34 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
   const togglePath = (path: string) => {
     setExpandedPaths((prev) => {
       const next = new Set(prev);
-      if (next.has(path)) {
-        next.delete(path);
-      } else {
-        next.add(path);
-      }
+      if (next.has(path)) { next.delete(path); } else { next.add(path); }
       return next;
     });
   };
 
   const handleClose = () => setSidebarOpen(false);
-  const handleToggleTheme = (e: React.MouseEvent) => { toggleTheme(e); };
 
   if (!isSidebarOpen && !isDesktop) return null;
+
+  const sidebarBg = isDark ? '#0F0F0F' : '#E1E0DC';
+  const sidebarBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
 
   return (
     <>
       {!isDesktop && isSidebarOpen && <SidebarOverlay onClose={handleClose} />}
       <aside
-        className={`fixed left-0 top-0 h-screen w-full md:w-80 border-r flex flex-col z-50 ${
-          isDark ? 'bg-[#0F0F0F] border-white/10' : 'bg-[#E1E0DC] border-black/10'
-        }`}
-        style={{ height: '100vh' }}
+        style={{
+          position: 'fixed', left: 0, top: 0,
+          height: '100vh', width: '100%', maxWidth: '20rem',
+          borderRight: `1px solid ${sidebarBorder}`,
+          display: 'flex', flexDirection: 'column', zIndex: 50,
+          background: sidebarBg,
+        }}
       >
         <SidebarHeader
-          onClose={handleClose} isDark={isDark}
-          onToggleTheme={handleToggleTheme}
+          onClose={handleClose}
+          isDark={isDark}
+          onToggleTheme={(e) => toggleTheme(e)}
           onToggleContacts={() => setShowContacts(!showContacts)}
           isDesktop={isDesktop}
         />
@@ -651,32 +688,23 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
           />
         )}
 
-        <div className="flex-1 overflow-y-auto p-3">
-          {/* FIX: show error state instead of empty list when manifest fails */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '0.75rem' }}>
           {error ? (
             <ManifestError isDark={isDark} error={error} />
           ) : loading ? (
             <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '2rem',
-              fontSize: '0.8rem',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '2rem', fontSize: '0.8rem',
               color: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
             }}>
               Загрузка...
             </div>
           ) : (
-            <nav className="space-y-2">
+            <nav>
               {navTree.docs.length > 0 && (
-                <div className="space-y-1 mb-4">
+                <div style={{ marginBottom: '1rem' }}>
                   {[...navTree.docs].sort((a, b) => a.title.localeCompare(b.title)).map((doc) => (
-                    <DocLink
-                      key={doc.id}
-                      doc={doc}
-                      isDark={isDark}
-                      isActive={currentDocSlug === doc.slug}
-                    />
+                    <DocLink key={doc.id} doc={doc} isDark={isDark} isActive={currentDocSlug === doc.slug} />
                   ))}
                 </div>
               )}
