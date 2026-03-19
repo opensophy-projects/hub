@@ -136,7 +136,6 @@ body {
 .prose .github-alert { margin: 1rem 0; padding: 1rem; border-left: 4px solid; border-radius: 0.375rem; }
 
 /* ── Mark / highlight ── */
-/* FIX: контраст в тёмной теме — было rgb(202,138,4) (~2.8:1), стало rgb(234,179,8) (~4.6:1) */
 .prose mark { background-color: rgb(253, 224, 71); color: rgb(0, 0, 0); padding: 2px 4px; border-radius: 2px; }
 .dark .prose mark { background-color: rgb(234, 179, 8); color: rgb(0, 0, 0); }
 
@@ -240,7 +239,3 @@ html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .
 .katex-display::-webkit-scrollbar-track { background: transparent; }
 .katex-display::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
 .dark .katex-display::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); }
-
-/* ── Mermaid ── */
-.prose .mermaid { margin: 1.5rem 0; }
-.prose .mermaid svg { max-width: 100%; height: auto; }
