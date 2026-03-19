@@ -3,7 +3,7 @@ import React, {
 } from 'react';
 import { useTheme } from '@/shared/contexts/ThemeContext';
 import { useDebounce } from '@/shared/hooks/useDebounce';
-import { useDocuments } from '@/features/docs/hooks/useDocuments';
+import { useManifest } from '@/features/docs/hooks/useDocuments';
 import {
   Search, X, Hash, Clock, ChevronRight,
   CalendarDays, SlidersHorizontal,
@@ -47,8 +47,6 @@ const PAGE_SIZE      = 10;
 const LOAD_MORE_N    = 10;
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
-// Date.now() at module level: called once when the module is imported,
-// never during component render — satisfies the SonarQube S6481 rule.
 const MODULE_NOW_MS = Date.now();
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -409,7 +407,7 @@ function useSearchResults(docs: DocMeta[], opts: SearchOptions) {
 
 const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const { isDark } = useTheme();
-  const { manifest: docs } = useDocuments();
+  const { manifest: docs } = useManifest();
   const C = useMemo(() => makeColors(isDark), [isDark]);
 
   const [query, setQuery]                   = useState('');
