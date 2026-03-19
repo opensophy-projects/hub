@@ -9,10 +9,6 @@ import Overlay from './Overlay';
 import { useDragScroll } from '@/features/table/hooks/useDragScroll';
 import hljs from 'highlight.js/lib/core';
 
-// ---------------------------------------------------------------------------
-// Design tokens — mirror TableControlsBar / TableModal / TableWithControls
-// ---------------------------------------------------------------------------
-
 function tk(isDark: boolean) {
   return isDark ? {
     outerBg:     '#0a0a0a',
@@ -77,10 +73,6 @@ function tk(isDark: boolean) {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Language support
-// ---------------------------------------------------------------------------
-
 const LANG_ALIASES: Record<string, string> = {
   jsx: 'javascript', tsx: 'typescript', shell: 'bash', sh: 'bash',
   yml: 'yaml', md: 'markdown', 'c++': 'cpp', cs: 'csharp',
@@ -141,10 +133,6 @@ async function loadLanguage(lang: string): Promise<void> {
   pendingLanguages.set(normalized, promise);
   return promise;
 }
-
-// ---------------------------------------------------------------------------
-// Highlight helpers
-// ---------------------------------------------------------------------------
 
 function escapeHtml(str: string): string {
   return str.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
@@ -208,10 +196,6 @@ function useHighlightedHtml(code: string, language: string, lineNumColor: string
   return html;
 }
 
-// ---------------------------------------------------------------------------
-// CodeBody with drag-scroll
-// ---------------------------------------------------------------------------
-
 interface BodyProps {
   lines: string[]; matchedLines: Set<number>; searchQuery: string;
   fg: string; codeBg: string; lineNum: string; highlightedHtml: string;
@@ -222,7 +206,6 @@ interface BodyProps {
 const CodeBody = React.forwardRef<HTMLDivElement, BodyProps>(
   ({ lines, matchedLines, searchQuery, fg, codeBg, lineNum, highlightedHtml, thumb, track, thumbHov, maxHeight }, _ref) => {
     const { scrollRef, dragStyle, dragHandlers } = useDragScroll();
-
     return (
       <>
         <style>{`
@@ -232,7 +215,6 @@ const CodeBody = React.forwardRef<HTMLDivElement, BodyProps>(
           .cb-scroll::-webkit-scrollbar-thumb:hover{background:${thumbHov}}
           .cb-scroll::-webkit-scrollbar-corner{background:transparent}
         `}</style>
-        {/* Outer div: handles scroll + drag */}
         <div
           ref={scrollRef}
           className="cb-scroll"
@@ -249,29 +231,17 @@ const CodeBody = React.forwardRef<HTMLDivElement, BodyProps>(
           }}
           {...dragHandlers}
         >
-          {/* Inner pre: preserves whitespace/newlines — must NOT be the scroll container */}
           <pre
             className="not-prose hljs"
             style={{
-              margin: 0,
-              padding: '10px 14px',
-              background: 'transparent',
-              color: fg,
+              margin: 0, padding: '10px 14px', background: 'transparent', color: fg,
               fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-              fontSize: '0.875rem',
-              lineHeight: '1.5',
-              // pre must NOT overflow — the outer div scrolls
-              overflow: 'visible',
-              whiteSpace: 'pre',
-              minWidth: 'max-content',
+              fontSize: '0.875rem', lineHeight: '1.5',
+              overflow: 'visible', whiteSpace: 'pre', minWidth: 'max-content',
             }}
           >
             {highlightedHtml
-              ? <code
-                  dangerouslySetInnerHTML={{ __html: highlightedHtml }}
-                  className="language-code"
-                  style={{ color: fg, display: 'block', whiteSpace: 'pre' }}
-                />
+              ? <code dangerouslySetInnerHTML={{ __html: highlightedHtml }} className="language-code" style={{ color: fg, display: 'block', whiteSpace: 'pre' }} />
               : lines.map((line, i) => (
                 <div key={`${i}-${line.slice(0, 8)}`} style={{ whiteSpace: 'pre' }}>
                   <span style={{ color: lineNum, display: 'inline-block', width: '28px', marginRight: '14px', textAlign: 'right', userSelect: 'none', fontSize: '11px' }}>{i + 1}</span>
@@ -286,10 +256,6 @@ const CodeBody = React.forwardRef<HTMLDivElement, BodyProps>(
   }
 );
 CodeBody.displayName = 'CodeBody';
-
-// ---------------------------------------------------------------------------
-// Pill button
-// ---------------------------------------------------------------------------
 
 function Pill({ onClick, title, label, icon, t, active, success, btnRef }: {
   onClick: () => void; title: string; label: string; icon: React.ReactNode;
@@ -317,7 +283,7 @@ function Pill({ onClick, title, label, icon, t, active, success, btnRef }: {
 }
 
 // ---------------------------------------------------------------------------
-// Portal menu (shared by LangPicker and MobileMenu)
+// PortalMenu — FIX: scroll inside the menu itself does NOT close it
 // ---------------------------------------------------------------------------
 
 const PortalMenu: React.FC<{
@@ -325,10 +291,16 @@ const PortalMenu: React.FC<{
   onClose: () => void; children: React.ReactNode; minWidth?: number;
 }> = ({ pos, t, onClose, children, minWidth = 190 }) => {
   const ref = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    const onMouse = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) onClose(); };
-    // Close on any scroll — menu is position:fixed but page scroll makes it look detached
-    const onScroll = () => onClose();
+    const onMouse = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) onClose();
+    };
+    const onScroll = (e: Event) => {
+      // If the scroll event target is inside the menu — don't close
+      if (ref.current && ref.current.contains(e.target as Node)) return;
+      onClose();
+    };
     document.addEventListener('mousedown', onMouse, true);
     window.addEventListener('scroll', onScroll, { capture: true, passive: true });
     return () => {
@@ -336,6 +308,7 @@ const PortalMenu: React.FC<{
       window.removeEventListener('scroll', onScroll, true);
     };
   }, [onClose]);
+
   return ReactDOM.createPortal(
     <>
       <style>{`@keyframes cbMenuIn{from{opacity:0;transform:translateY(-5px) scale(0.97)}to{opacity:1;transform:none}}`}</style>
@@ -353,18 +326,11 @@ const PortalMenu: React.FC<{
   );
 };
 
-// ---------------------------------------------------------------------------
-// LangPicker
-// ---------------------------------------------------------------------------
-
 function LangPicker({ currentLang, onSelect, onClose, anchorRect, t }: {
   currentLang: string; onSelect: (l: string) => void; onClose: () => void;
   anchorRect: DOMRect; t: ReturnType<typeof tk>;
 }) {
-  const pos = {
-    top: anchorRect.bottom + 4,
-    left: Math.max(8, anchorRect.right - 160),
-  };
+  const pos = { top: anchorRect.bottom + 4, left: Math.max(8, anchorRect.right - 160) };
   return (
     <PortalMenu pos={pos} t={t} onClose={onClose} minWidth={160}>
       <div style={{ maxHeight: 240, overflowY: 'auto' }}>
@@ -388,10 +354,6 @@ function LangPicker({ currentLang, onSelect, onClose, anchorRect, t }: {
   );
 }
 
-// ---------------------------------------------------------------------------
-// MobileMenu — ⋯ button with portal dropdown (copy, lang, fullscreen)
-// ---------------------------------------------------------------------------
-
 function MobileMenu({ t, code, activeLang, onSelectLang, onFullscreen }: {
   t: ReturnType<typeof tk>;
   code: string;
@@ -405,7 +367,6 @@ function MobileMenu({ t, code, activeLang, onSelectLang, onFullscreen }: {
   const [pos, setPos]       = useState({ top: 0, left: 0 });
   const [langPos, setLangPos] = useState({ top: 0, left: 0 });
   const ref = useRef<HTMLButtonElement>(null);
-  const langBtnRef = useRef<HTMLButtonElement>(null);
 
   const toggle = () => {
     if (open) { setOpen(false); setShowLang(false); return; }
@@ -423,7 +384,6 @@ function MobileMenu({ t, code, activeLang, onSelectLang, onFullscreen }: {
   };
 
   const openLangPicker = () => {
-    // Position lang submenu to the left of the main menu
     const r = ref.current?.getBoundingClientRect();
     if (!r) return;
     const mw = 160;
@@ -434,25 +394,15 @@ function MobileMenu({ t, code, activeLang, onSelectLang, onFullscreen }: {
   const sLabel = (s: string) => (
     <div style={{ padding: '7px 12px 3px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: t.menuSub }}>{s}</div>
   );
-
   const sep = <div style={{ height: 1, margin: '3px 0', background: t.menuBdr }} />;
-
-  const mRow = (
-    onClick: () => void,
-    icon: React.ReactNode,
-    label: string,
-    sub?: string,
-    green?: boolean,
-    danger?: boolean,
-  ) => (
+  const mRow = (onClick: () => void, icon: React.ReactNode, label: string, sub?: string, green?: boolean) => (
     <button onClick={onClick} style={{
       width: '100%', padding: sub ? '10px 14px' : '11px 14px',
       display: 'flex', flexDirection: sub ? 'column' : 'row',
       alignItems: sub ? 'flex-start' : 'center', gap: sub ? 2 : 10,
-      border: 'none',
-      background: green ? 'rgba(34,197,94,0.12)' : 'transparent',
+      border: 'none', background: green ? 'rgba(34,197,94,0.12)' : 'transparent',
       cursor: 'pointer', textAlign: 'left',
-      color: green ? '#22c55e' : danger ? '#f87171' : t.menuClr,
+      color: green ? '#22c55e' : t.menuClr,
       fontSize: 13, fontWeight: green ? 600 : 400, transition: 'background 0.1s',
     }}
       onMouseEnter={e => { if (!green) (e.currentTarget as HTMLButtonElement).style.background = t.menuHov; }}
@@ -469,7 +419,7 @@ function MobileMenu({ t, code, activeLang, onSelectLang, onFullscreen }: {
       <button ref={ref} onClick={toggle} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         width: 36, height: 36, borderRadius: 8,
-        border: `1px solid ${open ? t.btnBdr : t.btnBdr}`,
+        border: `1px solid ${t.btnBdr}`,
         background: open ? t.btnHov : t.btnBg,
         color: t.btnClr, cursor: 'pointer', flexShrink: 0, transition: 'all 0.13s',
       }}
@@ -482,13 +432,10 @@ function MobileMenu({ t, code, activeLang, onSelectLang, onFullscreen }: {
       {open && (
         <PortalMenu pos={pos} t={t} onClose={() => { setOpen(false); setShowLang(false); }} minWidth={210}>
           {sLabel('Копировать')}
-          {mRow(doCopy, copied ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />,
-            copied ? 'Скопировано!' : 'Скопировать код', undefined, copied)}
-
+          {mRow(doCopy, copied ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />, copied ? 'Скопировано!' : 'Скопировать код', undefined, copied)}
           {sep}
           {sLabel('Подсветка')}
           {mRow(openLangPicker, <Code2 size={14} />, activeLang || 'markdown', 'Сменить язык')}
-
           {sep}
           {mRow(() => { onFullscreen(); setOpen(false); }, <Maximize2 size={14} />, 'Развернуть')}
           <div style={{ height: 4 }} />
@@ -520,10 +467,6 @@ function MobileMenu({ t, code, activeLang, onSelectLang, onFullscreen }: {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main CodeBlock
-// ---------------------------------------------------------------------------
-
 interface CodeBlockProps {
   readonly code: string;
   readonly language?: string;
@@ -539,14 +482,14 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
   const { isDark } = useContext(TableContext);
   const t = tk(isDark);
 
-  const [isExpanded,    setIsExpanded]    = useState(false);
-  const [isCopied,      setIsCopied]      = useState(false);
-  const [isFullscreen,  setIsFullscreen]  = useState(false);
-  const [searchQuery,   setSearchQuery]   = useState('');
-  const [showLangPick,  setShowLangPick]  = useState(false);
-  const [langBtnRect,   setLangBtnRect]   = useState<DOMRect | null>(null);
-  const [activeLang,    setActiveLang]    = useState(language);
-  const [isMobile,      setIsMobile]      = useState(false);
+  const [isExpanded,   setIsExpanded]   = useState(false);
+  const [isCopied,     setIsCopied]     = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [searchQuery,  setSearchQuery]  = useState('');
+  const [showLangPick, setShowLangPick] = useState(false);
+  const [langBtnRect,  setLangBtnRect]  = useState<DOMRect | null>(null);
+  const [activeLang,   setActiveLang]   = useState(language);
+  const [isMobile,     setIsMobile]     = useState(false);
   const langBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => { setActiveLang(language); }, [language]);
@@ -592,14 +535,12 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
     thumb: t.thumb, track: t.track, thumbHov: t.thumbHov,
   };
 
-  // ── Toolbar ───────────────────────────────────────────────────────────────
   const renderToolbar = (isModal: boolean) => (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px',
       borderBottom: `1px solid ${t.barBorder}`,
       background: t.barBg, flexWrap: 'nowrap', minWidth: 0, flexShrink: 0,
     }}>
-      {/* Search input */}
       <div style={{ position: 'relative', flex: '1 1 0', minWidth: 0 }}>
         <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: t.plhClr, pointerEvents: 'none' }} />
         <input
@@ -626,57 +567,23 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
         )}
       </div>
 
-      {/* Desktop buttons */}
       {!isMobile && (
         <>
-          {/* Copy */}
-          <Pill
-            onClick={handleCopy}
-            title={isCopied ? 'Скопировано!' : 'Копировать'}
-            label={isCopied ? 'Скопировано' : 'Копировать'}
-            icon={isCopied ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />}
-            t={t} success={isCopied}
-          />
-
-          {/* Language picker */}
-          <Pill
-            btnRef={langBtnRef}
-            onClick={handleLangClick}
-            title="Сменить подсветку"
-            label={activeLang || 'markdown'}
-            icon={<Code2 size={14} />}
-            t={t} active={showLangPick}
-          />
-
-          {/* Fullscreen toggle */}
-          <Pill
-            onClick={() => isModal ? setIsFullscreen(false) : setIsFullscreen(true)}
-            title={isModal ? 'Свернуть' : 'Развернуть'}
-            label={isModal ? 'Свернуть' : 'Развернуть'}
-            icon={isModal ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-            t={t}
-          />
-
+          <Pill onClick={handleCopy} title={isCopied ? 'Скопировано!' : 'Копировать'} label={isCopied ? 'Скопировано' : 'Копировать'} icon={isCopied ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />} t={t} success={isCopied} />
+          <Pill btnRef={langBtnRef} onClick={handleLangClick} title="Сменить подсветку" label={activeLang || 'markdown'} icon={<Code2 size={14} />} t={t} active={showLangPick} />
+          <Pill onClick={() => isModal ? setIsFullscreen(false) : setIsFullscreen(true)} title={isModal ? 'Свернуть' : 'Развернуть'} label={isModal ? 'Свернуть' : 'Развернуть'} icon={isModal ? <Minimize2 size={14} /> : <Maximize2 size={14} />} t={t} />
           {showLangPick && langBtnRect && (
             <LangPicker currentLang={activeLang} onSelect={setActiveLang} onClose={() => setShowLangPick(false)} anchorRect={langBtnRect} t={t} />
           )}
         </>
       )}
 
-      {/* Mobile ⋯ menu */}
       {isMobile && (
-        <MobileMenu
-          t={t}
-          code={code}
-          activeLang={activeLang}
-          onSelectLang={setActiveLang}
-          onFullscreen={() => setIsFullscreen(true)}
-        />
+        <MobileMenu t={t} code={code} activeLang={activeLang} onSelectLang={setActiveLang} onFullscreen={() => setIsFullscreen(true)} />
       )}
     </div>
   );
 
-  // ── Footer ────────────────────────────────────────────────────────────────
   const renderFooter = () => (
     <div style={{
       padding: '6px 12px', borderTop: `1px solid ${t.barBorder}`,
@@ -689,20 +596,14 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
     </div>
   );
 
-  // ── Fullscreen modal ──────────────────────────────────────────────────────
   if (isFullscreen) {
     return (
       <Overlay onClose={() => setIsFullscreen(false)} zIndex={10000} backdropCursor="default">
         <div style={{
-          position: 'relative',
-          width: 'min(95vw, 1100px)',
-          maxHeight: '90vh',
-          borderRadius: 14,
-          border: `1px solid ${t.outerBorder}`,
-          background: t.outerBg,
-          boxShadow: t.modalShadow,
-          display: 'flex', flexDirection: 'column',
-          overflow: 'hidden',
+          position: 'relative', width: 'min(95vw, 1100px)', maxHeight: '90vh',
+          borderRadius: 14, border: `1px solid ${t.outerBorder}`,
+          background: t.outerBg, boxShadow: t.modalShadow,
+          display: 'flex', flexDirection: 'column', overflow: 'hidden',
         }}>
           {renderToolbar(true)}
           <div style={{ flex: 1, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
@@ -714,21 +615,15 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
     );
   }
 
-  // ── Normal view ───────────────────────────────────────────────────────────
   return (
     <div className="not-prose" style={{ margin: '1.25rem 0' }}>
       <div style={{
-        borderRadius: BORDER_RADIUS,
-        border: `1px solid ${t.outerBorder}`,
-        background: t.outerBg,
-        boxShadow: t.outerShadow,
-        overflow: 'clip',
-        display: 'flex', flexDirection: 'column',
+        borderRadius: BORDER_RADIUS, border: `1px solid ${t.outerBorder}`,
+        background: t.outerBg, boxShadow: t.outerShadow,
+        overflow: 'clip', display: 'flex', flexDirection: 'column',
         width: '100%', minWidth: 0,
       }}>
         {renderToolbar(false)}
-
-        {/* Code area with collapse */}
         <div style={{ position: 'relative', overflow: 'hidden', maxHeight: isExpanded ? 'none' : COLLAPSED_HEIGHT }}>
           <CodeBody {...bodyProps} />
           {isLong && !isExpanded && (
@@ -740,15 +635,12 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
             }} />
           )}
         </div>
-
-        {/* Expand/collapse */}
         {isLong && (
           <button
             onClick={() => setIsExpanded(p => !p)}
             style={{
-              width: '100%', borderTop: `1px solid ${t.barBorder}`,
-              padding: '7px 12px', background: t.barBg,
-              border: 'none', borderTopWidth: 1, borderTopStyle: 'solid', borderTopColor: t.barBorder,
+              width: '100%', padding: '7px 12px', background: t.barBg,
+              border: 'none', borderTop: `1px solid ${t.barBorder}`,
               color: t.footerClr, fontSize: 11, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
               transition: 'background 0.13s',
@@ -762,7 +654,6 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
             }
           </button>
         )}
-
         {renderFooter()}
       </div>
     </div>
