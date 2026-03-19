@@ -164,8 +164,8 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
 
-    const startTime   = performance.now();
-    let firstFrame    = true;
+    const startTime = performance.now();
+    let firstFrame  = true;
 
     const render = () => {
       if (!gl || !gpu) return;
@@ -182,14 +182,12 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
 
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-      // Clear to fully transparent — the solid background color comes from
-      // the parent div in DocHero (heroBg), never from the canvas itself.
+      // Transparent clear — solid background comes from parent div (heroBg color)
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
-      // Reveal canvas only after first frame — eliminates the white rectangle
-      // that appears during the ~1 frame gap before WebGL first draws.
+      // Show canvas only after first frame is drawn — no mount flash
       if (firstFrame) {
         canvas.style.opacity = '1';
         firstFrame = false;
@@ -234,11 +232,19 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
     canvas.addEventListener('webglcontextrestored', onContextRestored);
 
     return () => {
+      // KEY FIX: hide canvas BEFORE any GL cleanup.
+      // When React unmounts this component during navigation, the canvas element
+      // is still visible in the DOM for a frame while the new page loads.
+      // gl.deleteProgram / losing the GL context causes the canvas to flash white.
+      // Setting opacity to 0 first ensures the parent's heroBg color shows instead.
+      canvas.style.opacity = '0';
+
       cancelAnimationFrame(rafRef.current);
       ro.disconnect();
       document.removeEventListener('visibilitychange', onVisibility);
       canvas.removeEventListener('webglcontextlost',     onContextLost);
       canvas.removeEventListener('webglcontextrestored', onContextRestored);
+
       if (gl && gpu) {
         gl.deleteBuffer(gpu.buf);
         gl.deleteProgram(gpu.program);
@@ -257,8 +263,8 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
         display: 'block',
         pointerEvents: 'none',
         contain: 'strict',
-        // Hidden until first WebGL frame is drawn (set to 1 in render loop above).
-        // The parent div already has the correct heroBg color, so no white flash.
+        // Start invisible — shown after first GL frame (render loop sets opacity:1).
+        // Also hidden on unmount cleanup to prevent white flash during navigation.
         opacity: 0,
       }}
     />
