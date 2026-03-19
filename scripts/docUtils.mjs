@@ -268,17 +268,6 @@ function handleStepsBlock(trimmed, lines, i, codeBlocks, output) {
   return endIndex + 1;
 }
 
-function handleDiagramBlock(trimmed, lines, i, output) {
-  const match = trimmed.match(/^:::diagram(?:\[([^\]]*)\])?\s*$/);
-  if (!match) return null;
-  const diagramParams = parseParams(match[1] ?? '');
-  const color = escapeAttr(diagramParams.color ?? diagramParams.borderColor ?? '');
-  const { body, endIndex } = collectBlockBody(lines, i + 1);
-  const encodedCode = Buffer.from(body.trim(), 'utf8').toString('base64');
-  output.push(`<div class="custom-diagram" data-color="${color}" data-code="${encodedCode}"></div>`);
-  return endIndex + 1;
-}
-
 // ─── Custom block preprocessor ────────────────────────────────────────────────
 
 function preprocessCustomBlocks(content, codeBlocks) {
@@ -292,8 +281,7 @@ function preprocessCustomBlocks(content, codeBlocks) {
       handleCardsBlock(trimmed, lines, i, codeBlocks, output) ??
       handleCardBlock(trimmed, lines, i, codeBlocks, output) ??
       handleColumnsBlock(trimmed, lines, i, codeBlocks, output) ??
-      handleStepsBlock(trimmed, lines, i, codeBlocks, output) ??
-      handleDiagramBlock(trimmed, lines, i, output);
+      handleStepsBlock(trimmed, lines, i, codeBlocks, output);
 
     if (nextI == null) { output.push(lines[i]); i++; }
     else               { i = nextI; }
