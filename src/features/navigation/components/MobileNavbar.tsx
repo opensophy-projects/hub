@@ -1,6 +1,6 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
+import { useTheme } from '@/shared/contexts/ThemeContext';
 import TocPanel from './TocPanel';
 import { PanelLeft, Search, ArrowUp, List } from 'lucide-react';
 
@@ -40,7 +40,6 @@ function getHeadingText(heading: Element): string {
   return heading.textContent?.trim() || '';
 }
 
-// Общая утилита сбора заголовков из DOM
 function scanHeadings(): TocItem[] {
   const container =
     document.querySelector('[data-article-content]') ||
@@ -63,13 +62,16 @@ function scanHeadings(): TocItem[] {
   return items;
 }
 
-const MobileNavbarInner: React.FC = () => {
+/**
+ * MobileNavbar no longer wraps itself in ThemeProvider.
+ * Uses useTheme() directly — context is provided by Layout.astro.
+ */
+const MobileNavbar: React.FC = () => {
   const { isDark, setSidebarOpen } = useTheme();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isTocOpen, setIsTocOpen] = useState(false);
   const [toc, setToc] = useState<TocItem[]>([]);
 
-  // Фоновый сбор TOC через MutationObserver — заполняет кэш как только DOM готов
   useEffect(() => {
     const items = scanHeadings();
     if (items.length > 0) {
@@ -99,20 +101,15 @@ const MobileNavbarInner: React.FC = () => {
     };
   }, []);
 
-  // FIX БАГ 2: всегда делаем свежий scan в момент нажатия — не полагаемся на
-  // закэшированный state, который мог быть пустым если DOM ещё не был готов
   const handleTocOpen = () => {
     const freshItems = scanHeadings();
 
     if (freshItems.length > 0) {
-      // Обновляем кэш и сразу открываем
       setToc(freshItems);
       setIsTocOpen(true);
     } else if (toc.length > 0) {
-      // Свежий scan пустой, но кэш есть — используем кэш (страница не изменилась)
       setIsTocOpen(true);
     } else {
-      // Совсем нет заголовков — открываем панель с сообщением "нет оглавления"
       setIsTocOpen((v) => !v);
     }
   };
@@ -123,7 +120,7 @@ const MobileNavbarInner: React.FC = () => {
 
   return (
     <>
-      {/* Мобильный нижний навбар — только на мобильных */}
+      {/* Mobile bottom navbar */}
       <nav
         className={`md:hidden fixed bottom-0 left-0 right-0 z-50 border-t ${
           isDark
@@ -173,11 +170,5 @@ const MobileNavbarInner: React.FC = () => {
     </>
   );
 };
-
-const MobileNavbar: React.FC = () => (
-  <ThemeProvider>
-    <MobileNavbarInner />
-  </ThemeProvider>
-);
 
 export default MobileNavbar;
