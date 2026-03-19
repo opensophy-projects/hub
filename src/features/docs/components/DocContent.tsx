@@ -14,6 +14,8 @@ import AskAIButton from './AskAIButton';
 
 const LazyTableModal = lazy(() => import('@/features/table/components/TableModal'));
 
+// ─── § Imports & types ────────────────────────────────────────────────────────
+
 interface DocContentProps {
   doc: {
     id: string;
@@ -32,6 +34,12 @@ interface DocContentProps {
   };
 }
 
+// ─── § Helpers ────────────────────────────────────────────────────────────────
+//
+// stripHtmlTags: naive tag stripper for read-time estimation.
+// Not used for rendering — just for word-count purposes, so full DOM parsing
+// would be overkill.
+
 function stripHtmlTags(html: string): string {
   return html
     .split('<')
@@ -39,12 +47,24 @@ function stripHtmlTags(html: string): string {
     .join(' ');
 }
 
+/** Estimates reading time at 200 wpm. Minimum 1 minute. */
 function estimateReadTime(content: string): number {
   if (!content) return 1;
   const text  = stripHtmlTags(content).replaceAll(/\s+/g, ' ').trim();
   const words = text.split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.round(words / 200));
 }
+
+// ─── § TOC hook ───────────────────────────────────────────────────────────────
+//
+// useActiveHeading — tracks which heading is currently in the viewport.
+//
+// Uses IntersectionObserver with a "top 10% / bottom 30%" rootMargin so the
+// active heading updates slightly before reaching the very top of the viewport,
+// giving a natural feel when scrolling.
+//
+// When multiple headings are visible simultaneously (e.g. short sections),
+// the topmost visible one wins.
 
 function useActiveHeading(toc: ReturnType<typeof useTableOfContents>): string {
   const [activeId, setActiveId] = useState('');
@@ -67,6 +87,21 @@ function useActiveHeading(toc: ReturnType<typeof useTableOfContents>): string {
   }, [toc]);
   return activeId;
 }
+
+// ─── § TOC item visuals ───────────────────────────────────────────────────────
+//
+// The TOC uses a "proximity glow" effect:
+//   - Active item:        full opacity, glow shadow, white/black border
+//   - Adjacent items:     slightly dimmed, faint glow
+//   - Far items:          progressively more dimmed, no glow
+//   - Before first scroll (no active): all items at 60% opacity, no glow
+//
+// absDist = Math.abs(index - activeIndex)
+// The formulas below produce:
+//   dist 0 → opacity 1,    glowOpacity 1
+//   dist 1 → opacity 0.6,  glowOpacity 0.37
+//   dist 2 → opacity 0.4,  glowOpacity 0.19
+//   dist 3+ → opacity 0.35, glowOpacity 0
 
 function getTocItemVisuals(isActive: boolean, absDist: number, hasActive: boolean) {
   if (!hasActive) return { opacity: 0.6, glowOpacity: 0 };
@@ -99,6 +134,12 @@ function getTocBoxShadow(isActive: boolean, isDark: boolean, glowOpacity: number
   return 'none';
 }
 
+// ─── § Hero colors ────────────────────────────────────────────────────────────
+//
+// All hero section color tokens in one place.
+// Returned as a plain object (not a component) so DocHero can destructure
+// exactly what it needs without any hook overhead.
+
 function useHeroColors(isDark: boolean) {
   return {
     heroBg:          isDark ? '#0a0a0a' : '#E8E7E3',
@@ -109,6 +150,15 @@ function useHeroColors(isDark: boolean) {
     textPrimary:     isDark ? '#ffffff' : '#000000',
   };
 }
+
+// ─── § Hero sub-components ────────────────────────────────────────────────────
+//
+// DocHero is broken into small sub-components for clarity:
+//   HeroBreadcrumbs — "Главная › CategoryName ›" (hidden when no typename)
+//   HeroMeta        — date badge, updated badge, typename badge
+//   HeroAuthors     — "Автор: Name" / "Авторы: A, B"
+//   DocHero         — assembles all of the above + title + description +
+//                     read-time + AskAIButton on top of DotWaveBackground
 
 const HeroBreadcrumbs: React.FC<{ typename?: string; textPrimary: string }> = ({ typename, textPrimary }) => {
   if (!typename?.trim()) return null;
@@ -179,6 +229,19 @@ const HeroAuthors: React.FC<{ author?: string; metaTextColor: string; textPrimar
   );
 };
 
+/**
+ * DocHero — the coloured banner at the top of every article.
+ *
+ * Contains:
+ *   - DotWaveBackground: animated WebGL dot grid (absolute, pointer-events none)
+ *     The `contain: strict` wrapper prevents the canvas from triggering layout
+ *     recalculations during scroll (GPU-composited).
+ *   - Breadcrumbs, date/type badges, h1 title, description
+ *   - Read-time estimate, author list, AskAIButton
+ *
+ * `markdownContent` passed to AskAIButton is the rendered HTML (not raw markdown)
+ * so users can copy the HTML to feed to an AI. The button label says "Копировать HTML".
+ */
 const DocHero: React.FC<{
   doc: DocContentProps['doc'];
   isDark: boolean;
@@ -218,6 +281,33 @@ const DocHero: React.FC<{
   );
 };
 
+// ─── § DocContentMain ─────────────────────────────────────────────────────────
+//
+// The main layout component. Responsibilities:
+//
+//   Scroll progress bar
+//   ───────────────────
+//   A thin bar at the top of the viewport (position:fixed, z-index:999).
+//   Width is mutated directly via ref (useScrollProgress) — no setState,
+//   no re-renders on every scroll event. See useScrollProgress.ts.
+//
+//   TOC aside (desktop only)
+//   ────────────────────────
+//   Rendered only when toc.length > 0 AND isDesktop.
+//   Width: TOC_PANEL_WIDTH (18rem). Items use the proximity-glow style from
+//   getTocItem* helpers above.
+//
+//   Main content column
+//   ───────────────────
+//   margin-left: 20rem (sidebar width, from CSS variable --sidebar-width)
+//   margin-right: TOC_PANEL_WIDTH when TOC is visible, 0 otherwise
+//   Both margins are 0 on mobile (sidebar is a slide-over).
+//
+//   TableModal
+//   ──────────
+//   Lazily imported. Opened when a table's "Развернуть" button is clicked.
+//   State: fullscreenTableHtml — the outerHTML of the clicked table.
+
 const TOC_PANEL_WIDTH = '18rem';
 
 const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
@@ -225,7 +315,8 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
 
   const toc        = useTableOfContents(doc);
-  // New: ref-based scroll progress — no re-renders on scroll
+  // useScrollProgress returns a ref to attach to the progress bar div.
+  // The hook mutates style.width directly — zero re-renders on scroll.
   const progressBarRef = useScrollProgress();
   const activeId   = useActiveHeading(toc);
   const isDesktop  = useIsDesktop();
@@ -234,6 +325,8 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
 
   const htmlContent = useMemo(() => doc.content || '', [doc.content]);
 
+  // parseHtmlToReact is memoised on htmlContent — it does DOM parsing so we
+  // don't want to re-run it on every render caused by scroll / theme changes.
   const contentNodes = useMemo(() => {
     if (!htmlContent) return [];
     return parseHtmlToReact(htmlContent);
@@ -244,6 +337,9 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
     [doc.content, htmlContent]
   );
 
+  // tableContextValue provides onTableClick and isDark to all nested nodes.
+  // Memoised to prevent re-renders of every table/code block on theme change
+  // (only the isDark value changes, not the callback reference).
   const tableContextValue = useMemo(
     () => ({ onTableClick: (html: string) => setFullscreenTableHtml(html), isDark }),
     [isDark]
@@ -251,7 +347,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
 
   return (
     <div style={{ minHeight: '100vh' }}>
-      {/* Progress bar: width is mutated directly via ref — zero re-renders */}
+      {/* Scroll progress bar — width mutated via ref, no re-renders */}
       <div
         ref={progressBarRef}
         className={`fixed top-0 left-0 h-1 ${isDark ? 'bg-white' : 'bg-black'}`}
@@ -261,6 +357,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
       <TopNavbar />
       <Sidebar currentDocSlug={doc.slug} />
 
+      {/* TOC aside — desktop only, hidden on mobile (use mobile TOC panel instead) */}
       {hasToc && isDesktop && (
         <aside
           className={`hidden md:flex flex-col fixed right-0 z-40 border-l overflow-hidden ${isDark ? 'bg-[#0F0F0F] border-white/10' : 'bg-[#E1E0DC] border-black/10'}`}
@@ -271,6 +368,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
             transition: 'none',
           }}
         >
+          {/* TOC header: "На этой странице" label + scroll-to-top button */}
           <div className={`flex-shrink-0 px-4 py-4 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
             <div className="flex items-center justify-between gap-2">
               <h2 className={`text-sm font-bold uppercase tracking-widest ${isDark ? 'text-white/50' : 'text-black/50'}`}>
@@ -286,6 +384,8 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
               </button>
             </div>
           </div>
+
+          {/* TOC item list — proximity-glow highlighting */}
           <div className="flex-1 overflow-y-auto py-3">
             <nav className="space-y-0.5">
               {toc.map((item, index) => {
@@ -302,6 +402,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
                     onClick={() => scrollToElement(item.id)}
                     className="w-full text-left py-2 pr-3 text-sm leading-snug"
                     style={{
+                      // Indentation: level 2 = 14px, level 3 = 28px, level 4 = 42px
                       paddingLeft:     `${14 + (item.level - 2) * 14}px`,
                       color:           getTocItemColor(isActive, isDark, opacity),
                       transition:      'color 0.5s ease, box-shadow 0.5s ease, border-color 0.5s ease',
@@ -320,16 +421,20 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
         </aside>
       )}
 
+      {/* Main content column */}
       <main
         className={`min-h-screen ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}
         style={{
           marginLeft:   isDesktop ? '20rem' : '0',
           marginRight:  hasToc && isDesktop ? TOC_PANEL_WIDTH : '0',
-          marginBottom: isDesktop ? '0' : '3.5rem',
-          transition:   'none',
+          marginBottom: isDesktop ? '0' : '3.5rem', // space for mobile bottom nav bar
+          transition:   'none', // instant — no color/position lag during theme switch
         }}
       >
+        {/* Hero banner */}
         <DocHero doc={doc} isDark={isDark} readTime={readTime} markdownContent={doc.content} />
+
+        {/* Article body — TableContext provides onTableClick + isDark to all nested components */}
         <article className="flex-1 pb-12 w-full" style={{ paddingLeft: '2rem', paddingRight: '2rem', paddingTop: '2rem' }}>
           <TableContext.Provider value={tableContextValue}>
             <div
@@ -342,6 +447,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
         </article>
       </main>
 
+      {/* Fullscreen table modal — lazy loaded, only mounted when a table is expanded */}
       <AnimatePresence>
         {fullscreenTableHtml && (
           <Suspense fallback={null}>
@@ -357,6 +463,13 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
     </div>
   );
 };
+
+// ─── § DocContent ─────────────────────────────────────────────────────────────
+//
+// Thin wrapper that provides ThemeProvider.
+// Each Astro client:only="react" island gets its own React tree with no shared
+// context. ThemeProvider syncs state cross-island via localStorage + StorageEvent.
+// See ThemeContext.tsx for the full story.
 
 const DocContent: React.FC<DocContentProps> = ({ doc }) => (
   <ThemeProvider>
