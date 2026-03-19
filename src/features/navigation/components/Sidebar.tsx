@@ -167,7 +167,7 @@ const SidebarOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 const IconButton: React.FC<{
   icon: React.ReactNode;
   label: string;
-  onClick: () => void;
+  onClick: (e: React.MouseEvent) => void;
   isDark: boolean;
   title?: string;
 }> = ({ icon, label, onClick, isDark, title }) => (
@@ -189,7 +189,8 @@ const IconButton: React.FC<{
 
 const SidebarHeader: React.FC<{
   onClose: () => void; isDark: boolean;
-  onToggleTheme: () => void; onToggleContacts: () => void; isDesktop: boolean;
+  onToggleTheme: (e: React.MouseEvent) => void;
+  onToggleContacts: () => void; isDesktop: boolean;
 }> = memo(({ onClose, isDark, onToggleTheme, onToggleContacts, isDesktop }) => (
   <div
     className="flex-shrink-0 px-4 py-3 border-b flex items-center justify-between sticky top-0 z-20"
@@ -474,7 +475,7 @@ const ContactsSection: React.FC<{ isDark: boolean; isOpen: boolean; onClose: () 
         </button>
       </div>
       <div className="flex-1 overflow-y-auto p-3 space-y-1">
-        {CONTACTS.map((c) => (  // ← из shared/data/contacts
+        {CONTACTS.map((c) => (
           <ContactLink key={c.href} {...c} isDark={isDark} />
         ))}
       </div>
@@ -527,7 +528,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
       .filter(s => s.navSlug !== '')
       .find(s => pathname === s.navSlug || pathname.startsWith(s.navSlug + '/'));
     const detected = matched?.navSlug ?? '';
-    storageSet('hub:activeNavSlug', detected); // ← shared storage wrapper
+    storageSet('hub:activeNavSlug', detected);
     startTransition(() => { setActiveNavSlug(detected); });
   }, [sections]);
 
@@ -568,6 +569,11 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
 
   const handleClose = () => setSidebarOpen(false);
 
+  // Pass mouse event to toggleTheme for View Transitions
+  const handleToggleTheme = (e: React.MouseEvent) => {
+    toggleTheme(e);
+  };
+
   if (!isSidebarOpen && !isDesktop) return null;
 
   return (
@@ -581,7 +587,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
       >
         <SidebarHeader
           onClose={handleClose} isDark={isDark}
-          onToggleTheme={toggleTheme}
+          onToggleTheme={handleToggleTheme}
           onToggleContacts={() => setShowContacts(!showContacts)}
           isDesktop={isDesktop}
         />
@@ -597,7 +603,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
             sections={sections}
             activeSlug={activeNavSlug}
             onSelect={(slug) => {
-              storageSet('hub:activeNavSlug', slug); // ← shared storage wrapper
+              storageSet('hub:activeNavSlug', slug);
               setActiveNavSlug(slug);
               setExpandedPaths(new Set());
             }}
