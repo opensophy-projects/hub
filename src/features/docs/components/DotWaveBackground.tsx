@@ -4,7 +4,6 @@ interface DotWaveBackgroundProps {
   isDark: boolean;
 }
 
-// Color presets matching the reference shader
 const COLOR_PRESETS = {
   dark: {
     shadow:    [0.04,  0.04,  0.04 ] as const,
@@ -111,6 +110,9 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef    = useRef<number>(0);
   const themeRef  = useRef(isDark);
+  // Track wall-clock time paused while tab is hidden, so animation doesn't jump
+  const pausedAtRef    = useRef<number | null>(null);
+  const totalPausedRef = useRef<number>(0);
 
   useEffect(() => {
     themeRef.current = isDark;
@@ -120,35 +122,57 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: false });
+    // ── WebGL init ────────────────────────────────────────────────────────────
+    let gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: false });
     if (!gl) return;
 
-    const vert = createShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER);
-    const frag = createShader(gl, gl.FRAGMENT_SHADER, FRAGMENT_SHADER);
-    if (!vert || !frag) return;
+    // Compile shaders helper — called on init and on context restore
+    function buildGL(ctx: WebGLRenderingContext): {
+      program: WebGLProgram;
+      buf: WebGLBuffer;
+      uTime: WebGLUniformLocation | null;
+      uResolution: WebGLUniformLocation | null;
+      uShadow: WebGLUniformLocation | null;
+      uHighlight: WebGLUniformLocation | null;
+    } | null {
+      const vert = createShader(ctx, ctx.VERTEX_SHADER, VERTEX_SHADER);
+      const frag = createShader(ctx, ctx.FRAGMENT_SHADER, FRAGMENT_SHADER);
+      if (!vert || !frag) return null;
+      const program = createProgram(ctx, vert, frag);
+      if (!program) return null;
 
-    const program = createProgram(gl, vert, frag);
-    if (!program) return;
+      const positions = new Float32Array([-1, -1,  1, -1, -1,  1,  1,  1]);
+      const buf = ctx.createBuffer()!;
+      ctx.bindBuffer(ctx.ARRAY_BUFFER, buf);
+      ctx.bufferData(ctx.ARRAY_BUFFER, positions, ctx.STATIC_DRAW);
 
-    const positions = new Float32Array([-1, -1,  1, -1, -1,  1,  1,  1]);
-    const buf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-    gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+      const aPos = ctx.getAttribLocation(program, 'a_position');
+      ctx.enableVertexAttribArray(aPos);
+      ctx.vertexAttribPointer(aPos, 2, ctx.FLOAT, false, 0, 0);
 
-    const aPos = gl.getAttribLocation(program, 'a_position');
-    gl.enableVertexAttribArray(aPos);
-    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+      // Cleanup individual shaders — they're linked into program now
+      ctx.deleteShader(vert);
+      ctx.deleteShader(frag);
 
-    const uTime       = gl.getUniformLocation(program, 'u_time');
-    const uResolution = gl.getUniformLocation(program, 'u_resolution');
-    const uShadow     = gl.getUniformLocation(program, 'u_colorShadow');
-    const uHighlight  = gl.getUniformLocation(program, 'u_colorHighlight');
+      return {
+        program,
+        buf,
+        uTime:       ctx.getUniformLocation(program, 'u_time'),
+        uResolution: ctx.getUniformLocation(program, 'u_resolution'),
+        uShadow:     ctx.getUniformLocation(program, 'u_colorShadow'),
+        uHighlight:  ctx.getUniformLocation(program, 'u_colorHighlight'),
+      };
+    }
 
+    let gpu = buildGL(gl);
+    if (!gpu) return;
+
+    // ── Resize ────────────────────────────────────────────────────────────────
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
       canvas.width  = canvas.offsetWidth  * dpr;
       canvas.height = canvas.offsetHeight * dpr;
-      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl!.viewport(0, 0, canvas.width, canvas.height);
     };
     resize();
     const ro = new ResizeObserver(resize);
@@ -156,22 +180,24 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
 
     const startTime = performance.now();
 
+    // ── Render loop ───────────────────────────────────────────────────────────
     const render = () => {
-      const t      = (performance.now() - startTime) / 1000 * 0.5;
+      if (!gl || !gpu) return;
+
+      const elapsed = performance.now() - startTime - totalPausedRef.current;
+      const t = (elapsed / 1000) * 0.5;
       const preset = COLOR_PRESETS[themeRef.current ? 'dark' : 'light'];
 
-      gl.useProgram(program);
-      gl.uniform1f(uTime, t);
-      // FIX S7748: 1.0 → 1 (no unnecessary trailing zero)
-      gl.uniform3f(uResolution, canvas.width, canvas.height, 1);
-      gl.uniform3f(uShadow,    ...preset.shadow);
-      gl.uniform3f(uHighlight, ...preset.highlight);
+      gl.useProgram(gpu.program);
+      gl.uniform1f(gpu.uTime, t);
+      gl.uniform3f(gpu.uResolution, canvas.width, canvas.height, 1);
+      gl.uniform3f(gpu.uShadow,    ...preset.shadow);
+      gl.uniform3f(gpu.uHighlight, ...preset.highlight);
 
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
-
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
       rafRef.current = requestAnimationFrame(render);
@@ -179,13 +205,54 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
 
     render();
 
+    // ── Pause when tab is hidden ──────────────────────────────────────────────
+    const onVisibility = () => {
+      if (document.hidden) {
+        // Tab hidden — stop loop and record when we paused
+        cancelAnimationFrame(rafRef.current);
+        pausedAtRef.current = performance.now();
+      } else {
+        // Tab visible — accumulate paused duration and restart loop
+        if (pausedAtRef.current !== null) {
+          totalPausedRef.current += performance.now() - pausedAtRef.current;
+          pausedAtRef.current = null;
+        }
+        render();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    // ── WebGL context lost / restored ─────────────────────────────────────────
+    const onContextLost = (e: Event) => {
+      e.preventDefault();
+      cancelAnimationFrame(rafRef.current);
+    };
+
+    const onContextRestored = () => {
+      // Re-acquire context reference and rebuild GPU objects
+      const newCtx = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: false });
+      if (!newCtx) return;
+      gl = newCtx;
+      gpu = buildGL(gl);
+      if (!gpu) return;
+      resize();
+      render();
+    };
+
+    canvas.addEventListener('webglcontextlost',     onContextLost);
+    canvas.addEventListener('webglcontextrestored', onContextRestored);
+
+    // ── Cleanup ───────────────────────────────────────────────────────────────
     return () => {
       cancelAnimationFrame(rafRef.current);
       ro.disconnect();
-      gl.deleteBuffer(buf);
-      gl.deleteProgram(program);
-      gl.deleteShader(vert);
-      gl.deleteShader(frag);
+      document.removeEventListener('visibilitychange', onVisibility);
+      canvas.removeEventListener('webglcontextlost',     onContextLost);
+      canvas.removeEventListener('webglcontextrestored', onContextRestored);
+      if (gl && gpu) {
+        gl.deleteBuffer(gpu.buf);
+        gl.deleteProgram(gpu.program);
+      }
     };
   }, []); // only once — isDark handled via ref
 
@@ -201,6 +268,8 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
         height: '100%',
         display: 'block',
         pointerEvents: 'none',
+        // Prevent layout thrash: this canvas never affects surrounding layout
+        contain: 'strict',
       }}
     />
   );
