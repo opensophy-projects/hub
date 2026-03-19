@@ -23,7 +23,7 @@ interface LoadedComponentData {
   fileContents: Record<string, string>;
 }
 
-// ─── Design tokens — unified with CodeBlock / TableControlsBar ────────────────
+// ─── Design tokens ────────────────────────────────────────────────────────────
 
 function tk(isDark: boolean) {
   return isDark ? {
@@ -55,6 +55,7 @@ function tk(isDark: boolean) {
     tabActBdr:    'rgba(255,255,255,0.15)',
     tabActClr:    '#ffffff',
     tabClr:       'rgba(255,255,255,0.45)',
+    dangerClr:    '#f87171',
   } : {
     outerBg:      '#E8E7E3',
     barBg:        '#d8d7d3',
@@ -84,12 +85,13 @@ function tk(isDark: boolean) {
     tabActBdr:    'rgba(0,0,0,0.18)',
     tabActClr:    '#000000',
     tabClr:       'rgba(0,0,0,0.45)',
+    dangerClr:    '#dc2626',
   };
 }
 
 type T = ReturnType<typeof tk>;
 
-// ─── Pill button — same as CodeBlock / TableControlsBar ───────────────────────
+// ─── Pill button ──────────────────────────────────────────────────────────────
 
 interface PillProps {
   onClick: () => void;
@@ -104,7 +106,8 @@ interface PillProps {
 function Pill({ onClick, title, label, icon, t, active, danger }: PillProps) {
   const bg    = active ? t.btnActBg  : t.btnBg;
   const bdr   = active ? t.btnActBdr : t.btnBdr;
-  const color = danger ? (document.body.classList.contains('dark') ? '#f87171' : '#dc2626') : active ? t.btnActClr : t.btnClr;
+  // FIX: use t.dangerClr instead of document.body.classList.contains('dark')
+  const color = danger ? t.dangerClr : active ? t.btnActClr : t.btnClr;
   return (
     <button
       onClick={onClick}
@@ -274,14 +277,12 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
         style={{ position: 'relative', width: '100%', height: 140, cursor: 'crosshair', background: `linear-gradient(to bottom, transparent, #000), linear-gradient(to right, #fff, ${hueColor})` }}>
         <div style={{ position: 'absolute', left: `${sat * 100}%`, top: `${(1 - val) * 100}%`, width: 13, height: 13, borderRadius: '50%', border: '2px solid #fff', boxShadow: '0 0 0 1px rgba(0,0,0,0.4),0 1px 4px rgba(0,0,0,0.5)', transform: 'translate(-50%,-50%)', pointerEvents: 'none' }} />
       </div>
-
       <div style={{ padding: '10px 12px 0' }}>
         <div ref={hueRef} onMouseDown={handleHueMouseDown}
           style={{ position: 'relative', height: 10, borderRadius: 5, cursor: 'pointer', background: 'linear-gradient(to right,#f00 0%,#ff0 16.67%,#0f0 33.33%,#0ff 50%,#00f 66.67%,#f0f 83.33%,#f00 100%)' }}>
           <div style={{ position: 'absolute', top: '50%', left: `${(hue / 360) * 100}%`, width: 16, height: 16, borderRadius: '50%', background: hueColor, border: '2px solid #fff', boxShadow: '0 0 0 1px rgba(0,0,0,0.3)', transform: 'translate(-50%,-50%)', pointerEvents: 'none' }} />
         </div>
       </div>
-
       <div style={{ padding: '10px 12px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
         <div style={{ width: 22, height: 22, borderRadius: 5, flexShrink: 0, background: currentHex, border: `1px solid ${t.barBorder}` }} />
         <div style={{ flex: 1 }}>
@@ -303,7 +304,6 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
           }
         </button>
       </div>
-
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, margin: '8px 0 0', background: t.barBorder }}>
         {[{ label: 'RGB', value: currentRgb.join(', ') }, { label: 'HSL', value: `${currentHsl[0]}°, ${currentHsl[1]}%, ${currentHsl[2]}%` }].map(({ label, value: v }) => (
           <div key={label} style={{ background: t.outerBg, padding: '5px 12px' }}>
@@ -312,7 +312,6 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
           </div>
         ))}
       </div>
-
       <div style={{ padding: '8px 12px' }}>
         <button onClick={() => { onChange(undefined); setHexInput(''); }}
           style={{ width: '100%', padding: '4px', borderRadius: 5, border: `1px solid ${t.inpBdr}`, background: 'transparent', color: t.fgMuted, fontSize: 10, cursor: 'pointer' }}
@@ -326,7 +325,7 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
   );
 };
 
-// ─── Number input with range slider ──────────────────────────────────────────
+// ─── Number input ─────────────────────────────────────────────────────────────
 
 const NumberInput: React.FC<{
   value: number; onChange: (v: number) => void;
@@ -359,7 +358,7 @@ const NumberInput: React.FC<{
   );
 };
 
-// ─── Sidebar field row ────────────────────────────────────────────────────────
+// ─── Field row ────────────────────────────────────────────────────────────────
 
 const FieldRow: React.FC<{
   label: string; fieldKey: keyof UniversalProps;
@@ -373,9 +372,7 @@ const FieldRow: React.FC<{
   return (
     <div style={{ padding: '6px 12px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-        <span style={{ fontSize: 10, fontWeight: 600, color: isChanged ? t.fg : t.fgMuted, letterSpacing: '0.02em' }}>
-          {label}
-        </span>
+        <span style={{ fontSize: 10, fontWeight: 600, color: isChanged ? t.fg : t.fgMuted, letterSpacing: '0.02em' }}>{label}</span>
         {isChanged && (
           <button onClick={() => onChange(fieldKey, defaultVal)}
             style={{ fontSize: 9, color: t.fgSub, background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}
@@ -388,7 +385,7 @@ const FieldRow: React.FC<{
   );
 };
 
-// ─── Sidebar accordion section ────────────────────────────────────────────────
+// ─── Accordion section ────────────────────────────────────────────────────────
 
 const AccordionSection: React.FC<{
   label: string; defaultOpen?: boolean; t: T; children: React.ReactNode;
@@ -400,9 +397,7 @@ const AccordionSection: React.FC<{
         width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '7px 12px', background: `${t.barBg}88`, border: 'none', cursor: 'pointer',
       }}>
-        <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: t.fgMuted }}>
-          {label}
-        </span>
+        <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: t.fgMuted }}>{label}</span>
         <svg width="9" height="9" viewBox="0 0 10 10" style={{ opacity: 0.35, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0 }}>
           <path d="M2 3 L5 7 L8 3" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" />
         </svg>
@@ -412,7 +407,7 @@ const AccordionSection: React.FC<{
   );
 };
 
-// ─── Color mode section ───────────────────────────────────────────────────────
+// ─── Color section ────────────────────────────────────────────────────────────
 
 const ColorSection: React.FC<{
   universalProps: UniversalProps;
@@ -422,7 +417,6 @@ const ColorSection: React.FC<{
   const [open, setOpen] = useState(true);
   const colorMode    = universalProps.colorMode ?? 'original';
   const currentColor = universalProps.color;
-
   return (
     <div style={{ borderBottom: `1px solid ${t.sectionBdr}` }}>
       <button onClick={() => setOpen(v => !v)} style={{
@@ -440,10 +434,8 @@ const ColorSection: React.FC<{
           <path d="M2 3 L5 7 L8 3" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" />
         </svg>
       </button>
-
       {open && (
         <div>
-          {/* Mode toggle */}
           <div style={{ display: 'flex', margin: '0 12px 8px', borderRadius: 7, overflow: 'hidden', border: `1px solid ${t.barBorder}` }}>
             {(['original', 'solid'] as const).map(mode => (
               <button key={mode} onClick={() => onChange('colorMode', mode)} style={{
@@ -456,14 +448,11 @@ const ColorSection: React.FC<{
               </button>
             ))}
           </div>
-
           {colorMode === 'solid' && (
             <ColorPicker value={currentColor ?? '#4287f5'} onChange={hex => onChange('color', hex)} t={t} />
           )}
           {colorMode === 'original' && (
-            <div style={{ padding: '6px 12px 10px', fontSize: 10, color: t.fgMuted }}>
-              Оригинальные цвета компонента
-            </div>
+            <div style={{ padding: '6px 12px 10px', fontSize: 10, color: t.fgMuted }}>Оригинальные цвета компонента</div>
           )}
         </div>
       )}
@@ -471,7 +460,7 @@ const ColorSection: React.FC<{
   );
 };
 
-// ─── Universal sidebar panel ──────────────────────────────────────────────────
+// ─── Universal sidebar ────────────────────────────────────────────────────────
 
 const UniversalSidebar: React.FC<{
   universalProps: UniversalProps;
@@ -483,8 +472,7 @@ const UniversalSidebar: React.FC<{
     {FIELD_GROUPS.map((group, gi) => (
       <AccordionSection key={gi} label={group.label} defaultOpen={gi === 0} t={t}>
         {group.fields.map(f => (
-          <FieldRow
-            key={f.key} label={f.label} fieldKey={f.key}
+          <FieldRow key={f.key} label={f.label} fieldKey={f.key}
             min={f.min} max={f.max} step={f.step} defaultVal={f.default}
             universalProps={universalProps} onChange={onChange} t={t}
           />
@@ -494,7 +482,7 @@ const UniversalSidebar: React.FC<{
   </div>
 );
 
-// ─── AiSelect (portal dropdown) ───────────────────────────────────────────────
+// ─── AiSelect ─────────────────────────────────────────────────────────────────
 
 const AiSelect: React.FC<{
   label: string; value: string; options: string[];
@@ -585,7 +573,7 @@ const AiSelect: React.FC<{
   );
 };
 
-// ─── Specific sidebar panel ───────────────────────────────────────────────────
+// ─── Specific sidebar ─────────────────────────────────────────────────────────
 
 const SpecificSidebar: React.FC<{
   config: ComponentConfig; componentProps: ComponentPropsMap;
@@ -598,11 +586,7 @@ const SpecificSidebar: React.FC<{
   [config]);
 
   if (!visibleProps.length) {
-    return (
-      <div style={{ padding: '20px 12px', textAlign: 'center', fontSize: 12, color: t.fgMuted }}>
-        Нет специфических настроек
-      </div>
-    );
+    return <div style={{ padding: '20px 12px', textAlign: 'center', fontSize: 12, color: t.fgMuted }}>Нет специфических настроек</div>;
   }
 
   return (
@@ -635,11 +619,7 @@ const SpecificSidebar: React.FC<{
 // ─── Tab bar ──────────────────────────────────────────────────────────────────
 
 const TabBar: React.FC<{ active: TabType; onSelect: (t: TabType) => void; t: T }> = ({ active, onSelect, t }) => (
-  <div style={{
-    display: 'flex', padding: '6px 12px', gap: 4,
-    borderBottom: `1px solid ${t.barBorder}`,
-    background: `${t.barBg}88`, flexShrink: 0,
-  }}>
+  <div style={{ display: 'flex', padding: '6px 12px', gap: 4, borderBottom: `1px solid ${t.barBorder}`, background: `${t.barBg}88`, flexShrink: 0 }}>
     {(['universal', 'specific'] as TabType[]).map(tab => {
       const a = active === tab;
       return (
@@ -657,7 +637,7 @@ const TabBar: React.FC<{ active: TabType; onSelect: (t: TabType) => void; t: T }
   </div>
 );
 
-// ─── Settings panel content ───────────────────────────────────────────────────
+// ─── Settings content ─────────────────────────────────────────────────────────
 
 const SettingsContent: React.FC<{
   activeTab: TabType; onTabSelect: (t: TabType) => void;
@@ -691,9 +671,7 @@ interface ComponentRenderProps {
 const ComponentRender: React.FC<ComponentRenderProps> = ({ Component, componentProps, universalProps, refreshKey, isDark }) => (
   <ComponentWrapper {...universalProps} className="w-full h-full">
     <Suspense fallback={
-      <div style={{ color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)', fontSize: 13 }}>
-        Загрузка…
-      </div>
+      <div style={{ color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)', fontSize: 13 }}>Загрузка…</div>
     }>
       <Component key={refreshKey} {...componentProps} />
     </Suspense>
@@ -720,10 +698,7 @@ const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
 
   return (
     <>
-      {isOpen && (
-        <div onClick={() => setActiveTab(null)} style={{ position: 'absolute', inset: 0, zIndex: 10 }} />
-      )}
-
+      {isOpen && <div onClick={() => setActiveTab(null)} style={{ position: 'absolute', inset: 0, zIndex: 10 }} />}
       <div style={{
         position: 'absolute', bottom: 52, left: 0, right: 0,
         height: isOpen ? SHEET_HEIGHT : 0,
@@ -735,24 +710,19 @@ const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
             <div style={{ width: 36, height: 4, borderRadius: 2, background: t.fgSub }} />
           </div>
           <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-            {activeTab === 'universal' && (
-              <UniversalSidebar universalProps={universalProps} onChange={onUniversalPropChange} t={t} />
-            )}
-            {activeTab === 'specific' && (
-              <SpecificSidebar config={config} componentProps={componentProps} onChange={onPropChange} t={t} />
-            )}
+            {activeTab === 'universal' && <UniversalSidebar universalProps={universalProps} onChange={onUniversalPropChange} t={t} />}
+            {activeTab === 'specific'  && <SpecificSidebar config={config} componentProps={componentProps} onChange={onPropChange} t={t} />}
           </div>
         </div>
       </div>
-
       <div style={{
         position: 'absolute', bottom: 0, left: 0, right: 0, height: 52,
         background: t.barBg, borderTop: `1px solid ${t.barBorder}`,
         display: 'flex', alignItems: 'stretch', zIndex: 30,
       }}>
         {([
-          { id: 'universal' as TabType, label: 'Общие',          Icon: isOpen ? ChevronDown : Settings },
-          { id: 'specific'  as TabType, label: 'Специфические',  Icon: isOpen ? ChevronDown : PanelRight },
+          { id: 'universal' as TabType, label: 'Общие',         Icon: isOpen ? ChevronDown : Settings },
+          { id: 'specific'  as TabType, label: 'Специфические', Icon: isOpen ? ChevronDown : PanelRight },
         ]).map(({ id, label, Icon }) => {
           const isActive = activeTab === id;
           return (
@@ -799,13 +769,11 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
 
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: t.outerBg, display: 'flex', flexDirection: 'column' }}>
-
       {/* Toolbar */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', flexShrink: 0,
         borderBottom: `1px solid ${t.barBorder}`, background: t.barBg,
       }}>
-        {/* Component name badge */}
         <div style={{
           fontSize: 13, fontWeight: 600, color: t.fgMuted,
           padding: '3px 9px', borderRadius: 7, background: t.btnBg,
@@ -815,12 +783,9 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
         }}>
           {config.name}
         </div>
-
         <div style={{ flex: 1 }} />
-
-        <Pill onClick={onRefresh} title="Перезапустить" label="Заново"  icon={<Play      size={14} />} t={t} />
-        <Pill onClick={onReset}   title="Сбросить"      label="Сбросить" icon={<RefreshCcw size={14} />} t={t} />
-
+        <Pill onClick={onRefresh} title="Перезапустить" label="Заново"   icon={<Play       size={14} />} t={t} />
+        <Pill onClick={onReset}   title="Сбросить"      label="Сбросить"  icon={<RefreshCcw size={14} />} t={t} />
         {!isMobile && (
           <>
             <Divider t={t} />
@@ -833,18 +798,18 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
             />
           </>
         )}
-
         <Pill onClick={onClose} title="Свернуть (Esc)" label="Свернуть" icon={<Minimize2 size={14} />} t={t} />
       </div>
 
       {/* Body */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
-        {/* Preview area */}
+        {/* FIX: explicit color: t.fg so text inherits correct color in light/dark theme */}
         <div style={{
           flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: isMobile ? '24px 16px' : 48,
           overflow: 'auto',
           paddingBottom: isMobile ? 68 : undefined,
+          color: t.fg,
         }}>
           <ComponentRender Component={Component} componentProps={componentProps} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} />
         </div>
@@ -884,7 +849,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
   );
 };
 
-// ─── Preview panel (inline) ───────────────────────────────────────────────────
+// ─── Preview panel ────────────────────────────────────────────────────────────
 
 const PreviewPanel: React.FC<ComponentRenderProps & {
   config: ComponentConfig;
@@ -894,15 +859,10 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
   t: T;
 }> = ({ config, Component, componentProps, universalProps, refreshKey, isDark, onRefresh, onFullscreen, onOpenSettings, t }) => (
   <div style={{
-    borderRadius: 12,
-    border: `1px solid ${t.outerBorder}`,
-    background: t.outerBg,
-    boxShadow: t.outerShadow,
-    overflow: 'clip',
-    display: 'flex', flexDirection: 'column',
-    width: '100%', minWidth: 0,
+    borderRadius: 12, border: `1px solid ${t.outerBorder}`, background: t.outerBg,
+    boxShadow: t.outerShadow, overflow: 'clip',
+    display: 'flex', flexDirection: 'column', width: '100%', minWidth: 0,
   }}>
-    {/* Toolbar */}
     <div style={{
       display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px',
       borderBottom: `1px solid ${t.barBorder}`, background: t.barBg,
@@ -918,17 +878,13 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
         {config.name}
       </div>
       <div style={{ flex: 1 }} />
-      <Pill onClick={onRefresh}      title="Перезапустить"  label="Заново"    icon={<Play      size={14} />} t={t} />
+      <Pill onClick={onRefresh}      title="Перезапустить"  label="Заново"     icon={<Play      size={14} />} t={t} />
       <Pill onClick={onFullscreen}   title="Развернуть"     label="Развернуть" icon={<Maximize2 size={14} />} t={t} />
       <Pill onClick={onOpenSettings} title="Настройки"      label="Настройки"  icon={<Settings  size={14} />} t={t} />
     </div>
-
-    {/* Preview area */}
-    <div style={{ minHeight: 380, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+    <div style={{ minHeight: 380, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, color: t.fg }}>
       <ComponentRender Component={Component} componentProps={componentProps} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} />
     </div>
-
-    {/* Footer */}
     <div style={{
       padding: '6px 12px', borderTop: `1px solid ${t.barBorder}`,
       fontSize: 11, color: t.footerClr,
@@ -941,7 +897,7 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
   </div>
 );
 
-// ─── Settings panel (inline, replaces preview) ────────────────────────────────
+// ─── Settings panel ───────────────────────────────────────────────────────────
 
 const SettingsPanel: React.FC<ComponentRenderProps & {
   config: ComponentConfig; onClose: () => void;
@@ -960,12 +916,9 @@ const SettingsPanel: React.FC<ComponentRenderProps & {
       display: 'flex', flexDirection: 'column',
       maxHeight: 'calc(100dvh - 3rem)', overflow: 'hidden',
     }}>
-      {/* Mini preview */}
-      <div style={{ minHeight: 220, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, borderBottom: `1px solid ${t.barBorder}` }}>
+      <div style={{ minHeight: 220, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, borderBottom: `1px solid ${t.barBorder}`, color: t.fg }}>
         <ComponentRender Component={props.Component} componentProps={props.componentProps} universalProps={props.universalProps} refreshKey={props.refreshKey} isDark={isDark} />
       </div>
-
-      {/* Settings */}
       <SettingsContent
         activeTab={activeTab} onTabSelect={setActiveTab}
         config={config} componentProps={props.componentProps}
@@ -974,17 +927,15 @@ const SettingsPanel: React.FC<ComponentRenderProps & {
         onUniversalChange={props.onUniversalPropChange}
         t={t}
       />
-
-      {/* Footer toolbar */}
       <div style={{
         flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
         padding: '8px 10px', borderTop: `1px solid ${t.barBorder}`, background: t.barBg,
         flexWrap: 'wrap', rowGap: 6,
       }}>
-        <Pill onClick={onRefresh} title="Перезапустить" label="Заново"  icon={<Play      size={14} />} t={t} />
+        <Pill onClick={onRefresh} title="Перезапустить" label="Заново"   icon={<Play       size={14} />} t={t} />
         <Pill onClick={onReset}   title="Сбросить всё"  label="Сбросить" icon={<RefreshCcw size={14} />} t={t} />
         <div style={{ flex: 1 }} />
-        <Pill onClick={onClose}   title="Закрыть"        label="Закрыть"  icon={<X         size={14} />} t={t} />
+        <Pill onClick={onClose}   title="Закрыть"        label="Закрыть"  icon={<X          size={14} />} t={t} />
       </div>
     </div>
   );
