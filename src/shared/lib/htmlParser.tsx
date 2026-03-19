@@ -513,8 +513,10 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
   // Step 3: sanitize the placeholder-only HTML (no katex SVG/MathML inside)
   const sanitized = DOMPurify.sanitize(rawDoc.body.innerHTML, {
     ALLOWED_TAGS: [...ALLOWED_TAGS],
-    ALLOWED_ATTR: [...ALLOWED_ATTR, 'data-katex-idx'],
+    ALLOWED_ATTR: [...ALLOWED_ATTR],
+    ADD_ATTR: ['data-katex-idx'],
     ALLOW_DATA_ATTR: true,
+    FORCE_BODY: false,
   });
 
   const doc      = new DOMParser().parseFromString(sanitized, 'text/html');
