@@ -98,6 +98,9 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
     setOpen(false);
   };
 
+  // FIX: markdownContent actually contains HTML (result of marked()).
+  // Renamed the copy action label to 'Копировать HTML' to accurately reflect
+  // what is being copied, rather than misleading the user with 'Копировать Markdown'.
   const handleCopy = async () => {
     if (!markdownContent) return;
     try {
@@ -213,7 +216,9 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
           {/* Разделитель */}
           <div style={{ height: '1px', background: t.divColor, margin: '4px 0' }} />
 
-          {/* Копировать Markdown */}
+          {/* FIX: renamed from 'Копировать Markdown' to 'Копировать HTML'
+              because markdownContent prop actually contains rendered HTML,
+              not the raw Markdown source. */}
           <button
             onClick={handleCopy}
             onMouseEnter={() => setHoveredId('copy')}
@@ -238,7 +243,7 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
               ? <Check size={13} style={{ color: '#22c55e', flexShrink: 0 }} />
               : <Copy size={13} style={{ opacity: 0.45, flexShrink: 0 }} />
             }
-            {copied ? 'Скопировано!' : 'Копировать Markdown'}
+            {copied ? 'Скопировано!' : 'Копировать HTML'}
           </button>
         </div>
       )}
