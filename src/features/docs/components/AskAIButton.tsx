@@ -25,6 +25,18 @@ const PROVIDERS = [
     getUrl: (title: string, url: string) =>
       `https://claude.ai/new?q=${encodeURIComponent(buildAiQuery(title, url))}`,
   },
+  {
+    id: 'gemini',
+    name: 'Gemini',
+    getUrl: (title: string, url: string) =>
+      `https://gemini.google.com/?q=${encodeURIComponent(buildAiQuery(title, url))}`,
+  },
+  {
+    id: 'perplexity',
+    name: 'Perplexity',
+    getUrl: (title: string, url: string) =>
+      `https://www.perplexity.ai/search?q=${encodeURIComponent(buildAiQuery(title, url))}`,
+  },
 ];
 
 // ─── Theme helpers ────────────────────────────────────────────────────────────
@@ -90,17 +102,17 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
     return () => document.removeEventListener('mousedown', onDown);
   }, [open]);
 
-  const getPageUrl = () =>
-    globalThis.window === undefined ? pageSlug : globalThis.window.location.href;
+  // Компонент используется только в client:only="react" — SSR недостижим,
+  // поэтому window доступен напрямую без проверки globalThis.
+  const getPageUrl = () => window.location.href;
 
   const handleProviderClick = (p: typeof PROVIDERS[0]) => {
-    globalThis.window.open(p.getUrl(pageTitle, getPageUrl()), '_blank', 'noopener,noreferrer');
+    window.open(p.getUrl(pageTitle, getPageUrl()), '_blank', 'noopener,noreferrer');
     setOpen(false);
   };
 
-  // FIX: markdownContent actually contains HTML (result of marked()).
-  // Renamed the copy action label to 'Копировать HTML' to accurately reflect
-  // what is being copied, rather than misleading the user with 'Копировать Markdown'.
+  // markdownContent содержит отрендеренный HTML (результат marked()),
+  // а не исходный Markdown — кнопка подписана соответственно.
   const handleCopy = async () => {
     if (!markdownContent) return;
     try {
@@ -108,7 +120,7 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // clipboard unavailable — silent fail
+      // clipboard недоступен — тихо игнорируем
     }
   };
 
@@ -216,9 +228,7 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
           {/* Разделитель */}
           <div style={{ height: '1px', background: t.divColor, margin: '4px 0' }} />
 
-          {/* FIX: renamed from 'Копировать Markdown' to 'Копировать HTML'
-              because markdownContent prop actually contains rendered HTML,
-              not the raw Markdown source. */}
+          {/* Копировать HTML — содержимое это отрендеренный HTML, не Markdown */}
           <button
             onClick={handleCopy}
             onMouseEnter={() => setHoveredId('copy')}
