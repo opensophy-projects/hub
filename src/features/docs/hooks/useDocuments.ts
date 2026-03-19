@@ -21,8 +21,6 @@ export interface DocMetadata {
   navIcon?: string;
 }
 
-// FIX: expose `error` so consumers (Sidebar) can render a meaningful error state
-// instead of silently showing an empty document list.
 export interface UseManifestResult {
   manifest: DocMetadata[];
   loading: boolean;
@@ -53,5 +51,3 @@ export function useManifest(): UseManifestResult {
 
   return { manifest, loading, error };
 }
-
-export const useDocuments = useManifest;
