@@ -1,4 +1,4 @@
-import React, { useState, useMemo, Suspense, lazy, useEffect } from 'react';
+import React, { useState, useMemo, Suspense, lazy, useEffect, useRef } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
 import Sidebar from '@/features/navigation/components/Sidebar';
@@ -217,29 +217,23 @@ const DocHero: React.FC<{
   );
 };
 
-function getMainMargins(isDesktop: boolean, hasToc: boolean, tocWidth: string) {
-  return {
-    marginLeft:   isDesktop ? '20rem' : '0',
-    marginRight:  hasToc && isDesktop ? tocWidth : '0',
-    marginBottom: isDesktop ? '0' : '3.5rem',
-  };
-}
+const TOC_PANEL_WIDTH = '18rem';
 
 const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const { isDark } = useTheme();
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
 
   const toc            = useTableOfContents(doc);
   const scrollProgress = useScrollProgress();
   const activeId       = useActiveHeading(toc);
   const isDesktop      = useIsDesktop();
 
-  useEffect(() => {
-    // Allow sidebar margin-left transition only after first paint to prevent layout jump
-    const raf = requestAnimationFrame(() => setMounted(true));
-    return () => cancelAnimationFrame(raf);
-  }, []);
+  // hasToc latched via ref: once headings are found, we never hide the TOC panel again.
+  // This prevents the 100ms setTimeout in useTableOfContents from causing a visible
+  // layout shift where the panel appears after the page has already painted.
+  const hasTocRef = useRef(false);
+  if (toc.length > 0) hasTocRef.current = true;
+  const hasToc = hasTocRef.current;
 
   const htmlContent = useMemo(() => doc.content || '', [doc.content]);
 
@@ -258,8 +252,14 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
     [isDark]
   );
 
-  const TOC_WIDTH = toc.length > 0 ? '18rem' : '0';
-  const hasToc    = toc.length > 0;
+  // No transitions on margins at all — sidebar and TOC are both fixed panels,
+  // not drawers. They are either present or absent from the start.
+  const mainStyle: React.CSSProperties = {
+    marginLeft:   isDesktop ? '20rem' : '0',
+    marginRight:  hasToc && isDesktop ? TOC_PANEL_WIDTH : '0',
+    marginBottom: isDesktop ? '0' : '3.5rem',
+    transition:   'none',
+  };
 
   return (
     <div style={{ minHeight: '100vh' }}>
@@ -276,9 +276,8 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
           className={`hidden md:flex flex-col fixed right-0 z-40 border-l overflow-hidden ${isDark ? 'bg-[#0F0F0F] border-white/10' : 'bg-[#E1E0DC] border-black/10'}`}
           style={{
             top: 0,
-            width: TOC_WIDTH,
+            width: TOC_PANEL_WIDTH,
             height: '100vh',
-            // No transition — TOC is always either present or not, like Sidebar
             transition: 'none',
           }}
         >
@@ -313,7 +312,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
                     onClick={() => scrollToElement(item.id)}
                     className="w-full text-left py-2 pr-3 text-sm leading-snug"
                     style={{
-                      paddingLeft: `${14 + (item.level - 2) * 14}px`,
+                      paddingLeft:     `${14 + (item.level - 2) * 14}px`,
                       color:           getTocItemColor(isActive, isDark, opacity),
                       transition:      'color 0.5s ease, box-shadow 0.5s ease, border-color 0.5s ease',
                       borderLeft:      '2px solid',
@@ -333,12 +332,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
 
       <main
         className={`min-h-screen ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}
-        style={{
-          ...getMainMargins(isDesktop, hasToc, TOC_WIDTH),
-          // Only animate margin-left (sidebar open/close on mobile).
-          // margin-right is never animated — TOC is fixed like sidebar, no slide-in effect.
-          transition: mounted ? 'margin-left 0.3s ease' : 'none',
-        }}
+        style={mainStyle}
       >
         <DocHero doc={doc} isDark={isDark} readTime={readTime} markdownContent={doc.content} />
         <article className="flex-1 pb-12 w-full" style={{ paddingLeft: '2rem', paddingRight: '2rem', paddingTop: '2rem' }}>
@@ -369,7 +363,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   );
 };
 
-// ThemeProvider wraps DocContentMain because DocContent is a client:only island
 const DocContent: React.FC<DocContentProps> = ({ doc }) => (
   <ThemeProvider>
     <DocContentMain doc={doc} />
