@@ -23,6 +23,12 @@ const ALLOWED_TAGS = [
   'pre', 'img', 'table', 'tr', 'td', 'th',
   'thead', 'tbody', 'div', 'span', 'hr', 'figure', 'figcaption',
   'del', 'input', 'sub', 'sup', 'details', 'summary', 'mark',
+  // KaTeX
+  'math', 'semantics', 'mrow', 'mi', 'mn', 'mo', 'mtext', 'mspace',
+  'mover', 'munder', 'munderover', 'msup', 'msub', 'msubsup', 'mfrac',
+  'msqrt', 'mroot', 'mtable', 'mtr', 'mtd', 'mstyle', 'menclose',
+  'annotation', 'svg', 'path', 'line', 'rect', 'circle', 'g', 'use',
+  'defs', 'clippath',
 ];
 
 const ALLOWED_ATTR = [
@@ -31,6 +37,14 @@ const ALLOWED_ATTR = [
   'data-cols', 'data-layout', 'data-status', 'data-title',
   'data-color', 'data-icon',
   'type', 'checked', 'disabled', 'open', 'style', 'align',
+  // KaTeX / SVG
+  'xmlns', 'viewBox', 'd', 'fill', 'stroke', 'stroke-width',
+  'width', 'height', 'x', 'y', 'x1', 'y1', 'x2', 'y2',
+  'cx', 'cy', 'r', 'transform', 'clip-path', 'clip-rule',
+  'fill-rule', 'stroke-linecap', 'stroke-linejoin',
+  'mathvariant', 'mathsize', 'stretchy', 'fence', 'separator',
+  'lspace', 'rspace', 'minsize', 'maxsize', 'columnalign',
+  'rowspacing', 'columnspacing', 'href', 'aria-hidden',
 ];
 
 const sanitizeInnerHTML = (html: string): string =>
