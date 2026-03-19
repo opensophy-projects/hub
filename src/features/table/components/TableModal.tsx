@@ -5,9 +5,8 @@ import { FiltersPanel } from './FiltersPanel';
 import { ColumnsPanel } from './ColumnsPanel';
 import { TableView } from './TableView';
 import { parseTableHtml } from '../utils/tableParser';
-import { filterAndSortRows, stripHtmlNormalize } from '../utils/tableFiltering';
+import { useTableControls } from '../hooks/useTableControls';
 import { parseTableForCopy, toMd, toTsv, type CopyFormat } from '../utils/copyUtils';
-import type { TableControlsState } from '../types/table';
 
 interface TableModalProps {
   isOpen: boolean;
@@ -212,71 +211,33 @@ const CopyBtn: React.FC<{ isDark: boolean; tableHtml: string; t: ReturnType<type
 const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onClose }) => {
   const t = tk(isDark);
 
-  const { headers, rows, headerAlignments } = useMemo(() => parseTableHtml(tableHtml), [tableHtml]);
+  // Parse table structure once per tableHtml
+  const { headers, rows, headerAlignments } = useMemo(
+    () => parseTableHtml(tableHtml),
+    [tableHtml]
+  );
 
-  const [state, setState] = useState<TableControlsState>({
-    searchQuery: '',
-    sortColumn: null,
-    sortDirection: 'none',
-    filters: new Map(),
-    visibleColumns: new Set(Array.from({ length: headers.length }, (_, i) => i)),
-  });
-  const [showFilters, setShowFilters] = useState(false);
+  // Unified controls hook — same as TableWithControls uses
+  const {
+    state,
+    setState,
+    showFilters,
+    setShowFilters,
+    filteredAndSortedRows,
+    getUniqueValuesForColumn,
+    toggleColumnVisibility,
+    toggleFilter,
+    handleSort,
+    resetFilters,
+    activeFilterCount,
+  } = useTableControls(rows, headers);
 
+  // Reset state when a new table is opened
   useEffect(() => {
-    setState({
-      searchQuery: '',
-      sortColumn: null,
-      sortDirection: 'none',
-      filters: new Map(),
-      visibleColumns: new Set(Array.from({ length: headers.length }, (_, i) => i)),
-    });
+    resetFilters();
     setShowFilters(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tableHtml]);
-
-  const filteredAndSorted = useMemo(() => filterAndSortRows(rows, state), [rows, state]);
-
-  const getUniqueForCol = (colIndex: number): string[] =>
-    Array.from(new Set(
-      rows.map(row => {
-        const cells = Array.from(row.querySelectorAll('td'));
-        return stripHtmlNormalize(cells[colIndex]?.innerHTML || '');
-      }).filter(Boolean)
-    )).sort();
-
-  const toggleFilter = (colIndex: number, value: string) => {
-    setState(prev => {
-      const next = new Map(prev.filters);
-      const set  = new Set(next.get(colIndex) ?? []);
-      set.has(value) ? set.delete(value) : set.add(value);
-      if (set.size === 0) next.delete(colIndex); else next.set(colIndex, set);
-      return { ...prev, filters: next };
-    });
-  };
-
-  const handleSort = (colIndex: number) => {
-    setState(prev => {
-      if (prev.sortColumn === colIndex) {
-        const dirs = ['asc', 'desc', 'none'] as const;
-        const next = dirs[(dirs.indexOf(prev.sortDirection) + 1) % dirs.length];
-        return { ...prev, sortDirection: next };
-      }
-      return { ...prev, sortColumn: colIndex, sortDirection: 'asc' };
-    });
-  };
-
-  const toggleColumn = (colIndex: number) => {
-    setState(prev => {
-      const next = new Set(prev.visibleColumns);
-      next.has(colIndex) ? next.delete(colIndex) : next.add(colIndex);
-      return { ...prev, visibleColumns: next };
-    });
-  };
-
-  const handleReset = () => {
-    setState(prev => ({ ...prev, searchQuery: '', sortColumn: null, sortDirection: 'none', filters: new Map() }));
-  };
 
   // Lock body scroll
   useEffect(() => {
@@ -296,7 +257,6 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
     return () => document.removeEventListener('keydown', h);
   }, [isOpen, onClose]);
 
-  const activeFilterCount = Array.from(state.filters.values()).filter(s => s.size > 0).length;
   const filterLabel = activeFilterCount > 0 ? `Фильтры · ${activeFilterCount}` : 'Фильтры';
 
   if (!isOpen) return null;
@@ -306,7 +266,6 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
       position: 'fixed', inset: 0,
       zIndex: 10000,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      // KEY FIX: allow scroll inside children on mobile
       WebkitOverflowScrolling: 'touch',
     }}>
       {/* Backdrop */}
@@ -335,18 +294,30 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
         overflow: 'hidden',
       }}>
         {/* Toolbar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderBottom: `1px solid ${t.border}`, background: t.barBg, flexWrap: 'nowrap', minWidth: 0, flexShrink: 0 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '8px 10px', borderBottom: `1px solid ${t.border}`,
+          background: t.barBg, flexWrap: 'nowrap', minWidth: 0, flexShrink: 0,
+        }}>
           <div style={{ position: 'relative', flex: '1 1 0', minWidth: 0 }}>
             <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: t.plhClr, pointerEvents: 'none' }} />
             <input
               type="text" placeholder="Поиск..." value={state.searchQuery}
               onChange={e => setState(p => ({ ...p, searchQuery: e.target.value }))}
-              style={{ width: '100%', padding: '0 30px 0 30px', height: 36, borderRadius: 8, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: t.inpClr, fontSize: 13, outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s' }}
+              style={{
+                width: '100%', padding: '0 30px 0 30px', height: 36,
+                borderRadius: 8, border: `1px solid ${t.inpBdr}`,
+                background: t.inpBg, color: t.inpClr, fontSize: 13,
+                outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s',
+              }}
               onFocus={e => { (e.target as HTMLInputElement).style.borderColor = t.inpFoc; }}
               onBlur={e  => { (e.target as HTMLInputElement).style.borderColor = t.inpBdr; }}
             />
             {state.searchQuery && (
-              <button onClick={() => setState(p => ({ ...p, searchQuery: '' }))} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: t.plhClr, display: 'flex' }}>
+              <button
+                onClick={() => setState(p => ({ ...p, searchQuery: '' }))}
+                style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: t.plhClr, display: 'flex' }}
+              >
                 <X size={12} />
               </button>
             )}
@@ -354,9 +325,18 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
             <CopyBtn isDark={isDark} tableHtml={tableHtml} t={t} />
-            <Pill onClick={() => setShowFilters(v => !v)} title="Фильтры" label={filterLabel} icon={<Filter size={14} />} t={t} active={showFilters || activeFilterCount > 0} />
+            <Pill
+              onClick={() => setShowFilters(v => !v)}
+              title="Фильтры" label={filterLabel}
+              icon={<Filter size={14} />} t={t}
+              active={showFilters || activeFilterCount > 0}
+            />
             {activeFilterCount > 0 && (
-              <Pill onClick={handleReset} title="Сбросить" label="Сбросить" icon={<RotateCcw size={14} />} t={t} danger />
+              <Pill
+                onClick={resetFilters}
+                title="Сбросить" label="Сбросить"
+                icon={<RotateCcw size={14} />} t={t} danger
+              />
             )}
             <Pill onClick={onClose} title="Закрыть (Esc)" label="Закрыть" icon={<X size={14} />} t={t} />
           </div>
@@ -365,26 +345,35 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
         {/* Filters — scrollable independently */}
         {showFilters && (
           <div style={{ flexShrink: 0, overflowY: 'auto', maxHeight: '40%', touchAction: 'pan-y' }}>
-            <FiltersPanel isDark={isDark} headers={headers} filters={state.filters}
-              onToggleFilter={toggleFilter} getUniqueValuesForColumn={getUniqueForCol} />
-            <ColumnsPanel isDark={isDark} headers={headers} visibleColumns={state.visibleColumns} onToggleColumn={toggleColumn} />
+            <FiltersPanel
+              isDark={isDark}
+              headers={headers}
+              filters={state.filters}
+              onToggleFilter={toggleFilter}
+              getUniqueValuesForColumn={getUniqueValuesForColumn}
+            />
+            <ColumnsPanel
+              isDark={isDark}
+              headers={headers}
+              visibleColumns={state.visibleColumns}
+              onToggleColumn={toggleColumnVisibility}
+            />
           </div>
         )}
 
-        {/* Table — KEY FIX: flex:1 + overflow hidden + inner scroll with touch-action */}
+        {/* Table — unified TableView, same as TableWithControls */}
         <div style={{
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
           minHeight: 0,
-          // Allow touch scroll inside the table area
           touchAction: 'pan-x pan-y',
         }}>
           <TableView
             isDark={isDark}
             headers={headers}
-            rows={filteredAndSorted}
+            rows={filteredAndSortedRows}
             visibleColumns={state.visibleColumns}
             searchQuery={state.searchQuery}
             sortColumn={state.sortColumn}
@@ -396,8 +385,18 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '6px 12px', flexShrink: 0, borderTop: `1px solid ${t.border}`, fontSize: 11, color: t.footerClr, display: 'flex', alignItems: 'center', justifyContent: 'space-between', userSelect: 'none', background: t.modalBg }}>
-          <span>{filteredAndSorted.length === rows.length ? `${rows.length} строк` : `${filteredAndSorted.length} из ${rows.length} строк`}</span>
+        <div style={{
+          padding: '6px 12px', flexShrink: 0,
+          borderTop: `1px solid ${t.border}`,
+          fontSize: 11, color: t.footerClr,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          userSelect: 'none', background: t.modalBg,
+        }}>
+          <span>
+            {filteredAndSortedRows.length === rows.length
+              ? `${rows.length} строк`
+              : `${filteredAndSortedRows.length} из ${rows.length} строк`}
+          </span>
           {activeFilterCount > 0 && <span>{activeFilterCount} фильтра активно</span>}
         </div>
       </div>
