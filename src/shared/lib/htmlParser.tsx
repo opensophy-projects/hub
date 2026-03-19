@@ -240,6 +240,7 @@ const processColumnsElement = (element: Element, key: string, elements: React.Re
   elements.push(React.createElement(ColumnsWithContext, { key, layout }, ...colElements));
 };
 
+// FIX: read data-color from each step element and pass it to StepData
 const processStepsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const steps: StepData[] = [];
   for (const stepEl of Array.from(element.children)) {
@@ -248,6 +249,8 @@ const processStepsElement = (element: Element, key: string, elements: React.Reac
       steps.push({
         title:   stepEl.dataset.title || '',
         status:  (stepEl.dataset.status || 'default') as StepStatus,
+        // Read custom color from data-color attribute (set by docUtils.mjs handleStepsBlock)
+        color:   stepEl.dataset.color || undefined,
         content: React.createElement(React.Fragment, null, ...contentNodes),
       });
     }
@@ -300,7 +303,7 @@ const processFigureElement = (element: Element, key: string, elements: React.Rea
   elements.push(React.createElement('figure', { key }, ...children));
 };
 
-// ── Katex processors (bypass DOMPurify — HTML is server-generated, trusted) ──
+// ── Katex processors ──────────────────────────────────────────────────────────
 
 const processKatexBlock = (element: Element, key: string, elements: React.ReactNode[]) => {
   elements.push(
@@ -377,10 +380,7 @@ function splitParagraphIntoRuns(element: Element): ParagraphRun[] {
   let textBuffer = '';
 
   const flushText = () => {
-    if (!textBuffer.trim()) {
-      textBuffer = '';
-      return;
-    }
+    if (!textBuffer.trim()) { textBuffer = ''; return; }
     const tmp = document.createElement('div');
     tmp.innerHTML = textBuffer.trim();
     while (tmp.firstChild && isBrOrEmpty(tmp.firstChild)) tmp.firstChild.remove();
@@ -394,22 +394,11 @@ function splitParagraphIntoRuns(element: Element): ParagraphRun[] {
     if (node.nodeType === Node.ELEMENT_NODE) {
       const el  = node as Element;
       const tag = el.tagName.toLowerCase();
-
-      if (tag === 'img') {
-        flushText();
-        result.push({ type: 'img', el });
-        continue;
-      }
-
+      if (tag === 'img') { flushText(); result.push({ type: 'img', el }); continue; }
       if (tag === 'a') {
         const img = getImgFromLink(el);
-        if (img) {
-          flushText();
-          result.push({ type: 'img', el: img });
-          continue;
-        }
+        if (img) { flushText(); result.push({ type: 'img', el: img }); continue; }
       }
-
       textBuffer += el.outerHTML;
     } else if (node.nodeType === Node.TEXT_NODE) {
       textBuffer += node.textContent ?? '';
@@ -431,7 +420,6 @@ const processParagraphElement = (
   const hasKatex = element.querySelector('[data-katex-idx]');
   const hasImg   = element.querySelector('img');
 
-  // Fast path: plain paragraph, no katex, no images
   if (!hasKatex && !hasImg) {
     elements.push(
       React.createElement('p', {
@@ -442,7 +430,6 @@ const processParagraphElement = (
     return;
   }
 
-  // Has katex spans: build children array, restoring each katex placeholder
   if (hasKatex && !hasImg) {
     const kids: React.ReactNode[] = [];
     Array.from(element.childNodes).forEach((child, ci) => {
@@ -478,7 +465,6 @@ const processParagraphElement = (
     return;
   }
 
-  // Has images (existing split logic, no katex)
   const runs = splitParagraphIntoRuns(element);
   runs.forEach((run, i) => {
     const runKey = `${key}-r${i}`;
@@ -535,10 +521,8 @@ const processElement = (
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export const parseHtmlToReact = (html: string): React.ReactNode[] => {
-  // Step 1: parse raw HTML into DOM to correctly extract nested katex elements
   const rawDoc = new DOMParser().parseFromString(html, 'text/html');
 
-  // Step 2: replace katex elements with indexed placeholders before DOMPurify
   const katexStore: Array<{ tag: 'div' | 'span'; cls: string; inner: string }> = [];
 
   rawDoc.querySelectorAll('div.katex-block, span.katex-inline').forEach((el) => {
@@ -551,7 +535,6 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
     el.replaceWith(placeholder);
   });
 
-  // Step 3: sanitize placeholder-only HTML (no katex SVG/MathML inside)
   const sanitized = DOMPurify.sanitize(rawDoc.body.innerHTML, {
     ALLOWED_TAGS: [...ALLOWED_TAGS],
     ALLOWED_ATTR: [...ALLOWED_ATTR],
@@ -573,7 +556,6 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       const element = node as Element;
       const tagName = element.tagName.toLowerCase();
 
-      // Step 4: restore top-level katex divs from store
       const katexIdx = element.getAttribute('data-katex-idx');
       if (katexIdx !== null) {
         const stored = katexStore[Number.parseInt(katexIdx, 10)];
@@ -590,7 +572,6 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       }
 
       if (tagName === 'div') { processDivElement(element, key, elements, processNodes); return; }
-      // Pass katexStore so paragraph handler can restore inline katex spans
       if (tagName === 'p')   { processParagraphElement(element, key, elements, katexStore); return; }
 
       processElement(element, tagName, key, elements, processNodes);
