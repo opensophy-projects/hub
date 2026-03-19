@@ -42,25 +42,28 @@ const imageUrl = image
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Theme + body background: must run before any paint to eliminate FOUC.
-         Sets both the html class AND the body background color immediately,
-         so there is never a white flash between page navigations. -->
+    <!--
+      Theme script: runs BEFORE any paint.
+      Sets both the html class AND background-color so the page never
+      shows a white flash — not on first load, not between navigations.
+      The bg colors match DocContent: dark=#0a0a0a, light=#E8E7E3
+    -->
     <script is:inline>
       (function () {
         var theme = localStorage.getItem('theme');
         if (!theme) theme = 'dark';
-
-        if (theme === 'dark') {
+        var dark = theme !== 'light';
+        if (dark) {
           document.documentElement.classList.add('dark');
           document.documentElement.style.colorScheme = 'dark';
-          // Match bg-[#0a0a0a] used by DocContent main in dark mode
-          document.documentElement.style.backgroundColor = '#0a0a0a';
         } else {
           document.documentElement.classList.remove('dark');
           document.documentElement.style.colorScheme = 'light';
-          // Match bg-[#E8E7E3] used by DocContent main in light mode
-          document.documentElement.style.backgroundColor = '#E8E7E3';
         }
+        // KEY: set background immediately so the content area is never white.
+        // This color is visible from the very first pixel until React renders DocContent.
+        document.documentElement.style.backgroundColor = dark ? '#0a0a0a' : '#E8E7E3';
+        document.body && (document.body.style.backgroundColor = dark ? '#0a0a0a' : '#E8E7E3');
       })();
     </script>
 
@@ -119,6 +122,18 @@ const imageUrl = image
         margin: 0;
         padding: 0;
         overflow-x: hidden;
+      }
+
+      /*
+       * Fallback background via CSS (in case script runs after paint on slow devices).
+       * Matches the JS values above. These are overridden by React's inline styles
+       * once DocContent mounts — but they guarantee no white frame ever shows.
+       */
+      html:not(.dark) body {
+        background-color: #E8E7E3;
+      }
+      html.dark body {
+        background-color: #0a0a0a;
       }
 
       @media (min-width: 768px) {
