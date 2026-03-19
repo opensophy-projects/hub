@@ -233,7 +233,7 @@ html:not(.dark) .hljs-symbol, html:not(.dark) .hljs-bullet, html:not(.dark) .hlj
 html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .hljs-title { color: #4078f2; }
 
 /* ── KaTeX ── */
-@import url('https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css');
+/* katex.min.css подключается в Layout.astro через import из пакета */
 
 .katex-block {
   display: block;
