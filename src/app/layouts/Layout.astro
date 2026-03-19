@@ -41,6 +41,22 @@ const imageUrl = image
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Theme: must run before any paint to eliminate FOUC -->
+    <script is:inline>
+      (function () {
+        var theme = localStorage.getItem('theme');
+        if (!theme) theme = 'dark';
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+          document.documentElement.style.colorScheme = 'dark';
+        } else {
+          document.documentElement.classList.remove('dark');
+          document.documentElement.style.colorScheme = 'light';
+        }
+      })();
+    </script>
+
     <meta name="description" content={description} />
     <meta name="keywords" content={keywords} />
     <meta name="robots" content={robots} />
@@ -96,6 +112,20 @@ const imageUrl = image
         padding: 0;
         overflow-x: hidden;
       }
+
+      /* View Transitions */
+      @keyframes fade-in {
+        from { opacity: 0; }
+      }
+      @keyframes fade-out {
+        to { opacity: 0; }
+      }
+      ::view-transition-old(root) {
+        animation: 180ms ease-out fade-out;
+      }
+      ::view-transition-new(root) {
+        animation: 180ms ease-in fade-in;
+      }
     </style>
 
     <title>{title}</title>
@@ -108,14 +138,5 @@ const imageUrl = image
         <SearchWrapper client:only="react" />
       </ThemeProvider>
     </ErrorBoundary>
-
-    <script>
-      const theme = localStorage.getItem('theme') || 'dark';
-      if (theme === 'light') {
-        document.documentElement.style.colorScheme = 'light';
-      } else {
-        document.documentElement.style.colorScheme = 'dark';
-      }
-    </script>
   </body>
 </html>
