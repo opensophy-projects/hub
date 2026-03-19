@@ -46,7 +46,9 @@ function generateSitemap() {
   let urlCount = 1;
 
   for (const doc of docs) {
-    if (!doc.slug) continue;
+    // FIX: skip welcome page — it's served at '/' and already included above.
+    // welcome.md is stored with slug = '' or 'welcome' in the manifest.
+    if (!doc.slug || doc.slug === 'welcome') continue;
 
     const url = `${BASE_URL}/${doc.slug}`;
     const lastmod = doc.updated || doc.date || today;
