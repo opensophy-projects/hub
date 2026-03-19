@@ -1,19 +1,41 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
-export function useScrollProgress(): number {
-  const [scrollProgress, setScrollProgress] = useState(0);
+/**
+ * Directly mutates the progress bar's style.width via a ref —
+ * no setState, no re-renders of the parent component on every scroll event.
+ *
+ * Usage:
+ *   const progressRef = useScrollProgress();
+ *   <div ref={progressRef} className="fixed top-0 left-0 h-1 bg-white" style={{ width: '0%', zIndex: 999 }} />
+ */
+export function useScrollProgress(): React.RefObject<HTMLDivElement> {
+  const barRef = useRef<HTMLDivElement>(null);
+  const rafId  = useRef<number>(0);
 
   useEffect(() => {
-    const handleScroll = () => {
+    const update = () => {
       const { scrollHeight, scrollTop, clientHeight } = document.documentElement;
-      const windowHeight = scrollHeight - clientHeight;
-      const progress = windowHeight > 0 ? (scrollTop / windowHeight) * 100 : 0;
-      setScrollProgress(progress);
+      const total = scrollHeight - clientHeight;
+      const pct   = total > 0 ? (scrollTop / total) * 100 : 0;
+      if (barRef.current) {
+        barRef.current.style.width = `${pct}%`;
+      }
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const onScroll = () => {
+      cancelAnimationFrame(rafId.current);
+      rafId.current = requestAnimationFrame(update);
+    };
+
+    // Run once on mount to set initial value
+    update();
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(rafId.current);
+    };
   }, []);
 
-  return scrollProgress;
+  return barRef;
 }
