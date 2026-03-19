@@ -5,7 +5,7 @@ import katex from 'katex';
 
 marked.setOptions({ breaks: true, gfm: true });
 
-// ─── KaTeX renderers ──────────────────────────────────────────────────────────
+// ─── § KaTeX renderers ────────────────────────────────────────────────────────
 
 function renderKatex(tex, displayMode) {
   try {
@@ -57,7 +57,16 @@ export function preprocessKatex(content) {
   return result;
 }
 
-// ─── Entry name parser ────────────────────────────────────────────────────────
+// ─── § Entry name parser ──────────────────────────────────────────────────────
+//
+// Parses folder/file names with the convention:
+//   [TYPE][ICON]Title{slug}
+//
+// Examples:
+//   [N][book]My Section{my-section}   → nav popover named "My Section"
+//   [C][cpu]Hardware                  → category named "Hardware", auto-slug
+//   [A][tag]Article Title{article}    → article entry
+//   Plain Name                        → no type/icon, slug auto-generated
 
 export function parseEntryName(name) {
   const typeMatch = name.match(/^\[([NCA])\]/);
@@ -82,7 +91,7 @@ export function parseEntryName(name) {
   return { type: entryType, icon, title, slug };
 }
 
-// ─── Nav popover / category name parsers ─────────────────────────────────────
+// ─── § Nav popover / category name parsers ────────────────────────────────────
 
 export function parseNavPopoverFolder(folderName) {
   const entry = parseEntryName(folderName);
@@ -110,7 +119,11 @@ export function parseCategoryName(folderName) {
   return { title: folderName, slug: slugify(folderName), icon: null };
 }
 
-// ─── Slugify ──────────────────────────────────────────────────────────────────
+// ─── § Slugify ────────────────────────────────────────────────────────────────
+//
+// Converts arbitrary text to URL-safe slugs.
+// Includes a Cyrillic → Latin transliteration table so Russian folder/file
+// names produce readable slugs instead of percent-encoded strings.
 
 const TRANSLIT_MAP = {
   а:'a',  б:'b',  в:'v',  г:'g',  д:'d',  е:'e',  ё:'yo', ж:'zh', з:'z',  и:'i',
@@ -129,7 +142,7 @@ export function slugify(str) {
     .replaceAll(/^-|-$/g, '');
 }
 
-// ─── File system ──────────────────────────────────────────────────────────────
+// ─── § File system ────────────────────────────────────────────────────────────
 
 export function scanDocsDirectoryRecursive(baseDir) {
   const results = [];
@@ -150,7 +163,11 @@ export function scanDocsDirectoryRecursive(baseDir) {
   return results;
 }
 
-// ─── Front matter ─────────────────────────────────────────────────────────────
+// ─── § Front matter ───────────────────────────────────────────────────────────
+//
+// Parses the YAML-ish front matter block delimited by `---` lines.
+// Only supports simple `key: value` pairs — no nested objects or arrays.
+// Returns { metadata: Record<string,string>, content: string }.
 
 export function extractFrontMatter(content) {
   if (!content.startsWith('---\n')) return { metadata: {}, content };
@@ -173,7 +190,7 @@ export function extractFrontMatter(content) {
   return { metadata, content: rest };
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── § Helpers ────────────────────────────────────────────────────────────────
 
 function escapeAttr(str) {
   return String(str)
@@ -194,12 +211,17 @@ function parseParams(paramStr) {
   return params;
 }
 
+/** Restores placeholder CODE_BLOCK tokens before running marked. */
 function markedWithCodeBlocks(str, codeBlocks) {
   const restored = str.replaceAll(/___CODE_BLOCK_(\d+)___/g, (_, i) => codeBlocks[Number.parseInt(i, 10)]);
   return marked(restored);
 }
 
-// ─── Block body collector ─────────────────────────────────────────────────────
+// ─── § Block body collector ───────────────────────────────────────────────────
+//
+// Collects lines belonging to a nested `:::block ... :::` construct.
+// Handles nesting: each opening `:::something` increments depth,
+// a bare `:::` decrements it. Returns body text and the end line index.
 
 function collectBlockBody(lines, startAfterIndex) {
   const bodyLines = [];
@@ -225,7 +247,10 @@ function collectBlockBody(lines, startAfterIndex) {
   return { body: bodyLines.join('\n'), endIndex: i - 1 };
 }
 
-// ─── Inner block parser ───────────────────────────────────────────────────────
+// ─── § Inner block parser ─────────────────────────────────────────────────────
+//
+// Parses inner `:::tag[params] inlineText ... :::` blocks within a parent body.
+// Used by cards (:::card), columns (:::col), steps (:::step).
 
 function parseInnerBlocks(bodyStr, innerTag) {
   const lines   = bodyStr.split('\n');
@@ -254,7 +279,7 @@ function parseInnerBlocks(bodyStr, innerTag) {
   return results;
 }
 
-// ─── Card builder ─────────────────────────────────────────────────────────────
+// ─── § Card builder ───────────────────────────────────────────────────────────
 
 function buildCardHtml(params, body, codeBlocks) {
   const color = params.color ? escapeAttr(params.color) : '';
@@ -272,7 +297,20 @@ function buildCardHtml(params, body, codeBlocks) {
   return `<div class="custom-card" data-color="${color}" data-title="${title}" data-icon="${icon}">${contentHtml}</div>`;
 }
 
-// ─── Block handlers ───────────────────────────────────────────────────────────
+// ─── § Block handlers ─────────────────────────────────────────────────────────
+//
+// Each handler tries to match the current line against its opening pattern.
+// Returns the next line index to process (skipping the consumed block),
+// or null if this line is not the start of that block type.
+//
+// Supported blocks:
+//   :::cards[cols=N]   — card grid
+//   :::card[color=X]   — standalone card
+//   :::columns[layout] — multi-column layout
+//   :::steps           — step-by-step stepper
+//   :::math[display]   — KaTeX math block
+//
+// NOTE: Diagrams were removed from production. Do NOT add diagram handlers here.
 
 function handleCardsBlock(trimmed, lines, i, codeBlocks, output) {
   const match = trimmed.match(/^:::cards(?:\[([^\]]*)\])?\s*$/);
@@ -314,7 +352,6 @@ function handleStepsBlock(trimmed, lines, i, codeBlocks, output) {
   for (const step of parseInnerBlocks(body, 'step')) {
     const status = escapeAttr(step.params.status ?? 'default');
     const title  = escapeAttr(step.inlineText ?? '');
-    // FIX: save color param into data-color attribute
     const color  = step.params.color ? escapeAttr(step.params.color) : '';
     html += `<div class="custom-step" data-status="${status}" data-title="${title}" data-color="${color}">${markedWithCodeBlocks(step.body.trim(), codeBlocks)}</div>`;
   }
@@ -348,7 +385,11 @@ function handleMathBlock(trimmed, lines, i, output) {
   return j + 1;
 }
 
-// ─── Custom block preprocessor ────────────────────────────────────────────────
+// ─── § Custom block preprocessor ─────────────────────────────────────────────
+//
+// Walks the markdown line-by-line and replaces custom `:::` block syntax with
+// HTML before passing content to marked.
+// Each line is tried against every block handler in priority order.
 
 function preprocessCustomBlocks(content, codeBlocks) {
   const lines  = content.split('\n');
@@ -371,9 +412,26 @@ function preprocessCustomBlocks(content, codeBlocks) {
   return output.join('\n');
 }
 
-// ─── Alert preprocessor ───────────────────────────────────────────────────────
+// ─── § Markdown extensions preprocessor ──────────────────────────────────────
+//
+// Previously named `preprocessAlerts` — renamed because it now handles all
+// custom markdown extension blocks, not just alerts.
+//
+// Processes (in order):
+//   1. GitHub-style alert blocks: :::note, :::tip, :::important,
+//                                 :::warning, :::caution
+//   2. Custom block syntax: :::cards, :::card, :::columns, :::steps, :::math
+//      (delegated to preprocessCustomBlocks above)
+//
+// Code blocks (``` ``` ```) are extracted and replaced with placeholders before
+// processing so their content is never accidentally matched by the block parsers.
+// They are restored at the end.
+//
+// NOTE: Diagram blocks (:::mermaid, :::diagram, etc.) are NOT supported.
+//       They were removed from production and must not be added back here.
 
-export function preprocessAlerts(content) {
+export function preprocessMarkdownExtensions(content) {
+  // ── Step 1: extract code blocks so their content is invisible to parsers ──
   const codeBlocks = [];
   let withoutCode  = '';
   let searchFrom   = 0;
@@ -389,6 +447,7 @@ export function preprocessAlerts(content) {
     searchFrom = close + 3;
   }
 
+  // ── Step 2: process GitHub-style alert blocks ─────────────────────────────
   const ALERT_TYPES     = new Set(['note', 'tip', 'important', 'warning', 'caution']);
   const ALERT_PREFIX_RE = /^:::([a-z]+)$/;
   const alertLines      = withoutCode.split('\n');
@@ -415,11 +474,13 @@ export function preprocessAlerts(content) {
     }
   }
 
+  // ── Step 3: process remaining custom blocks (cards, columns, steps, math) ─
+  // ── Step 4: restore code block placeholders ───────────────────────────────
   return preprocessCustomBlocks(alertOutput.join('\n'), codeBlocks)
     .replaceAll(/___CODE_BLOCK_(\d+)___/g, (_match, index) => codeBlocks[Number.parseInt(index, 10)]);
 }
 
-// ─── Content helpers ──────────────────────────────────────────────────────────
+// ─── § Content helpers ────────────────────────────────────────────────────────
 
 export function processImageSyntax(content) {
   return content.replaceAll(
@@ -437,7 +498,18 @@ export function getFirstParagraph(content) {
   return '';
 }
 
-// ─── Doc info ─────────────────────────────────────────────────────────────────
+// ─── § Doc info ───────────────────────────────────────────────────────────────
+//
+// Derives routing metadata (slug, navSlug, categoryPath, etc.) from the
+// filesystem path of a markdown file relative to the Docs/ root.
+//
+// Path structure (optional):
+//   Docs/
+//     [N][icon]NavSection{nav-slug}/      ← nav popover folder
+//       [C][icon]Category{cat-slug}/      ← category folder
+//         [A][icon]ArticleTitle{slug}.md  ← article file
+//
+// Files directly in Docs/ root get a flat slug (no nav/category prefix).
 
 export function getDocInfo(fullPath, docsDir) {
   const relativePath = path.relative(docsDir, fullPath);
@@ -509,14 +581,36 @@ export function getDocInfo(fullPath, docsDir) {
   };
 }
 
-// ─── Doc builder ──────────────────────────────────────────────────────────────
+// ─── § Doc IO ─────────────────────────────────────────────────────────────────
+//
+// readDoc — pure filesystem read, no parsing.
+// Separated from parsing so parseDoc can be tested without touching the FS.
 
-export function buildDocFromPath(mdPath, docsDir) {
-  const rawContent                          = fs.readFileSync(mdPath, 'utf-8');
+export function readDoc(mdPath) {
+  return fs.readFileSync(mdPath, 'utf-8');
+}
+
+// ─── § Doc builder ────────────────────────────────────────────────────────────
+//
+// parseDoc — pure transformation: markdown string → doc data object.
+// Does NOT touch the filesystem. Testable in isolation.
+//
+// Pipeline:
+//   raw markdown
+//     → extractFrontMatter      (strip YAML header)
+//     → processImageSyntax      ([foo.png] → ![](/assets/foo.png))
+//     → preprocessKatex         ($...$ and $$...$$ → KaTeX HTML)
+//     → preprocessMarkdownExtensions  (:::note, :::cards, :::steps, etc.)
+//     → marked                  (CommonMark → HTML)
+//
+// buildDocFromPath — convenience wrapper: readDoc + parseDoc.
+// Use this in generateDocs.mjs and [...slug].astro.
+
+export function parseDoc(rawContent, mdPath, docsDir) {
   const { metadata, content: cleanContent } = extractFrontMatter(rawContent);
   const processed                           = processImageSyntax(cleanContent);
   const withKatex                           = preprocessKatex(processed);
-  const htmlContent                         = marked(preprocessAlerts(withKatex));
+  const htmlContent                         = marked(preprocessMarkdownExtensions(withKatex));
   const info                                = getDocInfo(mdPath, docsDir);
   const fileEntry                           = parseEntryName(path.basename(mdPath, '.md'));
 
@@ -544,4 +638,10 @@ export function buildDocFromPath(mdPath, docsDir) {
     robots:       metadata.robots   || 'index, follow',
     icon:         finalIcon,
   };
+}
+
+/** Convenience wrapper: reads the file and parses it in one call. */
+export function buildDocFromPath(mdPath, docsDir) {
+  const rawContent = readDoc(mdPath);
+  return parseDoc(rawContent, mdPath, docsDir);
 }
