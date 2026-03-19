@@ -1,8 +1,8 @@
 import React, { useState, useMemo, Suspense, lazy, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
-import TopNavbar from '@/features/navigation/components/MobileNavbar';
+import { useTheme } from '@/shared/contexts/ThemeContext';
 import Sidebar from '@/features/navigation/components/Sidebar';
+import TopNavbar from '@/features/navigation/components/MobileNavbar';
 import { parseHtmlToReact, TableContext } from '@/shared/lib/htmlParser';
 import { useTableOfContents } from '../hooks/useTableOfContents';
 import { useScrollProgress } from '../hooks/useScrollProgress';
@@ -235,9 +235,13 @@ function getMainMargins(isDesktop: boolean, hasToc: boolean, tocWidth: string) {
   };
 }
 
-// ─── DocContentMain ───────────────────────────────────────────────────────────
+// ─── DocContent ───────────────────────────────────────────────────────────────
 
-const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
+/**
+ * DocContent no longer wraps itself in ThemeProvider.
+ * The single ThemeProvider lives in Layout.astro → all children share one context.
+ */
+const DocContent: React.FC<DocContentProps> = ({ doc }) => {
   const { isDark } = useTheme();
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
 
@@ -246,9 +250,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const activeId       = useActiveHeading(toc);
   const isDesktop      = useIsDesktop();
 
-  const htmlContent = useMemo(() => {
-    return doc.content || '';
-  }, [doc.content]);
+  const htmlContent = useMemo(() => doc.content || '', [doc.content]);
 
   const contentNodes = useMemo(() => {
     if (!htmlContent) return [];
@@ -364,13 +366,5 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
     </div>
   );
 };
-
-// ─── Export ───────────────────────────────────────────────────────────────────
-
-const DocContent: React.FC<DocContentProps> = ({ doc }) => (
-  <ThemeProvider>
-    <DocContentMain doc={doc} />
-  </ThemeProvider>
-);
 
 export default DocContent;
