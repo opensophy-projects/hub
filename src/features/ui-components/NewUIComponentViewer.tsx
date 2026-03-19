@@ -12,6 +12,8 @@ import { ComponentWrapper } from './ComponentWrapper';
 import { useIsMobile } from '@/shared/hooks/useBreakpoint';
 import type { UniversalProps, ComponentConfig, PropDefinition } from './types';
 
+// ─── § Imports & types ────────────────────────────────────────────────────────
+
 type PropValue = string | number | boolean | string[] | undefined;
 type ComponentPropsMap = Record<string, PropValue>;
 type AnyComponent = React.ComponentType<Record<string, PropValue>>;
@@ -23,7 +25,14 @@ interface LoadedComponentData {
   fileContents: Record<string, string>;
 }
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
+// ─── § Design tokens ─────────────────────────────────────────────────────────
+//
+// tk(isDark) returns a flat object of all color tokens used across every
+// sub-component in this file. Keeping them together means:
+//   - one diff when the design changes
+//   - sub-components don't need to import useTheme() individually
+//
+// The object is passed down as `t` prop through the component tree.
 
 function tk(isDark: boolean) {
   return isDark ? {
@@ -91,7 +100,11 @@ function tk(isDark: boolean) {
 
 type T = ReturnType<typeof tk>;
 
-// ─── Pill button ──────────────────────────────────────────────────────────────
+// ─── § Pill button ────────────────────────────────────────────────────────────
+//
+// Pill: icon centered on top, text label below.
+// Used in every toolbar across Preview, Settings, and Fullscreen modes.
+// Hover: bg fades to t.btnHov. Leave: bg reverts to original.
 
 interface PillProps {
   onClick: () => void;
@@ -106,7 +119,6 @@ interface PillProps {
 function Pill({ onClick, title, label, icon, t, active, danger }: PillProps) {
   const bg    = active ? t.btnActBg  : t.btnBg;
   const bdr   = active ? t.btnActBdr : t.btnBdr;
-  // FIX: use t.dangerClr instead of document.body.classList.contains('dark')
   const color = danger ? t.dangerClr : active ? t.btnActClr : t.btnClr;
   return (
     <button
@@ -131,13 +143,13 @@ function Pill({ onClick, title, label, icon, t, active, danger }: PillProps) {
   );
 }
 
-// ─── Divider ──────────────────────────────────────────────────────────────────
+// ─── § Divider ────────────────────────────────────────────────────────────────
 
 function Divider({ t }: { t: T }) {
   return <div style={{ width: 1, height: 22, background: t.barBorder, margin: '0 2px', flexShrink: 0 }} />;
 }
 
-// ─── Section label ────────────────────────────────────────────────────────────
+// ─── § Section label ──────────────────────────────────────────────────────────
 
 function SectionLabel({ label, t }: { label: string; t: T }) {
   return (
@@ -151,7 +163,13 @@ function SectionLabel({ label, t }: { label: string; t: T }) {
   );
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── § Constants ─────────────────────────────────────────────────────────────
+//
+// DEFAULT_UNIVERSAL_PROPS: the "factory reset" values for all universal controls.
+// Used both as initial state and when "Сбросить" is clicked.
+//
+// FIELD_GROUPS: defines the rendered order of universal prop sliders.
+// Each entry maps to a FieldRow rendered inside an AccordionSection.
 
 const DEFAULT_UNIVERSAL_PROPS: UniversalProps = {
   enableUniversalProps: true,
@@ -186,7 +204,13 @@ const FIELD_GROUPS: Array<{
   },
 ];
 
-// ─── Color utils ──────────────────────────────────────────────────────────────
+// ─── § Color utils ────────────────────────────────────────────────────────────
+//
+// Self-contained color conversion utilities used by ColorPicker.
+// No external color library dependency — keeps the bundle lean.
+//
+// Color model used internally: HSV (hue 0-360, saturation 0-1, value 0-1)
+// because the SV picker canvas maps naturally to a 2D plane.
 
 function hsvToRgb(h: number, s: number, v: number): [number, number, number] {
   const f = (n: number) => { const k = (n + h / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); };
@@ -214,7 +238,27 @@ function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   return [Math.round(h * 60), Math.round(s * 100), Math.round(l * 100)];
 }
 
-// ─── Color Picker ─────────────────────────────────────────────────────────────
+// ─── § Color Picker ───────────────────────────────────────────────────────────
+//
+// Fully custom HSV color picker. Two interaction surfaces:
+//
+//   SV canvas  — 2D div with CSS gradient background:
+//                horizontal: white → hue color
+//                vertical:   top → bottom (bright → dark)
+//                Mouse/touch drag emits (saturation, value) changes.
+//
+//   Hue slider — horizontal div with rainbow gradient.
+//                Drag emits hue changes (0-360°).
+//
+// State:
+//   hue/sat/val — internal HSV, updated on every drag event
+//   hexInput    — text field, synced bidirectionally with HSV
+//
+// Emits: onChange(hex | undefined)
+//   undefined means "no color selected" (reset to original)
+//
+// NOTE: mouse event listeners are attached to window (not the div) during drag
+// so that fast mouse movement outside the element doesn't break dragging.
 
 const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined) => void; t: T }> = ({ value, onChange, t }) => {
   const [hue, setHue]   = useState(217);
@@ -225,6 +269,7 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
   const svRef  = useRef<HTMLDivElement>(null);
   const hueRef = useRef<HTMLDivElement>(null);
 
+  // Sync internal state when controlled `value` prop changes from outside
   useEffect(() => {
     if (!value) return;
     const rgb = hexToRgb(value); if (!rgb) return;
@@ -242,6 +287,7 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
     const hex = rgbToHex(...hsvToRgb(h, s, v)); onChange(hex); setHexInput(hex.replace('#', ''));
   }, [onChange]);
 
+  // SV canvas drag — clamps to [0,1] range
   const handleSvDrag = useCallback((e: MouseEvent | React.MouseEvent) => {
     const el = svRef.current; if (!el) return;
     const rect = el.getBoundingClientRect();
@@ -257,6 +303,7 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
     window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
   }, [handleSvDrag]);
 
+  // Hue slider drag — clamps to [0, 360]
   const handleHueDrag = useCallback((e: MouseEvent | React.MouseEvent) => {
     const el = hueRef.current; if (!el) return;
     const rect = el.getBoundingClientRect();
@@ -273,16 +320,20 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
 
   return (
     <div style={{ userSelect: 'none' }}>
+      {/* SV canvas */}
       <div ref={svRef} onMouseDown={handleSvMouseDown}
         style={{ position: 'relative', width: '100%', height: 140, cursor: 'crosshair', background: `linear-gradient(to bottom, transparent, #000), linear-gradient(to right, #fff, ${hueColor})` }}>
+        {/* Crosshair cursor dot */}
         <div style={{ position: 'absolute', left: `${sat * 100}%`, top: `${(1 - val) * 100}%`, width: 13, height: 13, borderRadius: '50%', border: '2px solid #fff', boxShadow: '0 0 0 1px rgba(0,0,0,0.4),0 1px 4px rgba(0,0,0,0.5)', transform: 'translate(-50%,-50%)', pointerEvents: 'none' }} />
       </div>
       <div style={{ padding: '10px 12px 0' }}>
+        {/* Hue slider */}
         <div ref={hueRef} onMouseDown={handleHueMouseDown}
           style={{ position: 'relative', height: 10, borderRadius: 5, cursor: 'pointer', background: 'linear-gradient(to right,#f00 0%,#ff0 16.67%,#0f0 33.33%,#0ff 50%,#00f 66.67%,#f0f 83.33%,#f00 100%)' }}>
           <div style={{ position: 'absolute', top: '50%', left: `${(hue / 360) * 100}%`, width: 16, height: 16, borderRadius: '50%', background: hueColor, border: '2px solid #fff', boxShadow: '0 0 0 1px rgba(0,0,0,0.3)', transform: 'translate(-50%,-50%)', pointerEvents: 'none' }} />
         </div>
       </div>
+      {/* Hex input + swatch + copy button */}
       <div style={{ padding: '10px 12px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
         <div style={{ width: 22, height: 22, borderRadius: 5, flexShrink: 0, background: currentHex, border: `1px solid ${t.barBorder}` }} />
         <div style={{ flex: 1 }}>
@@ -304,6 +355,7 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
           }
         </button>
       </div>
+      {/* RGB / HSL read-only display */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, margin: '8px 0 0', background: t.barBorder }}>
         {[{ label: 'RGB', value: currentRgb.join(', ') }, { label: 'HSL', value: `${currentHsl[0]}°, ${currentHsl[1]}%, ${currentHsl[2]}%` }].map(({ label, value: v }) => (
           <div key={label} style={{ background: t.outerBg, padding: '5px 12px' }}>
@@ -325,7 +377,12 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
   );
 };
 
-// ─── Number input ─────────────────────────────────────────────────────────────
+// ─── § Number input ───────────────────────────────────────────────────────────
+//
+// Combined range slider + click-to-edit number display.
+// Click the number badge to switch it to a text input for precise entry.
+// Pressing Enter or blurring commits the value (clamped to min/max).
+// Pressing Escape cancels.
 
 const NumberInput: React.FC<{
   value: number; onChange: (v: number) => void;
@@ -358,7 +415,10 @@ const NumberInput: React.FC<{
   );
 };
 
-// ─── Field row ────────────────────────────────────────────────────────────────
+// ─── § Field row ──────────────────────────────────────────────────────────────
+//
+// One labelled slider row inside a settings panel.
+// Shows a "↺ reset" button when the value differs from the default.
 
 const FieldRow: React.FC<{
   label: string; fieldKey: keyof UniversalProps;
@@ -385,7 +445,10 @@ const FieldRow: React.FC<{
   );
 };
 
-// ─── Accordion section ────────────────────────────────────────────────────────
+// ─── § Accordion section ──────────────────────────────────────────────────────
+//
+// Collapsible section header for grouping field rows.
+// defaultOpen controls initial state; the user can toggle independently.
 
 const AccordionSection: React.FC<{
   label: string; defaultOpen?: boolean; t: T; children: React.ReactNode;
@@ -407,7 +470,14 @@ const AccordionSection: React.FC<{
   );
 };
 
-// ─── Color section ────────────────────────────────────────────────────────────
+// ─── § Color section ──────────────────────────────────────────────────────────
+//
+// Collapsible color control with two modes:
+//   'original' — use the component's own colors (no override)
+//   'solid'    — open ColorPicker and apply a single color to the component
+//
+// The color preview swatch and hex value are shown in the collapsed header
+// so the user can see the current color at a glance without expanding.
 
 const ColorSection: React.FC<{
   universalProps: UniversalProps;
@@ -424,6 +494,7 @@ const ColorSection: React.FC<{
         padding: '7px 12px', background: `${t.barBg}88`, border: 'none', cursor: 'pointer',
       }}>
         <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: t.fgMuted, flex: 1, textAlign: 'left' }}>Цвет</span>
+        {/* Preview swatch — shown in collapsed header */}
         {colorMode === 'solid' && currentColor && (
           <div style={{ width: 12, height: 12, borderRadius: 3, background: currentColor, border: `1px solid ${t.barBorder}`, flexShrink: 0 }} />
         )}
@@ -436,6 +507,7 @@ const ColorSection: React.FC<{
       </button>
       {open && (
         <div>
+          {/* Mode switcher: Original | Цвет */}
           <div style={{ display: 'flex', margin: '0 12px 8px', borderRadius: 7, overflow: 'hidden', border: `1px solid ${t.barBorder}` }}>
             {(['original', 'solid'] as const).map(mode => (
               <button key={mode} onClick={() => onChange('colorMode', mode)} style={{
@@ -460,7 +532,10 @@ const ColorSection: React.FC<{
   );
 };
 
-// ─── Universal sidebar ────────────────────────────────────────────────────────
+// ─── § Universal sidebar ──────────────────────────────────────────────────────
+//
+// Renders all universal prop controls:
+//   ColorSection on top, then FIELD_GROUPS as AccordionSections.
 
 const UniversalSidebar: React.FC<{
   universalProps: UniversalProps;
@@ -482,7 +557,15 @@ const UniversalSidebar: React.FC<{
   </div>
 );
 
-// ─── AiSelect ─────────────────────────────────────────────────────────────────
+// ─── § AiSelect ───────────────────────────────────────────────────────────────
+//
+// Custom portal dropdown for string prop selection.
+// Rendered via createPortal into document.body to escape any overflow:hidden
+// clipping on ancestor elements (settings panels have overflow:hidden).
+//
+// The dropdown position is computed from getBoundingClientRect() each time it
+// opens. Scroll/resize listeners update the position while open.
+// dropUp is true when there is not enough space below and there is room above.
 
 const AiSelect: React.FC<{
   label: string; value: string; options: string[];
@@ -573,7 +656,11 @@ const AiSelect: React.FC<{
   );
 };
 
-// ─── Specific sidebar ─────────────────────────────────────────────────────────
+// ─── § Specific sidebar ───────────────────────────────────────────────────────
+//
+// Renders prop controls defined in config.json.
+// If config.specificProps is set, only those props are shown.
+// Supported control types: select, number, text (default).
 
 const SpecificSidebar: React.FC<{
   config: ComponentConfig; componentProps: ComponentPropsMap;
@@ -616,7 +703,7 @@ const SpecificSidebar: React.FC<{
   );
 };
 
-// ─── Tab bar ──────────────────────────────────────────────────────────────────
+// ─── § Tab bar ────────────────────────────────────────────────────────────────
 
 const TabBar: React.FC<{ active: TabType; onSelect: (t: TabType) => void; t: T }> = ({ active, onSelect, t }) => (
   <div style={{ display: 'flex', padding: '6px 12px', gap: 4, borderBottom: `1px solid ${t.barBorder}`, background: `${t.barBg}88`, flexShrink: 0 }}>
@@ -637,7 +724,10 @@ const TabBar: React.FC<{ active: TabType; onSelect: (t: TabType) => void; t: T }
   </div>
 );
 
-// ─── Settings content ─────────────────────────────────────────────────────────
+// ─── § Settings content ───────────────────────────────────────────────────────
+//
+// Composes TabBar + the active sidebar content.
+// Used in both the inline SettingsPanel and the Fullscreen desktop side panel.
 
 const SettingsContent: React.FC<{
   activeTab: TabType; onTabSelect: (t: TabType) => void;
@@ -658,7 +748,11 @@ const SettingsContent: React.FC<{
   </div>
 );
 
-// ─── Component render ─────────────────────────────────────────────────────────
+// ─── § Component render ───────────────────────────────────────────────────────
+//
+// Wraps the live component in ComponentWrapper (handles universal prop transforms)
+// and a Suspense boundary (components are lazy-loaded).
+// refreshKey is incremented by "Заново" to force a full remount.
 
 interface ComponentRenderProps {
   Component: AnyComponent;
@@ -678,7 +772,17 @@ const ComponentRender: React.FC<ComponentRenderProps> = ({ Component, componentP
   </ComponentWrapper>
 );
 
-// ─── Mobile bottom sheet ──────────────────────────────────────────────────────
+// ─── § Mobile bottom sheet ────────────────────────────────────────────────────
+//
+// On mobile, the settings sidebar is replaced by a bottom sheet that slides up
+// from the bottom of the fullscreen overlay.
+//
+// Two tabs are shown in a fixed bottom bar (52px height).
+// Tapping a tab opens the sheet to 65dvh; tapping the same tab or the
+// backdrop closes it.
+//
+// Height transition uses CSS (height: 0 → SHEET_HEIGHT) for smoothness.
+// Backdrop is an absolutely positioned div that captures clicks outside.
 
 interface MobileBottomSheetProps {
   config: ComponentConfig;
@@ -698,7 +802,9 @@ const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
 
   return (
     <>
+      {/* Transparent backdrop — closes the sheet when tapped */}
       {isOpen && <div onClick={() => setActiveTab(null)} style={{ position: 'absolute', inset: 0, zIndex: 10 }} />}
+      {/* Sheet body — slides up via height transition */}
       <div style={{
         position: 'absolute', bottom: 52, left: 0, right: 0,
         height: isOpen ? SHEET_HEIGHT : 0,
@@ -706,6 +812,7 @@ const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
         zIndex: 20, display: 'flex', flexDirection: 'column',
       }}>
         <div style={{ flex: 1, background: t.panelBg, borderTop: `1px solid ${t.barBorder}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Drag handle indicator */}
           <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 4px', flexShrink: 0 }}>
             <div style={{ width: 36, height: 4, borderRadius: 2, background: t.fgSub }} />
           </div>
@@ -715,6 +822,7 @@ const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
           </div>
         </div>
       </div>
+      {/* Fixed bottom tab bar */}
       <div style={{
         position: 'absolute', bottom: 0, left: 0, right: 0, height: 52,
         background: t.barBg, borderTop: `1px solid ${t.barBorder}`,
@@ -745,7 +853,18 @@ const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
   );
 };
 
-// ─── Fullscreen modal ─────────────────────────────────────────────────────────
+// ─── § Fullscreen modal ───────────────────────────────────────────────────────
+//
+// Portal overlay covering the full viewport.
+// Layout:
+//   - Toolbar (fixed height, top)
+//   - Body (flex row):
+//       - ComponentRender area (flex: 1)
+//       - Desktop: optional side panel (280px, toggled by "Панель" button)
+//       - Mobile: MobileBottomSheet (bottom sheet)
+//
+// Keyboard: Escape closes the modal.
+// body.overflow is set to 'hidden' while mounted.
 
 const FullscreenModal: React.FC<ComponentRenderProps & {
   config: ComponentConfig; onClose: () => void; onRefresh: () => void;
@@ -774,6 +893,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
         display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', flexShrink: 0,
         borderBottom: `1px solid ${t.barBorder}`, background: t.barBg,
       }}>
+        {/* Component name badge */}
         <div style={{
           fontSize: 13, fontWeight: 600, color: t.fgMuted,
           padding: '3px 9px', borderRadius: 7, background: t.btnBg,
@@ -803,13 +923,13 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
 
       {/* Body */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
-        {/* FIX: explicit color: t.fg so text inherits correct color in light/dark theme */}
+        {/* Component preview area */}
         <div style={{
           flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: isMobile ? '24px 16px' : 48,
           overflow: 'auto',
-          paddingBottom: isMobile ? 68 : undefined,
-          color: t.fg,
+          paddingBottom: isMobile ? 68 : undefined, // room for mobile bottom sheet tab bar
+          color: t.fg, // ensure text inherits correct color in light/dark theme
         }}>
           <ComponentRender Component={Component} componentProps={componentProps} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} />
         </div>
@@ -833,7 +953,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
           </div>
         )}
 
-        {/* Mobile bottom sheet */}
+        {/* Mobile: bottom sheet replaces the side panel */}
         {isMobile && (
           <MobileBottomSheet
             config={config} componentProps={componentProps}
@@ -849,7 +969,13 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
   );
 };
 
-// ─── Preview panel ────────────────────────────────────────────────────────────
+// ─── § Preview panel ──────────────────────────────────────────────────────────
+//
+// The default compact inline view.
+// Shows a toolbar with three actions:
+//   Заново    — remount the component (increment refreshKey)
+//   Развернуть — enter fullscreen mode
+//   Настройки  — switch to inline settings mode
 
 const PreviewPanel: React.FC<ComponentRenderProps & {
   config: ComponentConfig;
@@ -897,7 +1023,13 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
   </div>
 );
 
-// ─── Settings panel ───────────────────────────────────────────────────────────
+// ─── § Settings panel ─────────────────────────────────────────────────────────
+//
+// Inline settings mode (activated by clicking "Настройки" in PreviewPanel).
+// Layout (vertical):
+//   - Mini component preview (fixed height ~220px)
+//   - SettingsContent (scrollable, fills remaining height)
+//   - Footer toolbar: Заново | Сбросить | ──── | Закрыть
 
 const SettingsPanel: React.FC<ComponentRenderProps & {
   config: ComponentConfig; onClose: () => void;
@@ -916,9 +1048,11 @@ const SettingsPanel: React.FC<ComponentRenderProps & {
       display: 'flex', flexDirection: 'column',
       maxHeight: 'calc(100dvh - 3rem)', overflow: 'hidden',
     }}>
+      {/* Mini preview */}
       <div style={{ minHeight: 220, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, borderBottom: `1px solid ${t.barBorder}`, color: t.fg }}>
         <ComponentRender Component={props.Component} componentProps={props.componentProps} universalProps={props.universalProps} refreshKey={props.refreshKey} isDark={isDark} />
       </div>
+      {/* Settings */}
       <SettingsContent
         activeTab={activeTab} onTabSelect={setActiveTab}
         config={config} componentProps={props.componentProps}
@@ -927,6 +1061,7 @@ const SettingsPanel: React.FC<ComponentRenderProps & {
         onUniversalChange={props.onUniversalPropChange}
         t={t}
       />
+      {/* Footer toolbar */}
       <div style={{
         flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
         padding: '8px 10px', borderTop: `1px solid ${t.barBorder}`, background: t.barBg,
@@ -941,7 +1076,23 @@ const SettingsPanel: React.FC<ComponentRenderProps & {
   );
 };
 
-// ─── Root ─────────────────────────────────────────────────────────────────────
+// ─── § Root (UIComponentViewer) ───────────────────────────────────────────────
+//
+// State owned here:
+//   settingsOpen    — whether the inline SettingsPanel is shown
+//   isFullscreen    — whether the FullscreenModal portal is mounted
+//   refreshKey      — incremented to force component remount ("Заново")
+//   componentProps  — current specific prop values (from config defaults)
+//   universalProps  — current universal prop values (scale, rotation, etc.)
+//   componentData   — loaded config + Component class (null while loading)
+//
+// Loading:
+//   loadComponent(componentId) is called once on mount.
+//   While loading, a "Загрузка компонента…" placeholder is shown.
+//   On success, componentProps are initialised from config defaults.
+//
+// Handlers are memoised with useCallback to avoid unnecessary re-renders of
+// child components when only unrelated state changes.
 
 const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) => {
   const { isDark } = useTheme();
@@ -986,6 +1137,7 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
 
   return (
     <div className="not-prose" style={{ margin: '1.25rem 0' }}>
+      {/* Inline mode: either preview or settings panel */}
       {settingsOpen ? (
         <SettingsPanel {...shared} config={componentData.config}
           onClose={() => setSettingsOpen(false)}
@@ -1003,6 +1155,7 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
         />
       )}
 
+      {/* Fullscreen portal — mounted on top of everything */}
       {isFullscreen && (
         <FullscreenModal {...shared} config={componentData.config}
           onClose={() => setIsFullscreen(false)}
