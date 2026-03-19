@@ -42,17 +42,24 @@ const imageUrl = image
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Theme: must run before any paint to eliminate FOUC -->
+    <!-- Theme + body background: must run before any paint to eliminate FOUC.
+         Sets both the html class AND the body background color immediately,
+         so there is never a white flash between page navigations. -->
     <script is:inline>
       (function () {
         var theme = localStorage.getItem('theme');
         if (!theme) theme = 'dark';
+
         if (theme === 'dark') {
           document.documentElement.classList.add('dark');
           document.documentElement.style.colorScheme = 'dark';
+          // Match bg-[#0a0a0a] used by DocContent main in dark mode
+          document.documentElement.style.backgroundColor = '#0a0a0a';
         } else {
           document.documentElement.classList.remove('dark');
           document.documentElement.style.colorScheme = 'light';
+          // Match bg-[#E8E7E3] used by DocContent main in light mode
+          document.documentElement.style.backgroundColor = '#E8E7E3';
         }
       })();
     </script>
@@ -98,7 +105,6 @@ const imageUrl = image
       :root {
         --font-sans: system-ui, -apple-system, sans-serif;
         --font-mono: ui-monospace, monospace;
-        /* Sidebar width — matches the React component's w-80 = 20rem */
         --sidebar-width: 20rem;
       }
 
@@ -115,29 +121,11 @@ const imageUrl = image
         overflow-x: hidden;
       }
 
-      /*
-       * Pre-reserve the sidebar space BEFORE React hydrates.
-       * This is the key fix: the sidebar placeholder occupies 20rem on desktop
-       * so the main content never has to "jump" rightward when JS loads.
-       *
-       * The actual sidebar element is position:fixed so it doesn't affect
-       * document flow — we use a pseudo-spacer on body instead.
-       *
-       * We apply margin-left directly to the document root so any
-       * client:only island that renders <main> already has the correct offset.
-       */
       @media (min-width: 768px) {
-        /* Spacer so SSR content is already offset correctly */
         body {
           padding-left: var(--sidebar-width);
         }
 
-        /*
-         * Once React mounts and DocContent renders its own <main> with
-         * margin-left: 20rem, we must remove the body padding to avoid double offset.
-         * We detect hydration by presence of [data-doc-hydrated] attribute
-         * which DocContent sets on mount.
-         */
         body[data-doc-hydrated] {
           padding-left: 0;
         }
@@ -155,11 +143,8 @@ const imageUrl = image
       </ThemeProvider>
     </ErrorBoundary>
 
-    <!-- Mark body as hydrated once JS runs, removes the SSR padding-left -->
     <script is:inline>
-      // Set immediately on DOMContentLoaded — before React paints
       document.addEventListener('DOMContentLoaded', function() {
-        // Small rAF delay so React's first paint happens before we toggle padding
         requestAnimationFrame(function() {
           requestAnimationFrame(function() {
             document.body.setAttribute('data-doc-hydrated', 'true');
