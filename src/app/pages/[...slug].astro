@@ -6,7 +6,6 @@ import path from 'node:path';
 import {
   scanDocsDirectoryRecursive,
   buildDocFromPath,
-  getDocInfo,
 } from '../../../scripts/docUtils.mjs';
 
 export async function getStaticPaths() {
@@ -19,21 +18,39 @@ export async function getStaticPaths() {
 
   const allMdFiles = scanDocsDirectoryRecursive(docsDir);
 
-  return allMdFiles
-    .map((mdPath) => {
-      const info = getDocInfo(mdPath, docsDir);
+  // FIX: deduplicate slugs before returning paths to Astro.
+  // When two .md files resolve to the same slug, Astro throws a cryptic build
+  // error. We warn early with both conflicting file paths and skip the duplicate.
+  const seen = new Map<string, string>(); // slug → first mdPath that claimed it
 
-      // welcome.md → slug '' → рендерится index.astro, пропускаем
-      if (info.slug === '') return null;
+  const paths: Array<{ params: { slug: string }; props: { doc: any } }> = [];
 
-      const doc = buildDocFromPath(mdPath, docsDir);
+  for (const mdPath of allMdFiles) {
+    // FIX: buildDocFromPath already calls getDocInfo internally — we no longer
+    // need a separate getDocInfo call just to read the slug.
+    const doc = buildDocFromPath(mdPath, docsDir);
 
-      return {
-        params: { slug: doc.slug },
-        props: { doc },
-      };
-    })
-    .filter(Boolean);
+    // welcome.md → slug '' → rendered by index.astro, skip here
+    if (!doc.slug) continue;
+
+    if (seen.has(doc.slug)) {
+      console.warn(
+        `[slug dedup] Duplicate slug "${doc.slug}" found:\n` +
+        `  first:  ${seen.get(doc.slug)}\n` +
+        `  second: ${mdPath}\n` +
+        `  Skipping the second file.`
+      );
+      continue;
+    }
+
+    seen.set(doc.slug, mdPath);
+    paths.push({
+      params: { slug: doc.slug },
+      props: { doc },
+    });
+  }
+
+  return paths;
 }
 
 const { slug } = Astro.params;
