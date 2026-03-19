@@ -1,6 +1,6 @@
 import React, { useState, useMemo, Suspense, lazy, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { useTheme } from '@/shared/contexts/ThemeContext';
+import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
 import Sidebar from '@/features/navigation/components/Sidebar';
 import TopNavbar from '@/features/navigation/components/MobileNavbar';
 import { parseHtmlToReact, TableContext } from '@/shared/lib/htmlParser';
@@ -46,8 +46,6 @@ function estimateReadTime(content: string): number {
   return Math.max(1, Math.round(words / 200));
 }
 
-// ─── Hooks ────────────────────────────────────────────────────────────────────
-
 function useActiveHeading(toc: ReturnType<typeof useTableOfContents>): string {
   const [activeId, setActiveId] = useState('');
   useEffect(() => {
@@ -69,8 +67,6 @@ function useActiveHeading(toc: ReturnType<typeof useTableOfContents>): string {
   }, [toc]);
   return activeId;
 }
-
-// ─── TOC helpers ─────────────────────────────────────────────────────────────
 
 function getTocItemVisuals(isActive: boolean, absDist: number, hasActive: boolean) {
   if (!hasActive) return { opacity: 0.6, glowOpacity: 0 };
@@ -103,8 +99,6 @@ function getTocBoxShadow(isActive: boolean, isDark: boolean, glowOpacity: number
   return 'none';
 }
 
-// ─── Hero colors ──────────────────────────────────────────────────────────────
-
 function useHeroColors(isDark: boolean) {
   return {
     heroBg:          isDark ? '#0a0a0a' : '#E8E7E3',
@@ -115,8 +109,6 @@ function useHeroColors(isDark: boolean) {
     textPrimary:     isDark ? '#ffffff' : '#000000',
   };
 }
-
-// ─── Hero sub-components ──────────────────────────────────────────────────────
 
 const HeroBreadcrumbs: React.FC<{ typename?: string; textPrimary: string }> = ({ typename, textPrimary }) => {
   if (!typename?.trim()) return null;
@@ -225,8 +217,6 @@ const DocHero: React.FC<{
   );
 };
 
-// ─── Layout ───────────────────────────────────────────────────────────────────
-
 function getMainMargins(isDesktop: boolean, hasToc: boolean, tocWidth: string) {
   return {
     marginLeft:   isDesktop ? '20rem' : '0',
@@ -235,13 +225,7 @@ function getMainMargins(isDesktop: boolean, hasToc: boolean, tocWidth: string) {
   };
 }
 
-// ─── DocContent ───────────────────────────────────────────────────────────────
-
-/**
- * DocContent no longer wraps itself in ThemeProvider.
- * The single ThemeProvider lives in Layout.astro → all children share one context.
- */
-const DocContent: React.FC<DocContentProps> = ({ doc }) => {
+const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const { isDark } = useTheme();
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
 
@@ -366,5 +350,12 @@ const DocContent: React.FC<DocContentProps> = ({ doc }) => {
     </div>
   );
 };
+
+// ThemeProvider wraps DocContentMain because DocContent is a client:only island
+const DocContent: React.FC<DocContentProps> = ({ doc }) => (
+  <ThemeProvider>
+    <DocContentMain doc={doc} />
+  </ThemeProvider>
+);
 
 export default DocContent;
