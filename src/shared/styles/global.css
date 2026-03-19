@@ -241,18 +241,12 @@ html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .
   overflow-x: auto;
   overflow-y: hidden;
   margin: 1.25rem 0;
-  padding: 1rem 1.5rem;
+  padding: 0.875rem 1.25rem;
   border-radius: 10px;
   border: 1px solid rgba(0, 0, 0, 0.08);
   background: rgba(0, 0, 0, 0.02);
   text-align: center;
   -webkit-overflow-scrolling: touch;
-}
-
-.katex-block--inline {
-  text-align: left;
-  padding: 0.6rem 1rem;
-  font-size: 0.95em;
 }
 
 .dark .katex-block {
@@ -265,8 +259,10 @@ html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .
 .katex-block::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
 .dark .katex-block::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); }
 
+/* Inline: no box, flows naturally in text */
 .katex-inline {
   display: inline;
+  vertical-align: middle;
 }
 
 .katex-error {
