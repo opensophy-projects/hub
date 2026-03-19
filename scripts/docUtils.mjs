@@ -1,8 +1,69 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { marked } from 'marked';
+import katex from 'katex';
 
 marked.setOptions({ breaks: true, gfm: true });
+
+// ─── KaTeX preprocessor ───────────────────────────────────────────────────────
+
+/**
+ * Renders $...$ (inline) and $$...$$ (block) math via KaTeX server-side.
+ * Runs BEFORE marked so that markdown doesn't mangle the LaTeX syntax.
+ * Code blocks (``` and `) are protected first.
+ */
+export function preprocessKatex(content) {
+  // Step 1: protect code blocks and inline code from being touched
+  const protected_ = [];
+
+  // Protect fenced code blocks (``` ... ```)
+  let result = content.replace(/```[\s\S]*?```/g, (match) => {
+    protected_.push(match);
+    return `___PROTECTED_${protected_.length - 1}___`;
+  });
+
+  // Protect inline code (` ... `)
+  result = result.replace(/`[^`\n]+`/g, (match) => {
+    protected_.push(match);
+    return `___PROTECTED_${protected_.length - 1}___`;
+  });
+
+  // Step 2: render $$...$$ block math (must come before inline $)
+  result = result.replace(/\$\$([\s\S]+?)\$\$/g, (_match, tex) => {
+    try {
+      const html = katex.renderToString(tex.trim(), {
+        displayMode: true,
+        throwOnError: false,
+        trust: false,
+        strict: 'ignore',
+      });
+      return `<div class="katex-block">${html}</div>`;
+    } catch {
+      return `<div class="katex-block katex-error"><code>$$${tex}$$</code></div>`;
+    }
+  });
+
+  // Step 3: render $...$ inline math
+  // Avoid matching currency: require non-space after opening $ and non-space before closing $
+  result = result.replace(/\$([^\s$][^$\n]*?[^\s$]|\S)\$/g, (_match, tex) => {
+    try {
+      const html = katex.renderToString(tex.trim(), {
+        displayMode: false,
+        throwOnError: false,
+        trust: false,
+        strict: 'ignore',
+      });
+      return `<span class="katex-inline">${html}</span>`;
+    } catch {
+      return `<span class="katex-inline katex-error"><code>$${tex}$</code></span>`;
+    }
+  });
+
+  // Step 4: restore protected blocks
+  result = result.replace(/___PROTECTED_(\d+)___/g, (_, i) => protected_[Number.parseInt(i, 10)]);
+
+  return result;
+}
 
 // ─── Entry name parser ────────────────────────────────────────────────────────
 
@@ -434,7 +495,8 @@ export function buildDocFromPath(mdPath, docsDir) {
   const rawContent                          = fs.readFileSync(mdPath, 'utf-8');
   const { metadata, content: cleanContent } = extractFrontMatter(rawContent);
   const processed                           = processImageSyntax(cleanContent);
-  const htmlContent                         = marked(preprocessAlerts(processed));
+  const withKatex                           = preprocessKatex(processed);
+  const htmlContent                         = marked(preprocessAlerts(withKatex));
   const info                                = getDocInfo(mdPath, docsDir);
   const fileEntry                           = parseEntryName(path.basename(mdPath, '.md'));
 
