@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, lazy, Suspense, memo, startTransition } from 'react';
 import { useTheme } from '@/shared/contexts/ThemeContext';
-import { useDocuments } from '@/features/docs/hooks/useDocuments';
+import { useManifest } from '@/features/docs/hooks/useDocuments';
 import { storageSet } from '@/shared/lib/storage';
 import { CONTACTS } from '@/shared/data/contacts';
 import {
@@ -575,7 +575,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
   const { isDark, toggleTheme, isSidebarOpen, setSidebarOpen } = useTheme();
-  const { manifest: docs, loading, error } = useDocuments();
+  const { manifest: docs, loading, error } = useManifest();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [showContacts, setShowContacts] = useState(false);
