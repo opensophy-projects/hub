@@ -1,16 +1,11 @@
 /**
  * DocsPanel — объединённая панель Навигация + Страницы
- *
- * Левая колонка: дерево Docs/ (NavEditorPanel)
- * Правая колонка: редактор выбранного файла (PageEditorPanel)
- *
- * Создание статьи: заполняешь весь frontmatter сразу, жмёшь Create →
- * файл создаётся + bridge.runGenerate() → страница сразу доступна на сайте.
- *
- * Редактирование: клик по файлу в дереве → открывается только markdown-редактор
- * (frontmatter отдельно). Сохранение = Ctrl+S или кнопка → runGenerate().
- *
- * Preview: открывает реальную страницу в браузере (window.open).
+ * - Дерево Docs/
+ * - Создание Nav Popover / Категории / Статьи
+ * - Редактор markdown с frontmatter
+ * - Кнопка "Открыть" открывает реальную страницу в браузере
+ * - Никаких .gitkeep/.keep — директории создаются через bridge.mkdir
+ * - Генерация и перезагрузка браузера происходят автоматически на сервере
  */
 
 import React, {
@@ -26,7 +21,7 @@ import {
   FolderOpen, Folder, FileText, Plus, Trash2,
   ChevronRight, ChevronDown, FolderPlus, FilePlus,
   Loader2, Save, Eye, Bold, Italic, Code, Link, Hash, List,
-  RefreshCw, X, Search,
+  RefreshCw,
 } from 'lucide-react';
 
 marked.setOptions({ breaks: true, gfm: true });
@@ -156,12 +151,12 @@ function CreateModal({
   onClose: () => void;
   onCreated: (filePath?: string) => void;
 }) {
-  const [title, setTitle]     = useState('');
-  const [slug, setSlug]       = useState('');
-  const [icon, setIcon]       = useState('');
+  const [title, setTitle]       = useState('');
+  const [slug, setSlug]         = useState('');
+  const [icon, setIcon]         = useState('');
   const [autoSlug, setAutoSlug] = useState(true);
-  const [fm, setFm]           = useState<FM>({ ...EMPTY_FM });
-  const [saving, setSaving]   = useState(false);
+  const [fm, setFm]             = useState<FM>({ ...EMPTY_FM });
+  const [saving, setSaving]     = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 50); }, []);
@@ -172,37 +167,34 @@ function CreateModal({
     if (autoSlug) setSlug(slugify(v));
   };
 
-  const setFmField = (k: keyof FM, v: string) => setFm(prev => ({ ...prev, [k]: v }));
-
-  const typeLabels = { N: 'Nav Popover [N]', C: 'Категория [C]', A: 'Статья [A]' };
-  const defaultIcons: Record<string, string> = { N: 'book', C: 'folder', A: 'file-text' };
   const isArticle = config.entryType === 'A';
+  const defaultIcons: Record<string, string> = { N: 'book', C: 'folder', A: 'file-text' };
+  const typeLabels = { N: 'Nav Popover [N]', C: 'Категория [C]', A: 'Статья [A]' };
 
   const create = async () => {
     if (!title.trim()) return;
     setSaving(true);
     try {
-      const ic = icon.trim() || defaultIcons[config.entryType];
-      const iconPart = ic ? `[${ic}]` : '';
-      const slugPart = slug.trim() ? `{${slug.trim()}}` : '';
+      const ic        = icon.trim() || defaultIcons[config.entryType];
+      const iconPart  = ic ? `[${ic}]` : '';
+      const slugPart  = slug.trim() ? `{${slug.trim()}}` : '';
       const entryName = `[${config.entryType}]${iconPart}${title.trim()}${slugPart}`;
 
       if (isArticle) {
         const filePath = `${config.parentPath}/${entryName}.md`;
-        const finalFm = { ...fm, title: title.trim() };
-        const content = serializeFM(finalFm, `# ${title.trim()}\n\nНачните писать здесь...\n`);
+        const content  = serializeFM(
+          { ...fm, title: title.trim() },
+          `# ${title.trim()}\n\nНачните писать здесь...\n`
+        );
         await bridge.writeFile(filePath, content);
-
-        // Generate immediately so page is accessible
-        const gen = await bridge.runGenerate();
-        if (!gen.ok) toast.warning('Файл создан, но генерация завершилась с ошибкой');
-        else toast.success(`Статья "${title.trim()}" создана и опубликована`);
-
+        // bridge автоматически запустит generate + reload браузера
+        toast.success(`Статья "${title.trim()}" создана`);
         onCreated(filePath);
       } else {
+        // Создаём директорию напрямую — без файлов-заглушек
         const dirPath = `${config.parentPath}/${entryName}`;
-        await bridge.writeFile(`${dirPath}/.keep`, '');
-        await bridge.runGenerate();
+        await bridge.mkdir(dirPath);
+        // bridge автоматически запустит generate + reload браузера
         toast.success(`${config.entryType === 'N' ? 'Nav popover' : 'Категория'} "${title.trim()}" создана`);
         onCreated();
       }
@@ -243,7 +235,10 @@ function CreateModal({
           padding: 20, boxShadow: '0 24px 64px rgba(0,0,0,0.7)',
           fontFamily: T.mono,
         }}
-        onKeyDown={e => { if (e.key === 'Enter' && !isArticle) create(); if (e.key === 'Escape') onClose(); }}
+        onKeyDown={e => {
+          if (e.key === 'Enter' && !isArticle) create();
+          if (e.key === 'Escape') onClose();
+        }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
           <Badge type={config.entryType} />
@@ -252,7 +247,6 @@ function CreateModal({
           </span>
         </div>
 
-        {/* Common fields */}
         <div style={{ marginBottom: 10 }}>
           <label style={labelStyle}>Название *</label>
           <input ref={inputRef} value={title} onChange={e => handleTitle(e.target.value)}
@@ -279,7 +273,6 @@ function CreateModal({
             placeholder={defaultIcons[config.entryType]} style={inputStyle} />
         </div>
 
-        {/* Article-only frontmatter fields */}
         {isArticle && (
           <>
             <div style={{
@@ -288,35 +281,34 @@ function CreateModal({
             }}>
               Frontmatter статьи
             </div>
-
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 10px', marginBottom: 10 }}>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={labelStyle}>Описание</label>
-                <input value={fm.description} onChange={e => setFmField('description', e.target.value)}
+                <input value={fm.description} onChange={e => setFm(p => ({ ...p, description: e.target.value }))}
                   placeholder="Краткое описание для SEO" style={inputStyle} />
               </div>
               <div>
                 <label style={labelStyle}>Автор</label>
-                <input value={fm.author} onChange={e => setFmField('author', e.target.value)}
+                <input value={fm.author} onChange={e => setFm(p => ({ ...p, author: e.target.value }))}
                   placeholder="veilosophy" style={inputStyle} />
               </div>
               <div>
                 <label style={labelStyle}>Дата</label>
-                <input type="date" value={fm.date} onChange={e => setFmField('date', e.target.value)} style={inputStyle} />
+                <input type="date" value={fm.date} onChange={e => setFm(p => ({ ...p, date: e.target.value }))} style={inputStyle} />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={labelStyle}>Теги (через запятую)</label>
-                <input value={fm.tags} onChange={e => setFmField('tags', e.target.value)}
+                <input value={fm.tags} onChange={e => setFm(p => ({ ...p, tags: e.target.value }))}
                   placeholder="linux, security, devops" style={inputStyle} />
               </div>
               <div>
                 <label style={labelStyle}>Lang</label>
-                <input value={fm.lang} onChange={e => setFmField('lang', e.target.value)}
+                <input value={fm.lang} onChange={e => setFm(p => ({ ...p, lang: e.target.value }))}
                   placeholder="ru" style={inputStyle} />
               </div>
               <div>
                 <label style={labelStyle}>Robots</label>
-                <input value={fm.robots} onChange={e => setFmField('robots', e.target.value)}
+                <input value={fm.robots} onChange={e => setFm(p => ({ ...p, robots: e.target.value }))}
                   placeholder="index, follow" style={inputStyle} />
               </div>
             </div>
@@ -326,7 +318,7 @@ function CreateModal({
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Btn fullWidth onClick={onClose}>Отмена</Btn>
           <Btn variant="accent" fullWidth loading={saving} onClick={create} style={{ fontWeight: 700 }}>
-            {isArticle ? 'Создать и опубликовать' : 'Создать'}
+            {isArticle ? 'Создать' : 'Создать'}
           </Btn>
         </div>
       </div>
@@ -348,7 +340,7 @@ function ActionIconBtn({ icon, title, onClick, danger }: {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: hov ? (danger ? T.dangerSoft : T.bgActive) : 'transparent',
         color: hov ? (danger ? T.danger : T.fg) : T.fgSub,
-        cursor: 'pointer', transition: 'all 0.1s',
+        cursor: 'pointer',
       }}
     >{icon}</button>
   );
@@ -364,12 +356,12 @@ function TreeNode({
   selectedPath: string;
 }) {
   const [expanded, setExpanded] = useState(entry.depth < 2);
-  const [hov, setHov] = useState(false);
+  const [hov, setHov]           = useState(false);
   const isDir    = entry.type === 'dir';
   const isActive = entry.path === selectedPath;
   const p = entry.parsed;
-  const iconMap: Record<string, string> = { N: T.accent, C: '#22c55e', A: '#f59e0b' };
-  const entryColor = iconMap[p.type ?? ''] ?? T.fgSub;
+  const colorMap: Record<string, string> = { N: T.accent, C: '#22c55e', A: '#f59e0b' };
+  const entryColor = colorMap[p.type ?? ''] ?? T.fgSub;
 
   return (
     <div>
@@ -385,17 +377,21 @@ function TreeNode({
         }}
       >
         {isDir
-          ? (expanded ? <ChevronDown size={11} style={{ color: T.fgSub, flexShrink: 0 }} />
-                      : <ChevronRight size={11} style={{ color: T.fgSub, flexShrink: 0 }} />)
+          ? (expanded
+              ? <ChevronDown  size={11} style={{ color: T.fgSub, flexShrink: 0 }} />
+              : <ChevronRight size={11} style={{ color: T.fgSub, flexShrink: 0 }} />)
           : <span style={{ width: 11, flexShrink: 0 }} />
         }
         {isDir
-          ? (expanded ? <FolderOpen size={12} style={{ color: entryColor, flexShrink: 0 }} />
-                      : <Folder     size={12} style={{ color: entryColor, flexShrink: 0 }} />)
+          ? (expanded
+              ? <FolderOpen size={12} style={{ color: entryColor, flexShrink: 0 }} />
+              : <Folder     size={12} style={{ color: entryColor, flexShrink: 0 }} />)
           : <FileText size={12} style={{ color: T.fgSub, flexShrink: 0 }} />
         }
         {p.type && <Badge type={p.type} />}
-        {p.icon && <span style={{ fontSize: 9, color: T.fgSub, flexShrink: 0 }}>⬡{p.icon}</span>}
+        {p.icon && (
+          <span style={{ fontSize: 9, color: T.fgSub, flexShrink: 0 }}>⬡{p.icon}</span>
+        )}
         <span style={{
           fontSize: 12, color: isActive ? T.accent : T.fg,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
@@ -438,24 +434,6 @@ function TreeNode({
 
 // ─── Markdown Editor ──────────────────────────────────────────────────────────
 
-const PREVIEW_CSS = `
-  .dp { font-size:13px; color:rgba(255,255,255,0.85); line-height:1.7; font-family:system-ui,sans-serif; }
-  .dp h1,.dp h2,.dp h3,.dp h4 { color:rgba(255,255,255,0.95); margin-top:1.3em; margin-bottom:.4em; }
-  .dp h1{font-size:1.6em;font-weight:700} .dp h2{font-size:1.3em;font-weight:700;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:.25em}
-  .dp h3{font-size:1.1em;font-weight:700} .dp p{margin:.6em 0}
-  .dp code{background:rgba(255,255,255,0.08);padding:2px 5px;border-radius:3px;font-family:ui-monospace,monospace;font-size:.85em}
-  .dp pre{background:#080810;padding:10px 12px;border-radius:7px;overflow-x:auto;margin:.8em 0}
-  .dp pre code{background:none;padding:0}
-  .dp blockquote{border-left:3px solid rgba(124,92,252,0.6);padding:.1em .75em;margin:.7em 0;color:rgba(255,255,255,.6);background:rgba(124,92,252,0.05);border-radius:0 5px 5px 0}
-  .dp ul,.dp ol{padding-left:1.4em;margin:.4em 0} .dp li{margin:.2em 0}
-  .dp a{color:#7c5cfc} .dp hr{border:none;border-top:1px solid rgba(255,255,255,0.1);margin:1.2em 0}
-  .dp table{border-collapse:collapse;width:100%;margin:.7em 0;font-size:.9em}
-  .dp td,.dp th{border:1px solid rgba(255,255,255,0.1);padding:5px 9px}
-  .dp th{background:rgba(255,255,255,0.06);font-weight:600}
-  .dp strong{color:rgba(255,255,255,.96);font-weight:700} .dp em{font-style:italic}
-  .dp img{max-width:100%;border-radius:5px}
-`;
-
 function MarkdownEditor({
   filePath, onClose,
 }: {
@@ -472,9 +450,8 @@ function MarkdownEditor({
 
   const fileName = filePath.split('/').pop()?.replace(/\.md$/, '') ?? '';
 
-  // Derive slug for preview URL
+  // Derive preview URL from file path
   const previewSlug = useMemo(() => {
-    // path like Docs/[N]..../[A][icon]Title{slug}.md
     const parts = filePath.replace(/^Docs\//, '').split('/');
     const slugParts: string[] = [];
     for (const p of parts) {
@@ -499,7 +476,7 @@ function MarkdownEditor({
     setSaving(true);
     try {
       await bridge.writeFile(filePath, serializeFM(fm, body));
-      await bridge.runGenerate();
+      // bridge автоматически запустит generate + reload
       setDirty(false);
       toast.success('Сохранено');
     } catch (e: any) {
@@ -522,7 +499,7 @@ function MarkdownEditor({
     if (!ta) return;
     const s = ta.selectionStart, e = ta.selectionEnd;
     const sel = body.slice(s, e);
-    const nv = body.slice(0, s) + before + sel + after + body.slice(e);
+    const nv  = body.slice(0, s) + before + sel + after + body.slice(e);
     setBody(nv); setDirty(true);
     setTimeout(() => {
       ta.focus();
@@ -535,7 +512,7 @@ function MarkdownEditor({
     if (e.key !== 'Tab') return;
     e.preventDefault();
     const ta = e.currentTarget;
-    const s = ta.selectionStart;
+    const s  = ta.selectionStart;
     const nv = body.slice(0, s) + '  ' + body.slice(ta.selectionEnd);
     setBody(nv); setDirty(true);
     setTimeout(() => { ta.selectionStart = ta.selectionEnd = s + 2; }, 0);
@@ -568,16 +545,15 @@ function MarkdownEditor({
         }}>← Назад</button>
 
         <span style={{
-          fontSize: 11, color: T.fg, flex: 1, overflow: 'hidden',
-          textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: T.mono,
+          fontSize: 11, color: T.fg, flex: 1,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: T.mono,
         }}>
           {fileName}{dirty && <span style={{ color: T.warning, marginLeft: 4 }}>●</span>}
         </span>
 
-        {/* Open in browser */}
         <button
           onClick={() => window.open(`/${previewSlug}`, '_blank')}
-          title="Открыть на сайте"
+          title="Открыть страницу на сайте"
           style={{
             display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px',
             borderRadius: 4, border: `1px solid ${T.border}`,
@@ -613,26 +589,35 @@ function MarkdownEditor({
         >
           {fmOpen ? <ChevronDown size={10}/> : <ChevronRight size={10}/>}
           Frontmatter
-          {fm.title && <span style={{ fontWeight: 400, marginLeft: 6, fontSize: 9, color: T.fgSub }}>— {fm.title.slice(0, 28)}</span>}
+          {fm.title && (
+            <span style={{ fontWeight: 400, marginLeft: 6, fontSize: 9, color: T.fgSub }}>
+              — {fm.title.slice(0, 28)}
+            </span>
+          )}
         </button>
         {fmOpen && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 8px', padding: '6px 10px 8px' }}>
             {([
-              { k: 'title',       label: 'Title',       span: true  },
-              { k: 'description', label: 'Description', span: true  },
-              { k: 'author',      label: 'Author' },
+              { k: 'title',       label: 'Title',       span: true   },
+              { k: 'description', label: 'Description', span: true   },
+              { k: 'author',      label: 'Author'                    },
               { k: 'date',        label: 'Date',        type: 'date' },
               { k: 'updated',     label: 'Updated',     type: 'date' },
-              { k: 'tags',        label: 'Tags',        span: true  },
-              { k: 'icon',        label: 'Icon' },
-              { k: 'lang',        label: 'Lang' },
-              { k: 'robots',      label: 'Robots' },
+              { k: 'tags',        label: 'Tags',        span: true   },
+              { k: 'icon',        label: 'Icon'                      },
+              { k: 'lang',        label: 'Lang'                      },
+              { k: 'robots',      label: 'Robots'                    },
             ] as Array<{ k: keyof FM; label: string; span?: boolean; type?: string }>).map(f => (
               <div key={f.k} style={{ gridColumn: f.span ? '1 / -1' : 'auto' }}>
-                <div style={{ fontSize: 9, color: T.fgSub, marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{f.label}</div>
-                <input type={f.type ?? 'text'} value={fm[f.k]}
+                <div style={{ fontSize: 9, color: T.fgSub, marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  {f.label}
+                </div>
+                <input
+                  type={f.type ?? 'text'}
+                  value={fm[f.k]}
                   onChange={e => { setFm(prev => ({ ...prev, [f.k]: e.target.value })); setDirty(true); }}
-                  style={inputStyle} />
+                  style={inputStyle}
+                />
               </div>
             ))}
           </div>
@@ -640,14 +625,17 @@ function MarkdownEditor({
       </div>
 
       {/* Syntax toolbar */}
-      <div style={{ display: 'flex', gap: 2, padding: '3px 8px', borderBottom: `1px solid ${T.border}`, flexShrink: 0, background: T.bgPanel }}>
+      <div style={{
+        display: 'flex', gap: 2, padding: '3px 8px',
+        borderBottom: `1px solid ${T.border}`, flexShrink: 0, background: T.bgPanel,
+      }}>
         {[
-          { icon: <Bold size={11}/>,   b: '**', a: '**' },
-          { icon: <Italic size={11}/>, b: '_',  a: '_'  },
-          { icon: <Code size={11}/>,   b: '`',  a: '`'  },
-          { icon: <Hash size={11}/>,   b: '\n## ', a: '' },
-          { icon: <List size={11}/>,   b: '\n- ',  a: '' },
-          { icon: <Link size={11}/>,   b: '[',  a: '](url)' },
+          { icon: <Bold size={11}/>,   b: '**',    a: '**'       },
+          { icon: <Italic size={11}/>, b: '_',     a: '_'        },
+          { icon: <Code size={11}/>,   b: '`',     a: '`'        },
+          { icon: <Hash size={11}/>,   b: '\n## ', a: ''         },
+          { icon: <List size={11}/>,   b: '\n- ',  a: ''         },
+          { icon: <Link size={11}/>,   b: '[',     a: '](url)'   },
         ].map((btn, i) => (
           <button key={i} onClick={() => handleInsert(btn.b, btn.a)}
             style={{
@@ -655,13 +643,19 @@ function MarkdownEditor({
               width: 22, height: 20, borderRadius: 3,
               border: 'none', background: 'transparent', color: T.fgMuted, cursor: 'pointer',
             }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = T.bgHov; (e.currentTarget as HTMLButtonElement).style.color = T.fg; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = T.fgMuted; }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLButtonElement).style.background = T.bgHov;
+              (e.currentTarget as HTMLButtonElement).style.color = T.fg;
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+              (e.currentTarget as HTMLButtonElement).style.color = T.fgMuted;
+            }}
           >{btn.icon}</button>
         ))}
       </div>
 
-      {/* Editor only — preview is the real site */}
+      {/* Markdown editor */}
       <textarea
         ref={taRef}
         value={body}
@@ -674,7 +668,7 @@ function MarkdownEditor({
           color: '#e2e8f0', fontSize: 12,
           fontFamily: T.mono, lineHeight: 1.75,
           resize: 'none', outline: 'none',
-          scrollbarWidth: 'thin',
+          scrollbarWidth: 'thin' as const,
         }}
       />
 
@@ -689,8 +683,8 @@ function MarkdownEditor({
 // ─── DocsPanel ────────────────────────────────────────────────────────────────
 
 export default function DocsPanel() {
-  const [tree, setTree]           = useState<TreeEntry[]>([]);
-  const [loading, setLoading]     = useState(true);
+  const [tree, setTree]             = useState<TreeEntry[]>([]);
+  const [loading, setLoading]       = useState(true);
   const [selectedFile, setSelected] = useState<string | null>(null);
   const [createConfig, setCreate]   = useState<CreateConfig | null>(null);
   const [toDelete, setToDelete]     = useState<TreeEntry | null>(null);
@@ -715,8 +709,9 @@ export default function DocsPanel() {
       await bridge.deleteFile(toDelete.path);
       if (selectedFile === toDelete.path) setSelected(null);
       setToDelete(null);
-      await load();
-      await bridge.runGenerate();
+      // Перезагружаем дерево после короткой задержки
+      // (bridge сам делает generate+reload в браузере)
+      setTimeout(load, 400);
       toast.success(`Удалено: ${toDelete.parsed.title || toDelete.name}`);
     } catch (e: any) {
       toast.error(`Ошибка: ${e.message}`);
@@ -724,20 +719,21 @@ export default function DocsPanel() {
   };
 
   const handleCreated = useCallback((filePath?: string) => {
-    load();
-    if (filePath) setSelected(filePath);
+    // Перезагружаем дерево после создания
+    setTimeout(() => {
+      load();
+      if (filePath) setSelected(filePath);
+    }, 400);
   }, [load]);
 
   const fileCount = tree.reduce(function count(acc: number, e: TreeEntry): number {
     return acc + (e.type === 'file' ? 1 : 0) + (e.children ? e.children.reduce(count, 0) : 0);
   }, 0);
 
-  // Show editor if file selected
   if (selectedFile) {
     return (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <MarkdownEditor filePath={selectedFile} onClose={() => setSelected(null)} />
-
         {createConfig && (
           <CreateModal config={createConfig} onClose={() => setCreate(null)} onCreated={handleCreated} />
         )}
@@ -758,7 +754,9 @@ export default function DocsPanel() {
           Nav Popover
         </Btn>
         <div style={{ flex: 1 }} />
-        <Btn icon={<RefreshCw size={11}/>} size="sm" onClick={load}>Обновить</Btn>
+        <Btn icon={<RefreshCw size={11}/>} size="sm" onClick={load}>
+          Обновить
+        </Btn>
       </div>
 
       {/* Tree */}
@@ -795,7 +793,6 @@ export default function DocsPanel() {
       {createConfig && (
         <CreateModal config={createConfig} onClose={() => setCreate(null)} onCreated={handleCreated} />
       )}
-
       {toDelete && (
         <ConfirmDialog
           message={`Удалить "${toDelete.parsed.title || toDelete.name}"? Необратимо.`}
