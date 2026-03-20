@@ -1,15 +1,11 @@
 /**
- * Hub Dev Panel — WebSocket Bridge v3
+ * Hub Dev Panel — WebSocket Bridge v4
  *
  * Astro integration plugin.
  * Запускается ТОЛЬКО через astro:server:setup хук (только в astro dev).
  * В production build этот файл не используется.
  *
  * ws://127.0.0.1:7777 — только localhost
- *
- * Генерация встроена напрямую (без дочернего процесса) и сразу
- * триггерит Vite HMR через server.watcher — страницы обновляются
- * мгновенно без npm run dev / npm run generate.
  */
 
 import { WebSocketServer } from 'ws';
@@ -17,18 +13,17 @@ import fs   from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT        = process.cwd();
-const __dirname   = path.dirname(fileURLToPath(import.meta.url));
-const DOCS_DIR    = path.join(ROOT, 'Docs');
-const OUTPUT_DIR  = path.join(ROOT, 'public/data/docs');
-const MANIFEST    = path.join(OUTPUT_DIR, 'manifest.json');
-const SITEMAP     = path.join(ROOT, 'public/sitemap.xml');
-const BASE_URL    = 'https://hub.opensophy.com';
+const ROOT       = process.cwd();
+const DOCS_DIR   = path.join(ROOT, 'Docs');
+const OUTPUT_DIR = path.join(ROOT, 'public/data/docs');
+const MANIFEST   = path.join(OUTPUT_DIR, 'manifest.json');
+const SITEMAP    = path.join(ROOT, 'public/sitemap.xml');
+const BASE_URL   = 'https://hub.opensophy.com';
 
 // ─── Разрешённые пути ──────────────────────────────────────────────────────────
 
 const ALLOWED_WRITE = ['Docs/', 'src/shared/data/', 'public/'];
-const ALLOWED_READ  = [...ALLOWED_WRITE, 'src/shared/data/contacts.ts', 'public/robots.txt'];
+const ALLOWED_READ  = [...ALLOWED_WRITE, 'src/shared/data/contacts.ts'];
 
 function relPath(abs) {
   return path.relative(ROOT, abs).replaceAll('\\', '/');
@@ -42,19 +37,20 @@ function canRead(absPath) {
   return ALLOWED_READ.some(p => rel === p || rel.startsWith(p));
 }
 
-// ─── Inline generation (no child process) ─────────────────────────────────────
-// Импортируем утилиты напрямую из docUtils.mjs
+// ─── Inline generation ────────────────────────────────────────────────────────
 
 let _docUtils = null;
 async function getDocUtils() {
-  if (!_docUtils) {
-    _docUtils = await import(path.join(ROOT, 'scripts/docUtils.mjs'));
-  }
+  if (_docUtils) return _docUtils;
+  // Always re-import fresh to pick up file changes
+  _docUtils = await import(`${path.join(ROOT, 'scripts/docUtils.mjs')}?t=${Date.now()}`);
   return _docUtils;
 }
 
 async function runGenerate() {
-  const { scanDocsDirectoryRecursive, buildDocFromPath, extractFrontMatter } = await getDocUtils();
+  // Reset cache so next call re-reads disk
+  _docUtils = null;
+  const { scanDocsDirectoryRecursive, buildDocFromPath } = await getDocUtils();
 
   if (!fs.existsSync(DOCS_DIR)) throw new Error('Docs/ directory not found');
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
@@ -80,12 +76,10 @@ async function runGenerate() {
 
   fs.writeFileSync(MANIFEST, JSON.stringify(sorted));
 
-  // Generate sitemap
+  // Sitemap
   const today = new Date().toISOString().split('T')[0];
-  let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>${BASE_URL}/</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>\n`;
-
+  let sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+  sitemap += `  <url><loc>${BASE_URL}/</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>\n`;
   for (const doc of sorted) {
     if (!doc.slug || doc.slug === 'welcome') continue;
     const lastmod = doc.updated || doc.date || today;
@@ -95,11 +89,11 @@ async function runGenerate() {
   fs.writeFileSync(SITEMAP, sitemap);
 
   return {
-    ok:      errors.length === 0,
-    count:   manifest.length,
+    ok:     errors.length === 0,
+    count:  manifest.length,
     errors,
-    stdout:  `Generated ${manifest.length} docs`,
-    stderr:  errors.map(e => `${e.file}: ${e.error}`).join('\n'),
+    stdout: `Generated ${manifest.length} docs`,
+    stderr: errors.map(e => `${e.file}: ${e.error}`).join('\n'),
   };
 }
 
@@ -115,6 +109,14 @@ async function handleWriteFile({ filePath, content }) {
   await fs.promises.mkdir(path.dirname(abs), { recursive: true });
   await fs.promises.writeFile(abs, content, 'utf-8');
   return { written: relPath(abs) };
+}
+
+// NEW: create directory without any placeholder file
+async function handleMkdir({ dirPath }) {
+  const abs = path.isAbsolute(dirPath) ? dirPath : path.join(ROOT, dirPath);
+  if (!canWrite(abs)) throw new Error(`Write not allowed: ${relPath(abs)}`);
+  await fs.promises.mkdir(abs, { recursive: true });
+  return { created: relPath(abs) };
 }
 
 async function handleReadFile({ filePath }) {
@@ -133,13 +135,10 @@ async function handleDeleteFile({ filePath }) {
 
 async function handleListDocs() {
   const result = [];
-
   function scan(dir, depth = 0) {
     if (!fs.existsSync(dir)) return;
-    const items = fs.readdirSync(dir, { withFileTypes: true });
-    for (const item of items) {
-      // Skip hidden files and .gitkeep
-      if (item.name.startsWith('.')) continue;
+    for (const item of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (item.name.startsWith('.')) continue; // skip all hidden files
       const full = path.join(dir, item.name);
       const rel  = relPath(full);
       if (item.isDirectory()) {
@@ -150,20 +149,21 @@ async function handleListDocs() {
       }
     }
   }
-
   scan(DOCS_DIR);
   return { entries: result };
 }
 
 async function handleReadContacts() {
-  const fp      = path.join(ROOT, 'src/shared/data/contacts.ts');
-  const content = await fs.promises.readFile(fp, 'utf-8');
+  const content = await fs.promises.readFile(
+    path.join(ROOT, 'src/shared/data/contacts.ts'), 'utf-8'
+  );
   return { content };
 }
 
 async function handleWriteContacts({ content }) {
-  const fp = path.join(ROOT, 'src/shared/data/contacts.ts');
-  await fs.promises.writeFile(fp, content, 'utf-8');
+  await fs.promises.writeFile(
+    path.join(ROOT, 'src/shared/data/contacts.ts'), content, 'utf-8'
+  );
   return { ok: true };
 }
 
@@ -192,6 +192,7 @@ async function handleRunGenerate() {
 const HANDLERS = {
   ping:          handlePing,
   writeFile:     handleWriteFile,
+  mkdir:         handleMkdir,
   readFile:      handleReadFile,
   deleteFile:    handleDeleteFile,
   listDocs:      handleListDocs,
@@ -212,10 +213,19 @@ export function devBridgeIntegration() {
         const wss = new WebSocketServer({ port: 7777, host: '127.0.0.1' });
         logger.info('[hub-dev] Bridge ready → ws://127.0.0.1:7777 | Press Ctrl+Shift+D in browser');
 
-        // Watch Docs/ directory so Vite knows about new/changed/deleted files
-        // and triggers full page reload automatically
-        server.watcher.add(DOCS_DIR);
-        server.watcher.add(MANIFEST);
+        // Helper: tell ALL connected browsers to do a full page reload
+        function triggerReload() {
+          try {
+            // Astro/Vite HMR full-reload message
+            server.ws.send({ type: 'full-reload', path: '*' });
+          } catch {}
+          // Also touch manifest so watcher picks it up
+          try {
+            const now = Date.now();
+            fs.utimesSync(MANIFEST, now / 1000, now / 1000);
+            server.watcher.emit('change', MANIFEST);
+          } catch {}
+        }
 
         wss.on('connection', (ws, req) => {
           const ip = req.socket.remoteAddress ?? '';
@@ -249,24 +259,18 @@ export function devBridgeIntegration() {
               const result = await handler(payload ?? {});
               ws.send(JSON.stringify({ id, ok: true, result }));
 
-              // After any write/delete/generate — trigger HMR on manifest
-              // so the browser reloads the page with fresh data
-              const needsReload = ['writeFile', 'deleteFile', 'runGenerate'].includes(action);
-              if (needsReload) {
-                // Small delay to let filesystem settle
-                setTimeout(() => {
+              // After any mutation — regenerate and reload browser
+              const mutating = ['writeFile', 'mkdir', 'deleteFile', 'runGenerate'].includes(action);
+              if (mutating) {
+                setTimeout(async () => {
                   try {
-                    // Touch the manifest file to force Vite to reload it
-                    server.watcher.emit('change', MANIFEST);
-                    // Also emit change on any written doc file
-                    if (action === 'writeFile' && result?.written) {
-                      server.watcher.emit('change', path.join(ROOT, result.written));
-                    }
-                    if (action === 'deleteFile' && result?.deleted) {
-                      server.watcher.emit('unlink', path.join(ROOT, result.deleted));
-                    }
-                  } catch {}
-                }, 150);
+                    await runGenerate();
+                    triggerReload();
+                    logger.info(`[hub-dev] Regenerated after ${action}`);
+                  } catch (err) {
+                    logger.error(`[hub-dev] Generate error: ${err.message}`);
+                  }
+                }, 100);
               }
             } catch (err) {
               logger.error(`[hub-dev] ${action} error: ${err.message}`);
@@ -276,17 +280,6 @@ export function devBridgeIntegration() {
 
           ws.on('close', () => logger.info('[hub-dev] Client disconnected'));
           ws.on('error', err => logger.error(`[hub-dev] WS error: ${err.message}`));
-        });
-
-        // Watch Docs/ for changes made outside the panel (e.g. editor)
-        // and auto-regenerate
-        server.watcher.on('change', async (changedPath) => {
-          if (changedPath.startsWith(DOCS_DIR) && changedPath.endsWith('.md')) {
-            try {
-              await runGenerate();
-              server.watcher.emit('change', MANIFEST);
-            } catch {}
-          }
         });
 
         server.httpServer?.on('close', () => {
