@@ -1142,7 +1142,7 @@ i\hbar \frac{\partial \Psi}{\partial t} = -\frac{\hbar^2}{2m} \nabla^2 \Psi + V\
 :::chart
 [title]Продажи по кварталам
 [type]bar
-[colors]#383838, #4a4a4a, #33b02c
+[colors]#383838, #7c9ca1, #33b02c
 
 | Квартал | Север | Юг  | Запад |
 |---------|-------|-----|-------|
