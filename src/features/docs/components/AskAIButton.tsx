@@ -26,20 +26,12 @@ const PROVIDERS = [
       `https://claude.ai/new?q=${encodeURIComponent(buildAiQuery(title, url))}`,
   },
   {
-    id: 'gemini',
-    name: 'Gemini',
-    getUrl: (title: string, url: string) =>
-      `https://gemini.google.com/?q=${encodeURIComponent(buildAiQuery(title, url))}`,
-  },
-  {
     id: 'perplexity',
     name: 'Perplexity',
     getUrl: (title: string, url: string) =>
       `https://www.perplexity.ai/search?q=${encodeURIComponent(buildAiQuery(title, url))}`,
   },
 ];
-
-// ─── Theme helpers ────────────────────────────────────────────────────────────
 
 interface Theme {
   popupBg: string;
@@ -79,8 +71,6 @@ function getTheme(isDark: boolean): Theme {
       };
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 const AskAIButton: React.FC<AskAIButtonProps> = ({
   isDark,
   pageTitle,
@@ -102,8 +92,6 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
     return () => document.removeEventListener('mousedown', onDown);
   }, [open]);
 
-  // Компонент используется только в client:only="react" — SSR недостижим,
-  // поэтому window доступен напрямую без проверки globalThis.
   const getPageUrl = () => window.location.href;
 
   const handleProviderClick = (p: typeof PROVIDERS[0]) => {
@@ -111,8 +99,6 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
     setOpen(false);
   };
 
-  // markdownContent содержит отрендеренный HTML (результат marked()),
-  // а не исходный Markdown — кнопка подписана соответственно.
   const handleCopy = async () => {
     if (!markdownContent) return;
     try {
@@ -130,7 +116,6 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
 
   return (
     <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
-      {/* Кнопка */}
       <button
         onClick={() => setOpen(v => !v)}
         onMouseEnter={e => (e.currentTarget.style.background = t.btnHov)}
@@ -164,7 +149,6 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
         />
       </button>
 
-      {/* Дропдаун */}
       {open && (
         <div
           style={{
@@ -188,7 +172,6 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
             }
           `}</style>
 
-          {/* Лейбл */}
           <div style={{
             padding: '9px 12px 4px',
             fontSize: '0.6rem',
@@ -200,7 +183,6 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
             Выбери ИИ
           </div>
 
-          {/* Провайдеры */}
           {PROVIDERS.map(p => (
             <button
               key={p.id}
@@ -225,10 +207,8 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
             </button>
           ))}
 
-          {/* Разделитель */}
           <div style={{ height: '1px', background: t.divColor, margin: '4px 0' }} />
 
-          {/* Копировать HTML — содержимое это отрендеренный HTML, не Markdown */}
           <button
             onClick={handleCopy}
             onMouseEnter={() => setHoveredId('copy')}
