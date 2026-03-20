@@ -4,7 +4,6 @@ import 'katex/dist/katex.min.css';
 import { ClientRouter } from 'astro:transitions';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import ErrorBoundary from '@/shared/components/ErrorBoundary';
-import TopNavbar from '@/features/navigation/components/MobileNavbar';
 import SearchWrapper from '@/features/navigation/components/SearchWrapper';
 
 interface Props {
@@ -31,7 +30,7 @@ const {
   robots = 'index, follow',
 } = Astro.props;
 
-const fullUrl = new URL(url, 'https://hub.opensophy.com').href;
+const fullUrl  = new URL(url, 'https://hub.opensophy.com').href;
 const imageUrl = image
   ? new URL(image, 'https://hub.opensophy.com').href
   : 'https://hub.opensophy.com/og-image.png';
@@ -60,33 +59,33 @@ const imageUrl = image
     </script>
 
     <meta name="description" content={description} />
-    <meta name="keywords" content={keywords} />
-    <meta name="robots" content={robots} />
-    
-    <meta property="og:title" content={title} />
+    <meta name="keywords"    content={keywords} />
+    <meta name="robots"      content={robots} />
+
+    <meta property="og:title"       content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:type" content={type} />
-    <meta property="og:url" content={fullUrl} />
-    <meta property="og:image" content={imageUrl} />
-    
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={title} />
+    <meta property="og:type"        content={type} />
+    <meta property="og:url"         content={fullUrl} />
+    <meta property="og:image"       content={imageUrl} />
+
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:title"       content={title} />
     <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content={imageUrl} />
-    
+    <meta name="twitter:image"       content={imageUrl} />
+
     {type === 'article' && author && <meta name="author" content={author} />}
     {type === 'article' && date && (
       <>
         <meta property="article:published_time" content={new Date(date).toISOString()} />
-        <meta property="article:modified_time" content={new Date(date).toISOString()} />
+        <meta property="article:modified_time"  content={new Date(date).toISOString()} />
       </>
     )}
-    
+
     <link rel="canonical" href={fullUrl} />
-    <link rel="icon" href="/favicon.png" />
+    <link rel="icon"      href="/favicon.png" />
 
     <ClientRouter />
-    
+
     <style is:global>
       @font-face {
         font-family: 'customfont';
@@ -99,7 +98,6 @@ const imageUrl = image
       :root {
         --font-sans: system-ui, -apple-system, sans-serif;
         --font-mono: ui-monospace, monospace;
-        --sidebar-width: 20rem;
       }
 
       html {
@@ -110,13 +108,12 @@ const imageUrl = image
       }
 
       html:not(.dark) { background-color: #E8E7E3; }
-      html.dark { background-color: #0a0a0a; }
+      html.dark        { background-color: #0a0a0a; }
 
       body {
         margin: 0;
         padding: 0;
         overflow-x: hidden;
-        /* НЕТ padding-left — DocContent сам управляет marginLeft через isDesktop */
       }
     </style>
 
@@ -125,16 +122,16 @@ const imageUrl = image
   <body>
     <ErrorBoundary>
       <ThemeProvider>
-        <TopNavbar client:only="react" />
+        <!-- TopNavbar и MobileNavbar убраны — Navigation.tsx рендерит нижнюю/боковую навигацию сам -->
         <slot />
         <SearchWrapper client:only="react" />
       </ThemeProvider>
     </ErrorBoundary>
 
     <script is:inline>
-      document.addEventListener('astro:after-swap', function() {
+      document.addEventListener('astro:after-swap', function () {
         var theme = localStorage.getItem('theme') || 'dark';
-        var dark = theme !== 'light';
+        var dark  = theme !== 'light';
         if (dark) {
           document.documentElement.classList.add('dark');
           document.documentElement.style.colorScheme = 'dark';
