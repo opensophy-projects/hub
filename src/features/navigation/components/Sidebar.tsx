@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef, lazy, Suspense, memo, startTransition } from 'react';
 import { useTheme } from '@/shared/contexts/ThemeContext';
 import { useManifest } from '@/features/docs/hooks/useDocuments';
+import { useIsDesktop } from '@/shared/hooks/useBreakpoint';
 import { storageSet } from '@/shared/lib/storage';
 import { CONTACTS } from '@/shared/data/contacts';
 import {
@@ -209,10 +210,10 @@ const IconButton: React.FC<{
 // ─── SidebarHeader ────────────────────────────────────────────────────────────
 
 const SidebarHeader: React.FC<{
-  onClose: () => void; isDark: boolean;
+  isDark: boolean;
   onToggleTheme: (e: React.MouseEvent) => void;
-  onToggleContacts: () => void; isDesktop: boolean;
-}> = memo(({ onClose, isDark, onToggleTheme, onToggleContacts, isDesktop }) => (
+  onToggleContacts: () => void;
+}> = memo(({ isDark, onToggleTheme, onToggleContacts }) => (
   <div
     style={{
       flexShrink: 0, padding: '0.75rem 1rem',
@@ -243,19 +244,6 @@ const SidebarHeader: React.FC<{
         isDark={isDark}
         title="Контакты"
       />
-      {!isDesktop && (
-        <button
-          onClick={onClose}
-          style={{
-            padding: '0.5rem', borderRadius: '0.5rem', border: 'none',
-            background: 'transparent', cursor: 'pointer',
-            color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)',
-          }}
-          aria-label="Закрыть меню"
-        >
-          <X size={18} />
-        </button>
-      )}
     </div>
   </div>
 ));
@@ -574,7 +562,8 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
-  const { isDark, toggleTheme, isSidebarOpen, setSidebarOpen } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
+  const isDesktop = useIsDesktop();
   const { manifest: docs, loading, error } = useManifest();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
@@ -582,16 +571,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
   const [activeNavSlug, setActiveNavSlug] = useState<string>('');
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
 
-  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
-
-  useEffect(() => {
-    if (!isDesktop && isSidebarOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [isSidebarOpen, isDesktop]);
+  // ── CRITICAL: Never render on mobile/tablet ──
+  // Return null immediately if not desktop — no sidebar on mobile
+  if (!isDesktop) return null;
 
   const sections = useMemo<NavSection[]>(() => {
     const map = new Map<string, NavSection>();
@@ -642,16 +624,11 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
     });
   };
 
-  const handleClose = () => setSidebarOpen(false);
-
-  if (!isSidebarOpen && !isDesktop) return null;
-
   const sidebarBg = isDark ? '#0F0F0F' : '#E1E0DC';
   const sidebarBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
 
   return (
     <>
-      {!isDesktop && isSidebarOpen && <SidebarOverlay onClose={handleClose} />}
       <aside
         style={{
           position: 'fixed', left: 0, top: 0,
@@ -662,11 +639,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
         }}
       >
         <SidebarHeader
-          onClose={handleClose}
           isDark={isDark}
           onToggleTheme={(e) => toggleTheme(e)}
           onToggleContacts={() => setShowContacts(!showContacts)}
-          isDesktop={isDesktop}
         />
         <SidebarSearch
           value={searchQuery}
