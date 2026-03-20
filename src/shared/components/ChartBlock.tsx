@@ -1,8 +1,8 @@
 import React, { useContext, useMemo, useState, useCallback } from 'react';
 import {
   AreaChart, Area,
-  BarChart, Bar,
-  PieChart, Pie, Cell,
+  BarChart, Bar, Cell,
+  PieChart, Pie,
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
   XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
@@ -204,6 +204,10 @@ function renderArea(
 }
 
 // ─── BAR ──────────────────────────────────────────────────────────────────────
+//
+// FIX: when there is only one value series (single column of data), each bar
+// gets its own color from the palette (like a pie chart does).
+// When there are multiple series, each series keeps its own single color.
 
 function renderBar(
   data: Record<string, unknown>[],
@@ -212,6 +216,8 @@ function renderBar(
   hidden: Set<string>, t: ReturnType<typeof tk>
 ) {
   const visible = valueKeys.filter(k => !hidden.has(k));
+  // Color each bar individually only when there is a single value series
+  const useRowColors = visible.length === 1;
   const a = ap(t);
   return (
     <BarChart data={data} layout={horizontal ? 'vertical' : 'horizontal'}
@@ -223,13 +229,17 @@ function renderBar(
       <Tooltip content={<CustomTooltip t={t} />} cursor={{ fill: t.gridLine }} />
       {visible.map((key) => {
         const idx = valueKeys.indexOf(key);
-        const color = palette[idx % palette.length];
+        const seriesColor = palette[idx % palette.length];
         return (
-          <Bar key={key} dataKey={key} fill={color}
+          <Bar key={key} dataKey={key} fill={seriesColor}
             radius={stacked ? [0,0,0,0] : horizontal ? [0,3,3,0] : [3,3,0,0]}
             stackId={stacked ? 'stack' : undefined}
             maxBarSize={40} isAnimationActive={false}
-          />
+          >
+            {useRowColors && data.map((_, rowIdx) => (
+              <Cell key={`cell-${rowIdx}`} fill={palette[rowIdx % palette.length]} />
+            ))}
+          </Bar>
         );
       })}
     </BarChart>
@@ -317,8 +327,17 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
 
   const isEmpty = !data.length || !valueKeys.length;
 
+  // Legend: for single-series bar/area charts with row-level colors, show one
+  // item per data row. For multi-series and pie, keep existing behaviour.
   const legendItems: LegendItem[] = useMemo(() => {
     if (type === 'pie' || type === 'pie-donut') {
+      return data.map((d, i) => ({
+        key:   String(d[nameKey]),
+        color: palette[i % palette.length],
+      }));
+    }
+    const isSingleSeries = (type === 'bar' || type === 'bar-horizontal') && valueKeys.length === 1;
+    if (isSingleSeries) {
       return data.map((d, i) => ({
         key:   String(d[nameKey]),
         color: palette[i % palette.length],
