@@ -311,3 +311,34 @@ html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .
 }
 
 /* 5. Progress bar width — direct DOM mutation, no transition needed anyway */
+
+/* ── Ensure custom table widget fills its container ── */
+.not-prose {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* ── Undo prose table width:auto inside .not-prose ── */
+.prose .not-prose table,
+.not-prose table {
+  width: 100% !important;
+  min-width: max-content;
+}
+
+/* ── Toolbar search input must be able to shrink ── */
+.tb-desk,
+.tb-mob {
+  flex-shrink: 0;
+}
+
+/* ── Scroll wrapper full width ── */
+.tb-scroll-wrap {
+  width: 100%;
+  min-width: 0;
+}
+
+.tb-scroll {
+  width: 100%;
+  min-width: 0;
+}
