@@ -1,6 +1,6 @@
 import React, { useState, useMemo, Suspense, lazy, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { useTheme } from '@/shared/contexts/ThemeContext';
+import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
 import Navigation from '@/features/navigation/components/Navigation';
 import { parseHtmlToReact, TableContext } from '@/shared/lib/htmlParser';
 import { useTableOfContents } from '../hooks/useTableOfContents';
@@ -121,7 +121,7 @@ const DocHero: React.FC<{ doc: DocContentProps['doc']; isDark: boolean; readTime
 // ThemeProvider removed — Layout.astro already wraps everything in ThemeProvider.
 // DocContent now consumes useTheme() directly, same as any other component.
 
-const DocContent: React.FC<DocContentProps> = ({ doc }) => {
+const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const { isDark } = useTheme();
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
 
@@ -213,5 +213,13 @@ const DocContent: React.FC<DocContentProps> = ({ doc }) => {
     </div>
   );
 };
+
+// ThemeProvider остаётся здесь — каждый Astro island (client:only="react")
+// изолированное React-дерево и НЕ наследует контекст из Layout.astro.
+const DocContent: React.FC<DocContentProps> = ({ doc }) => (
+  <ThemeProvider>
+    <DocContentMain doc={doc} />
+  </ThemeProvider>
+);
 
 export default DocContent;
