@@ -3,11 +3,6 @@
  *
  * Desktop (>1000px): Rail 64px + slide-out panel + resize handle
  * Mobile (≤1000px):  Bottom bar centered + full-screen panels (like search)
- *
- * Mobile buttons (centered, no Панель):
- *   {Тема}  Поиск  Разделы  [Лого]  Оглавление  Наверх  {Контакты}
- *
- * {} = hidden under fade, visible when scrolling left/right
  */
 
 import React, {
@@ -29,15 +24,11 @@ import {
 
 const LazyUnifiedSearchPanel = lazy(() => import('./UnifiedSearchPanel'));
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
 const BREAKPOINT    = 1000;
 const RAIL_W        = 64;
 const PANEL_DEFAULT = 280;
 const PANEL_MIN     = 220;
 const PANEL_MAX     = 500;
-
-// ─── useIsDesktop ─────────────────────────────────────────────────────────────
 
 function useIsDesktop(): boolean {
   const [v, setV] = useState(false);
@@ -55,8 +46,6 @@ function useIsDesktop(): boolean {
   }, []);
   return v;
 }
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface TocItem { id: string; text: string; level: number; }
 interface CategoryPathItem { slug: string; title: string; icon: string | null; }
@@ -76,8 +65,6 @@ interface NavigationProps {
   activeHeadingId?: string;
 }
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
-
 function tk(isDark: boolean) {
   return {
     railBg:     isDark ? '#0d0d0d'                 : '#E0DFDb',
@@ -91,18 +78,14 @@ function tk(isDark: boolean) {
     accentSoft: isDark ? 'rgba(255,255,255,0.08)'  : 'rgba(0,0,0,0.07)',
     inputBg:    isDark ? '#1a1a1a'                 : '#cccbc7',
     inputClr:   isDark ? '#fff'                    : '#000',
-    // Мобильный бар — строго непрозрачный, без артефактов при смене темы
     mobBg:      isDark ? '#0a0a0a'                 : '#dcdbd7',
     overlay:    isDark ? 'rgba(0,0,0,0.7)'         : 'rgba(0,0,0,0.3)',
     handle:     isDark ? 'rgba(255,255,255,0.25)'  : 'rgba(0,0,0,0.25)',
     handleHov:  isDark ? 'rgba(255,255,255,0.7)'   : 'rgba(0,0,0,0.7)',
-    // Панели (полноэкранные на мобиле)
     panelFullBg: isDark ? '#0f0f0f'                : '#E0DFDb',
     surface:     isDark ? '#141414'                : '#d5d4d0',
   };
 }
-
-// ─── LucideIcon lazy ─────────────────────────────────────────────────────────
 
 const iconCache = new Map<string, React.FC<{ size?: number }>>();
 const LucideIcon: React.FC<{ name: string; size?: number }> = memo(({ name, size = 15 }) => {
@@ -118,8 +101,6 @@ const LucideIcon: React.FC<{ name: string; size?: number }> = memo(({ name, size
   if (!Icon) return <span style={{ width: size, height: size, display: 'inline-block' }} />;
   return <Icon size={size} />;
 });
-
-// ─── Nav tree ─────────────────────────────────────────────────────────────────
 
 function buildTree(docs: Doc[], query: string, navSlug: string): NavNode {
   const root: NavNode = { title: '', slug: '', icon: null, docs: [], children: {}, isCategory: false };
@@ -150,20 +131,23 @@ function countDocs(node: NavNode): number {
 
 // ─── DocLink ──────────────────────────────────────────────────────────────────
 
-const DocLink: React.FC<{ doc: Doc; isDark: boolean; isActive: boolean; onClick?: () => void }> = memo(({ doc, isDark, isActive, onClick }) => {
+const DocLink: React.FC<{ doc: Doc; isDark: boolean; isActive: boolean; onClick?: () => void; mobile?: boolean }> = memo(({ doc, isDark, isActive, onClick, mobile }) => {
   const t = tk(isDark);
   return (
     <a href={`/${doc.slug}`} onClick={onClick} style={{
-      display: 'flex', alignItems: 'center', gap: '0.4rem',
-      padding: '5px 10px', borderRadius: '7px', fontSize: '0.875rem',
+      display: 'flex', alignItems: 'center', gap: '0.5rem',
+      padding: mobile ? '10px 14px' : '5px 10px',
+      borderRadius: '8px',
+      fontSize: mobile ? '1rem' : '0.875rem',
       textDecoration: 'none',
       borderLeft: `2px solid ${isActive ? t.accent : 'transparent'}`,
       color: isActive ? t.accent : t.fg,
-      fontWeight: 400,
+      fontWeight: isActive ? 600 : 400,
       background: isActive ? t.accentSoft : 'transparent',
+      lineHeight: 1.4,
     }}>
-      {doc.icon && <span style={{ flexShrink: 0, width: 13, height: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fgMuted }}><LucideIcon name={doc.icon} size={12} /></span>}
-      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.3 }}>{doc.title}</span>
+      {doc.icon && <span style={{ flexShrink: 0, width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fgMuted }}><LucideIcon name={doc.icon} size={14} /></span>}
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.35 }}>{doc.title}</span>
     </a>
   );
 });
@@ -172,8 +156,8 @@ const DocLink: React.FC<{ doc: Doc; isDark: boolean; isActive: boolean; onClick?
 
 const CategoryNode: React.FC<{
   node: NavNode; path: string; expandedPaths: Set<string>;
-  onToggle: (p: string) => void; isDark: boolean; currentDocSlug?: string; onDocClick?: () => void;
-}> = memo(({ node, path, expandedPaths, onToggle, isDark, currentDocSlug, onDocClick }) => {
+  onToggle: (p: string) => void; isDark: boolean; currentDocSlug?: string; onDocClick?: () => void; mobile?: boolean;
+}> = memo(({ node, path, expandedPaths, onToggle, isDark, currentDocSlug, onDocClick, mobile }) => {
   const t = tk(isDark);
   const expanded = expandedPaths.has(path);
   const total    = countDocs(node);
@@ -181,25 +165,28 @@ const CategoryNode: React.FC<{
     <div>
       <button onClick={() => onToggle(path)} style={{
         width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '6px 10px', borderRadius: '7px', fontSize: '0.875rem', fontWeight: 600,
+        padding: mobile ? '10px 14px' : '6px 10px',
+        borderRadius: '8px',
+        fontSize: mobile ? '1rem' : '0.875rem',
+        fontWeight: 600,
         border: 'none', background: 'transparent', color: t.fg, cursor: 'pointer', textAlign: 'left',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <span style={{ width: 13, height: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: t.fgMuted }}>
-            {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: t.fgMuted }}>
+            {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </span>
-          {node.icon && <span style={{ width: 13, height: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: t.fgMuted }}><LucideIcon name={node.icon} size={12} /></span>}
-          <span style={{ wordBreak: 'break-word', lineHeight: 1.3 }}>{node.title}</span>
+          {node.icon && <span style={{ width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: t.fgMuted }}><LucideIcon name={node.icon} size={14} /></span>}
+          <span style={{ wordBreak: 'break-word', lineHeight: 1.35 }}>{node.title}</span>
         </div>
-        {total > 0 && <span style={{ fontSize: '0.67rem', padding: '1px 6px', borderRadius: '4px', background: t.accentSoft, color: t.fgMuted }}>{total}</span>}
+        {total > 0 && <span style={{ fontSize: '0.72rem', padding: '2px 7px', borderRadius: '5px', background: t.accentSoft, color: t.fgMuted, flexShrink: 0 }}>{total}</span>}
       </button>
       {expanded && (
-        <div style={{ marginLeft: '0.75rem', borderLeft: `1px solid ${t.border}`, paddingLeft: '0.4rem' }}>
+        <div style={{ marginLeft: '0.85rem', borderLeft: `1px solid ${t.border}`, paddingLeft: '0.5rem' }}>
           {[...node.docs].sort((a, b) => a.title.localeCompare(b.title)).map(doc => (
-            <DocLink key={doc.id} doc={doc} isDark={isDark} isActive={currentDocSlug === doc.slug} onClick={onDocClick} />
+            <DocLink key={doc.id} doc={doc} isDark={isDark} isActive={currentDocSlug === doc.slug} onClick={onDocClick} mobile={mobile} />
           ))}
           {Object.entries(node.children).sort(([a], [b]) => a.localeCompare(b)).map(([key, child]) => (
-            <CategoryNode key={key} node={child} path={`${path}/${key}`} expandedPaths={expandedPaths} onToggle={onToggle} isDark={isDark} currentDocSlug={currentDocSlug} onDocClick={onDocClick} />
+            <CategoryNode key={key} node={child} path={`${path}/${key}`} expandedPaths={expandedPaths} onToggle={onToggle} isDark={isDark} currentDocSlug={currentDocSlug} onDocClick={onDocClick} mobile={mobile} />
           ))}
         </div>
       )}
@@ -207,11 +194,11 @@ const CategoryNode: React.FC<{
   );
 });
 
-// ─── NavPanelContent (shared desktop+mobile) ─────────────────────────────────
+// ─── NavPanelContent ─────────────────────────────────────────────────────────
 
 const NavPanelContent: React.FC<{
-  isDark: boolean; currentDocSlug?: string; onOpenSearch: () => void;
-}> = ({ isDark, currentDocSlug, onOpenSearch }) => {
+  isDark: boolean; currentDocSlug?: string; onOpenSearch: () => void; mobile?: boolean;
+}> = ({ isDark, currentDocSlug, onOpenSearch, mobile }) => {
   const t = tk(isDark);
   const { manifest: docs, loading, error } = useManifest();
   const [query, setQuery]                 = useState('');
@@ -257,19 +244,22 @@ const NavPanelContent: React.FC<{
   const activeSection = sections.find(s => s.navSlug === activeNavSlug) ?? sections[0];
   const togglePath    = (path: string) => setExpandedPaths(prev => { const n = new Set(prev); n.has(path) ? n.delete(path) : n.add(path); return n; });
 
+  const inputFontSize = mobile ? '1rem' : '0.855rem';
+  const inputPadding  = mobile ? '0.6rem 0.6rem 0.6rem 2.4rem' : '0.45rem 0.5rem 0.45rem 2.1rem';
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      {/* Поиск — прозрачный фон как у navpopover */}
-      <div style={{ flexShrink: 0, padding: '10px', borderBottom: `1px solid ${t.border}` }}>
+      <div style={{ flexShrink: 0, padding: mobile ? '12px 14px' : '10px', borderBottom: `1px solid ${t.border}` }}>
         <div style={{ position: 'relative' }}>
-          <Search size={13} style={{ position: 'absolute', left: '0.65rem', top: '50%', transform: 'translateY(-50%)', color: t.fgSub, pointerEvents: 'none' }} />
+          <Search size={mobile ? 15 : 13} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: t.fgSub, pointerEvents: 'none' }} />
           <input
             type="text" placeholder="Фильтр по названию..." value={query}
             onChange={e => setQuery(e.target.value)}
             style={{
-              width: '100%', paddingLeft: '2.1rem', paddingRight: '0.5rem',
-              paddingTop: '0.45rem', paddingBottom: '0.45rem',
-              borderRadius: '7px', fontSize: '0.855rem',
+              width: '100%',
+              padding: inputPadding,
+              borderRadius: '8px',
+              fontSize: inputFontSize,
               border: `1px solid ${t.border}`,
               background: 'transparent', color: t.fg,
               outline: 'none', boxSizing: 'border-box',
@@ -278,30 +268,38 @@ const NavPanelContent: React.FC<{
         </div>
       </div>
 
-      {/* Section switcher — без тени */}
       {sections.length > 1 && activeSection && (
-        <div style={{ flexShrink: 0, padding: '8px 10px', borderBottom: `1px solid ${t.border}`, position: 'relative' }} ref={sectionRef}>
+        <div style={{ flexShrink: 0, padding: mobile ? '10px 14px' : '8px 10px', borderBottom: `1px solid ${t.border}`, position: 'relative' }} ref={sectionRef}>
           <button onClick={() => setSectionOpen(v => !v)} style={{
             width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '0.4rem 0.65rem', borderRadius: '7px', fontSize: '0.875rem',
+            padding: mobile ? '0.55rem 0.85rem' : '0.4rem 0.65rem',
+            borderRadius: '8px', fontSize: mobile ? '1rem' : '0.875rem',
             border: `1px solid ${t.border}`, background: 'transparent', color: t.fg, cursor: 'pointer',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden' }}>
-              {activeSection.navSlug === '' ? <Home size={13} style={{ color: t.fgMuted, flexShrink: 0 }} /> : <LucideIcon name={activeSection.navIcon} size={13} />}
+              {activeSection.navSlug === '' ? <Home size={mobile ? 15 : 13} style={{ color: t.fgMuted, flexShrink: 0 }} /> : <LucideIcon name={activeSection.navIcon} size={mobile ? 15 : 13} />}
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeSection.navTitle}</span>
             </div>
-            <ChevronDown size={12} style={{ color: t.fgMuted, flexShrink: 0, transform: sectionOpen ? 'rotate(180deg)' : 'none' }} />
+            <ChevronDown size={mobile ? 14 : 12} style={{ color: t.fgMuted, flexShrink: 0, transform: sectionOpen ? 'rotate(180deg)' : 'none' }} />
           </button>
           {sectionOpen && (
             <div style={{
-              position: 'absolute', left: '10px', right: '10px', top: 'calc(100% - 2px)',
+              position: 'absolute', left: mobile ? '14px' : '10px', right: mobile ? '14px' : '10px', top: 'calc(100% - 2px)',
               borderRadius: '10px', border: `1px solid ${t.border}`, background: t.panelBg,
               zIndex: 100, overflow: 'hidden',
             }}>
               {sections.map(s => (
                 <button key={s.navSlug} onClick={() => { storageSet('hub:activeNavSlug', s.navSlug); setActiveNavSlug(s.navSlug); setExpandedPaths(new Set()); setSectionOpen(false); }}
-                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.55rem 0.75rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer', textAlign: 'left', background: s.navSlug === activeNavSlug ? t.accentSoft : 'transparent', color: s.navSlug === activeNavSlug ? t.accent : t.fg, fontWeight: s.navSlug === activeNavSlug ? 600 : 400 }}>
-                  {s.navSlug === '' ? <Home size={13} style={{ color: t.fgMuted }} /> : <LucideIcon name={s.navIcon} size={13} />}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                    padding: mobile ? '0.7rem 1rem' : '0.55rem 0.75rem',
+                    fontSize: mobile ? '1rem' : '0.875rem',
+                    border: 'none', cursor: 'pointer', textAlign: 'left',
+                    background: s.navSlug === activeNavSlug ? t.accentSoft : 'transparent',
+                    color: s.navSlug === activeNavSlug ? t.accent : t.fg,
+                    fontWeight: s.navSlug === activeNavSlug ? 600 : 400,
+                  }}>
+                  {s.navSlug === '' ? <Home size={mobile ? 15 : 13} style={{ color: t.fgMuted }} /> : <LucideIcon name={s.navIcon} size={mobile ? 15 : 13} />}
                   <span>{s.navTitle}</span>
                 </button>
               ))}
@@ -310,27 +308,26 @@ const NavPanelContent: React.FC<{
         </div>
       )}
 
-      {/* Tree */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '6px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: mobile ? '8px 6px' : '6px' }}>
         {error ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', padding: '2rem', textAlign: 'center' }}>
             <AlertTriangle size={22} style={{ color: 'rgba(251,191,36,0.7)' }} />
-            <p style={{ margin: 0, fontSize: '0.8rem', color: t.fgMuted }}>Не удалось загрузить документы</p>
-            <button onClick={() => window.location.reload()} style={{ padding: '0.25rem 0.75rem', borderRadius: '6px', border: `1px solid ${t.border}`, background: 'transparent', color: t.fgMuted, fontSize: '0.75rem', cursor: 'pointer' }}>Обновить</button>
+            <p style={{ margin: 0, fontSize: mobile ? '0.95rem' : '0.8rem', color: t.fgMuted }}>Не удалось загрузить документы</p>
+            <button onClick={() => window.location.reload()} style={{ padding: '0.35rem 0.85rem', borderRadius: '7px', border: `1px solid ${t.border}`, background: 'transparent', color: t.fgMuted, fontSize: mobile ? '0.9rem' : '0.75rem', cursor: 'pointer' }}>Обновить</button>
           </div>
         ) : loading ? (
-          <div style={{ padding: '2rem', textAlign: 'center', fontSize: '0.8rem', color: t.fgMuted }}>Загрузка...</div>
+          <div style={{ padding: '2rem', textAlign: 'center', fontSize: mobile ? '0.95rem' : '0.8rem', color: t.fgMuted }}>Загрузка...</div>
         ) : (
           <nav>
             {navTree.docs.length > 0 && (
               <div style={{ marginBottom: '6px' }}>
                 {[...navTree.docs].sort((a, b) => a.title.localeCompare(b.title)).map(doc => (
-                  <DocLink key={doc.id} doc={doc} isDark={isDark} isActive={currentDocSlug === doc.slug} />
+                  <DocLink key={doc.id} doc={doc} isDark={isDark} isActive={currentDocSlug === doc.slug} mobile={mobile} />
                 ))}
               </div>
             )}
             {Object.entries(navTree.children).sort(([a], [b]) => a.localeCompare(b)).map(([key, node]) => (
-              <CategoryNode key={key} node={node} path={key} expandedPaths={expandedPaths} onToggle={togglePath} isDark={isDark} currentDocSlug={currentDocSlug} />
+              <CategoryNode key={key} node={node} path={key} expandedPaths={expandedPaths} onToggle={togglePath} isDark={isDark} currentDocSlug={currentDocSlug} mobile={mobile} />
             ))}
           </nav>
         )}
@@ -339,33 +336,53 @@ const NavPanelContent: React.FC<{
   );
 };
 
-// ─── TocPanelContent — glow effect ───────────────────────────────────────────
+// ─── TocPanelContent ──────────────────────────────────────────────────────────
 
 const TocPanelContent: React.FC<{
-  toc: TocItem[]; activeId: string; isDark: boolean; onItemClick?: () => void;
-}> = ({ toc, activeId, isDark, onItemClick }) => {
+  toc: TocItem[]; activeId: string; isDark: boolean; onItemClick?: () => void; mobile?: boolean;
+}> = ({ toc, activeId, isDark, onItemClick, mobile }) => {
   const t = tk(isDark);
-  if (!toc.length) return <div style={{ padding: '2rem', textAlign: 'center', fontSize: '0.85rem', color: t.fgMuted }}>На этой странице нет заголовков</div>;
+  if (!toc.length) return (
+    <div style={{ padding: '2.5rem 1.5rem', textAlign: 'center', fontSize: mobile ? '1rem' : '0.85rem', color: t.fgMuted }}>
+      На этой странице нет заголовков
+    </div>
+  );
+
   return (
-    <nav style={{ padding: '6px 4px' }}>
+    <nav style={{ padding: mobile ? '8px 6px' : '6px 4px' }}>
       {toc.map((item, index) => {
         const activeIndex = toc.findIndex(i => i.id === activeId);
         const dist      = Math.abs(index - activeIndex);
         const isActive  = item.id === activeId && activeId !== '';
         const hasActive = activeId !== '';
-        const opacity   = !hasActive ? 0.55 : isActive ? 1 : Math.max(0.28, 0.78 - dist * 0.18);
+        const opacity   = !hasActive ? 0.65 : isActive ? 1 : Math.max(0.32, 0.82 - dist * 0.18);
         const glowOp    = !hasActive ? 0 : isActive ? 1 : Math.max(0, 0.5 - dist * 0.16);
         const borderClr = isActive ? t.accent : glowOp > 0 ? (isDark ? `rgba(255,255,255,${glowOp})` : `rgba(0,0,0,${glowOp})`) : 'transparent';
         const shadow    = isActive ? `inset 3px 0 10px -2px ${t.accent}88` : glowOp > 0 ? `inset 3px 0 8px -3px ${isDark ? `rgba(255,255,255,${glowOp * 0.35})` : `rgba(0,0,0,${glowOp * 0.35})`}` : 'none';
+
+        const baseFontSize = mobile ? 1.0 : 0.82;
+        const fontSize = `${baseFontSize - (item.level - 2) * (mobile ? 0.05 : 0.04)}rem`;
+        const paddingLeft = mobile
+          ? 14 + (item.level - 2) * 18
+          : 12 + (item.level - 2) * 14;
+
         return (
           <button key={item.id} onClick={() => { scrollToElement(item.id); onItemClick?.(); }}
             style={{
-              width: '100%', textAlign: 'left', paddingTop: '0.38rem', paddingBottom: '0.38rem',
-              paddingRight: '0.75rem', paddingLeft: `${12 + (item.level - 2) * 14}px`,
-              fontSize: '0.82rem', lineHeight: 1.4, background: 'transparent', border: 'none', cursor: 'pointer',
-              borderLeft: '2px solid', borderLeftColor: borderClr, boxShadow: shadow,
+              width: '100%', textAlign: 'left',
+              paddingTop: mobile ? '0.55rem' : '0.38rem',
+              paddingBottom: mobile ? '0.55rem' : '0.38rem',
+              paddingRight: mobile ? '1rem' : '0.75rem',
+              paddingLeft: `${paddingLeft}px`,
+              fontSize,
+              lineHeight: 1.45,
+              background: isActive ? (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)') : 'transparent',
+              border: 'none', cursor: 'pointer',
+              borderLeft: '2px solid', borderLeftColor: borderClr,
+              boxShadow: shadow,
+              borderRadius: '0 8px 8px 0',
               color: isActive ? t.accent : isDark ? `rgba(255,255,255,${opacity})` : `rgba(0,0,0,${opacity})`,
-              fontWeight: 400,
+              fontWeight: isActive ? 600 : item.level === 2 ? 500 : 400,
               textShadow: isActive ? `0 0 12px ${t.accent}55` : 'none',
             }}
           >{item.text}</button>
@@ -377,18 +394,23 @@ const TocPanelContent: React.FC<{
 
 // ─── ContactsPanelContent ─────────────────────────────────────────────────────
 
-const ContactsPanelContent: React.FC<{ isDark: boolean }> = ({ isDark }) => {
+const ContactsPanelContent: React.FC<{ isDark: boolean; mobile?: boolean }> = ({ isDark, mobile }) => {
   const t = tk(isDark);
   return (
-    <div style={{ padding: '8px' }}>
+    <div style={{ padding: mobile ? '8px' : '8px' }}>
       {CONTACTS.map(c => (
         <a key={c.href} href={c.href} target={c.external ? '_blank' : undefined} rel={c.external ? 'noopener noreferrer' : undefined}
-          style={{ display: 'flex', flexDirection: 'column', padding: '10px', borderRadius: '8px', textDecoration: 'none', color: t.fg, fontSize: '0.875rem', gap: '2px' }}
+          style={{
+            display: 'flex', flexDirection: 'column',
+            padding: mobile ? '14px 16px' : '10px',
+            borderRadius: '10px', textDecoration: 'none', color: t.fg,
+            fontSize: mobile ? '1rem' : '0.875rem', gap: '3px',
+          }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = t.hov; }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
         >
-          <div style={{ fontWeight: 500 }}>{c.title}</div>
-          <div style={{ fontSize: '0.75rem', color: t.fgMuted }}>{c.subtitle}</div>
+          <div style={{ fontWeight: 600 }}>{c.title}</div>
+          <div style={{ fontSize: mobile ? '0.875rem' : '0.75rem', color: t.fgMuted }}>{c.subtitle}</div>
         </a>
       ))}
     </div>
@@ -411,7 +433,7 @@ const PanelHeader: React.FC<{ title: string; isDark: boolean; onClose: () => voi
   );
 };
 
-// ─── RailBtn — иконка + текст, без фона ──────────────────────────────────────
+// ─── RailBtn ──────────────────────────────────────────────────────────────────
 
 const RailBtn: React.FC<{
   icon: React.ReactNode; label: string;
@@ -443,7 +465,6 @@ const DesktopNav: React.FC<{
   const t = tk(isDark);
   const [railVisible, setRailVisible] = useState(true);
 
-  // Восстанавливаем activePanel и panelWidth из sessionStorage — переживает навигацию Astro
   const [activePanel, setActivePanel] = useState<PanelType>(() => {
     try {
       const s = sessionStorage.getItem('hub:activePanel');
@@ -460,8 +481,6 @@ const DesktopNav: React.FC<{
     return PANEL_DEFAULT;
   });
 
-  // Синхронно выставляем --nav-left ДО первого рендера контента
-  // Иначе DocContent читает 0 и контент прыгает вправо после гидрации
   useState(() => {
     try {
       const panel = sessionStorage.getItem('hub:activePanel');
@@ -472,6 +491,7 @@ const DesktopNav: React.FC<{
       document.documentElement.style.setProperty('--nav-left', `${left}px`);
     } catch {}
   });
+
   const [searchOpen, setSearchOpen]   = useState(false);
   const [handleHov, setHandleHov]     = useState(false);
   const isDragging = useRef(false);
@@ -481,7 +501,6 @@ const DesktopNav: React.FC<{
   const togglePanel = useCallback((panel: PanelType) => {
     setActivePanel(prev => {
       const next = prev === panel ? null : panel;
-      // Немедленно пишем в sessionStorage (useEffect может опоздать при Astro навигации)
       try { sessionStorage.setItem('hub:activePanel', next ?? ''); } catch {}
       return next;
     });
@@ -509,17 +528,14 @@ const DesktopNav: React.FC<{
     window.addEventListener('mouseup', onUp);
   }, [panelWidth]);
 
-  // Сохраняем activePanel в sessionStorage
   useEffect(() => {
     try { sessionStorage.setItem('hub:activePanel', activePanel ?? ''); } catch {}
   }, [activePanel]);
 
-  // Сохраняем panelWidth в sessionStorage
   useEffect(() => {
     try { sessionStorage.setItem('hub:panelWidth', String(panelWidth)); } catch {}
   }, [panelWidth]);
 
-  // Отступ для контента
   useEffect(() => {
     const left = (railVisible ? RAIL_W : 0) + (activePanel ? panelWidth : 0);
     document.documentElement.style.setProperty('--nav-left', `${left}px`);
@@ -530,7 +546,6 @@ const DesktopNav: React.FC<{
 
   return (
     <>
-      {/* Rail */}
       {railVisible && (
         <aside style={{
           position: 'fixed', left: 0, top: 0, height: '100vh', width: RAIL_W,
@@ -538,7 +553,6 @@ const DesktopNav: React.FC<{
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           zIndex: 50, padding: '8px 0', gap: '2px',
         }}>
-          {/* Лого — не кнопка */}
           <div style={{ width: RAIL_W, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <img src="/favicon.png" alt="hub" style={{ width: 28, height: 28, objectFit: 'contain' }} />
           </div>
@@ -554,7 +568,6 @@ const DesktopNav: React.FC<{
         </aside>
       )}
 
-      {/* Кнопка вернуть рейл */}
       {!railVisible && (
         <button onClick={() => setRailVisible(true)}
           style={{ position: 'fixed', left: 8, top: 8, zIndex: 55, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: '8px', border: `1px solid ${t.border}`, background: t.railBg, color: t.fgMuted, cursor: 'pointer' }}
@@ -563,7 +576,6 @@ const DesktopNav: React.FC<{
         </button>
       )}
 
-      {/* Panel — всегда рендерится, скрывается через width:0 чтобы не дёргаться при навигации */}
       {railVisible && (
         <aside style={{
           position: 'fixed', left: RAIL_W, top: 0, height: '100vh',
@@ -572,7 +584,6 @@ const DesktopNav: React.FC<{
           borderRight: activePanel ? `1px solid ${t.border}` : 'none',
           display: 'flex', flexDirection: 'column', zIndex: 49,
           overflow: 'hidden',
-          // Без transition — мгновенно, без анимации
           pointerEvents: activePanel ? 'auto' : 'none',
           visibility: activePanel ? 'visible' : 'hidden',
         }}>
@@ -586,7 +597,6 @@ const DesktopNav: React.FC<{
               </div>
             </>
           )}
-          {/* Resize handle */}
           {activePanel && (
             <div onMouseDown={onResizeMouseDown} onMouseEnter={() => setHandleHov(true)} onMouseLeave={() => setHandleHov(false)}
               style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '8px', cursor: 'col-resize', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -607,8 +617,7 @@ const DesktopNav: React.FC<{
   );
 };
 
-// ─── Mobile full-screen panel (portal) ───────────────────────────────────────
-// Работает как UnifiedSearchPanel — через portal в body, полноэкранный overlay
+// ─── Mobile full-screen panel ─────────────────────────────────────────────────
 
 const MobilePanel: React.FC<{
   type: 'nav' | 'toc' | 'contacts';
@@ -620,7 +629,6 @@ const MobilePanel: React.FC<{
 }> = ({ type, onClose, isDark, currentDocSlug, toc, activeId }) => {
   const t = tk(isDark);
 
-  // Блокируем скролл body пока панель открыта
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -628,40 +636,61 @@ const MobilePanel: React.FC<{
     return () => { document.body.style.overflow = ''; document.removeEventListener('keydown', onKey); };
   }, [onClose]);
 
-  const titles: Record<string, string> = { nav: 'Навигация', toc: 'Оглавление', contacts: 'Контакты' };
+  const PANEL_TITLES: Record<string, string> = { nav: 'Навигация', toc: 'Оглавление', contacts: 'Контакты' };
 
   const content = (
-    <>
+    <div style={{
+      position: 'fixed', inset: 0,
+      zIndex: 62,
+      background: t.panelFullBg,
+      display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      animation: 'mobPanelIn 0.22s cubic-bezier(0.4,0,0.2,1)',
+      paddingBottom: '60px',
+    }}>
+      <style>{`@keyframes mobPanelIn{from{transform:translateY(100%)}to{transform:translateY(0)}}`}</style>
 
-
-      {/* Panel — полноэкранный как поиск */}
+      {/* Header */}
       <div style={{
-        position: 'fixed', inset: 0,
-        zIndex: 62,
+        flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '52px 20px 16px',
+        borderBottom: `1px solid ${t.border}`,
         background: t.panelFullBg,
-        display: 'flex', flexDirection: 'column', overflow: 'hidden',
-        animation: 'mobPanelIn 0.22s cubic-bezier(0.4,0,0.2,1)',
-        paddingBottom: '60px',
       }}>
-        <style>{`@keyframes mobPanelIn{from{transform:translateY(100%)}to{transform:translateY(0)}}`}</style>
-
-        {/* Header */}
-        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '52px 16px 12px', borderBottom: `1px solid ${t.border}` }}>
-          <span style={{ fontSize: '0.95rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: t.fg }}>{titles[type]}</span>
-          <button onClick={onClose}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: '7px', border: 'none', background: t.hov, color: t.fgMuted, cursor: 'pointer' }}>
-            <X size={14} />
-          </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          <span style={{
+            fontSize: '1.25rem', fontWeight: 700,
+            color: t.fg,
+            letterSpacing: '-0.01em',
+          }}>
+            {PANEL_TITLES[type]}
+          </span>
+          {type === 'toc' && toc.length > 0 && (
+            <span style={{ fontSize: '0.8rem', color: t.fgMuted }}>
+              {toc.length} {toc.length === 1 ? 'раздел' : toc.length < 5 ? 'раздела' : 'разделов'}
+            </span>
+          )}
         </div>
-
-        {/* Content */}
-        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          {type === 'nav'      && <NavPanelContent isDark={isDark} currentDocSlug={currentDocSlug} onOpenSearch={() => {}} />}
-          {type === 'toc'      && <div style={{ flex: 1, overflowY: 'auto' }}><TocPanelContent toc={toc} activeId={activeId} isDark={isDark} onItemClick={onClose} /></div>}
-          {type === 'contacts' && <div style={{ overflowY: 'auto' }}><ContactsPanelContent isDark={isDark} /></div>}
-        </div>
+        <button onClick={onClose}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 36, height: 36, borderRadius: '10px',
+            border: `1px solid ${t.border}`,
+            background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+            color: t.fg, cursor: 'pointer',
+            flexShrink: 0,
+          }}>
+          <X size={16} />
+        </button>
       </div>
-    </>
+
+      {/* Content */}
+      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        {type === 'nav'      && <NavPanelContent isDark={isDark} currentDocSlug={currentDocSlug} onOpenSearch={() => {}} mobile />}
+        {type === 'toc'      && <div style={{ flex: 1, overflowY: 'auto' }}><TocPanelContent toc={toc} activeId={activeId} isDark={isDark} onItemClick={onClose} mobile /></div>}
+        {type === 'contacts' && <div style={{ overflowY: 'auto' }}><ContactsPanelContent isDark={isDark} mobile /></div>}
+      </div>
+    </div>
   );
 
   return createPortal(content, document.body);
@@ -698,15 +727,10 @@ const MobileNav: React.FC<{
   const [sheet, setSheet]           = useState<MobileSheet>(null);
   const [searchOpen, setSearchOpen] = useState(false);
 
-
-
   const toggle = (s: MobileSheet) => setSheet(prev => prev === s ? null : s);
-
-
 
   return (
     <>
-      {/* Полноэкранные панели через portal */}
       {sheet && (
         <MobilePanel
           type={sheet}
@@ -718,7 +742,6 @@ const MobileNav: React.FC<{
         />
       )}
 
-      {/* Bottom bar — все кнопки видны сразу */}
       <nav style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 60,
         height: '60px',
@@ -730,7 +753,6 @@ const MobileNav: React.FC<{
         <MobBtn label="Поиск"    icon={<Search size={22} />}                             isDark={isDark} onClick={() => { setSheet(null); setSearchOpen(true); }}       isActive={false} />
         <MobBtn label="Разделы"  icon={<FolderOpen size={22} />}                         isDark={isDark} onClick={() => toggle('nav')}                                  isActive={sheet === 'nav'} />
 
-        {/* Лого — занимает flex:1 по центру */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <img src="/favicon.png" alt="hub" style={{ width: 38, height: 38, objectFit: 'contain' }} />
         </div>
