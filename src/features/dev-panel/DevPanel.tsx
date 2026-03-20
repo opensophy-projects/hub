@@ -11,6 +11,7 @@ import { createPortal } from 'react-dom';
 import { useDevBridge } from './useDevBridge';
 import { T, DevPanelStyles } from './components/ui';
 import { ToastContainer } from './components/Toast';
+import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import {
   Palette, FolderTree, FileEdit, Users, Image,
   Terminal, X, Zap, ChevronRight, Wifi, WifiOff,
@@ -336,6 +337,14 @@ function PanelTrigger({
 // ─── Main DevPanel ────────────────────────────────────────────────────────────
 
 export default function DevPanel() {
+  return (
+    <ThemeProvider>
+      <DevPanelInner />
+    </ThemeProvider>
+  );
+}
+
+function DevPanelInner() {
   const { status } = useDevBridge();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('theme');
