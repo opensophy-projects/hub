@@ -74,10 +74,7 @@ const imageUrl = image
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={imageUrl} />
     
-    {type === 'article' && author && (
-      <meta name="author" content={author} />
-    )}
-    
+    {type === 'article' && author && <meta name="author" content={author} />}
     {type === 'article' && date && (
       <>
         <meta property="article:published_time" content={new Date(date).toISOString()} />
@@ -88,7 +85,6 @@ const imageUrl = image
     <link rel="canonical" href={fullUrl} />
     <link rel="icon" href="/favicon.png" />
 
-    <!-- Astro 6: ClientRouter replaces ViewTransitions -->
     <ClientRouter />
     
     <style is:global>
@@ -113,27 +109,14 @@ const imageUrl = image
         -moz-osx-font-smoothing: grayscale;
       }
 
-      html:not(.dark) {
-        background-color: #E8E7E3;
-      }
-      html.dark {
-        background-color: #0a0a0a;
-      }
+      html:not(.dark) { background-color: #E8E7E3; }
+      html.dark { background-color: #0a0a0a; }
 
       body {
         margin: 0;
         padding: 0;
         overflow-x: hidden;
-      }
-
-      @media (min-width: 768px) {
-        body {
-          padding-left: var(--sidebar-width);
-        }
-
-        body[data-doc-hydrated] {
-          padding-left: 0;
-        }
+        /* НЕТ padding-left — DocContent сам управляет marginLeft через isDesktop */
       }
     </style>
 
@@ -149,7 +132,6 @@ const imageUrl = image
     </ErrorBoundary>
 
     <script is:inline>
-      // Re-apply theme after each SPA navigation
       document.addEventListener('astro:after-swap', function() {
         var theme = localStorage.getItem('theme') || 'dark';
         var dark = theme !== 'light';
@@ -161,24 +143,6 @@ const imageUrl = image
           document.documentElement.style.colorScheme = 'light';
         }
         document.documentElement.style.backgroundColor = dark ? '#0a0a0a' : '#E8E7E3';
-      });
-
-      // Re-apply data-doc-hydrated after each navigation
-      document.addEventListener('astro:page-load', function() {
-        requestAnimationFrame(function() {
-          requestAnimationFrame(function() {
-            document.body.setAttribute('data-doc-hydrated', 'true');
-          });
-        });
-      });
-
-      // Initial hydration marker
-      document.addEventListener('DOMContentLoaded', function() {
-        requestAnimationFrame(function() {
-          requestAnimationFrame(function() {
-            document.body.setAttribute('data-doc-hydrated', 'true');
-          });
-        });
       });
     </script>
   </body>
