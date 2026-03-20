@@ -1107,7 +1107,7 @@ i\hbar \frac{\partial \Psi}{\partial t} = -\frac{\hbar^2}{2m} \nabla^2 \Psi + V\
 :::chart
 [title]Посещаемость за год
 [type]area
-[colors]#383838, #4a4a4a, #5e5e5e
+[colors]#383838, #4a4a4a, #b02c2c
  
 | Месяц | Визиты | Уники | Боты |
 |-------|--------|-------|------|
