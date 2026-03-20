@@ -4,7 +4,11 @@ import 'katex/dist/katex.min.css';
 import { ClientRouter } from 'astro:transitions';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import ErrorBoundary from '@/shared/components/ErrorBoundary';
-import SearchWrapper from '@/features/navigation/components/SearchWrapper';
+
+// SearchWrapper removed — it was mounted as a separate React island but search
+// is opened exclusively via buttons inside Navigation.tsx. The island never
+// received a trigger and was dead code. Search now lives entirely inside
+// Navigation (both desktop and mobile panels).
 
 interface Props {
   title: string;
@@ -122,9 +126,7 @@ const imageUrl = image
   <body>
     <ErrorBoundary>
       <ThemeProvider>
-        <!-- TopNavbar и MobileNavbar убраны — Navigation.tsx рендерит нижнюю/боковую навигацию сам -->
         <slot />
-        <SearchWrapper client:only="react" />
       </ThemeProvider>
     </ErrorBoundary>
 
