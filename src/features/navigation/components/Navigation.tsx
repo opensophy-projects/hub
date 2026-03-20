@@ -561,7 +561,7 @@ const DesktopNav: React.FC<{
             <RailBtn icon={isDark ? <Sun size={18} /> : <Moon size={18} />}         label="Тема"     isDark={isDark} onClick={toggleTheme}                 title={isDark ? 'Светлая' : 'Тёмная'} />
             <RailBtn icon={<Search size={18} />}                                    label="Поиск"    isDark={isDark} onClick={() => setSearchOpen(true)}   title="Поиск" />
             <RailBtn icon={<FolderOpen size={18} />}                                label="Разделы"  isDark={isDark} isActive={activePanel === 'nav'}      onClick={() => togglePanel('nav')}      title="Разделы" />
-            <RailBtn icon={<List size={18} />}                                      label="Оглавл."  isDark={isDark} isActive={activePanel === 'toc'}      onClick={() => togglePanel('toc')}      title="Оглавление" />
+            <RailBtn icon={<List size={18} />}                                      label="Оглавление"  isDark={isDark} isActive={activePanel === 'toc'}      onClick={() => togglePanel('toc')}      title="Оглавление" />
             <RailBtn icon={<ArrowUp size={18} />}                                   label="Наверх"   isDark={isDark} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} title="Наверх" />
             <RailBtn icon={<Mail size={18} />}                                      label="Контакты" isDark={isDark} isActive={activePanel === 'contacts'} onClick={() => togglePanel('contacts')} title="Контакты" />
           </div>
@@ -757,7 +757,7 @@ const MobileNav: React.FC<{
           <img src="/favicon.png" alt="hub" style={{ width: 38, height: 38, objectFit: 'contain' }} />
         </div>
 
-        <MobBtn label="Оглавл."  icon={<List size={22} />}                               isDark={isDark} onClick={() => toggle('toc')}                                  isActive={sheet === 'toc'} />
+        <MobBtn label="Оглавление"  icon={<List size={22} />}                               isDark={isDark} onClick={() => toggle('toc')}                                  isActive={sheet === 'toc'} />
         <MobBtn label="Наверх"   icon={<ArrowUp size={22} />}                            isDark={isDark} onClick={() => { setSheet(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }} isActive={false} />
         <MobBtn label="Контакты" icon={<Mail size={22} />}                               isDark={isDark} onClick={() => toggle('contacts')}                             isActive={sheet === 'contacts'} />
       </nav>
