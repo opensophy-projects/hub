@@ -1,12 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
-import TopNavbar from '@/features/navigation/components/MobileNavbar';
+import Navigation from '@/features/navigation/components/Navigation';
 
-// Sidebar намеренно УБРАН — он рендерится только на десктопе через DocContent/Sidebar.tsx
+// MobileNavbar заменён на Navigation — умеет работать без doc/toc props,
+// рендерит и десктопный rail, и мобильный bottom bar.
+//
+// ThemeProvider остаётся — NotFound монтируется как client:only="react" island,
+// каждый island изолирован и не наследует контекст из Layout.astro.
 
 const NotFoundContent: React.FC = () => {
   const { isDark } = useTheme();
   const [countdown, setCountdown] = useState(10);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth > 1000);
+    check();
+    window.addEventListener('resize', check, { passive: true });
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -20,8 +32,14 @@ const NotFoundContent: React.FC = () => {
 
   return (
     <>
-      <TopNavbar />
-      <div className={`min-h-screen flex items-center justify-center px-4 pt-16 ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}>
+      <Navigation />
+      <div
+        className={`min-h-screen flex items-center justify-center px-4 ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}
+        style={{
+          marginLeft:   isDesktop ? '64px' : 0,
+          marginBottom: !isDesktop ? '60px' : 0,
+        }}
+      >
         <div className="max-w-2xl w-full text-center">
           <h1 className={`text-8xl md:text-9xl font-bold mb-4 ${isDark ? 'text-white' : 'text-black'}`}>404</h1>
           <h2 className={`text-2xl md:text-3xl font-semibold mb-4 ${isDark ? 'text-white' : 'text-black'}`}>Страница не найдена</h2>
