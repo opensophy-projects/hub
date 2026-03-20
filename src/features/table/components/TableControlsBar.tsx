@@ -71,7 +71,6 @@ const PortalMenu: React.FC<{
 
   useEffect(() => {
     const onMouse = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) onClose(); };
-    // Close when page scrolls — fixed menu would appear detached
     const onScroll = () => onClose();
     document.addEventListener('mousedown', onMouse);
     window.addEventListener('scroll', onScroll, { capture: true, passive: true });
@@ -112,7 +111,8 @@ const Pill: React.FC<{
     <button onClick={onClick} title={title} style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       justifyContent: 'center', gap: 3,
-      padding: '5px 12px', minWidth: 52, height: 44,
+      // FIX: reduced padding and minWidth so buttons fit on narrow screens
+      padding: '5px 10px', minWidth: 48, height: 44,
       borderRadius: 8, border: `1px solid ${bdr}`,
       background: bg, color, cursor: 'pointer', flexShrink: 0, transition: 'background 0.13s',
     }}
@@ -157,7 +157,8 @@ const CopyButton: React.FC<{ isDark: boolean; tableHtml: string }> = ({ isDark, 
       <button ref={ref} onClick={toggle} title="Копировать" style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'center', gap: 3,
-        padding: '5px 12px', minWidth: 68, height: 44,
+        // FIX: tighter sizing
+        padding: '5px 10px', minWidth: 64, height: 44,
         borderRadius: 8, border: `1px solid ${bdr}`,
         background: bg, color, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s',
       }}
@@ -291,34 +292,57 @@ export const TableControlsBar: React.FC<TableControlsBarProps> = ({
 
   return (
     <>
-      <style>{`.tb-desk{display:flex!important}.tb-mob{display:none!important}@media(max-width:580px){.tb-desk{display:none!important}.tb-mob{display:flex!important}}`}</style>
+      {/*
+        FIX: breakpoint lowered to 480px (was 580px) so mobile ⋯ menu
+        activates sooner on narrow screens like 768px - navWidth = ~700px content.
+        Also added flex-shrink:0 on button group to prevent search eating all space.
+      */}
+      <style>{`.tb-desk{display:flex!important}.tb-mob{display:none!important}@media(max-width:480px){.tb-desk{display:none!important}.tb-mob{display:flex!important}}`}</style>
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        padding: '8px 10px',
+        display: 'flex', alignItems: 'center', gap: 6,
+        // FIX: reduced padding slightly to reclaim horizontal space
+        padding: '8px 8px',
         borderBottom: `1px solid ${t.border}`,
         background: t.barBg,
-        flexWrap: 'nowrap', minWidth: 0,
+        // FIX: allow wrapping on very narrow screens as last resort, but prefer nowrap
+        flexWrap: 'nowrap',
+        minWidth: 0,
+        // FIX: ensure bar itself is full width
+        width: '100%',
+        boxSizing: 'border-box' as const,
       }}>
+        {/* FIX: search input — min-width:0 is critical so it can shrink */}
         <div style={{ position: 'relative', flex: '1 1 0', minWidth: 0 }}>
-          <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: t.plhClr, pointerEvents: 'none' }} />
+          <Search size={13} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: t.plhClr, pointerEvents: 'none' }} />
           <input type="text" placeholder="Поиск..." value={searchQuery}
             onChange={e => onSearchChange(e.target.value)}
-            style={{ width: '100%', padding: '0 30px 0 30px', height: 36, borderRadius: 8, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: t.inpClr, fontSize: 13, outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s' }}
+            style={{
+              width: '100%', padding: '0 28px 0 26px', height: 36, borderRadius: 8,
+              border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: t.inpClr,
+              fontSize: 13, outline: 'none', boxSizing: 'border-box' as const,
+              transition: 'border-color 0.15s',
+              // FIX: min-width:0 lets input shrink below its default min-width
+              minWidth: 0,
+            }}
             onFocus={e => { (e.target as HTMLInputElement).style.borderColor = t.inpFoc; }}
             onBlur={e  => { (e.target as HTMLInputElement).style.borderColor = t.inpBdr; }}
           />
           {searchQuery && (
-            <button onClick={() => onSearchChange('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: t.plhClr, display: 'flex' }}>
+            <button onClick={() => onSearchChange('')} style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: t.plhClr, display: 'flex' }}>
               <X size={12} />
             </button>
           )}
         </div>
-        <div className="tb-desk" style={{ alignItems: 'center', gap: 6, flexShrink: 0 }}>
+
+        {/* Desktop buttons — flex-shrink:0 so they don't get squeezed */}
+        <div className="tb-desk" style={{ alignItems: 'center', gap: 4, flexShrink: 0 }}>
           <CopyButton isDark={isDark} tableHtml={tableHtml} />
           <Pill onClick={onToggleFilters} title="Фильтры" label={filterLabel} icon={<Filter size={14} />} isDark={isDark} active={showFilters || activeFilterCount > 0} />
           {activeFilterCount > 0 && <Pill onClick={onResetFilters} title="Сбросить" label="Сбросить" icon={<X size={14} />} isDark={isDark} danger />}
           <Pill onClick={onFullscreen} title="На весь экран" label="Развернуть" icon={<Maximize2 size={14} />} isDark={isDark} />
         </div>
+
+        {/* Mobile ⋯ button */}
         <div className="tb-mob" style={{ flexShrink: 0 }}>
           <MobileMenu isDark={isDark} tableHtml={tableHtml} showFilters={showFilters} onToggleFilters={onToggleFilters} activeFilterCount={activeFilterCount} onResetFilters={onResetFilters} onFullscreen={onFullscreen} />
         </div>
