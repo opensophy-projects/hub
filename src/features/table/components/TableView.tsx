@@ -74,9 +74,9 @@ export const TableView: React.FC<TableViewProps> = ({
           -webkit-overflow-scrolling: touch;
           scrollbar-width: thin;
           scrollbar-color: ${t.thumb} ${t.track};
+          /* FIX: width:100% ensures scroll container fills the parent fully */
           width: 100%;
           display: block;
-          /* KEY FIX: allow both axes of touch scroll */
           touch-action: pan-x pan-y;
         }
         .tb-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -85,7 +85,14 @@ export const TableView: React.FC<TableViewProps> = ({
         .tb-scroll::-webkit-scrollbar-thumb:hover { background: ${t.thumbHov}; }
         .tb-scroll::-webkit-scrollbar-corner { background: transparent; }
 
-        .tb-scroll-wrap { position: relative; }
+        /* FIX: tb-scroll-wrap must also be full width */
+        .tb-scroll-wrap {
+          position: relative;
+          width: 100%;
+          min-width: 0;
+          overflow: hidden;
+        }
+        /* Fade edges only when content overflows — keep them subtle */
         .tb-scroll-wrap::after {
           content: '';
           position: absolute;
@@ -108,7 +115,17 @@ export const TableView: React.FC<TableViewProps> = ({
         }
       `}</style>
 
-      <div className="tb-scroll-wrap" style={{ flex: fullscreen ? 1 : undefined, display: fullscreen ? 'flex' : undefined, flexDirection: fullscreen ? 'column' : undefined, minHeight: 0, overflow: 'hidden' }}>
+      <div
+        className="tb-scroll-wrap"
+        style={{
+          flex: fullscreen ? 1 : undefined,
+          display: fullscreen ? 'flex' : undefined,
+          flexDirection: fullscreen ? 'column' : undefined,
+          minHeight: 0,
+          // FIX: don't use overflow:hidden here — it was cutting off the table width
+          // tb-scroll handles the scrolling; tb-scroll-wrap just clips the fade gradients
+        }}
+      >
         <div
           ref={scrollRef}
           className="tb-scroll"
@@ -123,7 +140,10 @@ export const TableView: React.FC<TableViewProps> = ({
           <table style={{
             borderCollapse: 'separate',
             borderSpacing: 0,
+            // FIX: use width:100% so table fills container on narrow screens
+            // minWidth:max-content was causing table to be too small with empty space
             width: '100%',
+            minWidth: 'max-content',
             tableLayout: 'auto',
           }}>
             <TableHead
