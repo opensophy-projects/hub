@@ -2,7 +2,7 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
 import TocPanel from './TocPanel';
-import { PanelLeft, Search, ArrowUp, List } from 'lucide-react';
+import { Search, ArrowUp, List } from 'lucide-react';
 
 const LazyUnifiedSearchPanel = lazy(() => import('./UnifiedSearchPanel'));
 
@@ -55,7 +55,7 @@ function scanHeadings(): TocItem[] {
 }
 
 const MobileNavbarInner: React.FC = () => {
-  const { isDark, setSidebarOpen } = useTheme();
+  const { isDark } = useTheme();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isTocOpen, setIsTocOpen] = useState(false);
   const [toc, setToc] = useState<TocItem[]>([]);
@@ -64,8 +64,6 @@ const MobileNavbarInner: React.FC = () => {
     const items = scanHeadings();
     if (items.length > 0) { setToc(items); return; }
 
-    // Debounced MutationObserver — avoids firing on every individual DOM mutation
-    // when React renders many nodes at once (e.g. long article with many headings).
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
     const observer = new MutationObserver(() => {
@@ -81,7 +79,6 @@ const MobileNavbarInner: React.FC = () => {
 
     observer.observe(document.body, { childList: true, subtree: true });
 
-    // Hard fallback — disconnect after 5s regardless
     const fallback = setTimeout(() => {
       if (debounceTimer) clearTimeout(debounceTimer);
       const found = scanHeadings();
@@ -105,6 +102,7 @@ const MobileNavbarInner: React.FC = () => {
 
   return (
     <>
+      {/* Bottom navigation bar — mobile only */}
       <nav
         className={`md:hidden fixed bottom-0 left-0 right-0 z-50 border-t ${
           isDark
@@ -113,7 +111,6 @@ const MobileNavbarInner: React.FC = () => {
         }`}
       >
         <div className="flex items-center justify-around px-2 py-1">
-          <NavButton icon={<PanelLeft size={20} />} label="Меню" onClick={() => setSidebarOpen(true)} />
           <NavButton icon={<Search size={20} />} label="Поиск" onClick={() => setIsSearchOpen(true)} />
           <a href="/" className="flex flex-col items-center justify-center gap-1 px-2 py-2">
             <img src="/favicon.png" alt="Opensophy" className="w-10 h-10 object-contain" />
