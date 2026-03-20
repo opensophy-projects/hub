@@ -133,7 +133,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const [navLeft, setNavLeft] = useState('0px');
 
   useEffect(() => {
-    const check = () => setIsDesktop(window.innerWidth > 820);
+    const check = () => setIsDesktop(window.innerWidth > 1000);
     check();
     window.addEventListener('resize', check, { passive: true });
     document.addEventListener('astro:after-swap', check);
