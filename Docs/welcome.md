@@ -19,9 +19,7 @@ robots: "index, follow"
 
 [Демонстрация форматирования](https://hub.opensophy.com/docs/markdown-guide/) — [GitHub репозиторий](https://github.com/opensophy-projects/hub)
 
-```
 Используйте **Меню** чтобы менять тему сайта и просматривать статьи, или **Поиск** для быстрого поиска нужного материала.
-```
 
 ---
 
