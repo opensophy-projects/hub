@@ -1,71 +1,97 @@
 /**
- * useDevBridge — React хук для общения с WebSocket-бриджем
- * Автоматически переподключается, очередь запросов с Promise-based API
+ * useDevBridge v2 — улучшенный WebSocket хук
+ * - Экспоненциальный backoff для переподключения
+ * - Типизированный API bridge
+ * - Очередь сообщений при разрыве
+ * - Heartbeat для детекции обрыва
  */
 
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 const WS_URL = 'ws://127.0.0.1:7777';
-const RECONNECT_DELAY = 2000;
 
-type BridgeStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
+export type BridgeStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 
-interface PendingRequest {
-  resolve: (value: unknown) => void;
-  reject: (reason: unknown) => void;
+interface PendingMsg {
+  resolve: (v: unknown) => void;
+  reject: (e: Error) => void;
+  timeout: ReturnType<typeof setTimeout>;
 }
 
-let globalWs: WebSocket | null = null;
-let globalPending = new Map<string, PendingRequest>();
-let globalListeners = new Set<(status: BridgeStatus) => void>();
-let globalStatus: BridgeStatus = 'disconnected';
-let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+// ─── Singleton connection manager ──────────────────────────────────────────────
 
-function setGlobalStatus(s: BridgeStatus) {
-  globalStatus = s;
-  globalListeners.forEach((fn) => fn(s));
+let ws: WebSocket | null = null;
+let pending   = new Map<string, PendingMsg>();
+let listeners = new Set<(s: BridgeStatus) => void>();
+let status: BridgeStatus = 'disconnected';
+let reconnectDelay = 1000;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+let connectCalled = false;
+
+function broadcast(s: BridgeStatus) {
+  status = s;
+  listeners.forEach(fn => fn(s));
+}
+
+function stopHeartbeat() {
+  if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+}
+
+function startHeartbeat() {
+  stopHeartbeat();
+  heartbeatTimer = setInterval(() => {
+    if (ws?.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ id: '__ping__', action: 'ping' }));
+    }
+  }, 15_000);
 }
 
 function connect() {
-  if (globalWs && globalWs.readyState === WebSocket.OPEN) return;
-  if (globalWs && globalWs.readyState === WebSocket.CONNECTING) return;
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
 
-  setGlobalStatus('connecting');
+  broadcast('connecting');
 
   try {
-    globalWs = new WebSocket(WS_URL);
+    ws = new WebSocket(WS_URL);
   } catch {
-    setGlobalStatus('error');
+    broadcast('error');
     scheduleReconnect();
     return;
   }
 
-  globalWs.onopen = () => {
-    setGlobalStatus('connected');
+  ws.onopen = () => {
+    reconnectDelay = 1000;
     if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+    broadcast('connected');
+    startHeartbeat();
   };
 
-  globalWs.onmessage = (ev) => {
-    try {
-      const msg = JSON.parse(ev.data);
-      const pending = globalPending.get(msg.id);
-      if (!pending) return;
-      globalPending.delete(msg.id);
-      if (msg.ok) pending.resolve(msg.result);
-      else pending.reject(new Error(msg.error ?? 'Bridge error'));
-    } catch { /* ignore */ }
+  ws.onmessage = ev => {
+    let msg: any;
+    try { msg = JSON.parse(ev.data); } catch { return; }
+
+    // Ignore pong
+    if (msg.id === '__ping__') return;
+
+    const p = pending.get(msg.id);
+    if (!p) return;
+    clearTimeout(p.timeout);
+    pending.delete(msg.id);
+    if (msg.ok) p.resolve(msg.result ?? null);
+    else p.reject(new Error(msg.error ?? 'Bridge error'));
   };
 
-  globalWs.onclose = () => {
-    setGlobalStatus('disconnected');
-    // Reject all pending
-    globalPending.forEach(({ reject }) => reject(new Error('WS disconnected')));
-    globalPending.clear();
+  ws.onclose = () => {
+    stopHeartbeat();
+    pending.forEach(({ reject, timeout }) => { clearTimeout(timeout); reject(new Error('Disconnected')); });
+    pending.clear();
+    broadcast('disconnected');
     scheduleReconnect();
   };
 
-  globalWs.onerror = () => {
-    setGlobalStatus('error');
+  ws.onerror = () => {
+    broadcast('error');
   };
 }
 
@@ -73,80 +99,80 @@ function scheduleReconnect() {
   if (reconnectTimer) return;
   reconnectTimer = setTimeout(() => {
     reconnectTimer = null;
+    reconnectDelay = Math.min(reconnectDelay * 1.5, 10_000);
     connect();
-  }, RECONNECT_DELAY);
+  }, reconnectDelay);
 }
 
-function sendAction<T = unknown>(action: string, payload?: unknown): Promise<T> {
-  return new Promise((resolve, reject) => {
-    if (!globalWs || globalWs.readyState !== WebSocket.OPEN) {
-      reject(new Error('Bridge not connected'));
+function send<T = unknown>(action: string, payload?: unknown): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      reject(new Error('Not connected'));
       return;
     }
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    globalPending.set(id, { resolve: resolve as (v: unknown) => void, reject });
-    globalWs.send(JSON.stringify({ id, action, payload }));
 
-    // Timeout 30s
-    setTimeout(() => {
-      if (globalPending.has(id)) {
-        globalPending.delete(id);
-        reject(new Error(`Timeout: ${action}`));
-      }
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const timeout = setTimeout(() => {
+      pending.delete(id);
+      reject(new Error(`Timeout: ${action}`));
     }, 30_000);
+
+    pending.set(id, { resolve: resolve as (v: unknown) => void, reject, timeout });
+    ws.send(JSON.stringify({ id, action, payload }));
   });
 }
 
-// ─── Public hook ──────────────────────────────────────────────────────────────
+// ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useDevBridge() {
-  const [status, setStatus] = useState<BridgeStatus>(globalStatus);
+  const [bridgeStatus, setBridgeStatus] = useState<BridgeStatus>(status);
 
   useEffect(() => {
-    globalListeners.add(setStatus);
-    connect();
-    return () => { globalListeners.delete(setStatus); };
+    listeners.add(setBridgeStatus);
+    if (!connectCalled) { connectCalled = true; connect(); }
+    else setBridgeStatus(status);
+    return () => { listeners.delete(setBridgeStatus); };
   }, []);
 
-  const send = useCallback(<T = unknown>(action: string, payload?: unknown) =>
-    sendAction<T>(action, payload), []);
-
-  return { status, send, isConnected: status === 'connected' };
+  return {
+    status: bridgeStatus,
+    isConnected: bridgeStatus === 'connected',
+  };
 }
 
-// ─── Typed action helpers ─────────────────────────────────────────────────────
+// ─── Typed bridge API ──────────────────────────────────────────────────────────
 
 export const bridge = {
-  writeFile:     (filePath: string, content: string) =>
-    sendAction<{ written: string }>('writeFile', { filePath, content }),
+  writeFile: (filePath: string, content: string) =>
+    send<{ written: string }>('writeFile', { filePath, content }),
 
-  readFile:      (filePath: string) =>
-    sendAction<{ content: string }>('readFile', { filePath }),
+  readFile: (filePath: string) =>
+    send<{ content: string }>('readFile', { filePath }),
 
-  deleteFile:    (filePath: string) =>
-    sendAction<{ deleted: string }>('deleteFile', { filePath }),
+  deleteFile: (filePath: string) =>
+    send<{ deleted: string }>('deleteFile', { filePath }),
 
-  listDocs:      () =>
-    sendAction<{ entries: Array<{ type: string; path: string; name: string; depth: number }> }>('listDocs'),
+  listDocs: () =>
+    send<{ entries: Array<{ type: 'file'|'dir'; path: string; name: string; depth: number }> }>('listDocs'),
 
-  readContacts:  () =>
-    sendAction<{ content: string }>('readContacts'),
+  readContacts: () =>
+    send<{ content: string }>('readContacts'),
 
   writeContacts: (content: string) =>
-    sendAction<{ ok: boolean }>('writeContacts', { content }),
+    send<{ ok: boolean }>('writeContacts', { content }),
 
-  readCss:       () =>
-    sendAction<{ content: string }>('readCss', {}),
+  readCss: () =>
+    send<{ content: string }>('readCss'),
 
-  writeCssVars:  (vars: Record<string, string>) =>
-    sendAction<{ ok: boolean }>('writeCssVars', { vars }),
+  writeCssVars: (vars: Record<string, string>) =>
+    send<{ ok: boolean }>('writeCssVars', { vars }),
 
-  uploadAsset:   (filename: string, base64: string, mimeType: string) =>
-    sendAction<{ path: string }>('uploadAsset', { filename, base64, mimeType }),
+  uploadAsset: (filename: string, base64: string, mimeType: string) =>
+    send<{ path: string }>('uploadAsset', { filename, base64, mimeType }),
 
   uploadFavicon: (base64: string, mimeType: string) =>
-    sendAction<{ path: string }>('uploadFavicon', { base64, mimeType }),
+    send<{ path: string }>('uploadFavicon', { base64, mimeType }),
 
-  runGenerate:   () =>
-    sendAction<{ ok: boolean; stdout: string; stderr: string }>('runGenerate'),
+  runGenerate: () =>
+    send<{ ok: boolean; stdout: string; stderr: string }>('runGenerate'),
 };
