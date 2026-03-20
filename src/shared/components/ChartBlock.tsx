@@ -1,18 +1,16 @@
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useMemo, useState, useCallback } from 'react';
 import {
   AreaChart, Area,
   BarChart, Bar,
-  LineChart, Line,
   PieChart, Pie, Cell,
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
-  XAxis, YAxis, Tooltip, Legend,
-  ResponsiveContainer,
+  XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { TableContext } from '../lib/htmlParser';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type ChartType =
+export type ChartType =
   | 'area' | 'area-stacked'
   | 'bar'  | 'bar-stacked' | 'bar-horizontal'
   | 'pie'  | 'pie-donut'
@@ -33,7 +31,7 @@ const DEFAULT_COLORS = [
   '#ef4444', '#ec4899', '#14b8a6', '#f97316',
 ];
 
-// ─── Token helper — same pattern as rest of codebase ─────────────────────────
+// ─── Tokens ───────────────────────────────────────────────────────────────────
 
 function tk(isDark: boolean) {
   return {
@@ -45,26 +43,25 @@ function tk(isDark: boolean) {
     tooltipBg:   isDark ? '#1a1a1a'                : '#ffffff',
     tooltipBdr:  isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)',
     tooltipText: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)',
-    axisText:    isDark ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)',
-    titleText:   isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.32)',
+    axisText:    isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)',
+    titleText:   isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.28)',
     footerText:  isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.32)',
     footerBdr:   isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)',
+    legendText:  isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)',
+    legendMuted: isDark ? 'rgba(255,255,255,0.2)'  : 'rgba(0,0,0,0.2)',
+    gridLine:    isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
   };
 }
 
 // ─── Key detection ────────────────────────────────────────────────────────────
-// First key = category axis (X / label). Rest = numeric series.
 
 function detectKeys(data: Record<string, unknown>[]): { nameKey: string; valueKeys: string[] } {
   if (!data.length) return { nameKey: 'name', valueKeys: [] };
   const keys = Object.keys(data[0]);
-  return {
-    nameKey:   keys[0] ?? 'name',
-    valueKeys: keys.slice(1),
-  };
+  return { nameKey: keys[0] ?? 'name', valueKeys: keys.slice(1) };
 }
 
-// ─── Custom tooltip ───────────────────────────────────────────────────────────
+// ─── Tooltips ─────────────────────────────────────────────────────────────────
 
 const CustomTooltip: React.FC<{
   active?: boolean;
@@ -75,17 +72,12 @@ const CustomTooltip: React.FC<{
   if (!active || !payload?.length) return null;
   return (
     <div style={{
-      background: t.tooltipBg,
-      border: `1px solid ${t.tooltipBdr}`,
-      borderRadius: 8,
-      padding: '8px 12px',
-      fontSize: 12,
-      color: t.tooltipText,
-      boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+      background: t.tooltipBg, border: `1px solid ${t.tooltipBdr}`,
+      borderRadius: 8, padding: '8px 12px', fontSize: 12,
+      color: t.tooltipText, boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+      pointerEvents: 'none',
     }}>
-      {label && (
-        <div style={{ fontWeight: 600, marginBottom: 4, opacity: 0.7 }}>{label}</div>
-      )}
+      {label && <div style={{ fontWeight: 600, marginBottom: 4, opacity: 0.7 }}>{label}</div>}
       {payload.map((entry, i) => (
         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
           <div style={{ width: 8, height: 8, borderRadius: 2, background: entry.color, flexShrink: 0 }} />
@@ -97,8 +89,6 @@ const CustomTooltip: React.FC<{
   );
 };
 
-// ─── Pie custom tooltip ───────────────────────────────────────────────────────
-
 const PieTooltip: React.FC<{
   active?: boolean;
   payload?: Array<{ name: string; value: number; payload: { fill: string } }>;
@@ -108,13 +98,10 @@ const PieTooltip: React.FC<{
   const entry = payload[0];
   return (
     <div style={{
-      background: t.tooltipBg,
-      border: `1px solid ${t.tooltipBdr}`,
-      borderRadius: 8,
-      padding: '8px 12px',
-      fontSize: 12,
-      color: t.tooltipText,
-      boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+      background: t.tooltipBg, border: `1px solid ${t.tooltipBdr}`,
+      borderRadius: 8, padding: '8px 12px', fontSize: 12,
+      color: t.tooltipText, boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+      pointerEvents: 'none',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <div style={{ width: 8, height: 8, borderRadius: 2, background: entry.payload.fill, flexShrink: 0 }} />
@@ -125,134 +112,188 @@ const PieTooltip: React.FC<{
   );
 };
 
-// ─── Legend style ─────────────────────────────────────────────────────────────
+// ─── Custom Legend ────────────────────────────────────────────────────────────
 
-function legendStyle(t: ReturnType<typeof tk>) {
-  return { fontSize: 11, color: t.axisText };
+interface LegendItem { key: string; color: string; }
+
+const CustomLegend: React.FC<{
+  items: LegendItem[];
+  hidden: Set<string>;
+  onToggle: (key: string) => void;
+  t: ReturnType<typeof tk>;
+}> = ({ items, hidden, onToggle, t }) => {
+  if (items.length <= 1) return null;
+  return (
+    <div style={{
+      display: 'flex', flexWrap: 'wrap', justifyContent: 'center',
+      gap: '4px 12px', padding: '2px 12px 10px',
+    }}>
+      {items.map(item => {
+        const isHidden = hidden.has(item.key);
+        return (
+          <button
+            key={item.key}
+            onClick={() => onToggle(item.key)}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '3px 6px', borderRadius: 5, outline: 'none',
+              color: isHidden ? t.legendMuted : t.legendText,
+              fontSize: 11, fontWeight: isHidden ? 400 : 500,
+              userSelect: 'none', transition: 'color 0.12s',
+            }}
+          >
+            <div style={{
+              width: 10, height: 10, borderRadius: 3, flexShrink: 0,
+              background: isHidden ? 'transparent' : item.color,
+              border: `2px solid ${isHidden ? t.legendMuted : item.color}`,
+              transition: 'all 0.12s',
+            }} />
+            <span style={{ textDecoration: isHidden ? 'line-through' : 'none' }}>
+              {item.key}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
+// ─── Chart height ─────────────────────────────────────────────────────────────
+
+function chartHeight(type: ChartType, rowCount: number): number {
+  if (type === 'bar-horizontal') return Math.max(100, rowCount * 40 + 36);
+  if (type === 'pie' || type === 'pie-donut') return 240;
+  if (type === 'radar') return 270;
+  return 210;
 }
 
-// ─── Chart renderers ──────────────────────────────────────────────────────────
+// ─── Axis props ───────────────────────────────────────────────────────────────
+
+function ap(t: ReturnType<typeof tk>) {
+  return { tick: { fill: t.axisText, fontSize: 11 }, axisLine: false, tickLine: false };
+}
+
+// ─── AREA ─────────────────────────────────────────────────────────────────────
 
 function renderArea(
   data: Record<string, unknown>[],
-  nameKey: string,
-  valueKeys: string[],
-  palette: string[],
-  stacked: boolean,
-  t: ReturnType<typeof tk>
+  nameKey: string, valueKeys: string[], palette: string[],
+  stacked: boolean, hidden: Set<string>, t: ReturnType<typeof tk>
 ) {
+  const visible = valueKeys.filter(k => !hidden.has(k));
   return (
-    <AreaChart data={data}>
-      <XAxis dataKey={nameKey} tick={{ fill: t.axisText, fontSize: 11 }} axisLine={false} tickLine={false} />
-      <YAxis tick={{ fill: t.axisText, fontSize: 11 }} axisLine={false} tickLine={false} width={36} />
-      <Tooltip content={<CustomTooltip t={t} />} />
-      {valueKeys.length > 1 && <Legend wrapperStyle={legendStyle(t)} />}
-      {valueKeys.map((key, i) => (
-        <Area
-          key={key}
-          type="monotone"
-          dataKey={key}
-          stroke={palette[i % palette.length]}
-          fill={palette[i % palette.length]}
-          fillOpacity={0.12}
-          strokeWidth={2}
-          stackId={stacked ? 'stack' : undefined}
-          dot={false}
-          activeDot={{ r: 4, strokeWidth: 0 }}
-        />
-      ))}
+    <AreaChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+      <XAxis dataKey={nameKey} {...ap(t)} />
+      <YAxis {...ap(t)} width={38} />
+      <Tooltip content={<CustomTooltip t={t} />} cursor={{ stroke: t.gridLine, strokeWidth: 1 }} />
+      {visible.map((key) => {
+        const idx = valueKeys.indexOf(key);
+        const color = palette[idx % palette.length];
+        return (
+          <Area key={key} type="monotone" dataKey={key}
+            stroke={color} fill={color} fillOpacity={0.1} strokeWidth={2}
+            stackId={stacked ? 'stack' : undefined}
+            dot={false} activeDot={{ r: 4, strokeWidth: 0 }}
+            isAnimationActive={false}
+          />
+        );
+      })}
     </AreaChart>
   );
 }
 
+// ─── BAR ──────────────────────────────────────────────────────────────────────
+
 function renderBar(
   data: Record<string, unknown>[],
-  nameKey: string,
-  valueKeys: string[],
-  palette: string[],
-  stacked: boolean,
-  horizontal: boolean,
-  t: ReturnType<typeof tk>
+  nameKey: string, valueKeys: string[], palette: string[],
+  stacked: boolean, horizontal: boolean,
+  hidden: Set<string>, t: ReturnType<typeof tk>
 ) {
-  const axisProps = { tick: { fill: t.axisText, fontSize: 11 }, axisLine: false, tickLine: false };
+  const visible = valueKeys.filter(k => !hidden.has(k));
+  const a = ap(t);
   return (
-    <BarChart data={data} layout={horizontal ? 'vertical' : 'horizontal'}>
+    <BarChart data={data} layout={horizontal ? 'vertical' : 'horizontal'}
+      margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
       {horizontal
-        ? <><YAxis dataKey={nameKey} type="category" {...axisProps} width={80} /><XAxis type="number" {...axisProps} /></>
-        : <><XAxis dataKey={nameKey} {...axisProps} /><YAxis {...axisProps} width={36} /></>
+        ? <><YAxis dataKey={nameKey} type="category" {...a} width={90} /><XAxis type="number" {...a} /></>
+        : <><XAxis dataKey={nameKey} {...a} /><YAxis {...a} width={38} /></>
       }
-      <Tooltip content={<CustomTooltip t={t} />} cursor={{ fill: t.axisText, fillOpacity: 0.06 }} />
-      {valueKeys.length > 1 && <Legend wrapperStyle={legendStyle(t)} />}
-      {valueKeys.map((key, i) => (
-        <Bar
-          key={key}
-          dataKey={key}
-          fill={palette[i % palette.length]}
-          radius={stacked ? [0, 0, 0, 0] : (horizontal ? [0, 3, 3, 0] : [3, 3, 0, 0])}
-          stackId={stacked ? 'stack' : undefined}
-          maxBarSize={48}
-        />
-      ))}
+      <Tooltip content={<CustomTooltip t={t} />} cursor={{ fill: t.gridLine }} />
+      {visible.map((key) => {
+        const idx = valueKeys.indexOf(key);
+        const color = palette[idx % palette.length];
+        return (
+          <Bar key={key} dataKey={key} fill={color}
+            radius={stacked ? [0,0,0,0] : horizontal ? [0,3,3,0] : [3,3,0,0]}
+            stackId={stacked ? 'stack' : undefined}
+            maxBarSize={40} isAnimationActive={false}
+          />
+        );
+      })}
     </BarChart>
   );
 }
 
+// ─── PIE ──────────────────────────────────────────────────────────────────────
+
 function renderPie(
   data: Record<string, unknown>[],
-  nameKey: string,
-  valueKeys: string[],
-  palette: string[],
-  donut: boolean,
-  t: ReturnType<typeof tk>
+  nameKey: string, valueKeys: string[], palette: string[],
+  donut: boolean, hidden: Set<string>, t: ReturnType<typeof tk>
 ) {
   const valueKey = valueKeys[0] ?? 'value';
-  const innerR   = donut ? '55%' : '0%';
+  const visibleData = data.filter(d => !hidden.has(String(d[nameKey])));
   return (
-    <PieChart>
+    <PieChart margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
       <Pie
-        data={data}
-        dataKey={valueKey}
-        nameKey={nameKey}
-        cx="50%"
-        cy="50%"
-        innerRadius={innerR}
-        outerRadius="75%"
-        paddingAngle={2}
-        strokeWidth={0}
+        data={visibleData} dataKey={valueKey} nameKey={nameKey}
+        cx="50%" cy="50%"
+        innerRadius={donut ? '50%' : '0%'} outerRadius="78%"
+        paddingAngle={2} strokeWidth={0}
+        style={{ outline: 'none' }}
+        isAnimationActive={false}
       >
-        {data.map((_, i) => (
-          <Cell key={i} fill={palette[i % palette.length]} />
-        ))}
+        {visibleData.map((entry, i) => {
+          const origIdx = data.findIndex(d => d[nameKey] === entry[nameKey]);
+          return (
+            <Cell key={i}
+              fill={palette[origIdx % palette.length]}
+              style={{ outline: 'none', cursor: 'default' }}
+            />
+          );
+        })}
       </Pie>
       <Tooltip content={<PieTooltip t={t} />} />
-      <Legend wrapperStyle={legendStyle(t)} />
     </PieChart>
   );
 }
 
+// ─── RADAR ────────────────────────────────────────────────────────────────────
+
 function renderRadar(
   data: Record<string, unknown>[],
-  nameKey: string,
-  valueKeys: string[],
-  palette: string[],
-  t: ReturnType<typeof tk>
+  nameKey: string, valueKeys: string[], palette: string[],
+  hidden: Set<string>, t: ReturnType<typeof tk>
 ) {
+  const visible = valueKeys.filter(k => !hidden.has(k));
   return (
-    <RadarChart data={data} cx="50%" cy="50%" outerRadius="70%">
-      <PolarGrid stroke={t.axisText} strokeOpacity={0.3} />
+    <RadarChart data={data} cx="50%" cy="50%" outerRadius="72%"
+      margin={{ top: 8, right: 16, left: 16, bottom: 8 }}>
+      <PolarGrid stroke={t.gridLine} />
       <PolarAngleAxis dataKey={nameKey} tick={{ fill: t.axisText, fontSize: 11 }} />
       <Tooltip content={<CustomTooltip t={t} />} />
-      {valueKeys.length > 1 && <Legend wrapperStyle={legendStyle(t)} />}
-      {valueKeys.map((key, i) => (
-        <Radar
-          key={key}
-          dataKey={key}
-          stroke={palette[i % palette.length]}
-          fill={palette[i % palette.length]}
-          fillOpacity={0.15}
-          strokeWidth={2}
-        />
-      ))}
+      {visible.map((key) => {
+        const idx = valueKeys.indexOf(key);
+        const color = palette[idx % palette.length];
+        return (
+          <Radar key={key} dataKey={key}
+            stroke={color} fill={color} fillOpacity={0.12} strokeWidth={2}
+            isAnimationActive={false}
+          />
+        );
+      })}
     </RadarChart>
   );
 }
@@ -264,87 +305,114 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
   const palette = colors?.length ? colors : DEFAULT_COLORS;
   const { nameKey, valueKeys } = useMemo(() => detectKeys(data), [data]);
 
-  const chart = useMemo(() => {
-    if (!data.length || !valueKeys.length) return null;
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
 
-    switch (type) {
-      case 'area':
-        return renderArea(data, nameKey, valueKeys, palette, false, t);
-      case 'area-stacked':
-        return renderArea(data, nameKey, valueKeys, palette, true, t);
-      case 'bar':
-        return renderBar(data, nameKey, valueKeys, palette, false, false, t);
-      case 'bar-stacked':
-        return renderBar(data, nameKey, valueKeys, palette, true, false, t);
-      case 'bar-horizontal':
-        return renderBar(data, nameKey, valueKeys, palette, false, true, t);
-      case 'pie':
-        return renderPie(data, nameKey, valueKeys, palette, false, t);
-      case 'pie-donut':
-        return renderPie(data, nameKey, valueKeys, palette, true, t);
-      case 'radar':
-        return renderRadar(data, nameKey, valueKeys, palette, t);
-      default:
-        return null;
-    }
-  }, [type, data, nameKey, valueKeys, palette, t]);
+  const toggleHidden = useCallback((key: string) => {
+    setHidden(prev => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  }, []);
 
   const isEmpty = !data.length || !valueKeys.length;
 
+  const legendItems: LegendItem[] = useMemo(() => {
+    if (type === 'pie' || type === 'pie-donut') {
+      return data.map((d, i) => ({
+        key:   String(d[nameKey]),
+        color: palette[i % palette.length],
+      }));
+    }
+    return valueKeys.map((k, i) => ({
+      key: k, color: palette[i % palette.length],
+    }));
+  }, [type, data, nameKey, valueKeys, palette]);
+
+  const height = chartHeight(type, data.length);
+
+  const chart = useMemo(() => {
+    if (isEmpty) return null;
+    switch (type) {
+      case 'area':           return renderArea(data, nameKey, valueKeys, palette, false, hidden, t);
+      case 'area-stacked':   return renderArea(data, nameKey, valueKeys, palette, true,  hidden, t);
+      case 'bar':            return renderBar(data, nameKey, valueKeys, palette, false, false, hidden, t);
+      case 'bar-stacked':    return renderBar(data, nameKey, valueKeys, palette, true,  false, hidden, t);
+      case 'bar-horizontal': return renderBar(data, nameKey, valueKeys, palette, false, true,  hidden, t);
+      case 'pie':            return renderPie(data, nameKey, valueKeys, palette, false, hidden, t);
+      case 'pie-donut':      return renderPie(data, nameKey, valueKeys, palette, true,  hidden, t);
+      case 'radar':          return renderRadar(data, nameKey, valueKeys, palette, hidden, t);
+      default:               return null;
+    }
+  }, [type, data, nameKey, valueKeys, palette, hidden, t, isEmpty]);
+
   return (
     <div className="not-prose" style={{ margin: '1.25rem 0' }}>
+      {/* Глобальный сброс outline для всех recharts-элементов */}
+      <style>{`
+        .recharts-wrapper:focus,
+        .recharts-wrapper *:focus,
+        .recharts-surface:focus,
+        .recharts-pie-sector:focus,
+        .recharts-sector:focus,
+        .recharts-rectangle:focus,
+        .recharts-curve:focus,
+        .recharts-layer:focus {
+          outline: none !important;
+          box-shadow: none !important;
+        }
+      `}</style>
       <div style={{
         borderRadius: 12,
         border: `1px solid ${t.outerBorder}`,
         background: t.outerBg,
         boxShadow: t.outerShadow,
         overflow: 'hidden',
+        outline: 'none',
       }}>
         {title && (
           <div style={{
             padding: '10px 16px 0',
-            fontSize: '0.69rem',
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '0.07em',
+            fontSize: '0.68rem', fontWeight: 700,
+            textTransform: 'uppercase', letterSpacing: '0.08em',
             color: t.titleText,
           }}>
             {title}
           </div>
         )}
 
-        <div style={{ padding: title ? '12px 8px 4px' : '16px 8px 4px' }}>
+        <div style={{ padding: title ? '10px 4px 0' : '14px 4px 0', outline: 'none' }}>
           {isEmpty ? (
             <div style={{
-              height: 240,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 13,
-              color: t.axisText,
-              fontStyle: 'italic',
+              height: 140, display: 'flex', alignItems: 'center',
+              justifyContent: 'center', fontSize: 13,
+              color: t.axisText, fontStyle: 'italic',
             }}>
               Нет данных
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={height}>
               {chart ?? <div />}
             </ResponsiveContainer>
           )}
         </div>
 
+        {!isEmpty && (
+          <CustomLegend items={legendItems} hidden={hidden} onToggle={toggleHidden} t={t} />
+        )}
+
         <div style={{
-          padding: '4px 16px 8px',
-          fontSize: 11,
-          color: t.footerText,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          borderTop: `1px solid ${t.footerBdr}`,
-          userSelect: 'none',
+          padding: '5px 16px 7px', fontSize: 11, color: t.footerText,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          borderTop: `1px solid ${t.footerBdr}`, userSelect: 'none',
         }}>
-          <span>{data.length} {data.length === 1 ? 'запись' : data.length < 5 ? 'записи' : 'записей'}</span>
-          <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 10, opacity: 0.7 }}>{type}</span>
+          <span>
+            {data.length}{' '}
+            {data.length === 1 ? 'запись' : data.length < 5 ? 'записи' : 'записей'}
+          </span>
+          <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 10, opacity: 0.6 }}>
+            {type}
+          </span>
         </div>
       </div>
     </div>
@@ -358,5 +426,4 @@ export const ChartBlockWithContext: React.FC<Omit<ChartBlockProps, 'isDark'>> = 
   return <ChartBlock {...props} isDark={isDark} />;
 };
 
-export type { ChartType };
 export default ChartBlockWithContext;
