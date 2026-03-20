@@ -1,15 +1,13 @@
 ---
-title: "Добро пожаловать в Hub"
-description: "Hub проекта Opensophy - центр знаний"
-author: ""
-icon: crown
+title: Добро пожаловать в Hub
+description: Hub проекта Opensophy - центр знаний
 date: 2026-02-17
-tags: welcome, hub, opensophy
-keywords: Opensophy, Hub, документация, знания, AI, security
-canonical: null
-robots: index, follow
+tags: "welcome, hub, opensophy"
+icon: crown
 lang: ru
+robots: "index, follow"
 ---
+
 
 ## Кто мы?
 
@@ -19,7 +17,9 @@ lang: ru
 
 [Демонстрация форматирования](https://hub.opensophy.com/docs/markdown-guide/) — [GitHub репозиторий](https://github.com/opensophy-projects/hub)
 
+```
 Используйте **Меню** чтобы менять тему сайта и просматривать статьи, или **Поиск** для быстрого поиска нужного материала.
+```
 
 ---
 
