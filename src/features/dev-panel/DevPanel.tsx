@@ -1,7 +1,7 @@
 /**
- * DevPanel — главная оболочка dev-панели
- * Floating боковая панель с табами. Только в dev-режиме.
- * Стиль: утилитарный инструмент разработчика, тёмный, плотный, без лишнего.
+ * DevPanel v2 — главная оболочка
+ * Resizable floating sidebar, tab navigation, connection status
+ * Горячая клавиша: Ctrl+Shift+D
  */
 
 import React, {
@@ -9,273 +9,198 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useDevBridge } from './useDevBridge';
+import { T, DevPanelStyles } from './components/ui';
+import { ToastContainer } from './components/Toast';
 import {
-  Settings, FileText, Navigation, Users, Palette,
-  Image, ChevronLeft, ChevronRight, Terminal, Zap,
-  RefreshCw, X, AlertCircle, Wifi, WifiOff,
+  Palette, FolderTree, FileEdit, Users, Image,
+  Terminal, X, Zap, ChevronRight, Wifi, WifiOff,
+  Loader2, AlertCircle,
 } from 'lucide-react';
 
-// Ленивая загрузка панелей
-const ThemePanel     = lazy(() => import('./panels/ThemePanel'));
-const NavEditorPanel = lazy(() => import('./panels/NavEditorPanel'));
-const PageEditorPanel= lazy(() => import('./panels/PageEditorPanel'));
-const ContactsPanel  = lazy(() => import('./panels/ContactsPanel'));
-const AssetsPanel    = lazy(() => import('./panels/AssetsPanel'));
-const GeneratePanel  = lazy(() => import('./panels/GeneratePanel'));
+// ─── Lazy-loaded panels ───────────────────────────────────────────────────────
 
-// ─── Токены ───────────────────────────────────────────────────────────────────
+const ThemePanel      = lazy(() => import('./panels/ThemePanel'));
+const NavEditorPanel  = lazy(() => import('./panels/NavEditorPanel'));
+const PageEditorPanel = lazy(() => import('./panels/PageEditorPanel'));
+const ContactsPanel   = lazy(() => import('./panels/ContactsPanel'));
+const AssetsPanel     = lazy(() => import('./panels/AssetsPanel'));
+const GeneratePanel   = lazy(() => import('./panels/GeneratePanel'));
+const SettingsPanel   = lazy(() => import('./panels/SettingsPanel'));
 
-const T = {
-  bg:         '#0c0c0e',
-  bgPanel:    '#111114',
-  bgHov:      '#1a1a1f',
-  bgActive:   '#1e1e24',
-  border:     'rgba(255,255,255,0.08)',
-  borderHov:  'rgba(255,255,255,0.14)',
-  fg:         'rgba(255,255,255,0.9)',
-  fgMuted:    'rgba(255,255,255,0.4)',
-  fgSub:      'rgba(255,255,255,0.22)',
-  accent:     '#7c5cfc',
-  accentGlow: 'rgba(124,92,252,0.3)',
-  accentSoft: 'rgba(124,92,252,0.12)',
-  success:    '#22c55e',
-  warning:    '#f59e0b',
-  danger:     '#ef4444',
-  dangerSoft: 'rgba(239,68,68,0.1)',
-};
-
-// ─── Tabs ─────────────────────────────────────────────────────────────────────
+// ─── Tab config ───────────────────────────────────────────────────────────────
 
 interface Tab {
   id: string;
   label: string;
+  shortLabel: string;
   icon: React.ReactNode;
-  component: React.ComponentType<{ onClose?: () => void }>;
+  component: React.ComponentType<any>;
+  hotkey?: string;
 }
 
 const TABS: Tab[] = [
-  { id: 'theme',    label: 'Тема',      icon: <Palette    size={15}/>, component: ThemePanel      },
-  { id: 'nav',      label: 'Навигация', icon: <Navigation size={15}/>, component: NavEditorPanel  },
-  { id: 'pages',    label: 'Страницы',  icon: <FileText   size={15}/>, component: PageEditorPanel },
-  { id: 'contacts', label: 'Контакты',  icon: <Users      size={15}/>, component: ContactsPanel   },
-  { id: 'assets',   label: 'Ассеты',    icon: <Image      size={15}/>, component: AssetsPanel     },
-  { id: 'generate', label: 'Билд',      icon: <Terminal   size={15}/>, component: GeneratePanel   },
+  {
+    id: 'theme',    label: 'Тема',       shortLabel: 'Тема',
+    icon: <Palette   size={14}/>,
+    component: ThemePanel,     hotkey: '1',
+  },
+  {
+    id: 'nav',      label: 'Навигация',  shortLabel: 'Nav',
+    icon: <FolderTree size={14}/>,
+    component: NavEditorPanel, hotkey: '2',
+  },
+  {
+    id: 'pages',    label: 'Страницы',   shortLabel: 'MD',
+    icon: <FileEdit  size={14}/>,
+    component: PageEditorPanel,hotkey: '3',
+  },
+  {
+    id: 'contacts', label: 'Контакты',   shortLabel: 'CX',
+    icon: <Users     size={14}/>,
+    component: ContactsPanel,  hotkey: '4',
+  },
+  {
+    id: 'assets',   label: 'Ассеты',     shortLabel: 'IMG',
+    icon: <Image     size={14}/>,
+    component: AssetsPanel,    hotkey: '5',
+  },
+  {
+    id: 'generate', label: 'Generate',   shortLabel: 'GEN',
+    icon: <Terminal  size={14}/>,
+    component: GeneratePanel,  hotkey: '6',
+  },
 ];
 
-// ─── PanelShell ───────────────────────────────────────────────────────────────
+// ─── Status indicator ──────────────────────────────────────────────────────────
 
-interface PanelShellProps {
-  visible: boolean;
-  onClose: () => void;
-  activeTab: string;
-  onTabChange: (id: string) => void;
-  status: 'connecting' | 'connected' | 'disconnected' | 'error';
+function StatusDot({ status }: { status: string }) {
+  const map: Record<string, { color: string; label: string; glow: boolean }> = {
+    connected:    { color: '#22c55e', label: 'Подключено',    glow: true  },
+    connecting:   { color: '#f59e0b', label: 'Подключение...', glow: false },
+    disconnected: { color: '#6b7280', label: 'Отключено',     glow: false },
+    error:        { color: '#ef4444', label: 'Ошибка',        glow: false },
+  };
+  const s = map[status] ?? map.disconnected;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+      <div style={{
+        width: 6, height: 6, borderRadius: '50%', background: s.color, flexShrink: 0,
+        boxShadow: s.glow ? `0 0 6px ${s.color}` : 'none',
+        animation: status === 'connecting' ? 'devPulse 1s ease-in-out infinite' : 'none',
+      }} />
+      <span style={{ fontSize: 10, color: s.color }}>{s.label}</span>
+    </div>
+  );
 }
 
-function PanelShell({ visible, onClose, activeTab, onTabChange, status }: PanelShellProps) {
-  const [width, setWidth] = useState(420);
-  const isDragging = useRef(false);
-  const dragStartX = useRef(0);
-  const dragStartW = useRef(0);
+// ─── Panel header ──────────────────────────────────────────────────────────────
 
-  const onResizeMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    isDragging.current = true;
-    dragStartX.current = e.clientX;
-    dragStartW.current = width;
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-
-    const onMove = (ev: MouseEvent) => {
-      if (!isDragging.current) return;
-      const delta = dragStartX.current - ev.clientX;
-      setWidth(Math.max(340, Math.min(680, dragStartW.current + delta)));
-    };
-    const onUp = () => {
-      isDragging.current = false;
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-  }, [width]);
-
-  const ActiveComponent = TABS.find(t => t.id === activeTab)?.component ?? ThemePanel;
-
-  const statusColor = status === 'connected' ? T.success
-    : status === 'connecting' ? T.warning
-    : T.danger;
-
-  const statusLabel = status === 'connected' ? 'Подключено'
-    : status === 'connecting' ? 'Подключение...'
-    : 'Отключено';
-
+function PanelHeader({
+  onClose, status, activeTab, onTabChange,
+}: {
+  onClose: () => void;
+  status: string;
+  activeTab: string;
+  onTabChange: (id: string) => void;
+}) {
   return (
-    <div style={{
-      position: 'fixed',
-      right: visible ? 0 : -width - 10,
-      top: 0,
-      height: '100vh',
-      width,
-      zIndex: 99999,
-      display: 'flex',
-      flexDirection: 'column',
-      background: T.bg,
-      borderLeft: `1px solid ${T.border}`,
-      boxShadow: '-4px 0 40px rgba(0,0,0,0.6)',
-      transition: 'right 0.25s cubic-bezier(0.4,0,0.2,1)',
-      fontFamily: 'ui-monospace, "Cascadia Code", "Fira Code", monospace',
-    }}>
-      {/* Resize handle */}
-      <div
-        onMouseDown={onResizeMouseDown}
-        style={{
-          position: 'absolute',
-          left: -4,
-          top: 0,
-          bottom: 0,
-          width: 8,
-          cursor: 'col-resize',
-          zIndex: 10,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <div style={{
-          width: 3,
-          height: 48,
-          borderRadius: 3,
-          background: T.border,
-          transition: 'background 0.15s',
-        }} />
-      </div>
-
-      {/* Header */}
+    <>
+      {/* Top bar */}
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '10px 14px',
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '9px 12px 8px',
         borderBottom: `1px solid ${T.border}`,
-        flexShrink: 0,
         background: T.bgPanel,
+        flexShrink: 0,
+        userSelect: 'none',
       }}>
+        {/* Logo */}
         <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          flex: 1,
+          width: 20, height: 20, borderRadius: 5,
+          background: T.accentSoft,
+          border: `1px solid ${T.accent}40`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
         }}>
-          <div style={{
-            width: 22,
-            height: 22,
-            borderRadius: 5,
-            background: T.accentSoft,
-            border: `1px solid ${T.accent}44`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            <Zap size={12} style={{ color: T.accent }} />
-          </div>
-          <span style={{ fontSize: 12, fontWeight: 700, color: T.fg, letterSpacing: '0.05em' }}>
-            HUB DEV
-          </span>
-          <span style={{
-            fontSize: 9,
-            fontWeight: 600,
-            color: T.accent,
-            background: T.accentSoft,
-            border: `1px solid ${T.accent}33`,
-            borderRadius: 4,
-            padding: '1px 5px',
-            letterSpacing: '0.08em',
-          }}>
-            DEV ONLY
-          </span>
+          <Zap size={11} style={{ color: T.accent }} />
         </div>
 
-        {/* Status */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 5,
-          fontSize: 10,
-          color: statusColor,
-        }}>
-          <div style={{
-            width: 6,
-            height: 6,
-            borderRadius: '50%',
-            background: statusColor,
-            boxShadow: status === 'connected' ? `0 0 6px ${T.success}` : 'none',
-          }} />
-          {statusLabel}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 1, flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{
+              fontSize: 11, fontWeight: 800, color: T.fg,
+              letterSpacing: '0.06em', fontFamily: T.mono,
+            }}>
+              HUB DEV
+            </span>
+            <span style={{
+              fontSize: 8, fontWeight: 700, color: T.accent,
+              background: T.accentSoft, border: `1px solid ${T.accent}30`,
+              borderRadius: 3, padding: '1px 4px', letterSpacing: '0.1em',
+            }}>
+              DEV ONLY
+            </span>
+          </div>
+          <StatusDot status={status} />
         </div>
 
         <button
           onClick={onClose}
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 24,
-            height: 24,
-            borderRadius: 5,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 22, height: 22, borderRadius: 5,
             border: `1px solid ${T.border}`,
-            background: 'transparent',
-            color: T.fgMuted,
-            cursor: 'pointer',
+            background: 'transparent', color: T.fgMuted, cursor: 'pointer',
+            flexShrink: 0,
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = T.fg; (e.currentTarget as HTMLButtonElement).style.background = T.bgHov; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = T.fgMuted; (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLButtonElement).style.background = T.bgHov;
+            (e.currentTarget as HTMLButtonElement).style.color = T.fg;
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+            (e.currentTarget as HTMLButtonElement).style.color = T.fgMuted;
+          }}
+          title="Закрыть (Ctrl+Shift+D)"
         >
-          <X size={13} />
+          <X size={12} />
         </button>
       </div>
 
-      {/* Tab bar */}
+      {/* Tab strip */}
       <div style={{
-        display: 'flex',
-        borderBottom: `1px solid ${T.border}`,
-        background: T.bgPanel,
-        flexShrink: 0,
-        overflowX: 'auto',
+        display: 'flex', overflowX: 'auto', borderBottom: `1px solid ${T.border}`,
+        background: T.bgPanel, flexShrink: 0,
         scrollbarWidth: 'none',
       }}>
         {TABS.map(tab => {
-          const isActive = tab.id === activeTab;
+          const active = tab.id === activeTab;
           return (
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
+              title={`${tab.label} (Ctrl+Shift+${tab.hotkey})`}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                padding: '8px 12px',
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '8px 11px',
                 border: 'none',
-                borderBottom: isActive ? `2px solid ${T.accent}` : '2px solid transparent',
-                background: isActive ? T.accentSoft : 'transparent',
-                color: isActive ? T.accent : T.fgMuted,
-                fontSize: 11,
-                fontWeight: isActive ? 700 : 400,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.12s',
-                fontFamily: 'inherit',
+                borderBottom: active ? `2px solid ${T.accent}` : '2px solid transparent',
+                background: active ? T.accentSoft : 'transparent',
+                color: active ? T.accent : T.fgMuted,
+                fontSize: 11, fontWeight: active ? 700 : 400,
+                cursor: 'pointer', whiteSpace: 'nowrap',
+                transition: 'all 0.1s',
+                fontFamily: T.mono,
+                flexShrink: 0,
               }}
               onMouseEnter={e => {
-                if (!isActive) {
+                if (!active) {
                   (e.currentTarget as HTMLButtonElement).style.color = T.fg;
                   (e.currentTarget as HTMLButtonElement).style.background = T.bgHov;
                 }
               }}
               onMouseLeave={e => {
-                if (!isActive) {
+                if (!active) {
                   (e.currentTarget as HTMLButtonElement).style.color = T.fgMuted;
                   (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
                 }
@@ -287,99 +212,280 @@ function PanelShell({ visible, onClose, activeTab, onTabChange, status }: PanelS
           );
         })}
       </div>
+    </>
+  );
+}
 
-      {/* Content */}
-      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        <Suspense fallback={
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, color: T.fgSub, fontSize: 12 }}>
-            Загрузка...
+// ─── Disconnected overlay ──────────────────────────────────────────────────────
+
+function DisconnectedOverlay({ status, onRetry }: { status: string; onRetry: () => void }) {
+  if (status === 'connected') return null;
+  const isConnecting = status === 'connecting';
+
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, zIndex: 10,
+      background: 'rgba(12,12,14,0.9)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      gap: 12, backdropFilter: 'blur(4px)',
+    }}>
+      {isConnecting ? (
+        <>
+          <Loader2 size={24} style={{ color: T.accent, animation: 'devSpinAnim 1s linear infinite' }} />
+          <div style={{ fontSize: 12, color: T.fgMuted, textAlign: 'center', lineHeight: 1.5 }}>
+            Подключение к dev-серверу...<br/>
+            <span style={{ fontSize: 10, color: T.fgSub }}>ws://127.0.0.1:7777</span>
           </div>
-        }>
-          <ActiveComponent />
-        </Suspense>
-      </div>
+        </>
+      ) : (
+        <>
+          <WifiOff size={24} style={{ color: T.danger, opacity: 0.7 }} />
+          <div style={{ fontSize: 12, color: T.fgMuted, textAlign: 'center', lineHeight: 1.5 }}>
+            Нет соединения с dev-сервером<br/>
+            <span style={{ fontSize: 10, color: T.fgSub }}>
+              Убедись что запущен `astro dev`
+            </span>
+          </div>
+          <button
+            onClick={onRetry}
+            style={{
+              padding: '6px 14px', borderRadius: 6,
+              border: `1px solid ${T.accent}55`,
+              background: T.accentSoft, color: T.accent,
+              fontSize: 11, cursor: 'pointer', fontFamily: T.mono,
+            }}
+          >
+            Переподключиться
+          </button>
+        </>
+      )}
     </div>
   );
 }
 
-// ─── Toggle button ─────────────────────────────────────────────────────────────
+// ─── Toggle trigger ───────────────────────────────────────────────────────────
 
-function ToggleButton({ visible, onClick, hasError }: { visible: boolean; onClick: () => void; hasError: boolean }) {
+function PanelTrigger({
+  visible,
+  onClick,
+  status,
+}: {
+  visible: boolean;
+  onClick: () => void;
+  status: string;
+}) {
   const [hov, setHov] = useState(false);
+  const hasIssue = status !== 'connected' && status !== 'connecting';
 
   return (
     <button
       onClick={onClick}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
-      title={visible ? 'Скрыть Dev Panel' : 'Открыть Dev Panel'}
+      title={visible ? 'Скрыть панель (Ctrl+Shift+D)' : 'Dev Panel (Ctrl+Shift+D)'}
       style={{
         position: 'fixed',
-        right: visible ? 0 : 0,
-        bottom: 80,
-        zIndex: 99998,
+        right: 0,
+        bottom: 96,
+        zIndex: 99997,
         display: 'flex',
         alignItems: 'center',
-        gap: 6,
-        padding: '8px 10px',
-        background: hov ? T.accent : T.bg,
-        border: `1px solid ${hov ? T.accent : T.border}`,
-        borderRight: 'none',
+        gap: 0,
+        border: 'none',
         borderRadius: '8px 0 0 8px',
-        color: hov ? '#fff' : T.fgMuted,
+        background: hov ? T.accent : visible ? T.bgActive : T.bgPanel,
+        boxShadow: hov
+          ? `-4px 0 20px ${T.accentGlow}`
+          : '-2px 0 12px rgba(0,0,0,0.5)',
         cursor: 'pointer',
-        fontSize: 10,
-        fontWeight: 700,
-        letterSpacing: '0.06em',
-        transition: 'all 0.15s',
-        boxShadow: hov ? `-4px 0 20px ${T.accentGlow}` : '-2px 0 12px rgba(0,0,0,0.4)',
-        fontFamily: 'ui-monospace, monospace',
-        writingMode: 'vertical-rl',
-        textOrientation: 'mixed',
+        transition: 'all 0.18s',
+        overflow: 'hidden',
+        padding: 0,
       }}
     >
-      {hasError && <AlertCircle size={11} style={{ color: T.danger }} />}
-      <Zap size={11} />
-      <span>DEV</span>
+      {/* Accent bar */}
+      <div style={{
+        width: 3, alignSelf: 'stretch',
+        background: visible ? T.accent : hov ? '#fff3' : T.accent + '60',
+        transition: 'background 0.18s',
+      }} />
+
+      {/* Icon + label */}
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        gap: 5, padding: '10px 7px',
+        writingMode: 'vertical-rl',
+        textOrientation: 'mixed',
+      }}>
+        {hasIssue && (
+          <AlertCircle size={10} style={{ color: T.danger }} />
+        )}
+        <Zap size={12} style={{ color: hov ? '#fff' : T.accent, transform: 'rotate(-90deg)' }} />
+        <span style={{
+          fontSize: 9, fontWeight: 800, letterSpacing: '0.12em',
+          color: hov ? '#fff' : T.fgMuted,
+          fontFamily: T.mono,
+        }}>
+          DEV
+        </span>
+      </div>
     </button>
   );
 }
 
-// ─── DevPanel root ─────────────────────────────────────────────────────────────
+// ─── Main DevPanel ────────────────────────────────────────────────────────────
 
 export default function DevPanel() {
   const { status } = useDevBridge();
-  const [visible, setVisible] = useState(false);
+  const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('theme');
+  const [width, setWidth] = useState(() => {
+    try { return parseInt(localStorage.getItem('hub-dev-width') ?? '420'); } catch { return 420; }
+  });
 
-  // Keyboard shortcut: Ctrl+Shift+D
+  const isDragging  = useRef(false);
+  const dragStartX  = useRef(0);
+  const dragStartW  = useRef(0);
+  const panelRef    = useRef<HTMLDivElement>(null);
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────────────
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Ctrl+Shift+D — toggle panel
       if (e.ctrlKey && e.shiftKey && e.key === 'D') {
         e.preventDefault();
-        setVisible(v => !v);
+        setOpen(v => !v);
+        return;
+      }
+      // Ctrl+Shift+1..6 — switch tab
+      if (e.ctrlKey && e.shiftKey && /^[1-6]$/.test(e.key)) {
+        e.preventDefault();
+        const tab = TABS[parseInt(e.key) - 1];
+        if (tab) { setActiveTab(tab.id); setOpen(true); }
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  // ── Resize handle ───────────────────────────────────────────────────────────
+  const onResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isDragging.current  = true;
+    dragStartX.current  = e.clientX;
+    dragStartW.current  = width;
+    document.body.style.cursor     = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    const onMove = (ev: MouseEvent) => {
+      if (!isDragging.current) return;
+      const next = Math.max(320, Math.min(720, dragStartW.current + (dragStartX.current - ev.clientX)));
+      setWidth(next);
+    };
+    const onUp = () => {
+      isDragging.current = false;
+      document.body.style.cursor     = '';
+      document.body.style.userSelect = '';
+      try { localStorage.setItem('hub-dev-width', String(width)); } catch {}
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }, [width]);
+
+  // Persist width
+  useEffect(() => {
+    try { localStorage.setItem('hub-dev-width', String(width)); } catch {}
+  }, [width]);
+
+  const ActiveComp = TABS.find(t => t.id === activeTab)?.component ?? ThemePanel;
+
   if (typeof document === 'undefined') return null;
 
   return createPortal(
     <>
-      <ToggleButton
-        visible={visible}
-        onClick={() => setVisible(v => !v)}
-        hasError={status === 'error' || status === 'disconnected'}
-      />
-      <PanelShell
-        visible={visible}
-        onClose={() => setVisible(false)}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
+      <DevPanelStyles />
+
+      <style>{`
+        @keyframes devPulse {
+          0%,100% { opacity: 1; }
+          50%      { opacity: 0.4; }
+        }
+      `}</style>
+
+      {/* Trigger button */}
+      <PanelTrigger
+        visible={open}
+        onClick={() => setOpen(v => !v)}
         status={status}
       />
+
+      {/* Slide-in panel */}
+      <div
+        ref={panelRef}
+        style={{
+          position: 'fixed',
+          top: 0, right: 0, bottom: 0,
+          width,
+          zIndex: 99998,
+          display: 'flex',
+          flexDirection: 'column',
+          background: T.bg,
+          borderLeft: `1px solid ${T.border}`,
+          boxShadow: open ? '-8px 0 48px rgba(0,0,0,0.7)' : 'none',
+          transform: open ? 'translateX(0)' : 'translateX(100%)',
+          transition: 'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
+          fontFamily: T.mono,
+          contain: 'layout',
+        }}
+      >
+        {/* Resize handle */}
+        <div
+          onMouseDown={onResizeStart}
+          style={{
+            position: 'absolute', left: -5, top: 0, bottom: 0,
+            width: 10, cursor: 'col-resize', zIndex: 10,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <div style={{
+            width: 3, height: 40, borderRadius: 3,
+            background: 'rgba(255,255,255,0.1)',
+            transition: 'background 0.15s',
+          }} />
+        </div>
+
+        <PanelHeader
+          onClose={() => setOpen(false)}
+          status={status}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+
+        {/* Panel content */}
+        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+          <DisconnectedOverlay
+            status={status}
+            onRetry={() => window.location.reload()}
+          />
+
+          <Suspense fallback={
+            <div style={{
+              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: 8, color: T.fgSub, fontSize: 12,
+            }}>
+              <Loader2 size={14} style={{ animation: 'devSpinAnim 1s linear infinite' }} />
+              Загрузка...
+            </div>
+          }>
+            <ActiveComp />
+          </Suspense>
+        </div>
+      </div>
+
+      {/* Toast notifications */}
+      <ToastContainer />
     </>,
     document.body
   );
