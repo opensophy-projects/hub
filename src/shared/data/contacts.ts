@@ -12,4 +12,5 @@ export const CONTACTS: ContactItem[] = [
   { href: 'https://t.me/veilosophy', title: 'Telegram', subtitle: '@veilosophy', external: true },
   { href: 'https://github.com/opensophy-projects', title: 'GitHub', subtitle: 'opensophy', external: true },
   { href: 'https://habr.com/ru/users/opensophy/', title: 'Habr', subtitle: 'opensophy', external: true },
+  { href: 'https://www.reddit.com/user/opensophy/', title: 'Reddit', subtitle: 'opensophy', external: true },
 ];
