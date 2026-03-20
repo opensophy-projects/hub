@@ -1,25 +1,19 @@
 /**
  * DevPanelLoader
  *
- * Astro требует статический import для client:only — нельзя хранить компонент
- * в переменной frontmatter. Поэтому этот файл импортируется всегда,
- * но сам проверяет import.meta.env.DEV и возвращает null в production.
+ * Astro requires a static default export for client:only —
+ * the component reference must NOT be derived from a variable or conditional.
  *
- * Vite при сборке заменяет import.meta.env.DEV на false,
- * dead-code elimination убирает весь внутренний код → в prod-бандле
- * этот модуль превращается в `export default function(){return null}`.
+ * Fix: always import DevPanel statically. The component itself returns null
+ * in production because import.meta.env.DEV is replaced with `false` by Vite
+ * at build time, and dead-code elimination removes the inner logic entirely.
  */
 
-import { lazy, Suspense } from 'react';
-
-// Динамический импорт тоже tree-shaking'ится когда условие статически false
-const DevPanel = import.meta.env.DEV
-  ? lazy(() => import('./DevPanel'))
-  : null;
+import { Suspense } from 'react';
+import DevPanel from './DevPanel';
 
 export default function DevPanelLoader() {
-  // Двойная защита: проверка и в рантайме
-  if (!import.meta.env.DEV || !DevPanel) return null;
+  if (!import.meta.env.DEV) return null;
 
   return (
     <Suspense fallback={null}>
