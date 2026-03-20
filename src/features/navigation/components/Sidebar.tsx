@@ -286,4 +286,4 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
   );
 };
 
-export default Sidebar;
+export default Sidebar
