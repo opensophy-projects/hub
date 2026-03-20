@@ -1,5 +1,5 @@
 /**
- * Hub Dev Panel — WebSocket Bridge v2
+ * Hub Dev Panel — WebSocket Bridge v3
  *
  * Astro integration plugin.
  * Запускается ТОЛЬКО через astro:server:setup хук (только в astro dev).
@@ -14,20 +14,18 @@ import path from 'node:path';
 
 const ROOT = process.cwd();
 
-// ─── Разрешённые пути для записи ──────────────────────────────────────────────
+// ─── Разрешённые пути ──────────────────────────────────────────────────────────
+
 const ALLOWED_WRITE = [
   'Docs/',
   'src/shared/data/',
-  'src/shared/styles/',
   'public/',
 ];
 
-// Разрешённые пути для чтения (включает исходные файлы)
 const ALLOWED_READ = [
   ...ALLOWED_WRITE,
   'src/shared/data/contacts.ts',
   'public/robots.txt',
-  'src/shared/styles/global.css',
 ];
 
 function relPath(abs) {
@@ -80,8 +78,7 @@ async function handleListDocs() {
     if (!fs.existsSync(dir)) return;
     const items = fs.readdirSync(dir, { withFileTypes: true });
     for (const item of items) {
-      if (item.name.startsWith('.') && item.name !== '.gitkeep') continue;
-      if (item.name === '.gitkeep') continue;
+      if (item.name.startsWith('.')) continue;
       const full = path.join(dir, item.name);
       const rel  = relPath(full);
       if (item.isDirectory()) {
@@ -109,64 +106,18 @@ async function handleWriteContacts({ content }) {
   return { ok: true };
 }
 
-async function handleWriteCssVars({ vars }) {
-  const fp  = path.join(ROOT, 'src/shared/styles/global.css');
-  let css   = await fs.promises.readFile(fp, 'utf-8');
-
-  const varLines = Object.entries(vars)
-    .map(([k, v]) => `  ${k}: ${v};`)
-    .join('\n');
-
-  const startMarker = '/* hub-dev-panel-vars-start */';
-  const endMarker   = '/* hub-dev-panel-vars-end */';
-  const block       = `${startMarker}\n:root {\n${varLines}\n}\n${endMarker}`;
-
-  if (css.includes(startMarker)) {
-    // Replace existing block — wherever it is
-    css = css.replace(
-      new RegExp(`${startMarker.replace(/\//g, '\\/')}[\\s\\S]*?${endMarker.replace(/\//g, '\\/')}`, 'g'),
-      block
-    );
-  } else {
-    // FIX: must insert AFTER all @import statements so PostCSS doesn't complain.
-    // Find the last @import line and insert the :root block after it.
-    const lines = css.split('\n');
-    let lastImportIndex = -1;
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].trimStart().startsWith('@import ')) {
-        lastImportIndex = i;
-      }
-    }
-
-    if (lastImportIndex >= 0) {
-      // Insert after the last @import line
-      lines.splice(lastImportIndex + 1, 0, '', block);
-      css = lines.join('\n');
-    } else {
-      // No @import found — prepend (shouldn't happen in practice)
-      css = `${block}\n\n${css}`;
-    }
-  }
-
-  await fs.promises.writeFile(fp, css, 'utf-8');
-  return { ok: true };
-}
-
-async function handleUploadAsset({ filename, base64, mimeType }) {
+async function handleUploadAsset({ filename, base64 }) {
   const dir = path.join(ROOT, 'public/assets');
   await fs.promises.mkdir(dir, { recursive: true });
-  const buf  = Buffer.from(base64, 'base64');
-  const fp   = path.join(dir, filename);
-  await fs.promises.writeFile(fp, buf);
+  const buf = Buffer.from(base64, 'base64');
+  await fs.promises.writeFile(path.join(dir, filename), buf);
   return { path: `/assets/${filename}` };
 }
 
 async function handleUploadFavicon({ base64, mimeType }) {
-  // Save as favicon.png regardless (browsers handle it)
   const ext = mimeType === 'image/svg+xml' ? 'svg' : 'png';
   const fp  = path.join(ROOT, `public/favicon.${ext}`);
-  const buf = Buffer.from(base64, 'base64');
-  await fs.promises.writeFile(fp, buf);
+  await fs.promises.writeFile(fp, Buffer.from(base64, 'base64'));
   return { path: `/favicon.${ext}` };
 }
 
@@ -188,7 +139,6 @@ const HANDLERS = {
   listDocs:      handleListDocs,
   readContacts:  handleReadContacts,
   writeContacts: handleWriteContacts,
-  writeCssVars:  handleWriteCssVars,
   uploadAsset:   handleUploadAsset,
   uploadFavicon: handleUploadFavicon,
   runGenerate:   handleRunGenerate,
@@ -219,7 +169,10 @@ export function devBridgeIntegration() {
           ws.on('message', async raw => {
             let msg;
             try { msg = JSON.parse(raw.toString()); }
-            catch { ws.send(JSON.stringify({ id: null, ok: false, error: 'Invalid JSON' })); return; }
+            catch {
+              ws.send(JSON.stringify({ id: null, ok: false, error: 'Invalid JSON' }));
+              return;
+            }
 
             const { id, action, payload } = msg;
             const handler = HANDLERS[action];
@@ -248,7 +201,6 @@ export function devBridgeIntegration() {
           ws.on('error', err => logger.error(`[hub-dev] WS error: ${err.message}`));
         });
 
-        // Clean up on server close
         server.httpServer?.on('close', () => {
           wss.close();
           logger.info('[hub-dev] Bridge closed');
