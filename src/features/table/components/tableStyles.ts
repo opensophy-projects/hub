@@ -10,8 +10,12 @@ export function getTableStyles(isDark: boolean): string {
     table {
       border-collapse: separate;
       border-spacing: 0;
-      width: auto;
-      min-width: 100%;
+      /* FIX: was "width: auto" — that makes the table shrink to content width.
+         width: 100% stretches it to fill the scroll container.
+         min-width: max-content ensures it never gets narrower than its content
+         (so horizontal scroll still works when content is wider than container). */
+      width: 100%;
+      min-width: max-content;
     }
     th, td {
       padding: 0.65rem 1rem;
