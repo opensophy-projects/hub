@@ -1,4 +1,4 @@
-import React, { createContext } from 'react';
+import React, { createContext, lazy, Suspense } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
 import { CodeBlock } from '../components/CodeBlock';
 import TableWithControls from '@/features/table/components/TableWithControls';
@@ -11,25 +11,14 @@ import { StepperWithContext } from '../components/Stepper';
 import type { StepData, StepStatus } from '../components/Stepper';
 import type { ColumnsLayout } from '../components/Columns';
 
+const LazyChartBlock = lazy(() => import('../components/ChartBlock'));
+
 // ─── § Exports & context ──────────────────────────────────────────────────────
-//
-// TableContext is a React context threaded through the entire parsed tree.
-// It carries two values:
-//   onTableClick — callback that opens the fullscreen TableModal in DocContent
-//   isDark       — current theme flag, needed by all leaf components
-//
-// It is consumed by TableWithControls, CodeBlock, Card, and other leaf nodes
-// that need the theme but don't have direct access to useTheme() because they
-// are rendered as plain React elements (not hooks-capable function components).
 
 export const TableContext = createContext<{
   onTableClick?: (tableHtml: string) => void;
   isDark: boolean;
 }>({ isDark: false });
-
-// Allowlists used for the single DOMPurify sanitize pass.
-// SANITIZE_TAGS and SANITIZE_ATTR are exported so any future consumer
-// can reuse the same policy without copy-pasting.
 
 export const SANITIZE_TAGS = [
   'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
@@ -51,6 +40,7 @@ export const SANITIZE_ATTR = [
   'data-language', 'data-lang', 'data-alert-type',
   'data-cols', 'data-layout', 'data-status', 'data-title',
   'data-color', 'data-icon',
+  'data-chart', 'data-colors', 'data-type',
   'type', 'checked', 'disabled', 'open', 'style', 'align',
   // KaTeX / SVG attributes
   'xmlns', 'viewBox', 'd', 'fill', 'stroke', 'stroke-width',
@@ -62,16 +52,10 @@ export const SANITIZE_ATTR = [
   'rowspacing', 'columnspacing', 'href', 'aria-hidden',
 ];
 
-// Internal re-sanitize used ONLY for table.outerHTML, which is re-serialised
-// from DOM back to string before passing to TableWithControls.
 const sanitizeHtml = (html: string): string =>
   DOMPurify.sanitize(html, { ALLOWED_TAGS: SANITIZE_TAGS, ALLOWED_ATTR: SANITIZE_ATTR, ALLOW_DATA_ATTR: true });
 
 // ─── § Slug helper ────────────────────────────────────────────────────────────
-//
-// Converts heading text to an id-safe slug.
-// Must match the slugifyHeading in useTableOfContents.ts — they share the
-// same algorithm so that TOC links and heading ids always align.
 
 function slugifyHeading(text: string): string {
   return text
@@ -83,10 +67,6 @@ function slugifyHeading(text: string): string {
 }
 
 // ─── § Heading styles ─────────────────────────────────────────────────────────
-//
-// Inline styles applied to h1-h6 elements.
-// scrollMarginTop: '5rem' ensures that when a TOC link scrolls to a heading,
-// the heading is not hidden behind the fixed top bar.
 
 const TAG_STYLES: Record<number, React.CSSProperties> = {
   1: { fontSize: 'clamp(1.4rem,3vw,2.25rem)',    fontWeight: 700, marginTop: '2rem',    marginBottom: '1rem',    lineHeight: 1.2,  scrollMarginTop: '5rem' },
@@ -98,12 +78,7 @@ const TAG_STYLES: Record<number, React.CSSProperties> = {
 };
 
 // ─── § Element processors ─────────────────────────────────────────────────────
-//
-// Convention: every processor receives an already-sanitized DOM element and
-// pushes one or more React nodes into the `elements` array.
-// Processors must NOT modify the DOM — they are purely read-only.
 
-// <pre><code> → CodeBlock React component
 const processPreElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const codeElement = element.querySelector('code');
   if (!codeElement) return;
@@ -116,8 +91,6 @@ const processPreElement = (element: Element, key: string, elements: React.ReactN
   elements.push(React.createElement(CodeBlock, { key, code: code.trim(), language }));
 };
 
-// Inline <code> (not inside <pre>) — rendered as a simple styled element.
-// We skip it if the parent is <pre> because processPreElement already handles that case.
 const processCodeElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   if (element.parentElement?.tagName.toLowerCase() === 'pre') return;
   elements.push(
@@ -129,13 +102,11 @@ const processCodeElement = (element: Element, key: string, elements: React.React
   );
 };
 
-// h1-h6 — assigns a slug id for TOC anchor linking
 const processHeadingElement = (element: Element, tagName: string, key: string, elements: React.ReactNode[]) => {
   const text  = element.textContent || '';
   const id    = element.id || slugifyHeading(text);
   const level = Number.parseInt(tagName[1], 10);
   const Tag   = tagName as keyof JSX.IntrinsicElements;
-  // innerHTML is already sanitized — safe to use directly via dangerouslySetInnerHTML
   elements.push(
     React.createElement(Tag, {
       key, id,
@@ -145,7 +116,6 @@ const processHeadingElement = (element: Element, tagName: string, key: string, e
   );
 };
 
-// ul / ol — task lists get a special className so CSS can style the checkboxes
 const processListElement = (element: Element, tagName: string, key: string, elements: React.ReactNode[]) => {
   const hasTaskList = element.querySelector('input[type="checkbox"]');
   elements.push(
@@ -157,8 +127,6 @@ const processListElement = (element: Element, tagName: string, key: string, elem
   );
 };
 
-// <a> — if the sole child is an <img>, treat the whole thing as an ImageCard
-// so clicking the image opens the lightbox rather than navigating.
 const processLinkElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const children = Array.from(element.childNodes).filter(
     (n) => !(n.nodeType === Node.TEXT_NODE && !n.textContent?.trim())
@@ -184,7 +152,6 @@ const processLinkElement = (element: Element, key: string, elements: React.React
   );
 };
 
-// Standalone <img> → ImageCard with lightbox
 const processImageElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   elements.push(React.createElement(ImageCard, {
     key,
@@ -203,9 +170,6 @@ const processBlockquoteElement = (element: Element, key: string, elements: React
   );
 };
 
-// <table> → TableWithControls (sortable, filterable, fullscreen modal)
-// The table HTML is re-serialised from DOM to string here, so one sanitize
-// pass is appropriate before handing it off to the table component.
 const processTableElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const tableHtml = sanitizeHtml(element.outerHTML);
   elements.push(
@@ -222,7 +186,6 @@ const processTableElement = (element: Element, key: string, elements: React.Reac
   );
 };
 
-// Generic inline wrapper for strong / em / u / del / sub / sup
 const processInlineElement = (tag: string, element: Element, key: string, elements: React.ReactNode[]) => {
   elements.push(
     React.createElement(tag, {
@@ -232,8 +195,6 @@ const processInlineElement = (tag: string, element: Element, key: string, elemen
   );
 };
 
-// <details><summary> — content inside is recursively parsed so nested custom
-// blocks (tables, code blocks) work correctly inside accordions.
 const processDetailsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const summary     = element.querySelector('summary');
   const summaryText = summary?.textContent || 'Подробности';
@@ -249,8 +210,6 @@ const processDetailsElement = (element: Element, key: string, elements: React.Re
   );
 };
 
-// .custom-alert[data-alert-type] → Alert component
-// Generated by preprocessMarkdownExtensions from :::note / :::tip / etc.
 const processAlertElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const alertType = element.dataset.alertType as 'note' | 'tip' | 'important' | 'warning' | 'caution';
   if (!alertType) return;
@@ -258,7 +217,6 @@ const processAlertElement = (element: Element, key: string, elements: React.Reac
   elements.push(React.createElement(Alert, { key, type: alertType }, ...contentElements));
 };
 
-// .custom-card → Card (with optional color, title, icon from data attributes)
 const processCardElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const contentElements = parseHtmlToReact(element.innerHTML);
   elements.push(
@@ -270,7 +228,6 @@ const processCardElement = (element: Element, key: string, elements: React.React
   );
 };
 
-// .custom-cardgrid → CardGrid wrapping individual Card children
 const processCardGridElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const cols = Number.parseInt(element.dataset.cols || '2', 10);
   const cardElements: React.ReactNode[] = [];
@@ -280,7 +237,6 @@ const processCardGridElement = (element: Element, key: string, elements: React.R
   elements.push(React.createElement(CardGridWithContext, { key, cols }, ...cardElements));
 };
 
-// .custom-columns → Columns layout component
 const processColumnsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const layout = (element.dataset.layout || 'equal') as ColumnsLayout;
   const colElements: React.ReactNode[] = [];
@@ -293,8 +249,6 @@ const processColumnsElement = (element: Element, key: string, elements: React.Re
   elements.push(React.createElement(ColumnsWithContext, { key, layout }, ...colElements));
 };
 
-// .custom-steps → Stepper component
-// Each .custom-step child carries title/status/color via data attributes.
 const processStepsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const steps: StepData[] = [];
   for (const stepEl of Array.from(element.children)) {
@@ -311,9 +265,35 @@ const processStepsElement = (element: Element, key: string, elements: React.Reac
   elements.push(React.createElement(StepperWithContext, { key, steps }));
 };
 
-// [uic:component-id] inside a <p> → UIComponentViewer
-// Authors embed interactive component demos in markdown using this shortcode.
-// Returns true if the paragraph was consumed as a UI component.
+// ─── § Chart processor ────────────────────────────────────────────────────────
+
+const processChartElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  const type   = (element.getAttribute('data-type')   || 'bar') as import('../components/ChartBlock').ChartType;
+  const title  =  element.getAttribute('data-title')  || undefined;
+  const colors =  element.getAttribute('data-colors') || '';
+
+  const palette = colors
+    ? colors.split(',').map(c => c.trim()).filter(Boolean)
+    : undefined;
+
+  let data: Record<string, unknown>[] = [];
+  const raw = element.getAttribute('data-chart') || '[]';
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) data = parsed;
+  } catch { /* невалидный JSON — пустой чарт */ }
+
+  elements.push(
+    React.createElement(
+      Suspense,
+      { key, fallback: React.createElement('div', { style: { height: 320 } }) },
+      React.createElement(LazyChartBlock, { type, data, title, colors: palette })
+    )
+  );
+};
+
+// ─── § UIComponent processor ─────────────────────────────────────────────────
+
 const processUIComponent = (
   element: Element,
   key: string,
@@ -330,16 +310,12 @@ const processUIComponent = (
   return true;
 };
 
-// Raw text nodes — only emitted when they contain non-whitespace content
 const processTextNode = (node: ChildNode, key: string, elements: React.ReactNode[]) => {
   const text = node.textContent || '';
   if (text.trim()) elements.push(React.createElement('span', { key }, text));
 };
 
 // ─── § Figure processor ───────────────────────────────────────────────────────
-//
-// <figure><img><figcaption> → ImageCard with the caption as the title.
-// Falls back to recursive parsing if there is no <img> inside.
 
 const processFigureElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const img        = element.querySelector('img');
@@ -364,12 +340,6 @@ const processFigureElement = (element: Element, key: string, elements: React.Rea
 };
 
 // ─── § KaTeX processors ───────────────────────────────────────────────────────
-//
-// KaTeX nodes are extracted before DOMPurify runs (to prevent mangling)
-// and stored in katexStore with a data-katex-idx placeholder.
-// These processors restore them into the React tree using
-// dangerouslySetInnerHTML — safe because the KaTeX HTML was generated by us,
-// not from user input.
 
 const processKatexBlock = (element: Element, key: string, elements: React.ReactNode[]) => {
   elements.push(
@@ -392,17 +362,11 @@ const processKatexInline = (element: Element, key: string, elements: React.React
 };
 
 // ─── § Div dispatcher ─────────────────────────────────────────────────────────
-//
-// <div> elements are dispatched by className.
-// Order matters: more specific classes should come first.
-// If no class matches, child nodes are processed recursively.
-//
-// NOTE: diagram classes (mermaid, diagram, etc.) are intentionally absent.
-//       Diagrams were removed from production and must not be added back.
 
 const DIV_CLASS_HANDLERS: Array<[string, (el: Element, key: string, els: React.ReactNode[]) => void]> = [
   ['katex-block',     processKatexBlock],
   ['custom-alert',    processAlertElement],
+  ['custom-chart',    processChartElement],
   ['custom-cardgrid', processCardGridElement],
   ['custom-card',     processCardElement],
   ['custom-columns',  processColumnsElement],
@@ -421,25 +385,10 @@ const processDivElement = (
       return;
     }
   }
-  // Unknown div — recurse into children so we don't silently drop content
   if (element.childNodes.length > 0) processNodes(element.childNodes, key);
 };
 
 // ─── § Paragraph dispatcher ───────────────────────────────────────────────────
-//
-// <p> elements are split into "runs" because a single markdown paragraph can
-// contain a mix of text and images, e.g.:
-//
-//   Some intro text
-//   ![image](/foo.png)
-//   More text after
-//
-// marked() wraps all of this in one <p>. We split it into separate elements
-// so each image becomes an ImageCard while the text remains a <p>.
-//
-// Special cases handled before splitting:
-//   1. [uic:id] shortcode  → UIComponentViewer (early return)
-//   2. KaTeX placeholders  → restored inline without splitting
 
 function getImgFromLink(el: Element): Element | null {
   const nonEmpty = Array.from(el.childNodes).filter(
@@ -503,13 +452,11 @@ const processParagraphElement = (
   elements: React.ReactNode[],
   katexStore: Array<{ tag: 'div' | 'span'; cls: string; inner: string }>
 ): void => {
-  // Case 1: UIComponent shortcode — consume the whole paragraph
   if (processUIComponent(element, key, element.textContent || '', elements)) return;
 
   const hasKatex = element.querySelector('[data-katex-idx]');
   const hasImg   = element.querySelector('img');
 
-  // Case 2: plain paragraph — fast path
   if (!hasKatex && !hasImg) {
     elements.push(
       React.createElement('p', {
@@ -520,7 +467,6 @@ const processParagraphElement = (
     return;
   }
 
-  // Case 3: paragraph with KaTeX but no images — restore KaTeX nodes inline
   if (hasKatex && !hasImg) {
     const kids: React.ReactNode[] = [];
     Array.from(element.childNodes).forEach((child, ci) => {
@@ -556,7 +502,6 @@ const processParagraphElement = (
     return;
   }
 
-  // Case 4: paragraph contains images — split into text runs and image cards
   const runs = splitParagraphIntoRuns(element);
   runs.forEach((run, i) => {
     const runKey = `${key}-r${i}`;
@@ -579,10 +524,6 @@ const processParagraphElement = (
 };
 
 // ─── § Main element dispatcher ────────────────────────────────────────────────
-//
-// Routes a DOM element to the appropriate processor by tagName.
-// <div> and <p> are handled by their own dispatchers above.
-// Unknown tags with child content are recursed into (no silent drops).
 
 const HEADING_TAGS = new Set(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']);
 const INLINE_TAGS  = new Set(['strong', 'em', 'u', 'del', 'sub', 'sup']);
@@ -615,26 +556,10 @@ const processElement = (
 };
 
 // ─── § Public API ─────────────────────────────────────────────────────────────
-//
-// parseHtmlToReact(html) — the sole public export.
-//
-// Full pipeline:
-//   1. Parse html string into a raw DOM document
-//   2. Extract KaTeX nodes before DOMPurify (stored in katexStore with
-//      data-katex-idx placeholders so DOMPurify can't mangle them)
-//   3. Single DOMPurify.sanitize() pass on the entire document
-//   4. Walk the sanitized DOM, dispatching each node to its processor
-//   5. Return the flat array of React nodes
-//
-// The resulting array is spread into a <div data-article-content> in DocContent.
 
 export const parseHtmlToReact = (html: string): React.ReactNode[] => {
   const rawDoc = new DOMParser().parseFromString(html, 'text/html');
 
-  // Step 1: protect KaTeX nodes from DOMPurify mangling.
-  // DOMPurify strips SVG attributes and MathML elements that KaTeX needs.
-  // We replace them with placeholder <div data-katex-idx="N"> before sanitizing
-  // and restore them in processParagraphElement / processKatexBlock.
   const katexStore: Array<{ tag: 'div' | 'span'; cls: string; inner: string }> = [];
 
   rawDoc.querySelectorAll('div.katex-block, span.katex-inline').forEach((el) => {
@@ -647,7 +572,6 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
     el.replaceWith(placeholder);
   });
 
-  // Step 2: single DOMPurify sanitize — all processors below work with this DOM
   const sanitized = DOMPurify.sanitize(rawDoc.body.innerHTML, {
     ALLOWED_TAGS: [...SANITIZE_TAGS],
     ALLOWED_ATTR: [...SANITIZE_ATTR],
@@ -659,7 +583,6 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
   const doc      = new DOMParser().parseFromString(sanitized, 'text/html');
   const elements: React.ReactNode[] = [];
 
-  // Step 3: walk and dispatch
   const processNodes = (nodes: NodeListOf<ChildNode>, parentKey = '') => {
     Array.from(nodes).forEach((node, index) => {
       const key = `${parentKey}-${index}`;
@@ -670,7 +593,6 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       const element = node as Element;
       const tagName = element.tagName.toLowerCase();
 
-      // Restore KaTeX placeholder before any other processing
       const katexIdx = element.getAttribute('data-katex-idx');
       if (katexIdx !== null) {
         const stored = katexStore[Number.parseInt(katexIdx, 10)];
