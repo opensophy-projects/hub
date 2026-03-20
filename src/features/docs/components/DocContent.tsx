@@ -1,13 +1,11 @@
 import React, { useState, useMemo, Suspense, lazy, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
-import Sidebar from '@/features/navigation/components/Sidebar';
+import Navigation from '@/features/navigation/components/Navigation';
 import { parseHtmlToReact, TableContext } from '@/shared/lib/htmlParser';
 import { useTableOfContents } from '../hooks/useTableOfContents';
 import { useScrollProgress } from '../hooks/useScrollProgress';
-import { scrollToElement } from '../utils/scrollUtils';
-import { useIsDesktop } from '@/shared/hooks/useBreakpoint';
-import { Clock, CalendarDays, ArrowUp, ChevronRight, RefreshCw } from 'lucide-react';
+import { Clock, CalendarDays, ChevronRight, RefreshCw } from 'lucide-react';
 import DotWaveBackground from './DotWaveBackground';
 import AskAIButton from './AskAIButton';
 
@@ -15,130 +13,116 @@ const LazyTableModal = lazy(() => import('@/features/table/components/TableModal
 
 interface DocContentProps {
   doc: {
-    id: string;
-    title: string;
-    slug: string;
-    description: string;
-    type?: string;
-    typename?: string;
-    content?: string;
-    author?: string;
-    date?: string;
-    updated?: string;
-    tags?: string[];
-    navSlug?: string;
-    navTitle?: string;
+    id: string; title: string; slug: string; description: string;
+    type?: string; typename?: string; content?: string;
+    author?: string; date?: string; updated?: string;
+    tags?: string[]; navSlug?: string; navTitle?: string;
   };
 }
 
 function stripHtmlTags(html: string): string {
-  return html.split('<').map((chunk, i) => (i === 0 ? chunk : chunk.slice(chunk.indexOf('>') + 1))).join(' ');
+  return html.split('<').map((c, i) => i === 0 ? c : c.slice(c.indexOf('>') + 1)).join(' ');
 }
 
 function estimateReadTime(content: string): number {
   if (!content) return 1;
-  const text  = stripHtmlTags(content).replaceAll(/\s+/g, ' ').trim();
-  const words = text.split(/\s+/).filter(Boolean).length;
+  const words = stripHtmlTags(content).replaceAll(/\s+/g, ' ').trim().split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.round(words / 200));
 }
 
-function useActiveHeading(toc: ReturnType<typeof useTableOfContents>): string {
+function useActiveHeading(toc: { id: string; text: string; level: number }[]): string {
   const [activeId, setActiveId] = useState('');
   useEffect(() => {
-    if (toc.length === 0) return;
-    const headingEls = toc.map(({ id }) => document.getElementById(id)).filter((el): el is HTMLElement => el !== null);
-    const observer = new IntersectionObserver(
-      (entries) => {
+    if (!toc.length) return;
+    const els = toc.map(({ id }) => document.getElementById(id)).filter((el): el is HTMLElement => el !== null);
+    const obs = new IntersectionObserver(
+      entries => {
         const visible = entries.filter(e => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible.length > 0) setActiveId(visible[0].target.id);
+        if (visible.length) setActiveId(visible[0].target.id);
       },
       { rootMargin: '-10% 0px -70% 0px', threshold: 0 }
     );
-    headingEls.forEach(el => observer.observe(el));
-    return () => observer.disconnect();
+    els.forEach(el => obs.observe(el));
+    return () => obs.disconnect();
   }, [toc]);
   return activeId;
 }
 
-function getTocItemVisuals(isActive: boolean, absDist: number, hasActive: boolean) {
-  if (!hasActive) return { opacity: 0.6, glowOpacity: 0 };
-  if (isActive)   return { opacity: 1,   glowOpacity: 1 };
-  return { opacity: Math.max(0.35, 0.8 - absDist * 0.2), glowOpacity: Math.max(0, 0.55 - absDist * 0.18) };
-}
-
-function useHeroColors(isDark: boolean) {
-  return {
-    heroBg:          isDark ? '#0a0a0a' : '#E8E7E3',
-    borderColor:     isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
-    metaTextColor:   isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.75)',
-    metaBadgeBg:     isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)',
-    metaBadgeBorder: isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)',
-    textPrimary:     isDark ? '#ffffff' : '#000000',
-  };
-}
-
-const HeroBreadcrumbs: React.FC<{ typename?: string; textPrimary: string }> = ({ typename, textPrimary }) => {
-  if (!typename?.trim()) return null;
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap', fontSize: '0.8rem' }}>
-      <a href="/" style={{ color: textPrimary, textDecoration: 'none', opacity: 0.7 }} onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}>Главная</a>
-      <ChevronRight size={14} style={{ opacity: 0.4, color: textPrimary }} />
-      <span style={{ color: textPrimary, fontWeight: 600 }}>{typename}</span>
-      <ChevronRight size={14} style={{ opacity: 0.4, color: textPrimary }} />
-    </div>
-  );
-};
-
-const HeroMeta: React.FC<{ date?: string; updated?: string; typename?: string; metaTextColor: string; metaBadgeBg: string; metaBadgeBorder: string; }> = ({ date, updated, typename, metaTextColor, metaBadgeBg, metaBadgeBorder }) => {
-  const locale = 'ru-RU';
+// Hero
+const DocHero: React.FC<{ doc: DocContentProps['doc']; isDark: boolean; readTime: number }> = ({ doc, isDark, readTime }) => {
+  const heroBg      = isDark ? '#0a0a0a' : '#E8E7E3';
+  const borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+  const metaClr     = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.75)';
+  const badgeBg     = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
+  const badgeBdr    = isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
+  const textPrimary = isDark ? '#ffffff' : '#000000';
+  const locale      = 'ru-RU';
   const opts: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-  const formattedDate    = date    ? new Date(date).toLocaleDateString(locale, opts)    : null;
-  const formattedUpdated = updated ? new Date(updated).toLocaleDateString(locale, opts) : null;
-  const dot = <span style={{ color: metaTextColor, fontSize: '0.7rem' }}>·</span>;
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-      {formattedDate && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: metaTextColor }}><CalendarDays size={13} style={{ opacity: 0.7 }} />{formattedDate}</span>}
-      {formattedUpdated && <>{formattedDate && dot}<span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: metaTextColor }}><RefreshCw size={13} style={{ opacity: 0.7 }} />Обновлено: {formattedUpdated}</span></>}
-      {typename?.trim() && <>{(formattedDate || formattedUpdated) && dot}<span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: metaTextColor, background: metaBadgeBg, border: `1px solid ${metaBadgeBorder}`, borderRadius: '6px', padding: '2px 8px' }}>{typename}</span></>}
-    </div>
-  );
-};
+  const fmtDate     = doc.date    ? new Date(doc.date).toLocaleDateString(locale, opts)    : null;
+  const fmtUpdated  = doc.updated ? new Date(doc.updated).toLocaleDateString(locale, opts) : null;
+  const authors     = doc.author  ? doc.author.split(',').map(a => a.trim()).filter(Boolean) : [];
 
-const HeroAuthors: React.FC<{ author?: string; metaTextColor: string; textPrimary: string }> = ({ author, metaTextColor, textPrimary }) => {
-  const authors = author ? author.split(',').map(a => a.trim()).filter(Boolean) : [];
-  if (authors.length === 0) return null;
   return (
-    <>
-      <span style={{ color: metaTextColor, fontSize: '0.75rem' }}>·</span>
-      <span style={{ fontSize: '0.8rem', color: metaTextColor }}>
-        {authors.length === 1 ? 'Автор' : 'Авторы'}:{' '}
-        {authors.map((a, i) => (<React.Fragment key={a}><strong style={{ color: textPrimary, fontWeight: 600 }}>{a}</strong>{i < authors.length - 1 && ', '}</React.Fragment>))}
-      </span>
-    </>
-  );
-};
-
-const DocHero: React.FC<{ doc: DocContentProps['doc']; isDark: boolean; readTime: number; markdownContent?: string; }> = ({ doc, isDark, readTime, markdownContent }) => {
-  const colors = useHeroColors(isDark);
-  return (
-    <div style={{ background: colors.heroBg, borderBottom: `1px solid ${colors.borderColor}`, padding: '3rem 2rem 2.5rem', position: 'relative' }}>
-      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', contain: 'strict' }}><DotWaveBackground isDark={isDark} /></div>
+    <div style={{ background: heroBg, borderBottom: `1px solid ${borderColor}`, padding: '3rem 2rem 2.5rem', position: 'relative' }}>
+      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', contain: 'strict' }}>
+        <DotWaveBackground isDark={isDark} />
+      </div>
       <div style={{ position: 'relative', zIndex: 1 }}>
-        <HeroBreadcrumbs typename={doc.typename} textPrimary={colors.textPrimary} />
-        <HeroMeta date={doc.date} updated={doc.updated} typename={doc.typename} metaTextColor={colors.metaTextColor} metaBadgeBg={colors.metaBadgeBg} metaBadgeBorder={colors.metaBadgeBorder} />
-        <h1 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.8rem)', fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.02em', color: isDark ? '#ffffff' : '#0a0a0a', margin: '0 0 1rem 0', fontFamily: 'system-ui, -apple-system, sans-serif', maxWidth: '820px' }}>{doc.title}</h1>
-        {doc.description && <p style={{ fontSize: 'clamp(0.9rem, 1.5vw, 1.05rem)', lineHeight: 1.65, color: colors.textPrimary, margin: '0 0 1.75rem 0', maxWidth: '680px' }}>{doc.description}</p>}
+        {/* Breadcrumbs */}
+        {doc.typename?.trim() && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap', fontSize: '0.8rem' }}>
+            <a href="/" style={{ color: textPrimary, textDecoration: 'none', opacity: 0.7 }}>Главная</a>
+            <ChevronRight size={14} style={{ opacity: 0.4, color: textPrimary }} />
+            <span style={{ color: textPrimary, fontWeight: 600 }}>{doc.typename}</span>
+            <ChevronRight size={14} style={{ opacity: 0.4, color: textPrimary }} />
+          </div>
+        )}
+        {/* Meta */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+          {fmtDate && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: metaClr }}><CalendarDays size={13} style={{ opacity: 0.7 }} />{fmtDate}</span>}
+          {fmtUpdated && <><span style={{ color: metaClr, fontSize: '0.7rem' }}>·</span><span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: metaClr }}><RefreshCw size={13} style={{ opacity: 0.7 }} />Обновлено: {fmtUpdated}</span></>}
+          {doc.typename?.trim() && <span style={{ fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: metaClr, background: badgeBg, border: `1px solid ${badgeBdr}`, borderRadius: '6px', padding: '2px 8px' }}>{doc.typename}</span>}
+        </div>
+        {/* Title */}
+        <h1 style={{ fontSize: 'clamp(1.6rem,4vw,2.8rem)', fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.02em', color: isDark ? '#ffffff' : '#0a0a0a', margin: '0 0 1rem 0', fontFamily: 'system-ui,-apple-system,sans-serif', maxWidth: '820px' }}>
+          {doc.title}
+        </h1>
+        {doc.description && (
+          <p style={{ fontSize: 'clamp(0.9rem,1.5vw,1.05rem)', lineHeight: 1.65, color: textPrimary, margin: '0 0 1.75rem 0', maxWidth: '680px' }}>
+            {doc.description}
+          </p>
+        )}
+        {/* Footer row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', paddingTop: '1rem' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: colors.metaTextColor }}><Clock size={13} style={{ opacity: 0.7 }} />{readTime} мин чтения</span>
-          <HeroAuthors author={doc.author} metaTextColor={colors.metaTextColor} textPrimary={colors.textPrimary} />
-          <div style={{ marginLeft: 'auto' }}><AskAIButton isDark={isDark} pageTitle={doc.title} pageSlug={doc.slug} markdownContent={markdownContent} /></div>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: metaClr }}>
+            <Clock size={13} style={{ opacity: 0.7 }} />{readTime} мин чтения
+          </span>
+          {authors.length > 0 && (
+            <>
+              <span style={{ color: metaClr, fontSize: '0.75rem' }}>·</span>
+              <span style={{ fontSize: '0.8rem', color: metaClr }}>
+                {authors.length === 1 ? 'Автор' : 'Авторы'}:{' '}
+                {authors.map((a, i) => (
+                  <React.Fragment key={a}>
+                    <strong style={{ color: textPrimary, fontWeight: 600 }}>{a}</strong>
+                    {i < authors.length - 1 && ', '}
+                  </React.Fragment>
+                ))}
+              </span>
+            </>
+          )}
+          <div style={{ marginLeft: 'auto' }}>
+            <AskAIButton isDark={isDark} pageTitle={doc.title} pageSlug={doc.slug} markdownContent={doc.content} />
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-const TOC_PANEL_WIDTH = '18rem';
+// DocContentMain
+const SIDEBAR_W = '20rem';
+const TOC_W     = '18rem';
 
 const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const { isDark } = useTheme();
@@ -147,76 +131,49 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const toc            = useTableOfContents(doc);
   const progressBarRef = useScrollProgress();
   const activeId       = useActiveHeading(toc);
-  
-  // КРИТИЧНО: useState(false) — инициализируется false, не показывает sidebar до mount
-  const isDesktop = useIsDesktop();
-  const hasToc    = toc.length > 0;
 
+  // isDesktop — синхронно с Navigation
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth > 820);
+    check();
+    window.addEventListener('resize', check, { passive: true });
+    document.addEventListener('astro:after-swap', check);
+    document.addEventListener('astro:page-load', check);
+    return () => {
+      window.removeEventListener('resize', check);
+      document.removeEventListener('astro:after-swap', check);
+      document.removeEventListener('astro:page-load', check);
+    };
+  }, []);
+
+  const hasToc        = toc.length > 0;
   const htmlContent   = useMemo(() => doc.content || '', [doc.content]);
-  const contentNodes  = useMemo(() => { if (!htmlContent) return []; return parseHtmlToReact(htmlContent); }, [htmlContent]);
+  const contentNodes  = useMemo(() => parseHtmlToReact(htmlContent), [htmlContent]);
   const readTime      = useMemo(() => estimateReadTime(doc.content || htmlContent), [doc.content, htmlContent]);
-  const tableContextValue = useMemo(() => ({ onTableClick: (html: string) => setFullscreenTableHtml(html), isDark }), [isDark]);
+  const tableCtx      = useMemo(() => ({ onTableClick: (html: string) => setFullscreenTableHtml(html), isDark }), [isDark]);
 
   return (
     <div style={{ minHeight: '100vh' }}>
-      {/* Прогресс-бар */}
-      <div ref={progressBarRef} className={`fixed top-0 left-0 h-1 ${isDark ? 'bg-white' : 'bg-black'}`} style={{ width: '0%', zIndex: 999, transition: 'none' }} />
+      {/* Progress bar */}
+      <div ref={progressBarRef} style={{ position: 'fixed', top: 0, left: 0, height: '2px', width: '0%', background: isDark ? '#fff' : '#000', zIndex: 999, transition: 'none' }} />
 
-      {/* Sidebar — ТОЛЬКО десктоп, Sidebar сам проверяет isDesktop внутри */}
-      <Sidebar currentDocSlug={doc.slug} />
+      {/* Единая навигация */}
+      <Navigation currentDocSlug={doc.slug} toc={toc} activeHeadingId={activeId} />
 
-      {/* TOC aside — ТОЛЬКО десктоп, строго условный рендер */}
-      {hasToc && isDesktop && (
-        <aside
-          className={`flex flex-col fixed right-0 z-40 border-l overflow-hidden ${isDark ? 'bg-[#0F0F0F] border-white/10' : 'bg-[#E1E0DC] border-black/10'}`}
-          style={{ top: 0, width: TOC_PANEL_WIDTH, height: '100vh', transition: 'none' }}
-        >
-          <div className={`flex-shrink-0 px-4 py-4 border-b ${isDark ? 'border-white/10' : 'border-black/10'}`}>
-            <div className="flex items-center justify-between gap-2">
-              <h2 className={`text-sm font-bold uppercase tracking-widest ${isDark ? 'text-white/50' : 'text-black/50'}`}>На этой странице</h2>
-              <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-lg border transition-colors ${isDark ? 'text-white/60 hover:bg-white/5 hover:text-white border-white/10' : 'text-black/60 hover:bg-black/5 hover:text-black border-black/10'}`} title="Наверх">
-                <ArrowUp size={15} />
-                <span className="text-[9px] font-medium leading-none">Наверх</span>
-              </button>
-            </div>
-          </div>
-          <div className="flex-1 overflow-y-auto py-3">
-            <nav className="space-y-0.5">
-              {toc.map((item, index) => {
-                const activeIndex = toc.findIndex(t => t.id === activeId);
-                const distance    = index - activeIndex;
-                const isActive    = distance === 0 && activeId !== '';
-                const absDist     = Math.abs(distance);
-                const accentColor = isDark ? '#ffffff' : '#000000';
-                const hasActive   = activeId !== '';
-                const { opacity, glowOpacity } = getTocItemVisuals(isActive, absDist, hasActive);
-                const borderLeftColor = isActive ? accentColor : glowOpacity > 0 ? (isDark ? `rgba(255,255,255,${glowOpacity})` : `rgba(0,0,0,${glowOpacity})`) : 'transparent';
-                const boxShadow = isActive ? `inset 3px 0 10px -2px ${accentColor}88` : glowOpacity > 0 ? `inset 3px 0 7px -3px ${isDark ? `rgba(255,255,255,${glowOpacity * 0.4})` : `rgba(0,0,0,${glowOpacity * 0.4})`}` : 'none';
-                return (
-                  <button key={item.id} onClick={() => scrollToElement(item.id)} className="w-full text-left py-2 pr-3 text-sm leading-snug"
-                    style={{ paddingLeft: `${14 + (item.level - 2) * 14}px`, color: isActive ? (isDark ? '#ffffff' : '#000000') : (isDark ? `rgba(255,255,255,${opacity})` : `rgba(0,0,0,${opacity})`), borderLeft: '2px solid', borderLeftColor, boxShadow, textShadow: isActive ? `0 0 12px ${accentColor}66` : 'none' }}>
-                    {item.text}
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-        </aside>
-      )}
-
-      {/* Основной контент */}
+      {/* Main */}
       <main
         className={`min-h-screen ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}
         style={{
-          marginLeft:   isDesktop ? '20rem' : '0',
-          marginRight:  hasToc && isDesktop ? TOC_PANEL_WIDTH : '0',
+          marginLeft:   isDesktop ? SIDEBAR_W : '0',
+          marginRight:  isDesktop && hasToc ? TOC_W : '0',
           marginBottom: isDesktop ? '0' : '3.5rem',
           transition:   'none',
         }}
       >
-        <DocHero doc={doc} isDark={isDark} readTime={readTime} markdownContent={doc.content} />
-        <article className="flex-1 pb-12 w-full" style={{ paddingLeft: '2rem', paddingRight: '2rem', paddingTop: '2rem' }}>
-          <TableContext.Provider value={tableContextValue}>
+        <DocHero doc={doc} isDark={isDark} readTime={readTime} />
+        <article style={{ padding: '2rem 2rem 3rem' }}>
+          <TableContext.Provider value={tableCtx}>
             <div data-article-content className={`prose max-w-none w-full overflow-x-auto ${isDark ? 'text-white' : 'text-black'}`}>
               {contentNodes}
             </div>
