@@ -14,37 +14,47 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 const KEY_THEME  = 'theme';
 const KEY_SEARCH = 'hub:search';
 
+// Custom event name для cross-island синхронизации внутри одной страницы
+const THEME_CHANGE_EVENT = 'hub:theme-change';
+
 const getInitialTheme = (): boolean => {
   if (typeof window === 'undefined') return true;
   return localStorage.getItem(KEY_THEME) !== 'light';
 };
 
-const applyTheme = (isDark: boolean) => {
+export const applyTheme = (isDark: boolean) => {
   if (typeof document === 'undefined') return;
   if (isDark) {
     document.documentElement.classList.add('dark');
     document.documentElement.style.colorScheme = 'dark';
+    document.documentElement.style.backgroundColor = '#0a0a0a';
   } else {
     document.documentElement.classList.remove('dark');
     document.documentElement.style.colorScheme = 'light';
+    document.documentElement.style.backgroundColor = '#E8E7E3';
   }
 };
 
-function broadcastStorage(key: string, value: string) {
+function broadcastTheme(isDark: boolean) {
   try {
-    localStorage.setItem(key, value);
+    localStorage.setItem(KEY_THEME, isDark ? 'dark' : 'light');
+  } catch {}
+  // CustomEvent работает внутри одной страницы между всеми React islands
+  window.dispatchEvent(new CustomEvent(THEME_CHANGE_EVENT, { detail: { isDark } }));
+  // StorageEvent для других вкладок
+  try {
     window.dispatchEvent(
-      new StorageEvent('storage', { key, newValue: value, storageArea: localStorage })
+      new StorageEvent('storage', {
+        key: KEY_THEME,
+        newValue: isDark ? 'dark' : 'light',
+        storageArea: localStorage,
+      })
     );
-  } catch {
-    // SSR / private browsing
-  }
+  } catch {}
 }
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isDark, setIsDark] = useState<boolean>(getInitialTheme);
-  // isSidebarOpen здесь только для legacy совместимости с MobileNavbar
-  // Реальное управление sidebar — через useIsDesktop в каждом компоненте
   const [isSidebarOpen, setIsSidebarOpenState] = useState(false);
   const [isSearchOpen, setIsSearchOpenState] = useState(false);
 
@@ -53,6 +63,14 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [isDark]);
 
   useEffect(() => {
+    // Слушаем CustomEvent — работает между islands на одной странице
+    const onCustom = (e: Event) => {
+      const detail = (e as CustomEvent<{ isDark: boolean }>).detail;
+      setIsDark(detail.isDark);
+      applyTheme(detail.isDark);
+    };
+
+    // Слушаем StorageEvent — работает между вкладками
     const onStorage = (e: StorageEvent) => {
       if (e.key === KEY_THEME && e.newValue !== null) {
         const next = e.newValue !== 'light';
@@ -63,15 +81,20 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setIsSearchOpenState(e.newValue === 'true');
       }
     };
+
+    window.addEventListener(THEME_CHANGE_EVENT, onCustom);
     window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener(THEME_CHANGE_EVENT, onCustom);
+      window.removeEventListener('storage', onStorage);
+    };
   }, []);
 
   const toggleTheme = useCallback((_event?: React.MouseEvent) => {
     const next = !isDark;
-    broadcastStorage(KEY_THEME, next ? 'dark' : 'light');
     setIsDark(next);
     applyTheme(next);
+    broadcastTheme(next);
   }, [isDark]);
 
   const setSidebarOpen = useCallback((open: boolean) => {
@@ -80,32 +103,22 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const setSearchOpen = useCallback((open: boolean) => {
     setIsSearchOpenState(open);
-    broadcastStorage(KEY_SEARCH, String(open));
+    try { localStorage.setItem(KEY_SEARCH, String(open)); } catch {}
+    window.dispatchEvent(
+      new StorageEvent('storage', { key: KEY_SEARCH, newValue: String(open), storageArea: localStorage })
+    );
   }, []);
 
   const value = useMemo<ThemeContextType>(
-    () => ({
-      isDark,
-      toggleTheme,
-      isSidebarOpen,
-      setSidebarOpen,
-      isSearchOpen,
-      setSearchOpen,
-    }),
+    () => ({ isDark, toggleTheme, isSidebarOpen, setSidebarOpen, isSearchOpen, setSearchOpen }),
     [isDark, toggleTheme, isSidebarOpen, setSidebarOpen, isSearchOpen, setSearchOpen]
   );
 
-  return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };
 
 export const useTheme = (): ThemeContextType => {
   const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within ThemeProvider');
-  }
+  if (!context) throw new Error('useTheme must be used within ThemeProvider');
   return context;
 };
