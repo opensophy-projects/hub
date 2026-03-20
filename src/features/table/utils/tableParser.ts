@@ -1,13 +1,11 @@
 import type { ParsedTable } from '../types/table';
 
 function getAlignment(element: Element): 'left' | 'center' | 'right' | null {
-  // Проверяем атрибут align
   const alignAttr = element.getAttribute('align');
   if (alignAttr === 'left' || alignAttr === 'center' || alignAttr === 'right') {
     return alignAttr;
   }
 
-  // Проверяем style text-align
   const style = element.getAttribute('style');
   if (style) {
     if (style.includes('text-align: left') || style.includes('text-align:left')) {
@@ -35,9 +33,11 @@ export function parseTableHtml(tableHtml: string): ParsedTable {
 
   const headerElements = Array.from(table.querySelectorAll('thead th'));
 
-  const headers = headerElements.map((th) => th.innerHTML || '');
+  // FIX: was th.innerHTML — HTML tags rendered as literal text in <span>{header}</span>.
+  // textContent gives the plain string that actually displays correctly.
+  const headers = headerElements.map((th) => th.textContent?.trim() || '');
   const headerAlignments = headerElements.map(getAlignment);
-  
+
   const rows = Array.from(table.querySelectorAll('tbody tr'));
 
   return { headers, rows, headerAlignments };
