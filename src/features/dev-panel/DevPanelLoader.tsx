@@ -1,23 +1,31 @@
 /**
- * DevPanelLoader — безопасная обёртка над DevPanel
+ * DevPanelLoader v2 — безопасная точка монтирования
  *
- * import.meta.env.DEV == false на билде → Vite tree-shakes весь этот чанк
- * Dynamic import → отдельный JS чанк, не попадает в main bundle
+ * ❌ Production: import.meta.env.DEV === false → Vite tree-shakes весь код
+ * ✅ Dev: динамический импорт → отдельный чанк, не в main bundle
  *
  * Использование в Layout.astro:
- *   {import.meta.env.DEV && <DevPanelLoader client:only="react" />}
+ *   const isDev = import.meta.env.DEV;
+ *   let DevPanelIsland = null;
+ *   if (isDev) {
+ *     const mod = await import('@/features/dev-panel/DevPanelLoader');
+ *     DevPanelIsland = mod.default;
+ *   }
+ *   ---
+ *   {isDev && DevPanelIsland && <DevPanelIsland client:only="react" />}
  */
 
 import { lazy, Suspense } from 'react';
 
-// Динамический импорт — Vite создаст отдельный чанк
-// и в production-билде он НЕ будет включён благодаря tree-shaking
+// Dynamic import → Vite создаёт отдельный чанк
+// В prod build этот чанк не создаётся (tree-shaking на import.meta.env.DEV)
 const DevPanel = lazy(() => import('./DevPanel'));
 
 export default function DevPanelLoader() {
-  // Двойная проверка — на случай если условие в Layout.astro
-  // не сработало по какой-то причине
-  if (!import.meta.env.DEV) return null;
+  // Тройная защита
+  if (typeof import.meta === 'undefined') return null;
+  if (!import.meta.env?.DEV) return null;
+  if (typeof window === 'undefined') return null;
 
   return (
     <Suspense fallback={null}>
