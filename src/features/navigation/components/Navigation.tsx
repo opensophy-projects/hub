@@ -159,11 +159,11 @@ const DocLink: React.FC<{ doc: Doc; isDark: boolean; isActive: boolean; onClick?
       textDecoration: 'none',
       borderLeft: `2px solid ${isActive ? t.accent : 'transparent'}`,
       color: isActive ? t.accent : t.fg,
-      fontWeight: isActive ? 600 : 400,
+      fontWeight: 400,
       background: isActive ? t.accentSoft : 'transparent',
     }}>
       {doc.icon && <span style={{ flexShrink: 0, width: 13, height: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fgMuted }}><LucideIcon name={doc.icon} size={12} /></span>}
-      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.title}</span>
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.3 }}>{doc.title}</span>
     </a>
   );
 });
@@ -189,7 +189,7 @@ const CategoryNode: React.FC<{
             {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
           </span>
           {node.icon && <span style={{ width: 13, height: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: t.fgMuted }}><LucideIcon name={node.icon} size={12} /></span>}
-          <span>{node.title}</span>
+          <span style={{ wordBreak: 'break-word', lineHeight: 1.3 }}>{node.title}</span>
         </div>
         {total > 0 && <span style={{ fontSize: '0.67rem', padding: '1px 6px', borderRadius: '4px', background: t.accentSoft, color: t.fgMuted }}>{total}</span>}
       </button>
@@ -365,7 +365,7 @@ const TocPanelContent: React.FC<{
               fontSize: '0.82rem', lineHeight: 1.4, background: 'transparent', border: 'none', cursor: 'pointer',
               borderLeft: '2px solid', borderLeftColor: borderClr, boxShadow: shadow,
               color: isActive ? t.accent : isDark ? `rgba(255,255,255,${opacity})` : `rgba(0,0,0,${opacity})`,
-              fontWeight: isActive ? 600 : 400,
+              fontWeight: 400,
               textShadow: isActive ? `0 0 12px ${t.accent}55` : 'none',
             }}
           >{item.text}</button>
@@ -430,7 +430,7 @@ const RailBtn: React.FC<{
         cursor: 'pointer', borderRadius: '10px', flexShrink: 0,
       }}>
       <span style={{ width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
-      <span style={{ fontSize: '9px', fontWeight: isActive ? 600 : 400, lineHeight: 1, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>{label}</span>
+      <span style={{ fontSize: '9px', fontWeight: 400, lineHeight: 1, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>{label}</span>
     </button>
   );
 };
@@ -578,34 +578,22 @@ const MobilePanel: React.FC<{
 
   const content = (
     <>
-      {/* Backdrop */}
-      <div onClick={onClose} style={{
-        position: 'fixed', inset: 0, zIndex: 61,
-        background: t.overlay,
-        backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
-      }} />
 
-      {/* Panel */}
+
+      {/* Panel — полноэкранный как поиск */}
       <div style={{
-        position: 'fixed', bottom: '3.5rem', left: 0, right: 0,
-        height: type === 'contacts' ? '55dvh' : '78dvh',
+        position: 'fixed', inset: 0,
         zIndex: 62,
         background: t.panelFullBg,
-        borderTop: `1px solid ${t.border}`,
-        borderRadius: '16px 16px 0 0',
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
-        animation: 'mobPanelIn 0.25s cubic-bezier(0.4,0,0.2,1)',
+        animation: 'mobPanelIn 0.22s cubic-bezier(0.4,0,0.2,1)',
+        paddingBottom: '60px',
       }}>
-        <style>{`@keyframes mobPanelIn{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}`}</style>
-
-        {/* Drag handle */}
-        <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'center', paddingTop: '10px', paddingBottom: '4px' }}>
-          <div style={{ width: 40, height: 4, borderRadius: 2, background: t.handle }} />
-        </div>
+        <style>{`@keyframes mobPanelIn{from{transform:translateY(100%)}to{transform:translateY(0)}}`}</style>
 
         {/* Header */}
-        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px 10px', borderBottom: `1px solid ${t.border}` }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: t.fgMuted }}>{titles[type]}</span>
+        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '52px 16px 12px', borderBottom: `1px solid ${t.border}` }}>
+          <span style={{ fontSize: '0.95rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: t.fg }}>{titles[type]}</span>
           <button onClick={onClose}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: '7px', border: 'none', background: t.hov, color: t.fgMuted, cursor: 'pointer' }}>
             <X size={14} />
@@ -615,7 +603,7 @@ const MobilePanel: React.FC<{
         {/* Content */}
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           {type === 'nav'      && <NavPanelContent isDark={isDark} currentDocSlug={currentDocSlug} onOpenSearch={() => {}} />}
-          {type === 'toc'      && <div style={{ flex: 1, overflowY: 'auto' }}><TocPanelContent toc={toc} activeId={activeId} isDark={isDark} /></div>}
+          {type === 'toc'      && <div style={{ flex: 1, overflowY: 'auto' }}><TocPanelContent toc={toc} activeId={activeId} isDark={isDark} onItemClick={onClose} /></div>}
           {type === 'contacts' && <div style={{ overflowY: 'auto' }}><ContactsPanelContent isDark={isDark} /></div>}
         </div>
       </div>
@@ -634,14 +622,13 @@ const MobBtn: React.FC<{
   return (
     <button onClick={onClick}
       style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        gap: '4px', padding: '0 14px', minWidth: '58px', border: 'none', background: 'transparent',
+        flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        gap: '4px', padding: '0', border: 'none', background: 'transparent',
         cursor: 'pointer', color: isActive ? t.accent : t.fgMuted,
-        // Убираем линию выделения
-        outline: 'none', flexShrink: 0,
+        outline: 'none', minWidth: 0,
       }}>
       <span style={{ width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
-      <span style={{ fontSize: '10px', fontWeight: isActive ? 600 : 400, lineHeight: 1, marginTop: '1px' }}>{label}</span>
+      <span style={{ fontSize: '10px', fontWeight: 400, lineHeight: 1, marginTop: '1px' }}>{label}</span>
     </button>
   );
 };
@@ -656,25 +643,12 @@ const MobileNav: React.FC<{
   const t = tk(isDark);
   const [sheet, setSheet]           = useState<MobileSheet>(null);
   const [searchOpen, setSearchOpen] = useState(false);
-  const scrollBarRef = useRef<HTMLDivElement>(null);
 
-  // Начальный скролл: {Тема} уходит за левый fade, {Контакты} за правый
-  // Видимая зона: Поиск / Разделы / [Лого] / Оглавл. / Наверх
-  useEffect(() => {
-    const el = scrollBarRef.current;
-    if (!el) return;
-    // Одна кнопка слева (Тема) — 58px
-    el.scrollLeft = 58;
-  }, []);
+
 
   const toggle = (s: MobileSheet) => setSheet(prev => prev === s ? null : s);
 
-  const fadeL = isDark
-    ? 'linear-gradient(to right, #0a0a0a 30%, transparent)'
-    : 'linear-gradient(to right, #dcdbd7 30%, transparent)';
-  const fadeR = isDark
-    ? 'linear-gradient(to left, #0a0a0a 30%, transparent)'
-    : 'linear-gradient(to left, #dcdbd7 30%, transparent)';
+
 
   return (
     <>
@@ -690,50 +664,26 @@ const MobileNav: React.FC<{
         />
       )}
 
-      {/* Bottom bar — строго непрозрачный фон (fix white bg bug при смене темы) */}
+      {/* Bottom bar — все кнопки видны сразу */}
       <nav style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 60,
-        height: '56px',
+        height: '60px',
         background: t.mobBg,
         borderTop: `1px solid ${t.border}`,
-        overflow: 'hidden',
+        display: 'flex', alignItems: 'stretch',
       }}>
-        {/* Fade слева и справа */}
-        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 48, background: fadeL, zIndex: 2, pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 48, background: fadeR, zIndex: 2, pointerEvents: 'none' }} />
+        <MobBtn label="Тема"     icon={isDark ? <Sun size={22} /> : <Moon size={22} />}  isDark={isDark} onClick={toggleTheme}                                         isActive={false} />
+        <MobBtn label="Поиск"    icon={<Search size={22} />}                             isDark={isDark} onClick={() => { setSheet(null); setSearchOpen(true); }}       isActive={false} />
+        <MobBtn label="Разделы"  icon={<FolderOpen size={22} />}                         isDark={isDark} onClick={() => toggle('nav')}                                  isActive={sheet === 'nav'} />
 
-        {/* Скроллируемый ряд — центрирован через justify-content при достаточной ширине */}
-        <div
-          ref={scrollBarRef}
-          className="mob-nav-bar"
-          style={{
-            display: 'flex', alignItems: 'center', height: '100%',
-            overflowX: 'auto', overflowY: 'hidden',
-            scrollbarWidth: 'none' as any,
-            // Центрируем содержимое если помещается, иначе скролл
-            justifyContent: 'safe center',
-          }}
-        >
-          <style>{`.mob-nav-bar::-webkit-scrollbar{display:none}`}</style>
-
-          {/* {Тема} — скрыта слева */}
-          <MobBtn label="Тема"      icon={isDark ? <Sun size={21} /> : <Moon size={21} />} isDark={isDark} onClick={toggleTheme}                                      isActive={false} />
-
-          {/* Видимая зона */}
-          <MobBtn label="Поиск"     icon={<Search size={21} />}                            isDark={isDark} onClick={() => { setSheet(null); setSearchOpen(true); }}    isActive={false} />
-          <MobBtn label="Разделы"   icon={<FolderOpen size={21} />}                        isDark={isDark} onClick={() => toggle('nav')}                               isActive={sheet === 'nav'} />
-
-          {/* Лого по центру — не кнопка */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 10px', flexShrink: 0 }}>
-            <img src="/favicon.png" alt="hub" style={{ width: 30, height: 30, objectFit: 'contain' }} />
-          </div>
-
-          <MobBtn label="Оглавл."   icon={<List size={21} />}                              isDark={isDark} onClick={() => toggle('toc')}                               isActive={sheet === 'toc'} />
-          <MobBtn label="Наверх"    icon={<ArrowUp size={21} />}                           isDark={isDark} onClick={() => { setSheet(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }} isActive={false} />
-
-          {/* {Контакты} — скрыта справа */}
-          <MobBtn label="Контакты"  icon={<Mail size={21} />}                              isDark={isDark} onClick={() => toggle('contacts')}                          isActive={sheet === 'contacts'} />
+        {/* Лого — занимает flex:1 по центру */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <img src="/favicon.png" alt="hub" style={{ width: 38, height: 38, objectFit: 'contain' }} />
         </div>
+
+        <MobBtn label="Оглавл."  icon={<List size={22} />}                               isDark={isDark} onClick={() => toggle('toc')}                                  isActive={sheet === 'toc'} />
+        <MobBtn label="Наверх"   icon={<ArrowUp size={22} />}                            isDark={isDark} onClick={() => { setSheet(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }} isActive={false} />
+        <MobBtn label="Контакты" icon={<Mail size={22} />}                               isDark={isDark} onClick={() => toggle('contacts')}                             isActive={sheet === 'contacts'} />
       </nav>
 
       <AnimatePresence>
