@@ -122,14 +122,30 @@ async function handleWriteCssVars({ vars }) {
   const block       = `${startMarker}\n:root {\n${varLines}\n}\n${endMarker}`;
 
   if (css.includes(startMarker)) {
-    // Replace existing block
+    // Replace existing block — wherever it is
     css = css.replace(
       new RegExp(`${startMarker.replace(/\//g, '\\/')}[\\s\\S]*?${endMarker.replace(/\//g, '\\/')}`, 'g'),
       block
     );
   } else {
-    // Prepend new block
-    css = `${block}\n\n${css}`;
+    // FIX: must insert AFTER all @import statements so PostCSS doesn't complain.
+    // Find the last @import line and insert the :root block after it.
+    const lines = css.split('\n');
+    let lastImportIndex = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].trimStart().startsWith('@import ')) {
+        lastImportIndex = i;
+      }
+    }
+
+    if (lastImportIndex >= 0) {
+      // Insert after the last @import line
+      lines.splice(lastImportIndex + 1, 0, '', block);
+      css = lines.join('\n');
+    } else {
+      // No @import found — prepend (shouldn't happen in practice)
+      css = `${block}\n\n${css}`;
+    }
   }
 
   await fs.promises.writeFile(fp, css, 'utf-8');
