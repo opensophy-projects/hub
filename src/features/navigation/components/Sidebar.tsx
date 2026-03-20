@@ -178,29 +178,24 @@ function buildNavigationTree(docs: Doc[], searchQuery: string, activeNavSlug: st
   return root;
 }
 
-// ─── Sidebar — строго только десктоп ─────────────────────────────────────────
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
 
 interface SidebarProps { currentDocSlug?: string; }
 
 const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
   const { isDark, toggleTheme } = useTheme();
-  
-  // КРИТИЧНО: useState(false) — при первом рендере всегда false
-  // useEffect потом установит правильное значение
-  // Это предотвращает показ sidebar на мобильных при hydration
-  const isDesktop = useIsDesktop();
-
+  const isDesktop = useIsDesktop(); // инициализируется false, обновляется в useEffect
   const { manifest: docs, loading, error } = useManifest();
+
+  // ВСЕ ХУКИ ДОЛЖНЫ БЫТЬ ДО ЛЮБОГО RETURN — правило React
   const [searchQuery, setSearchQuery]     = useState('');
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [showContacts, setShowContacts]   = useState(false);
   const [activeNavSlug, setActiveNavSlug] = useState<string>('');
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
-  // ВОТ КЛЮЧЕВОЙ GUARD: если не десктоп — не рендерим НИЧЕГО
-  if (!isDesktop) return null;
-
   const sections = useMemo<NavSection[]>(() => {
+    if (!isDesktop) return []; // не вычисляем на мобильных
     const map = new Map<string, NavSection>();
     map.set('', { navSlug: '', navTitle: 'Главная', navIcon: 'home' });
     for (const doc of docs as Doc[]) {
@@ -208,27 +203,33 @@ const Sidebar: React.FC<SidebarProps> = ({ currentDocSlug }) => {
       if (slug && !map.has(slug)) map.set(slug, { navSlug: slug, navTitle: doc.navTitle ?? slug, navIcon: doc.navIcon ?? '' });
     }
     return Array.from(map.values());
-  }, [docs]);
+  }, [docs, isDesktop]);
 
   useEffect(() => {
-    if (sections.length === 0) return;
+    if (!isDesktop || sections.length === 0) return;
     const pathname = globalThis.window.location.pathname.replace(/^\//, '');
     const matched  = sections.filter(s => s.navSlug !== '').find(s => pathname === s.navSlug || pathname.startsWith(s.navSlug + '/'));
     const detected = matched?.navSlug ?? '';
     storageSet('hub:activeNavSlug', detected);
     startTransition(() => setActiveNavSlug(detected));
-  }, [sections]);
+  }, [sections, isDesktop]);
 
   useEffect(() => {
-    if (!currentDocSlug) return;
+    if (!isDesktop || !currentDocSlug) return;
     let slugForTree = currentDocSlug;
     if (activeNavSlug !== '' && currentDocSlug.startsWith(activeNavSlug + '/')) slugForTree = currentDocSlug.slice(activeNavSlug.length + 1);
     const parts = slugForTree.split('/');
     const pathParts = parts.slice(0, -1).map((_, i) => parts.slice(0, i + 1).join('/'));
     if (pathParts.length > 0) startTransition(() => setExpandedPaths(new Set(pathParts)));
-  }, [currentDocSlug, activeNavSlug]);
+  }, [currentDocSlug, activeNavSlug, isDesktop]);
 
-  const navTree = useMemo(() => buildNavigationTree(docs as Doc[], searchQuery, activeNavSlug), [docs, searchQuery, activeNavSlug]);
+  const navTree = useMemo(
+    () => isDesktop ? buildNavigationTree(docs as Doc[], searchQuery, activeNavSlug) : { title: '', slug: '', icon: null, docs: [], children: {}, isCategory: false },
+    [docs, searchQuery, activeNavSlug, isDesktop]
+  );
+
+  // ТОЛЬКО ПОСЛЕ ВСЕХ ХУКОВ — ранний return
+  if (!isDesktop) return null;
 
   const togglePath = (path: string) => {
     setExpandedPaths(prev => { const next = new Set(prev); next.has(path) ? next.delete(path) : next.add(path); return next; });
