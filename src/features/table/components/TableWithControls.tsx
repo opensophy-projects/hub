@@ -44,26 +44,20 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
   const radius = 12;
 
   return (
-    <div className="not-prose" style={{ margin: '1.25rem 0' }}>
-      {/*
-        Key insight for mobile horizontal scroll:
-        - `overflow: hidden` on a border-radius container clips child overflow on iOS Safari
-        - Solution: use `overflow: clip` which clips visually but does NOT establish
-          a scroll container, so child overflow:auto works correctly on mobile
-        - Fallback for older browsers: just use overflow:hidden (still works on most)
-      */}
+    <div className="not-prose" style={{ margin: '1.25rem 0', width: '100%', minWidth: 0 }}>
       <div style={{
         borderRadius: radius,
         border: `1px solid ${outerBorder}`,
         background: outerBg,
         boxShadow: outerShadow,
-        // overflow:clip = visual clipping only, does NOT block child scroll (CSS 2021)
-        // Unlike overflow:hidden which creates a new BFC and can block touch scroll
+        // FIX: overflow:clip clips visually but doesn't block child touch-scroll
         overflow: 'clip',
         display: 'flex',
         flexDirection: 'column',
+        // FIX: force full width — was missing boxSizing which caused width calc issues
         width: '100%',
         minWidth: 0,
+        boxSizing: 'border-box' as const,
       }}>
         <TableControlsBar
           isDark={isDark}
