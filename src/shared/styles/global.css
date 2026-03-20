@@ -1,13 +1,51 @@
-/* hub-dev-panel-vars-start */
-:root {
-  --accent-primary: #ededed;
-}
-/* hub-dev-panel-vars-end */
-
 @import 'katex/dist/katex.min.css';
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
+
+/* ─── CSS переменные темы ──────────────────────────────────────────────────── */
+/* Все @import должны быть ВЫШЕ этого блока */
+
+:root {
+  /* Акцент — используется в навигации для active states и glow */
+  --accent-primary:   #7234ff;
+  --glow-color:       #7234ff;
+  --accent-secondary: #22c55e;
+
+  /* Фоны тёмной темы */
+  --bg-primary-dark:  #0a0a0a;
+  --bg-nav-dark:      #0d0d0d;
+  --bg-surface-dark:  #141414;
+
+  /* Фоны светлой темы */
+  --bg-primary-light: #E8E7E3;
+  --bg-nav-light:     #E0DFDb;
+  --bg-surface-light: #d8d7d3;
+
+  /* Типографика */
+  --font-sans: system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, monospace;
+
+  color-scheme: light dark;
+}
+
+/* ─── Тёмная тема ────────────────────────────────────────────────────────── */
+html.dark {
+  background-color: var(--bg-primary-dark);
+  --bg-page:    var(--bg-primary-dark);
+  --bg-nav:     var(--bg-nav-dark);
+  --bg-surface: var(--bg-surface-dark);
+  --nav-accent: var(--accent-primary);
+}
+
+/* ─── Светлая тема ───────────────────────────────────────────────────────── */
+html:not(.dark) {
+  background-color: var(--bg-primary-light);
+  --bg-page:    var(--bg-primary-light);
+  --bg-nav:     var(--bg-nav-light);
+  --bg-surface: var(--bg-surface-light);
+  --nav-accent: var(--accent-primary);
+}
 
 @font-face {
   font-family: 'customfont';
@@ -16,17 +54,13 @@
   font-style: normal;
 }
 
-:root {
-  color-scheme: light dark;
-}
-
 html {
   scroll-behavior: smooth;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.5;
@@ -39,8 +73,8 @@ body {
 
 .prose {
   max-width: none;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif);
 }
 
 .prose h1 { margin-top: 2rem; margin-bottom: 1rem; font-size: 1.5rem; line-height: 2rem; font-weight: 700; font-family: inherit; }
@@ -67,7 +101,7 @@ body {
 .prose code {
   border-radius: 0.25rem;
   padding: 0.25rem 0.5rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace);
   font-size: 0.75rem;
   line-height: 1rem;
   background-color: rgba(0, 0, 0, 0.05);
@@ -107,7 +141,7 @@ body {
 .prose th { font-weight: 600; position: sticky; top: 0; z-index: 10; background-color: rgba(0, 0, 0, 0.08); }
 .dark .prose th { background-color: rgba(255, 255, 255, 0.08); }
 .prose th code,
-.prose td code { background-color: transparent; padding: 0; font-size: 0.9em; font-family: ui-monospace, monospace; white-space: pre-wrap; word-break: break-word; }
+.prose td code { background-color: transparent; padding: 0; font-size: 0.9em; font-family: var(--font-mono, ui-monospace, monospace); white-space: pre-wrap; word-break: break-word; }
 .prose tbody tr:nth-child(even) { background-color: rgba(0, 0, 0, 0.02); }
 .dark .prose tbody tr:nth-child(even) { background-color: rgba(255, 255, 255, 0.03); }
 
@@ -127,8 +161,6 @@ body {
 
 .prose hr { margin: 2rem 0; border: 0; border-top: 1px solid #6b7280; opacity: 0.5; }
 .dark .prose hr { border-top-color: #6b7280; }
-
-.prose .github-alert { margin: 1rem 0; padding: 1rem; border-left: 4px solid; border-radius: 0.375rem; }
 
 .prose mark { background-color: rgb(253, 224, 71); color: rgb(0, 0, 0); padding: 2px 4px; border-radius: 2px; }
 .dark .prose mark { background-color: rgb(234, 179, 8); color: rgb(0, 0, 0); }
@@ -190,8 +222,9 @@ body {
 .dark ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); }
 .dark ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
 
-::selection { background-color: rgb(37 99 235); color: rgb(255 255 255); }
+::selection { background-color: var(--accent-primary, rgb(37 99 235)); color: rgb(255 255 255); }
 
+/* ─── Highlight.js ─────────────────────────────────────────────────────────── */
 .hljs { display: block; overflow-x: auto; color: #abb2bf; background: transparent; }
 .hljs-comment, .hljs-quote { color: #5c6370; font-style: italic; }
 .hljs-doctag, .hljs-keyword, .hljs-formula { color: #c678dd; }
@@ -221,6 +254,7 @@ html:not(.dark) .hljs-selector-pseudo, html:not(.dark) .hljs-number { color: #98
 html:not(.dark) .hljs-symbol, html:not(.dark) .hljs-bullet, html:not(.dark) .hljs-link,
 html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .hljs-title { color: #4078f2; }
 
+/* ─── KaTeX ────────────────────────────────────────────────────────────────── */
 .katex-block {
   display: block;
   overflow-x: auto;
@@ -233,31 +267,19 @@ html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .
   text-align: center;
   -webkit-overflow-scrolling: touch;
 }
-
 .dark .katex-block {
   border-color: rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
 }
-
 .katex-block::-webkit-scrollbar { height: 5px; }
 .katex-block::-webkit-scrollbar-track { background: transparent; }
 .katex-block::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
 .dark .katex-block::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); }
+.katex-inline { display: inline; vertical-align: middle; }
+.katex-error { color: #e06c75; font-size: 0.85em; font-family: var(--font-mono, ui-monospace, monospace); }
+.dark .katex-error { color: #f87171; }
 
-.katex-inline {
-  display: inline;
-  vertical-align: middle;
-}
-
-.katex-error {
-  color: #e06c75;
-  font-size: 0.85em;
-  font-family: ui-monospace, monospace;
-}
-.dark .katex-error {
-  color: #f87171;
-}
-
+/* ─── Transition overrides ────────────────────────────────────────────────── */
 *, *::before, *::after {
   transition-property: none !important;
   transition-duration: 0s !important;
@@ -283,6 +305,7 @@ html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .
   transition-timing-function: ease !important;
 }
 
+/* ─── Table fixes ─────────────────────────────────────────────────────────── */
 .prose .not-prose table,
 .not-prose table {
   width: 100% !important;
@@ -295,12 +318,5 @@ html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .
   box-sizing: border-box;
 }
 
-.tb-scroll-wrap {
-  width: 100%;
-  min-width: 0;
-}
-
-.tb-scroll {
-  width: 100%;
-  min-width: 0;
-}
+.tb-scroll-wrap { width: 100%; min-width: 0; }
+.tb-scroll { width: 100%; min-width: 0; }
