@@ -48,7 +48,8 @@ function useActiveHeading(toc: { id: string; text: string; level: number }[]): s
   return activeId;
 }
 
-// Hero
+// ─── DocHero ──────────────────────────────────────────────────────────────────
+
 const DocHero: React.FC<{ doc: DocContentProps['doc']; isDark: boolean; readTime: number }> = ({ doc, isDark, readTime }) => {
   const heroBg      = isDark ? '#0a0a0a' : '#E8E7E3';
   const borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
@@ -68,7 +69,6 @@ const DocHero: React.FC<{ doc: DocContentProps['doc']; isDark: boolean; readTime
         <DotWaveBackground isDark={isDark} />
       </div>
       <div style={{ position: 'relative', zIndex: 1 }}>
-        {/* Breadcrumbs */}
         {doc.typename?.trim() && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap', fontSize: '0.8rem' }}>
             <a href="/" style={{ color: textPrimary, textDecoration: 'none', opacity: 0.7 }}>Главная</a>
@@ -77,13 +77,11 @@ const DocHero: React.FC<{ doc: DocContentProps['doc']; isDark: boolean; readTime
             <ChevronRight size={14} style={{ opacity: 0.4, color: textPrimary }} />
           </div>
         )}
-        {/* Meta */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
           {fmtDate && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: metaClr }}><CalendarDays size={13} style={{ opacity: 0.7 }} />{fmtDate}</span>}
           {fmtUpdated && <><span style={{ color: metaClr, fontSize: '0.7rem' }}>·</span><span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: metaClr }}><RefreshCw size={13} style={{ opacity: 0.7 }} />Обновлено: {fmtUpdated}</span></>}
           {doc.typename?.trim() && <span style={{ fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: metaClr, background: badgeBg, border: `1px solid ${badgeBdr}`, borderRadius: '6px', padding: '2px 8px' }}>{doc.typename}</span>}
         </div>
-        {/* Title */}
         <h1 style={{ fontSize: 'clamp(1.6rem,4vw,2.8rem)', fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.02em', color: isDark ? '#ffffff' : '#0a0a0a', margin: '0 0 1rem 0', fontFamily: 'system-ui,-apple-system,sans-serif', maxWidth: '820px' }}>
           {doc.title}
         </h1>
@@ -92,7 +90,6 @@ const DocHero: React.FC<{ doc: DocContentProps['doc']; isDark: boolean; readTime
             {doc.description}
           </p>
         )}
-        {/* Footer row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', paddingTop: '1rem' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: metaClr }}>
             <Clock size={13} style={{ opacity: 0.7 }} />{readTime} мин чтения
@@ -120,9 +117,7 @@ const DocHero: React.FC<{ doc: DocContentProps['doc']; isDark: boolean; readTime
   );
 };
 
-// DocContentMain
-const SIDEBAR_W = '20rem';
-const TOC_W     = '18rem';
+// ─── DocContentMain ───────────────────────────────────────────────────────────
 
 const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const { isDark } = useTheme();
@@ -132,8 +127,11 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const progressBarRef = useScrollProgress();
   const activeId       = useActiveHeading(toc);
 
-  // isDesktop — синхронно с Navigation
+  // Следим за шириной навигации через CSS-переменную --nav-left,
+  // которую выставляет DesktopNav при изменении состояния панели/рейла.
   const [isDesktop, setIsDesktop] = useState(false);
+  const [navLeft, setNavLeft] = useState('0px');
+
   useEffect(() => {
     const check = () => setIsDesktop(window.innerWidth > 820);
     check();
@@ -147,26 +145,49 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
     };
   }, []);
 
-  const hasToc        = toc.length > 0;
-  const htmlContent   = useMemo(() => doc.content || '', [doc.content]);
-  const contentNodes  = useMemo(() => parseHtmlToReact(htmlContent), [htmlContent]);
-  const readTime      = useMemo(() => estimateReadTime(doc.content || htmlContent), [doc.content, htmlContent]);
-  const tableCtx      = useMemo(() => ({ onTableClick: (html: string) => setFullscreenTableHtml(html), isDark }), [isDark]);
+  // Читаем --nav-left из :root и обновляем при любых изменениях.
+  // Navigation.tsx выставляет её через style.setProperty каждый раз,
+  // когда меняется ширина рейла или панели (в т.ч. при ресайзе drag-handle).
+  useEffect(() => {
+    if (!isDesktop) { setNavLeft('0px'); return; }
+
+    const readVar = () => {
+      const val = getComputedStyle(document.documentElement).getPropertyValue('--nav-left').trim();
+      setNavLeft(val || '64px');
+    };
+
+    // Начальное чтение
+    readVar();
+
+    // MutationObserver на style-атрибут <html> — срабатывает при каждом setProperty
+    const observer = new MutationObserver(readVar);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
+
+    return () => observer.disconnect();
+  }, [isDesktop]);
+
+  const htmlContent  = useMemo(() => doc.content || '', [doc.content]);
+  const contentNodes = useMemo(() => parseHtmlToReact(htmlContent), [htmlContent]);
+  const readTime     = useMemo(() => estimateReadTime(doc.content || htmlContent), [doc.content, htmlContent]);
+  const tableCtx     = useMemo(() => ({ onTableClick: (html: string) => setFullscreenTableHtml(html), isDark }), [isDark]);
 
   return (
     <div style={{ minHeight: '100vh' }}>
       {/* Progress bar */}
-      <div ref={progressBarRef} style={{ position: 'fixed', top: 0, left: 0, height: '2px', width: '0%', background: isDark ? '#fff' : '#000', zIndex: 999, transition: 'none' }} />
+      <div
+        ref={progressBarRef}
+        style={{ position: 'fixed', top: 0, left: 0, height: '2px', width: '0%', background: isDark ? '#fff' : '#000', zIndex: 999, transition: 'none' }}
+      />
 
-      {/* Единая навигация */}
+      {/* Навигация — управляет --nav-left */}
       <Navigation currentDocSlug={doc.slug} toc={toc} activeHeadingId={activeId} />
 
-      {/* Main */}
+      {/* Контент — marginLeft следует за --nav-left без жёсткого хардкода */}
       <main
         className={`min-h-screen ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}
         style={{
-          marginLeft:   isDesktop ? SIDEBAR_W : '0',
-          marginRight:  isDesktop && hasToc ? TOC_W : '0',
+          marginLeft:   isDesktop ? navLeft : '0',
+          marginRight:  '0',
           marginBottom: isDesktop ? '0' : '3.5rem',
           transition:   'none',
         }}
@@ -174,7 +195,10 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
         <DocHero doc={doc} isDark={isDark} readTime={readTime} />
         <article style={{ padding: '2rem 2rem 3rem' }}>
           <TableContext.Provider value={tableCtx}>
-            <div data-article-content className={`prose max-w-none w-full overflow-x-auto ${isDark ? 'text-white' : 'text-black'}`}>
+            <div
+              data-article-content
+              className={`prose max-w-none w-full overflow-x-auto ${isDark ? 'text-white' : 'text-black'}`}
+            >
               {contentNodes}
             </div>
           </TableContext.Provider>
@@ -184,7 +208,12 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
       <AnimatePresence>
         {fullscreenTableHtml && (
           <Suspense fallback={null}>
-            <LazyTableModal isOpen={!!fullscreenTableHtml} tableHtml={fullscreenTableHtml} isDark={isDark} onClose={() => setFullscreenTableHtml(null)} />
+            <LazyTableModal
+              isOpen={!!fullscreenTableHtml}
+              tableHtml={fullscreenTableHtml}
+              isDark={isDark}
+              onClose={() => setFullscreenTableHtml(null)}
+            />
           </Suspense>
         )}
       </AnimatePresence>
