@@ -228,9 +228,24 @@ function renderBar(
   stacked: boolean, horizontal: boolean,
   hidden: Set<string>, t: ReturnType<typeof tk>
 ) {
-  const visible = valueKeys.filter(k => !hidden.has(k));
-  // Color each bar individually only when there is a single value series
-  const useRowColors = visible.length === 1;
+  // For horizontal single-series charts the legend is keyed by ROW name,
+  // so we filter the data rows instead of the series list.
+  const isSingleSeries = valueKeys.length === 1;
+
+  let visibleData = data;
+  let visible = valueKeys;
+
+  if (isSingleSeries && horizontal) {
+    // hidden contains row nameKey values (e.g. "Python", "JavaScript")
+    visibleData = data.filter(d => !hidden.has(String(d[nameKey])));
+  } else {
+    // hidden contains series/column keys
+    visible = valueKeys.filter(k => !hidden.has(k));
+  }
+
+  // useRowColors: only when the data itself has one value column (not just one visible after hiding)
+  const useRowColors = isSingleSeries;
+
   const a = ap(t);
 
   // maxBarSize scales down when there are many series so groups stay compact
@@ -240,7 +255,7 @@ function renderBar(
 
   return (
     <BarChart
-      data={data}
+      data={visibleData}
       layout={horizontal ? 'vertical' : 'horizontal'}
       margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
       barCategoryGap={getCategoryGap(data.length)}
@@ -255,9 +270,9 @@ function renderBar(
         const idx = valueKeys.indexOf(key);
         const seriesColor = palette[idx % palette.length];
         // For stacked: only the last visible series gets rounded top corners
-        const isLast = idx === visible.length - 1;
+        const isLastVisible = visible.indexOf(key) === visible.length - 1;
         const radius: [number, number, number, number] = stacked
-          ? (isLast ? (horizontal ? [0,3,3,0] : [3,3,0,0]) : [0,0,0,0])
+          ? (isLastVisible ? (horizontal ? [0,3,3,0] : [3,3,0,0]) : [0,0,0,0])
           : (horizontal ? [0,3,3,0] : [3,3,0,0]);
         return (
           <Bar key={key} dataKey={key} fill={seriesColor}
@@ -265,9 +280,13 @@ function renderBar(
             stackId={stacked ? 'stack' : undefined}
             maxBarSize={maxSize} isAnimationActive={false}
           >
-            {useRowColors && data.map((_, rowIdx) => (
-              <Cell key={`cell-${rowIdx}`} fill={palette[rowIdx % palette.length]} />
-            ))}
+            {useRowColors && visibleData.map((_, rowIdx) => {
+              // find original row index for correct palette color
+              const origIdx = data.indexOf(visibleData[rowIdx]);
+              return (
+                <Cell key={`cell-${rowIdx}`} fill={palette[(origIdx === -1 ? rowIdx : origIdx) % palette.length]} />
+              );
+            })}
           </Bar>
         );
       })}
@@ -356,8 +375,10 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
 
   const isEmpty = !data.length || !valueKeys.length;
 
-  // Legend: for single-series bar/area charts with row-level colors, show one
-  // item per data row. For multi-series and pie, keep existing behaviour.
+  // Legend items:
+  // - pie / pie-donut → one item per data row
+  // - bar/bar-horizontal with single value series → one item per data row (keyed by row name)
+  // - everything else → one item per value series (keyed by column name)
   const legendItems: LegendItem[] = useMemo(() => {
     if (type === 'pie' || type === 'pie-donut') {
       return data.map((d, i) => ({
