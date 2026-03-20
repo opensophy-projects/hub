@@ -1,41 +1,29 @@
-/* hub-dev-panel-vars-start */
-:root {
-  --accent-primary: #4b13cd;
-}
-/* hub-dev-panel-vars-end */
-
 @import 'katex/dist/katex.min.css';
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
 /* ─── CSS переменные темы ──────────────────────────────────────────────────── */
-/* Все @import должны быть ВЫШЕ этого блока */
 
 :root {
-  /* Акцент — используется в навигации для active states и glow */
   --accent-primary:   #7234ff;
   --glow-color:       #7234ff;
   --accent-secondary: #22c55e;
 
-  /* Фоны тёмной темы */
   --bg-primary-dark:  #0a0a0a;
   --bg-nav-dark:      #0d0d0d;
   --bg-surface-dark:  #141414;
 
-  /* Фоны светлой темы */
   --bg-primary-light: #E8E7E3;
   --bg-nav-light:     #E0DFDb;
   --bg-surface-light: #d8d7d3;
 
-  /* Типографика */
   --font-sans: system-ui, -apple-system, sans-serif;
   --font-mono: ui-monospace, monospace;
 
   color-scheme: light dark;
 }
 
-/* ─── Тёмная тема ────────────────────────────────────────────────────────── */
 html.dark {
   background-color: var(--bg-primary-dark);
   --bg-page:    var(--bg-primary-dark);
@@ -44,7 +32,6 @@ html.dark {
   --nav-accent: var(--accent-primary);
 }
 
-/* ─── Светлая тема ───────────────────────────────────────────────────────── */
 html:not(.dark) {
   background-color: var(--bg-primary-light);
   --bg-page:    var(--bg-primary-light);
@@ -230,7 +217,6 @@ body {
 
 ::selection { background-color: var(--accent-primary, rgb(37 99 235)); color: rgb(255 255 255); }
 
-/* ─── Highlight.js ─────────────────────────────────────────────────────────── */
 .hljs { display: block; overflow-x: auto; color: #abb2bf; background: transparent; }
 .hljs-comment, .hljs-quote { color: #5c6370; font-style: italic; }
 .hljs-doctag, .hljs-keyword, .hljs-formula { color: #c678dd; }
@@ -260,23 +246,14 @@ html:not(.dark) .hljs-selector-pseudo, html:not(.dark) .hljs-number { color: #98
 html:not(.dark) .hljs-symbol, html:not(.dark) .hljs-bullet, html:not(.dark) .hljs-link,
 html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .hljs-title { color: #4078f2; }
 
-/* ─── KaTeX ────────────────────────────────────────────────────────────────── */
 .katex-block {
-  display: block;
-  overflow-x: auto;
-  overflow-y: hidden;
-  margin: 1.25rem 0;
-  padding: 0.875rem 1.25rem;
-  border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(0, 0, 0, 0.02);
-  text-align: center;
+  display: block; overflow-x: auto; overflow-y: hidden;
+  margin: 1.25rem 0; padding: 0.875rem 1.25rem;
+  border-radius: 10px; border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.02); text-align: center;
   -webkit-overflow-scrolling: touch;
 }
-.dark .katex-block {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
-}
+.dark .katex-block { border-color: rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.03); }
 .katex-block::-webkit-scrollbar { height: 5px; }
 .katex-block::-webkit-scrollbar-track { background: transparent; }
 .katex-block::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
@@ -285,44 +262,28 @@ html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .
 .katex-error { color: #e06c75; font-size: 0.85em; font-family: var(--font-mono, ui-monospace, monospace); }
 .dark .katex-error { color: #f87171; }
 
-/* ─── Transition overrides ────────────────────────────────────────────────── */
 *, *::before, *::after {
   transition-property: none !important;
   transition-duration: 0s !important;
   transition-delay: 0s !important;
 }
-
-.transition-transform,
-[class*="rotate-"] {
+.transition-transform, [class*="rotate-"] {
   transition-property: transform !important;
   transition-duration: 0.15s !important;
   transition-timing-function: ease !important;
 }
-
 .prose details summary::before {
   transition-property: transform !important;
   transition-duration: 0.2s !important;
   transition-timing-function: ease !important;
 }
-
 .sophy-card {
   transition-property: transform, box-shadow !important;
   transition-duration: 0.15s !important;
   transition-timing-function: ease !important;
 }
 
-/* ─── Table fixes ─────────────────────────────────────────────────────────── */
-.prose .not-prose table,
-.not-prose table {
-  width: 100% !important;
-  min-width: max-content;
-}
-
-.prose .not-prose {
-  width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-}
-
+.prose .not-prose table, .not-prose table { width: 100% !important; min-width: max-content; }
+.prose .not-prose { width: 100%; min-width: 0; box-sizing: border-box; }
 .tb-scroll-wrap { width: 100%; min-width: 0; }
 .tb-scroll { width: 100%; min-width: 0; }
