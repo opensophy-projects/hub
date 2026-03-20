@@ -14,7 +14,7 @@ export default defineConfig({
       external: ['isomorphic-dompurify'],
     },
     optimizeDeps: {
-      include: ['react', 'react-dom', 'marked', 'framer-motion', 'lucide-react'],
+      include: ['react', 'react-dom', 'marked', 'framer-motion', 'lucide-react', 'recharts'],
     },
     build: {
       chunkSizeWarningLimit: 1000,
@@ -32,6 +32,11 @@ export default defineConfig({
               id.includes('node_modules/marked') ||
               id.includes('node_modules/isomorphic-dompurify')
             ) return 'vendor-markdown';
+            if (
+              id.includes('node_modules/recharts') ||
+              id.includes('node_modules/d3-')      ||
+              id.includes('node_modules/victory-vendor')
+            ) return 'vendor-charts';
           },
         },
       },
