@@ -2,11 +2,10 @@
  * useDevBridge v2 — улучшенный WebSocket хук
  * - Экспоненциальный backoff для переподключения
  * - Типизированный API bridge
- * - Очередь сообщений при разрыве
  * - Heartbeat для детекции обрыва
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 
 const WS_URL = 'ws://127.0.0.1:7777';
 
@@ -70,10 +69,7 @@ function connect() {
   ws.onmessage = ev => {
     let msg: any;
     try { msg = JSON.parse(ev.data); } catch { return; }
-
-    // Ignore pong
     if (msg.id === '__ping__') return;
-
     const p = pending.get(msg.id);
     if (!p) return;
     clearTimeout(p.timeout);
@@ -90,9 +86,7 @@ function connect() {
     scheduleReconnect();
   };
 
-  ws.onerror = () => {
-    broadcast('error');
-  };
+  ws.onerror = () => { broadcast('error'); };
 }
 
 function scheduleReconnect() {
@@ -110,13 +104,11 @@ function send<T = unknown>(action: string, payload?: unknown): Promise<T> {
       reject(new Error('Not connected'));
       return;
     }
-
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const timeout = setTimeout(() => {
       pending.delete(id);
       reject(new Error(`Timeout: ${action}`));
     }, 30_000);
-
     pending.set(id, { resolve: resolve as (v: unknown) => void, reject, timeout });
     ws.send(JSON.stringify({ id, action, payload }));
   });
@@ -146,6 +138,10 @@ export const bridge = {
   writeFile: (filePath: string, content: string) =>
     send<{ written: string }>('writeFile', { filePath, content }),
 
+  // Create directory without any placeholder files
+  mkdir: (dirPath: string) =>
+    send<{ created: string }>('mkdir', { dirPath }),
+
   readFile: (filePath: string) =>
     send<{ content: string }>('readFile', { filePath }),
 
@@ -160,12 +156,6 @@ export const bridge = {
 
   writeContacts: (content: string) =>
     send<{ ok: boolean }>('writeContacts', { content }),
-
-  readCss: () =>
-    send<{ content: string }>('readCss'),
-
-  writeCssVars: (vars: Record<string, string>) =>
-    send<{ ok: boolean }>('writeCssVars', { vars }),
 
   uploadAsset: (filename: string, base64: string, mimeType: string) =>
     send<{ path: string }>('uploadAsset', { filename, base64, mimeType }),
