@@ -208,6 +208,19 @@ function renderArea(
 // FIX: when there is only one value series (single column of data), each bar
 // gets its own color from the palette (like a pie chart does).
 // When there are multiple series, each series keeps its own single color.
+//
+// Bar sizing strategy:
+//   barCategoryGap — space between groups as % of category width.
+//     Fewer rows → more gap → bars look thin, so we reduce the gap.
+//   barGap — gap between bars within a group (multi-series).
+//   maxBarSize — hard upper cap so bars don't become too wide on few rows.
+
+function getCategoryGap(rowCount: number): string {
+  if (rowCount <= 3)  return '15%';
+  if (rowCount <= 6)  return '20%';
+  if (rowCount <= 10) return '25%';
+  return '30%';
+}
 
 function renderBar(
   data: Record<string, unknown>[],
@@ -219,9 +232,20 @@ function renderBar(
   // Color each bar individually only when there is a single value series
   const useRowColors = visible.length === 1;
   const a = ap(t);
+
+  // maxBarSize scales down when there are many series so groups stay compact
+  const maxSize = visible.length <= 1 ? 72 : visible.length <= 3 ? 56 : 40;
+  // barGap: tighter for many series
+  const bGap = visible.length <= 2 ? 3 : 2;
+
   return (
-    <BarChart data={data} layout={horizontal ? 'vertical' : 'horizontal'}
-      margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+    <BarChart
+      data={data}
+      layout={horizontal ? 'vertical' : 'horizontal'}
+      margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+      barCategoryGap={getCategoryGap(data.length)}
+      barGap={bGap}
+    >
       {horizontal
         ? <><YAxis dataKey={nameKey} type="category" {...a} width={90} /><XAxis type="number" {...a} /></>
         : <><XAxis dataKey={nameKey} {...a} /><YAxis {...a} width={38} /></>
@@ -230,11 +254,16 @@ function renderBar(
       {visible.map((key) => {
         const idx = valueKeys.indexOf(key);
         const seriesColor = palette[idx % palette.length];
+        // For stacked: only the last visible series gets rounded top corners
+        const isLast = idx === visible.length - 1;
+        const radius: [number, number, number, number] = stacked
+          ? (isLast ? (horizontal ? [0,3,3,0] : [3,3,0,0]) : [0,0,0,0])
+          : (horizontal ? [0,3,3,0] : [3,3,0,0]);
         return (
           <Bar key={key} dataKey={key} fill={seriesColor}
-            radius={stacked ? [0,0,0,0] : horizontal ? [0,3,3,0] : [3,3,0,0]}
+            radius={radius}
             stackId={stacked ? 'stack' : undefined}
-            maxBarSize={40} isAnimationActive={false}
+            maxBarSize={maxSize} isAnimationActive={false}
           >
             {useRowColors && data.map((_, rowIdx) => (
               <Cell key={`cell-${rowIdx}`} fill={palette[rowIdx % palette.length]} />
