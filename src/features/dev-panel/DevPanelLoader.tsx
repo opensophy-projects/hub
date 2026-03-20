@@ -1,31 +1,25 @@
 /**
- * DevPanelLoader v2 — безопасная точка монтирования
+ * DevPanelLoader
  *
- * ❌ Production: import.meta.env.DEV === false → Vite tree-shakes весь код
- * ✅ Dev: динамический импорт → отдельный чанк, не в main bundle
+ * Astro требует статический import для client:only — нельзя хранить компонент
+ * в переменной frontmatter. Поэтому этот файл импортируется всегда,
+ * но сам проверяет import.meta.env.DEV и возвращает null в production.
  *
- * Использование в Layout.astro:
- *   const isDev = import.meta.env.DEV;
- *   let DevPanelIsland = null;
- *   if (isDev) {
- *     const mod = await import('@/features/dev-panel/DevPanelLoader');
- *     DevPanelIsland = mod.default;
- *   }
- *   ---
- *   {isDev && DevPanelIsland && <DevPanelIsland client:only="react" />}
+ * Vite при сборке заменяет import.meta.env.DEV на false,
+ * dead-code elimination убирает весь внутренний код → в prod-бандле
+ * этот модуль превращается в `export default function(){return null}`.
  */
 
 import { lazy, Suspense } from 'react';
 
-// Dynamic import → Vite создаёт отдельный чанк
-// В prod build этот чанк не создаётся (tree-shaking на import.meta.env.DEV)
-const DevPanel = lazy(() => import('./DevPanel'));
+// Динамический импорт тоже tree-shaking'ится когда условие статически false
+const DevPanel = import.meta.env.DEV
+  ? lazy(() => import('./DevPanel'))
+  : null;
 
 export default function DevPanelLoader() {
-  // Тройная защита
-  if (typeof import.meta === 'undefined') return null;
-  if (!import.meta.env?.DEV) return null;
-  if (typeof window === 'undefined') return null;
+  // Двойная защита: проверка и в рантайме
+  if (!import.meta.env.DEV || !DevPanel) return null;
 
   return (
     <Suspense fallback={null}>
