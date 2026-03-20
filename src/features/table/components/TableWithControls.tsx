@@ -44,20 +44,33 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
   const radius = 12;
 
   return (
-    <div className="not-prose" style={{ margin: '1.25rem 0', width: '100%', minWidth: 0 }}>
+    /*
+      FIX: not-prose class is here so that global.css rule
+      ".prose .not-prose table { width: 100% !important }" applies.
+      Also added display:block and explicit width/boxSizing so the
+      wrapper doesn't accidentally shrink.
+    */
+    <div
+      className="not-prose"
+      style={{
+        margin: '1.25rem 0',
+        display: 'block',
+        width: '100%',
+        minWidth: 0,
+        boxSizing: 'border-box',
+      }}
+    >
       <div style={{
         borderRadius: radius,
         border: `1px solid ${outerBorder}`,
         background: outerBg,
         boxShadow: outerShadow,
-        // FIX: overflow:clip clips visually but doesn't block child touch-scroll
         overflow: 'clip',
         display: 'flex',
         flexDirection: 'column',
-        // FIX: force full width — was missing boxSizing which caused width calc issues
         width: '100%',
         minWidth: 0,
-        boxSizing: 'border-box' as const,
+        boxSizing: 'border-box',
       }}>
         <TableControlsBar
           isDark={isDark}
