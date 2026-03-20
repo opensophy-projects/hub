@@ -201,7 +201,7 @@ function CreateModal({
         onCreated(filePath);
       } else {
         const dirPath = `${config.parentPath}/${entryName}`;
-        await bridge.writeFile(`${dirPath}/.gitkeep`, '');
+        await bridge.writeFile(`${dirPath}/.keep`, '');
         await bridge.runGenerate();
         toast.success(`${config.entryType === 'N' ? 'Nav popover' : 'Категория'} "${title.trim()}" создана`);
         onCreated();
