@@ -442,8 +442,24 @@ const DesktopNav: React.FC<{
 }> = ({ isDark, toggleTheme, currentDocSlug, toc, activeId }) => {
   const t = tk(isDark);
   const [railVisible, setRailVisible] = useState(true);
-  const [activePanel, setActivePanel] = useState<PanelType>(null);
-  const [panelWidth, setPanelWidth]   = useState(PANEL_DEFAULT);
+
+  // Восстанавливаем activePanel из sessionStorage — переживает навигацию Astro
+  const [activePanel, setActivePanel] = useState<PanelType>(() => {
+    try {
+      const s = sessionStorage.getItem('hub:activePanel');
+      if (s === 'nav' || s === 'toc' || s === 'contacts') return s as PanelType;
+    } catch {}
+    return null;
+  });
+
+  // Сохраняем panelWidth между сессиями
+  const [panelWidth, setPanelWidth] = useState<number>(() => {
+    try {
+      const w = Number(sessionStorage.getItem('hub:panelWidth'));
+      if (w >= PANEL_MIN && w <= PANEL_MAX) return w;
+    } catch {}
+    return PANEL_DEFAULT;
+  });
   const [searchOpen, setSearchOpen]   = useState(false);
   const [handleHov, setHandleHov]     = useState(false);
   const isDragging = useRef(false);
@@ -451,7 +467,12 @@ const DesktopNav: React.FC<{
   const dragStartW = useRef(0);
 
   const togglePanel = useCallback((panel: PanelType) => {
-    setActivePanel(prev => prev === panel ? null : panel);
+    setActivePanel(prev => {
+      const next = prev === panel ? null : panel;
+      // Немедленно пишем в sessionStorage (useEffect может опоздать при Astro навигации)
+      try { sessionStorage.setItem('hub:activePanel', next ?? ''); } catch {}
+      return next;
+    });
   }, []);
 
   const onResizeMouseDown = useCallback((e: React.MouseEvent) => {
@@ -474,6 +495,16 @@ const DesktopNav: React.FC<{
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
+  }, [panelWidth]);
+
+  // Сохраняем activePanel в sessionStorage
+  useEffect(() => {
+    try { sessionStorage.setItem('hub:activePanel', activePanel ?? ''); } catch {}
+  }, [activePanel]);
+
+  // Сохраняем panelWidth в sessionStorage
+  useEffect(() => {
+    try { sessionStorage.setItem('hub:panelWidth', String(panelWidth)); } catch {}
   }, [panelWidth]);
 
   // Отступ для контента
