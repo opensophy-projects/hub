@@ -1,7 +1,7 @@
 /**
- * DevPanel v2 — главная оболочка
- * Resizable floating sidebar, tab navigation, connection status
- * Горячая клавиша: Ctrl+Shift+D
+ * DevPanel v3
+ * Вкладки: Docs (Nav+Pages объединены), Contacts, Assets
+ * Убраны: Theme, Generate
  */
 
 import React, {
@@ -11,29 +11,23 @@ import { createPortal } from 'react-dom';
 import { useDevBridge } from './useDevBridge';
 import { T, DevPanelStyles } from './components/ui';
 import { ToastContainer } from './components/Toast';
-import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import {
-  Palette, FolderTree, FileEdit, Users, Image,
-  Terminal, X, Zap, ChevronRight, Wifi, WifiOff,
+  FolderTree, Users, Image,
+  X, Zap, Wifi, WifiOff,
   Loader2, AlertCircle,
 } from 'lucide-react';
 
 // ─── Lazy-loaded panels ───────────────────────────────────────────────────────
 
-const ThemePanel      = lazy(() => import('./panels/ThemePanel'));
-const NavEditorPanel  = lazy(() => import('./panels/NavEditorPanel'));
-const PageEditorPanel = lazy(() => import('./panels/PageEditorPanel'));
-const ContactsPanel   = lazy(() => import('./panels/ContactsPanel'));
-const AssetsPanel     = lazy(() => import('./panels/AssetsPanel'));
-const GeneratePanel   = lazy(() => import('./panels/GeneratePanel'));
-const SettingsPanel   = lazy(() => import('./panels/SettingsPanel'));
+const DocsPanel    = lazy(() => import('./panels/DocsPanel'));
+const ContactsPanel = lazy(() => import('./panels/ContactsPanel'));
+const AssetsPanel   = lazy(() => import('./panels/AssetsPanel'));
 
 // ─── Tab config ───────────────────────────────────────────────────────────────
 
 interface Tab {
   id: string;
   label: string;
-  shortLabel: string;
   icon: React.ReactNode;
   component: React.ComponentType<any>;
   hotkey?: string;
@@ -41,34 +35,16 @@ interface Tab {
 
 const TABS: Tab[] = [
   {
-    id: 'theme',    label: 'Тема',       shortLabel: 'Тема',
-    icon: <Palette   size={14}/>,
-    component: ThemePanel,     hotkey: '1',
+    id: 'docs',     label: 'Docs',     icon: <FolderTree size={14}/>,
+    component: DocsPanel,     hotkey: '1',
   },
   {
-    id: 'nav',      label: 'Навигация',  shortLabel: 'Nav',
-    icon: <FolderTree size={14}/>,
-    component: NavEditorPanel, hotkey: '2',
+    id: 'contacts', label: 'Контакты', icon: <Users size={14}/>,
+    component: ContactsPanel, hotkey: '2',
   },
   {
-    id: 'pages',    label: 'Страницы',   shortLabel: 'MD',
-    icon: <FileEdit  size={14}/>,
-    component: PageEditorPanel,hotkey: '3',
-  },
-  {
-    id: 'contacts', label: 'Контакты',   shortLabel: 'CX',
-    icon: <Users     size={14}/>,
-    component: ContactsPanel,  hotkey: '4',
-  },
-  {
-    id: 'assets',   label: 'Ассеты',     shortLabel: 'IMG',
-    icon: <Image     size={14}/>,
-    component: AssetsPanel,    hotkey: '5',
-  },
-  {
-    id: 'generate', label: 'Generate',   shortLabel: 'GEN',
-    icon: <Terminal  size={14}/>,
-    component: GeneratePanel,  hotkey: '6',
+    id: 'assets',   label: 'Ассеты',   icon: <Image size={14}/>,
+    component: AssetsPanel,   hotkey: '3',
   },
 ];
 
@@ -76,10 +52,10 @@ const TABS: Tab[] = [
 
 function StatusDot({ status }: { status: string }) {
   const map: Record<string, { color: string; label: string; glow: boolean }> = {
-    connected:    { color: '#22c55e', label: 'Подключено',    glow: true  },
+    connected:    { color: '#22c55e', label: 'Подключено',     glow: true  },
     connecting:   { color: '#f59e0b', label: 'Подключение...', glow: false },
-    disconnected: { color: '#6b7280', label: 'Отключено',     glow: false },
-    error:        { color: '#ef4444', label: 'Ошибка',        glow: false },
+    disconnected: { color: '#6b7280', label: 'Отключено',      glow: false },
+    error:        { color: '#ef4444', label: 'Ошибка',         glow: false },
   };
   const s = map[status] ?? map.disconnected;
   return (
@@ -115,7 +91,6 @@ function PanelHeader({
         flexShrink: 0,
         userSelect: 'none',
       }}>
-        {/* Logo */}
         <div style={{
           width: 20, height: 20, borderRadius: 5,
           background: T.accentSoft,
@@ -183,7 +158,7 @@ function PanelHeader({
               title={`${tab.label} (Ctrl+Shift+${tab.hotkey})`}
               style={{
                 display: 'flex', alignItems: 'center', gap: 5,
-                padding: '8px 11px',
+                padding: '8px 14px',
                 border: 'none',
                 borderBottom: active ? `2px solid ${T.accent}` : '2px solid transparent',
                 background: active ? T.accentSoft : 'transparent',
@@ -243,9 +218,7 @@ function DisconnectedOverlay({ status, onRetry }: { status: string; onRetry: () 
           <WifiOff size={24} style={{ color: T.danger, opacity: 0.7 }} />
           <div style={{ fontSize: 12, color: T.fgMuted, textAlign: 'center', lineHeight: 1.5 }}>
             Нет соединения с dev-сервером<br/>
-            <span style={{ fontSize: 10, color: T.fgSub }}>
-              Убедись что запущен `astro dev`
-            </span>
+            <span style={{ fontSize: 10, color: T.fgSub }}>Убедись что запущен `astro dev`</span>
           </div>
           <button
             onClick={onRetry}
@@ -266,14 +239,8 @@ function DisconnectedOverlay({ status, onRetry }: { status: string; onRetry: () 
 
 // ─── Toggle trigger ───────────────────────────────────────────────────────────
 
-function PanelTrigger({
-  visible,
-  onClick,
-  status,
-}: {
-  visible: boolean;
-  onClick: () => void;
-  status: string;
+function PanelTrigger({ visible, onClick, status }: {
+  visible: boolean; onClick: () => void; status: string;
 }) {
   const [hov, setHov] = useState(false);
   const hasIssue = status !== 'connected' && status !== 'connecting';
@@ -285,50 +252,29 @@ function PanelTrigger({
       onMouseLeave={() => setHov(false)}
       title={visible ? 'Скрыть панель (Ctrl+Shift+D)' : 'Dev Panel (Ctrl+Shift+D)'}
       style={{
-        position: 'fixed',
-        right: 0,
-        bottom: 96,
-        zIndex: 99997,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 0,
-        border: 'none',
-        borderRadius: '8px 0 0 8px',
+        position: 'fixed', right: 0, bottom: 96, zIndex: 99997,
+        display: 'flex', alignItems: 'center', gap: 0,
+        border: 'none', borderRadius: '8px 0 0 8px',
         background: hov ? T.accent : visible ? T.bgActive : T.bgPanel,
-        boxShadow: hov
-          ? `-4px 0 20px ${T.accentGlow}`
-          : '-2px 0 12px rgba(0,0,0,0.5)',
-        cursor: 'pointer',
-        transition: 'all 0.18s',
-        overflow: 'hidden',
-        padding: 0,
+        boxShadow: hov ? `-4px 0 20px ${T.accentGlow}` : '-2px 0 12px rgba(0,0,0,0.5)',
+        cursor: 'pointer', transition: 'all 0.18s', overflow: 'hidden', padding: 0,
       }}
     >
-      {/* Accent bar */}
       <div style={{
         width: 3, alignSelf: 'stretch',
         background: visible ? T.accent : hov ? '#fff3' : T.accent + '60',
-        transition: 'background 0.18s',
       }} />
-
-      {/* Icon + label */}
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         gap: 5, padding: '10px 7px',
-        writingMode: 'vertical-rl',
-        textOrientation: 'mixed',
+        writingMode: 'vertical-rl', textOrientation: 'mixed',
       }}>
-        {hasIssue && (
-          <AlertCircle size={10} style={{ color: T.danger }} />
-        )}
+        {hasIssue && <AlertCircle size={10} style={{ color: T.danger }} />}
         <Zap size={12} style={{ color: hov ? '#fff' : T.accent, transform: 'rotate(-90deg)' }} />
         <span style={{
           fontSize: 9, fontWeight: 800, letterSpacing: '0.12em',
-          color: hov ? '#fff' : T.fgMuted,
-          fontFamily: T.mono,
-        }}>
-          DEV
-        </span>
+          color: hov ? '#fff' : T.fgMuted, fontFamily: T.mono,
+        }}>DEV</span>
       </div>
     </button>
   );
@@ -337,18 +283,10 @@ function PanelTrigger({
 // ─── Main DevPanel ────────────────────────────────────────────────────────────
 
 export default function DevPanel() {
-  return (
-    <ThemeProvider>
-      <DevPanelInner />
-    </ThemeProvider>
-  );
-}
-
-function DevPanelInner() {
   const { status } = useDevBridge();
-  const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('theme');
-  const [width, setWidth] = useState(() => {
+  const [open, setOpen]         = useState(false);
+  const [activeTab, setActiveTab] = useState('docs');
+  const [width, setWidth]       = useState(() => {
     try { return parseInt(localStorage.getItem('hub-dev-width') ?? '420'); } catch { return 420; }
   });
 
@@ -357,17 +295,13 @@ function DevPanelInner() {
   const dragStartW  = useRef(0);
   const panelRef    = useRef<HTMLDivElement>(null);
 
-  // ── Keyboard shortcuts ──────────────────────────────────────────────────────
+  // Keyboard shortcuts
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      // Ctrl+Shift+D — toggle panel
       if (e.ctrlKey && e.shiftKey && e.key === 'D') {
-        e.preventDefault();
-        setOpen(v => !v);
-        return;
+        e.preventDefault(); setOpen(v => !v); return;
       }
-      // Ctrl+Shift+1..6 — switch tab
-      if (e.ctrlKey && e.shiftKey && /^[1-6]$/.test(e.key)) {
+      if (e.ctrlKey && e.shiftKey && /^[1-3]$/.test(e.key)) {
         e.preventDefault();
         const tab = TABS[parseInt(e.key) - 1];
         if (tab) { setActiveTab(tab.id); setOpen(true); }
@@ -377,25 +311,24 @@ function DevPanelInner() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  // ── Resize handle ───────────────────────────────────────────────────────────
+  // Resize handle
   const onResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
-    isDragging.current  = true;
-    dragStartX.current  = e.clientX;
-    dragStartW.current  = width;
+    isDragging.current = true;
+    dragStartX.current = e.clientX;
+    dragStartW.current = width;
     document.body.style.cursor     = 'col-resize';
     document.body.style.userSelect = 'none';
 
     const onMove = (ev: MouseEvent) => {
       if (!isDragging.current) return;
-      const next = Math.max(320, Math.min(720, dragStartW.current + (dragStartX.current - ev.clientX)));
+      const next = Math.max(320, Math.min(800, dragStartW.current + (dragStartX.current - ev.clientX)));
       setWidth(next);
     };
     const onUp = () => {
       isDragging.current = false;
       document.body.style.cursor     = '';
       document.body.style.userSelect = '';
-      try { localStorage.setItem('hub-dev-width', String(width)); } catch {}
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
     };
@@ -403,43 +336,30 @@ function DevPanelInner() {
     window.addEventListener('mouseup', onUp);
   }, [width]);
 
-  // Persist width
   useEffect(() => {
     try { localStorage.setItem('hub-dev-width', String(width)); } catch {}
   }, [width]);
 
-  const ActiveComp = TABS.find(t => t.id === activeTab)?.component ?? ThemePanel;
+  const ActiveComp = TABS.find(t => t.id === activeTab)?.component ?? DocsPanel;
 
   if (typeof document === 'undefined') return null;
 
   return createPortal(
     <>
       <DevPanelStyles />
-
       <style>{`
-        @keyframes devPulse {
-          0%,100% { opacity: 1; }
-          50%      { opacity: 0.4; }
-        }
+        @keyframes devPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
       `}</style>
 
-      {/* Trigger button */}
-      <PanelTrigger
-        visible={open}
-        onClick={() => setOpen(v => !v)}
-        status={status}
-      />
+      <PanelTrigger visible={open} onClick={() => setOpen(v => !v)} status={status} />
 
-      {/* Slide-in panel */}
       <div
         ref={panelRef}
         style={{
-          position: 'fixed',
-          top: 0, right: 0, bottom: 0,
+          position: 'fixed', top: 0, right: 0, bottom: 0,
           width,
           zIndex: 99998,
-          display: 'flex',
-          flexDirection: 'column',
+          display: 'flex', flexDirection: 'column',
           background: T.bg,
           borderLeft: `1px solid ${T.border}`,
           boxShadow: open ? '-8px 0 48px rgba(0,0,0,0.7)' : 'none',
@@ -461,7 +381,6 @@ function DevPanelInner() {
           <div style={{
             width: 3, height: 40, borderRadius: 3,
             background: 'rgba(255,255,255,0.1)',
-            transition: 'background 0.15s',
           }} />
         </div>
 
@@ -472,12 +391,8 @@ function DevPanelInner() {
           onTabChange={setActiveTab}
         />
 
-        {/* Panel content */}
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-          <DisconnectedOverlay
-            status={status}
-            onRetry={() => window.location.reload()}
-          />
+          <DisconnectedOverlay status={status} onRetry={() => window.location.reload()} />
 
           <Suspense fallback={
             <div style={{
@@ -493,7 +408,6 @@ function DevPanelInner() {
         </div>
       </div>
 
-      {/* Toast notifications */}
       <ToastContainer />
     </>,
     document.body
