@@ -443,7 +443,7 @@ const DesktopNav: React.FC<{
   const t = tk(isDark);
   const [railVisible, setRailVisible] = useState(true);
 
-  // Восстанавливаем activePanel из sessionStorage — переживает навигацию Astro
+  // Восстанавливаем activePanel и panelWidth из sessionStorage — переживает навигацию Astro
   const [activePanel, setActivePanel] = useState<PanelType>(() => {
     try {
       const s = sessionStorage.getItem('hub:activePanel');
@@ -452,13 +452,25 @@ const DesktopNav: React.FC<{
     return null;
   });
 
-  // Сохраняем panelWidth между сессиями
   const [panelWidth, setPanelWidth] = useState<number>(() => {
     try {
       const w = Number(sessionStorage.getItem('hub:panelWidth'));
       if (w >= PANEL_MIN && w <= PANEL_MAX) return w;
     } catch {}
     return PANEL_DEFAULT;
+  });
+
+  // Синхронно выставляем --nav-left ДО первого рендера контента
+  // Иначе DocContent читает 0 и контент прыгает вправо после гидрации
+  useState(() => {
+    try {
+      const panel = sessionStorage.getItem('hub:activePanel');
+      const hasPanel = panel === 'nav' || panel === 'toc' || panel === 'contacts';
+      const w = Number(sessionStorage.getItem('hub:panelWidth'));
+      const pw = (w >= PANEL_MIN && w <= PANEL_MAX) ? w : PANEL_DEFAULT;
+      const left = RAIL_W + (hasPanel ? pw : 0);
+      document.documentElement.style.setProperty('--nav-left', `${left}px`);
+    } catch {}
   });
   const [searchOpen, setSearchOpen]   = useState(false);
   const [handleHov, setHandleHov]     = useState(false);
@@ -551,25 +563,36 @@ const DesktopNav: React.FC<{
         </button>
       )}
 
-      {/* Panel */}
-      {railVisible && activePanel && (
+      {/* Panel — всегда рендерится, скрывается через width:0 чтобы не дёргаться при навигации */}
+      {railVisible && (
         <aside style={{
           position: 'fixed', left: RAIL_W, top: 0, height: '100vh',
-          width: panelWidth, background: t.panelBg,
-          borderRight: `1px solid ${t.border}`,
-          display: 'flex', flexDirection: 'column', zIndex: 49, overflow: 'hidden',
+          width: activePanel ? panelWidth : 0,
+          background: t.panelBg,
+          borderRight: activePanel ? `1px solid ${t.border}` : 'none',
+          display: 'flex', flexDirection: 'column', zIndex: 49,
+          overflow: 'hidden',
+          // Без transition — мгновенно, без анимации
+          pointerEvents: activePanel ? 'auto' : 'none',
+          visibility: activePanel ? 'visible' : 'hidden',
         }}>
-          <PanelHeader title={panelTitles[activePanel]} isDark={isDark} onClose={() => setActivePanel(null)} />
-          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            {activePanel === 'nav'      && <NavPanelContent isDark={isDark} currentDocSlug={currentDocSlug} onOpenSearch={() => setSearchOpen(true)} />}
-            {activePanel === 'toc'      && <div style={{ flex: 1, overflowY: 'auto' }}><TocPanelContent toc={toc} activeId={activeId} isDark={isDark} /></div>}
-            {activePanel === 'contacts' && <div style={{ overflowY: 'auto' }}><ContactsPanelContent isDark={isDark} /></div>}
-          </div>
+          {activePanel && (
+            <>
+              <PanelHeader title={panelTitles[activePanel]} isDark={isDark} onClose={() => setActivePanel(null)} />
+              <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                {activePanel === 'nav'      && <NavPanelContent isDark={isDark} currentDocSlug={currentDocSlug} onOpenSearch={() => setSearchOpen(true)} />}
+                {activePanel === 'toc'      && <div style={{ flex: 1, overflowY: 'auto' }}><TocPanelContent toc={toc} activeId={activeId} isDark={isDark} /></div>}
+                {activePanel === 'contacts' && <div style={{ overflowY: 'auto' }}><ContactsPanelContent isDark={isDark} /></div>}
+              </div>
+            </>
+          )}
           {/* Resize handle */}
-          <div onMouseDown={onResizeMouseDown} onMouseEnter={() => setHandleHov(true)} onMouseLeave={() => setHandleHov(false)}
-            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '8px', cursor: 'col-resize', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ width: '3px', height: '56px', borderRadius: '3px', background: handleHov ? t.handleHov : t.handle, pointerEvents: 'none' }} />
-          </div>
+          {activePanel && (
+            <div onMouseDown={onResizeMouseDown} onMouseEnter={() => setHandleHov(true)} onMouseLeave={() => setHandleHov(false)}
+              style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '8px', cursor: 'col-resize', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: '3px', height: '56px', borderRadius: '3px', background: handleHov ? t.handleHov : t.handle, pointerEvents: 'none' }} />
+            </div>
+          )}
         </aside>
       )}
 
