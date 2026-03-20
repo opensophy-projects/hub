@@ -278,7 +278,7 @@ const NavPanelContent: React.FC<{
       {/* Поиск — только фильтр, без кнопки расширенного */}
       <div style={{ flexShrink: 0, padding: '10px', borderBottom: `1px solid ${t.border}` }}>
         <div style={{ position: 'relative' }}>
-          <Search size={13} style={{ position: 'absolute', left: '0.6rem', top: '50%', transform: 'translateY(-50%)', color: t.fgMuted, pointerEvents: 'none' }} />
+          <Search size={13} style={{ position: 'absolute', left: '0.6rem', top: '50%', transform: 'translateY(-50%)', color: t.fgSub, pointerEvents: 'none' }} />
           <input
             type="text" placeholder="Фильтр по названию..." value={query}
             onChange={e => setQuery(e.target.value)}
@@ -286,7 +286,7 @@ const NavPanelContent: React.FC<{
               width: '100%', paddingLeft: '2rem', paddingRight: '0.5rem',
               paddingTop: '0.4rem', paddingBottom: '0.4rem',
               borderRadius: '7px', fontSize: '0.83rem',
-              border: `1px solid ${t.border}`, background: t.inputBg, color: t.inputClr,
+              border: `1px solid ${t.border}`, background: 'transparent', color: t.fg,
               outline: 'none', boxSizing: 'border-box',
             }}
           />
@@ -311,7 +311,7 @@ const NavPanelContent: React.FC<{
             <div style={{
               position: 'absolute', left: '10px', right: '10px', top: 'calc(100% - 2px)',
               borderRadius: '10px', border: `1px solid ${t.border}`, background: t.panelBg,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.4)', zIndex: 100, overflow: 'hidden',
+              zIndex: 100, overflow: 'hidden',
             }}>
               {sections.map(s => (
                 <button key={s.navSlug} onClick={() => {
@@ -686,14 +686,23 @@ const MobileNav: React.FC<{
   currentDocSlug?: string; toc: TocItem[]; activeId: string;
 }> = ({ isDark, toggleTheme, currentDocSlug, toc, activeId }) => {
   const t = tk(isDark);
-  const [sheet, setSheet]         = useState<MobileSheet>(null);
+  const [sheet, setSheet]           = useState<MobileSheet>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const scrollBarRef = useRef<HTMLDivElement>(null);
 
   const close  = () => setSheet(null);
   const toggle = (s: MobileSheet) => setSheet(prev => prev === s ? null : s);
 
-  // НЕ закрываем при навигации
-  // useEffect нарочно убран — панели остаются открытыми
+  // Прокручиваем бар так, чтобы {Панель}{Тема} были за левым fade,
+  // а {Контакты} за правым — видимая зона: Поиск/Разделы/Лого/Оглавл./Наверх
+  useEffect(() => {
+    const el = scrollBarRef.current;
+    if (!el) return;
+    // Ширина двух скрытых кнопок слева (52px * 2 = 104px)
+    el.scrollLeft = 52 * 2;
+  }, []);
+
+  // НЕ закрываем панели при навигации — убираем astro:after-swap listener
 
   const SHEET_H: Record<string, string> = { nav: '75dvh', toc: '65dvh', contacts: '50dvh' };
 
@@ -737,7 +746,7 @@ const MobileNav: React.FC<{
               <>
                 <PanelHeader title="Оглавление" isDark={isDark} onClose={close} />
                 <div style={{ flex: 1, overflowY: 'auto' }}>
-                  <TocPanelContent toc={toc} activeId={activeId} isDark={isDark} onItemClick={close} />
+                  <TocPanelContent toc={toc} activeId={activeId} isDark={isDark} />
                 </div>
               </>
             )}
@@ -766,14 +775,18 @@ const MobileNav: React.FC<{
         <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 44, background: fadeGrad('left'),  zIndex: 2, pointerEvents: 'none' }} />
 
         {/* Скроллируемый ряд кнопок */}
-        <div style={{
-          display: 'flex', alignItems: 'stretch', height: '100%',
-          overflowX: 'auto', overflowY: 'hidden',
-          scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' as any,
-          scrollSnapType: 'x proximity',
-          paddingLeft: '2px', paddingRight: '2px',
-        }}>
-          <style>{`nav .mob-scroll::-webkit-scrollbar{display:none}`}</style>
+        <div
+          ref={scrollBarRef}
+          className="mob-nav-bar"
+          style={{
+            display: 'flex', alignItems: 'stretch', height: '100%',
+            overflowX: 'auto', overflowY: 'hidden',
+            scrollbarWidth: 'none' as any,
+            scrollSnapType: 'x proximity',
+            paddingLeft: '2px', paddingRight: '2px',
+          }}
+        >
+          <style>{`.mob-nav-bar::-webkit-scrollbar{display:none}`}</style>
 
           {/* {Панель} — скрыта слева под fade */}
           <MobBtn label="Панель"   icon={<PanelLeft size={19} />}                                 isDark={isDark} onClick={() => {}}          isActive={false} />
