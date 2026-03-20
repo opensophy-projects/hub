@@ -5,11 +5,6 @@ import { ClientRouter } from 'astro:transitions';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import ErrorBoundary from '@/shared/components/ErrorBoundary';
 
-// SearchWrapper removed — it was mounted as a separate React island but search
-// is opened exclusively via buttons inside Navigation.tsx. The island never
-// received a trigger and was dead code. Search now lives entirely inside
-// Navigation (both desktop and mobile panels).
-
 interface Props {
   title: string;
   description?: string;
@@ -38,6 +33,19 @@ const fullUrl  = new URL(url, 'https://hub.opensophy.com').href;
 const imageUrl = image
   ? new URL(image, 'https://hub.opensophy.com').href
   : 'https://hub.opensophy.com/og-image.png';
+
+// ─── Dev Panel ────────────────────────────────────────────────────────────────
+// import.meta.env.DEV === false в production → Vite tree-shakes весь блок
+// Условный импорт гарантирует что код панели не попадает в prod-бандл
+
+const isDev = import.meta.env.DEV;
+
+// Условный импорт только в dev-режиме
+let DevPanelIsland: any = null;
+if (isDev) {
+  const { default: Loader } = await import('@/features/dev-panel/DevPanelLoader');
+  DevPanelIsland = Loader;
+}
 ---
 
 <!doctype html>
@@ -46,6 +54,7 @@ const imageUrl = image
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+    <!-- Theme init script (inline, runs before paint) -->
     <script is:inline>
       (function () {
         var theme = localStorage.getItem('theme');
@@ -62,16 +71,19 @@ const imageUrl = image
       })();
     </script>
 
+    <!-- SEO -->
     <meta name="description" content={description} />
     <meta name="keywords"    content={keywords} />
     <meta name="robots"      content={robots} />
 
+    <!-- Open Graph -->
     <meta property="og:title"       content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type"        content={type} />
     <meta property="og:url"         content={fullUrl} />
     <meta property="og:image"       content={imageUrl} />
 
+    <!-- Twitter -->
     <meta name="twitter:card"        content="summary_large_image" />
     <meta name="twitter:title"       content={title} />
     <meta name="twitter:description" content={description} />
@@ -130,6 +142,18 @@ const imageUrl = image
       </ThemeProvider>
     </ErrorBoundary>
 
+    <!--
+      ╔══════════════════════════════════════════════════════════╗
+      ║  DEV PANEL — only in development mode                   ║
+      ║  Completely absent from production build HTML           ║
+      ║  Hotkey: Ctrl+Shift+D                                   ║
+      ╚══════════════════════════════════════════════════════════╝
+    -->
+    {isDev && DevPanelIsland && (
+      <DevPanelIsland client:only="react" />
+    )}
+
+    <!-- Theme sync after SPA navigation -->
     <script is:inline>
       document.addEventListener('astro:after-swap', function () {
         var theme = localStorage.getItem('theme') || 'dark';
