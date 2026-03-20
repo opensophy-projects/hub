@@ -5,6 +5,12 @@ import { ClientRouter } from 'astro:transitions';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import ErrorBoundary from '@/shared/components/ErrorBoundary';
 
+// ─── Dev Panel ────────────────────────────────────────────────────────────────
+// Astro требует статический import для client:only — нельзя через переменную.
+// Решение: всегда импортируем, но сам компонент внутри проверяет import.meta.env.DEV
+// и возвращает null в production. Vite tree-shaking уберёт мёртвый код при билде.
+import DevPanelLoader from '@/features/dev-panel/DevPanelLoader';
+
 interface Props {
   title: string;
   description?: string;
@@ -34,18 +40,7 @@ const imageUrl = image
   ? new URL(image, 'https://hub.opensophy.com').href
   : 'https://hub.opensophy.com/og-image.png';
 
-// ─── Dev Panel ────────────────────────────────────────────────────────────────
-// import.meta.env.DEV === false в production → Vite tree-shakes весь блок
-// Условный импорт гарантирует что код панели не попадает в prod-бандл
-
 const isDev = import.meta.env.DEV;
-
-// Условный импорт только в dev-режиме
-let DevPanelIsland: any = null;
-if (isDev) {
-  const { default: Loader } = await import('@/features/dev-panel/DevPanelLoader');
-  DevPanelIsland = Loader;
-}
 ---
 
 <!doctype html>
@@ -54,7 +49,6 @@ if (isDev) {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Theme init script (inline, runs before paint) -->
     <script is:inline>
       (function () {
         var theme = localStorage.getItem('theme');
@@ -71,19 +65,16 @@ if (isDev) {
       })();
     </script>
 
-    <!-- SEO -->
     <meta name="description" content={description} />
     <meta name="keywords"    content={keywords} />
     <meta name="robots"      content={robots} />
 
-    <!-- Open Graph -->
     <meta property="og:title"       content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type"        content={type} />
     <meta property="og:url"         content={fullUrl} />
     <meta property="og:image"       content={imageUrl} />
 
-    <!-- Twitter -->
     <meta name="twitter:card"        content="summary_large_image" />
     <meta name="twitter:title"       content={title} />
     <meta name="twitter:description" content={description} />
@@ -143,17 +134,12 @@ if (isDev) {
     </ErrorBoundary>
 
     <!--
-      ╔══════════════════════════════════════════════════════════╗
-      ║  DEV PANEL — only in development mode                   ║
-      ║  Completely absent from production build HTML           ║
-      ║  Hotkey: Ctrl+Shift+D                                   ║
-      ╚══════════════════════════════════════════════════════════╝
+      Dev Panel — статический импорт обязателен для client:only.
+      DevPanelLoader сам проверяет import.meta.env.DEV и возвращает null в prod.
+      Горячая клавиша: Ctrl+Shift+D
     -->
-    {isDev && DevPanelIsland && (
-      <DevPanelIsland client:only="react" />
-    )}
+    <DevPanelLoader client:only="react" />
 
-    <!-- Theme sync after SPA navigation -->
     <script is:inline>
       document.addEventListener('astro:after-swap', function () {
         var theme = localStorage.getItem('theme') || 'dark';
