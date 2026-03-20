@@ -1,3 +1,9 @@
+/* hub-dev-panel-vars-start */
+:root {
+  --accent-primary: #4b13cd;
+}
+/* hub-dev-panel-vars-end */
+
 @import 'katex/dist/katex.min.css';
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
