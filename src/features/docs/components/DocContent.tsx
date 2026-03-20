@@ -1,6 +1,6 @@
 import React, { useState, useMemo, Suspense, lazy, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
+import { useTheme } from '@/shared/contexts/ThemeContext';
 import Navigation from '@/features/navigation/components/Navigation';
 import { parseHtmlToReact, TableContext } from '@/shared/lib/htmlParser';
 import { useTableOfContents } from '../hooks/useTableOfContents';
@@ -117,9 +117,11 @@ const DocHero: React.FC<{ doc: DocContentProps['doc']; isDark: boolean; readTime
   );
 };
 
-// ─── DocContentMain ───────────────────────────────────────────────────────────
+// ─── DocContent ───────────────────────────────────────────────────────────────
+// ThemeProvider removed — Layout.astro already wraps everything in ThemeProvider.
+// DocContent now consumes useTheme() directly, same as any other component.
 
-const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
+const DocContent: React.FC<DocContentProps> = ({ doc }) => {
   const { isDark } = useTheme();
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
 
@@ -127,8 +129,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const progressBarRef = useScrollProgress();
   const activeId       = useActiveHeading(toc);
 
-  // Следим за шириной навигации через CSS-переменную --nav-left,
-  // которую выставляет DesktopNav при изменении состояния панели/рейла.
   const [isDesktop, setIsDesktop] = useState(false);
   const [navLeft, setNavLeft] = useState('0px');
 
@@ -145,9 +145,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
     };
   }, []);
 
-  // Читаем --nav-left из :root и обновляем при любых изменениях.
-  // Navigation.tsx выставляет её через style.setProperty каждый раз,
-  // когда меняется ширина рейла или панели (в т.ч. при ресайзе drag-handle).
   useEffect(() => {
     if (!isDesktop) { setNavLeft('0px'); return; }
 
@@ -156,10 +153,8 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
       setNavLeft(val || '64px');
     };
 
-    // Начальное чтение
     readVar();
 
-    // MutationObserver на style-атрибут <html> — срабатывает при каждом setProperty
     const observer = new MutationObserver(readVar);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
 
@@ -179,10 +174,8 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
         style={{ position: 'fixed', top: 0, left: 0, height: '2px', width: '0%', background: isDark ? '#fff' : '#000', zIndex: 999, transition: 'none' }}
       />
 
-      {/* Навигация — управляет --nav-left */}
       <Navigation currentDocSlug={doc.slug} toc={toc} activeHeadingId={activeId} />
 
-      {/* Контент — marginLeft следует за --nav-left без жёсткого хардкода */}
       <main
         className={`min-h-screen ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}
         style={{
@@ -220,11 +213,5 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
     </div>
   );
 };
-
-const DocContent: React.FC<DocContentProps> = ({ doc }) => (
-  <ThemeProvider>
-    <DocContentMain doc={doc} />
-  </ThemeProvider>
-);
 
 export default DocContent;
