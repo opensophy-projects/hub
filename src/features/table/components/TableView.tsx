@@ -74,7 +74,6 @@ export const TableView: React.FC<TableViewProps> = ({
           -webkit-overflow-scrolling: touch;
           scrollbar-width: thin;
           scrollbar-color: ${t.thumb} ${t.track};
-          /* FIX: width:100% ensures scroll container fills the parent fully */
           width: 100%;
           display: block;
           touch-action: pan-x pan-y;
@@ -85,14 +84,7 @@ export const TableView: React.FC<TableViewProps> = ({
         .tb-scroll::-webkit-scrollbar-thumb:hover { background: ${t.thumbHov}; }
         .tb-scroll::-webkit-scrollbar-corner { background: transparent; }
 
-        /* FIX: tb-scroll-wrap must also be full width */
-        .tb-scroll-wrap {
-          position: relative;
-          width: 100%;
-          min-width: 0;
-          overflow: hidden;
-        }
-        /* Fade edges only when content overflows — keep them subtle */
+        .tb-scroll-wrap { position: relative; width: 100%; min-width: 0; }
         .tb-scroll-wrap::after {
           content: '';
           position: absolute;
@@ -122,8 +114,7 @@ export const TableView: React.FC<TableViewProps> = ({
           display: fullscreen ? 'flex' : undefined,
           flexDirection: fullscreen ? 'column' : undefined,
           minHeight: 0,
-          // FIX: don't use overflow:hidden here — it was cutting off the table width
-          // tb-scroll handles the scrolling; tb-scroll-wrap just clips the fade gradients
+          overflow: 'hidden',
         }}
       >
         <div
@@ -137,11 +128,15 @@ export const TableView: React.FC<TableViewProps> = ({
           }}
           {...dragHandlers}
         >
+          {/*
+            FIX: table needs BOTH width:100% (fill container) and minWidth:max-content
+            (allow horizontal scroll when content is wider).
+            The inline style overrides the .prose table { width: auto } from global.css
+            which was the root cause — it made the table shrink to content width.
+          */}
           <table style={{
             borderCollapse: 'separate',
             borderSpacing: 0,
-            // FIX: use width:100% so table fills container on narrow screens
-            // minWidth:max-content was causing table to be too small with empty space
             width: '100%',
             minWidth: 'max-content',
             tableLayout: 'auto',
@@ -204,7 +199,6 @@ const TableHead: React.FC<{
           borderBottom: `1px solid ${t.thBorder}`,
           borderTop: 'none', borderLeft: 'none', borderRight: 'none',
           boxShadow: 'none',
-          transition: 'color 0.14s',
           whiteSpace: 'nowrap',
         }}>
           <div style={{
@@ -291,7 +285,7 @@ const TableRow: React.FC<{
 
   return (
     <tr
-      style={{ background: bg, transition: 'background 0.1s ease' }}
+      style={{ background: bg }}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
     >
@@ -302,7 +296,7 @@ const TableRow: React.FC<{
           borderBottom: `1px solid ${t.cellBorder}`,
           borderTop: 'none', borderLeft: 'none', borderRight: 'none',
           color: t.cellColor, fontSize: 13.5,
-          background: bg, transition: 'background 0.1s ease',
+          background: bg,
         }}>
           <CellContent html={cell} searchQuery={searchQuery} />
         </td>
