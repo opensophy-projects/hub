@@ -607,7 +607,7 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
 
       <StatusBar
         left={`${body.trim().split(/\s+/).filter(Boolean).length} слов`}
-        right={dirty ? '● Ctrl+S для сохранения' : '✓ Сохранено'}
+        right={saving ? '⟳ сохраняется...' : dirty ? '● Ctrl+S для сохранения' : '✓ Сохранено'}
       />
     </div>
   );
