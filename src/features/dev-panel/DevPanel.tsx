@@ -1,28 +1,22 @@
 /**
- * DevPanel v5 — Админ Панель
- * Дизайн в стиле UnifiedSearchPanel: floating overlay, backdrop blur
- * Тема: light/dark sync с проектом
+ * DevPanel v6
+ * Fixes: no backdrop blur, draggable+resizable panel, no purple accent,
+ * tabs don't go grey on click, no footer kbd hints, proper light theme
  */
 
 import React, {
-  useState, useCallback, useEffect, useRef, Suspense, lazy,
+  useState, useEffect, useRef, useCallback, Suspense, lazy,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useDevBridge } from './useDevBridge';
 import { ToastContainer } from './components/Toast';
-import {
-  FileText, Users, Image,
-  X, UserCog, WifiOff, Wifi,
-  Loader2, AlertCircle, Settings2,
-} from 'lucide-react';
-
-// ─── Lazy-loaded panels ───────────────────────────────────────────────────────
+import { FileText, Users, Image, X, UserCog, WifiOff, Loader2, AlertCircle } from 'lucide-react';
 
 const DocsPanel     = lazy(() => import('./panels/DocsPanel'));
 const ContactsPanel = lazy(() => import('./panels/ContactsPanel'));
 const AssetsPanel   = lazy(() => import('./panels/AssetsPanel'));
 
-// ─── Theme hook ───────────────────────────────────────────────────────────────
+// ─── Theme ────────────────────────────────────────────────────────────────────
 
 export function useIsDark(): boolean {
   const [isDark, setIsDark] = useState(() =>
@@ -31,466 +25,359 @@ export function useIsDark(): boolean {
       : true
   );
   useEffect(() => {
-    const onTheme = (e: Event) => {
-      setIsDark((e as CustomEvent<{ isDark: boolean }>).detail.isDark);
-    };
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === 'theme') setIsDark(e.newValue !== 'light');
-    };
-    window.addEventListener('hub:theme-change', onTheme);
-    window.addEventListener('storage', onStorage);
-    return () => {
-      window.removeEventListener('hub:theme-change', onTheme);
-      window.removeEventListener('storage', onStorage);
-    };
+    const a = (e: Event) => setIsDark((e as CustomEvent<{ isDark: boolean }>).detail.isDark);
+    const b = (e: StorageEvent) => { if (e.key === 'theme') setIsDark(e.newValue !== 'light'); };
+    window.addEventListener('hub:theme-change', a);
+    window.addEventListener('storage', b);
+    return () => { window.removeEventListener('hub:theme-change', a); window.removeEventListener('storage', b); };
   }, []);
   return isDark;
 }
 
-// ─── Design tokens — matching UnifiedSearchPanel style ────────────────────────
-
 export function makeT(isDark: boolean) {
+  // No purple — use neutral whites/blacks with a single green accent for active state
   return isDark ? {
-    // Panel backgrounds
-    overlay:    'rgba(0,0,0,0.55)',
-    bg:         '#0F0F0F',
-    surface:    '#161616',
-    surfaceHov: '#1e1e1e',
-    surfaceAct: '#222',
-    border:     'rgba(255,255,255,0.08)',
-    borderStrong:'rgba(255,255,255,0.16)',
-    // Text
-    fg:         '#e8e8e8',
-    fgMuted:    'rgba(255,255,255,0.42)',
-    fgSub:      'rgba(255,255,255,0.22)',
-    // Accent
-    accent:     '#7c5cfc',
-    accentSoft: 'rgba(124,92,252,0.12)',
-    accentBorder:'rgba(124,92,252,0.35)',
-    // Status
-    success:    '#22c55e',
-    successSoft:'rgba(34,197,94,0.12)',
-    danger:     '#ef4444',
-    dangerSoft: 'rgba(239,68,68,0.1)',
-    warning:    '#f59e0b',
-    // Misc
-    mono:       'ui-monospace, "Cascadia Code", "Fira Code", monospace',
-    kbd:        'rgba(255,255,255,0.07)',
-    kbdBorder:  'rgba(255,255,255,0.13)',
-    shadow:     '0 40px 100px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.04) inset',
-    shadow2:    '0 8px 32px rgba(0,0,0,0.7)',
-    // Input
-    inpBg:      '#1a1a1a',
-    inpBorder:  'rgba(255,255,255,0.12)',
-    inpFocus:   'rgba(124,92,252,0.5)',
-    // Tab
-    tabActiveBg:'rgba(124,92,252,0.12)',
-    tabActiveBorder: 'rgba(124,92,252,0.5)',
-    // Code/editor
-    editorBg:   '#0d0d0d',
-    editorFg:   '#e2e8f0',
-    caret:      '#e2e8f0',
-    lineNum:    '#444',
+    bg:          '#111112',
+    surface:     '#18181a',
+    surfaceHov:  '#1f1f22',
+    border:      'rgba(255,255,255,0.09)',
+    borderStrong:'rgba(255,255,255,0.18)',
+    fg:          '#e8e8e8',
+    fgMuted:     'rgba(255,255,255,0.4)',
+    fgSub:       'rgba(255,255,255,0.2)',
+    accent:      '#e8e8e8',       // white — used for active tab text/border
+    accentSoft:  'rgba(255,255,255,0.06)',
+    accentBorder:'rgba(255,255,255,0.2)',
+    success:     '#22c55e',
+    danger:      '#ef4444',
+    warning:     '#f59e0b',
+    mono:        'ui-monospace, "Cascadia Code", "Fira Code", monospace',
+    shadow:      '0 8px 40px rgba(0,0,0,0.7)',
+    inpBg:       '#1e1e20',
+    inpBorder:   'rgba(255,255,255,0.12)',
+    dragHandle:  'rgba(255,255,255,0.08)',
+    dragHandleHov:'rgba(255,255,255,0.2)',
+    editorBg:    '#0d0d0e',
+    editorFg:    '#e2e8f0',
   } : {
-    overlay:    'rgba(0,0,0,0.28)',
-    bg:         '#E1E0DC',
-    surface:    '#D8D7D3',
-    surfaceHov: '#CCCBC7',
-    surfaceAct: '#C4C3BF',
-    border:     'rgba(0,0,0,0.08)',
-    borderStrong:'rgba(0,0,0,0.18)',
-    fg:         '#111111',
-    fgMuted:    'rgba(0,0,0,0.45)',
-    fgSub:      'rgba(0,0,0,0.28)',
-    accent:     '#6b46e8',
-    accentSoft: 'rgba(107,70,232,0.1)',
-    accentBorder:'rgba(107,70,232,0.35)',
-    success:    '#16a34a',
-    successSoft:'rgba(22,163,74,0.1)',
-    danger:     '#dc2626',
-    dangerSoft: 'rgba(220,38,38,0.08)',
-    warning:    '#d97706',
-    mono:       'ui-monospace, "Cascadia Code", "Fira Code", monospace',
-    kbd:        'rgba(0,0,0,0.06)',
-    kbdBorder:  'rgba(0,0,0,0.12)',
-    shadow:     '0 40px 100px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,255,255,0.6) inset',
-    shadow2:    '0 8px 28px rgba(0,0,0,0.16)',
-    inpBg:      '#E8E7E3',
-    inpBorder:  'rgba(0,0,0,0.12)',
-    inpFocus:   'rgba(107,70,232,0.5)',
-    tabActiveBg:'rgba(107,70,232,0.1)',
-    tabActiveBorder: 'rgba(107,70,232,0.5)',
-    editorBg:   '#F0EFEB',
-    editorFg:   '#1e293b',
-    caret:      '#1e293b',
-    lineNum:    '#aaa',
+    bg:          '#f0efeb',
+    surface:     '#e5e4e0',
+    surfaceHov:  '#dddcd8',
+    border:      'rgba(0,0,0,0.1)',
+    borderStrong:'rgba(0,0,0,0.2)',
+    fg:          '#111111',
+    fgMuted:     'rgba(0,0,0,0.45)',
+    fgSub:       'rgba(0,0,0,0.25)',
+    accent:      '#111111',       // black — used for active tab text/border
+    accentSoft:  'rgba(0,0,0,0.06)',
+    accentBorder:'rgba(0,0,0,0.25)',
+    success:     '#16a34a',
+    danger:      '#dc2626',
+    warning:     '#d97706',
+    mono:        'ui-monospace, "Cascadia Code", "Fira Code", monospace',
+    shadow:      '0 8px 32px rgba(0,0,0,0.18)',
+    inpBg:       '#e8e7e3',
+    inpBorder:   'rgba(0,0,0,0.12)',
+    dragHandle:  'rgba(0,0,0,0.1)',
+    dragHandleHov:'rgba(0,0,0,0.3)',
+    editorBg:    '#eceae5',
+    editorFg:    '#1e293b',
   };
 }
 
 export type TTokens = ReturnType<typeof makeT>;
 export const ThemeTokensContext = React.createContext<TTokens>(makeT(true));
 
-// ─── Tabs ─────────────────────────────────────────────────────────────────────
-
 const TABS = [
-  { id: 'docs',     label: 'Страницы', icon: <FileText size={14}/>,  hotkey: '1' },
-  { id: 'contacts', label: 'Контакты', icon: <Users size={14}/>,     hotkey: '2' },
-  { id: 'assets',   label: 'Ассеты',   icon: <Image size={14}/>,     hotkey: '3' },
+  { id: 'docs',     label: 'Страницы', icon: <FileText size={13}/> },
+  { id: 'contacts', label: 'Контакты', icon: <Users size={13}/>    },
+  { id: 'assets',   label: 'Ассеты',   icon: <Image size={13}/>    },
 ];
 
-// ─── Status pill ──────────────────────────────────────────────────────────────
-
-function StatusPill({ status, t }: { status: string; t: TTokens }) {
-  const map: Record<string, { color: string; bg: string; label: string; dot?: string }> = {
-    connected:    { color: '#22c55e', bg: 'rgba(34,197,94,0.12)',   label: 'Подключено'    },
-    connecting:   { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  label: 'Подключение...' },
-    disconnected: { color: t.fgMuted, bg: t.surface,                label: 'Отключено'     },
-    error:        { color: '#ef4444', bg: 'rgba(239,68,68,0.1)',    label: 'Ошибка'        },
-  };
-  const s = map[status] ?? map.disconnected;
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 5,
-      padding: '3px 8px', borderRadius: 20,
-      background: s.bg, border: `1px solid ${s.color}30`,
-      fontSize: 10, color: s.color, fontFamily: 'inherit',
-    }}>
-      <div style={{
-        width: 5, height: 5, borderRadius: '50%', background: s.color, flexShrink: 0,
-        boxShadow: status === 'connected' ? `0 0 5px ${s.color}` : 'none',
-        animation: status === 'connecting' ? 'devPulse 1s ease-in-out infinite' : 'none',
-      }}/>
-      {s.label}
-    </div>
-  );
-}
-
-// ─── Floating trigger button (bottom-left of rail) ────────────────────────────
+// ─── Trigger button ───────────────────────────────────────────────────────────
 
 function PanelTrigger({ open, onClick, status, t }: {
   open: boolean; onClick: () => void; status: string; t: TTokens;
 }) {
-  const [hov, setHov] = useState(false);
   const hasIssue = status !== 'connected' && status !== 'connecting';
-
   return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      title={open ? 'Закрыть панель (Ctrl+Shift+D)' : 'Админ Панель (Ctrl+Shift+D)'}
+    <button onClick={onClick} title="Админ Панель (Ctrl+Shift+D)"
       style={{
-        position: 'fixed',
-        left: 8, bottom: 70,
-        zIndex: 99997,
-        width: 48, height: 48,
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        gap: 2,
-        borderRadius: 12,
-        border: `1px solid ${open || hov ? t.accentBorder : t.border}`,
-        background: open
-          ? t.accentSoft
-          : hov
-            ? t.surfaceHov
-            : t.surface,
-        color: open || hov ? t.accent : t.fgMuted,
-        cursor: 'pointer',
-        transition: 'all 0.16s ease',
-        boxShadow: open || hov ? `0 4px 16px ${t.accent}30` : t.shadow2,
+        position: 'fixed', left: 8, bottom: 70, zIndex: 99997,
+        width: 44, height: 44,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+        borderRadius: 10,
+        border: `1px solid ${t.border}`,
+        background: open ? t.surfaceHov : t.surface,
+        color: t.fgMuted, cursor: 'pointer',
+        boxShadow: t.shadow,
       }}
+      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.surfaceHov; (e.currentTarget as HTMLButtonElement).style.color = t.fg; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = open ? t.surfaceHov : t.surface; (e.currentTarget as HTMLButtonElement).style.color = t.fgMuted; }}
     >
-      {hasIssue
-        ? <AlertCircle size={16} style={{ color: t.danger }}/>
-        : open
-          ? <X size={16}/>
-          : <UserCog size={16}/>
-      }
-      <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.04em', fontFamily: t.mono }}>
-        ADMIN
-      </span>
+      {hasIssue ? <AlertCircle size={15} style={{ color: t.danger }}/> : <UserCog size={15}/>}
+      <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.05em', fontFamily: t.mono }}>ADMIN</span>
     </button>
   );
 }
 
-// ─── Main Panel (floating, like UnifiedSearchPanel) ───────────────────────────
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function DevPanel() {
   const { status } = useDevBridge();
   const isDark = useIsDark();
   const t = React.useMemo(() => makeT(isDark), [isDark]);
 
-  const [open, setOpen]         = useState(false);
-  const [activeTab, setActiveTab] = useState('docs');
+  const [open, setOpen]       = useState(false);
+  const [tab, setTab]         = useState('docs');
 
-  // Keyboard shortcuts
+  // Panel position & size (draggable + resizable)
+  const [pos, setPos]   = useState({ x: window.innerWidth - 520 - 24, y: 40 });
+  const [size, setSize] = useState({ w: 520, h: Math.min(820, window.innerHeight - 80) });
+
+  const dragging  = useRef(false);
+  const resizing  = useRef<'r'|'b'|'rb'|null>(null);
+  const startData = useRef({ mx: 0, my: 0, x: 0, y: 0, w: 0, h: 0 });
+
+  // Drag header
+  const onDragStart = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button')) return;
+    e.preventDefault();
+    dragging.current = true;
+    startData.current = { mx: e.clientX, my: e.clientY, x: pos.x, y: pos.y, w: size.w, h: size.h };
+    document.body.style.userSelect = 'none';
+  };
+
+  // Resize handles
+  const onResizeStart = (e: React.MouseEvent, dir: 'r'|'b'|'rb') => {
+    e.preventDefault(); e.stopPropagation();
+    resizing.current = dir;
+    startData.current = { mx: e.clientX, my: e.clientY, x: pos.x, y: pos.y, w: size.w, h: size.h };
+    document.body.style.userSelect = 'none';
+  };
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
-        e.preventDefault(); setOpen(v => !v); return;
+    const onMove = (e: MouseEvent) => {
+      const d = startData.current;
+      if (dragging.current) {
+        setPos({
+          x: Math.max(0, Math.min(window.innerWidth - size.w, d.x + e.clientX - d.mx)),
+          y: Math.max(0, Math.min(window.innerHeight - 60, d.y + e.clientY - d.my)),
+        });
       }
-      if (open && e.ctrlKey && e.shiftKey && /^[1-3]$/.test(e.key)) {
-        e.preventDefault();
-        const tab = TABS[parseInt(e.key) - 1];
-        if (tab) setActiveTab(tab.id);
+      if (resizing.current) {
+        const dx = e.clientX - d.mx, dy = e.clientY - d.my;
+        if (resizing.current === 'r' || resizing.current === 'rb')
+          setSize(s => ({ ...s, w: Math.max(380, Math.min(900, d.w + dx)) }));
+        if (resizing.current === 'b' || resizing.current === 'rb')
+          setSize(s => ({ ...s, h: Math.max(300, Math.min(window.innerHeight - 40, d.h + dy)) }));
       }
+    };
+    const onUp = () => {
+      dragging.current = false;
+      resizing.current = null;
+      document.body.style.userSelect = '';
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+  }, [size.w]);
+
+  // Keyboard
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') { e.preventDefault(); setOpen(v => !v); }
       if (open && e.key === 'Escape') setOpen(false);
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
   }, [open]);
-
-  const ActivePanel = TABS.find(t => t.id === activeTab)?.id === 'docs'
-    ? DocsPanel
-    : TABS.find(t => t.id === activeTab)?.id === 'contacts'
-      ? ContactsPanel
-      : AssetsPanel;
 
   if (typeof document === 'undefined') return null;
 
   return createPortal(
     <ThemeTokensContext.Provider value={t}>
       <style>{`
-        @keyframes devPulse { 0%,100%{opacity:1}50%{opacity:0.4} }
-        @keyframes devSpinAnim { to { transform: rotate(360deg); } }
-        @keyframes adminPanelIn {
-          from { opacity:0; transform:translateY(-6px) scale(0.98); }
-          to   { opacity:1; transform:translateY(0) scale(1); }
-        }
-        .admin-scroll::-webkit-scrollbar { width:4px; height:4px; }
-        .admin-scroll::-webkit-scrollbar-track { background:transparent; }
-        .admin-scroll::-webkit-scrollbar-thumb { background:rgba(128,128,128,0.25); border-radius:4px; }
+        @keyframes devPulse{0%,100%{opacity:1}50%{opacity:0.4}}
+        @keyframes devSpinAnim{to{transform:rotate(360deg)}}
+        .adm-scroll::-webkit-scrollbar{width:4px;height:4px}
+        .adm-scroll::-webkit-scrollbar-track{background:transparent}
+        .adm-scroll::-webkit-scrollbar-thumb{background:rgba(128,128,128,0.2);border-radius:4px}
       `}</style>
 
-      <PanelTrigger open={open} onClick={() => setOpen(v => !v)} status={status} t={t} />
+      <PanelTrigger open={open} onClick={() => setOpen(v => !v)} status={status} t={t}/>
 
       {open && (
-        <>
-          {/* Backdrop */}
+        <div style={{
+          position: 'fixed',
+          left: pos.x, top: pos.y,
+          width: size.w, height: size.h,
+          zIndex: 99999,
+          background: t.bg,
+          border: `1px solid ${t.borderStrong}`,
+          borderRadius: 12,
+          boxShadow: t.shadow,
+          display: 'flex', flexDirection: 'column',
+          overflow: 'hidden',
+          fontFamily: t.mono,
+          // No backdrop-filter, no blur
+        }}>
+
+          {/* ── Header (drag handle) ── */}
           <div
-            onClick={() => setOpen(false)}
+            onMouseDown={onDragStart}
             style={{
-              position: 'fixed', inset: 0, zIndex: 99998,
-              background: t.overlay,
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-              animation: 'adminPanelIn 0.15s ease',
-            }}
-          />
-
-          {/* Panel */}
-          <div style={{
-            position: 'fixed',
-            top: '5vh',
-            right: '24px',
-            width: 'min(500px, calc(100vw - 48px))',
-            height: '90vh',
-            maxHeight: 860,
-            zIndex: 99999,
-            background: t.bg,
-            border: `1px solid ${t.border}`,
-            borderRadius: 16,
-            boxShadow: t.shadow,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            animation: 'adminPanelIn 0.18s cubic-bezier(.22,.61,.36,1)',
-            fontFamily: t.mono,
-          }}>
-            {/* ── Header ── */}
-            <div style={{
               display: 'flex', alignItems: 'center', gap: 10,
-              padding: '14px 16px 12px',
+              padding: '10px 12px 9px',
               background: t.surface,
               borderBottom: `1px solid ${t.border}`,
               flexShrink: 0,
-            }}>
-              {/* Icon */}
-              <div style={{
-                width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-                background: t.accentSoft,
-                border: `1px solid ${t.accentBorder}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <UserCog size={15} style={{ color: t.accent }}/>
-              </div>
-
-              {/* Title + status */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{
-                    fontSize: 13, fontWeight: 800, color: t.fg,
-                    letterSpacing: '0.05em', fontFamily: t.mono,
-                  }}>
-                    АДМИН ПАНЕЛЬ
-                  </span>
-                  <span style={{
-                    fontSize: 9, fontWeight: 700, color: t.accent,
-                    background: t.accentSoft, border: `1px solid ${t.accentBorder}`,
-                    borderRadius: 4, padding: '1px 5px', letterSpacing: '0.1em',
-                  }}>
-                    DEV ONLY
-                  </span>
-                </div>
-                <StatusPill status={status} t={t}/>
-              </div>
-
-              {/* Close */}
-              <button
-                onClick={() => setOpen(false)}
-                title="Закрыть (Esc)"
-                style={{
-                  width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: `1px solid ${t.border}`,
-                  background: 'transparent', color: t.fgMuted, cursor: 'pointer',
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLButtonElement).style.background = t.surfaceHov;
-                  (e.currentTarget as HTMLButtonElement).style.color = t.fg;
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
-                  (e.currentTarget as HTMLButtonElement).style.color = t.fgMuted;
-                }}
-              >
-                <X size={14}/>
-              </button>
-            </div>
-
-            {/* ── Tab bar ── */}
+              cursor: 'move',
+              userSelect: 'none',
+            }}
+          >
             <div style={{
-              display: 'flex',
-              background: t.surface,
-              borderBottom: `1px solid ${t.border}`,
-              flexShrink: 0,
-              padding: '0 8px',
+              width: 28, height: 28, borderRadius: 7, flexShrink: 0,
+              background: t.accentSoft,
+              border: `1px solid ${t.border}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              {TABS.map(tab => {
-                const isActive = tab.id === activeTab;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 6,
-                      padding: '10px 12px',
-                      border: 'none',
-                      borderBottom: `2px solid ${isActive ? t.accent : 'transparent'}`,
-                      background: 'transparent',
-                      color: isActive ? t.accent : t.fgMuted,
-                      fontSize: 12, fontWeight: isActive ? 600 : 400,
-                      cursor: 'pointer', fontFamily: t.mono,
-                      transition: 'all 0.1s',
-                      flexShrink: 0,
-                    }}
-                    onMouseEnter={e => {
-                      if (!isActive) {
-                        (e.currentTarget as HTMLButtonElement).style.color = t.fg;
-                        (e.currentTarget as HTMLButtonElement).style.background = t.surfaceHov;
-                      }
-                    }}
-                    onMouseLeave={e => {
-                      if (!isActive) {
-                        (e.currentTarget as HTMLButtonElement).style.color = t.fgMuted;
-                        (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
-                      }
-                    }}
-                  >
-                    {tab.icon}
-                    {tab.label}
-                  </button>
-                );
-              })}
+              <UserCog size={13} style={{ color: t.fg }}/>
             </div>
 
-            {/* ── Content area ── */}
-            <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-              {/* Disconnected overlay */}
-              {status !== 'connected' && (
-                <div style={{
-                  position: 'absolute', inset: 0, zIndex: 10,
-                  background: isDark ? 'rgba(15,15,15,0.92)' : 'rgba(225,224,220,0.92)',
-                  backdropFilter: 'blur(4px)',
-                  display: 'flex', flexDirection: 'column',
-                  alignItems: 'center', justifyContent: 'center', gap: 12,
-                }}>
-                  {status === 'connecting' ? (
-                    <>
-                      <Loader2 size={26} style={{ color: t.accent, animation: 'devSpinAnim 1s linear infinite' }}/>
-                      <div style={{ fontSize: 13, color: t.fgMuted, textAlign: 'center' }}>
-                        Подключение к dev-серверу...
-                        <div style={{ fontSize: 11, color: t.fgSub, marginTop: 4 }}>ws://127.0.0.1:7777</div>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <WifiOff size={26} style={{ color: t.danger, opacity: 0.7 }}/>
-                      <div style={{ fontSize: 13, color: t.fgMuted, textAlign: 'center' }}>
-                        Нет соединения
-                        <div style={{ fontSize: 11, color: t.fgSub, marginTop: 4 }}>Запусти `astro dev`</div>
-                      </div>
-                      <button
-                        onClick={() => window.location.reload()}
-                        style={{
-                          padding: '7px 16px', borderRadius: 8, cursor: 'pointer',
-                          border: `1px solid ${t.accentBorder}`,
-                          background: t.accentSoft, color: t.accent,
-                          fontSize: 12, fontFamily: t.mono,
-                        }}
-                      >
-                        Переподключиться
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-
-              <Suspense fallback={
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: t.fgSub, fontSize: 13 }}>
-                  <Loader2 size={16} style={{ animation: 'devSpinAnim 1s linear infinite' }}/>
-                  Загрузка...
-                </div>
-              }>
-                {activeTab === 'docs'     && <DocsPanel />}
-                {activeTab === 'contacts' && <ContactsPanel />}
-                {activeTab === 'assets'   && <AssetsPanel />}
-              </Suspense>
-            </div>
-
-            {/* ── Footer shortcuts ── */}
-            <div style={{
-              borderTop: `1px solid ${t.border}`,
-              padding: '6px 16px',
-              display: 'flex', alignItems: 'center', gap: 14,
-              flexShrink: 0,
-              background: t.surface,
-            }}>
-              {[
-                { keys: ['Ctrl', 'Shift', 'D'], label: 'панель' },
-                { keys: ['Ctrl', 'S'],           label: 'сохранить' },
-                { keys: ['Esc'],                  label: 'закрыть' },
-              ].map(({ keys, label }) => (
-                <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: t.fgSub }}>
-                  {keys.map(k => (
-                    <kbd key={k} style={{
-                      background: t.kbd, border: `1px solid ${t.kbdBorder}`,
-                      borderRadius: 4, padding: '1px 5px',
-                      fontFamily: t.mono, fontSize: 10, color: t.fgMuted,
-                    }}>{k}</kbd>
-                  ))}
-                  {label}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 11, fontWeight: 800, color: t.fg, letterSpacing: '0.06em' }}>
+                  АДМИН ПАНЕЛЬ
                 </span>
-              ))}
+                <span style={{
+                  fontSize: 8, fontWeight: 700, color: t.fgMuted,
+                  background: t.accentSoft, border: `1px solid ${t.border}`,
+                  borderRadius: 3, padding: '1px 5px', letterSpacing: '0.1em',
+                }}>
+                  DEV ONLY
+                </span>
+              </div>
+              {/* Status inline */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                <div style={{
+                  width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
+                  background: status === 'connected' ? '#22c55e' : status === 'connecting' ? '#f59e0b' : '#ef4444',
+                  boxShadow: status === 'connected' ? '0 0 4px #22c55e' : 'none',
+                  animation: status === 'connecting' ? 'devPulse 1s ease-in-out infinite' : 'none',
+                }}/>
+                <span style={{ fontSize: 9, color: status === 'connected' ? '#22c55e' : t.fgSub }}>
+                  {status === 'connected' ? 'Подключено' : status === 'connecting' ? 'Подключение...' : 'Отключено'}
+                </span>
+              </div>
             </div>
+
+            <button onClick={() => setOpen(false)} style={{
+              width: 26, height: 26, borderRadius: 6, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: `1px solid ${t.border}`, background: 'transparent', color: t.fgMuted, cursor: 'pointer',
+            }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.surfaceHov; (e.currentTarget as HTMLButtonElement).style.color = t.fg; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = t.fgMuted; }}
+            >
+              <X size={13}/>
+            </button>
           </div>
-        </>
+
+          {/* ── Tabs ── */}
+          <div style={{
+            display: 'flex',
+            background: t.surface,
+            borderBottom: `1px solid ${t.border}`,
+            flexShrink: 0,
+            padding: '0 4px',
+          }}>
+            {TABS.map(tb => {
+              const active = tb.id === tab;
+              return (
+                <button
+                  key={tb.id}
+                  // Use onMouseDown to prevent losing active state on click
+                  onMouseDown={e => { e.preventDefault(); setTab(tb.id); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    padding: '9px 12px',
+                    border: 'none',
+                    borderBottom: `2px solid ${active ? t.fg : 'transparent'}`,
+                    background: 'transparent',
+                    color: active ? t.fg : t.fgMuted,
+                    fontSize: 11, fontWeight: active ? 600 : 400,
+                    cursor: 'pointer', fontFamily: t.mono,
+                    flexShrink: 0,
+                    outline: 'none',
+                  }}
+                >
+                  {tb.icon}
+                  {tb.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* ── Content ── */}
+          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+            {status !== 'connected' && (
+              <div style={{
+                position: 'absolute', inset: 0, zIndex: 10,
+                background: isDark ? 'rgba(17,17,18,0.93)' : 'rgba(240,239,235,0.93)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10,
+              }}>
+                {status === 'connecting' ? (
+                  <>
+                    <Loader2 size={22} style={{ color: t.fgMuted, animation: 'devSpinAnim 1s linear infinite' }}/>
+                    <div style={{ fontSize: 12, color: t.fgMuted }}>Подключение...</div>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff size={22} style={{ color: t.danger }}/>
+                    <div style={{ fontSize: 12, color: t.fgMuted }}>Нет соединения. Запусти `astro dev`</div>
+                    <button onClick={() => window.location.reload()} style={{
+                      padding: '6px 14px', borderRadius: 7, cursor: 'pointer',
+                      border: `1px solid ${t.border}`, background: t.surfaceHov, color: t.fg,
+                      fontSize: 11, fontFamily: t.mono,
+                    }}>Обновить</button>
+                  </>
+                )}
+              </div>
+            )}
+
+            <Suspense fallback={
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: t.fgSub, fontSize: 12 }}>
+                <Loader2 size={14} style={{ animation: 'devSpinAnim 1s linear infinite' }}/> Загрузка...
+              </div>
+            }>
+              {tab === 'docs'     && <DocsPanel/>}
+              {tab === 'contacts' && <ContactsPanel/>}
+              {tab === 'assets'   && <AssetsPanel/>}
+            </Suspense>
+          </div>
+
+          {/* ── Resize handles ── */}
+          {/* Right edge */}
+          <div onMouseDown={e => onResizeStart(e, 'r')} style={{
+            position: 'absolute', right: 0, top: 40, bottom: 8,
+            width: 6, cursor: 'col-resize', zIndex: 10,
+          }}/>
+          {/* Bottom edge */}
+          <div onMouseDown={e => onResizeStart(e, 'b')} style={{
+            position: 'absolute', bottom: 0, left: 8, right: 8,
+            height: 6, cursor: 'row-resize', zIndex: 10,
+          }}/>
+          {/* Corner */}
+          <div onMouseDown={e => onResizeStart(e, 'rb')} style={{
+            position: 'absolute', bottom: 0, right: 0,
+            width: 14, height: 14, cursor: 'nwse-resize', zIndex: 11,
+          }}/>
+        </div>
       )}
 
-      <ToastContainer />
+      <ToastContainer/>
     </ThemeTokensContext.Provider>,
     document.body
   );
 }
-
-export { makeT as default_makeT };
