@@ -9,12 +9,105 @@ interface FiltersPanelProps {
   getUniqueValuesForColumn: (colIndex: number) => string[];
 }
 
+// Цветовые токены для светлой/тёмной темы
+function useThemeTokens(isDark: boolean) {
+  return {
+    bg:       isDark ? '#0a0a0a'                : '#E8E7E3',
+    panelBg:  isDark ? '#111111'                : '#d8d7d3',
+    border:   isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)',
+    rowBg:    isDark ? '#161616'                : '#cbcac6',
+    rowBdr:   isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)',
+    headClr:  isDark ? 'rgba(255,255,255,0.7)'  : 'rgba(0,0,0,0.7)',
+    headActC: isDark ? '#ffffff'                : '#000000',
+    subClr:   isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.32)',
+    tagBg:    isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)',
+    tagBdr:   isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)',
+    tagClr:   isDark ? 'rgba(255,255,255,0.6)'  : 'rgba(0,0,0,0.6)',
+    actBg:    isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.13)',
+    actBdr:   isDark ? 'rgba(255,255,255,0.3)'  : 'rgba(0,0,0,0.25)',
+    actClr:   isDark ? '#ffffff'                : '#000000',
+    inpBg:    isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+    inpBdr:   isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)',
+    inpClr:   isDark ? 'rgba(255,255,255,0.8)'  : 'rgba(0,0,0,0.8)',
+    plhClr:   isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.3)',
+  };
+}
+
+// ─── Подкомпоненты ────────────────────────────────────────────────────────────
+
+interface ActiveTagsProps {
+  activeFilters: Set<string>;
+  actBg: string; actBdr: string; actClr: string; subClr: string;
+}
+const ActiveTags: React.FC<ActiveTagsProps> = ({ activeFilters, actBg, actBdr, actClr, subClr }) => (
+  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', flex: 2, justifyContent: 'flex-end' }}>
+    {Array.from(activeFilters).slice(0, 3).map(v => (
+      <span key={v} style={{ fontSize: 10, padding: '1px 7px', borderRadius: 4, background: actBg, border: `1px solid ${actBdr}`, color: actClr, fontWeight: 600, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {v}
+      </span>
+    ))}
+    {activeFilters.size > 3 && <span style={{ fontSize: 10, color: subClr }}>+{activeFilters.size - 3}</span>}
+  </div>
+);
+
+interface SearchInputProps {
+  header: string; search: string;
+  onSearch: (v: string) => void; onClear: () => void;
+  inpBg: string; inpBdr: string; inpClr: string; plhClr: string;
+}
+const SearchInput: React.FC<SearchInputProps> = ({ header, search, onSearch, onClear, inpBg, inpBdr, inpClr, plhClr }) => (
+  <div style={{ position: 'relative' }}>
+    <Search size={11} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: plhClr, pointerEvents: 'none' }} />
+    <input
+      type="text"
+      placeholder={`Найти в "${header}"...`}
+      value={search}
+      onChange={e => onSearch(e.target.value)}
+      style={{ width: '100%', padding: '5px 8px 5px 26px', borderRadius: 6, border: `1px solid ${inpBdr}`, background: inpBg, color: inpClr, fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
+    />
+    {search && (
+      <button onClick={onClear} style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: plhClr, display: 'flex' }}>
+        <X size={11} />
+      </button>
+    )}
+  </div>
+);
+
+interface FilterTagsProps {
+  filtered: string[];
+  activeFilters: Set<string>;
+  colIndex: number;
+  onToggleFilter: (c: number, v: string) => void;
+  tagBg: string; tagBdr: string; tagClr: string;
+  actBg: string; actBdr: string; actClr: string;
+  plhClr: string;
+}
+const FilterTags: React.FC<FilterTagsProps> = ({ filtered, activeFilters, colIndex, onToggleFilter, tagBg, tagBdr, tagClr, actBg, actBdr, actClr, plhClr }) => (
+  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, maxHeight: 160, overflowY: 'auto' }}>
+    {filtered.length === 0
+      ? <span style={{ fontSize: 12, color: plhClr, fontStyle: 'italic' }}>Нет совпадений</span>
+      : filtered.map(val => {
+          const active = activeFilters.has(val);
+          return (
+            <button
+              key={val}
+              onClick={() => onToggleFilter(colIndex, val)}
+              title={val}
+              style={{ padding: '4px 10px', borderRadius: 6, border: `1px solid ${active ? actBdr : tagBdr}`, background: active ? actBg : tagBg, color: active ? actClr : tagClr, fontSize: 12, cursor: 'pointer', fontWeight: active ? 600 : 400, transition: 'all 0.12s', whiteSpace: 'nowrap', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis' }}
+            >
+              {val}
+            </button>
+          );
+        })}
+  </div>
+);
+
+// ─── FiltersPanel ─────────────────────────────────────────────────────────────
+
 export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   isDark, headers, filters, onToggleFilter, getUniqueValuesForColumn,
 }) => {
-  const bg      = isDark ? '#0a0a0a'                : '#E8E7E3';
-  const panelBg = isDark ? '#111111'                : '#d8d7d3';
-  const border  = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)';
+  const { panelBg, border, bg } = useThemeTokens(isDark);
 
   const columns = useMemo(() =>
     headers.map((header, colIndex) => ({
@@ -28,17 +121,27 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   return (
     <div style={{ background: panelBg, borderBottom: `1px solid ${border}`, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.32)' }}>
-        Фильтры по колонкам {totalActive > 0 && `· ${totalActive} активно`}
+        Фильтры по колонкам {totalActive > 0 && `· ${String(totalActive)} активно`}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {columns.map(({ header, colIndex, values }) => (
-          <FilterAccordion key={colIndex} header={header} colIndex={colIndex} values={values}
-            activeFilters={filters.get(colIndex) || new Set()} onToggleFilter={onToggleFilter} isDark={isDark} bg={bg} />
+          <FilterAccordion
+            key={colIndex}
+            header={header}
+            colIndex={colIndex}
+            values={values}
+            activeFilters={filters.get(colIndex) ?? new Set()}
+            onToggleFilter={onToggleFilter}
+            isDark={isDark}
+            bg={bg}
+          />
         ))}
       </div>
     </div>
   );
 };
+
+// ─── FilterAccordion ──────────────────────────────────────────────────────────
 
 const FilterAccordion: React.FC<{
   header: string; colIndex: number; values: string[];
@@ -46,6 +149,7 @@ const FilterAccordion: React.FC<{
   onToggleFilter: (c: number, v: string) => void;
   isDark: boolean; bg: string;
 }> = ({ header, colIndex, values, activeFilters, onToggleFilter, isDark, bg }) => {
+  const t = useThemeTokens(isDark);
   const hasActive = activeFilters.size > 0;
   const [open, setOpen] = useState(hasActive);
   const [search, setSearch] = useState('');
@@ -54,79 +158,68 @@ const FilterAccordion: React.FC<{
     search.trim() ? values.filter(v => v.toLowerCase().includes(search.toLowerCase())) : values,
   [values, search]);
 
-  // Pure neutral colors
-  const rowBg    = isDark ? '#161616' : '#cbcac6';
-  const rowBdr   = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)';
-  const headClr  = isDark ? 'rgba(255,255,255,0.7)'  : 'rgba(0,0,0,0.7)';
-  const headActC = isDark ? '#ffffff'                : '#000000';
-  const subClr   = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.32)';
+  // Выбирает все незадействованные значения из текущего списка
+  const handleSelectAll = () =>
+    filtered.filter(v => !activeFilters.has(v)).forEach(v => onToggleFilter(colIndex, v));
 
-  const tagBg    = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
-  const tagBdr   = isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
-  const tagClr   = isDark ? 'rgba(255,255,255,0.6)'  : 'rgba(0,0,0,0.6)';
-  const actBg    = isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.13)';
-  const actBdr   = isDark ? 'rgba(255,255,255,0.3)'  : 'rgba(0,0,0,0.25)';
-  const actClr   = isDark ? '#ffffff'                : '#000000';
-
-  const inpBg    = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
-  const inpBdr   = isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
-  const inpClr   = isDark ? 'rgba(255,255,255,0.8)'  : 'rgba(0,0,0,0.8)';
-  const plhClr   = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.3)';
+  // Снимает все активные фильтры колонки
+  const handleClearAll = () =>
+    Array.from(activeFilters).forEach(v => onToggleFilter(colIndex, v));
 
   return (
-    <div style={{ borderRadius: 8, border: `1px solid ${rowBdr}`, overflow: 'hidden' }}>
-      <button onClick={() => setOpen(v => !v)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: rowBg, border: 'none', cursor: 'pointer', textAlign: 'left' }}>
-        <span style={{ flex: 1, fontSize: 12, fontWeight: hasActive ? 700 : 500, color: hasActive ? headActC : headClr }}>{header}</span>
+    <div style={{ borderRadius: 8, border: `1px solid ${t.rowBdr}`, overflow: 'hidden' }}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: t.rowBg, border: 'none', cursor: 'pointer', textAlign: 'left' }}
+      >
+        <span style={{ flex: 1, fontSize: 12, fontWeight: hasActive ? 700 : 500, color: hasActive ? t.headActC : t.headClr }}>
+          {header}
+        </span>
         {hasActive && (
-          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', flex: 2, justifyContent: 'flex-end' }}>
-            {Array.from(activeFilters).slice(0, 3).map(v => (
-              <span key={v} style={{ fontSize: 10, padding: '1px 7px', borderRadius: 4, background: actBg, border: `1px solid ${actBdr}`, color: actClr, fontWeight: 600, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v}</span>
-            ))}
-            {activeFilters.size > 3 && <span style={{ fontSize: 10, color: subClr }}>+{activeFilters.size - 3}</span>}
-          </div>
+          <ActiveTags activeFilters={activeFilters} actBg={t.actBg} actBdr={t.actBdr} actClr={t.actClr} subClr={t.subClr} />
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           {hasActive && (
-            <button onClick={e => { e.stopPropagation(); Array.from(activeFilters).forEach(v => onToggleFilter(colIndex, v)); }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '1px 3px', color: subClr, display: 'flex', alignItems: 'center' }}>
+            <button
+              onClick={e => { e.stopPropagation(); handleClearAll(); }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '1px 3px', color: t.subClr, display: 'flex', alignItems: 'center' }}
+            >
               <X size={12} />
             </button>
           )}
-          {open ? <ChevronUp size={13} style={{ color: subClr }} /> : <ChevronDown size={13} style={{ color: subClr }} />}
+          {open ? <ChevronUp size={13} style={{ color: t.subClr }} /> : <ChevronDown size={13} style={{ color: t.subClr }} />}
         </div>
       </button>
 
       {open && (
-        <div style={{ padding: '10px 12px', borderTop: `1px solid ${rowBdr}`, background: bg, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ padding: '10px 12px', borderTop: `1px solid ${t.rowBdr}`, background: bg, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {values.length > 6 && (
-            <div style={{ position: 'relative' }}>
-              <Search size={11} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: plhClr, pointerEvents: 'none' }} />
-              <input type="text" placeholder={`Найти в "${header}"...`} value={search} onChange={e => setSearch(e.target.value)}
-                style={{ width: '100%', padding: '5px 8px 5px 26px', borderRadius: 6, border: `1px solid ${inpBdr}`, background: inpBg, color: inpClr, fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
-              />
-              {search && <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: plhClr, display: 'flex' }}><X size={11} /></button>}
-            </div>
+            <SearchInput
+              header={header}
+              search={search}
+              onSearch={setSearch}
+              onClear={() => setSearch('')}
+              inpBg={t.inpBg} inpBdr={t.inpBdr} inpClr={t.inpClr} plhClr={t.plhClr}
+            />
           )}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, maxHeight: 160, overflowY: 'auto' }}>
-            {filtered.length === 0
-              ? <span style={{ fontSize: 12, color: plhClr, fontStyle: 'italic' }}>Нет совпадений</span>
-              : filtered.map(val => {
-                  const active = activeFilters.has(val);
-                  return (
-                    <button key={val} onClick={() => onToggleFilter(colIndex, val)} title={val}
-                      style={{ padding: '4px 10px', borderRadius: 6, border: `1px solid ${active ? actBdr : tagBdr}`, background: active ? actBg : tagBg, color: active ? actClr : tagClr, fontSize: 12, cursor: 'pointer', fontWeight: active ? 600 : 400, transition: 'all 0.12s', whiteSpace: 'nowrap', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {val}
-                    </button>
-                  );
-                })}
-          </div>
+          <FilterTags
+            filtered={filtered}
+            activeFilters={activeFilters}
+            colIndex={colIndex}
+            onToggleFilter={onToggleFilter}
+            tagBg={t.tagBg} tagBdr={t.tagBdr} tagClr={t.tagClr}
+            actBg={t.actBg} actBdr={t.actBdr} actClr={t.actClr}
+            plhClr={t.plhClr}
+          />
           {filtered.length > 1 && (
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => filtered.filter(v => !activeFilters.has(v)).forEach(v => onToggleFilter(colIndex, v))}
-                style={{ fontSize: 11, padding: '2px 8px', borderRadius: 5, border: `1px solid ${tagBdr}`, background: 'transparent', cursor: 'pointer', color: subClr }}>Выбрать все</button>
-              {activeFilters.size > 0 && (
-                <button onClick={() => Array.from(activeFilters).forEach(v => onToggleFilter(colIndex, v))}
-                  style={{ fontSize: 11, padding: '2px 8px', borderRadius: 5, border: `1px solid ${tagBdr}`, background: 'transparent', cursor: 'pointer', color: subClr }}>Снять все</button>
+              <button onClick={handleSelectAll} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 5, border: `1px solid ${t.tagBdr}`, background: 'transparent', cursor: 'pointer', color: t.subClr }}>
+                Выбрать все
+              </button>
+              {hasActive && (
+                <button onClick={handleClearAll} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 5, border: `1px solid ${t.tagBdr}`, background: 'transparent', cursor: 'pointer', color: t.subClr }}>
+                  Снять все
+                </button>
               )}
             </div>
           )}
