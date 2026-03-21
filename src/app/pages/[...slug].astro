@@ -8,17 +8,11 @@ import {
   buildDocFromPath,
 } from '../../../scripts/docUtils.mjs';
 
-// In dev: render on every request so new pages appear without server restart
 export const prerender = import.meta.env.DEV ? false : true;
 
 export async function getStaticPaths() {
-  // getStaticPaths runs in its own scope — variables must be defined here
   const docsDir = path.join(process.cwd(), 'Docs');
-
-  if (!fs.existsSync(docsDir)) {
-    console.warn('Docs directory not found');
-    return [];
-  }
+  if (!fs.existsSync(docsDir)) return [];
 
   const allMdFiles = scanDocsDirectoryRecursive(docsDir);
   const seen = new Map<string, string>();
@@ -27,36 +21,27 @@ export async function getStaticPaths() {
   for (const mdPath of allMdFiles) {
     const doc = buildDocFromPath(mdPath, docsDir);
     if (!doc.slug) continue;
-
     if (seen.has(doc.slug)) {
       console.warn(`[slug dedup] Duplicate slug "${doc.slug}", skipping ${mdPath}`);
       continue;
     }
-
     seen.set(doc.slug, mdPath);
     paths.push({ params: { slug: doc.slug }, props: { doc } });
   }
-
   return paths;
 }
-
-// ─── Resolve doc ──────────────────────────────────────────────────────────────
 
 const { slug } = Astro.params;
 const docsDir = path.join(process.cwd(), 'Docs');
 let doc: any = null;
 
 if (import.meta.env.DEV) {
-  // Dev: scan Docs/ fresh on every request — new pages found instantly
   if (slug && fs.existsSync(docsDir)) {
     const allMdFiles = scanDocsDirectoryRecursive(docsDir);
     for (const mdPath of allMdFiles) {
       try {
         const candidate = buildDocFromPath(mdPath, docsDir);
-        if (candidate.slug === slug) {
-          doc = candidate;
-          break;
-        }
+        if (candidate.slug === slug) { doc = candidate; break; }
       } catch (e) {
         console.warn(`[slug] Failed to build doc from ${mdPath}:`, e);
       }
@@ -66,9 +51,14 @@ if (import.meta.env.DEV) {
   doc = (Astro.props as any).doc ?? null;
 }
 
-if (!doc || !slug) {
-  return Astro.redirect('/404');
-}
+if (!doc || !slug) return Astro.redirect('/404');
+
+// Глобальный язык как фолбэк
+let globalLang = 'ru';
+try {
+  const mod = await import('@/shared/data/seo');
+  if (mod?.SEO_CONFIG?.siteLang) globalLang = mod.SEO_CONFIG.siteLang;
+} catch {}
 ---
 
 <Layout
@@ -81,6 +71,7 @@ if (!doc || !slug) {
   date={doc.date}
   keywords={doc.keywords}
   robots={doc.robots}
+  lang={doc.lang || globalLang}
 >
   <DocContent client:only="react" doc={doc} />
 </Layout>
