@@ -118,8 +118,6 @@ const DocHero: React.FC<{ doc: DocContentProps['doc']; isDark: boolean; readTime
 };
 
 // ─── DocContent ───────────────────────────────────────────────────────────────
-// ThemeProvider removed — Layout.astro already wraps everything in ThemeProvider.
-// DocContent now consumes useTheme() directly, same as any other component.
 
 const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const { isDark } = useTheme();
@@ -147,17 +145,13 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
 
   useEffect(() => {
     if (!isDesktop) { setNavLeft('0px'); return; }
-
     const readVar = () => {
       const val = getComputedStyle(document.documentElement).getPropertyValue('--nav-left').trim();
       setNavLeft(val || '64px');
     };
-
     readVar();
-
     const observer = new MutationObserver(readVar);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
-
     return () => observer.disconnect();
   }, [isDesktop]);
 
@@ -165,6 +159,19 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const contentNodes = useMemo(() => parseHtmlToReact(htmlContent), [htmlContent]);
   const readTime     = useMemo(() => estimateReadTime(doc.content || htmlContent), [doc.content, htmlContent]);
   const tableCtx     = useMemo(() => ({ onTableClick: (html: string) => setFullscreenTableHtml(html), isDark }), [isDark]);
+
+  // ─── Dev live preview (BroadcastChannel) ─────────────────────────────────
+  // Dev панель отправляет готовый HTML → подменяем контент без перезагрузки
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return;
+    const ch = new BroadcastChannel('hub-dev-preview');
+    ch.onmessage = (e) => {
+      if (e.data?.type !== 'preview') return;
+      const article = document.querySelector('[data-article-content]');
+      if (article) article.innerHTML = e.data.html;
+    };
+    return () => ch.close();
+  }, []);
 
   return (
     <div style={{ minHeight: '100vh' }}>
@@ -214,8 +221,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   );
 };
 
-// ThemeProvider остаётся здесь — каждый Astro island (client:only="react")
-// изолированное React-дерево и НЕ наследует контекст из Layout.astro.
 const DocContent: React.FC<DocContentProps> = ({ doc }) => (
   <ThemeProvider>
     <DocContentMain doc={doc} />
