@@ -418,13 +418,19 @@ function BlockPicker({ onInsert, t }: { onInsert:(c:string)=>void; t:TTokens }) 
   const [grp,setGrp]    = useState(0);
   const [sub,setSub]    = useState<BI|null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
-  const [pos, setPos]   = useState({top:0,right:0});
+  const [pos, setPos]   = useState({top:0,left:0});
+
+  const MENU_W = 360;
 
   const toggle = () => {
     if(open){setOpen(false);return;}
     const r = btnRef.current?.getBoundingClientRect();
     if(!r) return;
-    setPos({top:r.bottom+4, right:window.innerWidth-r.right});
+    // Центр кнопки, смещаем меню чтобы оно было по центру
+    const idealLeft = r.left + r.width/2 - MENU_W/2;
+    // Clamp: не выходить за левый и правый края экрана с отступом 8px
+    const clampedLeft = Math.max(8, Math.min(idealLeft, window.innerWidth - MENU_W - 8));
+    setPos({top: r.bottom+4, left: clampedLeft});
     setOpen(true); setSub(null);
   };
 
@@ -462,8 +468,8 @@ function BlockPicker({ onInsert, t }: { onInsert:(c:string)=>void; t:TTokens }) 
 
       {open && createPortal(
         <div id="adm-blk-menu" style={{
-          position:'fixed',top:pos.top,right:pos.right,zIndex:100030,
-          width:360,maxHeight:340,
+          position:'fixed',top:pos.top,left:pos.left,zIndex:100030,
+          width:MENU_W,maxHeight:340,
           background:t.bg,border:`1px solid ${t.borderStrong}`,
           borderRadius:10,boxShadow:t.shadow,
           display:'flex',overflow:'hidden',fontFamily:t.mono,
