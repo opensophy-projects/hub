@@ -235,9 +235,9 @@ function Modal({ onClose, children, width, t }: {
         position:'fixed', inset:0, zIndex:100020,
         border:'none', padding:0, margin:0,
         maxWidth:'100vw', maxHeight:'100vh', width:'100%', height:'100%',
-        background:'transparent',
+        background:'rgba(0,0,0,0.6)',
+        display:'flex', alignItems:'center', justifyContent:'center',
       }}
-      onKeyDown={e => { if (e.key === 'Escape') onClose(); }}
     >
       <button
         type="button"
@@ -245,23 +245,20 @@ function Modal({ onClose, children, width, t }: {
         onClick={onClose}
         style={{
           position:'absolute', inset:0, width:'100%', height:'100%',
-          background:'rgba(0,0,0,0.6)', border:'none', cursor:'default',
-          display:'flex', alignItems:'center', justifyContent:'center',
-          padding:0,
+          background:'transparent', border:'none', cursor:'default', padding:0,
+        }}
+      />
+      <div
+        style={{
+          position:'relative', zIndex:1,
+          background:t.bg, border:`1px solid ${t.borderStrong}`,
+          borderRadius:12, padding:22, width:width ?? 360,
+          boxShadow:t.shadow, fontFamily:t.mono,
+          maxHeight:'90vh', overflowY:'auto',
         }}
       >
-        <div
-          style={{
-            background:t.bg, border:`1px solid ${t.borderStrong}`,
-            borderRadius:12, padding:22, width:width ?? 360,
-            boxShadow:t.shadow, fontFamily:t.mono,
-            maxHeight:'90vh', overflowY:'auto', cursor:'default',
-          }}
-          onClick={e => e.stopPropagation()}
-        >
-          {children}
-        </div>
-      </button>
+        {children}
+      </div>
     </dialog>,
     document.body
   );
@@ -1060,8 +1057,7 @@ export default function DocsPanel() {
         Перетащи страницу или категорию в другую папку
       </div>
 
-      <div
-        role="region"
+      <section
         aria-label="Дерево документов"
         style={{flex:1, overflowY:'auto', padding:'4px'}}
         className="adm-scroll"
@@ -1069,7 +1065,7 @@ export default function DocsPanel() {
         onDrop={e => { e.preventDefault(); const src = e.dataTransfer.getData('text/plain'); if (src) handleDrop(src, 'Docs'); }}
       >
         {renderTreeContent()}
-      </div>
+      </section>
 
       <div style={{padding:'5px 10px', borderTop:`1px solid ${t.border}`, display:'flex', alignItems:'center', justifyContent:'space-between', fontSize:10, color:t.fgSub, background:t.surface, flexShrink:0}}>
         <span>{fileCount} страниц</span>
