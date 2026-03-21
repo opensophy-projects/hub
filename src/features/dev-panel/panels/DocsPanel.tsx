@@ -374,6 +374,7 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
   const [fmOpen, setFmOpen]   = useState(false);
   const [viewMode, setMode]   = useState<ViewMode>('split');
   const [iframeKey, setIframeKey] = useState(0);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout>|null>(null);
   const taRef   = useRef<HTMLTextAreaElement>(null);
   const fmRef   = useRef(fm);
   const bodyRef = useRef(body);
@@ -406,12 +407,33 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
       .finally(() => setLoading(false));
   }, [filePath]);
 
-  // SAVE — only on Ctrl+S or button click, never automatically
+  // Silent save — no toast, used for debounced autosave in split-site mode
+  const silentSave = useCallback(async () => {
+    try {
+      await bridge.writeFile(filePath, serializeFM(fmRef.current, bodyRef.current));
+      setDirty(false);
+      setIframeKey(k => k + 1);
+    } catch {}
+  }, [filePath]);
+
+  // Schedule debounced save — only fires in split-site mode
+  const scheduleSave = useCallback((mode: ViewMode) => {
+    if (mode !== 'split-site') return;
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => { silentSave(); }, 900);
+  }, [silentSave]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
+  }, []);
+
+  // SAVE — Ctrl+S or button, always works in all modes
   const save = useCallback(async () => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
     setSaving(true);
     try {
       await bridge.writeFile(filePath, serializeFM(fmRef.current, bodyRef.current));
-      // bridge runs generate + full-reload on save
       setDirty(false); setIframeKey(k => k + 1);
       toast.success('Сохранено и опубликовано');
     } catch (e: any) { toast.error(e.message); }
@@ -430,7 +452,7 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
     const ta = taRef.current; if (!ta) return;
     const s=ta.selectionStart, e=ta.selectionEnd, sel=body.slice(s,e);
     const nv = body.slice(0,s)+before+sel+after+body.slice(e);
-    setBody(nv); setDirty(true);
+    setBody(nv); setDirty(true); scheduleSave(viewMode);
     setTimeout(()=>{ ta.focus(); ta.selectionStart=s+before.length; ta.selectionEnd=s+before.length+sel.length; },0);
   };
 
@@ -438,7 +460,7 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
     if (e.key!=='Tab') return; e.preventDefault();
     const ta=e.currentTarget, s=ta.selectionStart;
     const nv=body.slice(0,s)+'  '+body.slice(ta.selectionEnd);
-    setBody(nv); setDirty(true);
+    setBody(nv); setDirty(true); scheduleSave(viewMode);
     setTimeout(()=>{ ta.selectionStart=ta.selectionEnd=s+2; },0);
   };
 
@@ -506,7 +528,7 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
               <div key={f.k} style={{gridColumn:f.span?'1 / -1':'auto'}}>
                 <div style={{fontSize:9,color:T.fgSub,marginBottom:2,textTransform:'uppercase',letterSpacing:'0.06em'}}>{f.l}</div>
                 <input type={f.t??'text'} value={fm[f.k]}
-                  onChange={e=>{setFm(p=>({...p,[f.k]:e.target.value}));setDirty(true);}}
+                  onChange={e=>{setFm(p=>({...p,[f.k]:e.target.value}));setDirty(true);scheduleSave(viewMode);}}
                   style={inpS}/>
               </div>
             ))}
@@ -542,7 +564,7 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
               MARKDOWN
             </div>
             <textarea ref={taRef} value={body}
-              onChange={e=>{setBody(e.target.value);setDirty(true);}}
+              onChange={e=>{setBody(e.target.value);setDirty(true);scheduleSave(viewMode);}}
               onKeyDown={handleTab} spellCheck={false}
               style={{flex:1,padding:'10px 12px',border:'none',background:T.bgHov,
                 color:'#e2e8f0',fontSize:12,fontFamily:T.mono,lineHeight:1.75,
