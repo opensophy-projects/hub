@@ -9,28 +9,52 @@ interface FiltersPanelProps {
   getUniqueValuesForColumn: (colIndex: number) => string[];
 }
 
-// Цветовые токены для светлой/тёмной темы
+// Статические наборы токенов для тёмной и светлой темы
+const DARK_TOKENS = {
+  bg:       '#0a0a0a',
+  panelBg:  '#111111',
+  border:   'rgba(255,255,255,0.07)',
+  rowBg:    '#161616',
+  rowBdr:   'rgba(255,255,255,0.07)',
+  headClr:  'rgba(255,255,255,0.7)',
+  headActC: '#ffffff',
+  subClr:   'rgba(255,255,255,0.28)',
+  tagBg:    'rgba(255,255,255,0.07)',
+  tagBdr:   'rgba(255,255,255,0.1)',
+  tagClr:   'rgba(255,255,255,0.6)',
+  actBg:    'rgba(255,255,255,0.16)',
+  actBdr:   'rgba(255,255,255,0.3)',
+  actClr:   '#ffffff',
+  inpBg:    'rgba(255,255,255,0.06)',
+  inpBdr:   'rgba(255,255,255,0.1)',
+  inpClr:   'rgba(255,255,255,0.8)',
+  plhClr:   'rgba(255,255,255,0.25)',
+};
+
+const LIGHT_TOKENS = {
+  bg:       '#E8E7E3',
+  panelBg:  '#d8d7d3',
+  border:   'rgba(0,0,0,0.08)',
+  rowBg:    '#cbcac6',
+  rowBdr:   'rgba(0,0,0,0.08)',
+  headClr:  'rgba(0,0,0,0.7)',
+  headActC: '#000000',
+  subClr:   'rgba(0,0,0,0.32)',
+  tagBg:    'rgba(0,0,0,0.06)',
+  tagBdr:   'rgba(0,0,0,0.1)',
+  tagClr:   'rgba(0,0,0,0.6)',
+  actBg:    'rgba(0,0,0,0.13)',
+  actBdr:   'rgba(0,0,0,0.25)',
+  actClr:   '#000000',
+  inpBg:    'rgba(0,0,0,0.06)',
+  inpBdr:   'rgba(0,0,0,0.1)',
+  inpClr:   'rgba(0,0,0,0.8)',
+  plhClr:   'rgba(0,0,0,0.3)',
+};
+
+// Возвращает токены для текущей темы
 function useThemeTokens(isDark: boolean) {
-  return {
-    bg:       isDark ? '#0a0a0a'                : '#E8E7E3',
-    panelBg:  isDark ? '#111111'                : '#d8d7d3',
-    border:   isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)',
-    rowBg:    isDark ? '#161616'                : '#cbcac6',
-    rowBdr:   isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)',
-    headClr:  isDark ? 'rgba(255,255,255,0.7)'  : 'rgba(0,0,0,0.7)',
-    headActC: isDark ? '#ffffff'                : '#000000',
-    subClr:   isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.32)',
-    tagBg:    isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)',
-    tagBdr:   isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)',
-    tagClr:   isDark ? 'rgba(255,255,255,0.6)'  : 'rgba(0,0,0,0.6)',
-    actBg:    isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.13)',
-    actBdr:   isDark ? 'rgba(255,255,255,0.3)'  : 'rgba(0,0,0,0.25)',
-    actClr:   isDark ? '#ffffff'                : '#000000',
-    inpBg:    isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-    inpBdr:   isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)',
-    inpClr:   isDark ? 'rgba(255,255,255,0.8)'  : 'rgba(0,0,0,0.8)',
-    plhClr:   isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.3)',
-  };
+  return isDark ? DARK_TOKENS : LIGHT_TOKENS;
 }
 
 // ─── Подкомпоненты ────────────────────────────────────────────────────────────
@@ -117,11 +141,12 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   [headers, getUniqueValuesForColumn]);
 
   const totalActive = Array.from(filters.values()).reduce((s, v) => s + v.size, 0);
+  const activeLabel: string = totalActive > 0 ? `· ${totalActive} активно` : '';
 
   return (
     <div style={{ background: panelBg, borderBottom: `1px solid ${border}`, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.32)' }}>
-        Фильтры по колонкам {totalActive > 0 && `· ${String(totalActive)} активно`}
+        {`Фильтры по колонкам ${activeLabel}`.trimEnd()}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {columns.map(({ header, colIndex, values }) => (
