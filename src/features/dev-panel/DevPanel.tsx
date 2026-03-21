@@ -10,11 +10,12 @@ import React, {
 import { createPortal } from 'react-dom';
 import { useDevBridge } from './useDevBridge';
 import { ToastContainer } from './components/Toast';
-import { FileText, Users, Image, X, UserCog, WifiOff, Loader2, AlertCircle } from 'lucide-react';
+import { FileText, Users, Image, Globe, X, UserCog, WifiOff, Loader2, AlertCircle } from 'lucide-react';
 
 const DocsPanel     = lazy(() => import('./panels/DocsPanel'));
 const ContactsPanel = lazy(() => import('./panels/ContactsPanel'));
 const AssetsPanel   = lazy(() => import('./panels/AssetsPanel'));
+const SitePanel     = lazy(() => import('./panels/SitePanel'));
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
 
@@ -92,6 +93,7 @@ const TABS = [
   { id: 'docs',     label: 'Страницы', icon: <FileText size={13}/> },
   { id: 'contacts', label: 'Контакты', icon: <Users size={13}/>    },
   { id: 'assets',   label: 'Ассеты',   icon: <Image size={13}/>    },
+  { id: 'site',     label: 'Сайт',     icon: <Globe size={13}/>    },
 ];
 
 // ─── Trigger button ───────────────────────────────────────────────────────────
@@ -368,6 +370,7 @@ export default function DevPanel() {
               {tab === 'docs'     && <DocsPanel/>}
               {tab === 'contacts' && <ContactsPanel/>}
               {tab === 'assets'   && <AssetsPanel/>}
+              {tab === 'site'     && <SitePanel/>}
             </Suspense>
           </div>
 
