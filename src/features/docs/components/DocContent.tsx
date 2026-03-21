@@ -159,12 +159,21 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
 
   // ─── Dev live preview (BroadcastChannel) ─────────────────────────────────
   // Получаем HTML от dev панели → парсим через parseHtmlToReact → React re-render
+  // FIX: сохраняем scrollY до обновления и восстанавливаем после рендера,
+  // чтобы DotWave / hero секция не прыгали при каждом изменении в редакторе
   useEffect(() => {
     if (typeof BroadcastChannel === 'undefined') return;
     const ch = new BroadcastChannel('hub-dev-preview');
     ch.onmessage = (e) => {
       if (e.data?.type !== 'preview') return;
+      const savedScrollY = window.scrollY;
       setLiveHtml(e.data.html ?? null);
+      // Два RAF: первый — React commit, второй — browser paint
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: savedScrollY, behavior: 'instant' as ScrollBehavior });
+        });
+      });
     };
     return () => ch.close();
   }, []);
