@@ -39,6 +39,8 @@ function tk(isDark: boolean) {
     dropHov:  'rgba(255,255,255,0.08)',
     dropClr:  'rgba(255,255,255,0.85)',
     dropSub:  'rgba(255,255,255,0.38)',
+    copiedBg: 'rgba(34,197,94,0.16)',
+    copiedBdr:'rgba(34,197,94,0.4)',
   } : {
     modalBg:  '#E8E7E3',
     barBg:    '#d8d7d3',
@@ -62,10 +64,12 @@ function tk(isDark: boolean) {
     dropHov:  'rgba(0,0,0,0.07)',
     dropClr:  'rgba(0,0,0,0.85)',
     dropSub:  'rgba(0,0,0,0.4)',
+    copiedBg: 'rgba(34,197,94,0.14)',
+    copiedBdr:'rgba(34,197,94,0.5)',
   };
 }
 
-// ─── Dropdown menu rendered in body ──────────────────────────────────────────
+// ─── Дропдаун, рендерится в body ──────────────────────────────────────────────
 const BodyDropdown: React.FC<{
   anchorRef: React.RefObject<HTMLButtonElement>;
   isDark: boolean;
@@ -117,15 +121,20 @@ const BodyDropdown: React.FC<{
   );
 };
 
-// ─── Pill button ─────────────────────────────────────────────────────────────
+// ─── Кнопка-пилюля: иконка сверху, подпись снизу ─────────────────────────────
 const Pill: React.FC<{
   onClick: () => void; title: string; label: string;
   icon: React.ReactNode; t: ReturnType<typeof tk>;
   active?: boolean; danger?: boolean;
 }> = ({ onClick, title, label, icon, t, active, danger }) => {
-  const bg    = active ? t.btnActBg  : t.btnBg;
-  const bdr   = active ? t.btnActBdr : t.btnBdr;
-  const color = danger ? t.dangerClr : active ? t.btnActClr : t.btnClr;
+  const bg  = active ? t.btnActBg  : t.btnBg;
+  const bdr = active ? t.btnActBdr : t.btnBdr;
+  // Вынесено из вложенного тернарника: danger → active → default
+  let color: string;
+  if (danger)      color = t.dangerClr;
+  else if (active) color = t.btnActClr;
+  else             color = t.btnClr;
+
   return (
     <button onClick={onClick} title={title} style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -143,7 +152,7 @@ const Pill: React.FC<{
   );
 };
 
-// ─── Copy button ─────────────────────────────────────────────────────────────
+// ─── Кнопка копирования ───────────────────────────────────────────────────────
 const CopyBtn: React.FC<{ isDark: boolean; tableHtml: string; t: ReturnType<typeof tk> }> = ({ isDark, tableHtml, t }) => {
   const [open, setOpen]     = useState(false);
   const [copied, setCopied] = useState<CopyFormat | null>(null);
@@ -157,9 +166,10 @@ const CopyBtn: React.FC<{ isDark: boolean; tableHtml: string; t: ReturnType<type
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const bg    = isCopied ? (isDark ? 'rgba(34,197,94,0.16)' : 'rgba(34,197,94,0.14)') : t.btnBg;
-  const bdr   = isCopied ? (isDark ? 'rgba(34,197,94,0.4)'  : 'rgba(34,197,94,0.5)')  : t.btnBdr;
-  const color = isCopied ? '#22c55e' : t.btnClr;
+  // Вынесено из вложенных тернарников
+  const bg    = isCopied ? t.copiedBg  : t.btnBg;
+  const bdr   = isCopied ? t.copiedBdr : t.btnBdr;
+  const color = isCopied ? '#22c55e'   : t.btnClr;
 
   return (
     <>
@@ -207,17 +217,15 @@ const CopyBtn: React.FC<{ isDark: boolean; tableHtml: string; t: ReturnType<type
   );
 };
 
-// ─── TableModal ───────────────────────────────────────────────────────────────
+// ─── Модальное окно таблицы ───────────────────────────────────────────────────
 const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onClose }) => {
   const t = tk(isDark);
 
-  // Parse table structure once per tableHtml
   const { headers, rows, headerAlignments } = useMemo(
     () => parseTableHtml(tableHtml),
     [tableHtml]
   );
 
-  // Unified controls hook — same as TableWithControls uses
   const {
     state,
     setState,
@@ -232,24 +240,20 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
     activeFilterCount,
   } = useTableControls(rows, headers);
 
-  // Reset state when a new table is opened
+  // Сброс состояния при открытии новой таблицы
   useEffect(() => {
     resetFilters();
     setShowFilters(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tableHtml]);
 
-  // Lock body scroll
+  // Блокировка скролла body при открытом модале
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    document.body.style.overflow = isOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
-  // Esc to close
+  // Закрытие по Escape
   useEffect(() => {
     if (!isOpen) return;
     const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -268,18 +272,22 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       WebkitOverflowScrolling: 'touch',
     }}>
-      {/* Backdrop */}
-      <div
+      {/* Бэкдроп — button для корректной семантики и поддержки клавиатуры */}
+      <button
         onClick={onClose}
+        aria-label="Закрыть модальное окно"
         style={{
           position: 'absolute', inset: 0,
           background: 'rgba(0,0,0,0.6)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
+          border: 'none',
+          cursor: 'pointer',
+          padding: 0,
         }}
       />
 
-      {/* Modal panel */}
+      {/* Панель модального окна */}
       <div style={{
         position: 'relative',
         width: 'min(95vw, 1400px)',
@@ -293,7 +301,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
         display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
       }}>
-        {/* Toolbar */}
+        {/* Тулбар */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8,
           padding: '8px 10px', borderBottom: `1px solid ${t.border}`,
@@ -342,7 +350,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
           </div>
         </div>
 
-        {/* Filters — scrollable independently */}
+        {/* Панель фильтров — независимый скролл */}
         {showFilters && (
           <div style={{ flexShrink: 0, overflowY: 'auto', maxHeight: '40%', touchAction: 'pan-y' }}>
             <FiltersPanel
@@ -361,7 +369,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
           </div>
         )}
 
-        {/* Table — unified TableView, same as TableWithControls */}
+        {/* Таблица */}
         <div style={{
           flex: 1,
           display: 'flex',
@@ -384,7 +392,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
           />
         </div>
 
-        {/* Footer */}
+        {/* Футер со счётчиком строк */}
         <div style={{
           padding: '6px 12px', flexShrink: 0,
           borderTop: `1px solid ${t.border}`,
