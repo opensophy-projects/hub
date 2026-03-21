@@ -20,6 +20,12 @@ interface DocContentProps {
   };
 }
 
+// FM override — то что приходит из dev панели в реальном времени
+interface LiveFM {
+  title?: string; description?: string; author?: string;
+  date?: string; updated?: string; tags?: string; icon?: string; lang?: string; robots?: string;
+}
+
 function stripHtmlTags(html: string): string {
   return html.split('<').map((c, i) => i === 0 ? c : c.slice(c.indexOf('>') + 1)).join(' ');
 }
@@ -50,7 +56,21 @@ function useActiveHeading(toc: { id: string; text: string; level: number }[]): s
 
 // ─── DocHero ──────────────────────────────────────────────────────────────────
 
-const DocHero: React.FC<{ doc: DocContentProps['doc']; isDark: boolean; readTime: number }> = ({ doc, isDark, readTime }) => {
+interface DocHeroProps {
+  doc: DocContentProps['doc'];
+  isDark: boolean;
+  readTime: number;
+  liveFM?: LiveFM | null;  // ← оверрайд от dev панели
+}
+
+const DocHero: React.FC<DocHeroProps> = ({ doc, isDark, readTime, liveFM }) => {
+  // Мержим live FM поверх оригинального doc
+  const title       = liveFM?.title?.trim()       || doc.title;
+  const description = liveFM?.description?.trim() || doc.description;
+  const author      = liveFM?.author?.trim()       || doc.author;
+  const date        = liveFM?.date?.trim()         || doc.date;
+  const updated     = liveFM?.updated?.trim()      || doc.updated;
+
   const heroBg      = isDark ? '#0a0a0a' : '#E8E7E3';
   const borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
   const metaClr     = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.75)';
@@ -59,9 +79,9 @@ const DocHero: React.FC<{ doc: DocContentProps['doc']; isDark: boolean; readTime
   const textPrimary = isDark ? '#ffffff' : '#000000';
   const locale      = 'ru-RU';
   const opts: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-  const fmtDate     = doc.date    ? new Date(doc.date).toLocaleDateString(locale, opts)    : null;
-  const fmtUpdated  = doc.updated ? new Date(doc.updated).toLocaleDateString(locale, opts) : null;
-  const authors     = doc.author  ? doc.author.split(',').map(a => a.trim()).filter(Boolean) : [];
+  const fmtDate     = date    ? new Date(date).toLocaleDateString(locale, opts)    : null;
+  const fmtUpdated  = updated ? new Date(updated).toLocaleDateString(locale, opts) : null;
+  const authors     = author  ? author.split(',').map(a => a.trim()).filter(Boolean) : [];
 
   return (
     <div style={{ background: heroBg, borderBottom: `1px solid ${borderColor}`, padding: '3rem 2rem 2.5rem', position: 'relative' }}>
@@ -83,11 +103,11 @@ const DocHero: React.FC<{ doc: DocContentProps['doc']; isDark: boolean; readTime
           {doc.typename?.trim() && <span style={{ fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: metaClr, background: badgeBg, border: `1px solid ${badgeBdr}`, borderRadius: '6px', padding: '2px 8px' }}>{doc.typename}</span>}
         </div>
         <h1 style={{ fontSize: 'clamp(1.6rem,4vw,2.8rem)', fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.02em', color: isDark ? '#ffffff' : '#0a0a0a', margin: '0 0 1rem 0', fontFamily: 'system-ui,-apple-system,sans-serif', maxWidth: '820px' }}>
-          {doc.title}
+          {title}
         </h1>
-        {doc.description && (
+        {description && (
           <p style={{ fontSize: 'clamp(0.9rem,1.5vw,1.05rem)', lineHeight: 1.65, color: textPrimary, margin: '0 0 1.75rem 0', maxWidth: '680px' }}>
-            {doc.description}
+            {description}
           </p>
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', paddingTop: '1rem' }}>
@@ -109,7 +129,7 @@ const DocHero: React.FC<{ doc: DocContentProps['doc']; isDark: boolean; readTime
             </>
           )}
           <div style={{ marginLeft: 'auto' }}>
-            <AskAIButton isDark={isDark} pageTitle={doc.title} pageSlug={doc.slug} markdownContent={doc.content} />
+            <AskAIButton isDark={isDark} pageTitle={title} pageSlug={doc.slug} markdownContent={doc.content} />
           </div>
         </div>
       </div>
@@ -128,7 +148,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const activeId       = useActiveHeading(toc);
 
   const [isDesktop, setIsDesktop] = useState(false);
-  const [navLeft, setNavLeft] = useState('0px');
+  const [navLeft, setNavLeft]     = useState('0px');
 
   useEffect(() => {
     const check = () => setIsDesktop(window.innerWidth > 1000);
@@ -156,24 +176,19 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   }, [isDesktop]);
 
   const [liveHtml, setLiveHtml] = useState<string | null>(null);
+  const [liveFM,   setLiveFM]   = useState<LiveFM | null>(null);
 
   // ─── Dev live preview (BroadcastChannel) ─────────────────────────────────
-  // Получаем HTML от dev панели → парсим через parseHtmlToReact → React re-render
-  // FIX: сохраняем scrollY до обновления и восстанавливаем после рендера,
-  // чтобы DotWave / hero секция не прыгали при каждом изменении в редакторе
+  // Получаем html (body) + fm (frontmatter) от dev панели.
+  // fm обновляет hero секцию (title, description, author, date, updated).
+  // html обновляет контент статьи.
   useEffect(() => {
     if (typeof BroadcastChannel === 'undefined') return;
     const ch = new BroadcastChannel('hub-dev-preview');
     ch.onmessage = (e) => {
       if (e.data?.type !== 'preview') return;
-      const savedScrollY = window.scrollY;
-      setLiveHtml(e.data.html ?? null);
-      // Два RAF: первый — React commit, второй — browser paint
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          window.scrollTo({ top: savedScrollY, behavior: 'instant' as ScrollBehavior });
-        });
-      });
+      if (e.data.html !== undefined) setLiveHtml(e.data.html);
+      if (e.data.fm   !== undefined) setLiveFM(e.data.fm);
     };
     return () => ch.close();
   }, []);
@@ -202,7 +217,9 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
           transition:   'none',
         }}
       >
-        <DocHero doc={doc} isDark={isDark} readTime={readTime} />
+        {/* liveFM передаётся в hero → title/description/author/date обновляются в реальном времени */}
+        <DocHero doc={doc} isDark={isDark} readTime={readTime} liveFM={liveFM} />
+
         <article style={{ padding: '2rem 2rem 3rem' }}>
           <TableContext.Provider value={tableCtx}>
             <div
