@@ -36,9 +36,8 @@ export async function loadComponent(componentId: string): Promise<LoadedComponen
   const cached = componentCache.get(componentId);
   if (cached) return cached;
 
-  if (loadingPromises.has(componentId)) {
-    return loadingPromises.get(componentId)!;
-  }
+  const inFlight = loadingPromises.get(componentId);
+  if (inFlight !== undefined) return inFlight;
 
   const promise = loadComponentInternal(componentId);
   loadingPromises.set(componentId, promise);
