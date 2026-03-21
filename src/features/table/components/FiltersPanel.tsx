@@ -141,7 +141,8 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   [headers, getUniqueValuesForColumn]);
 
   const totalActive = Array.from(filters.values()).reduce((s, v) => s + v.size, 0);
-  const activeLabel: string = totalActive > 0 ? `· ${totalActive.toString()} активно` : '';
+  const totalActiveStr: string = totalActive.toString();
+  const activeLabel: string = totalActive > 0 ? ('· ' + totalActiveStr + ' активно') : '';
 
   return (
     <div style={{ background: panelBg, borderBottom: `1px solid ${border}`, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
