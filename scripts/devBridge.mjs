@@ -6,12 +6,14 @@
  * В production build этот файл не используется.
  *
  * ws://127.0.0.1:7777 — только localhost
+ *
+ * Reload браузера: server.environments.client.hot.send({ type: 'full-reload' })
+ * Это официальный Vite 6 API — работает в Astro 6.
  */
 
 import { WebSocketServer } from 'ws';
 import fs   from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 const ROOT       = process.cwd();
 const DOCS_DIR   = path.join(ROOT, 'Docs');
@@ -20,7 +22,7 @@ const MANIFEST   = path.join(OUTPUT_DIR, 'manifest.json');
 const SITEMAP    = path.join(ROOT, 'public/sitemap.xml');
 const BASE_URL   = 'https://hub.opensophy.com';
 
-// ─── Разрешённые пути ──────────────────────────────────────────────────────────
+// ─── Allowed paths ────────────────────────────────────────────────────────────
 
 const ALLOWED_WRITE = ['Docs/', 'src/shared/data/', 'public/'];
 const ALLOWED_READ  = [...ALLOWED_WRITE, 'src/shared/data/contacts.ts'];
@@ -38,66 +40,86 @@ function canRead(absPath) {
 }
 
 // ─── Inline generation ────────────────────────────────────────────────────────
+// Импортируем docUtils напрямую — без дочернего процесса.
+// Cache сбрасывается перед каждой генерацией чтобы подхватить новые файлы.
 
-let _docUtils = null;
-async function getDocUtils() {
-  if (_docUtils) return _docUtils;
-  // Always re-import fresh to pick up file changes
-  _docUtils = await import(`${path.join(ROOT, 'scripts/docUtils.mjs')}?t=${Date.now()}`);
-  return _docUtils;
+let _utils = null;
+
+async function loadUtils() {
+  // Always reload to pick up any changes to docUtils itself
+  const url = `${pathToFileURL(path.join(ROOT, 'scripts/docUtils.mjs'))}?bust=${Date.now()}`;
+  _utils = await import(url);
+  return _utils;
+}
+
+// pathToFileURL helper (node doesn't expose it directly in all envs)
+function pathToFileURL(p) {
+  return 'file:///' + p.replaceAll('\\', '/').replace(/^\//, '');
 }
 
 async function runGenerate() {
-  // Reset cache so next call re-reads disk
-  _docUtils = null;
-  const { scanDocsDirectoryRecursive, buildDocFromPath } = await getDocUtils();
+  const { scanDocsDirectoryRecursive, buildDocFromPath } = await loadUtils();
 
-  if (!fs.existsSync(DOCS_DIR)) throw new Error('Docs/ directory not found');
+  if (!fs.existsSync(DOCS_DIR)) return { ok: false, stdout: '', stderr: 'Docs/ not found' };
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
-  const allMdFiles = scanDocsDirectoryRecursive(DOCS_DIR);
-  const manifest   = [];
-  const errors     = [];
-  const EXCLUDED   = new Set(['content', 'keywords', 'robots']);
+  const allFiles = scanDocsDirectoryRecursive(DOCS_DIR);
+  const manifest = [];
+  const errors   = [];
+  const SKIP     = new Set(['content', 'keywords', 'robots']);
 
-  for (const mdPath of allMdFiles) {
+  for (const mdPath of allFiles) {
     try {
       const doc   = buildDocFromPath(mdPath, DOCS_DIR);
-      const entry = Object.fromEntries(Object.entries(doc).filter(([k]) => !EXCLUDED.has(k)));
+      const entry = Object.fromEntries(Object.entries(doc).filter(([k]) => !SKIP.has(k)));
       manifest.push(entry);
     } catch (err) {
-      errors.push({ file: relPath(mdPath), error: err.message });
+      errors.push(`${relPath(mdPath)}: ${err.message}`);
     }
   }
 
-  const sorted = manifest.toSorted((a, b) =>
-    new Date(b.date).getTime() - new Date(a.date).getTime()
+  const sorted = [...manifest].sort(
+    (a, b) => new Date(b.date ?? 0).getTime() - new Date(a.date ?? 0).getTime()
   );
 
   fs.writeFileSync(MANIFEST, JSON.stringify(sorted));
 
   // Sitemap
   const today = new Date().toISOString().split('T')[0];
-  let sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
-  sitemap += `  <url><loc>${BASE_URL}/</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>\n`;
-  for (const doc of sorted) {
-    if (!doc.slug || doc.slug === 'welcome') continue;
-    const lastmod = doc.updated || doc.date || today;
-    sitemap += `  <url><loc>${BASE_URL}/${doc.slug}</loc><lastmod>${lastmod}</lastmod><changefreq>monthly</changefreq><priority>0.9</priority></url>\n`;
-  }
-  sitemap += `</urlset>\n`;
-  fs.writeFileSync(SITEMAP, sitemap);
+  const urls = sorted
+    .filter(d => d.slug && d.slug !== 'welcome')
+    .map(d => `  <url><loc>${BASE_URL}/${d.slug}</loc><lastmod>${d.updated || d.date || today}</lastmod><changefreq>monthly</changefreq><priority>0.9</priority></url>`)
+    .join('\n');
+
+  fs.writeFileSync(SITEMAP,
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+    `  <url><loc>${BASE_URL}/</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>\n` +
+    urls + `\n</urlset>\n`
+  );
 
   return {
     ok:     errors.length === 0,
     count:  manifest.length,
-    errors,
     stdout: `Generated ${manifest.length} docs`,
-    stderr: errors.map(e => `${e.file}: ${e.error}`).join('\n'),
+    stderr: errors.join('\n'),
   };
 }
 
-// ─── Handlers ──────────────────────────────────────────────────────────────────
+// ─── Full reload helper ───────────────────────────────────────────────────────
+
+function sendFullReload(server) {
+  try {
+    // Vite 6 / Astro 6 official API
+    server.environments.client.hot.send({ type: 'full-reload', path: '*' });
+  } catch {
+    try {
+      // Fallback for older Vite versions
+      server.ws?.send({ type: 'full-reload', path: '*' });
+    } catch {}
+  }
+}
+
+// ─── Handlers ─────────────────────────────────────────────────────────────────
 
 async function handlePing() {
   return { pong: true, ts: Date.now() };
@@ -111,7 +133,6 @@ async function handleWriteFile({ filePath, content }) {
   return { written: relPath(abs) };
 }
 
-// NEW: create directory without any placeholder file
 async function handleMkdir({ dirPath }) {
   const abs = path.isAbsolute(dirPath) ? dirPath : path.join(ROOT, dirPath);
   if (!canWrite(abs)) throw new Error(`Write not allowed: ${relPath(abs)}`);
@@ -122,8 +143,7 @@ async function handleMkdir({ dirPath }) {
 async function handleReadFile({ filePath }) {
   const abs = path.isAbsolute(filePath) ? filePath : path.join(ROOT, filePath);
   if (!canRead(abs)) throw new Error(`Read not allowed: ${relPath(abs)}`);
-  const content = await fs.promises.readFile(abs, 'utf-8');
-  return { content };
+  return { content: await fs.promises.readFile(abs, 'utf-8') };
 }
 
 async function handleDeleteFile({ filePath }) {
@@ -138,7 +158,7 @@ async function handleListDocs() {
   function scan(dir, depth = 0) {
     if (!fs.existsSync(dir)) return;
     for (const item of fs.readdirSync(dir, { withFileTypes: true })) {
-      if (item.name.startsWith('.')) continue; // skip all hidden files
+      if (item.name.startsWith('.')) continue;
       const full = path.join(dir, item.name);
       const rel  = relPath(full);
       if (item.isDirectory()) {
@@ -154,16 +174,11 @@ async function handleListDocs() {
 }
 
 async function handleReadContacts() {
-  const content = await fs.promises.readFile(
-    path.join(ROOT, 'src/shared/data/contacts.ts'), 'utf-8'
-  );
-  return { content };
+  return { content: await fs.promises.readFile(path.join(ROOT, 'src/shared/data/contacts.ts'), 'utf-8') };
 }
 
 async function handleWriteContacts({ content }) {
-  await fs.promises.writeFile(
-    path.join(ROOT, 'src/shared/data/contacts.ts'), content, 'utf-8'
-  );
+  await fs.promises.writeFile(path.join(ROOT, 'src/shared/data/contacts.ts'), content, 'utf-8');
   return { ok: true };
 }
 
@@ -176,10 +191,7 @@ async function handleUploadAsset({ filename, base64 }) {
 
 async function handleUploadFavicon({ base64, mimeType }) {
   const ext = mimeType === 'image/svg+xml' ? 'svg' : 'png';
-  await fs.promises.writeFile(
-    path.join(ROOT, `public/favicon.${ext}`),
-    Buffer.from(base64, 'base64')
-  );
+  await fs.promises.writeFile(path.join(ROOT, `public/favicon.${ext}`), Buffer.from(base64, 'base64'));
   return { path: `/favicon.${ext}` };
 }
 
@@ -187,7 +199,7 @@ async function handleRunGenerate() {
   return runGenerate();
 }
 
-// ─── Dispatch table ────────────────────────────────────────────────────────────
+// ─── Dispatch ─────────────────────────────────────────────────────────────────
 
 const HANDLERS = {
   ping:          handlePing,
@@ -203,6 +215,9 @@ const HANDLERS = {
   runGenerate:   handleRunGenerate,
 };
 
+// Actions that require regeneration + browser reload
+const MUTATING = new Set(['writeFile', 'mkdir', 'deleteFile', 'runGenerate']);
+
 // ─── Astro integration ────────────────────────────────────────────────────────
 
 export function devBridgeIntegration() {
@@ -213,25 +228,9 @@ export function devBridgeIntegration() {
         const wss = new WebSocketServer({ port: 7777, host: '127.0.0.1' });
         logger.info('[hub-dev] Bridge ready → ws://127.0.0.1:7777 | Press Ctrl+Shift+D in browser');
 
-        // Helper: tell ALL connected browsers to do a full page reload
-        function triggerReload() {
-          try {
-            // Astro/Vite HMR full-reload message
-            server.ws.send({ type: 'full-reload', path: '*' });
-          } catch {}
-          // Also touch manifest so watcher picks it up
-          try {
-            const now = Date.now();
-            fs.utimesSync(MANIFEST, now / 1000, now / 1000);
-            server.watcher.emit('change', MANIFEST);
-          } catch {}
-        }
-
         wss.on('connection', (ws, req) => {
           const ip = req.socket.remoteAddress ?? '';
-          const ALLOWED_IPS = new Set(['::1', '127.0.0.1', '::ffff:127.0.0.1']);
-
-          if (!ALLOWED_IPS.has(ip)) {
+          if (!['::1', '127.0.0.1', '::ffff:127.0.0.1'].includes(ip)) {
             logger.warn(`[hub-dev] Rejected from ${ip}`);
             ws.close(1008, 'Forbidden');
             return;
@@ -259,18 +258,17 @@ export function devBridgeIntegration() {
               const result = await handler(payload ?? {});
               ws.send(JSON.stringify({ id, ok: true, result }));
 
-              // After any mutation — regenerate and reload browser
-              const mutating = ['writeFile', 'mkdir', 'deleteFile', 'runGenerate'].includes(action);
-              if (mutating) {
-                setTimeout(async () => {
-                  try {
-                    await runGenerate();
-                    triggerReload();
-                    logger.info(`[hub-dev] Regenerated after ${action}`);
-                  } catch (err) {
-                    logger.error(`[hub-dev] Generate error: ${err.message}`);
-                  }
-                }, 100);
+              if (MUTATING.has(action)) {
+                // Run generation and reload browser — no delay needed since
+                // generate is synchronous in-process, not a child process
+                try {
+                  const gen = await runGenerate();
+                  sendFullReload(server);
+                  logger.info(`[hub-dev] Regenerated (${gen.count} docs) after ${action}`);
+                  if (gen.stderr) logger.warn(`[hub-dev] Generate warnings: ${gen.stderr}`);
+                } catch (err) {
+                  logger.error(`[hub-dev] Generate failed: ${err.message}`);
+                }
               }
             } catch (err) {
               logger.error(`[hub-dev] ${action} error: ${err.message}`);
