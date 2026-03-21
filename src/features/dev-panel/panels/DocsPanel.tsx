@@ -783,7 +783,7 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, selectedPath, t
             {actionBtn(<Edit3 size={13}/>, 'Редактировать', ()=>onEdit(entry))}
             {/* Add children for dirs */}
             {isDir && p.type==='N' && actionBtn(<FolderPlus size={13}/>, '+ Категория', ()=>onCreate({parentPath:entry.path,entryType:'C'}))}
-            {isDir && (p.type==='N'||p.type==='C') && actionBtn(<FilePlus size={13}/>, '+ Статья', ()=>onCreate({parentPath:entry.path,entryType:'A'}))}
+            {isDir && (p.type==='N'||p.type==='C') && actionBtn(<FilePlus size={13}/>, '+ Страница', ()=>onCreate({parentPath:entry.path,entryType:'A'}))}
             {/* Delete */}
             {actionBtn(<Trash2 size={13}/>, 'Удалить', ()=>onDelete(entry), true)}
           </div>
