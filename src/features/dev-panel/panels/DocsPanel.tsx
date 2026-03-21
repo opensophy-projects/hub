@@ -258,7 +258,7 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
 
   const setT = (v:string) => { setTitle(v); if(auto) setSlug(slugify(v)); };
   const isA = cfg.entryType==='A';
-  const lbl: Record<string,string> = {N:'Nav Popover',C:'Категория',A:'Статья'};
+  const lbl: Record<string,string> = {N:'Секция',C:'Категория',A:'Страница'};
   const dIco: Record<string,string> = {N:'book',C:'folder',A:'file-text'};
 
   const doSave = async () => {
