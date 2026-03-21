@@ -15,8 +15,6 @@ let SEO_CONFIG = {
   siteAuthor:      'Opensophy',
   keywords:        'opensophy, hub, документация',
   metaRobots:      'index, follow',
-  googleVerify:    '',
-  yandexVerify:    '',
   ogImage:         '/og-image.png',
   ogType:          'website',
   ogLocale:        'ru_RU',
@@ -97,10 +95,6 @@ const pageTitle = title === SEO_CONFIG.siteTitle
     <meta name="keywords"    content={keywords} />
     <meta name="robots"      content={robots} />
     {SEO_CONFIG.siteAuthor && <meta name="author" content={author || SEO_CONFIG.siteAuthor} />}
-
-    <!-- Verification -->
-    {SEO_CONFIG.googleVerify && <meta name="google-site-verification" content={SEO_CONFIG.googleVerify} />}
-    {SEO_CONFIG.yandexVerify && <meta name="yandex-verification"      content={SEO_CONFIG.yandexVerify} />}
 
     <!-- Open Graph -->
     <meta property="og:title"       content={title} />
