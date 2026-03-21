@@ -37,6 +37,8 @@ function tk(isDark: boolean) {
     menuClr:   'rgba(255,255,255,0.82)',
     menuSub:   'rgba(255,255,255,0.35)',
     dangerClr: '#f87171',
+    greenBg:   'rgba(34,197,94,0.12)',
+    greenSub:  'rgba(34,197,94,0.7)',
   } : {
     barBg:     '#d8d7d3',
     border:    'rgba(0,0,0,0.09)',
@@ -58,10 +60,12 @@ function tk(isDark: boolean) {
     menuClr:   'rgba(0,0,0,0.82)',
     menuSub:   'rgba(0,0,0,0.38)',
     dangerClr: '#dc2626',
+    greenBg:   'rgba(34,197,94,0.1)',
+    greenSub:  'rgba(34,197,94,0.7)',
   };
 }
 
-// ─── Portal menu — closes on scroll ──────────────────────────────────────────
+// ─── Портальное меню — закрывается при скролле ────────────────────────────────
 const PortalMenu: React.FC<{
   pos: { top: number; left: number }; isDark: boolean;
   onClose: () => void; children: React.ReactNode; minWidth?: number;
@@ -97,7 +101,7 @@ const PortalMenu: React.FC<{
   );
 };
 
-// ─── Pill: icon top, label bottom ────────────────────────────────────────────
+// ─── Кнопка-пилюля: иконка сверху, подпись снизу ─────────────────────────────
 const Pill: React.FC<{
   onClick: () => void; title: string; label: string;
   icon: React.ReactNode; isDark: boolean;
@@ -106,12 +110,16 @@ const Pill: React.FC<{
   const t = tk(isDark);
   const bg    = active ? t.btnActBg  : t.btnBg;
   const bdr   = active ? t.btnActBdr : t.btnBdr;
-  const color = danger ? t.dangerClr : active ? t.btnActClr : t.btnClr;
+  // Вынесено из вложенного тернарника: danger → active → default
+  let color: string;
+  if (danger)       color = t.dangerClr;
+  else if (active)  color = t.btnActClr;
+  else              color = t.btnClr;
+
   return (
     <button onClick={onClick} title={title} style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       justifyContent: 'center', gap: 3,
-      // FIX: reduced padding and minWidth so buttons fit on narrow screens
       padding: '5px 10px', minWidth: 48, height: 44,
       borderRadius: 8, border: `1px solid ${bdr}`,
       background: bg, color, cursor: 'pointer', flexShrink: 0, transition: 'background 0.13s',
@@ -125,7 +133,7 @@ const Pill: React.FC<{
   );
 };
 
-// ─── Desktop CopyButton ───────────────────────────────────────────────────────
+// ─── Кнопка копирования (десктоп) ─────────────────────────────────────────────
 const CopyButton: React.FC<{ isDark: boolean; tableHtml: string }> = ({ isDark, tableHtml }) => {
   const [open, setOpen]     = useState(false);
   const [copied, setCopied] = useState<CopyFormat | null>(null);
@@ -141,6 +149,7 @@ const CopyButton: React.FC<{ isDark: boolean; tableHtml: string }> = ({ isDark, 
     setPos({ top: r.bottom + 6, left: Math.min(r.left, window.innerWidth - 202) });
     setOpen(true);
   };
+
   const doCopy = async (fmt: CopyFormat) => {
     const { headers, rows } = parseTableForCopy(tableHtml);
     await navigator.clipboard.writeText(fmt === 'md' ? toMd(headers, rows) : toTsv(headers, rows));
@@ -148,8 +157,12 @@ const CopyButton: React.FC<{ isDark: boolean; tableHtml: string }> = ({ isDark, 
     setTimeout(() => setCopied(null), 2000);
   };
 
+  // Вынесено из вложенных тернарников
   const bg    = isCopied ? (isDark ? 'rgba(34,197,94,0.16)' : 'rgba(34,197,94,0.14)') : t.btnBg;
-  const bdr   = isCopied ? (isDark ? 'rgba(34,197,94,0.4)'  : 'rgba(34,197,94,0.5)')  : t.btnBdr;
+  const copiedBg  = isDark ? 'rgba(34,197,94,0.16)' : 'rgba(34,197,94,0.14)';
+  const copiedBdr = isDark ? 'rgba(34,197,94,0.4)'  : 'rgba(34,197,94,0.5)';
+  const bdr   = isCopied ? copiedBdr : t.btnBdr;
+  const bgVal = isCopied ? copiedBg  : t.btnBg;
   const color = isCopied ? '#22c55e' : t.btnClr;
 
   return (
@@ -157,13 +170,12 @@ const CopyButton: React.FC<{ isDark: boolean; tableHtml: string }> = ({ isDark, 
       <button ref={ref} onClick={toggle} title="Копировать" style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'center', gap: 3,
-        // FIX: tighter sizing
         padding: '5px 10px', minWidth: 64, height: 44,
         borderRadius: 8, border: `1px solid ${bdr}`,
-        background: bg, color, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s',
+        background: bgVal, color, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s',
       }}
         onMouseEnter={e => { if (!isCopied) (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
-        onMouseLeave={e => { if (!isCopied) (e.currentTarget as HTMLButtonElement).style.background = bg; }}
+        onMouseLeave={e => { if (!isCopied) (e.currentTarget as HTMLButtonElement).style.background = bgVal; }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           {isCopied ? <Check size={13} strokeWidth={2.5} /> : <Copy size={13} />}
@@ -194,7 +206,7 @@ const CopyButton: React.FC<{ isDark: boolean; tableHtml: string }> = ({ isDark, 
   );
 };
 
-// ─── Mobile ⋯ — closes on scroll ─────────────────────────────────────────────
+// ─── Мобильное меню ⋯ — закрывается при скролле ──────────────────────────────
 const MobileMenu: React.FC<{
   isDark: boolean; tableHtml: string;
   showFilters: boolean; onToggleFilters: () => void;
@@ -215,6 +227,7 @@ const MobileMenu: React.FC<{
     setPos({ top: r.bottom + 6, left: Math.max(8, Math.min(r.right - mw, window.innerWidth - mw - 8)) });
     setOpen(true);
   };
+
   const doCopy = async (fmt: CopyFormat) => {
     const { headers, rows } = parseTableForCopy(tableHtml);
     await navigator.clipboard.writeText(fmt === 'md' ? toMd(headers, rows) : toTsv(headers, rows));
@@ -223,28 +236,40 @@ const MobileMenu: React.FC<{
   };
 
   const sep = <div style={{ height: 1, margin: '3px 0', background: t.menuBdr }} />;
+
   const sLabel = (s: string) => (
     <div style={{ padding: '7px 14px 3px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: t.menuSub }}>{s}</div>
   );
-  const mRow = (onClick: () => void, icon: React.ReactNode, label: string, sub?: string, danger?: boolean, green?: boolean) => (
-    <button onClick={onClick} style={{
-      width: '100%', padding: sub ? '10px 14px' : '11px 14px',
-      display: 'flex', flexDirection: sub ? 'column' : 'row',
-      alignItems: sub ? 'flex-start' : 'center', gap: sub ? 2 : 10,
-      border: 'none',
-      background: green ? (isDark ? 'rgba(34,197,94,0.12)' : 'rgba(34,197,94,0.1)') : 'transparent',
-      cursor: 'pointer', textAlign: 'left',
-      color: green ? '#22c55e' : danger ? t.dangerClr : t.menuClr,
-      fontSize: 13, fontWeight: green ? 600 : 400, transition: 'background 0.1s',
-    }}
-      onMouseEnter={e => { if (!green) (e.currentTarget as HTMLButtonElement).style.background = t.menuHov; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = green ? (isDark ? 'rgba(34,197,94,0.12)' : 'rgba(34,197,94,0.1)') : 'transparent'; }}
-    >
-      {!sub && <span style={{ opacity: green ? 1 : 0.6, flexShrink: 0, display: 'flex' }}>{icon}</span>}
-      <span style={{ flex: 1, fontWeight: 500 }}>{label}</span>
-      {sub && <span style={{ fontSize: 11, color: green ? 'rgba(34,197,94,0.7)' : t.menuSub }}>{sub}</span>}
-    </button>
-  );
+
+  const mRow = (onClick: () => void, icon: React.ReactNode, label: string, sub?: string, danger?: boolean, green?: boolean) => {
+    // Вынесено из вложенных тернарников
+    let rowColor: string;
+    if (green)        rowColor = '#22c55e';
+    else if (danger)  rowColor = t.dangerClr;
+    else              rowColor = t.menuClr;
+
+    const rowBg       = green ? t.greenBg : 'transparent';
+    const rowBgHover  = green ? t.greenBg : t.menuHov;
+
+    return (
+      <button onClick={onClick} style={{
+        width: '100%', padding: sub ? '10px 14px' : '11px 14px',
+        display: 'flex', flexDirection: sub ? 'column' : 'row',
+        alignItems: sub ? 'flex-start' : 'center', gap: sub ? 2 : 10,
+        border: 'none', background: rowBg,
+        cursor: 'pointer', textAlign: 'left',
+        color: rowColor,
+        fontSize: 13, fontWeight: green ? 600 : 400, transition: 'background 0.1s',
+      }}
+        onMouseEnter={e => { if (!green) (e.currentTarget as HTMLButtonElement).style.background = rowBgHover; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = rowBg; }}
+      >
+        {!sub && <span style={{ opacity: green ? 1 : 0.6, flexShrink: 0, display: 'flex' }}>{icon}</span>}
+        <span style={{ flex: 1, fontWeight: 500 }}>{label}</span>
+        {sub && <span style={{ fontSize: 11, color: green ? t.greenSub : t.menuSub }}>{sub}</span>}
+      </button>
+    );
+  };
 
   return (
     <>
@@ -264,10 +289,16 @@ const MobileMenu: React.FC<{
       {open && (
         <PortalMenu pos={pos} isDark={isDark} onClose={() => setOpen(false)} minWidth={220}>
           {sLabel('Копировать')}
-          {mRow(() => doCopy('md'), copied === 'md' ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />,
-            copied === 'md' ? 'Скопировано!' : 'Markdown', copied === 'md' ? undefined : 'Для документов', false, copied === 'md')}
-          {mRow(() => doCopy('excel'), copied === 'excel' ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />,
-            copied === 'excel' ? 'Скопировано!' : 'Excel / TSV', copied === 'excel' ? undefined : 'Tab-separated', false, copied === 'excel')}
+          {mRow(() => doCopy('md'),
+            copied === 'md' ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />,
+            copied === 'md' ? 'Скопировано!' : 'Markdown',
+            copied === 'md' ? undefined : 'Для документов',
+            false, copied === 'md')}
+          {mRow(() => doCopy('excel'),
+            copied === 'excel' ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />,
+            copied === 'excel' ? 'Скопировано!' : 'Excel / TSV',
+            copied === 'excel' ? undefined : 'Tab-separated',
+            false, copied === 'excel')}
           {sep}
           {mRow(() => { onToggleFilters(); setOpen(false); }, <Filter size={14} />,
             activeFilterCount > 0 ? `Фильтры · ${activeFilterCount}` : 'Фильтры')}
@@ -281,7 +312,7 @@ const MobileMenu: React.FC<{
   );
 };
 
-// ─── TableControlsBar ────────────────────────────────────────────────────────
+// ─── Панель управления таблицей ───────────────────────────────────────────────
 export const TableControlsBar: React.FC<TableControlsBarProps> = ({
   isDark, searchQuery, onSearchChange,
   showFilters, onToggleFilters, activeFilterCount, onResetFilters,
@@ -292,26 +323,17 @@ export const TableControlsBar: React.FC<TableControlsBarProps> = ({
 
   return (
     <>
-      {/*
-        FIX: breakpoint lowered to 480px (was 580px) so mobile ⋯ menu
-        activates sooner on narrow screens like 768px - navWidth = ~700px content.
-        Also added flex-shrink:0 on button group to prevent search eating all space.
-      */}
       <style>{`.tb-desk{display:flex!important}.tb-mob{display:none!important}@media(max-width:480px){.tb-desk{display:none!important}.tb-mob{display:flex!important}}`}</style>
       <div style={{
         display: 'flex', alignItems: 'center', gap: 6,
-        // FIX: reduced padding slightly to reclaim horizontal space
         padding: '8px 8px',
         borderBottom: `1px solid ${t.border}`,
         background: t.barBg,
-        // FIX: allow wrapping on very narrow screens as last resort, but prefer nowrap
         flexWrap: 'nowrap',
         minWidth: 0,
-        // FIX: ensure bar itself is full width
         width: '100%',
         boxSizing: 'border-box' as const,
       }}>
-        {/* FIX: search input — min-width:0 is critical so it can shrink */}
         <div style={{ position: 'relative', flex: '1 1 0', minWidth: 0 }}>
           <Search size={13} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: t.plhClr, pointerEvents: 'none' }} />
           <input type="text" placeholder="Поиск..." value={searchQuery}
@@ -320,9 +342,7 @@ export const TableControlsBar: React.FC<TableControlsBarProps> = ({
               width: '100%', padding: '0 28px 0 26px', height: 36, borderRadius: 8,
               border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: t.inpClr,
               fontSize: 13, outline: 'none', boxSizing: 'border-box' as const,
-              transition: 'border-color 0.15s',
-              // FIX: min-width:0 lets input shrink below its default min-width
-              minWidth: 0,
+              transition: 'border-color 0.15s', minWidth: 0,
             }}
             onFocus={e => { (e.target as HTMLInputElement).style.borderColor = t.inpFoc; }}
             onBlur={e  => { (e.target as HTMLInputElement).style.borderColor = t.inpBdr; }}
@@ -334,7 +354,6 @@ export const TableControlsBar: React.FC<TableControlsBarProps> = ({
           )}
         </div>
 
-        {/* Desktop buttons — flex-shrink:0 so they don't get squeezed */}
         <div className="tb-desk" style={{ alignItems: 'center', gap: 4, flexShrink: 0 }}>
           <CopyButton isDark={isDark} tableHtml={tableHtml} />
           <Pill onClick={onToggleFilters} title="Фильтры" label={filterLabel} icon={<Filter size={14} />} isDark={isDark} active={showFilters || activeFilterCount > 0} />
@@ -342,7 +361,6 @@ export const TableControlsBar: React.FC<TableControlsBarProps> = ({
           <Pill onClick={onFullscreen} title="На весь экран" label="Развернуть" icon={<Maximize2 size={14} />} isDark={isDark} />
         </div>
 
-        {/* Mobile ⋯ button */}
         <div className="tb-mob" style={{ flexShrink: 0 }}>
           <MobileMenu isDark={isDark} tableHtml={tableHtml} showFilters={showFilters} onToggleFilters={onToggleFilters} activeFilterCount={activeFilterCount} onResetFilters={onResetFilters} onFullscreen={onFullscreen} />
         </div>
