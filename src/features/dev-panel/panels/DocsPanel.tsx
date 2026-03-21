@@ -80,7 +80,7 @@ const parseFM = (raw: string): { fm: FM; body: string } => {
     const ci = line.indexOf(':');
     if (ci < 1) return;
     const k = line.slice(0,ci).trim() as keyof FM;
-    const v = line.slice(ci+1).trim().replace(/^["']|["']$/g,'');
+    const v = line.slice(ci+1).trim().replaceAll(/^["']|["']$/g, '');
     if (k in fm) (fm as Record<string,string>)[k] = v;
   });
   return { fm, body: raw.slice(end+5) };
@@ -91,7 +91,8 @@ const serializeFM = (fm: FM, body: string): string => {
   for (const [k,v] of Object.entries(fm) as [keyof FM,string][]) {
     if (!v) continue;
     const needsQuotes = /[:#[\]{}&*!|>'",%@`]/.test(v);
-    const val = needsQuotes ? `"${v.replaceAll('"', String.raw`\"`)}"` : v;
+    const escaped = v.replaceAll('"', String.raw`\"`);
+    const val = needsQuotes ? `"${escaped}"` : v;
     lines.push(`${k}: ${val}`);
   }
   return `---\n${lines.join('\n')}\n---\n\n${body}`;
@@ -232,24 +233,35 @@ function Modal({ onClose, children, width, t }: {
       open
       style={{
         position:'fixed', inset:0, zIndex:100020,
-        background:'rgba(0,0,0,0.6)',
-        display:'flex', alignItems:'center', justifyContent:'center',
-        border:'none', padding:0, margin:0, maxWidth:'100vw', maxHeight:'100vh', width:'100%',
+        border:'none', padding:0, margin:0,
+        maxWidth:'100vw', maxHeight:'100vh', width:'100%', height:'100%',
+        background:'transparent',
       }}
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       onKeyDown={e => { if (e.key === 'Escape') onClose(); }}
     >
-      <div
+      <button
+        type="button"
+        aria-label="Закрыть"
+        onClick={onClose}
         style={{
-          background:t.bg, border:`1px solid ${t.borderStrong}`,
-          borderRadius:12, padding:22, width:width ?? 360,
-          boxShadow:t.shadow, fontFamily:t.mono,
-          maxHeight:'90vh', overflowY:'auto',
+          position:'absolute', inset:0, width:'100%', height:'100%',
+          background:'rgba(0,0,0,0.6)', border:'none', cursor:'default',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          padding:0,
         }}
-        onClick={e => e.stopPropagation()}
       >
-        {children}
-      </div>
+        <div
+          style={{
+            background:t.bg, border:`1px solid ${t.borderStrong}`,
+            borderRadius:12, padding:22, width:width ?? 360,
+            boxShadow:t.shadow, fontFamily:t.mono,
+            maxHeight:'90vh', overflowY:'auto', cursor:'default',
+          }}
+          onClick={e => e.stopPropagation()}
+        >
+          {children}
+        </div>
+      </button>
     </dialog>,
     document.body
   );
@@ -368,7 +380,8 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
     letterSpacing:'0.07em', marginBottom:4, display:'block',
   };
   // Текст кнопки сохранения зависит от состояния и режима (создание/редактирование)
-  const saveBtnLabel = saving ? '...' : isEdit ? 'Применить' : 'Создать';
+  const idleLabel = isEdit ? 'Применить' : 'Создать';
+  const saveBtnLabel = saving ? '...' : idleLabel;
 
   return (
     <Modal onClose={onClose} width={isA && !isEdit ? 440 : 340} t={t}>
@@ -517,18 +530,7 @@ function BlockPicker({ onInsert, t }: { readonly onInsert: (c:string) => void; r
             ))}
           </div>
           <div style={{flex:1, overflowY:'auto', padding:'4px'}} className="adm-scroll">
-            {!sub ? BG[grp].items.map((item, ii) => (
-              <button
-                key={item.label + ii}
-                onClick={() => { if (item.variants) { setSub(item); } else { onInsert(item.code ?? ''); setOpen(false); } }}
-                style={rs()}
-                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = t.surfaceHov}
-                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
-              >
-                <div style={{display:'flex', alignItems:'center', gap:6}}><span style={{color:t.fgMuted}}>{item.icon}</span>{item.label}</div>
-                {item.variants && <ChevronRight size={9} style={{color:t.fgSub, flexShrink:0}}/>}
-              </button>
-            )) : (
+            {sub ? (
               <>
                 <button onClick={() => setSub(null)} style={{display:'flex', alignItems:'center', gap:4, padding:'5px 8px', border:'none', background:'transparent', color:t.fgMuted, cursor:'pointer', fontSize:10, fontFamily:t.mono, marginBottom:3}}>
                   <ChevronRight size={9} style={{transform:'rotate(180deg)'}}/> Назад
@@ -546,7 +548,18 @@ function BlockPicker({ onInsert, t }: { readonly onInsert: (c:string) => void; r
                   </button>
                 ))}
               </>
-            )}
+            ) : BG[grp].items.map((item, ii) => (
+              <button
+                key={item.label + ii}
+                onClick={() => { if (item.variants) { setSub(item); } else { onInsert(item.code ?? ''); setOpen(false); } }}
+                style={rs()}
+                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = t.surfaceHov}
+                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
+              >
+                <div style={{display:'flex', alignItems:'center', gap:6}}><span style={{color:t.fgMuted}}>{item.icon}</span>{item.label}</div>
+                {item.variants && <ChevronRight size={9} style={{color:t.fgSub, flexShrink:0}}/>}
+              </button>
+            ))}
           </div>
         </div>,
         document.body
@@ -827,16 +840,17 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
   const nodeOutline = getNodeOutline(isDragOver, isDir);
 
   // Вес шрифта зависит от типа узла
-  const fontWeight = p.type === 'N' ? 600 : p.type === 'C' ? 500 : 400;
+  const fontWeightMap: Record<string, number> = { N: 600, C: 500, A: 400 };
+  const fontWeight = p.type ? (fontWeightMap[p.type] ?? 400) : 400;
   // Иконка раскрытия для директории
-  const chevronIcon = isDir ? (expanded ? <ChevronDown size={11}/> : <ChevronRight size={11}/>) : null;
+  const expandIcon  = expanded ? <ChevronDown size={11}/> : <ChevronRight size={11}/>;
+  const chevronIcon = isDir ? expandIcon : null;
 
   return (
     <div>
-      <div
+      <button
+        type="button"
         draggable
-        role="button"
-        tabIndex={0}
         onDragStart={e => { e.stopPropagation(); e.dataTransfer.setData('text/plain', entry.path); e.dataTransfer.effectAllowed = 'move'; }}
         onDragOver={e => { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'move'; setDragOverPath(entry.path); }}
         onDragLeave={e => { e.stopPropagation(); setDragOverPath(null); }}
@@ -844,11 +858,11 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
         onMouseEnter={() => setHov(true)}
         onMouseLeave={() => setHov(false)}
         onClick={() => { if (isDir) setExpanded(v => !v); else onSelect(entry.path); }}
-        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { if (isDir) setExpanded(v => !v); else onSelect(entry.path); } }}
         style={{
           display:'flex', alignItems:'center', gap:5, cursor:'grab', userSelect:'none',
+          width:'100%', textAlign:'left',
           padding:`4px 8px 4px ${8 + entry.depth * 14}px`,
-          borderRadius:6,
+          borderRadius:6, border:'none',
           background: nodeBg,
           outline: nodeOutline,
           outlineOffset:-1, minHeight:28, transition:'background 0.1s',
@@ -863,14 +877,19 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
           {p.title || entry.name}
         </span>
         {hov && (
-          <div style={{display:'flex', gap:3, flexShrink:0}} onClick={e => e.stopPropagation()}>
+          <div
+            role="toolbar"
+            style={{display:'flex', gap:3, flexShrink:0}}
+            onClick={e => e.stopPropagation()}
+            onKeyDown={e => e.stopPropagation()}
+          >
             {actionBtn(<Edit3 size={13}/>, 'Редактировать', () => onEdit(entry))}
             {isDir && p.type === 'N' && actionBtn(<FolderPlus size={13}/>, '+ Категория', () => onCreate({parentPath:entry.path, entryType:'C'}))}
             {isDir && (p.type === 'N' || p.type === 'C') && actionBtn(<FilePlus size={13}/>, '+ Страница', () => onCreate({parentPath:entry.path, entryType:'A'}))}
             {actionBtn(<Trash2 size={13}/>, 'Удалить', () => onDelete(entry), true)}
           </div>
         )}
-      </div>
+      </button>
       {isDir && expanded && entry.children.length > 0 && (
         <div style={{marginLeft: 8 + entry.depth * 14 + 7, borderLeft:`1px solid ${t.border}`}}>
           {entry.children.map(c => (
@@ -1042,6 +1061,8 @@ export default function DocsPanel() {
       </div>
 
       <div
+        role="region"
+        aria-label="Дерево документов"
         style={{flex:1, overflowY:'auto', padding:'4px'}}
         className="adm-scroll"
         onDragOver={e => e.preventDefault()}
