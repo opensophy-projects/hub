@@ -293,7 +293,7 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
         if (isA) {
           const fp = `${cfg.parentPath}/${nm}.md`;
           await bridge.writeFile(fp, serializeFM({...fm,title:title.trim()},`# ${title.trim()}\n\nНачните писать здесь...\n`));
-          toast.success('Статья создана'); onDone(fp);
+          toast.success('Страница создана'); onDone(fp);
         } else {
           await bridge.mkdir(`${cfg.parentPath}/${nm}`);
           toast.success('Создано'); onDone();
