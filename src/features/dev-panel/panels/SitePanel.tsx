@@ -163,15 +163,29 @@ function Section({ icon, title, badge, defaultOpen = true, t, children }: Readon
 // ─── Стили кнопки "Сохранить" — вынесены чтобы избежать вложенных тернарников ─
 
 function getSaveBtnStyle(saved: boolean, dirty: boolean, saving: boolean, t: TTokens): React.CSSProperties {
-  const border     = saved ? `1px solid ${t.success}66` : dirty ? `1px solid ${t.borderStrong}` : `1px solid ${t.border}`;
-  const background = saved ? 'rgba(34,197,94,0.1)'      : dirty ? t.surfaceHov                  : 'transparent';
-  const color      = saved ? t.success                  : dirty ? t.fg                           : t.fgMuted;
-  const fontWeight = dirty ? 500 : 400;
+  let border: string;
+  let background: string;
+  let color: string;
+
+  if (saved) {
+    border     = `1px solid ${t.success}66`;
+    background = 'rgba(34,197,94,0.1)';
+    color      = t.success;
+  } else if (dirty) {
+    border     = `1px solid ${t.borderStrong}`;
+    background = t.surfaceHov;
+    color      = t.fg;
+  } else {
+    border     = `1px solid ${t.border}`;
+    background = 'transparent';
+    color      = t.fgMuted;
+  }
+
   return {
     display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px',
     borderRadius: 6, border, background, color,
     cursor: saving ? 'default' : 'pointer',
-    fontSize: 11, fontFamily: t.mono, fontWeight,
+    fontSize: 11, fontFamily: t.mono, fontWeight: dirty ? 500 : 400,
   };
 }
 
