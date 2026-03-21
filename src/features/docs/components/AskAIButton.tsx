@@ -48,26 +48,26 @@ interface Theme {
 function getTheme(isDark: boolean): Theme {
   return isDark
     ? {
-        popupBg:   '#0a0a0a',
-        border:    'rgba(255,255,255,0.1)',
-        textColor: 'rgba(255,255,255,0.85)',
-        labelColor:'rgba(255,255,255,0.3)',
-        rowHov:    'rgba(255,255,255,0.06)',
-        divColor:  'rgba(255,255,255,0.08)',
-        btnBg:     '#1a1a1a',
-        btnBorder: 'rgba(255,255,255,0.12)',
-        btnHov:    '#222222',
+        popupBg:    '#0a0a0a',
+        border:     'rgba(255,255,255,0.1)',
+        textColor:  'rgba(255,255,255,0.85)',
+        labelColor: 'rgba(255,255,255,0.3)',
+        rowHov:     'rgba(255,255,255,0.06)',
+        divColor:   'rgba(255,255,255,0.08)',
+        btnBg:      '#1a1a1a',
+        btnBorder:  'rgba(255,255,255,0.12)',
+        btnHov:     '#222222',
       }
     : {
-        popupBg:   '#E8E7E3',
-        border:    'rgba(0,0,0,0.1)',
-        textColor: 'rgba(0,0,0,0.85)',
-        labelColor:'rgba(0,0,0,0.35)',
-        rowHov:    'rgba(0,0,0,0.06)',
-        divColor:  'rgba(0,0,0,0.08)',
-        btnBg:     '#d4d3cf',
-        btnBorder: 'rgba(0,0,0,0.15)',
-        btnHov:    '#c8c7c3',
+        popupBg:    '#E8E7E3',
+        border:     'rgba(0,0,0,0.1)',
+        textColor:  'rgba(0,0,0,0.85)',
+        labelColor: 'rgba(0,0,0,0.35)',
+        rowHov:     'rgba(0,0,0,0.06)',
+        divColor:   'rgba(0,0,0,0.08)',
+        btnBg:      '#d4d3cf',
+        btnBorder:  'rgba(0,0,0,0.15)',
+        btnHov:     '#c8c7c3',
       };
 }
 
@@ -77,11 +77,11 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
   pageSlug,
   markdownContent,
 }) => {
-  const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [open,      setOpen]      = useState(false);
+  const [copied,    setCopied]    = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
-  const t = getTheme(isDark);
+  const t   = getTheme(isDark);
 
   useEffect(() => {
     if (!open) return;
@@ -92,10 +92,10 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
     return () => document.removeEventListener('mousedown', onDown);
   }, [open]);
 
-  const getPageUrl = () => window.location.href;
+  const getPageUrl = () => globalThis.location.href;
 
   const handleProviderClick = (p: typeof PROVIDERS[0]) => {
-    window.open(p.getUrl(pageTitle, getPageUrl()), '_blank', 'noopener,noreferrer');
+    globalThis.open(p.getUrl(pageTitle, getPageUrl()), '_blank', 'noopener,noreferrer');
     setOpen(false);
   };
 
@@ -137,7 +137,7 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
           lineHeight: 1,
         }}
       >
-        <Sparkles size={11} style={{ opacity: 0.7 }} />
+        <Sparkles size={11} style={{ opacity: 0.7 }}/>
         Спросить у ИИ
         <ChevronDown
           size={11}
@@ -150,21 +150,19 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
       </button>
 
       {open && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 7px)',
-            right: 0,
-            width: '200px',
-            background: t.popupBg,
-            border: `1px solid ${t.border}`,
-            borderRadius: '10px',
-            boxShadow,
-            zIndex: 200,
-            overflow: 'hidden',
-            animation: 'askAiIn 0.13s ease',
-          }}
-        >
+        <div style={{
+          position: 'absolute',
+          top: 'calc(100% + 7px)',
+          right: 0,
+          width: '200px',
+          background: t.popupBg,
+          border: `1px solid ${t.border}`,
+          borderRadius: '10px',
+          boxShadow,
+          zIndex: 200,
+          overflow: 'hidden',
+          animation: 'askAiIn 0.13s ease',
+        }}>
           <style>{`
             @keyframes askAiIn {
               from { opacity:0; transform:translateY(-5px) scale(0.97); }
@@ -207,7 +205,7 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
             </button>
           ))}
 
-          <div style={{ height: '1px', background: t.divColor, margin: '4px 0' }} />
+          <div style={{ height: '1px', background: t.divColor, margin: '4px 0' }}/>
 
           <button
             onClick={handleCopy}
@@ -230,8 +228,8 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
             }}
           >
             {copied
-              ? <Check size={13} style={{ color: '#22c55e', flexShrink: 0 }} />
-              : <Copy size={13} style={{ opacity: 0.45, flexShrink: 0 }} />
+              ? <Check size={13} style={{ color: '#22c55e', flexShrink: 0 }}/>
+              : <Copy  size={13} style={{ opacity: 0.45,   flexShrink: 0 }}/>
             }
             {copied ? 'Скопировано!' : 'Копировать HTML'}
           </button>
