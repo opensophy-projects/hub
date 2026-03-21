@@ -878,7 +878,7 @@ export default function DocsPanel() {
         ) : tree.length===0 ? (
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8,padding:28,color:t.fgMuted,textAlign:'center'}}>
             <FolderOpen size={28} style={{opacity:0.3}}/>
-            <div style={{fontSize:12}}>Docs/ пуста. Создай Nav Popover</div>
+            <div style={{fontSize:12}}>Docs/ пуста. Создай Секцию</div>
           </div>
         ) : tree.map(e=>(
           <TreeNode key={e.path} entry={e} onCreate={cfg=>setModal({cfg})}
