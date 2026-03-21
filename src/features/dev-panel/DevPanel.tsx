@@ -93,7 +93,7 @@ const TABS = [
   { id: 'docs',     label: 'Страницы', icon: <FileText size={13}/> },
   { id: 'contacts', label: 'Контакты', icon: <Users size={13}/>    },
   { id: 'assets',   label: 'Ассеты',   icon: <Image size={13}/>    },
-  { id: 'site',     label: 'Сайт',     icon: <Globe size={13}/>    },
+  { id: 'site',     label: 'Сайт(экспериментальный)',     icon: <Globe size={13}/>    },
 ];
 
 // ─── Trigger button ───────────────────────────────────────────────────────────
