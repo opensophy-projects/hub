@@ -19,7 +19,7 @@ import {
   FolderOpen, Folder, FileText, Plus, Trash2,
   ChevronRight, ChevronDown, FolderPlus, FilePlus,
   Loader2, Save, Bold, Italic, Code, Link, Hash, List,
-  RefreshCw, Eye, Columns,
+  RefreshCw, Eye, Columns, Globe,
 } from 'lucide-react';
 
 marked.setOptions({ breaks: true, gfm: true });
@@ -363,7 +363,7 @@ function TreeNode({ entry, onCreateChild, onDelete, onSelect, selectedPath }: {
 
 // ─── Markdown Editor ──────────────────────────────────────────────────────────
 
-type ViewMode = 'editor'|'split'|'preview';
+type ViewMode = 'editor'|'split'|'preview'|'site';
 
 function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>void }) {
   const [fm, setFm]           = useState<FM>({...EMPTY_FM});
@@ -373,6 +373,7 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
   const [dirty, setDirty]     = useState(false);
   const [fmOpen, setFmOpen]   = useState(false);
   const [viewMode, setMode]   = useState<ViewMode>('split');
+  const [iframeKey, setIframeKey] = useState(0);
   const taRef   = useRef<HTMLTextAreaElement>(null);
   const fmRef   = useRef(fm);
   const bodyRef = useRef(body);
@@ -411,7 +412,7 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
     try {
       await bridge.writeFile(filePath, serializeFM(fmRef.current, bodyRef.current));
       // bridge runs generate + full-reload on save
-      setDirty(false);
+      setDirty(false); setIframeKey(k => k + 1);
       toast.success('Сохранено и опубликовано');
     } catch (e: any) { toast.error(e.message); }
     finally { setSaving(false); }
@@ -465,9 +466,9 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
           textOverflow:'ellipsis',whiteSpace:'nowrap',fontFamily:T.mono}}>
           {fileName}{dirty&&<span style={{color:T.warning,marginLeft:4}}>●</span>}
         </span>
-        {(['editor','split','preview'] as ViewMode[]).map(mode=>{
-          const icons = {editor:<FileText size={10}/>,split:<Columns size={10}/>,preview:<Eye size={10}/>};
-          const lbls  = {editor:'MD',split:'Split',preview:'Preview'};
+        {(['editor','split','preview','site'] as ViewMode[]).map(mode=>{
+          const icons = {editor:<FileText size={10}/>,split:<Columns size={10}/>,preview:<Eye size={10}/>,site:<Globe size={10}/>};
+          const lbls  = {editor:'MD',split:'Split',preview:'Preview',site:'Сайт'};
           const active = viewMode===mode;
           return (
             <button key={mode} onClick={()=>setMode(mode)}
@@ -479,12 +480,6 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
             </button>
           );
         })}
-        <button onClick={()=>window.open(`/${previewSlug}`,'_blank')}
-          style={{display:'flex',alignItems:'center',gap:4,padding:'3px 7px',borderRadius:4,
-            border:`1px solid ${T.border}`,background:'transparent',
-            color:T.fgMuted,fontSize:10,cursor:'pointer',fontFamily:T.mono}}>
-          <Eye size={10}/> Сайт
-        </button>
         <Btn
           icon={saving?<Loader2 size={11} style={{animation:'devSpinAnim 1s linear infinite'}}/>:<Save size={11}/>}
           variant={dirty?'accent':'default'} size="sm" loading={saving} onClick={save}>
@@ -564,6 +559,26 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
             <div className="dp-wrap"
               style={{flex:1,overflowY:'auto',scrollbarWidth:'thin' as const}}
               dangerouslySetInnerHTML={{__html:previewHtml}}/>
+          </div>
+        )}
+        {viewMode==='site'&&(
+          <div style={{flex:1,display:'flex',flexDirection:'column',minWidth:0,overflow:'hidden'}}>
+            <div style={{padding:'2px 8px',fontSize:8,color:'#22c55e',background:T.bgPanel,
+              borderBottom:`1px solid ${T.border}44`,letterSpacing:'0.08em',flexShrink:0,
+              display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <span>САЙТ — сохрани (Ctrl+S) чтобы увидеть изменения</span>
+              <button onClick={()=>setIframeKey(k=>k+1)}
+                style={{background:'transparent',border:'none',cursor:'pointer',
+                  color:T.fgSub,fontSize:9,padding:'0 4px',fontFamily:T.mono}}>
+                ↺ обновить
+              </button>
+            </div>
+            <iframe
+              key={iframeKey}
+              src={`/${previewSlug}`}
+              style={{flex:1,border:'none',background:'#fff'}}
+              title="site preview"
+            />
           </div>
         )}
       </div>
