@@ -343,7 +343,8 @@ function PanelTrigger({ visible, onClick, status, t }: {
         bottom: 72,
         zIndex: 99997,
         display: 'flex', alignItems: 'center', gap: 0,
-        border: 'none', borderRadius: '8px',
+        borderRadius: '8px',
+        border: `1px solid ${hov ? t.accent : t.border}`,
         background: hov
           ? t.accent
           : visible
@@ -353,7 +354,6 @@ function PanelTrigger({ visible, onClick, status, t }: {
           ? `0 4px 20px ${t.accentGlow}`
           : `0 2px 12px rgba(0,0,0,0.2)`,
         cursor: 'pointer', transition: 'all 0.18s', overflow: 'hidden', padding: 0,
-        border: `1px solid ${hov ? t.accent : t.border}`,
       } as React.CSSProperties}
     >
       <div style={{
