@@ -1,27 +1,12 @@
-/**
- * Shared UI primitives for dev-panel.
- *
- * Exports:
- *   T              — static dark-theme tokens (used by Toast.tsx which renders
- *                    outside ThemeContext and always uses dark style)
- *   Badge          — coloured type badge [N] [C] [A]
- *   ConfirmDialog  — modal confirm dialog (requires t: TTokens prop)
- */
-
 import React from 'react';
 import type { TTokens } from '../DevPanel';
 
-// ─── Static dark tokens ───────────────────────────────────────────────────────
-// Toast notifications are always dark regardless of the page theme,
-// so we keep a minimal static token set here instead of passing context.
-
+// Статичные токены для Toast (всегда тёмная тема, вне ThemeContext)
 export const T = {
   fg:    'rgba(255,255,255,0.9)',
   fgSub: 'rgba(255,255,255,0.22)',
   mono:  'ui-monospace, "Cascadia Code", "Fira Code", monospace',
 };
-
-// ─── Badge ────────────────────────────────────────────────────────────────────
 
 type BadgeVariant = 'N' | 'C' | 'A' | 'default';
 
@@ -32,7 +17,7 @@ const BADGE_STYLES: Record<BadgeVariant, { bg: string; color: string; label: str
   default: { bg: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)', label: '?' },
 };
 
-export function Badge({ type }: { type: BadgeVariant }) {
+export function Badge({ type }: { readonly type: BadgeVariant }) {
   const s = BADGE_STYLES[type] ?? BADGE_STYLES.default;
   return (
     <span style={{
@@ -43,14 +28,12 @@ export function Badge({ type }: { type: BadgeVariant }) {
       borderRadius: 3,
       padding: '1px 5px',
       letterSpacing: '0.05em',
-      fontFamily: 'ui-monospace, "Cascadia Code", "Fira Code", monospace',
+      fontFamily: T.mono,
     }}>
       {s.label}
     </span>
   );
 }
-
-// ─── ConfirmDialog ────────────────────────────────────────────────────────────
 
 export function ConfirmDialog({
   message,
@@ -59,11 +42,11 @@ export function ConfirmDialog({
   danger,
   t,
 }: {
-  message: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  danger?: boolean;
-  t: TTokens;
+  readonly message: string;
+  readonly onConfirm: () => void;
+  readonly onCancel: () => void;
+  readonly danger?: boolean;
+  readonly t: TTokens;
 }) {
   return (
     <div style={{
@@ -115,7 +98,7 @@ export function ConfirmDialog({
               flex: 1,
               padding: '7px',
               borderRadius: 7,
-              border: `1px solid ${danger ? t.danger + '66' : t.borderStrong}`,
+              border: `1px solid ${danger ? `${t.danger}66` : t.borderStrong}`,
               background: danger ? 'rgba(239,68,68,0.12)' : t.surfaceHov,
               color: danger ? t.danger : t.fg,
               cursor: 'pointer',
