@@ -1,7 +1,3 @@
-/**
- * AssetsPanel — исправлено: серые дропзоны, светлая тема работает
- */
-
 import React, { useState, useRef, useCallback, useContext } from 'react';
 import { bridge } from '../useDevBridge';
 import { ThemeTokensContext } from '../DevPanel';
@@ -25,40 +21,49 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024)           return `${bytes} B`;
+  if (bytes < 1024 * 1024)   return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function DropZone({ label, accept, onFiles, loading, hint, t }: {
-  label: string; accept: string;
+// Дропзона для загрузки файлов — поддерживает drag-and-drop и клик
+function DropZone({ label, accept, onFiles, loading, hint, t }: Readonly<{
+  label: string;
+  accept: string;
   onFiles: (files: File[]) => void;
-  loading: boolean; hint?: string;
+  loading: boolean;
+  hint?: string;
   t: ReturnType<typeof import('../DevPanel').makeT>;
-}) {
+}>) {
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault(); setDragOver(false);
+    e.preventDefault();
+    setDragOver(false);
     const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
     if (files.length) onFiles(files);
   };
 
-  // Grey dropzone — matches the panel background style, NO purple
-  const dzBg = dragOver
-    ? t.surfaceHov
-    : t.surface;
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') inputRef.current?.click();
+  };
+
+  const dzBg     = dragOver ? t.surfaceHov : t.surface;
   const dzBorder = dragOver ? t.borderStrong : t.border;
 
   return (
     <div>
-      <div
+      {/* S6848 + S1082: нативный button вместо div с onClick */}
+      <button
+        type="button"
         onDragOver={e => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
+        onKeyDown={handleKeyDown}
         style={{
+          width: '100%',
           border: `1.5px dashed ${dzBorder}`,
           borderRadius: 10,
           padding: '28px 20px',
@@ -69,7 +74,10 @@ function DropZone({ label, accept, onFiles, loading, hint, t }: {
         }}
       >
         <input
-          ref={inputRef} type="file" accept={accept} multiple
+          ref={inputRef}
+          type="file"
+          accept={accept}
+          multiple
           style={{ display: 'none' }}
           onChange={e => {
             const files = Array.from(e.target.files ?? []);
@@ -78,8 +86,8 @@ function DropZone({ label, accept, onFiles, loading, hint, t }: {
           }}
         />
         {loading
-          ? <Loader2 size={22} style={{ color: t.fgMuted, animation: 'devSpinAnim 1s linear infinite', margin: '0 auto 10px' }} />
-          : <Upload size={22} style={{ color: dragOver ? t.fg : t.fgMuted, margin: '0 auto 10px' }} />
+          ? <Loader2 size={22} style={{ color: t.fgMuted, animation: 'devSpin 1s linear infinite', margin: '0 auto 10px' }}/>
+          : <Upload size={22} style={{ color: dragOver ? t.fg : t.fgMuted, margin: '0 auto 10px' }}/>
         }
         <div style={{ fontSize: 13, color: dragOver ? t.fg : t.fgMuted, fontWeight: 500, fontFamily: t.mono }}>
           {loading ? 'Загружаем...' : label}
@@ -87,7 +95,7 @@ function DropZone({ label, accept, onFiles, loading, hint, t }: {
         <div style={{ fontSize: 11, color: t.fgSub, marginTop: 4 }}>
           {loading ? '' : 'Перетащи или кликни'}
         </div>
-      </div>
+      </button>
       {hint && (
         <div style={{ fontSize: 10, color: t.fgSub, marginTop: 6, paddingLeft: 2 }}>{hint}</div>
       )}
@@ -95,10 +103,11 @@ function DropZone({ label, accept, onFiles, loading, hint, t }: {
   );
 }
 
-function AssetItem({ asset, t }: {
+// Элемент списка загруженного ассета с кнопкой копирования пути
+function AssetItem({ asset, t }: Readonly<{
   asset: UploadedAsset;
   t: ReturnType<typeof import('../DevPanel').makeT>;
-}) {
+}>) {
   const [copied, setCopied] = useState(false);
 
   const copy = () => {
@@ -116,9 +125,9 @@ function AssetItem({ asset, t }: {
       background: t.surface,
     }}>
       {asset.mimeType.startsWith('image/') ? (
-        <img src={asset.path} alt="" style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 4, flexShrink: 0 }} />
+        <img src={asset.path} alt="" style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 4, flexShrink: 0 }}/>
       ) : (
-        <Image size={24} style={{ color: t.fgMuted, flexShrink: 0 }} />
+        <Image size={24} style={{ color: t.fgMuted, flexShrink: 0 }}/>
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 11, color: t.fg, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: t.mono }}>
@@ -139,7 +148,7 @@ function AssetItem({ asset, t }: {
           fontSize: 10, cursor: 'pointer', fontFamily: t.mono, whiteSpace: 'nowrap',
         }}
       >
-        {copied ? <Check size={10} /> : null}
+        {copied ? <Check size={10}/> : null}
         {copied ? 'Скопировано' : 'Копировать путь'}
       </button>
     </div>
@@ -155,7 +164,8 @@ export default function AssetsPanel() {
   const [faviconSaved,   setFaviconSaved]   = useState(false);
 
   const handleAssetsUpload = useCallback(async (files: File[]) => {
-    setAssetsLoading(true); setError('');
+    setAssetsLoading(true);
+    setError('');
     try {
       const uploaded: UploadedAsset[] = [];
       for (const file of files) {
@@ -165,27 +175,34 @@ export default function AssetsPanel() {
       }
       setAssets(prev => [...uploaded, ...prev]);
       toast.success(`Загружено: ${uploaded.length} файл(ов)`);
-    } catch (e: unknown) { setError((e as Error).message); }
-    finally { setAssetsLoading(false); }
+    } catch (e: unknown) {
+      setError((e as Error).message);
+    } finally {
+      setAssetsLoading(false);
+    }
   }, []);
 
   const handleFaviconUpload = useCallback(async (files: File[]) => {
-    const file = files[0]; if (!file) return;
-    setFaviconLoading(true); setError('');
+    const file = files[0];
+    if (!file) return;
+    setFaviconLoading(true);
+    setError('');
     try {
       const base64 = await fileToBase64(file);
       await bridge.uploadFavicon(base64, file.type);
       setFaviconSaved(true);
       setTimeout(() => setFaviconSaved(false), 3000);
       toast.success('Favicon обновлён');
-    } catch (e: unknown) { setError((e as Error).message); }
-    finally { setFaviconLoading(false); }
+    } catch (e: unknown) {
+      setError((e as Error).message);
+    } finally {
+      setFaviconLoading(false);
+    }
   }, []);
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '12px', background: t.bg }} className="adm-scroll">
 
-      {/* Section label */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 6,
         fontSize: 9, fontWeight: 700, color: t.fgSub,
@@ -227,7 +244,8 @@ export default function AssetsPanel() {
           <div style={{ fontSize: 10, color: t.fgSub, marginBottom: 8, fontFamily: t.mono }}>
             Загружено в этой сессии ({assets.length}):
           </div>
-          {assets.map((a, i) => <AssetItem key={i} asset={a} t={t} />)}
+          {/* S6479: используем filename как ключ вместо индекса массива */}
+          {assets.map(a => <AssetItem key={a.filename} asset={a} t={t}/>)}
         </div>
       )}
 
