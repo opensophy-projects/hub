@@ -8,6 +8,7 @@ import { buildDocFromPath } from '../../../scripts/docUtils.mjs';
 const docsDir = path.join(process.cwd(), 'Docs');
 const welcomeMdPath = path.join(docsDir, 'welcome.md');
 
+// Always read fresh from disk (both dev and prod for index)
 let welcomeDoc = null;
 if (fs.existsSync(welcomeMdPath)) {
   welcomeDoc = buildDocFromPath(welcomeMdPath, docsDir);
@@ -18,9 +19,9 @@ if (fs.existsSync(welcomeMdPath)) {
   }
 }
 
-const title = welcomeDoc?.title || 'Hub - Opensophy';
-const description = welcomeDoc?.description || 'Hub проекта Opensophy. Новости, блоги, документация и статьи по искусственному интеллекту, кибербезопасности, уязвимостям и технологиям.';
-const keywords = welcomeDoc?.keywords || 'Opensophy, документация, искусственный интеллект, кибербезопасность, ИИ, AI, security, статьи, блог, новости';
+const title       = welcomeDoc?.title       || 'Hub - Opensophy';
+const description = welcomeDoc?.description || 'Hub проекта Opensophy.';
+const keywords    = welcomeDoc?.keywords    || 'Opensophy, документация';
 ---
 
 <Layout
