@@ -331,6 +331,25 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
     return () => window.removeEventListener('keydown', h);
   }, [save]);
 
+  // Live preview via BroadcastChannel — no page reload
+  const liveDebounce = useRef<ReturnType<typeof setTimeout>|null>(null);
+  const broadcastChannel = useRef<BroadcastChannel|null>(null);
+
+  useEffect(() => {
+    broadcastChannel.current = new BroadcastChannel('hub-dev-preview');
+    return () => { broadcastChannel.current?.close(); };
+  }, []);
+
+  const broadcastPreview = useCallback((md: string) => {
+    if (liveDebounce.current) clearTimeout(liveDebounce.current);
+    liveDebounce.current = setTimeout(async () => {
+      try {
+        const result = await bridge.renderPreview(md);
+        broadcastChannel.current?.postMessage({ type: 'preview', html: result.html ?? '' });
+      } catch {}
+    }, 400);
+  }, []);
+
   const handleInsert = (before: string, after='') => {
     const ta = taRef.current; if (!ta) return;
     const s=ta.selectionStart, e=ta.selectionEnd, sel=body.slice(s,e);
@@ -430,7 +449,7 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
       <div style={{flex:1,display:'flex',overflow:'hidden',minHeight:0}}>
         <div style={{flex:1,display:'flex',flexDirection:'column',minWidth:0}}>
             <textarea ref={taRef} value={body}
-              onChange={e=>{setBody(e.target.value);setDirty(true);}}
+              onChange={e=>{const v=e.target.value;setBody(v);setDirty(true);broadcastPreview(v);}}
               onKeyDown={handleTab} spellCheck={false}
               style={{flex:1,padding:'10px 12px',border:'none',background:T.bgHov,
                 color:'#e2e8f0',fontSize:12,fontFamily:T.mono,lineHeight:1.75,
