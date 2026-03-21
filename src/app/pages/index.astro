@@ -5,23 +5,27 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { buildDocFromPath } from '../../../scripts/docUtils.mjs';
 
-const docsDir = path.join(process.cwd(), 'Docs');
+const docsDir       = path.join(process.cwd(), 'Docs');
 const welcomeMdPath = path.join(docsDir, 'welcome.md');
 
-// Always read fresh from disk (both dev and prod for index)
 let welcomeDoc = null;
 if (fs.existsSync(welcomeMdPath)) {
   welcomeDoc = buildDocFromPath(welcomeMdPath, docsDir);
-  welcomeDoc.id = 'welcome';
+  welcomeDoc.id   = 'welcome';
   welcomeDoc.slug = '';
-  if (!welcomeDoc.keywords) {
-    welcomeDoc.keywords = 'Opensophy, документация, искусственный интеллект, кибербезопасность, ИИ, AI, security, статьи, блог, новости';
-  }
 }
 
-const title       = welcomeDoc?.title       || 'Hub - Opensophy';
-const description = welcomeDoc?.description || 'Hub проекта Opensophy.';
-const keywords    = welcomeDoc?.keywords    || 'Opensophy, документация';
+// SEO defaults из глобального конфига
+let globalSeo = { siteTitle: 'Hub — Opensophy', siteDescription: 'Hub проекта Opensophy.', keywords: '', siteLang: 'ru' };
+try {
+  const mod = await import('@/shared/data/seo');
+  if (mod?.SEO_CONFIG) globalSeo = { ...globalSeo, ...mod.SEO_CONFIG };
+} catch {}
+
+const title       = welcomeDoc?.title       || globalSeo.siteTitle;
+const description = welcomeDoc?.description || globalSeo.siteDescription;
+const keywords    = welcomeDoc?.keywords    || globalSeo.keywords;
+const lang        = welcomeDoc?.lang        || globalSeo.siteLang;
 ---
 
 <Layout
@@ -31,11 +35,12 @@ const keywords    = welcomeDoc?.keywords    || 'Opensophy, документац�
   type="website"
   keywords={keywords}
   robots="index, follow"
+  lang={lang}
 >
   {welcomeDoc ? (
     <DocContent client:only="react" doc={welcomeDoc} />
   ) : (
-    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;">
       <p>Загрузка...</p>
     </div>
   )}
