@@ -5,7 +5,7 @@
  */
 
 import React, {
-  useState, useEffect, useCallback, useRef, useMemo,
+  useState, useEffect, useCallback, useRef,
 } from 'react';
 import { bridge } from '../useDevBridge';
 import { toast } from '../components/Toast';
@@ -294,11 +294,7 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
   useEffect(() => { bodyRef.current = body; }, [body]);
 
   const fileName = filePath.split('/').pop()?.replace(/\.md$/,'') ?? '';
-  const previewSlug = useMemo(() => {
-    return filePath.replace(/^Docs\//,'').split('/')
-      .map(p => { const pr=parseName(p); return pr.slug??slugify(pr.title); })
-      .filter(Boolean).join('/');
-  }, [filePath]);
+
 
   // Load file
   useEffect(() => {
@@ -364,7 +360,7 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
   );
 
 
-  return ( (
+  return (
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
       {/* Toolbar */}
       <div style={{display:'flex',alignItems:'center',gap:4,padding:'5px 8px',
@@ -377,12 +373,7 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
           {fileName}{dirty&&<span style={{color:T.warning,marginLeft:4}}>●</span>}
         </span>
 
-        <button onClick={()=>window.open(`/${previewSlug}`,'_blank')}
-          style={{display:'flex',alignItems:'center',gap:3,padding:'3px 6px',borderRadius:4,
-            border:`1px solid ${T.border}`,background:'transparent',
-            color:T.fgMuted,fontSize:9,cursor:'pointer',fontFamily:T.mono}}>
-          <Eye size={10}/> Сайт
-        </button>
+
         <Btn
           icon={saving?<Loader2 size={11} style={{animation:'devSpinAnim 1s linear infinite'}}/>:<Save size={11}/>}
           variant={dirty?'accent':'default'} size="sm" loading={saving} onClick={save}>
@@ -438,10 +429,6 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
       {/* Editor + Preview */}
       <div style={{flex:1,display:'flex',overflow:'hidden',minHeight:0}}>
         <div style={{flex:1,display:'flex',flexDirection:'column',minWidth:0}}>
-            <div style={{padding:'2px 8px',fontSize:8,color:T.fgSub,background:T.bgPanel,
-              borderBottom:`1px solid ${T.border}44`,letterSpacing:'0.08em',flexShrink:0}}>
-              MARKDOWN
-            </div>
             <textarea ref={taRef} value={body}
               onChange={e=>{setBody(e.target.value);setDirty(true);}}
               onKeyDown={handleTab} spellCheck={false}
