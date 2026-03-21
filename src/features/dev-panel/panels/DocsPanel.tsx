@@ -363,7 +363,7 @@ function TreeNode({ entry, onCreateChild, onDelete, onSelect, selectedPath }: {
 
 // ─── Markdown Editor ──────────────────────────────────────────────────────────
 
-type ViewMode = 'editor'|'split'|'preview'|'site';
+type ViewMode = 'editor'|'split'|'preview'|'site'|'split-site';
 
 function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>void }) {
   const [fm, setFm]           = useState<FM>({...EMPTY_FM});
@@ -466,9 +466,9 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
           textOverflow:'ellipsis',whiteSpace:'nowrap',fontFamily:T.mono}}>
           {fileName}{dirty&&<span style={{color:T.warning,marginLeft:4}}>●</span>}
         </span>
-        {(['editor','split','preview','site'] as ViewMode[]).map(mode=>{
-          const icons = {editor:<FileText size={10}/>,split:<Columns size={10}/>,preview:<Eye size={10}/>,site:<Globe size={10}/>};
-          const lbls  = {editor:'MD',split:'Split',preview:'Preview',site:'Сайт'};
+        {(['editor','split','preview','split-site','site'] as ViewMode[]).map(mode=>{
+          const icons = {editor:<FileText size={10}/>,split:<Columns size={10}/>,preview:<Eye size={10}/>,'split-site':<Globe size={10}/>,site:<Globe size={10}/>};
+          const lbls  = {editor:'MD',split:'Split',preview:'Preview','split-site':'MD+Сайт',site:'Сайт'};
           const active = viewMode===mode;
           return (
             <button key={mode} onClick={()=>setMode(mode)}
@@ -534,9 +534,9 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
 
       {/* Editor + Preview */}
       <div style={{flex:1,display:'flex',overflow:'hidden',minHeight:0}}>
-        {(viewMode==='editor'||viewMode==='split')&&(
+        {(viewMode==='editor'||viewMode==='split'||viewMode==='split-site')&&(
           <div style={{flex:1,display:'flex',flexDirection:'column',minWidth:0,
-            borderRight:viewMode==='split'?`1px solid ${T.border}`:'none'}}>
+            borderRight:(viewMode==='split'||viewMode==='split-site')?`1px solid ${T.border}`:'none'}}>
             <div style={{padding:'2px 8px',fontSize:8,color:T.fgSub,background:T.bgPanel,
               borderBottom:`1px solid ${T.border}44`,letterSpacing:'0.08em',flexShrink:0}}>
               MARKDOWN
@@ -549,7 +549,7 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
                 resize:'none',outline:'none',scrollbarWidth:'thin' as const}}/>
           </div>
         )}
-        {(viewMode==='preview'||viewMode==='split')&&(
+        {(viewMode==='preview'||viewMode==='split')&&viewMode!=='split-site'&&(
           <div style={{flex:1,display:'flex',flexDirection:'column',minWidth:0,overflow:'hidden'}}>
             <div style={{padding:'2px 8px',fontSize:8,color:T.accent,background:T.bgPanel,
               borderBottom:`1px solid ${T.border}44`,letterSpacing:'0.08em',flexShrink:0}}>
@@ -561,16 +561,16 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
               dangerouslySetInnerHTML={{__html:previewHtml}}/>
           </div>
         )}
-        {viewMode==='site'&&(
+        {(viewMode==='site'||viewMode==='split-site')&&(
           <div style={{flex:1,display:'flex',flexDirection:'column',minWidth:0,overflow:'hidden'}}>
             <div style={{padding:'2px 8px',fontSize:8,color:'#22c55e',background:T.bgPanel,
               borderBottom:`1px solid ${T.border}44`,letterSpacing:'0.08em',flexShrink:0,
               display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-              <span>САЙТ — сохрани (Ctrl+S) чтобы увидеть изменения</span>
+              <span>САЙТ — Ctrl+S для обновления</span>
               <button onClick={()=>setIframeKey(k=>k+1)}
                 style={{background:'transparent',border:'none',cursor:'pointer',
                   color:T.fgSub,fontSize:9,padding:'0 4px',fontFamily:T.mono}}>
-                ↺ обновить
+                ↺
               </button>
             </div>
             <iframe
