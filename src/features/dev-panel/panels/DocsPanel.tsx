@@ -734,7 +734,7 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
           <div style={{display:'flex',gap:3,flexShrink:0}} onClick={e=>e.stopPropagation()}>
             {actionBtn(<Edit3 size={13}/>, 'Редактировать', ()=>onEdit(entry))}
             {isDir&&p.type==='N'&&actionBtn(<FolderPlus size={13}/>, '+ Категория', ()=>onCreate({parentPath:entry.path,entryType:'C'}))}
-            {isDir&&(p.type==='N'||p.type==='C')&&actionBtn(<FilePlus size={13}/>, '+ Статья', ()=>onCreate({parentPath:entry.path,entryType:'A'}))}
+            {isDir&&(p.type==='N'||p.type==='C')&&actionBtn(<FilePlus size={13}/>, '+ Страница', ()=>onCreate({parentPath:entry.path,entryType:'A'}))}
             {actionBtn(<Trash2 size={13}/>, 'Удалить', ()=>onDelete(entry), true)}
           </div>
         )}
