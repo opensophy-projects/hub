@@ -49,20 +49,7 @@ const DEFAULTS: SiteConfig = {
   twitterSite:     '',
 };
 
-// LLM config отдельно — проще управлять
-interface LlmConfig {
-  enabled:      boolean;
-  usagePolicy:  string;
-  contact:      string;
-  description:  string;
-}
 
-const LLM_DEFAULTS: LlmConfig = {
-  enabled:      true,
-  usagePolicy:  'allowed',
-  contact:      '',
-  description:  '',
-};
 
 const SEO_PATH    = 'src/shared/data/seo.ts';
 const ROBOTS_PATH = 'public/robots.txt';
@@ -91,34 +78,6 @@ export const SEO_CONFIG = {
 `;
 }
 
-function buildLlmTxt(cfg: SiteConfig, llm: LlmConfig): string {
-  const base = cfg.siteUrl.replace(/\/$/, '');
-  const policyMap: Record<string, string> = {
-    'allowed':                  'allowed',
-    'allowed-with-attribution': 'allowed-with-attribution',
-    'disallowed':               'disallowed',
-  };
-  const lines = [
-    `# LLM.txt — ${cfg.siteTitle}`,
-    '# Инструкции для AI-агентов и языковых моделей',
-    '',
-    '## О сайте',
-    `Name: ${cfg.siteTitle}`,
-    `URL: ${base || cfg.siteUrl}`,
-  ];
-  if (cfg.siteAuthor)      lines.push(`Author: ${cfg.siteAuthor}`);
-  if (cfg.siteDescription) lines.push(`Description: ${cfg.siteDescription}`);
-  lines.push(
-    '', '## Политика использования',
-    `AI-Training: ${policyMap[llm.usagePolicy] ?? 'allowed'}`,
-    `AI-Indexing: ${llm.enabled ? 'allowed' : 'disallowed'}`,
-  );
-  if (llm.contact)     lines.push('', '## Контакт', `Contact: ${llm.contact}`);
-  if (llm.description) lines.push('', '## Описание контента', llm.description);
-  if (base)            lines.push('', '## Карта сайта', `Sitemap: ${base}/sitemap.xml`);
-  return lines.join('\n') + '\n';
-}
-
 // ─── Parsers ──────────────────────────────────────────────────────────────────
 
 function parseSeoTs(content: string): Partial<SiteConfig> {
@@ -129,32 +88,6 @@ function parseSeoTs(content: string): Partial<SiteConfig> {
     result[m[1]] = m[2];
   }
   return result as Partial<SiteConfig>;
-}
-
-function parseLlmTxt(content: string): Partial<LlmConfig> {
-  const result: Partial<LlmConfig> = {};
-  const lines = content.split('\n');
-  let inDesc = false;
-  const descLines: string[] = [];
-  for (const line of lines) {
-    if (line.startsWith('AI-Training:')) {
-      const v = line.replace('AI-Training:', '').trim();
-      if (['disallowed', 'allowed-with-attribution', 'allowed'].includes(v)) {
-        result.usagePolicy = v;
-      }
-    }
-    if (line.startsWith('AI-Indexing:')) {
-      result.enabled = line.replace('AI-Indexing:', '').trim() === 'allowed';
-    }
-    if (line.startsWith('Contact:')) {
-      result.contact = line.replace('Contact:', '').trim();
-    }
-    if (line === '## Описание контента') { inDesc = true; continue; }
-    if (inDesc && line.startsWith('##')) { inDesc = false; }
-    if (inDesc && line.trim()) descLines.push(line);
-  }
-  if (descLines.length) result.description = descLines.join('\n');
-  return result;
 }
 
 // ─── UI helpers ───────────────────────────────────────────────────────────────
@@ -191,22 +124,6 @@ function Sel({ value, onChange, options, t }: SelProps) {
   );
 }
 
-interface ToggleProps { value: boolean; onChange: (v: boolean) => void; label: string; t: TTokens; }
-function Toggle({ value, onChange, label, t }: ToggleProps) {
-  return (
-    <button onClick={() => onChange(!value)} style={{
-      display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none',
-      cursor: 'pointer', color: value ? t.fg : t.fgMuted, fontSize: 11,
-      padding: '2px 0', fontFamily: t.mono, textAlign: 'left' as const,
-    }}>
-      <div style={{ width: 32, height: 18, borderRadius: 9, position: 'relative' as const, flexShrink: 0, background: value ? t.success : t.border, transition: 'background 0.2s' }}>
-        <div style={{ position: 'absolute' as const, top: 2, left: value ? 14 : 2, width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
-      </div>
-      {label}
-    </button>
-  );
-}
-
 interface SectionProps { icon: React.ReactNode; title: string; badge?: string; defaultOpen?: boolean; t: TTokens; children: React.ReactNode; }
 function Section({ icon, title, badge, defaultOpen = true, t, children }: SectionProps) {
   const [open, setOpen] = useState(defaultOpen);
@@ -238,19 +155,19 @@ function Section({ icon, title, badge, defaultOpen = true, t, children }: Sectio
 export default function SitePanel() {
   const t = useContext(ThemeTokensContext);
   const [cfg, setCfg]           = useState<SiteConfig>({ ...DEFAULTS });
-  const [llm, setLlm]           = useState<LlmConfig>({ ...LLM_DEFAULTS });
-  const [robotsTxt, setRobotsTxt] = useState('');  // raw robots.txt text
+  const [robotsTxt, setRobotsTxt] = useState('');
+  const [llmTxt, setLlmTxt]     = useState('');
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [saved, setSaved]       = useState(false);
   const [dirty, setDirty]       = useState(false);
 
-  const cfgRef      = useRef(cfg);
-  const llmRef      = useRef(llm);
-  const robotsRef   = useRef(robotsTxt);
+  const cfgRef    = useRef(cfg);
+  const robotsRef = useRef(robotsTxt);
+  const llmRef    = useRef(llmTxt);
   useEffect(() => { cfgRef.current = cfg; }, [cfg]);
-  useEffect(() => { llmRef.current = llm; }, [llm]);
   useEffect(() => { robotsRef.current = robotsTxt; }, [robotsTxt]);
+  useEffect(() => { llmRef.current = llmTxt; }, [llmTxt]);
 
   const inp = useInpStyle(t);
 
@@ -261,10 +178,6 @@ export default function SitePanel() {
     };
   const setCVal = (key: keyof SiteConfig, val: string) => {
     setCfg(p => ({ ...p, [key]: val }));
-    setDirty(true);
-  };
-  const setL = (key: keyof LlmConfig, val: string | boolean) => {
-    setLlm(p => ({ ...p, [key]: val }));
     setDirty(true);
   };
 
@@ -284,12 +197,9 @@ export default function SitePanel() {
       const { content: robotsContent } = await bridge.readFile(ROBOTS_PATH);
       setRobotsTxt(robotsContent);
 
-      // 3. llm.txt
+      // 3. llm.txt — читаем как сырой текст
       const { content: llmContent } = await bridge.readFile(LLM_PATH);
-      if (llmContent.trim()) {
-        const parsed = parseLlmTxt(llmContent);
-        setLlm(prev => ({ ...prev, ...parsed }));
-      }
+      setLlmTxt(llmContent);
     } catch (e: any) {
       toast.error('Ошибка загрузки: ' + e.message);
     } finally {
@@ -307,7 +217,7 @@ export default function SitePanel() {
     try {
       await bridge.writeFile(SEO_PATH,    buildSeoTs(cfgRef.current));
       await bridge.writeFile(ROBOTS_PATH, robotsRef.current);
-      await bridge.writeFile(LLM_PATH,    buildLlmTxt(cfgRef.current, llmRef.current));
+      await bridge.writeFile(LLM_PATH,    llmRef.current);
       setDirty(false);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
@@ -502,38 +412,28 @@ export default function SitePanel() {
 
         {/* ── LLM.txt ── */}
         <Section icon={<Bot size={10}/>} title="LLM.txt / AI-боты" badge="public/llm.txt" t={t} defaultOpen={false}>
-          <Toggle
-            value={llm.enabled}
-            onChange={v => setL('enabled', v)}
-            label="Разрешить AI-ботам (GPT, Claude, Perplexity) индексировать сайт"
-            t={t}
-          />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <Field label="Политика обучения AI" wide t={t}>
-              <Sel value={llm.usagePolicy} onChange={v => setL('usagePolicy', v)} t={t} options={[
-                { value: 'allowed',                   label: '✅ Разрешено для обучения' },
-                { value: 'allowed-with-attribution',  label: '📝 Разрешено с указанием источника' },
-                { value: 'disallowed',                label: '🚫 Запрещено для обучения' },
-              ]}/>
-            </Field>
-            <Field label="Контакт" hint="email или URL" wide t={t}>
-              <input value={llm.contact} onChange={e => setL('contact', e.target.value)} placeholder="contact@example.com" style={inp}/>
-            </Field>
-            <Field label="Описание контента для AI" wide t={t}>
-              <textarea value={llm.description} onChange={e => setL('description', e.target.value)}
-                placeholder="Документация по AI и кибербезопасности..." rows={3}
-                style={{ ...inp, resize: 'vertical' as const, lineHeight: 1.5 }}/>
-            </Field>
+          <div style={{ fontSize: 10, color: t.fgSub, lineHeight: 1.6, padding: '2px 0' }}>
+            Прямое редактирование файла. Управляет тем, как AI-боты (ChatGPT, Claude, Perplexity) видят и используют сайт.
           </div>
-          {/* Превью */}
-          <div>
-            <div style={{ fontSize: 9, color: t.fgSub, marginBottom: 4, textTransform: 'uppercase' as const, letterSpacing: '0.07em' }}>Превью llm.txt</div>
-            <pre style={{
-              fontSize: 10, color: t.fgMuted, background: t.inpBg,
-              border: `1px solid ${t.border}`, borderRadius: 6,
-              padding: '6px 8px', margin: 0, fontFamily: t.mono,
-              whiteSpace: 'pre-wrap' as const, maxHeight: 160, overflowY: 'auto',
-            }}>{buildLlmTxt(cfg, llm)}</pre>
+          <Field label="Содержимое llm.txt" wide t={t}>
+            <textarea
+              value={llmTxt}
+              onChange={e => { setLlmTxt(e.target.value); setDirty(true); }}
+              rows={18}
+              spellCheck={false}
+              style={{
+                ...inp,
+                resize: 'vertical' as const,
+                lineHeight: 1.6,
+                fontFamily: t.mono,
+                fontSize: 11,
+                minHeight: 200,
+              }}
+            />
+          </Field>
+          <div style={{ fontSize: 9, color: t.fgSub, display: 'flex', gap: 16 }}>
+            <span>{llmTxt.split('\n').length} строк</span>
+            <span>{llmTxt.length} символов</span>
           </div>
         </Section>
 
