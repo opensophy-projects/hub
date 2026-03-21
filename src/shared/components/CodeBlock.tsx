@@ -263,8 +263,11 @@ function Pill({ onClick, title, label, icon, t, active, success, btnRef }: {
   readonly success?: boolean;
   readonly btnRef?: React.RefObject<HTMLButtonElement>;
 }) {
-  const bg    = success ? 'rgba(34,197,94,0.16)' : t.btnBg;
-  const bdr   = success ? 'rgba(34,197,94,0.4)'  : active ? 'rgba(255,255,255,0.2)' : t.btnBdr;
+  const bg = success ? 'rgba(34,197,94,0.16)' : t.btnBg;
+  let bdr: string;
+  if (success)      bdr = 'rgba(34,197,94,0.4)';
+  else if (active)  bdr = 'rgba(255,255,255,0.2)';
+  else              bdr = t.btnBdr;
   const color = success ? '#22c55e' : t.btnClr;
   return (
     <button ref={btnRef} onClick={onClick} title={title} style={{
