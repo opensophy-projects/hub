@@ -9,8 +9,6 @@ export const SEO_CONFIG = {
   siteAuthor:      "Opensophy",
   keywords:        "opensophy, hub, документация, AI, кибербезопасность",
   metaRobots:      "index, follow",
-  googleVerify:    "",
-  yandexVerify:    "",
   ogImage:         "/og-image.png",
   ogType:          "website",
   ogLocale:        "ru_RU",
