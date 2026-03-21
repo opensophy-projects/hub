@@ -132,8 +132,20 @@ export default function DevPanel() {
   const [tab, setTab]         = useState('docs');
 
   // Panel position & size (draggable + resizable)
-  const [pos, setPos]   = useState({ x: window.innerWidth - 520 - 24, y: 40 });
-  const [size, setSize] = useState({ w: 520, h: Math.min(820, window.innerHeight - 80) });
+  const [pos, setPos]   = useState({ x: 0, y: 40 });
+  const [size, setSize] = useState({ w: 520, h: 600 });
+
+  // При открытии — всегда пересчитываем позицию чтобы панель была полностью видна
+  const openPanel = () => {
+    const w = Math.min(520, window.innerWidth - 32);
+    const h = Math.min(820, window.innerHeight - 80);
+    setSize({ w, h });
+    setPos({
+      x: Math.max(8, window.innerWidth - w - 16),
+      y: 40,
+    });
+    setOpen(true);
+  };
 
   const dragging  = useRef(false);
   const resizing  = useRef<'r'|'b'|'rb'|null>(null);
@@ -186,7 +198,7 @@ export default function DevPanel() {
   // Keyboard
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'D') { e.preventDefault(); setOpen(v => !v); }
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') { e.preventDefault(); if (open) setOpen(false); else openPanel(); }
       if (open && e.key === 'Escape') setOpen(false);
     };
     window.addEventListener('keydown', h);
@@ -205,7 +217,7 @@ export default function DevPanel() {
         .adm-scroll::-webkit-scrollbar-thumb{background:rgba(128,128,128,0.2);border-radius:4px}
       `}</style>
 
-      <PanelTrigger open={open} onClick={() => setOpen(v => !v)} status={status} t={t}/>
+      <PanelTrigger open={open} onClick={() => open ? setOpen(false) : openPanel()} status={status} t={t}/>
 
       {open && (
         <div style={{
