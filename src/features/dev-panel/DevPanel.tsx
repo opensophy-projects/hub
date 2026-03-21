@@ -1,19 +1,4 @@
-/**
- * DevPanel v6
- * Fixes: no backdrop blur, draggable+resizable panel, no purple accent,
- * tabs don't go grey on click, no footer kbd hints, proper light theme
- *
- * SonarCloud fixes:
- *  - Removed unused `useCallback` import (S1128)
- *  - Flipped negated condition in useIsDark (S7735)
- *  - Replaced `window` with `globalThis` in event listeners (S7764)
- *  - Added role/aria to drag-handle div (S6848) — two occurrences
- *  - Extracted nested ternary for connection status color (S3358)
- */
-
-import React, {
-  useState, useEffect, useRef, Suspense, lazy,
-} from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { createPortal } from 'react-dom';
 import { useDevBridge } from './useDevBridge';
 import { ToastContainer } from './components/Toast';
@@ -24,24 +9,26 @@ const ContactsPanel = lazy(() => import('./panels/ContactsPanel'));
 const AssetsPanel   = lazy(() => import('./panels/AssetsPanel'));
 const SitePanel     = lazy(() => import('./panels/SitePanel'));
 
-// ─── Theme ────────────────────────────────────────────────────────────────────
+// ─── Тема ────────────────────────────────────────────────────────────────────
 
+// Слушает класс .dark на <html> и событие hub:theme-change
 export function useIsDark(): boolean {
-  // S7735: avoid negated condition — useState initialiser uses positive branch
   const [isDark, setIsDark] = useState(() =>
-    typeof document !== 'undefined'
-      ? document.documentElement.classList.contains('dark')
-      : true
+    typeof document === 'undefined'
+      ? true
+      : document.documentElement.classList.contains('dark')
   );
   useEffect(() => {
-    const a = (e: Event) => setIsDark((e as CustomEvent<{ isDark: boolean }>).detail.isDark);
-    const b = (e: StorageEvent) => { if (e.key === 'theme') setIsDark(e.newValue !== 'light'); };
-    // S7764: prefer globalThis over window
-    globalThis.addEventListener('hub:theme-change', a);
-    globalThis.addEventListener('storage', b);
+    const onTheme   = (e: Event) =>
+      setIsDark((e as CustomEvent<{ isDark: boolean }>).detail.isDark);
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'theme') setIsDark(e.newValue !== 'light');
+    };
+    globalThis.addEventListener('hub:theme-change', onTheme);
+    globalThis.addEventListener('storage', onStorage);
     return () => {
-      globalThis.removeEventListener('hub:theme-change', a);
-      globalThis.removeEventListener('storage', b);
+      globalThis.removeEventListener('hub:theme-change', onTheme);
+      globalThis.removeEventListener('storage', onStorage);
     };
   }, []);
   return isDark;
@@ -67,8 +54,6 @@ export function makeT(isDark: boolean) {
     shadow:       '0 8px 40px rgba(0,0,0,0.7)',
     inpBg:        '#1e1e20',
     inpBorder:    'rgba(255,255,255,0.12)',
-    dragHandle:   'rgba(255,255,255,0.08)',
-    dragHandleHov:'rgba(255,255,255,0.2)',
     editorBg:     '#0d0d0e',
     editorFg:     '#e2e8f0',
   } : {
@@ -90,8 +75,6 @@ export function makeT(isDark: boolean) {
     shadow:       '0 8px 32px rgba(0,0,0,0.18)',
     inpBg:        '#e8e7e3',
     inpBorder:    'rgba(0,0,0,0.12)',
-    dragHandle:   'rgba(0,0,0,0.1)',
-    dragHandleHov:'rgba(0,0,0,0.3)',
     editorBg:     '#eceae5',
     editorFg:     '#1e293b',
   };
@@ -100,16 +83,18 @@ export function makeT(isDark: boolean) {
 export type TTokens = ReturnType<typeof makeT>;
 export const ThemeTokensContext = React.createContext<TTokens>(makeT(true));
 
+// ─── Константы ───────────────────────────────────────────────────────────────
+
 const TABS = [
-  { id: 'docs',     label: 'Страницы',              icon: <FileText size={13}/> },
-  { id: 'contacts', label: 'Контакты',              icon: <Users size={13}/>    },
-  { id: 'assets',   label: 'Ассеты',                icon: <Image size={13}/>    },
-  { id: 'site',     label: 'Сайт(экспериментальный)', icon: <Globe size={13}/>  },
+  { id: 'docs',     label: 'Страницы',          icon: <FileText size={13}/> },
+  { id: 'contacts', label: 'Контакты',           icon: <Users size={13}/>    },
+  { id: 'assets',   label: 'Ассеты',             icon: <Image size={13}/>    },
+  { id: 'site',     label: 'Сайт (эксперимент)', icon: <Globe size={13}/>    },
 ];
 
-// ─── Status helpers (S3358: extract nested ternaries) ────────────────────────
+// ─── Хелперы статуса соединения ──────────────────────────────────────────────
 
-function getStatusDotColor(status: string, success: string, warning: string, danger: string): string {
+function getStatusColor(status: string, success: string, warning: string, danger: string): string {
   if (status === 'connected')  return success;
   if (status === 'connecting') return warning;
   return danger;
@@ -121,11 +106,14 @@ function getStatusLabel(status: string): string {
   return 'Отключено';
 }
 
-// ─── Trigger button ───────────────────────────────────────────────────────────
+// ─── Кнопка-триггер (левый нижний угол) ──────────────────────────────────────
 
-function PanelTrigger({ open, onClick, status, t }: {
-  open: boolean; onClick: () => void; status: string; t: TTokens;
-}) {
+function PanelTrigger({ open, onClick, status, t }: Readonly<{
+  open: boolean;
+  onClick: () => void;
+  status: string;
+  t: TTokens;
+}>) {
   const hasIssue = status !== 'connected' && status !== 'connecting';
   return (
     <button
@@ -135,11 +123,9 @@ function PanelTrigger({ open, onClick, status, t }: {
         position: 'fixed', left: 8, bottom: 70, zIndex: 99997,
         width: 44, height: 44,
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
-        borderRadius: 10,
-        border: `1px solid ${t.border}`,
+        borderRadius: 10, border: `1px solid ${t.border}`,
         background: open ? t.surfaceHov : t.surface,
-        color: t.fgMuted, cursor: 'pointer',
-        boxShadow: t.shadow,
+        color: t.fgMuted, cursor: 'pointer', boxShadow: t.shadow,
       }}
       onMouseEnter={e => { e.currentTarget.style.background = t.surfaceHov; e.currentTarget.style.color = t.fg; }}
       onMouseLeave={e => { e.currentTarget.style.background = open ? t.surfaceHov : t.surface; e.currentTarget.style.color = t.fgMuted; }}
@@ -150,30 +136,29 @@ function PanelTrigger({ open, onClick, status, t }: {
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// ─── Основной компонент ───────────────────────────────────────────────────────
 
 export default function DevPanel() {
   const { status } = useDevBridge();
-  const isDark = useIsDark();
-  const t = React.useMemo(() => makeT(isDark), [isDark]);
+  const isDark     = useIsDark();
+  const t          = React.useMemo(() => makeT(isDark), [isDark]);
 
   const [open, setOpen] = useState(false);
-  const [tab, setTab]   = useState('docs');
+  const [tab,  setTab]  = useState('docs');
 
   const [panelRight, setPanelRight] = useState(16);
   const [panelTop,   setPanelTop]   = useState(40);
-  const [size, setSize] = useState({ w: 520, h: 600 });
+  const [size,       setSize]       = useState({ w: 520, h: 600 });
 
   const openPanel = () => {
-    const w = Math.min(520, globalThis.innerWidth - 32);
-    const h = Math.min(820, globalThis.innerHeight - 56);
-    setSize({ w, h });
+    setSize({ w: Math.min(520, globalThis.innerWidth - 32), h: Math.min(820, globalThis.innerHeight - 56) });
     setPanelRight(16);
     setPanelTop(40);
     setOpen(true);
   };
 
-  const interacting = useRef<'drag'|'r'|'b'|'rb'|null>(null);
+  // Сохраняет начальные координаты между событиями mousemove
+  const interacting = useRef<'drag' | 'r' | 'b' | 'rb' | null>(null);
   const startData   = useRef({ mx: 0, my: 0, right: 16, top: 40, w: 0, h: 0 });
 
   const onDragStart = (e: React.MouseEvent) => {
@@ -184,7 +169,7 @@ export default function DevPanel() {
     document.body.style.userSelect = 'none';
   };
 
-  const onResizeStart = (e: React.MouseEvent, dir: 'r'|'b'|'rb') => {
+  const onResizeStart = (e: React.MouseEvent, dir: 'r' | 'b' | 'rb') => {
     e.preventDefault();
     e.stopPropagation();
     interacting.current = dir;
@@ -199,7 +184,6 @@ export default function DevPanel() {
       if (!mode) return;
       const dx = e.clientX - d.mx;
       const dy = e.clientY - d.my;
-
       if (mode === 'drag') {
         setPanelRight(Math.max(0, Math.min(globalThis.innerWidth  - d.w, d.right - dx)));
         setPanelTop  (Math.max(0, Math.min(globalThis.innerHeight - 60,  d.top   + dy)));
@@ -210,10 +194,7 @@ export default function DevPanel() {
           setSize(s => ({ ...s, h: Math.max(300, Math.min(globalThis.innerHeight - 40, d.h + dy)) }));
       }
     };
-    const onUp = () => {
-      interacting.current = null;
-      document.body.style.userSelect = '';
-    };
+    const onUp = () => { interacting.current = null; document.body.style.userSelect = ''; };
     globalThis.addEventListener('mousemove', onMove);
     globalThis.addEventListener('mouseup',   onUp);
     return () => {
@@ -223,67 +204,58 @@ export default function DevPanel() {
   }, []);
 
   useEffect(() => {
-    const h = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
-        e.preventDefault();
-        if (open) setOpen(false); else openPanel();
-      }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') { e.preventDefault(); if (open) setOpen(false); else openPanel(); }
       if (open && e.key === 'Escape') setOpen(false);
     };
-    globalThis.addEventListener('keydown', h);
-    return () => globalThis.removeEventListener('keydown', h);
+    globalThis.addEventListener('keydown', onKey);
+    return () => globalThis.removeEventListener('keydown', onKey);
   }, [open]);
 
   if (typeof document === 'undefined') return null;
 
-  const dotColor = getStatusDotColor(status, t.success, t.warning, t.danger);
+  const dotColor = getStatusColor(status, t.success, t.warning, t.danger);
+
+  // Базовые стили для невидимых кнопок-ресайзеров
+  const resizeBtn: React.CSSProperties = {
+    position: 'absolute', padding: 0, border: 'none', background: 'transparent', zIndex: 10,
+  };
 
   return createPortal(
     <ThemeTokensContext.Provider value={t}>
       <style>{`
-        @keyframes devPulse{0%,100%{opacity:1}50%{opacity:0.4}}
-        @keyframes devSpinAnim{to{transform:rotate(360deg)}}
-        .adm-scroll::-webkit-scrollbar{width:4px;height:4px}
-        .adm-scroll::-webkit-scrollbar-track{background:transparent}
-        .adm-scroll::-webkit-scrollbar-thumb{background:rgba(128,128,128,0.2);border-radius:4px}
+        @keyframes devPulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        @keyframes devSpin   { to{transform:rotate(360deg)} }
+        .adm-scroll::-webkit-scrollbar { width:4px; height:4px }
+        .adm-scroll::-webkit-scrollbar-track { background:transparent }
+        .adm-scroll::-webkit-scrollbar-thumb { background:rgba(128,128,128,0.2); border-radius:4px }
       `}</style>
 
       <PanelTrigger open={open} onClick={() => open ? setOpen(false) : openPanel()} status={status} t={t}/>
 
       {open && (
         <div style={{
-          position: 'fixed',
-          right: panelRight, top: panelTop,
-          width: size.w, height: size.h,
-          zIndex: 99999,
-          background: t.bg,
-          border: `1px solid ${t.borderStrong}`,
-          borderRadius: 12,
-          boxShadow: t.shadow,
+          position: 'fixed', right: panelRight, top: panelTop,
+          width: size.w, height: size.h, zIndex: 99999,
+          background: t.bg, border: `1px solid ${t.borderStrong}`,
+          borderRadius: 12, boxShadow: t.shadow,
           display: 'flex', flexDirection: 'column',
-          overflow: 'hidden',
-          fontFamily: t.mono,
+          overflow: 'hidden', fontFamily: t.mono,
         }}>
 
-          {/* ── Header / drag handle — S6848: add role + aria-label ── */}
-          <div
-            role="toolbar"
-            aria-label="Перетащите панель"
+          {/* Шапка — тянуть для перемещения панели */}
+          <header
             onMouseDown={onDragStart}
             style={{
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '10px 12px 9px',
-              background: t.surface,
-              borderBottom: `1px solid ${t.border}`,
-              flexShrink: 0,
-              cursor: 'move',
-              userSelect: 'none',
+              background: t.surface, borderBottom: `1px solid ${t.border}`,
+              flexShrink: 0, cursor: 'move', userSelect: 'none',
             }}
           >
             <div style={{
               width: 28, height: 28, borderRadius: 7, flexShrink: 0,
-              background: t.accentSoft,
-              border: `1px solid ${t.border}`,
+              background: t.accentSoft, border: `1px solid ${t.border}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <UserCog size={13} style={{ color: t.fg }}/>
@@ -302,8 +274,6 @@ export default function DevPanel() {
                   DEV ONLY
                 </span>
               </div>
-
-              {/* Status row */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
                 <div style={{
                   width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
@@ -322,22 +292,21 @@ export default function DevPanel() {
               style={{
                 width: 26, height: 26, borderRadius: 6, flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: `1px solid ${t.border}`, background: 'transparent', color: t.fgMuted, cursor: 'pointer',
+                border: `1px solid ${t.border}`, background: 'transparent',
+                color: t.fgMuted, cursor: 'pointer',
               }}
               onMouseEnter={e => { e.currentTarget.style.background = t.surfaceHov; e.currentTarget.style.color = t.fg; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = t.fgMuted; }}
             >
               <X size={13}/>
             </button>
-          </div>
+          </header>
 
-          {/* ── Tabs ── */}
+          {/* Табы */}
           <div style={{
-            display: 'flex',
-            background: t.surface,
+            display: 'flex', background: t.surface,
             borderBottom: `1px solid ${t.border}`,
-            flexShrink: 0,
-            padding: '0 4px',
+            flexShrink: 0, padding: '0 4px',
           }}>
             {TABS.map(tb => {
               const active = tb.id === tab;
@@ -347,25 +316,22 @@ export default function DevPanel() {
                   onMouseDown={e => { e.preventDefault(); setTab(tb.id); }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 5,
-                    padding: '9px 12px',
-                    border: 'none',
+                    padding: '9px 12px', border: 'none',
                     borderBottom: `2px solid ${active ? t.fg : 'transparent'}`,
                     background: 'transparent',
                     color: active ? t.fg : t.fgMuted,
                     fontSize: 11, fontWeight: active ? 600 : 400,
                     cursor: 'pointer', fontFamily: t.mono,
-                    flexShrink: 0,
-                    outline: 'none',
+                    flexShrink: 0, outline: 'none',
                   }}
                 >
-                  {tb.icon}
-                  {tb.label}
+                  {tb.icon}{tb.label}
                 </button>
               );
             })}
           </div>
 
-          {/* ── Content ── */}
+          {/* Контент — оверлей при отсутствии соединения */}
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
             {status !== 'connected' && (
               <div style={{
@@ -375,7 +341,7 @@ export default function DevPanel() {
               }}>
                 {status === 'connecting' ? (
                   <>
-                    <Loader2 size={22} style={{ color: t.fgMuted, animation: 'devSpinAnim 1s linear infinite' }}/>
+                    <Loader2 size={22} style={{ color: t.fgMuted, animation: 'devSpin 1s linear infinite' }}/>
                     <div style={{ fontSize: 12, color: t.fgMuted }}>Подключение...</div>
                   </>
                 ) : (
@@ -386,8 +352,8 @@ export default function DevPanel() {
                       onClick={() => globalThis.location.reload()}
                       style={{
                         padding: '6px 14px', borderRadius: 7, cursor: 'pointer',
-                        border: `1px solid ${t.border}`, background: t.surfaceHov, color: t.fg,
-                        fontSize: 11, fontFamily: t.mono,
+                        border: `1px solid ${t.border}`, background: t.surfaceHov,
+                        color: t.fg, fontSize: 11, fontFamily: t.mono,
                       }}
                     >
                       Обновить
@@ -399,7 +365,7 @@ export default function DevPanel() {
 
             <Suspense fallback={
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: t.fgSub, fontSize: 12 }}>
-                <Loader2 size={14} style={{ animation: 'devSpinAnim 1s linear infinite' }}/> Загрузка...
+                <Loader2 size={14} style={{ animation: 'devSpin 1s linear infinite' }}/> Загрузка...
               </div>
             }>
               {tab === 'docs'     && <DocsPanel/>}
@@ -409,26 +375,15 @@ export default function DevPanel() {
             </Suspense>
           </div>
 
-          {/* ── Resize handles — S6848: role + aria on all three ── */}
-          <div
-            role="separator"
-            aria-label="Изменить ширину"
-            aria-orientation="vertical"
-            onMouseDown={e => onResizeStart(e, 'r')}
-            style={{ position: 'absolute', right: 0, top: 40, bottom: 8, width: 6, cursor: 'col-resize', zIndex: 10 }}
+          {/* Ресайз-хэндлы: правый край, нижний край, угол */}
+          <button aria-label="Изменить ширину панели"  onMouseDown={e => onResizeStart(e, 'r')}
+            style={{ ...resizeBtn, right: 0, top: 40, bottom: 8, width: 6, cursor: 'col-resize' }}
           />
-          <div
-            role="separator"
-            aria-label="Изменить высоту"
-            aria-orientation="horizontal"
-            onMouseDown={e => onResizeStart(e, 'b')}
-            style={{ position: 'absolute', bottom: 0, left: 8, right: 8, height: 6, cursor: 'row-resize', zIndex: 10 }}
+          <button aria-label="Изменить высоту панели"  onMouseDown={e => onResizeStart(e, 'b')}
+            style={{ ...resizeBtn, bottom: 0, left: 8, right: 8, height: 6, cursor: 'row-resize' }}
           />
-          <div
-            role="separator"
-            aria-label="Изменить размер"
-            onMouseDown={e => onResizeStart(e, 'rb')}
-            style={{ position: 'absolute', bottom: 0, right: 0, width: 14, height: 14, cursor: 'nwse-resize', zIndex: 11 }}
+          <button aria-label="Изменить размер панели"  onMouseDown={e => onResizeStart(e, 'rb')}
+            style={{ ...resizeBtn, bottom: 0, right: 0, width: 14, height: 14, cursor: 'nwse-resize', zIndex: 11 }}
           />
         </div>
       )}
