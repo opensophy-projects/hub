@@ -13,8 +13,6 @@ import type { ColumnsLayout } from '../components/Columns';
 
 const LazyChartBlock = lazy(() => import('../components/ChartBlock'));
 
-// ─── § Exports & context ──────────────────────────────────────────────────────
-
 export const TableContext = createContext<{
   onTableClick?: (tableHtml: string) => void;
   isDark: boolean;
@@ -27,7 +25,6 @@ export const SANITIZE_TAGS = [
   'pre', 'img', 'table', 'tr', 'td', 'th',
   'thead', 'tbody', 'div', 'span', 'hr', 'figure', 'figcaption',
   'del', 'input', 'sub', 'sup', 'details', 'summary', 'mark',
-  // KaTeX-generated elements
   'math', 'semantics', 'mrow', 'mi', 'mn', 'mo', 'mtext', 'mspace',
   'mover', 'munder', 'munderover', 'msup', 'msub', 'msubsup', 'mfrac',
   'msqrt', 'mroot', 'mtable', 'mtr', 'mtd', 'mstyle', 'menclose',
@@ -42,7 +39,6 @@ export const SANITIZE_ATTR = [
   'data-color', 'data-icon',
   'data-chart', 'data-colors', 'data-type',
   'type', 'checked', 'disabled', 'open', 'style', 'align',
-  // KaTeX / SVG attributes
   'xmlns', 'viewBox', 'd', 'fill', 'stroke', 'stroke-width',
   'width', 'height', 'x', 'y', 'x1', 'y1', 'x2', 'y2',
   'cx', 'cy', 'r', 'transform', 'clip-path', 'clip-rule',
@@ -55,8 +51,7 @@ export const SANITIZE_ATTR = [
 const sanitizeHtml = (html: string): string =>
   DOMPurify.sanitize(html, { ALLOWED_TAGS: SANITIZE_TAGS, ALLOWED_ATTR: SANITIZE_ATTR, ALLOW_DATA_ATTR: true });
 
-// ─── § Slug helper ────────────────────────────────────────────────────────────
-
+// Транслитерация текста заголовка в slug для id
 function slugifyHeading(text: string): string {
   return text
     .toLowerCase()
@@ -66,8 +61,6 @@ function slugifyHeading(text: string): string {
     .replaceAll(/^-|-$/g, '');
 }
 
-// ─── § Heading styles ─────────────────────────────────────────────────────────
-
 const TAG_STYLES: Record<number, React.CSSProperties> = {
   1: { fontSize: 'clamp(1.4rem,3vw,2.25rem)',    fontWeight: 700, marginTop: '2rem',    marginBottom: '1rem',    lineHeight: 1.2,  scrollMarginTop: '5rem' },
   2: { fontSize: 'clamp(1.2rem,2.5vw,1.875rem)', fontWeight: 700, marginTop: '2rem',    marginBottom: '1rem',    lineHeight: 1.25, scrollMarginTop: '5rem' },
@@ -76,8 +69,6 @@ const TAG_STYLES: Record<number, React.CSSProperties> = {
   5: { fontSize: '1rem',                          fontWeight: 700, marginTop: '1.25rem', marginBottom: '0.5rem',                    scrollMarginTop: '5rem' },
   6: { fontSize: '0.875rem',                      fontWeight: 700, marginTop: '1rem',    marginBottom: '0.5rem',  textTransform: 'uppercase', letterSpacing: '0.05em', scrollMarginTop: '5rem' },
 };
-
-// ─── § Element processors ─────────────────────────────────────────────────────
 
 const processPreElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const codeElement = element.querySelector('code');
@@ -265,19 +256,17 @@ const processStepsElement = (element: Element, key: string, elements: React.Reac
   elements.push(React.createElement(StepperWithContext, { key, steps }));
 };
 
-// ─── § Chart processor ────────────────────────────────────────────────────────
-
 const processChartElement = (element: Element, key: string, elements: React.ReactNode[]) => {
-  const type   = (element.getAttribute('data-type')   || 'bar') as import('../components/ChartBlock').ChartType;
-  const title  =  element.getAttribute('data-title')  || undefined;
-  const colors =  element.getAttribute('data-colors') || '';
+  const type   = (element.dataset.type   || 'bar') as import('../components/ChartBlock').ChartType;
+  const title  =  element.dataset.title  || undefined;
+  const colors =  element.dataset.colors || '';
 
   const palette = colors
     ? colors.split(',').map(c => c.trim()).filter(Boolean)
     : undefined;
 
   let data: Record<string, unknown>[] = [];
-  const raw = element.getAttribute('data-chart') || '[]';
+  const raw = element.dataset.chart || '[]';
   try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) data = parsed;
@@ -291,8 +280,6 @@ const processChartElement = (element: Element, key: string, elements: React.Reac
     )
   );
 };
-
-// ─── § UIComponent processor ─────────────────────────────────────────────────
 
 const processUIComponent = (
   element: Element,
@@ -314,8 +301,6 @@ const processTextNode = (node: ChildNode, key: string, elements: React.ReactNode
   const text = node.textContent || '';
   if (text.trim()) elements.push(React.createElement('span', { key }, text));
 };
-
-// ─── § Figure processor ───────────────────────────────────────────────────────
 
 const processFigureElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const img        = element.querySelector('img');
@@ -339,8 +324,6 @@ const processFigureElement = (element: Element, key: string, elements: React.Rea
   elements.push(React.createElement('figure', { key }, ...children));
 };
 
-// ─── § KaTeX processors ───────────────────────────────────────────────────────
-
 const processKatexBlock = (element: Element, key: string, elements: React.ReactNode[]) => {
   elements.push(
     React.createElement('div', {
@@ -360,8 +343,6 @@ const processKatexInline = (element: Element, key: string, elements: React.React
     })
   );
 };
-
-// ─── § Div dispatcher ─────────────────────────────────────────────────────────
 
 const DIV_CLASS_HANDLERS: Array<[string, (el: Element, key: string, els: React.ReactNode[]) => void]> = [
   ['katex-block',     processKatexBlock],
@@ -387,8 +368,6 @@ const processDivElement = (
   }
   if (element.childNodes.length > 0) processNodes(element.childNodes, key);
 };
-
-// ─── § Paragraph dispatcher ───────────────────────────────────────────────────
 
 function getImgFromLink(el: Element): Element | null {
   const nonEmpty = Array.from(el.childNodes).filter(
@@ -476,8 +455,9 @@ const processParagraphElement = (
         if (text) kids.push(text);
       } else if (child.nodeType === Node.ELEMENT_NODE) {
         const el  = child as Element;
-        const idx = el.getAttribute('data-katex-idx');
-        if (idx !== null) {
+        // dataset.katexIdx соответствует data-katex-idx
+        const idx = el.dataset.katexIdx;
+        if (idx !== undefined) {
           const stored = katexStore[Number.parseInt(idx, 10)];
           if (stored) {
             kids.push(
@@ -523,8 +503,6 @@ const processParagraphElement = (
   });
 };
 
-// ─── § Main element dispatcher ────────────────────────────────────────────────
-
 const HEADING_TAGS = new Set(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']);
 const INLINE_TAGS  = new Set(['strong', 'em', 'u', 'del', 'sub', 'sup']);
 
@@ -555,20 +533,19 @@ const processElement = (
   }
 };
 
-// ─── § Public API ─────────────────────────────────────────────────────────────
-
 export const parseHtmlToReact = (html: string): React.ReactNode[] => {
   const rawDoc = new DOMParser().parseFromString(html, 'text/html');
 
   const katexStore: Array<{ tag: 'div' | 'span'; cls: string; inner: string }> = [];
 
   rawDoc.querySelectorAll('div.katex-block, span.katex-inline').forEach((el) => {
-    const tag = el.tagName.toLowerCase() as 'div' | 'span';
-    const cls = el.className;
+    const tag   = el.tagName.toLowerCase() as 'div' | 'span';
+    const cls   = el.className;
     const inner = el.innerHTML;
-    const idx = katexStore.push({ tag, cls, inner }) - 1;
+    const idx   = katexStore.push({ tag, cls, inner }) - 1;
     const placeholder = rawDoc.createElement(tag);
-    placeholder.setAttribute('data-katex-idx', String(idx));
+    // Запись индекса через dataset (эквивалентно data-katex-idx)
+    placeholder.dataset.katexIdx = String(idx);
     el.replaceWith(placeholder);
   });
 
@@ -593,8 +570,9 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       const element = node as Element;
       const tagName = element.tagName.toLowerCase();
 
-      const katexIdx = element.getAttribute('data-katex-idx');
-      if (katexIdx !== null) {
+      // Проверяем наличие заглушки KaTeX по dataset
+      const katexIdx = element.dataset.katexIdx;
+      if (katexIdx !== undefined) {
         const stored = katexStore[Number.parseInt(katexIdx, 10)];
         if (stored) {
           elements.push(
