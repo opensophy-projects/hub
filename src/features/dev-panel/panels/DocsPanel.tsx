@@ -258,7 +258,7 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
 
   const setT = (v:string) => { setTitle(v); if(auto) setSlug(slugify(v)); };
   const isA = cfg.entryType==='A';
-  const lbl: Record<string,string> = {N:'Секция',C:'Категория',A:'Страница'};
+  const lbl: Record<string,string> = {N:'Nav Popover',C:'Категория',A:'Статья'};
   const dIco: Record<string,string> = {N:'book',C:'folder',A:'file-text'};
 
   const doSave = async () => {
@@ -293,7 +293,7 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
         if (isA) {
           const fp = `${cfg.parentPath}/${nm}.md`;
           await bridge.writeFile(fp, serializeFM({...fm,title:title.trim()},`# ${title.trim()}\n\nНачните писать здесь...\n`));
-          toast.success('Страница создана'); onDone(fp);
+          toast.success('Статья создана'); onDone(fp);
         } else {
           await bridge.mkdir(`${cfg.parentPath}/${nm}`);
           toast.success('Создано'); onDone();
@@ -370,7 +370,8 @@ function BlockPicker({ onInsert, t }: { onInsert:(c:string)=>void; t:TTokens }) 
   const [open,setOpen]  = useState(false);
   const [grp,setGrp]    = useState(0);
   const [sub,setSub]    = useState<BI|null>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
+  const btnRef  = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [pos, setPos]   = useState({top:0,left:0});
   const MENU_W = 360;
 
@@ -384,14 +385,18 @@ function BlockPicker({ onInsert, t }: { onInsert:(c:string)=>void; t:TTokens }) 
     setOpen(true); setSub(null);
   };
 
+  // Use capture phase so we reliably detect outside clicks
+  // Check both the trigger button and the portal div via refs
   useEffect(()=>{
     if(!open) return;
     const h=(e:MouseEvent)=>{
-      const el=document.getElementById('adm-blk-menu');
-      if(!el?.contains(e.target as Node)&&!btnRef.current?.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      const insideBtn  = btnRef.current?.contains(target) ?? false;
+      const insideMenu = menuRef.current?.contains(target) ?? false;
+      if(!insideBtn && !insideMenu) setOpen(false);
     };
-    document.addEventListener('mousedown',h);
-    return ()=>document.removeEventListener('mousedown',h);
+    document.addEventListener('mousedown', h, true);
+    return ()=>document.removeEventListener('mousedown', h, true);
   },[open]);
 
   const rs = (active?:boolean):React.CSSProperties => ({
@@ -416,7 +421,7 @@ function BlockPicker({ onInsert, t }: { onInsert:(c:string)=>void; t:TTokens }) 
       ><Plus size={11}/> Блок</button>
 
       {open && createPortal(
-        <div id="adm-blk-menu" style={{
+        <div ref={menuRef} style={{
           position:'fixed',top:pos.top,left:pos.left,zIndex:100030,
           width:MENU_W,maxHeight:340,
           background:t.bg,border:`1px solid ${t.borderStrong}`,
@@ -425,7 +430,7 @@ function BlockPicker({ onInsert, t }: { onInsert:(c:string)=>void; t:TTokens }) 
         }}>
           <div style={{width:100,borderRight:`1px solid ${t.border}`,overflowY:'auto',flexShrink:0}} className="adm-scroll">
             {BG.map((g,gi)=>(
-              <button key={gi} onMouseDown={e=>{e.preventDefault();setGrp(gi);setSub(null);}} style={{
+              <button key={gi} onClick={()=>{ setGrp(gi); setSub(null); }} style={{
                 width:'100%',display:'flex',alignItems:'center',gap:6,
                 padding:'7px 9px',border:'none',textAlign:'left',cursor:'pointer',
                 background:grp===gi?t.surfaceHov:'transparent',
@@ -438,7 +443,7 @@ function BlockPicker({ onInsert, t }: { onInsert:(c:string)=>void; t:TTokens }) 
           </div>
           <div style={{flex:1,overflowY:'auto',padding:'4px'}} className="adm-scroll">
             {!sub ? BG[grp].items.map((item,ii)=>(
-              <button key={ii} onMouseDown={e=>{e.preventDefault();if(item.variants)setSub(item);else{onInsert(item.code!);setOpen(false);}}}
+              <button key={ii} onClick={()=>{ if(item.variants){ setSub(item); } else { onInsert(item.code!); setOpen(false); } }}
                 style={rs()} onMouseEnter={e=>(e.currentTarget as HTMLButtonElement).style.background=t.surfaceHov}
                 onMouseLeave={e=>(e.currentTarget as HTMLButtonElement).style.background='transparent'}>
                 <div style={{display:'flex',alignItems:'center',gap:6}}><span style={{color:t.fgMuted}}>{item.icon}</span>{item.label}</div>
@@ -446,12 +451,12 @@ function BlockPicker({ onInsert, t }: { onInsert:(c:string)=>void; t:TTokens }) 
               </button>
             )) : (
               <>
-                <button onMouseDown={e=>{e.preventDefault();setSub(null);}} style={{display:'flex',alignItems:'center',gap:4,padding:'5px 8px',border:'none',background:'transparent',color:t.fgMuted,cursor:'pointer',fontSize:10,fontFamily:t.mono,marginBottom:3}}>
+                <button onClick={()=>setSub(null)} style={{display:'flex',alignItems:'center',gap:4,padding:'5px 8px',border:'none',background:'transparent',color:t.fgMuted,cursor:'pointer',fontSize:10,fontFamily:t.mono,marginBottom:3}}>
                   <ChevronRight size={9} style={{transform:'rotate(180deg)'}}/> Назад
                 </button>
                 <div style={{fontSize:9,color:t.fgSub,padding:'0 8px 5px',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.07em'}}>{sub.label}</div>
                 {sub.variants!.map((v,vi)=>(
-                  <button key={vi} onMouseDown={e=>{e.preventDefault();onInsert(v.code);setOpen(false);}}
+                  <button key={vi} onClick={()=>{ onInsert(v.code); setOpen(false); }}
                     style={{...rs(),justifyContent:'flex-start'}}
                     onMouseEnter={e=>(e.currentTarget as HTMLButtonElement).style.background=t.surfaceHov}
                     onMouseLeave={e=>(e.currentTarget as HTMLButtonElement).style.background='transparent'}>
@@ -734,7 +739,7 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
           <div style={{display:'flex',gap:3,flexShrink:0}} onClick={e=>e.stopPropagation()}>
             {actionBtn(<Edit3 size={13}/>, 'Редактировать', ()=>onEdit(entry))}
             {isDir&&p.type==='N'&&actionBtn(<FolderPlus size={13}/>, '+ Категория', ()=>onCreate({parentPath:entry.path,entryType:'C'}))}
-            {isDir&&(p.type==='N'||p.type==='C')&&actionBtn(<FilePlus size={13}/>, '+ Страница', ()=>onCreate({parentPath:entry.path,entryType:'A'}))}
+            {isDir&&(p.type==='N'||p.type==='C')&&actionBtn(<FilePlus size={13}/>, '+ Статья', ()=>onCreate({parentPath:entry.path,entryType:'A'}))}
             {actionBtn(<Trash2 size={13}/>, 'Удалить', ()=>onDelete(entry), true)}
           </div>
         )}
@@ -850,7 +855,7 @@ export default function DocsPanel() {
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
       <div style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',borderBottom:`1px solid ${t.border}`,flexShrink:0,background:t.surface}}>
         <button onClick={()=>setModal({cfg:{parentPath:'Docs',entryType:'N'}})} style={{display:'flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:7,border:`1px solid ${t.borderStrong}`,background:t.surfaceHov,color:t.fg,fontSize:11,fontWeight:500,cursor:'pointer',fontFamily:t.mono}}>
-          <Plus size={12}/> Секция
+          <Plus size={12}/> Nav Popover
         </button>
         <div style={{flex:1}}/>
         {moving && <Loader2 size={12} style={{color:t.fgMuted,animation:'devSpinAnim 1s linear infinite'}}/>}
@@ -878,7 +883,7 @@ export default function DocsPanel() {
         ) : tree.length===0 ? (
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8,padding:28,color:t.fgMuted,textAlign:'center'}}>
             <FolderOpen size={28} style={{opacity:0.3}}/>
-            <div style={{fontSize:12}}>Docs/ пуста. Создай Секцию</div>
+            <div style={{fontSize:12}}>Docs/ пуста. Создай Nav Popover</div>
           </div>
         ) : tree.map(e=>(
           <TreeNode key={e.path} entry={e} onCreate={cfg=>setModal({cfg})}
