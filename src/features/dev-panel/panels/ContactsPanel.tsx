@@ -6,14 +6,20 @@ import { Plus, Trash2, Loader2, AlertCircle } from 'lucide-react';
 
 interface Contact { href: string; title: string; subtitle: string; external: boolean; }
 
+// Регексы с ограниченной длиной совпадения для защиты от ReDoS
+const RE_BLOCK    = /\{([^{}]{1,500})\}/g;
+const RE_HREF     = /href:\s*'([^']{0,300})'/;
+const RE_TITLE    = /title:\s*'([^']{0,300})'/;
+const RE_SUBTITLE = /subtitle:\s*'([^']{0,300})'/;
+
 function parseContacts(ts: string): Contact[] {
-  const matches = [...ts.matchAll(/\{([^}]+)\}/g)];
+  const matches = [...ts.matchAll(RE_BLOCK)];
   const result: Contact[] = [];
   for (const m of matches) {
     const block    = m[1];
-    const href     = block.match(/href:\s*'([^']+)'/)?.[1] ?? '';
-    const title    = block.match(/title:\s*'([^']+)'/)?.[1] ?? '';
-    const subtitle = block.match(/subtitle:\s*'([^']+)'/)?.[1] ?? '';
+    const href     = block.match(RE_HREF)?.[1]     ?? '';
+    const title    = block.match(RE_TITLE)?.[1]    ?? '';
+    const subtitle = block.match(RE_SUBTITLE)?.[1] ?? '';
     const external = block.includes('external: true');
     if (href) result.push({ href, title, subtitle, external });
   }
