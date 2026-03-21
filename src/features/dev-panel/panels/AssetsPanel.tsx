@@ -1,13 +1,12 @@
 /**
- * AssetsPanel — загрузка ассетов (изображения, favicon)
- * Убран OG Image раздел
+ * AssetsPanel — исправлено: серые дропзоны, светлая тема работает
  */
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useContext } from 'react';
 import { bridge } from '../useDevBridge';
-import { T } from '../components/ui';
+import { ThemeTokensContext } from '../DevPanel';
 import { toast } from '../components/Toast';
-import { Upload, Image, Star, Loader2, Check, AlertCircle } from 'lucide-react';
+import { Upload, Image, Star, Loader2, Check } from 'lucide-react';
 
 interface UploadedAsset {
   filename: string;
@@ -18,10 +17,10 @@ interface UploadedAsset {
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload  = () => resolve((reader.result as string).split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+    const r = new FileReader();
+    r.onload  = () => resolve((r.result as string).split(',')[1]);
+    r.onerror = reject;
+    r.readAsDataURL(file);
   });
 }
 
@@ -31,14 +30,11 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-// ─── DropZone ─────────────────────────────────────────────────────────────────
-
-function DropZone({
-  label, accept, onFiles, loading, hint,
-}: {
+function DropZone({ label, accept, onFiles, loading, hint, t }: {
   label: string; accept: string;
   onFiles: (files: File[]) => void;
   loading: boolean; hint?: string;
+  t: ReturnType<typeof import('../DevPanel').makeT>;
 }) {
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -49,6 +45,12 @@ function DropZone({
     if (files.length) onFiles(files);
   };
 
+  // Grey dropzone — matches the panel background style, NO purple
+  const dzBg = dragOver
+    ? t.surfaceHov
+    : t.surface;
+  const dzBorder = dragOver ? t.borderStrong : t.border;
+
   return (
     <div>
       <div
@@ -57,15 +59,18 @@ function DropZone({
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
         style={{
-          border: `1.5px dashed ${dragOver ? T.accent : T.border}`,
-          borderRadius: 8, padding: '18px 16px',
-          textAlign: 'center', cursor: 'pointer',
-          background: dragOver ? T.accentSoft : T.bgHov,
+          border: `1.5px dashed ${dzBorder}`,
+          borderRadius: 10,
+          padding: '28px 20px',
+          textAlign: 'center',
+          cursor: 'pointer',
+          background: dzBg,
           transition: 'all 0.15s',
         }}
       >
         <input
-          ref={inputRef} type="file" accept={accept} multiple style={{ display: 'none' }}
+          ref={inputRef} type="file" accept={accept} multiple
+          style={{ display: 'none' }}
           onChange={e => {
             const files = Array.from(e.target.files ?? []);
             if (files.length) onFiles(files);
@@ -73,22 +78,27 @@ function DropZone({
           }}
         />
         {loading
-          ? <Loader2 size={20} style={{ color: T.accent, animation: 'devSpinAnim 1s linear infinite', margin: '0 auto 8px' }} />
-          : <Upload size={20} style={{ color: dragOver ? T.accent : T.fgMuted, margin: '0 auto 8px' }} />
+          ? <Loader2 size={22} style={{ color: t.fgMuted, animation: 'devSpinAnim 1s linear infinite', margin: '0 auto 10px' }} />
+          : <Upload size={22} style={{ color: dragOver ? t.fg : t.fgMuted, margin: '0 auto 10px' }} />
         }
-        <div style={{ fontSize: 12, color: dragOver ? T.accent : T.fg, fontWeight: 600 }}>{label}</div>
-        <div style={{ fontSize: 10, color: T.fgSub, marginTop: 4 }}>
-          {loading ? 'Загружаем...' : 'Перетащи или кликни'}
+        <div style={{ fontSize: 13, color: dragOver ? t.fg : t.fgMuted, fontWeight: 500, fontFamily: t.mono }}>
+          {loading ? 'Загружаем...' : label}
+        </div>
+        <div style={{ fontSize: 11, color: t.fgSub, marginTop: 4 }}>
+          {loading ? '' : 'Перетащи или кликни'}
         </div>
       </div>
-      {hint && <div style={{ fontSize: 10, color: T.fgSub, marginTop: 5, paddingLeft: 2 }}>{hint}</div>}
+      {hint && (
+        <div style={{ fontSize: 10, color: t.fgSub, marginTop: 6, paddingLeft: 2 }}>{hint}</div>
+      )}
     </div>
   );
 }
 
-// ─── Asset item ───────────────────────────────────────────────────────────────
-
-function AssetItem({ asset }: { asset: UploadedAsset }) {
+function AssetItem({ asset, t }: {
+  asset: UploadedAsset;
+  t: ReturnType<typeof import('../DevPanel').makeT>;
+}) {
   const [copied, setCopied] = useState(false);
 
   const copy = () => {
@@ -101,20 +111,20 @@ function AssetItem({ asset }: { asset: UploadedAsset }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 8,
-      padding: '7px 10px', borderRadius: 6,
-      border: `1px solid ${T.border}`, marginBottom: 6,
-      background: T.bgHov,
+      padding: '7px 10px', borderRadius: 7,
+      border: `1px solid ${t.border}`, marginBottom: 6,
+      background: t.surface,
     }}>
       {asset.mimeType.startsWith('image/') ? (
         <img src={asset.path} alt="" style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 4, flexShrink: 0 }} />
       ) : (
-        <Image size={24} style={{ color: T.fgMuted, flexShrink: 0 }} />
+        <Image size={24} style={{ color: t.fgMuted, flexShrink: 0 }} />
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 11, color: T.fg, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ fontSize: 11, color: t.fg, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: t.mono }}>
           {asset.filename}
         </div>
-        <div style={{ fontSize: 10, color: T.fgSub, fontFamily: 'ui-monospace, monospace' }}>
+        <div style={{ fontSize: 10, color: t.fgSub, fontFamily: t.mono }}>
           {asset.path} · {formatBytes(asset.size)}
         </div>
       </div>
@@ -123,10 +133,10 @@ function AssetItem({ asset }: { asset: UploadedAsset }) {
         style={{
           display: 'flex', alignItems: 'center', gap: 4,
           padding: '4px 8px', borderRadius: 5,
-          border: `1px solid ${copied ? T.success + '55' : T.border}`,
-          background: copied ? 'rgba(34,197,94,0.1)' : 'transparent',
-          color: copied ? T.success : T.fgMuted,
-          fontSize: 10, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
+          border: `1px solid ${copied ? t.success + '55' : t.border}`,
+          background: copied ? t.bg : 'transparent',
+          color: copied ? t.success : t.fgMuted,
+          fontSize: 10, cursor: 'pointer', fontFamily: t.mono, whiteSpace: 'nowrap',
         }}
       >
         {copied ? <Check size={10} /> : null}
@@ -136,9 +146,8 @@ function AssetItem({ asset }: { asset: UploadedAsset }) {
   );
 }
 
-// ─── AssetsPanel ──────────────────────────────────────────────────────────────
-
 export default function AssetsPanel() {
+  const t = useContext(ThemeTokensContext);
   const [assets,         setAssets]         = useState<UploadedAsset[]>([]);
   const [faviconLoading, setFaviconLoading] = useState(false);
   const [assetsLoading,  setAssetsLoading]  = useState(false);
@@ -156,11 +165,8 @@ export default function AssetsPanel() {
       }
       setAssets(prev => [...uploaded, ...prev]);
       toast.success(`Загружено: ${uploaded.length} файл(ов)`);
-    } catch (e: unknown) {
-      setError((e as Error).message);
-    } finally {
-      setAssetsLoading(false);
-    }
+    } catch (e: unknown) { setError((e as Error).message); }
+    finally { setAssetsLoading(false); }
   }, []);
 
   const handleFaviconUpload = useCallback(async (files: File[]) => {
@@ -172,68 +178,67 @@ export default function AssetsPanel() {
       setFaviconSaved(true);
       setTimeout(() => setFaviconSaved(false), 3000);
       toast.success('Favicon обновлён');
-    } catch (e: unknown) {
-      setError((e as Error).message);
-    } finally {
-      setFaviconLoading(false);
-    }
+    } catch (e: unknown) { setError((e as Error).message); }
+    finally { setFaviconLoading(false); }
   }, []);
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '12px', scrollbarWidth: 'thin' }}>
+    <div style={{ flex: 1, overflowY: 'auto', padding: '12px', background: t.bg }} className="adm-scroll">
 
-      {/* Favicon */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          fontSize: 10, fontWeight: 700, color: T.fgSub,
-          textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8,
-        }}>
-          <Star size={11} /> Favicon / Логотип
-        </div>
-        <DropZone
-          label={faviconSaved ? '✓ Favicon обновлён!' : 'Загрузить favicon'}
-          accept="image/png,image/svg+xml,image/x-icon,image/webp"
-          onFiles={handleFaviconUpload}
-          loading={faviconLoading}
-          hint="PNG, SVG, ICO · Сохраняется как public/favicon.png"
-        />
+      {/* Section label */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 6,
+        fontSize: 9, fontWeight: 700, color: t.fgSub,
+        textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8,
+      }}>
+        <Star size={10}/> FAVICON / ЛОГОТИП
       </div>
 
-      {/* General assets */}
-      <div>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          fontSize: 10, fontWeight: 700, color: T.fgSub,
-          textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8,
-        }}>
-          <Image size={11} /> Изображения (public/assets/)
-        </div>
-        <DropZone
-          label="Загрузить изображения"
-          accept="image/*"
-          onFiles={handleAssetsUpload}
-          loading={assetsLoading}
-          hint="Загруженные файлы доступны по пути /assets/filename"
-        />
+      <DropZone
+        label={faviconSaved ? '✓ Favicon обновлён!' : 'Загрузить favicon'}
+        accept="image/png,image/svg+xml,image/x-icon,image/webp"
+        onFiles={handleFaviconUpload}
+        loading={faviconLoading}
+        hint="PNG, SVG, ICO · Сохраняется как public/favicon.png"
+        t={t}
+      />
 
-        {assets.length > 0 && (
-          <div style={{ marginTop: 12 }}>
-            <div style={{ fontSize: 10, color: T.fgSub, marginBottom: 8 }}>
-              Загружено в этой сессии ({assets.length}):
-            </div>
-            {assets.map((a, i) => <AssetItem key={i} asset={a} />)}
+      <div style={{ height: 1, background: t.border, margin: '16px 0' }}/>
+
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 6,
+        fontSize: 9, fontWeight: 700, color: t.fgSub,
+        textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8,
+      }}>
+        <Image size={10}/> ИЗОБРАЖЕНИЯ (PUBLIC/ASSETS/)
+      </div>
+
+      <DropZone
+        label="Загрузить изображения"
+        accept="image/*"
+        onFiles={handleAssetsUpload}
+        loading={assetsLoading}
+        hint="Загруженные файлы доступны по пути /assets/filename"
+        t={t}
+      />
+
+      {assets.length > 0 && (
+        <div style={{ marginTop: 14 }}>
+          <div style={{ fontSize: 10, color: t.fgSub, marginBottom: 8, fontFamily: t.mono }}>
+            Загружено в этой сессии ({assets.length}):
           </div>
-        )}
-      </div>
+          {assets.map((a, i) => <AssetItem key={i} asset={a} t={t} />)}
+        </div>
+      )}
 
       {error && (
         <div style={{
           marginTop: 12, padding: '8px 10px', borderRadius: 6,
-          background: T.dangerSoft, color: T.danger, fontSize: 11,
+          background: t.bg, border: `1px solid ${t.danger}44`,
+          color: t.danger, fontSize: 11,
           display: 'flex', gap: 6, alignItems: 'center',
         }}>
-          <AlertCircle size={12} /> {error}
+          ⚠ {error}
         </div>
       )}
     </div>
