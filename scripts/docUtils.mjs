@@ -5,7 +5,7 @@ import katex from 'katex';
 
 marked.setOptions({ breaks: true, gfm: true });
 
-// ─── § KaTeX renderers ────────────────────────────────────────────────────────
+// ─── KaTeX ────────────────────────────────────────────────────────────────────
 
 function renderKatex(tex, displayMode) {
   try {
@@ -21,43 +21,33 @@ function renderKatex(tex, displayMode) {
   }
 }
 
-/**
- * Renders $...$ (inline) and $$...$$ (block) math via KaTeX.
- * Runs BEFORE marked so markdown doesn't mangle LaTeX syntax.
- * Code blocks are protected first.
- */
+// Runs BEFORE marked so markdown doesn't mangle LaTeX. Code blocks protected first.
 export function preprocessKatex(content) {
   const protected_ = [];
 
-  // Protect fenced code blocks
-  let result = content.replace(/```[\s\S]*?```/g, (match) => {
+  // S7781: use replaceAll instead of replace+/g flag
+  let result = content.replaceAll(/```[\s\S]*?```/g, (match) => {
     protected_.push(match);
     return `___PROTECTED_${protected_.length - 1}___`;
   });
 
-  // Protect inline code
-  result = result.replace(/`[^`\n]+`/g, (match) => {
+  result = result.replaceAll(/`[^`\n]+`/g, (match) => {
     protected_.push(match);
     return `___PROTECTED_${protected_.length - 1}___`;
   });
 
-  // Block math $$...$$ — must come before inline $
-  result = result.replace(/\$\$([\s\S]+?)\$\$/g, (_match, tex) => {
-    return `<div class="katex-block not-prose">${renderKatex(tex, true)}</div>`;
-  });
+  result = result.replaceAll(/\$\$([\s\S]+?)\$\$/g, (_match, tex) =>
+    `<div class="katex-block not-prose">${renderKatex(tex, true)}</div>`
+  );
 
-  // Inline math $...$ — non-greedy, avoid currency ($50, 100 $)
-  result = result.replace(/\$([^\s$][^$\n]*?[^\s$]|\S)\$/g, (_match, tex) => {
-    return `<span class="katex-inline">${renderKatex(tex, false)}</span>`;
-  });
+  result = result.replaceAll(/\$([^\s$][^$\n]*?[^\s$]|\S)\$/g, (_match, tex) =>
+    `<span class="katex-inline">${renderKatex(tex, false)}</span>`
+  );
 
-  // Restore protected blocks
-  result = result.replace(/___PROTECTED_(\d+)___/g, (_, i) => protected_[Number.parseInt(i, 10)]);
-
-  return result;
+  return result.replaceAll(/___PROTECTED_(\d+)___/g, (_, i) => protected_[Number.parseInt(i, 10)]);
 }
 
-// ─── § Entry name parser ──────────────────────────────────────────────────────
+// ─── Entry name parser ────────────────────────────────────────────────────────
 
 export function parseEntryName(name) {
   const typeMatch = name.match(/^\[([NCA])\]/);
@@ -82,7 +72,7 @@ export function parseEntryName(name) {
   return { type: entryType, icon, title, slug };
 }
 
-// ─── § Nav popover / category name parsers ────────────────────────────────────
+// ─── Nav / category parsers ───────────────────────────────────────────────────
 
 export function parseNavPopoverFolder(folderName) {
   const entry = parseEntryName(folderName);
@@ -110,7 +100,7 @@ export function parseCategoryName(folderName) {
   return { title: folderName, slug: slugify(folderName), icon: null };
 }
 
-// ─── § Slugify ────────────────────────────────────────────────────────────────
+// ─── Slugify ──────────────────────────────────────────────────────────────────
 
 const TRANSLIT_MAP = {
   а:'a',  б:'b',  в:'v',  г:'g',  д:'d',  е:'e',  ё:'yo', ж:'zh', з:'z',  и:'i',
@@ -129,7 +119,7 @@ export function slugify(str) {
     .replaceAll(/^-|-$/g, '');
 }
 
-// ─── § File system ────────────────────────────────────────────────────────────
+// ─── File system ──────────────────────────────────────────────────────────────
 
 export function scanDocsDirectoryRecursive(baseDir) {
   const results = [];
@@ -150,7 +140,7 @@ export function scanDocsDirectoryRecursive(baseDir) {
   return results;
 }
 
-// ─── § Front matter ───────────────────────────────────────────────────────────
+// ─── Front matter ─────────────────────────────────────────────────────────────
 
 export function extractFrontMatter(content) {
   if (!content.startsWith('---\n')) return { metadata: {}, content };
@@ -173,7 +163,7 @@ export function extractFrontMatter(content) {
   return { metadata, content: rest };
 }
 
-// ─── § Helpers ────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function escapeAttr(str) {
   return String(str)
@@ -194,13 +184,12 @@ function parseParams(paramStr) {
   return params;
 }
 
-/** Restores placeholder CODE_BLOCK tokens before running marked. */
 function markedWithCodeBlocks(str, codeBlocks) {
   const restored = str.replaceAll(/___CODE_BLOCK_(\d+)___/g, (_, i) => codeBlocks[Number.parseInt(i, 10)]);
   return marked(restored);
 }
 
-// ─── § Block body collector ───────────────────────────────────────────────────
+// ─── Block body collector ─────────────────────────────────────────────────────
 
 function collectBlockBody(lines, startAfterIndex) {
   const bodyLines = [];
@@ -226,7 +215,7 @@ function collectBlockBody(lines, startAfterIndex) {
   return { body: bodyLines.join('\n'), endIndex: i - 1 };
 }
 
-// ─── § Inner block parser ─────────────────────────────────────────────────────
+// ─── Inner block parser ───────────────────────────────────────────────────────
 
 function parseInnerBlocks(bodyStr, innerTag) {
   const lines   = bodyStr.split('\n');
@@ -255,7 +244,7 @@ function parseInnerBlocks(bodyStr, innerTag) {
   return results;
 }
 
-// ─── § Card builder ───────────────────────────────────────────────────────────
+// ─── Card builder ─────────────────────────────────────────────────────────────
 
 function buildCardHtml(params, body, codeBlocks) {
   const color = params.color ? escapeAttr(params.color) : '';
@@ -273,7 +262,7 @@ function buildCardHtml(params, body, codeBlocks) {
   return `<div class="custom-card" data-color="${color}" data-title="${title}" data-icon="${icon}">${contentHtml}</div>`;
 }
 
-// ─── § Block handlers ─────────────────────────────────────────────────────────
+// ─── Block handlers ───────────────────────────────────────────────────────────
 
 function handleCardsBlock(trimmed, lines, i, codeBlocks, output) {
   const match = trimmed.match(/^:::cards(?:\[([^\]]*)\])?\s*$/);
@@ -328,34 +317,27 @@ function handleMathBlock(trimmed, lines, i, output) {
   if (!match) return null;
 
   const displayMode = (match[1] ?? '').trim() === 'display';
-
-  const bodyLines = [];
+  const bodyLines   = [];
   let j = i + 1;
   while (j < lines.length && lines[j].trim() !== ':::') {
     bodyLines.push(lines[j]);
     j++;
   }
 
-  const tex      = bodyLines.join('\n').trim();
-  const rendered = renderKatex(tex, displayMode);
-
-  if (displayMode) {
-    output.push(`<div class="katex-block not-prose">${rendered}</div>`);
-  } else {
-    output.push(`<p><span class="katex-inline">${rendered}</span></p>`);
-  }
-
+  const rendered = renderKatex(bodyLines.join('\n').trim(), displayMode);
+  output.push(
+    displayMode
+      ? `<div class="katex-block not-prose">${rendered}</div>`
+      : `<p><span class="katex-inline">${rendered}</span></p>`
+  );
   return j + 1;
 }
 
-// ─── § Chart block handler ────────────────────────────────────────────────────
+// ─── Chart block handler ──────────────────────────────────────────────────────
 
-function handleChartBlock(trimmed, lines, i, output) {
-  if (!/^:::chart\s*$/.test(trimmed)) return null;
+// S3776: extracted helpers to reduce cognitive complexity of handleChartBlock
 
-  const { body, endIndex } = collectBlockBody(lines, i + 1);
-  const bodyLines = body.split('\n');
-
+function parseChartMeta(bodyLines) {
   let type   = 'bar';
   let title  = '';
   let colors = '';
@@ -370,54 +352,51 @@ function handleChartBlock(trimmed, lines, i, output) {
     if (titleMatch) { title  = titleMatch[1].trim();  continue; }
     if (colorMatch) { colors = colorMatch[1].trim();  continue; }
 
-    const trimmedLine = line.trim();
-    if (!trimmedLine) continue;
-    // Пропускаем строку-разделитель |---|---|
-    if (/^\|[\s\-:|]+\|$/.test(trimmedLine)) continue;
-    // Строки таблицы
-    if (trimmedLine.startsWith('|') && trimmedLine.endsWith('|')) {
-      dataLines.push(trimmedLine);
-    }
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (/^\|[\s\-:|]+\|$/.test(trimmed)) continue; // separator row |---|---|
+    if (trimmed.startsWith('|') && trimmed.endsWith('|')) dataLines.push(trimmed);
   }
 
-  // Парсим markdown-таблицу → массив объектов
-  let data = [];
-  if (dataLines.length >= 2) {
-    const headers = dataLines[0]
-      .slice(1, -1)
-      .split('|')
-      .map(h => h.trim());
+  return { type, title, colors, dataLines };
+}
 
-    for (let r = 1; r < dataLines.length; r++) {
-      const cells = dataLines[r]
-        .slice(1, -1)
-        .split('|')
-        .map(c => c.trim());
+function parseChartTableData(dataLines) {
+  if (dataLines.length < 2) return [];
 
-      const row = {};
-      headers.forEach((h, idx) => {
-        const raw = cells[idx] ?? '';
-        // Первая колонка — строковая метка (ось X), остальные — числа
-        row[h] = idx === 0 ? raw : (raw !== '' && !isNaN(Number(raw)) ? Number(raw) : raw);
-      });
-      data.push(row);
-    }
-  }
+  const headers = dataLines[0].slice(1, -1).split('|').map(h => h.trim());
 
-  // JSON в data-атрибут — экранируем только &quot; для HTML-атрибута
+  return dataLines.slice(1).map(row => {
+    const cells = row.slice(1, -1).split('|').map(c => c.trim());
+    const obj   = {};
+    headers.forEach((h, idx) => {
+      const raw = cells[idx] ?? '';
+      // First column is the X-axis label; rest are numeric values
+      obj[h] = idx === 0 ? raw : (raw !== '' && !isNaN(Number(raw)) ? Number(raw) : raw);
+    });
+    return obj;
+  });
+}
+
+function handleChartBlock(trimmed, lines, i, output) {
+  if (!/^:::chart\s*$/.test(trimmed)) return null;
+
+  const { body, endIndex } = collectBlockBody(lines, i + 1);
+  const { type, title, colors, dataLines } = parseChartMeta(body.split('\n'));
+  const data = parseChartTableData(dataLines);
+
   let jsonAttr = '[]';
   try {
     jsonAttr = JSON.stringify(data).replaceAll('"', '&quot;');
-  } catch { /* оставляем пустой массив */ }
+  } catch { /* keep empty array */ }
 
   output.push(
     `<div class="custom-chart" data-type="${escapeAttr(type)}" data-title="${escapeAttr(title)}" data-colors="${escapeAttr(colors)}" data-chart="${jsonAttr}"></div>`
   );
-
   return endIndex + 1;
 }
 
-// ─── § Custom block preprocessor ─────────────────────────────────────────────
+// ─── Custom block preprocessor ────────────────────────────────────────────────
 
 function preprocessCustomBlocks(content, codeBlocks) {
   const lines  = content.split('\n');
@@ -441,14 +420,14 @@ function preprocessCustomBlocks(content, codeBlocks) {
   return output.join('\n');
 }
 
-// ─── § Markdown extensions preprocessor ──────────────────────────────────────
+// ─── Markdown extensions preprocessor ────────────────────────────────────────
 
 export function preprocessMarkdownExtensions(content) {
-  // ── Step 1: extract code blocks ───────────────────────────────────────────
   const codeBlocks = [];
   let withoutCode  = '';
   let searchFrom   = 0;
 
+  // Step 1: extract code blocks to protect them from further processing
   while (true) {
     const open = content.indexOf('```', searchFrom);
     if (open === -1) { withoutCode += content.slice(searchFrom); break; }
@@ -460,7 +439,7 @@ export function preprocessMarkdownExtensions(content) {
     searchFrom = close + 3;
   }
 
-  // ── Step 2: process GitHub-style alert blocks ─────────────────────────────
+  // Step 2: GitHub-style alert blocks (:::note, :::tip, etc.)
   const ALERT_TYPES     = new Set(['note', 'tip', 'important', 'warning', 'caution']);
   const ALERT_PREFIX_RE = /^:::([a-z]+)$/;
   const alertLines      = withoutCode.split('\n');
@@ -487,13 +466,12 @@ export function preprocessMarkdownExtensions(content) {
     }
   }
 
-  // ── Step 3: process remaining custom blocks (cards, columns, steps, math, chart)
-  // ── Step 4: restore code block placeholders ───────────────────────────────
+  // Step 3: cards, columns, steps, math, chart — Step 4: restore code blocks
   return preprocessCustomBlocks(alertOutput.join('\n'), codeBlocks)
     .replaceAll(/___CODE_BLOCK_(\d+)___/g, (_match, index) => codeBlocks[Number.parseInt(index, 10)]);
 }
 
-// ─── § Content helpers ────────────────────────────────────────────────────────
+// ─── Content helpers ──────────────────────────────────────────────────────────
 
 export function processImageSyntax(content) {
   return content.replaceAll(
@@ -511,7 +489,7 @@ export function getFirstParagraph(content) {
   return '';
 }
 
-// ─── § Doc info ───────────────────────────────────────────────────────────────
+// ─── Doc info ─────────────────────────────────────────────────────────────────
 
 export function getDocInfo(fullPath, docsDir) {
   const relativePath = path.relative(docsDir, fullPath);
@@ -583,13 +561,13 @@ export function getDocInfo(fullPath, docsDir) {
   };
 }
 
-// ─── § Doc IO ─────────────────────────────────────────────────────────────────
+// ─── Doc IO ───────────────────────────────────────────────────────────────────
 
 export function readDoc(mdPath) {
   return fs.readFileSync(mdPath, 'utf-8');
 }
 
-// ─── § Doc builder ────────────────────────────────────────────────────────────
+// ─── Doc builder ──────────────────────────────────────────────────────────────
 
 export function parseDoc(rawContent, mdPath, docsDir) {
   const { metadata, content: cleanContent } = extractFrontMatter(rawContent);
@@ -625,18 +603,13 @@ export function parseDoc(rawContent, mdPath, docsDir) {
   };
 }
 
-/** Convenience wrapper: reads the file and parses it in one call. */
+// Convenience wrapper: reads the file and parses it in one call
 export function buildDocFromPath(mdPath, docsDir) {
-  const rawContent = readDoc(mdPath);
-  return parseDoc(rawContent, mdPath, docsDir);
+  return parseDoc(readDoc(mdPath), mdPath, docsDir);
 }
 
-// ─── § Preview renderer (used by dev panel) ───────────────────────────────────
-// Runs the same pipeline as parseDoc but returns only the HTML content string.
-// Called by devBridge.mjs → handleRenderPreview action.
-
+// Same pipeline as parseDoc but returns only the HTML string (used by devBridge → handleRenderPreview)
 export function renderMarkdownToHtml(markdown) {
-  // Strip frontmatter if present
   let content = markdown;
   if (content.startsWith('---\n')) {
     const end = content.indexOf('\n---\n', 4);
