@@ -3,7 +3,7 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
-/* ─── CSS переменные темы ──────────────────────────────────────────────────── */
+/* ─── CSS переменные темы ─────────────────────────────────────────────────── */
 
 :root {
   --accent-primary:   #7234ff;
@@ -63,6 +63,8 @@ body {
   font-family: 'customfont', sans-serif;
   letter-spacing: -0.02em;
 }
+
+/* ─── Prose ───────────────────────────────────────────────────────────────── */
 
 .prose {
   max-width: none;
@@ -138,11 +140,18 @@ body {
 .prose tbody tr:nth-child(even) { background-color: rgba(0, 0, 0, 0.02); }
 .dark .prose tbody tr:nth-child(even) { background-color: rgba(255, 255, 255, 0.03); }
 
-.prose table th[align="left"],  .prose table td[align="left"]   { text-align: left; }
-.prose table th[align="center"],.prose table td[align="center"] { text-align: center; }
-.prose table th[align="right"], .prose table td[align="right"]  { text-align: right; }
+.prose table th[align="left"],   .prose table td[align="left"]   { text-align: left; }
+.prose table th[align="center"], .prose table td[align="center"] { text-align: center; }
+.prose table th[align="right"],  .prose table td[align="right"]  { text-align: right; }
 
-.prose .not-prose { margin-top: 1.5rem; margin-bottom: 1.5rem; }
+/* S4666: объединены оба вхождения .prose .not-prose */
+.prose .not-prose {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
 .prose .not-prose + .not-prose { margin-top: 1rem; }
 
 .prose figure { margin: 1.5rem 0; width: 100%; }
@@ -164,7 +173,18 @@ body {
 .prose details summary { cursor: pointer; font-weight: 600; padding: 0.75rem 1rem; border-radius: 0.5rem 0.5rem 0 0; user-select: none; list-style: none; display: flex; align-items: center; gap: 0.5rem; color: rgba(0, 0, 0, 0.85); }
 .dark .prose details summary { color: rgba(255, 255, 255, 0.92) !important; }
 .prose details summary::-webkit-details-marker { display: none; }
-.prose details summary::before { content: '▶'; display: inline-block; flex-shrink: 0; transition: transform 0.2s; font-size: 0.7em; opacity: 0.55; }
+
+/* S4666: объединены оба вхождения .prose details summary::before */
+.prose details summary::before {
+  content: '▶';
+  display: inline-block;
+  flex-shrink: 0;
+  font-size: 0.7em;
+  opacity: 0.55;
+  transition-property: transform !important;
+  transition-duration: 0.2s !important;
+  transition-timing-function: ease !important;
+}
 .prose details[open] summary::before { transform: rotate(90deg); }
 .prose details summary:hover { background-color: rgba(0, 0, 0, 0.05); }
 .dark .prose details summary:hover { background-color: rgba(255, 255, 255, 0.07) !important; }
@@ -178,6 +198,8 @@ body {
 .prose details > div > ul,
 .prose details > div > ol,
 .prose details > div > blockquote { padding-left: 1rem; padding-right: 1rem; }
+
+/* ─── Адаптив ─────────────────────────────────────────────────────────────── */
 
 @media (min-width: 768px) {
   .prose h1 { font-size: 2.25rem; line-height: 2.5rem; }
@@ -208,6 +230,8 @@ body {
   .prose th, .prose td { padding: 0.6rem; font-size: 0.8rem; }
 }
 
+/* ─── Скроллбар ───────────────────────────────────────────────────────────── */
+
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
@@ -216,6 +240,8 @@ body {
 .dark ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
 
 ::selection { background-color: var(--accent-primary, rgb(37 99 235)); color: rgb(255 255 255); }
+
+/* ─── Highlight.js ────────────────────────────────────────────────────────── */
 
 .hljs { display: block; overflow-x: auto; color: #abb2bf; background: transparent; }
 .hljs-comment, .hljs-quote { color: #5c6370; font-style: italic; }
@@ -246,6 +272,8 @@ html:not(.dark) .hljs-selector-pseudo, html:not(.dark) .hljs-number { color: #98
 html:not(.dark) .hljs-symbol, html:not(.dark) .hljs-bullet, html:not(.dark) .hljs-link,
 html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .hljs-title { color: #4078f2; }
 
+/* ─── KaTeX ───────────────────────────────────────────────────────────────── */
+
 .katex-block {
   display: block; overflow-x: auto; overflow-y: hidden;
   margin: 1.25rem 0; padding: 0.875rem 1.25rem;
@@ -262,28 +290,28 @@ html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .
 .katex-error { color: #e06c75; font-size: 0.85em; font-family: var(--font-mono, ui-monospace, monospace); }
 .dark .katex-error { color: #f87171; }
 
+/* ─── Глобальное отключение переходов (кроме исключений) ─────────────────── */
+
 *, *::before, *::after {
   transition-property: none !important;
   transition-duration: 0s !important;
   transition-delay: 0s !important;
 }
+
 .transition-transform, [class*="rotate-"] {
   transition-property: transform !important;
   transition-duration: 0.15s !important;
   transition-timing-function: ease !important;
 }
-.prose details summary::before {
-  transition-property: transform !important;
-  transition-duration: 0.2s !important;
-  transition-timing-function: ease !important;
-}
+
 .sophy-card {
   transition-property: transform, box-shadow !important;
   transition-duration: 0.15s !important;
   transition-timing-function: ease !important;
 }
 
+/* ─── Таблицы вне prose ───────────────────────────────────────────────────── */
+
 .prose .not-prose table, .not-prose table { width: 100% !important; min-width: max-content; }
-.prose .not-prose { width: 100%; min-width: 0; box-sizing: border-box; }
 .tb-scroll-wrap { width: 100%; min-width: 0; }
 .tb-scroll { width: 100%; min-width: 0; }
