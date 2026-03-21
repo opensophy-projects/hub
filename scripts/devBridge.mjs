@@ -13,7 +13,10 @@ const MANIFEST   = path.join(OUTPUT_DIR, 'manifest.json');
 const SITEMAP    = path.join(ROOT, 'public/sitemap.xml');
 const BASE_URL   = 'https://hub.opensophy.com';
 
-// ─── Allowed paths ────────────────────────────────────────────────────────────
+// Адреса локального хоста, которым разрешено подключение
+const LOCALHOST_IPS = ['::1', '127.0.0.1', '::ffff:127.0.0.1'];
+
+// ─── Разрешённые пути ─────────────────────────────────────────────────────────
 
 const ALLOWED_WRITE = [
   'Docs/',
@@ -40,7 +43,7 @@ function canRead(absPath) {
   return ALLOWED_READ.some(p => rel === p || rel.startsWith(p));
 }
 
-// ─── Inline generation ────────────────────────────────────────────────────────
+// ─── Загрузка утилит ──────────────────────────────────────────────────────────
 
 let _utils = null;
 
@@ -53,6 +56,8 @@ async function loadUtils() {
 function pathToFileURL(p) {
   return 'file:///' + p.replaceAll('\\', '/').replace(/^\//, '');
 }
+
+// ─── Генерация манифеста и sitemap ────────────────────────────────────────────
 
 async function runGenerate() {
   const { scanDocsDirectoryRecursive, buildDocFromPath } = await loadUtils();
@@ -81,7 +86,6 @@ async function runGenerate() {
 
   fs.writeFileSync(MANIFEST, JSON.stringify(sorted));
 
-  // Sitemap
   const today = new Date().toISOString().split('T')[0];
   const urls = sorted
     .filter(d => d.slug && d.slug !== 'welcome')
@@ -102,7 +106,7 @@ async function runGenerate() {
   };
 }
 
-// ─── Full reload helper ───────────────────────────────────────────────────────
+// ─── Отправка полной перезагрузки клиенту ────────────────────────────────────
 
 function sendFullReload(server) {
   try {
@@ -112,7 +116,7 @@ function sendFullReload(server) {
   }
 }
 
-// ─── Handlers ─────────────────────────────────────────────────────────────────
+// ─── Обработчики команд ───────────────────────────────────────────────────────
 
 async function handlePing() {
   return { pong: true, ts: Date.now() };
@@ -223,7 +227,7 @@ async function handleRenderPreview({ markdown }) {
   }
 }
 
-// ─── Dispatch ─────────────────────────────────────────────────────────────────
+// ─── Таблица маршрутизации команд ─────────────────────────────────────────────
 
 const HANDLERS = {
   ping:          handlePing,
@@ -242,7 +246,7 @@ const HANDLERS = {
 
 const MUTATING = new Set(['writeFile', 'mkdir', 'deleteFile', 'runGenerate']);
 
-// ─── Astro integration ────────────────────────────────────────────────────────
+// ─── Astro интеграция ─────────────────────────────────────────────────────────
 
 export function devBridgeIntegration() {
   return {
@@ -286,7 +290,7 @@ export function devBridgeIntegration() {
 
         wss.on('connection', (ws, req) => {
           const ip = req.socket.remoteAddress ?? '';
-          if (!['::1', '127.0.0.1', '::ffff:127.0.0.1'].includes(ip)) {
+          if (!LOCALHOST_IPS.includes(ip)) {
             logger.warn(`[hub-dev] Rejected from ${ip}`);
             ws.close(1008, 'Forbidden');
             return;
