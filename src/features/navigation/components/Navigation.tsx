@@ -436,8 +436,18 @@ function getTocItemStyle(item: TocItem, dist: number, activeId: string, isDark: 
   const isActive  = item.id === activeId && activeId !== '';
   const hasActive = activeId !== '';
 
-  const opacity = hasActive ? (isActive ? 1 : Math.max(0.32, 0.82 - dist * 0.18)) : 0.65;
-  const glowOp  = hasActive ? (isActive ? 1 : Math.max(0, 0.5 - dist * 0.16)) : 0;
+  let opacity: number;
+  let glowOp: number;
+  if (!hasActive) {
+    opacity = 0.65;
+    glowOp  = 0;
+  } else if (isActive) {
+    opacity = 1;
+    glowOp  = 1;
+  } else {
+    opacity = Math.max(0.32, 0.82 - dist * 0.18);
+    glowOp  = Math.max(0, 0.5 - dist * 0.16);
+  }
 
   let borderClr: string;
   if (isActive)        borderClr = t.accent;
@@ -484,8 +494,14 @@ const TocPanelContent: React.FC<{
       {toc.map((item, index) => {
         const dist  = Math.abs(index - activeIndex);
         const style = getTocItemStyle(item, dist, activeId, isDark, mobile);
-        const bg    = style.isActive ? (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)') : 'transparent';
-        const fw    = style.isActive ? 600 : item.level === 2 ? 500 : 400;
+        let bg: string;
+        if (!style.isActive)  bg = 'transparent';
+        else if (isDark)      bg = 'rgba(255,255,255,0.04)';
+        else                  bg = 'rgba(0,0,0,0.03)';
+        let fw: number;
+        if (style.isActive)   fw = 600;
+        else if (item.level === 2) fw = 500;
+        else                  fw = 400;
 
         return (
           <button key={item.id} onClick={() => { scrollToElement(item.id); onItemClick?.(); }}
