@@ -2,7 +2,6 @@ export interface ContactItem {
   href: string;
   title: string;
   subtitle: string;
-  /** Открывать в новой вкладке */
   external: boolean;
 }
 
@@ -13,4 +12,5 @@ export const CONTACTS: ContactItem[] = [
   { href: 'https://habr.com/ru/users/opensophy/', title: 'Habr', subtitle: 'opensophy', external: true },
   { href: 'https://www.reddit.com/user/opensophy/', title: 'Reddit', subtitle: 'opensophy', external: true },
   { href: 'https://hackernoon.com/u/opensophy', title: 'Hackernoon', subtitle: ' @opensophy', external: true },
+  { href: '', title: 'ерк', subtitle: '', external: true },
 ];
