@@ -1,11 +1,6 @@
-/**
- * Lightweight Markdown syntax highlighter for textarea overlay.
- * Returns an array of {text, class} tokens.
- */
-
 export interface MdToken {
   text: string;
-  cls: string; // CSS class name
+  cls: string;
 }
 
 const ESCAPE_MAP: Record<string, string> = {
@@ -15,28 +10,82 @@ const ESCAPE_MAP: Record<string, string> = {
 };
 
 function escHtml(s: string): string {
-  return s.replace(/[&<>]/g, c => ESCAPE_MAP[c] || c);
+  return s.replaceAll(/[&<>]/g, c => ESCAPE_MAP[c] ?? c);
 }
 
+// ─── Обработчики отдельных типов строк ───────────────────────────────────────
+
+function handleFenceLine(line: string, inFence: boolean, result: string[]): boolean {
+  if (inFence) {
+    result.push(`<span class="mh-fence">${escHtml(line)}</span>`);
+    return false; // закрываем блок
+  }
+  result.push(`<span class="mh-fence">${escHtml(line)}</span>`);
+  return true; // открываем блок
+}
+
+function tryHandleLine(line: string, result: string[]): boolean {
+  // Frontmatter-разделитель
+  if (line === '---') {
+    result.push(`<span class="mh-fm-sep">${escHtml(line)}</span>`);
+    return true;
+  }
+
+  // Блоки Hub: :::note, :::card, :::steps и т.д.
+  if (line.startsWith(':::')) {
+    result.push(`<span class="mh-block">${escHtml(line)}</span>`);
+    return true;
+  }
+
+  // Заголовки
+  const headingMatch = /^(#{1,6})\s(.*)/.exec(line);
+  if (headingMatch) {
+    result.push(
+      `<span class="mh-h mh-h${headingMatch[1].length}">` +
+      `<span class="mh-hmark">${escHtml(headingMatch[1])}</span> ` +
+      `<span class="mh-htext">${inlineHighlight(headingMatch[2])}</span></span>`
+    );
+    return true;
+  }
+
+  // Горизонтальная линия
+  if (/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())) {
+    result.push(`<span class="mh-hr">${escHtml(line)}</span>`);
+    return true;
+  }
+
+  // Цитата
+  if (line.startsWith('>')) {
+    result.push(`<span class="mh-bq">${escHtml(line)}</span>`);
+    return true;
+  }
+
+  // Элемент списка
+  if (/^(\s*)([-*+]|\d+\.)/.test(line)) {
+    result.push(`<span class="mh-li">${inlineHighlight(line)}</span>`);
+    return true;
+  }
+
+  // Ссылочная строка [key]: value или якорная ссылка
+  if (/^\[.+\]/.test(line)) {
+    result.push(`<span class="mh-block">${inlineHighlight(line)}</span>`);
+    return true;
+  }
+
+  return false;
+}
+
+// ─── Основная функция хайлайтера ──────────────────────────────────────────────
+
 export function highlightMarkdown(code: string): string {
-  const lines = code.split('\n');
+  const lines  = code.split('\n');
   const result: string[] = [];
-  let inFence = false;
-  let fenceLang = '';
+  let inFence  = false;
 
-  for (const raw of lines) {
-    let line = raw;
-
-    // Fenced code block
-    if (/^```/.test(line)) {
-      if (!inFence) {
-        inFence = true;
-        fenceLang = line.slice(3).trim();
-        result.push(`<span class="mh-fence">${escHtml(line)}</span>`);
-      } else {
-        inFence = false;
-        result.push(`<span class="mh-fence">${escHtml(line)}</span>`);
-      }
+  for (const line of lines) {
+    // Открытие/закрытие фenced-блока кода
+    if (line.startsWith('```')) {
+      inFence = handleFenceLine(line, inFence, result);
       continue;
     }
 
@@ -45,75 +94,34 @@ export function highlightMarkdown(code: string): string {
       continue;
     }
 
-    // Frontmatter
-    if (line === '---') {
-      result.push(`<span class="mh-fm-sep">${escHtml(line)}</span>`);
-      continue;
+    if (!tryHandleLine(line, result)) {
+      result.push(`<span class="mh-p">${inlineHighlight(line)}</span>`);
     }
-
-    // Custom Hub blocks  :::note, :::card, :::steps etc.
-    if (/^:::/.test(line)) {
-      result.push(`<span class="mh-block">${escHtml(line)}</span>`);
-      continue;
-    }
-
-    // Heading
-    const headingMatch = /^(#{1,6})\s(.*)/.exec(line);
-    if (headingMatch) {
-      result.push(`<span class="mh-h mh-h${headingMatch[1].length}"><span class="mh-hmark">${escHtml(headingMatch[1])}</span> <span class="mh-htext">${inlineHighlight(headingMatch[2])}</span></span>`);
-      continue;
-    }
-
-    // HR
-    if (/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())) {
-      result.push(`<span class="mh-hr">${escHtml(line)}</span>`);
-      continue;
-    }
-
-    // Blockquote
-    if (/^>/.test(line)) {
-      result.push(`<span class="mh-bq">${escHtml(line)}</span>`);
-      continue;
-    }
-
-    // List item
-    if (/^(\s*)([-*+]|\d+\.)/.test(line)) {
-      result.push(`<span class="mh-li">${inlineHighlight(line)}</span>`);
-      continue;
-    }
-
-    // [key]: value  (frontmatter inline or link ref)
-    if (/^\[.+\]/.test(line)) {
-      result.push(`<span class="mh-block">${inlineHighlight(line)}</span>`);
-      continue;
-    }
-
-    result.push(`<span class="mh-p">${inlineHighlight(line)}</span>`);
   }
 
   return result.join('\n');
 }
 
+// ─── Инлайн-хайлайтер ────────────────────────────────────────────────────────
+
 function inlineHighlight(text: string): string {
-  // Process inline patterns left-to-right, protecting already-processed spans
   let out = escHtml(text);
 
-  // Bold+italic ***text***
-  out = out.replace(/\*\*\*(.+?)\*\*\*/g, '<span class="mh-bi">***$1***</span>');
-  // Bold **text**
-  out = out.replace(/\*\*(.+?)\*\*/g, '<span class="mh-b">**$1**</span>');
-  // Italic *text*
-  out = out.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<span class="mh-i">*$1*</span>');
-  // Inline code `code`
-  out = out.replace(/`([^`]+)`/g, '<span class="mh-ic">`$1`</span>');
-  // Link [text](url)
-  out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g,
-    '<span class="mh-lbr">[</span><span class="mh-ltext">$1</span><span class="mh-lbr">]</span><span class="mh-lparen">(</span><span class="mh-lurl">$2</span><span class="mh-lparen">)</span>');
-  // ~~strikethrough~~
-  out = out.replace(/~~(.+?)~~/g, '<span class="mh-del">~~$1~~</span>');
+  out = out.replaceAll(/\*\*\*(.+?)\*\*\*/g,  '<span class="mh-bi">***$1***</span>');
+  out = out.replaceAll(/\*\*(.+?)\*\*/g,       '<span class="mh-b">**$1**</span>');
+  out = out.replaceAll(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<span class="mh-i">*$1*</span>');
+  out = out.replaceAll(/`([^`]+)`/g,            '<span class="mh-ic">`$1`</span>');
+  out = out.replaceAll(
+    /\[([^\]]+)\]\(([^)]+)\)/g,
+    '<span class="mh-lbr">[</span><span class="mh-ltext">$1</span><span class="mh-lbr">]</span>' +
+    '<span class="mh-lparen">(</span><span class="mh-lurl">$2</span><span class="mh-lparen">)</span>'
+  );
+  out = out.replaceAll(/~~(.+?)~~/g,            '<span class="mh-del">~~$1~~</span>');
 
   return out;
 }
+
+// ─── CSS-темы ─────────────────────────────────────────────────────────────────
 
 export const MD_HIGHLIGHT_CSS_DARK = `
 .mh-h1 { color: #e2e8f0; font-size: 1.1em; }
