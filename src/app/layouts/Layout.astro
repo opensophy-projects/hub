@@ -4,13 +4,35 @@ import 'katex/dist/katex.min.css';
 import { ClientRouter } from 'astro:transitions';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import ErrorBoundary from '@/shared/components/ErrorBoundary';
-
-// Dev Panel — статический import обязателен для client:only в Astro.
-// DevPanelLoader сам возвращает null в production через import.meta.env.DEV.
 import DevPanelLoader from '@/features/dev-panel/DevPanelLoader';
 
+// SEO defaults — управляется через Dev Panel → вкладка "Сайт"
+let SEO_CONFIG = {
+  siteTitle:       'Hub — Opensophy',
+  siteDescription: 'Hub проекта Opensophy.',
+  siteUrl:         'https://hub.opensophy.com',
+  siteLang:        'ru',
+  siteAuthor:      'Opensophy',
+  keywords:        'opensophy, hub, документация',
+  metaRobots:      'index, follow',
+  googleVerify:    '',
+  yandexVerify:    '',
+  ogImage:         '/og-image.png',
+  ogType:          'website',
+  ogLocale:        'ru_RU',
+  twitterCard:     'summary_large_image',
+  twitterSite:     '',
+};
+
+try {
+  const mod = await import('@/shared/data/seo');
+  if (mod?.SEO_CONFIG) SEO_CONFIG = { ...SEO_CONFIG, ...mod.SEO_CONFIG };
+} catch {
+  // seo.ts ещё не создан — используем дефолты выше
+}
+
 interface Props {
-  title: string;
+  title?: string;
   description?: string;
   image?: string;
   url?: string;
@@ -19,33 +41,40 @@ interface Props {
   date?: string;
   keywords?: string;
   robots?: string;
+  lang?: string;
 }
 
 const {
-  title,
-  description = 'Hub - Opensophy',
+  title       = SEO_CONFIG.siteTitle,
+  description = SEO_CONFIG.siteDescription,
   image,
   url = '/',
   type = 'website',
   author,
   date,
-  keywords = 'opensophy, hub, documentation',
-  robots = 'index, follow',
+  keywords = SEO_CONFIG.keywords,
+  robots   = SEO_CONFIG.metaRobots,
+  lang     = SEO_CONFIG.siteLang,
 } = Astro.props;
 
-const fullUrl  = new URL(url, 'https://hub.opensophy.com').href;
+const baseUrl  = SEO_CONFIG.siteUrl.replace(/\/$/, '');
+const fullUrl  = new URL(url, baseUrl).href;
 const imageUrl = image
-  ? new URL(image, 'https://hub.opensophy.com').href
-  : 'https://hub.opensophy.com/og-image.png';
+  ? new URL(image, baseUrl).href
+  : new URL(SEO_CONFIG.ogImage, baseUrl).href;
+
+const pageTitle = title === SEO_CONFIG.siteTitle
+  ? title
+  : `${title} — ${SEO_CONFIG.siteTitle}`;
 ---
 
 <!doctype html>
-<html lang="ru">
+<html lang={lang}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Theme init script (inline, runs before paint) -->
+    <!-- Theme init (runs before paint) -->
     <script is:inline>
       (function () {
         var theme = localStorage.getItem('theme');
@@ -63,23 +92,33 @@ const imageUrl = image
     </script>
 
     <!-- SEO -->
+    <title>{pageTitle}</title>
     <meta name="description" content={description} />
     <meta name="keywords"    content={keywords} />
     <meta name="robots"      content={robots} />
+    {SEO_CONFIG.siteAuthor && <meta name="author" content={author || SEO_CONFIG.siteAuthor} />}
+
+    <!-- Verification -->
+    {SEO_CONFIG.googleVerify && <meta name="google-site-verification" content={SEO_CONFIG.googleVerify} />}
+    {SEO_CONFIG.yandexVerify && <meta name="yandex-verification"      content={SEO_CONFIG.yandexVerify} />}
 
     <!-- Open Graph -->
     <meta property="og:title"       content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:type"        content={type} />
+    <meta property="og:type"        content={type === 'article' ? 'article' : SEO_CONFIG.ogType} />
     <meta property="og:url"         content={fullUrl} />
     <meta property="og:image"       content={imageUrl} />
+    <meta property="og:locale"      content={SEO_CONFIG.ogLocale} />
+    <meta property="og:site_name"   content={SEO_CONFIG.siteTitle} />
 
     <!-- Twitter -->
-    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:card"        content={SEO_CONFIG.twitterCard} />
     <meta name="twitter:title"       content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image"       content={imageUrl} />
+    {SEO_CONFIG.twitterSite && <meta name="twitter:site" content={SEO_CONFIG.twitterSite} />}
 
+    <!-- Article meta -->
     {type === 'article' && author && <meta name="author" content={author} />}
     {type === 'article' && date && (
       <>
@@ -101,30 +140,20 @@ const imageUrl = image
         font-style: normal;
         font-display: swap;
       }
-
       :root {
         --font-sans: system-ui, -apple-system, sans-serif;
         --font-mono: ui-monospace, monospace;
       }
-
       html {
         font-family: var(--font-sans);
         scroll-behavior: smooth;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
       }
-
       html:not(.dark) { background-color: #E8E7E3; }
       html.dark        { background-color: #0a0a0a; }
-
-      body {
-        margin: 0;
-        padding: 0;
-        overflow-x: hidden;
-      }
+      body { margin: 0; padding: 0; overflow-x: hidden; }
     </style>
-
-    <title>{title}</title>
   </head>
   <body>
     <ErrorBoundary>
@@ -133,10 +162,6 @@ const imageUrl = image
       </ThemeProvider>
     </ErrorBoundary>
 
-    <!--
-      Dev Panel — Ctrl+Shift+D
-      DevPanelLoader возвращает null в production автоматически.
-    -->
     <DevPanelLoader client:only="react" />
 
     <!-- Theme sync after SPA navigation -->
