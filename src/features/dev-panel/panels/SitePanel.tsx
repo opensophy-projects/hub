@@ -69,7 +69,7 @@ export const SEO_CONFIG = {
 // ─── Парсинг seo.ts ───────────────────────────────────────────────────────────
 
 // Лимит длины значения защищает от ReDoS при незакрытых кавычках
-const RE_SEO_FIELD = /^\s*(\w+):\s*["']([^"'\n]{0,500})["'],?\s*$/gm;
+const RE_SEO_FIELD = /^[ \t]*(\w{1,40}):[ \t]*["']([^"'\n]{0,500})["'][^\n]*$/gm;
 
 function parseSeoTs(content: string): Partial<SiteConfig> {
   const result: Record<string, string> = {};
