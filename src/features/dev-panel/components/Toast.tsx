@@ -21,7 +21,7 @@ function notify() {
 }
 
 function addToast(type: ToastType, message: string) {
-  const id = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const id = crypto.randomUUID();
   toasts = [...toasts, { id, type, message }];
   notify();
   setTimeout(() => removeToast(id), 3500);
