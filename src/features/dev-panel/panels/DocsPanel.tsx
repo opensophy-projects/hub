@@ -1,9 +1,5 @@
 /**
  * DocsPanel v7
- * - Исправлено: текст в дереве отображается (был только точки)
- * - Восстановлен: live preview через BroadcastChannel + bridge.renderPreview
- * - Возвращено: редактирование существующих N/C при клике
- * - Кнопки действий крупнее и удобнее
  */
 
 import React, {
@@ -16,15 +12,13 @@ import { Badge, ConfirmDialog } from '../components/ui';
 import { ThemeTokensContext } from '../DevPanel';
 import type { TTokens } from '../DevPanel';
 import {
-  FolderOpen, Folder, FileText, Plus, Trash2,
+  FolderOpen, Plus, Trash2,
   ChevronRight, ChevronDown, FolderPlus, FilePlus,
   Loader2, Bold, Italic, Code, Link, Hash, List,
   RefreshCw, Minus, Image, BarChart2, Table,
   Columns, AlertCircle, Calculator, Footprints, LayoutGrid, Type,
   Edit3,
 } from 'lucide-react';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface FlatEntry { type: 'file'|'dir'; path: string; name: string; depth: number; }
 interface TreeEntry extends FlatEntry {
@@ -40,8 +34,6 @@ const EMPTY_FM: FM = {
   date: new Date().toISOString().split('T')[0],
   updated:'', tags:'', icon:'', lang:'ru', robots:'index, follow',
 };
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const TRANSLIT: Record<string,string> = {
   а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'yo',ж:'zh',з:'z',и:'i',й:'y',
@@ -100,44 +92,27 @@ const serializeFM = (fm: FM, body: string): string => {
   return `---\n${lines.join('\n')}\n---\n\n${body}`;
 };
 
-// ─── Recursive rename helper ──────────────────────────────────────────────────
-// bridge has no rename — implement via listDocs + readFile + writeFile + deleteFile
-
 async function renameDir(oldPath: string, newPath: string): Promise<void> {
-  // 1. List all entries under old path
   const { entries } = await bridge.listDocs();
   const children = entries.filter(e => e.path.startsWith(oldPath + '/') || e.path === oldPath);
-
-  // 2. Create new dir
   await bridge.mkdir(newPath);
-
-  // 3. Copy all files
   const files = children.filter(e => e.type === 'file');
   for (const file of files) {
-    const relPath = file.path.slice(oldPath.length); // e.g. /subdir/file.md
+    const relPath = file.path.slice(oldPath.length);
     const { content } = await bridge.readFile(file.path);
     await bridge.writeFile(newPath + relPath, content);
   }
-
-  // 4. Delete old files (deleteFile with recursive=true for dirs)
-  // Delete files first, then the old dir
   for (const file of files) {
     await bridge.deleteFile(file.path);
   }
-
-  // Delete subdirs (they should be empty now) - deleteFile handles dirs too
   const dirs = children
     .filter(e => e.type === 'dir' && e.path !== oldPath)
-    .sort((a, b) => b.path.length - a.path.length); // deepest first
+    .sort((a, b) => b.path.length - a.path.length);
   for (const d of dirs) {
     try { await bridge.deleteFile(d.path); } catch {}
   }
-
-  // Finally delete old root dir
   try { await bridge.deleteFile(oldPath); } catch {}
 }
-
-
 
 interface BV { label: string; code: string; }
 interface BI { label: string; icon: React.ReactNode; code?: string; variants?: BV[]; }
@@ -163,8 +138,8 @@ const BG: { g: string; icon: React.ReactNode; items: BI[] }[] = [
       {label:'Простая',   code:'\n> Текст цитаты.\n'},
       {label:'Вложенная', code:'\n> Уровень 1\n>> Уровень 2\n'},
     ]},
-    { label:'HR линия',   icon:<Minus size={10}/>, code:'\n---\n' },
-    { label:'Детали',     icon:<ChevronDown size={10}/>, code:'\n<details>\n<summary>Нажмите, чтобы развернуть</summary>\n\nСкрытый контент.\n\n</details>\n' },
+    { label:'HR линия', icon:<Minus size={10}/>, code:'\n---\n' },
+    { label:'Детали', icon:<ChevronDown size={10}/>, code:'\n<details>\n<summary>Нажмите, чтобы развернуть</summary>\n\nСкрытый контент.\n\n</details>\n' },
   ]},
   { g:'Алерты', icon:<AlertCircle size={11}/>, items:[
     {label:'Note',      icon:<AlertCircle size={10}/>, code:'\n:::note\nПолезная информация.\n:::\n'},
@@ -265,20 +240,13 @@ function Modal({ onClose, children, width, t }: {
   );
 }
 
-// ─── Create / Edit modal ──────────────────────────────────────────────────────
-
 interface CC { parentPath: string; entryType: 'N'|'C'|'A'; }
 
 function EntryModal({ cfg, existing, onClose, onDone, t }: {
-  cfg: CC;
-  existing?: TreeEntry;  // if set → edit mode (rename file/dir)
-  onClose:()=>void;
-  onDone:(fp?:string)=>void;
-  t:TTokens;
+  cfg: CC; existing?: TreeEntry; onClose:()=>void; onDone:(fp?:string)=>void; t:TTokens;
 }) {
   const isEdit = !!existing;
   const p = existing?.parsed;
-
   const [title,setTitle] = useState(p?.title ?? '');
   const [slug, setSlug]  = useState(p?.slug ?? (p?.title ? slugify(p.title) : ''));
   const [icon, setIcon]  = useState(p?.icon ?? '');
@@ -290,8 +258,8 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
 
   const setT = (v:string) => { setTitle(v); if(auto) setSlug(slugify(v)); };
   const isA = cfg.entryType==='A';
-  const lbl = {N:'Nav Popover',C:'Категория',A:'Статья'};
-  const dIco = {N:'book',C:'folder',A:'file-text'};
+  const lbl: Record<string,string> = {N:'Nav Popover',C:'Категория',A:'Статья'};
+  const dIco: Record<string,string> = {N:'book',C:'folder',A:'file-text'};
 
   const doSave = async () => {
     if(!title.trim()) return;
@@ -299,10 +267,7 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
     try {
       const ic = icon.trim() || dIco[cfg.entryType];
       const nm = `[${cfg.entryType}][${ic}]${title.trim()}${slug?`{${slug}}`:''}`;
-
       if (isEdit && existing) {
-        // Rename: inform user, can't rename dirs server-side automatically
-        // But for files (.md) we can write new + delete old
         if (existing.type === 'file') {
           const parent = existing.path.split('/').slice(0,-1).join('/');
           const newPath = `${parent}/${nm}.md`;
@@ -312,12 +277,8 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
             await bridge.deleteFile(existing.path);
             toast.success('Страница переименована');
             onDone(newPath);
-          } else {
-            toast.info('Имя не изменилось');
-            onDone();
-          }
+          } else { toast.info('Имя не изменилось'); onDone(); }
         } else {
-          // Directory rename: recursive copy + delete
           const parent = existing.path.split('/').slice(0,-1).join('/');
           const newPath = `${parent}/${nm}`;
           if (newPath !== existing.path) {
@@ -325,16 +286,10 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
               await renameDir(existing.path, newPath);
               toast.success('Переименовано');
               onDone();
-            } catch(err: any) {
-              toast.error('Ошибка: ' + err.message);
-            }
-          } else {
-            toast.info('Имя не изменилось');
-            onDone();
-          }
+            } catch(err: any) { toast.error('Ошибка: ' + err.message); }
+          } else { toast.info('Имя не изменилось'); onDone(); }
         }
       } else {
-        // Create new
         if (isA) {
           const fp = `${cfg.parentPath}/${nm}.md`;
           await bridge.writeFile(fp, serializeFM({...fm,title:title.trim()},`# ${title.trim()}\n\nНачните писать здесь...\n`));
@@ -411,24 +366,19 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
   );
 }
 
-// ─── Block picker ─────────────────────────────────────────────────────────────
-
 function BlockPicker({ onInsert, t }: { onInsert:(c:string)=>void; t:TTokens }) {
   const [open,setOpen]  = useState(false);
   const [grp,setGrp]    = useState(0);
   const [sub,setSub]    = useState<BI|null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const [pos, setPos]   = useState({top:0,left:0});
-
   const MENU_W = 360;
 
   const toggle = () => {
     if(open){setOpen(false);return;}
     const r = btnRef.current?.getBoundingClientRect();
     if(!r) return;
-    // Центр кнопки, смещаем меню чтобы оно было по центру
     const idealLeft = r.left + r.width/2 - MENU_W/2;
-    // Clamp: не выходить за левый и правый края экрана с отступом 8px
     const clampedLeft = Math.max(8, Math.min(idealLeft, window.innerWidth - MENU_W - 8));
     setPos({top: r.bottom+4, left: clampedLeft});
     setOpen(true); setSub(null);
@@ -459,8 +409,7 @@ function BlockPicker({ onInsert, t }: { onInsert:(c:string)=>void; t:TTokens }) 
           padding:'3px 8px',height:22,borderRadius:5,
           border:`1px solid ${open?t.borderStrong:t.border}`,
           background:open?t.surfaceHov:'transparent',
-          color:open?t.fg:t.fgMuted,cursor:'pointer',fontSize:11,fontFamily:t.mono,
-          gap:4,
+          color:open?t.fg:t.fgMuted,cursor:'pointer',fontSize:11,fontFamily:t.mono,gap:4,
         }}
         onMouseEnter={e=>{ if(!open){(e.currentTarget as HTMLButtonElement).style.background=t.surfaceHov;(e.currentTarget as HTMLButtonElement).style.color=t.fg;} }}
         onMouseLeave={e=>{ if(!open){(e.currentTarget as HTMLButtonElement).style.background='transparent';(e.currentTarget as HTMLButtonElement).style.color=t.fgMuted;} }}
@@ -519,22 +468,20 @@ function BlockPicker({ onInsert, t }: { onInsert:(c:string)=>void; t:TTokens }) 
   );
 }
 
-// ─── Markdown Editor with live preview ────────────────────────────────────────
-
 function MarkdownEditor({ filePath, onClose, t }: { filePath:string; onClose:()=>void; t:TTokens }) {
-  const [fm,setFm]       = useState<FM>({...EMPTY_FM});
-  const [body,setBody]   = useState('');
+  const [fm,setFm]           = useState<FM>({...EMPTY_FM});
+  const [body,setBody]       = useState('');
   const [loading,setLoading] = useState(true);
   const [saving,setSaving]   = useState(false);
   const [dirty,setDirty]     = useState(false);
   const [fmOpen,setFmOpen]   = useState(false);
-  const taRef = useRef<HTMLTextAreaElement>(null);
-  const fmRef = useRef(fm); const bodyRef = useRef(body);
+  const taRef    = useRef<HTMLTextAreaElement>(null);
+  const fmRef    = useRef(fm);
+  const bodyRef  = useRef(body);
   useEffect(()=>{ fmRef.current=fm; },[fm]);
   useEffect(()=>{ bodyRef.current=body; },[body]);
 
-  // ─── Live preview via BroadcastChannel ─────────────────────────────────────
-  const bcRef = useRef<BroadcastChannel|null>(null);
+  const bcRef    = useRef<BroadcastChannel|null>(null);
   const liveTimer = useRef<ReturnType<typeof setTimeout>|null>(null);
 
   useEffect(()=>{
@@ -549,12 +496,7 @@ function MarkdownEditor({ filePath, onClose, t }: { filePath:string; onClose:()=
     liveTimer.current = setTimeout(async () => {
       try {
         const result = await bridge.renderPreview(md);
-        // Передаём также актуальный frontmatter чтобы DocContent обновил hero секцию
-        bcRef.current?.postMessage({
-          type: 'preview',
-          html: result.html ?? '',
-          fm: fmRef.current,
-        });
+        bcRef.current?.postMessage({ type: 'preview', html: result.html ?? '', fm: fmRef.current });
       } catch {}
     }, 300);
   }, []);
@@ -569,7 +511,6 @@ function MarkdownEditor({ filePath, onClose, t }: { filePath:string; onClose:()=
         const {fm:f,body:b}=parseFM(content);
         if(!f.icon){ const p=parseName(filePath.split('/').pop()??''); if(p.icon)f.icon=p.icon; }
         setFm(f); setBody(b); setDirty(false);
-        // Send initial preview
         broadcastPreview(b);
       })
       .catch(e=>toast.error(e.message))
@@ -596,11 +537,9 @@ function MarkdownEditor({ filePath, onClose, t }: { filePath:string; onClose:()=
     const s=ta.selectionStart, e2=ta.selectionEnd;
     const savedScroll=ta.scrollTop;
     const nv=body.slice(0,s)+snippet+body.slice(e2);
-    setBody(nv); setDirty(true);
-    broadcastPreview(nv);
+    setBody(nv); setDirty(true); broadcastPreview(nv);
     requestAnimationFrame(()=>{
-      ta.focus();
-      ta.scrollTop=savedScroll;
+      ta.focus(); ta.scrollTop=savedScroll;
       ta.selectionStart=ta.selectionEnd=s+snippet.length;
     });
   },[body, broadcastPreview]);
@@ -611,28 +550,22 @@ function MarkdownEditor({ filePath, onClose, t }: { filePath:string; onClose:()=
     const s=ta.selectionStart, e2=ta.selectionEnd, sel=body.slice(s,e2);
     const savedScroll=ta.scrollTop;
     const nv=body.slice(0,s)+before+sel+after+body.slice(e2);
-    setBody(nv); setDirty(true);
-    broadcastPreview(nv);
+    setBody(nv); setDirty(true); broadcastPreview(nv);
     requestAnimationFrame(()=>{
-      ta.focus();
-      ta.scrollTop=savedScroll;
+      ta.focus(); ta.scrollTop=savedScroll;
       ta.selectionStart=s+before.length;
       ta.selectionEnd=s+before.length+sel.length;
     });
   };
 
-  const handleChange = (v: string) => {
-    setBody(v); setDirty(true);
-    broadcastPreview(v);
-  };
+  const handleChange = (v: string) => { setBody(v); setDirty(true); broadcastPreview(v); };
 
   const handleTab=(e:React.KeyboardEvent<HTMLTextAreaElement>)=>{
     if(e.key!=='Tab') return; e.preventDefault();
     const ta=e.currentTarget, s=ta.selectionStart;
     const savedScroll=ta.scrollTop;
     const nv=body.slice(0,s)+'  '+body.slice(ta.selectionEnd);
-    setBody(nv); setDirty(true);
-    broadcastPreview(nv);
+    setBody(nv); setDirty(true); broadcastPreview(nv);
     requestAnimationFrame(()=>{ ta.scrollTop=savedScroll; ta.selectionStart=ta.selectionEnd=s+2; });
   };
 
@@ -648,8 +581,8 @@ function MarkdownEditor({ filePath, onClose, t }: { filePath:string; onClose:()=
       width:24,height:22,borderRadius:4,border:'none',
       background:'transparent',color:t.fgMuted,cursor:'pointer',flexShrink:0,
     }}
-      onMouseEnter={e=>{ (e.currentTarget as HTMLButtonElement).style.background=t.surfaceHov; (e.currentTarget as HTMLButtonElement).style.color=t.fg; }}
-      onMouseLeave={e=>{ (e.currentTarget as HTMLButtonElement).style.background='transparent'; (e.currentTarget as HTMLButtonElement).style.color=t.fgMuted; }}
+      onMouseEnter={e=>{ (e.currentTarget as HTMLButtonElement).style.background=t.surfaceHov;(e.currentTarget as HTMLButtonElement).style.color=t.fg; }}
+      onMouseLeave={e=>{ (e.currentTarget as HTMLButtonElement).style.background='transparent';(e.currentTarget as HTMLButtonElement).style.color=t.fgMuted; }}
     >{ico}</button>
   );
 
@@ -661,49 +594,23 @@ function MarkdownEditor({ filePath, onClose, t }: { filePath:string; onClose:()=
 
   return (
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
-
-      {/* Top bar */}
-      <div style={{
-        display:'flex',alignItems:'center',gap:6,padding:'6px 10px',
-        borderBottom:`1px solid ${t.border}`,background:t.surface,flexShrink:0,
-      }}>
-        <button onClick={onClose} style={{
-          display:'flex',alignItems:'center',gap:4,padding:'5px 9px',borderRadius:6,
-          border:`1px solid ${t.border}`,background:'transparent',color:t.fgMuted,
-          cursor:'pointer',fontSize:11,fontFamily:t.mono,flexShrink:0,
-        }}
+      <div style={{display:'flex',alignItems:'center',gap:6,padding:'6px 10px',borderBottom:`1px solid ${t.border}`,background:t.surface,flexShrink:0}}>
+        <button onClick={onClose} style={{display:'flex',alignItems:'center',gap:4,padding:'5px 9px',borderRadius:6,border:`1px solid ${t.border}`,background:'transparent',color:t.fgMuted,cursor:'pointer',fontSize:11,fontFamily:t.mono,flexShrink:0}}
           onMouseEnter={e=>(e.currentTarget as HTMLButtonElement).style.background=t.surfaceHov}
           onMouseLeave={e=>(e.currentTarget as HTMLButtonElement).style.background='transparent'}
         >← Назад</button>
-
-        <span style={{
-          flex:1,fontSize:11,color:t.fg,fontFamily:t.mono,
-          overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',
-        }}>
+        <span style={{flex:1,fontSize:11,color:t.fg,fontFamily:t.mono,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
           {fileName}{dirty&&<span style={{color:t.warning,marginLeft:5}}>●</span>}
         </span>
-
-        <button onClick={save} style={{
-          display:'flex',alignItems:'center',gap:6,padding:'5px 12px',borderRadius:6,
-          border:`1px solid ${dirty?t.borderStrong:t.border}`,
-          background:dirty?t.surfaceHov:'transparent',
-          color:dirty?t.fg:t.fgMuted,
-          cursor:'pointer',fontSize:11,fontFamily:t.mono,flexShrink:0,
-          fontWeight:dirty?600:400,
-        }}>
+        <button onClick={save} style={{display:'flex',alignItems:'center',gap:6,padding:'5px 12px',borderRadius:6,border:`1px solid ${dirty?t.borderStrong:t.border}`,background:dirty?t.surfaceHov:'transparent',color:dirty?t.fg:t.fgMuted,cursor:'pointer',fontSize:11,fontFamily:t.mono,flexShrink:0,fontWeight:dirty?600:400}}>
           {saving&&<Loader2 size={11} style={{animation:'devSpinAnim 1s linear infinite'}}/>}
           Сохранить
           <span style={{fontSize:9,color:t.fgSub,background:t.inpBg,border:`1px solid ${t.border}`,borderRadius:3,padding:'1px 4px',fontFamily:t.mono}}>Ctrl+S</span>
         </button>
       </div>
 
-      {/* Frontmatter */}
       <div style={{borderBottom:`1px solid ${t.border}`,flexShrink:0}}>
-        <button onClick={()=>setFmOpen(v=>!v)} style={{
-          width:'100%',display:'flex',alignItems:'center',gap:6,padding:'5px 10px',
-          border:'none',background:t.surface,color:t.fgSub,fontSize:10,fontWeight:600,
-          textTransform:'uppercase',letterSpacing:'0.08em',cursor:'pointer',textAlign:'left',fontFamily:t.mono,
-        }}>
+        <button onClick={()=>setFmOpen(v=>!v)} style={{width:'100%',display:'flex',alignItems:'center',gap:6,padding:'5px 10px',border:'none',background:t.surface,color:t.fgSub,fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.08em',cursor:'pointer',textAlign:'left',fontFamily:t.mono}}>
           {fmOpen?<ChevronDown size={10}/>:<ChevronRight size={10}/>}
           Frontmatter
           {fm.title&&<span style={{fontWeight:400,letterSpacing:0,textTransform:'none',marginLeft:4,color:t.fgSub}}>— {fm.title.slice(0,30)}</span>}
@@ -721,7 +628,6 @@ function MarkdownEditor({ filePath, onClose, t }: { filePath:string; onClose:()=
                   onChange={e=>{
                     const newFm = {...fm,[f.k]:e.target.value};
                     setFm(newFm); setDirty(true);
-                    // Обновляем hero секцию — шлём новый FM сразу
                     if(liveTimer.current) clearTimeout(liveTimer.current);
                     liveTimer.current = setTimeout(async () => {
                       try {
@@ -737,11 +643,7 @@ function MarkdownEditor({ filePath, onClose, t }: { filePath:string; onClose:()=
         )}
       </div>
 
-      {/* Toolbar */}
-      <div style={{
-        display:'flex',alignItems:'center',gap:1,padding:'3px 8px',
-        borderBottom:`1px solid ${t.border}`,background:t.surface,flexShrink:0,
-      }}>
+      <div style={{display:'flex',alignItems:'center',gap:1,padding:'3px 8px',borderBottom:`1px solid ${t.border}`,background:t.surface,flexShrink:0}}>
         {toolBtn(()=>handleInsert('**','**'), <Bold size={11}/>, 'Жирный')}
         {toolBtn(()=>handleInsert('_','_'),   <Italic size={11}/>, 'Курсив')}
         {toolBtn(()=>handleInsert('`','`'),   <Code size={11}/>, 'Код')}
@@ -755,7 +657,6 @@ function MarkdownEditor({ filePath, onClose, t }: { filePath:string; onClose:()=
         <span style={{fontSize:10,color:t.fgSub}}>{body.trim().split(/\s+/).filter(Boolean).length} слов</span>
       </div>
 
-      {/* Textarea */}
       <textarea
         ref={taRef}
         value={body}
@@ -777,8 +678,6 @@ function MarkdownEditor({ filePath, onClose, t }: { filePath:string; onClose:()=
   );
 }
 
-// ─── Tree Node — with drag-and-drop ──────────────────────────────────────────
-
 function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
   selectedPath, dragOverPath, setDragOverPath, t }: {
   entry:TreeEntry; onCreate:(c:CC)=>void; onDelete:(e:TreeEntry)=>void;
@@ -789,21 +688,16 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
 }) {
   const [expanded,setExpanded] = useState(entry.depth<2);
   const [hov,setHov]           = useState(false);
-  const isDir    = entry.type==='dir';
-  const isActive = entry.path===selectedPath;
+  const isDir      = entry.type==='dir';
+  const isActive   = entry.path===selectedPath;
   const isDragOver = dragOverPath===entry.path;
-  const p        = entry.parsed;
-
+  const p          = entry.parsed;
   const typeDot: Record<string,string> = { N:'#22c55e', C:'#14b8a6', A:'#f59e0b' };
 
   const actionBtn=(ico:React.ReactNode,tip:string,fn:()=>void,danger?:boolean)=>(
     <button key={tip} title={tip}
       onClick={e=>{ e.stopPropagation(); fn(); }}
-      style={{
-        width:28,height:28,borderRadius:5,border:'none',flexShrink:0,
-        display:'flex',alignItems:'center',justifyContent:'center',
-        background:t.surfaceHov,color:danger?t.danger:t.fgMuted,cursor:'pointer',
-      }}
+      style={{width:28,height:28,borderRadius:5,border:'none',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',background:t.surfaceHov,color:danger?t.danger:t.fgMuted,cursor:'pointer'}}
       onMouseEnter={e=>{ (e.currentTarget as HTMLButtonElement).style.color=danger?t.danger:t.fg; (e.currentTarget as HTMLButtonElement).style.background=danger?'rgba(239,68,68,0.1)':t.surfaceHov; }}
       onMouseLeave={e=>{ (e.currentTarget as HTMLButtonElement).style.color=danger?t.danger:t.fgMuted; (e.currentTarget as HTMLButtonElement).style.background=t.surfaceHov; }}
     >{ico}</button>
@@ -816,59 +710,36 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
         onDragStart={e=>{ e.stopPropagation(); e.dataTransfer.setData('text/plain', entry.path); e.dataTransfer.effectAllowed='move'; }}
         onDragOver={e=>{ e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect='move'; setDragOverPath(entry.path); }}
         onDragLeave={e=>{ e.stopPropagation(); setDragOverPath(null); }}
-        onDrop={e=>{
-          e.preventDefault(); e.stopPropagation();
-          setDragOverPath(null);
-          const src = e.dataTransfer.getData('text/plain');
-          if (src && src !== entry.path) onDrop(src, entry.path);
-        }}
+        onDrop={e=>{ e.preventDefault(); e.stopPropagation(); setDragOverPath(null); const src=e.dataTransfer.getData('text/plain'); if(src&&src!==entry.path) onDrop(src,entry.path); }}
         onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
         onClick={()=>{ if(isDir)setExpanded(v=>!v); else onSelect(entry.path); }}
         style={{
           display:'flex',alignItems:'center',gap:5,cursor:'grab',userSelect:'none',
           padding:`4px 8px 4px ${8+entry.depth*14}px`,
           borderRadius:6,
-          background: isDragOver
-            ? (isDir ? 'rgba(20,184,166,0.15)' : 'rgba(245,158,11,0.12)')
-            : isActive ? t.surfaceHov : hov ? t.surfaceHov : 'transparent',
-          outline: isDragOver ? `1.5px dashed ${isDir ? '#14b8a6' : '#f59e0b'}` : 'none',
-          outlineOffset: -1,
-          minHeight:28,
-          transition:'background 0.1s',
+          background: isDragOver?(isDir?'rgba(20,184,166,0.15)':'rgba(245,158,11,0.12)'):isActive?t.surfaceHov:hov?t.surfaceHov:'transparent',
+          outline: isDragOver?`1.5px dashed ${isDir?'#14b8a6':'#f59e0b'}`:'none',
+          outlineOffset:-1, minHeight:28, transition:'background 0.1s',
         }}
       >
         <span style={{width:14,height:14,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',color:t.fgSub}}>
-          {isDir ? (expanded?<ChevronDown size={11}/>:<ChevronRight size={11}/>) : null}
+          {isDir?(expanded?<ChevronDown size={11}/>:<ChevronRight size={11}/>):null}
         </span>
-
-        {p.type && (
-          <span style={{width:7,height:7,borderRadius:'50%',flexShrink:0,background:typeDot[p.type]??t.fgSub}}/>
-        )}
-
-        {p.icon && (
-          <span style={{fontSize:9,color:t.fgSub,flexShrink:0,fontFamily:t.mono,maxWidth:60,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-            {p.icon}
-          </span>
-        )}
-
-        <span style={{
-          fontSize:12,color:t.fg,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',
-          flex:1,fontWeight:p.type==='N'?600:p.type==='C'?500:400,opacity:1,
-        }}>
+        {p.type && <span style={{width:7,height:7,borderRadius:'50%',flexShrink:0,background:typeDot[p.type]??t.fgSub}}/>}
+        {p.icon && <span style={{fontSize:9,color:t.fgSub,flexShrink:0,fontFamily:t.mono,maxWidth:60,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.icon}</span>}
+        <span style={{fontSize:12,color:t.fg,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,fontWeight:p.type==='N'?600:p.type==='C'?500:400}}>
           {p.title || entry.name}
         </span>
-
         {hov && (
           <div style={{display:'flex',gap:3,flexShrink:0}} onClick={e=>e.stopPropagation()}>
             {actionBtn(<Edit3 size={13}/>, 'Редактировать', ()=>onEdit(entry))}
-            {isDir && p.type==='N' && actionBtn(<FolderPlus size={13}/>, '+ Категория', ()=>onCreate({parentPath:entry.path,entryType:'C'}))}
-            {isDir && (p.type==='N'||p.type==='C') && actionBtn(<FilePlus size={13}/>, '+ Статья', ()=>onCreate({parentPath:entry.path,entryType:'A'}))}
+            {isDir&&p.type==='N'&&actionBtn(<FolderPlus size={13}/>, '+ Категория', ()=>onCreate({parentPath:entry.path,entryType:'C'}))}
+            {isDir&&(p.type==='N'||p.type==='C')&&actionBtn(<FilePlus size={13}/>, '+ Статья', ()=>onCreate({parentPath:entry.path,entryType:'A'}))}
             {actionBtn(<Trash2 size={13}/>, 'Удалить', ()=>onDelete(entry), true)}
           </div>
         )}
       </div>
-
-      {isDir && expanded && entry.children.length>0 && (
+      {isDir&&expanded&&entry.children.length>0&&(
         <div style={{marginLeft:8+entry.depth*14+7,borderLeft:`1px solid ${t.border}`}}>
           {entry.children.map(c=>(
             <TreeNode key={c.path} entry={c} onCreate={onCreate} onDelete={onDelete}
@@ -882,17 +753,15 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
   );
 }
 
-// ─── DocsPanel ────────────────────────────────────────────────────────────────
-
 export default function DocsPanel() {
   const t = useContext(ThemeTokensContext);
-  const [tree,setTree]           = useState<TreeEntry[]>([]);
-  const [loading,setLoading]     = useState(true);
-  const [selected,setSelected]   = useState<string|null>(null);
-  const [modalCfg,setModal]      = useState<{cfg:CC;existing?:TreeEntry}|null>(null);
-  const [toDelete,setToDelete]   = useState<TreeEntry|null>(null);
+  const [tree,setTree]             = useState<TreeEntry[]>([]);
+  const [loading,setLoading]       = useState(true);
+  const [selected,setSelected]     = useState<string|null>(null);
+  const [modalCfg,setModal]        = useState<{cfg:CC;existing?:TreeEntry}|null>(null);
+  const [toDelete,setToDelete]     = useState<TreeEntry|null>(null);
   const [dragOverPath,setDragOver] = useState<string|null>(null);
-  const [moving,setMoving]       = useState(false);
+  const [moving,setMoving]         = useState(false);
 
   const load = useCallback(async()=>{
     setLoading(true);
@@ -929,18 +798,7 @@ export default function DocsPanel() {
     }
   },[]);
 
-  // ─── Drag-and-drop move ───────────────────────────────────────────────────
   const handleDrop = useCallback(async (srcPath: string, dstPath: string) => {
-    // Find entries
-    const findEntry = (entries: TreeEntry[], path: string): TreeEntry|null => {
-      for (const e of entries) {
-        if (e.path === path) return e;
-        const found = findEntry(e.children, path);
-        if (found) return found;
-      }
-      return null;
-    };
-
     const allEntries: TreeEntry[] = [];
     const flatten = (entries: TreeEntry[]) => entries.forEach(e => { allEntries.push(e); flatten(e.children); });
     flatten(tree);
@@ -949,15 +807,9 @@ export default function DocsPanel() {
     const dst = allEntries.find(e => e.path === dstPath);
     if (!src || !dst) return;
 
-    // Determine target directory
-    // If dst is a dir (N or C) — move into it
-    // If dst is a file (A) — move to the same parent dir as dst
     const targetDir = dst.type === 'dir' ? dst.path : dst.path.split('/').slice(0,-1).join('/');
-
-    // Don't move into itself or its children
     if (srcPath === targetDir || targetDir.startsWith(srcPath + '/')) {
-      toast.error('Нельзя переместить папку внутрь себя');
-      return;
+      toast.error('Нельзя переместить папку внутрь себя'); return;
     }
 
     const srcName = srcPath.split('/').pop()!;
@@ -996,25 +848,13 @@ export default function DocsPanel() {
 
   return (
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      {/* Toolbar */}
-      <div style={{
-        display:'flex',alignItems:'center',gap:8,padding:'7px 10px',
-        borderBottom:`1px solid ${t.border}`,flexShrink:0,background:t.surface,
-      }}>
-        <button onClick={()=>setModal({cfg:{parentPath:'Docs',entryType:'N'}})} style={{
-          display:'flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:7,
-          border:`1px solid ${t.borderStrong}`,background:t.surfaceHov,color:t.fg,
-          fontSize:11,fontWeight:500,cursor:'pointer',fontFamily:t.mono,
-        }}>
+      <div style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',borderBottom:`1px solid ${t.border}`,flexShrink:0,background:t.surface}}>
+        <button onClick={()=>setModal({cfg:{parentPath:'Docs',entryType:'N'}})} style={{display:'flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:7,border:`1px solid ${t.borderStrong}`,background:t.surfaceHov,color:t.fg,fontSize:11,fontWeight:500,cursor:'pointer',fontFamily:t.mono}}>
           <Plus size={12}/> Nav Popover
         </button>
         <div style={{flex:1}}/>
         {moving && <Loader2 size={12} style={{color:t.fgMuted,animation:'devSpinAnim 1s linear infinite'}}/>}
-        <button onClick={load} style={{
-          display:'flex',alignItems:'center',gap:4,padding:'6px 10px',borderRadius:6,
-          border:`1px solid ${t.border}`,background:'transparent',color:t.fgMuted,
-          cursor:'pointer',fontSize:11,fontFamily:t.mono,
-        }}
+        <button onClick={load} style={{display:'flex',alignItems:'center',gap:4,padding:'6px 10px',borderRadius:6,border:`1px solid ${t.border}`,background:'transparent',color:t.fgMuted,cursor:'pointer',fontSize:11,fontFamily:t.mono}}
           onMouseEnter={e=>(e.currentTarget as HTMLButtonElement).style.background=t.surfaceHov}
           onMouseLeave={e=>(e.currentTarget as HTMLButtonElement).style.background='transparent'}
         >
@@ -1022,21 +862,13 @@ export default function DocsPanel() {
         </button>
       </div>
 
-      {/* Hint */}
       <div style={{padding:'4px 12px',fontSize:9,color:t.fgSub,background:t.surface,borderBottom:`1px solid ${t.border}`}}>
         Перетащи страницу или категорию в другую папку
       </div>
 
-      {/* Tree */}
-      <div
-        style={{flex:1,overflowY:'auto',padding:'4px'}} className="adm-scroll"
+      <div style={{flex:1,overflowY:'auto',padding:'4px'}} className="adm-scroll"
         onDragOver={e=>e.preventDefault()}
-        onDrop={e=>{
-          // Drop on root = move to Docs root
-          e.preventDefault();
-          const src = e.dataTransfer.getData('text/plain');
-          if (src) handleDrop(src, 'Docs');
-        }}
+        onDrop={e=>{ e.preventDefault(); const src=e.dataTransfer.getData('text/plain'); if(src) handleDrop(src,'Docs'); }}
       >
         {loading ? (
           <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,padding:24,color:t.fgMuted}}>
@@ -1057,12 +889,7 @@ export default function DocsPanel() {
         ))}
       </div>
 
-      {/* Footer */}
-      <div style={{
-        padding:'5px 10px',borderTop:`1px solid ${t.border}`,
-        display:'flex',alignItems:'center',justifyContent:'space-between',
-        fontSize:10,color:t.fgSub,background:t.surface,flexShrink:0,
-      }}>
+      <div style={{padding:'5px 10px',borderTop:`1px solid ${t.border}`,display:'flex',alignItems:'center',justifyContent:'space-between',fontSize:10,color:t.fgSub,background:t.surface,flexShrink:0}}>
         <span>{fileCount} страниц</span>
         <span style={{fontFamily:t.mono}}>Docs/</span>
       </div>
@@ -1071,9 +898,16 @@ export default function DocsPanel() {
         <EntryModal cfg={modalCfg.cfg} existing={modalCfg.existing}
           onClose={()=>setModal(null)} onDone={handleDone} t={t}/>
       )}
+
+      {/* ↓ ИСПРАВЛЕНО: добавлен t={t} */}
       {toDelete && (
-        <ConfirmDialog message={`Удалить «${toDelete.parsed.title||toDelete.name}»?`}
-          onConfirm={confirmDelete} onCancel={()=>setToDelete(null)} danger/>
+        <ConfirmDialog
+          message={`Удалить «${toDelete.parsed.title||toDelete.name}»?`}
+          onConfirm={confirmDelete}
+          onCancel={()=>setToDelete(null)}
+          danger
+          t={t}
+        />
       )}
     </div>
   );
