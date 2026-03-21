@@ -1,9 +1,8 @@
 /**
- * DocsPanel v3
- * - Preview рендерит через тот же парсер что и сайт (preprocessMarkdownExtensions + marked)
- * - НЕТ автосохранения — сохранение только Ctrl+S или кнопка
- * - Сайт перезагружается только при сохранении
- * - Split view: редактор слева, live preview справа (обновляется по мере печати)
+ * DocsPanel v4
+ * - Preview через bridge.renderPreview() → реальный docUtils.mjs
+ * - НЕТ автосохранения — только Ctrl+S или кнопка
+ * - Режимы: MD | Split | Preview
  */
 
 import React, {
@@ -18,7 +17,7 @@ import {
   FolderOpen, Folder, FileText, Plus, Trash2,
   ChevronRight, ChevronDown, FolderPlus, FilePlus,
   Loader2, Save, Bold, Italic, Code, Link, Hash, List,
-  Eye, Columns,
+  Eye, Columns, RefreshCw,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -45,10 +44,12 @@ const TRANSLIT: Record<string,string> = {
   к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',
   х:'kh',ц:'ts',ч:'ch',ш:'sh',щ:'shch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya',
 };
+
 function slugify(s: string) {
   return s.toLowerCase().replace(/[а-яё]/g,c=>TRANSLIT[c]??c)
     .replace(/[^\w\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
 }
+
 function parseName(name: string) {
   name = name.replace(/\.md$/, '');
   const tm = name.match(/^\[([NCA])\]/);
@@ -60,6 +61,7 @@ function parseName(name: string) {
   const sm = ai.match(/^(.+?)\{([^}]+)\}$/);
   return { type, icon, title: sm?sm[1].trim():ai.trim(), slug: sm?sm[2].trim():null };
 }
+
 function buildTree(flat: FlatEntry[]): TreeEntry[] {
   const m = new Map<string,TreeEntry>();
   const tree: TreeEntry[] = [];
@@ -71,6 +73,7 @@ function buildTree(flat: FlatEntry[]): TreeEntry[] {
   });
   return tree;
 }
+
 function parseFM(raw: string): { fm: FM; body: string } {
   if (!raw.startsWith('---\n')) return { fm:{...EMPTY_FM}, body:raw };
   const end = raw.indexOf('\n---\n', 4);
@@ -84,6 +87,7 @@ function parseFM(raw: string): { fm: FM; body: string } {
   });
   return { fm, body: raw.slice(end+5) };
 }
+
 function serializeFM(fm: FM, body: string): string {
   const lines: string[] = [];
   for (const [k,v] of Object.entries(fm) as [keyof FM,string][]) {
@@ -93,11 +97,6 @@ function serializeFM(fm: FM, body: string): string {
   }
   return `---\n${lines.join('\n')}\n---\n\n${body}`;
 }
-
-// ─── Markdown renderer with custom blocks ─────────────────────────────────────
-// Реализуем те же кастомные блоки что и в docUtils.mjs но на клиенте
-
-// Preview is rendered server-side via bridge.renderPreview() → docUtils.mjs
 
 // ─── Create Modal ─────────────────────────────────────────────────────────────
 
@@ -287,8 +286,8 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
   const [saving, setSaving]   = useState(false);
   const [dirty, setDirty]     = useState(false);
   const [fmOpen, setFmOpen]   = useState(false);
-  const [viewMode, setMode]       = useState<ViewMode>('split');
-  const [previewHtml, setPreviewHtml]     = useState('');
+  const [viewMode, setMode]   = useState<ViewMode>('split');
+  const [previewHtml, setPreviewHtml]       = useState('');
   const [previewLoading, setPreviewLoading] = useState(false);
   const previewDebounce = useRef<ReturnType<typeof setTimeout>|null>(null);
   const taRef   = useRef<HTMLTextAreaElement>(null);
@@ -304,15 +303,13 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
       .filter(Boolean).join('/');
   }, [filePath]);
 
-
+  // Load file
   useEffect(() => {
     bridge.readFile(filePath)
       .then(({content}) => {
         const {fm:f, body:b} = parseFM(content);
-        // If frontmatter has no icon, inherit it from the filename [icon] prefix
         if (!f.icon) {
-          const fileNameOnly = filePath.split('/').pop() ?? '';
-          const parsed = parseName(fileNameOnly);
+          const parsed = parseName(filePath.split('/').pop() ?? '');
           if (parsed.icon) f.icon = parsed.icon;
         }
         setFm(f); setBody(b); setDirty(false);
@@ -321,34 +318,33 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
       .finally(() => setLoading(false));
   }, [filePath]);
 
-  // Debounced server-side preview — fires 600ms after user stops typing
+  // Debounced server-side preview
   useEffect(() => {
-    if (viewMode === 'editor') return; // no need to render if not visible
+    if (viewMode === 'editor') return;
     if (previewDebounce.current) clearTimeout(previewDebounce.current);
     previewDebounce.current = setTimeout(async () => {
       setPreviewLoading(true);
       try {
-        const { html } = await bridge.renderPreview(body);
-        setPreviewHtml(html);
+        const result = await bridge.renderPreview(body);
+        setPreviewHtml(result.html ?? '');
       } catch {
-        // bridge unavailable — keep last html
+        // keep last html on error
       } finally {
         setPreviewLoading(false);
       }
-    }, 600);
+    }, 700);
     return () => { if (previewDebounce.current) clearTimeout(previewDebounce.current); };
   }, [body, viewMode]);
 
-  // Cleanup on unmount
   useEffect(() => () => { if (previewDebounce.current) clearTimeout(previewDebounce.current); }, []);
 
-  // SAVE — Ctrl+S or button
+  // Save
   const save = useCallback(async () => {
     setSaving(true);
     try {
       await bridge.writeFile(filePath, serializeFM(fmRef.current, bodyRef.current));
       setDirty(false);
-      toast.success('Сохранено и опубликовано');
+      toast.success('Сохранено');
     } catch (e: any) { toast.error(e.message); }
     finally { setSaving(false); }
   }, [filePath]);
@@ -389,6 +385,20 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
     </div>
   );
 
+  // Build srcDoc as a plain string — no template literals with embedded expressions
+  const iframeSrc = [
+    '<!DOCTYPE html><html><head>',
+    '<meta charset="utf-8"/>',
+    '<base href="/" target="_blank"/>',
+    '<link rel="stylesheet" href="/styles/global.css"/>',
+    '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"/>',
+    '<style>html,body{margin:0;padding:0;background:transparent}',
+    'body{padding:16px 20px;box-sizing:border-box;font-family:system-ui,sans-serif}</style>',
+    '</head><body class="dark"><article class="prose">',
+    previewHtml,
+    '</article></body></html>',
+  ].join('');
+
   return (
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
       {/* Toolbar */}
@@ -402,8 +412,10 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
           {fileName}{dirty&&<span style={{color:T.warning,marginLeft:4}}>●</span>}
         </span>
         {(['editor','split','preview'] as ViewMode[]).map(mode=>{
-          const icons:Record<ViewMode,React.ReactNode> = {editor:<FileText size={10}/>,split:<Columns size={10}/>,preview:<Eye size={10}/>};
-          const lbls:Record<ViewMode,string>  = {editor:'MD',split:'Split',preview:'Preview'};
+          const icons:Record<ViewMode,React.ReactNode> = {
+            editor:<FileText size={10}/>,split:<Columns size={10}/>,preview:<Eye size={10}/>
+          };
+          const lbls:Record<ViewMode,string> = {editor:'MD',split:'Split',preview:'Preview'};
           const active = viewMode===mode;
           return (
             <button key={mode} onClick={()=>setMode(mode)}
@@ -415,6 +427,12 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
             </button>
           );
         })}
+        <button onClick={()=>window.open(`/${previewSlug}`,'_blank')}
+          style={{display:'flex',alignItems:'center',gap:3,padding:'3px 6px',borderRadius:4,
+            border:`1px solid ${T.border}`,background:'transparent',
+            color:T.fgMuted,fontSize:9,cursor:'pointer',fontFamily:T.mono}}>
+          <Eye size={10}/> Сайт
+        </button>
         <Btn
           icon={saving?<Loader2 size={11} style={{animation:'devSpinAnim 1s linear infinite'}}/>:<Save size={11}/>}
           variant={dirty?'accent':'default'} size="sm" loading={saving} onClick={save}>
@@ -493,39 +511,17 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
               {previewLoading&&<Loader2 size={9} style={{color:T.fgSub,animation:'devSpinAnim 1s linear infinite'}}/>}
             </div>
             <iframe
-              srcDoc={`<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8"/>
-<base href="/" target="_blank"/>
-<link rel="stylesheet" href="/styles/global.css"/>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"/>
-<style>
-  html,body{margin:0;padding:0;background:transparent}
-  body{padding:16px 20px;box-sizing:border-box;font-family:system-ui,sans-serif}
-</style>
-</head>
-<body class="dark">
-<article class="prose">
-${previewHtml}
-</article>
-<script>
-  /* Re-run any chart/custom component init if needed */
-  document.dispatchEvent(new Event('preview-ready'));
-<\/script>
-</body>
-</html>`}
+              srcDoc={iframeSrc}
               style={{flex:1,border:'none',background:'transparent',width:'100%',height:'100%'}}
               title="preview"
             />
           </div>
         )}
-
       </div>
 
       <StatusBar
         left={`${body.trim().split(/\s+/).filter(Boolean).length} слов`}
-        right={saving ? '⟳ сохраняется...' : dirty ? '● Ctrl+S для сохранения' : '✓ Сохранено'}
+        right={saving ? '⟳ сохраняется...' : dirty ? '● Ctrl+S' : '✓ Сохранено'}
       />
     </div>
   );
