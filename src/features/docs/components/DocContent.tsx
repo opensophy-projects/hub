@@ -155,23 +155,24 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
     return () => observer.disconnect();
   }, [isDesktop]);
 
-  const htmlContent  = useMemo(() => doc.content || '', [doc.content]);
-  const contentNodes = useMemo(() => parseHtmlToReact(htmlContent), [htmlContent]);
-  const readTime     = useMemo(() => estimateReadTime(doc.content || htmlContent), [doc.content, htmlContent]);
-  const tableCtx     = useMemo(() => ({ onTableClick: (html: string) => setFullscreenTableHtml(html), isDark }), [isDark]);
+  const [liveHtml, setLiveHtml] = useState<string | null>(null);
 
   // ─── Dev live preview (BroadcastChannel) ─────────────────────────────────
-  // Dev панель отправляет готовый HTML → подменяем контент без перезагрузки
+  // Получаем HTML от dev панели → парсим через parseHtmlToReact → React re-render
   useEffect(() => {
     if (typeof BroadcastChannel === 'undefined') return;
     const ch = new BroadcastChannel('hub-dev-preview');
     ch.onmessage = (e) => {
       if (e.data?.type !== 'preview') return;
-      const article = document.querySelector('[data-article-content]');
-      if (article) article.innerHTML = e.data.html;
+      setLiveHtml(e.data.html ?? null);
     };
     return () => ch.close();
   }, []);
+
+  const htmlContent  = liveHtml ?? doc.content ?? '';
+  const contentNodes = useMemo(() => parseHtmlToReact(htmlContent), [htmlContent]);
+  const readTime     = useMemo(() => estimateReadTime(doc.content || ''), [doc.content]);
+  const tableCtx     = useMemo(() => ({ onTableClick: (html: string) => setFullscreenTableHtml(html), isDark }), [isDark]);
 
   return (
     <div style={{ minHeight: '100vh' }}>
