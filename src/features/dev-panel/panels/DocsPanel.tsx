@@ -258,7 +258,7 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
 
   const setT = (v:string) => { setTitle(v); if(auto) setSlug(slugify(v)); };
   const isA = cfg.entryType==='A';
-  const lbl: Record<string,string> = {N:'Nav Popover',C:'Категория',A:'Статья'};
+  const lbl: Record<string,string> = {N:'Секция',C:'Категория',A:'Страница'};
   const dIco: Record<string,string> = {N:'book',C:'folder',A:'file-text'};
 
   const doSave = async () => {
@@ -293,7 +293,7 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
         if (isA) {
           const fp = `${cfg.parentPath}/${nm}.md`;
           await bridge.writeFile(fp, serializeFM({...fm,title:title.trim()},`# ${title.trim()}\n\nНачните писать здесь...\n`));
-          toast.success('Статья создана'); onDone(fp);
+          toast.success('Страница создана'); onDone(fp);
         } else {
           await bridge.mkdir(`${cfg.parentPath}/${nm}`);
           toast.success('Создано'); onDone();
@@ -739,7 +739,7 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
           <div style={{display:'flex',gap:3,flexShrink:0}} onClick={e=>e.stopPropagation()}>
             {actionBtn(<Edit3 size={13}/>, 'Редактировать', ()=>onEdit(entry))}
             {isDir&&p.type==='N'&&actionBtn(<FolderPlus size={13}/>, '+ Категория', ()=>onCreate({parentPath:entry.path,entryType:'C'}))}
-            {isDir&&(p.type==='N'||p.type==='C')&&actionBtn(<FilePlus size={13}/>, '+ Статья', ()=>onCreate({parentPath:entry.path,entryType:'A'}))}
+            {isDir&&(p.type==='N'||p.type==='C')&&actionBtn(<FilePlus size={13}/>, '+ Страница', ()=>onCreate({parentPath:entry.path,entryType:'A'}))}
             {actionBtn(<Trash2 size={13}/>, 'Удалить', ()=>onDelete(entry), true)}
           </div>
         )}
@@ -855,7 +855,7 @@ export default function DocsPanel() {
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
       <div style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',borderBottom:`1px solid ${t.border}`,flexShrink:0,background:t.surface}}>
         <button onClick={()=>setModal({cfg:{parentPath:'Docs',entryType:'N'}})} style={{display:'flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:7,border:`1px solid ${t.borderStrong}`,background:t.surfaceHov,color:t.fg,fontSize:11,fontWeight:500,cursor:'pointer',fontFamily:t.mono}}>
-          <Plus size={12}/> Nav Popover
+          <Plus size={12}/> Секция
         </button>
         <div style={{flex:1}}/>
         {moving && <Loader2 size={12} style={{color:t.fgMuted,animation:'devSpinAnim 1s linear infinite'}}/>}
@@ -883,7 +883,7 @@ export default function DocsPanel() {
         ) : tree.length===0 ? (
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8,padding:28,color:t.fgMuted,textAlign:'center'}}>
             <FolderOpen size={28} style={{opacity:0.3}}/>
-            <div style={{fontSize:12}}>Docs/ пуста. Создай Nav Popover</div>
+            <div style={{fontSize:12}}>Docs/ пуста. Создай Секция</div>
           </div>
         ) : tree.map(e=>(
           <TreeNode key={e.path} entry={e} onCreate={cfg=>setModal({cfg})}
