@@ -331,7 +331,9 @@ const PortalMenu: React.FC<{
       if (!ref.current?.contains(e.target as Node)) onClose();
     };
     const onScroll = (e: Event) => {
-      if (ref.current?.contains(e.target as Node)) return;
+      // Скролл внутри самого меню (список языков) не закрывает его
+      const path = e.composedPath();
+      if (ref.current && path.includes(ref.current)) return;
       onClose();
     };
     document.addEventListener('mousedown', onMouse, true);
