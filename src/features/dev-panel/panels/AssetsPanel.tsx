@@ -243,7 +243,6 @@ export default function AssetsPanel() {
           <div style={{ fontSize: 10, color: t.fgSub, marginBottom: 8, fontFamily: t.mono }}>
             Загружено в этой сессии ({assets.length}):
           </div>
-          {/* S6479: используем filename как ключ вместо индекса массива */}
           {assets.map(a => <AssetItem key={a.filename} asset={a} t={t}/>)}
         </div>
       )}
