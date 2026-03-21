@@ -54,7 +54,6 @@ function DropZone({ label, accept, onFiles, loading, hint, t }: Readonly<{
 
   return (
     <div>
-      {/* S6848 + S1082: нативный button вместо div с onClick */}
       <button
         type="button"
         onDragOver={e => { e.preventDefault(); setDragOver(true); }}
