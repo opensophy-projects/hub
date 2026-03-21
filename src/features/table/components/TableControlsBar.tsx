@@ -39,6 +39,8 @@ function tk(isDark: boolean) {
     dangerClr: '#f87171',
     greenBg:   'rgba(34,197,94,0.12)',
     greenSub:  'rgba(34,197,94,0.7)',
+    copiedBg:  'rgba(34,197,94,0.16)',
+    copiedBdr: 'rgba(34,197,94,0.4)',
   } : {
     barBg:     '#d8d7d3',
     border:    'rgba(0,0,0,0.09)',
@@ -62,6 +64,8 @@ function tk(isDark: boolean) {
     dangerClr: '#dc2626',
     greenBg:   'rgba(34,197,94,0.1)',
     greenSub:  'rgba(34,197,94,0.7)',
+    copiedBg:  'rgba(34,197,94,0.14)',
+    copiedBdr: 'rgba(34,197,94,0.5)',
   };
 }
 
@@ -108,13 +112,12 @@ const Pill: React.FC<{
   active?: boolean; danger?: boolean;
 }> = ({ onClick, title, label, icon, isDark, active, danger }) => {
   const t = tk(isDark);
-  const bg    = active ? t.btnActBg  : t.btnBg;
-  const bdr   = active ? t.btnActBdr : t.btnBdr;
-  // Вынесено из вложенного тернарника: danger → active → default
+  const bg  = active ? t.btnActBg  : t.btnBg;
+  const bdr = active ? t.btnActBdr : t.btnBdr;
   let color: string;
-  if (danger)       color = t.dangerClr;
-  else if (active)  color = t.btnActClr;
-  else              color = t.btnClr;
+  if (danger)      color = t.dangerClr;
+  else if (active) color = t.btnActClr;
+  else             color = t.btnClr;
 
   return (
     <button onClick={onClick} title={title} style={{
@@ -157,13 +160,9 @@ const CopyButton: React.FC<{ isDark: boolean; tableHtml: string }> = ({ isDark, 
     setTimeout(() => setCopied(null), 2000);
   };
 
-  // Вынесено из вложенных тернарников
-  const bg    = isCopied ? (isDark ? 'rgba(34,197,94,0.16)' : 'rgba(34,197,94,0.14)') : t.btnBg;
-  const copiedBg  = isDark ? 'rgba(34,197,94,0.16)' : 'rgba(34,197,94,0.14)';
-  const copiedBdr = isDark ? 'rgba(34,197,94,0.4)'  : 'rgba(34,197,94,0.5)';
-  const bdr   = isCopied ? copiedBdr : t.btnBdr;
-  const bgVal = isCopied ? copiedBg  : t.btnBg;
-  const color = isCopied ? '#22c55e' : t.btnClr;
+  const bgVal = isCopied ? t.copiedBg  : t.btnBg;
+  const bdr   = isCopied ? t.copiedBdr : t.btnBdr;
+  const color = isCopied ? '#22c55e'   : t.btnClr;
 
   return (
     <>
@@ -242,14 +241,13 @@ const MobileMenu: React.FC<{
   );
 
   const mRow = (onClick: () => void, icon: React.ReactNode, label: string, sub?: string, danger?: boolean, green?: boolean) => {
-    // Вынесено из вложенных тернарников
     let rowColor: string;
-    if (green)        rowColor = '#22c55e';
-    else if (danger)  rowColor = t.dangerClr;
-    else              rowColor = t.menuClr;
+    if (green)       rowColor = '#22c55e';
+    else if (danger) rowColor = t.dangerClr;
+    else             rowColor = t.menuClr;
 
-    const rowBg       = green ? t.greenBg : 'transparent';
-    const rowBgHover  = green ? t.greenBg : t.menuHov;
+    const rowBg      = green ? t.greenBg : 'transparent';
+    const rowBgHover = green ? t.greenBg : t.menuHov;
 
     return (
       <button onClick={onClick} style={{
