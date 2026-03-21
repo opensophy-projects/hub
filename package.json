@@ -13,9 +13,8 @@
     "generate:sitemap": "node scripts/generateSitemap.mjs"
   },
   "dependencies": {
-    "astro": "^6.0.5",
+    "astro": "^6.0.4",
     "clsx": "^2.1.1",
-    "flatted": "^3.4.2",
     "framer-motion": "^12.24.7",
     "highlight.js": "^11.11.1",
     "isomorphic-dompurify": "^2.16.0",
@@ -46,8 +45,8 @@
   },
   "overrides": {
     "esbuild": "^0.25.0",
-    "h3": ">=1.15.9",
-    "flatted": ">=3.4.2",
+    "h3": "1.15.9",
+    "flatted": "3.4.2",
     "devalue": ">=5.6.3",
     "diff": ">=8.0.3",
     "svgo": ">=4.0.1",
