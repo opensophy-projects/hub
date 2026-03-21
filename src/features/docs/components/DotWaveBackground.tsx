@@ -129,7 +129,10 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
       if (!program) return null;
 
       const positions = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
-      const buf = ctx.createBuffer()!;
+
+      const buf = ctx.createBuffer();
+      if (!buf) return null;
+
       ctx.bindBuffer(ctx.ARRAY_BUFFER, buf);
       ctx.bufferData(ctx.ARRAY_BUFFER, positions, ctx.STATIC_DRAW);
 
@@ -155,7 +158,7 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
 
     const resize = () => {
       if (!gl) return;
-      const dpr = window.devicePixelRatio || 1;
+      const dpr     = globalThis.devicePixelRatio || 1;
       canvas.width  = canvas.offsetWidth  * dpr;
       canvas.height = canvas.offsetHeight * dpr;
       gl.viewport(0, 0, canvas.width, canvas.height);
@@ -171,8 +174,8 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
       if (!gl || !gpu) return;
 
       const elapsed = performance.now() - startTime - totalPausedRef.current;
-      const t = (elapsed / 1000) * 0.5;
-      const preset = COLOR_PRESETS[themeRef.current ? 'dark' : 'light'];
+      const t       = (elapsed / 1000) * 0.5;
+      const preset  = COLOR_PRESETS[themeRef.current ? 'dark' : 'light'];
 
       gl.useProgram(gpu.program);
       gl.uniform1f(gpu.uTime, t);
@@ -182,12 +185,12 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
 
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-      // Transparent clear — solid background comes from parent div (heroBg color)
+      // Прозрачный фон — сплошной цвет задаётся родительским div (heroBg)
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
-      // Show canvas only after first frame is drawn — no mount flash
+      // Показываем canvas только после первого кадра — чтобы не было вспышки при маунте
       if (firstFrame) {
         canvas.style.opacity = '1';
         firstFrame = false;
@@ -232,11 +235,8 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
     canvas.addEventListener('webglcontextrestored', onContextRestored);
 
     return () => {
-      // KEY FIX: hide canvas BEFORE any GL cleanup.
-      // When React unmounts this component during navigation, the canvas element
-      // is still visible in the DOM for a frame while the new page loads.
-      // gl.deleteProgram / losing the GL context causes the canvas to flash white.
-      // Setting opacity to 0 first ensures the parent's heroBg color shows instead.
+      // Скрываем canvas ДО удаления GL ресурсов — иначе при анмаунте во время навигации
+      // будет белая вспышка пока новая страница ещё не загрузилась
       canvas.style.opacity = '0';
 
       cancelAnimationFrame(rafRef.current);
@@ -263,8 +263,7 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
         display: 'block',
         pointerEvents: 'none',
         contain: 'strict',
-        // Start invisible — shown after first GL frame (render loop sets opacity:1).
-        // Also hidden on unmount cleanup to prevent white flash during navigation.
+        // Скрыт до первого GL кадра и при анмаунте — предотвращает вспышку
         opacity: 0,
       }}
     />
