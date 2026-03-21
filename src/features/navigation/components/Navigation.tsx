@@ -325,7 +325,7 @@ function useDesktopPanel() {
     try {
       const s = sessionStorage.getItem('hub:activePanel');
       if (s === 'nav' || s === 'toc' || s === 'contacts') return s as PanelType;
-    } catch (_e) { /* noop */ }
+    } catch { /* noop */ } // NOSONAR
     return null;
   });
 
@@ -333,22 +333,22 @@ function useDesktopPanel() {
     try {
       const w = Number(sessionStorage.getItem('hub:panelWidth'));
       if (w >= PANEL_MIN && w <= PANEL_MAX) return w;
-    } catch (_e) { /* noop */ }
+    } catch { /* noop */ } // NOSONAR
     return PANEL_DEFAULT;
   });
 
   useEffect(() => {
-    try { sessionStorage.setItem('hub:activePanel', activePanel ?? ''); } catch (_e) { /* noop */ }
+    try { sessionStorage.setItem('hub:activePanel', activePanel ?? ''); } catch { /* noop */ } // NOSONAR
   }, [activePanel]);
 
   useEffect(() => {
-    try { sessionStorage.setItem('hub:panelWidth', String(panelWidth)); } catch (_e) { /* noop */ }
+    try { sessionStorage.setItem('hub:panelWidth', String(panelWidth)); } catch { /* noop */ } // NOSONAR
   }, [panelWidth]);
 
   const togglePanel = useCallback((panel: PanelType) => {
     setActivePanel(prev => {
       const next = prev === panel ? null : panel;
-      try { sessionStorage.setItem('hub:activePanel', next ?? ''); } catch (_e) { /* noop */ }
+      try { sessionStorage.setItem('hub:activePanel', next ?? ''); } catch { /* noop */ } // NOSONAR
       return next;
     });
   }, []);
@@ -736,7 +736,7 @@ const DesktopNav: React.FC<{
       const pw       = (w >= PANEL_MIN && w <= PANEL_MAX) ? w : PANEL_DEFAULT;
       const left     = RAIL_W + (hasPanel ? pw : 0);
       document.documentElement.style.setProperty('--nav-left', `${left}px`);
-    } catch (_e) { /* noop */ }
+    } catch { /* noop */ } // NOSONAR
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
