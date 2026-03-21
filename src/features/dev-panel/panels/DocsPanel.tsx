@@ -393,6 +393,12 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
     bridge.readFile(filePath)
       .then(({content}) => {
         const {fm:f, body:b} = parseFM(content);
+        // If frontmatter has no icon, inherit it from the filename [icon] prefix
+        if (!f.icon) {
+          const fileNameOnly = filePath.split('/').pop() ?? '';
+          const parsed = parseName(fileNameOnly);
+          if (parsed.icon) f.icon = parsed.icon;
+        }
         setFm(f); setBody(b); setDirty(false);
       })
       .catch(e => toast.error(e.message))
