@@ -8,53 +8,65 @@ import {
   buildDocFromPath,
 } from '../../../scripts/docUtils.mjs';
 
-export async function getStaticPaths() {
-  const docsDir = path.join(process.cwd(), 'Docs');
+const docsDir = path.join(process.cwd(), 'Docs');
 
+// ─── Dev mode: disable prerendering so pages are resolved on every request ────
+// This means newly created pages appear instantly without server restart.
+// In production (output: static) this file is not used — build uses getStaticPaths.
+export const prerender = import.meta.env.DEV ? false : true;
+
+// ─── Production: generate all static paths at build time ──────────────────────
+export async function getStaticPaths() {
   if (!fs.existsSync(docsDir)) {
     console.warn('Docs directory not found');
     return [];
   }
 
   const allMdFiles = scanDocsDirectoryRecursive(docsDir);
-
-  // FIX: deduplicate slugs before returning paths to Astro.
-  // When two .md files resolve to the same slug, Astro throws a cryptic build
-  // error. We warn early with both conflicting file paths and skip the duplicate.
-  const seen = new Map<string, string>(); // slug → first mdPath that claimed it
-
+  const seen = new Map<string, string>();
   const paths: Array<{ params: { slug: string }; props: { doc: any } }> = [];
 
   for (const mdPath of allMdFiles) {
-    // FIX: buildDocFromPath already calls getDocInfo internally — we no longer
-    // need a separate getDocInfo call just to read the slug.
     const doc = buildDocFromPath(mdPath, docsDir);
-
-    // welcome.md → slug '' → rendered by index.astro, skip here
     if (!doc.slug) continue;
 
     if (seen.has(doc.slug)) {
-      console.warn(
-        `[slug dedup] Duplicate slug "${doc.slug}" found:\n` +
-        `  first:  ${seen.get(doc.slug)}\n` +
-        `  second: ${mdPath}\n` +
-        `  Skipping the second file.`
-      );
+      console.warn(`[slug dedup] Duplicate slug "${doc.slug}", skipping ${mdPath}`);
       continue;
     }
 
     seen.set(doc.slug, mdPath);
-    paths.push({
-      params: { slug: doc.slug },
-      props: { doc },
-    });
+    paths.push({ params: { slug: doc.slug }, props: { doc } });
   }
 
   return paths;
 }
 
+// ─── Resolve doc for this request ─────────────────────────────────────────────
+
 const { slug } = Astro.params;
-const { doc } = Astro.props as { doc: any };
+let doc: any = null;
+
+if (import.meta.env.DEV) {
+  // Dev: scan Docs/ fresh on every request — new pages found instantly
+  if (slug && fs.existsSync(docsDir)) {
+    const allMdFiles = scanDocsDirectoryRecursive(docsDir);
+    for (const mdPath of allMdFiles) {
+      try {
+        const candidate = buildDocFromPath(mdPath, docsDir);
+        if (candidate.slug === slug) {
+          doc = candidate;
+          break;
+        }
+      } catch (e) {
+        console.warn(`[slug] Failed to build doc from ${mdPath}:`, e);
+      }
+    }
+  }
+} else {
+  // Production: doc comes from getStaticPaths props
+  doc = (Astro.props as any).doc ?? null;
+}
 
 if (!doc || !slug) {
   return Astro.redirect('/404');
