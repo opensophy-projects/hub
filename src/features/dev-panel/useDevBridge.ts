@@ -20,13 +20,13 @@ interface PendingMsg {
 // ─── Singleton connection manager ──────────────────────────────────────────────
 
 let ws: WebSocket | null = null;
-let pending   = new Map<string, PendingMsg>();
-let listeners = new Set<(s: BridgeStatus) => void>();
+let pending       = new Map<string, PendingMsg>();
+let listeners     = new Set<(s: BridgeStatus) => void>();
 let status: BridgeStatus = 'disconnected';
 let reconnectDelay = 1000;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
-let connectCalled = false;
+let connectCalled  = false;
 
 function broadcast(s: BridgeStatus) {
   status = s;
@@ -47,7 +47,7 @@ function startHeartbeat() {
 }
 
 function connect() {
-  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
+  if (ws?.readyState === WebSocket.OPEN || ws?.readyState === WebSocket.CONNECTING) return;
 
   broadcast('connecting');
 
@@ -100,7 +100,7 @@ function scheduleReconnect() {
 
 function send<T = unknown>(action: string, payload?: unknown): Promise<T> {
   return new Promise<T>((resolve, reject) => {
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
+    if (ws?.readyState !== WebSocket.OPEN) {
       reject(new Error('Not connected'));
       return;
     }
@@ -121,8 +121,12 @@ export function useDevBridge() {
 
   useEffect(() => {
     listeners.add(setBridgeStatus);
-    if (!connectCalled) { connectCalled = true; connect(); }
-    else setBridgeStatus(status);
+    if (connectCalled) {
+      setBridgeStatus(status);
+    } else {
+      connectCalled = true;
+      connect();
+    }
     return () => { listeners.delete(setBridgeStatus); };
   }, []);
 
@@ -138,7 +142,7 @@ export const bridge = {
   writeFile: (filePath: string, content: string) =>
     send<{ written: string }>('writeFile', { filePath, content }),
 
-  // Create directory without any placeholder files
+  // Создаёт директорию без placeholder-файлов
   mkdir: (dirPath: string) =>
     send<{ created: string }>('mkdir', { dirPath }),
 
