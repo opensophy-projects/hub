@@ -1,13 +1,10 @@
 /**
- * SitePanel v4
+ * SitePanel v5
  *
  * Читает/пишет:
  *   src/shared/data/seo.ts   — глобальный SEO конфиг
- *   public/robots.txt        — индексирование
+ *   public/robots.txt        — прямое редактирование текста
  *   public/llm.txt           — AI боты
- *
- * ВАЖНО: googleVerify/yandexVerify убраны — проект публичный статический,
- * ключи верификации НЕ должны попадать в исходники.
  */
 
 import React, { useState, useEffect, useCallback, useContext, useRef } from 'react';
@@ -17,55 +14,54 @@ import { ThemeTokensContext } from '../DevPanel';
 import type { TTokens } from '../DevPanel';
 import {
   Globe, Search, Bot, RefreshCw, Loader2,
-  ChevronDown, ChevronRight, Check,
+  ChevronDown, ChevronRight, Check, FileText,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface SiteConfig {
-  // Основное
   siteTitle:       string;
   siteDescription: string;
   siteUrl:         string;
   siteLang:        string;
   siteAuthor:      string;
   keywords:        string;
-  // SEO
   metaRobots:      string;
   ogImage:         string;
   ogType:          string;
   ogLocale:        string;
   twitterCard:     string;
   twitterSite:     string;
-  // robots.txt
-  robotsAllowAll:      boolean;
-  robotsDisallowPaths: string;
-  // llm.txt
-  llmEnabled:      boolean;
-  llmUsagePolicy:  string;
-  llmContact:      string;
-  llmDescription:  string;
 }
 
 const DEFAULTS: SiteConfig = {
-  siteTitle:           'Hub — Opensophy',
-  siteDescription:     'Hub проекта Opensophy — центр знаний по ИИ и кибербезопасности.',
-  siteUrl:             'https://hub.opensophy.com',
-  siteLang:            'ru',
-  siteAuthor:          'Opensophy',
-  keywords:            'opensophy, hub, документация, AI, кибербезопасность',
-  metaRobots:          'index, follow',
-  ogImage:             '/og-image.png',
-  ogType:              'website',
-  ogLocale:            'ru_RU',
-  twitterCard:         'summary_large_image',
-  twitterSite:         '',
-  robotsAllowAll:      true,
-  robotsDisallowPaths: '',
-  llmEnabled:          true,
-  llmUsagePolicy:      'allowed',
-  llmContact:          '',
-  llmDescription:      '',
+  siteTitle:       'Hub — Opensophy',
+  siteDescription: 'Hub проекта Opensophy — центр знаний по ИИ и кибербезопасности.',
+  siteUrl:         'https://hub.opensophy.com',
+  siteLang:        'ru',
+  siteAuthor:      'Opensophy',
+  keywords:        'opensophy, hub, документация, AI, кибербезопасность',
+  metaRobots:      'index, follow',
+  ogImage:         '/og-image.png',
+  ogType:          'website',
+  ogLocale:        'ru_RU',
+  twitterCard:     'summary_large_image',
+  twitterSite:     '',
+};
+
+// LLM config отдельно — проще управлять
+interface LlmConfig {
+  enabled:      boolean;
+  usagePolicy:  string;
+  contact:      string;
+  description:  string;
+}
+
+const LLM_DEFAULTS: LlmConfig = {
+  enabled:      true,
+  usagePolicy:  'allowed',
+  contact:      '',
+  description:  '',
 };
 
 const SEO_PATH    = 'src/shared/data/seo.ts';
@@ -95,33 +91,13 @@ export const SEO_CONFIG = {
 `;
 }
 
-function buildRobotsTxt(cfg: SiteConfig): string {
-  const lines: string[] = ['User-agent: *', 'Allow: /'];
-
-  if (!cfg.robotsAllowAll) {
-    cfg.robotsDisallowPaths
-      .split('\n')
-      .map(l => l.trim())
-      .filter(Boolean)
-      .forEach(p => lines.push(`Disallow: ${p}`));
-  }
-
+function buildLlmTxt(cfg: SiteConfig, llm: LlmConfig): string {
   const base = cfg.siteUrl.replace(/\/$/, '');
-  if (base) {
-    lines.push('', `Sitemap: ${base}/sitemap.xml`);
-  }
-
-  lines.push('', '# AI crawlers');
-  const aiRule = cfg.llmEnabled ? 'Allow: /' : 'Disallow: /';
-  ['GPTBot', 'Claude-Web', 'anthropic-ai', 'PerplexityBot', 'Applebot-Extended'].forEach(bot => {
-    lines.push(`User-agent: ${bot}`, aiRule);
-  });
-
-  return lines.join('\n') + '\n';
-}
-
-function buildLlmTxt(cfg: SiteConfig): string {
-  const base = cfg.siteUrl.replace(/\/$/, '');
+  const policyMap: Record<string, string> = {
+    'allowed':                  'allowed',
+    'allowed-with-attribution': 'allowed-with-attribution',
+    'disallowed':               'disallowed',
+  };
   const lines = [
     `# LLM.txt — ${cfg.siteTitle}`,
     '# Инструкции для AI-агентов и языковых моделей',
@@ -132,20 +108,14 @@ function buildLlmTxt(cfg: SiteConfig): string {
   ];
   if (cfg.siteAuthor)      lines.push(`Author: ${cfg.siteAuthor}`);
   if (cfg.siteDescription) lines.push(`Description: ${cfg.siteDescription}`);
-  const policyMap: Record<string, string> = {
-    'allowed':                  'allowed',
-    'allowed-with-attribution': 'allowed-with-attribution',
-    'disallowed':               'disallowed',
-  };
   lines.push(
-    '',
-    '## Политика использования',
-    `AI-Training: ${policyMap[cfg.llmUsagePolicy] ?? 'allowed'}`,
-    `AI-Indexing: ${cfg.llmEnabled ? 'allowed' : 'disallowed'}`,
+    '', '## Политика использования',
+    `AI-Training: ${policyMap[llm.usagePolicy] ?? 'allowed'}`,
+    `AI-Indexing: ${llm.enabled ? 'allowed' : 'disallowed'}`,
   );
-  if (cfg.llmContact)     lines.push('', '## Контакт', `Contact: ${cfg.llmContact}`);
-  if (cfg.llmDescription) lines.push('', '## Описание контента', cfg.llmDescription);
-  if (base)               lines.push('', '## Карта сайта', `Sitemap: ${base}/sitemap.xml`);
+  if (llm.contact)     lines.push('', '## Контакт', `Contact: ${llm.contact}`);
+  if (llm.description) lines.push('', '## Описание контента', llm.description);
+  if (base)            lines.push('', '## Карта сайта', `Sitemap: ${base}/sitemap.xml`);
   return lines.join('\n') + '\n';
 }
 
@@ -153,7 +123,6 @@ function buildLlmTxt(cfg: SiteConfig): string {
 
 function parseSeoTs(content: string): Partial<SiteConfig> {
   const result: Record<string, string> = {};
-  // Парсим строки вида:   key: "value",
   const re = /^\s*(\w+):\s*["']([^"'\n]*)["'],?\s*$/gm;
   let m: RegExpExecArray | null;
   while ((m = re.exec(content)) !== null) {
@@ -162,68 +131,29 @@ function parseSeoTs(content: string): Partial<SiteConfig> {
   return result as Partial<SiteConfig>;
 }
 
-function parseRobotsTxt(content: string): Pick<SiteConfig, 'robotsAllowAll' | 'robotsDisallowPaths' | 'llmEnabled'> {
-  const lines = content.split('\n').map(l => l.trim());
-
-  // Находим блок User-agent: *
-  let inMainBlock = false;
-  const disallowPaths: string[] = [];
-
-  for (const line of lines) {
-    if (line === 'User-agent: *') { inMainBlock = true; continue; }
-    // Новый User-agent блок — заканчиваем парсинг основного
-    if (line.startsWith('User-agent:') && line !== 'User-agent: *') { inMainBlock = false; continue; }
-    if (inMainBlock && line.startsWith('Disallow:')) {
-      const p = line.replace('Disallow:', '').trim();
-      if (p && p !== '/') disallowPaths.push(p);
-    }
-  }
-
-  // AI crawlers: ищем GPTBot блок
-  const gptIdx = lines.findIndex(l => l === 'User-agent: GPTBot');
-  let llmEnabled = true;
-  if (gptIdx !== -1) {
-    for (let i = gptIdx + 1; i < lines.length; i++) {
-      if (lines[i].startsWith('User-agent:')) break;
-      if (lines[i].startsWith('Allow:'))    { llmEnabled = true;  break; }
-      if (lines[i].startsWith('Disallow:')) { llmEnabled = false; break; }
-    }
-  }
-
-  return {
-    robotsAllowAll:      disallowPaths.length === 0,
-    robotsDisallowPaths: disallowPaths.join('\n'),
-    llmEnabled,
-  };
-}
-
-function parseLlmTxt(content: string): Pick<SiteConfig, 'llmUsagePolicy' | 'llmContact' | 'llmDescription'> {
-  const result: Pick<SiteConfig, 'llmUsagePolicy' | 'llmContact' | 'llmDescription'> = {
-    llmUsagePolicy: 'allowed',
-    llmContact:     '',
-    llmDescription: '',
-  };
-
+function parseLlmTxt(content: string): Partial<LlmConfig> {
+  const result: Partial<LlmConfig> = {};
   const lines = content.split('\n');
   let inDesc = false;
   const descLines: string[] = [];
-
   for (const line of lines) {
     if (line.startsWith('AI-Training:')) {
       const v = line.replace('AI-Training:', '').trim();
-      if (v === 'disallowed' || v === 'allowed-with-attribution' || v === 'allowed') {
-        result.llmUsagePolicy = v;
+      if (['disallowed', 'allowed-with-attribution', 'allowed'].includes(v)) {
+        result.usagePolicy = v;
       }
     }
+    if (line.startsWith('AI-Indexing:')) {
+      result.enabled = line.replace('AI-Indexing:', '').trim() === 'allowed';
+    }
     if (line.startsWith('Contact:')) {
-      result.llmContact = line.replace('Contact:', '').trim();
+      result.contact = line.replace('Contact:', '').trim();
     }
     if (line === '## Описание контента') { inDesc = true; continue; }
     if (inDesc && line.startsWith('##')) { inDesc = false; }
     if (inDesc && line.trim()) descLines.push(line);
   }
-
-  if (descLines.length) result.llmDescription = descLines.join('\n');
+  if (descLines.length) result.description = descLines.join('\n');
   return result;
 }
 
@@ -242,10 +172,7 @@ interface FieldProps { label: string; hint?: string; wide?: boolean; t: TTokens;
 function Field({ label, hint, wide, t, children }: FieldProps) {
   return (
     <div style={{ gridColumn: wide ? '1 / -1' : 'auto' }}>
-      <div style={{
-        fontSize: 9, fontWeight: 700, color: t.fgSub,
-        textTransform: 'uppercase' as const, letterSpacing: '0.07em', marginBottom: 4,
-      }}>
+      <div style={{ fontSize: 9, fontWeight: 700, color: t.fgSub, textTransform: 'uppercase' as const, letterSpacing: '0.07em', marginBottom: 4 }}>
         {label}
         {hint && <span style={{ fontWeight: 400, textTransform: 'none' as const, letterSpacing: 0, marginLeft: 5, opacity: 0.65 }}>{hint}</span>}
       </div>
@@ -268,33 +195,19 @@ interface ToggleProps { value: boolean; onChange: (v: boolean) => void; label: s
 function Toggle({ value, onChange, label, t }: ToggleProps) {
   return (
     <button onClick={() => onChange(!value)} style={{
-      display: 'flex', alignItems: 'center', gap: 8,
-      background: 'none', border: 'none', cursor: 'pointer',
-      color: value ? t.fg : t.fgMuted, fontSize: 11,
+      display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none',
+      cursor: 'pointer', color: value ? t.fg : t.fgMuted, fontSize: 11,
       padding: '2px 0', fontFamily: t.mono, textAlign: 'left' as const,
     }}>
-      <div style={{
-        width: 32, height: 18, borderRadius: 9,
-        position: 'relative' as const, flexShrink: 0,
-        background: value ? t.success : t.border,
-        transition: 'background 0.2s',
-      }}>
-        <div style={{
-          position: 'absolute' as const, top: 2,
-          left: value ? 14 : 2,
-          width: 14, height: 14, borderRadius: '50%',
-          background: '#fff', transition: 'left 0.2s',
-        }} />
+      <div style={{ width: 32, height: 18, borderRadius: 9, position: 'relative' as const, flexShrink: 0, background: value ? t.success : t.border, transition: 'background 0.2s' }}>
+        <div style={{ position: 'absolute' as const, top: 2, left: value ? 14 : 2, width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
       </div>
       {label}
     </button>
   );
 }
 
-interface SectionProps {
-  icon: React.ReactNode; title: string; badge?: string;
-  defaultOpen?: boolean; t: TTokens; children: React.ReactNode;
-}
+interface SectionProps { icon: React.ReactNode; title: string; badge?: string; defaultOpen?: boolean; t: TTokens; children: React.ReactNode; }
 function Section({ icon, title, badge, defaultOpen = true, t, children }: SectionProps) {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -309,13 +222,7 @@ function Section({ icon, title, badge, defaultOpen = true, t, children }: Sectio
         {open ? <ChevronDown size={10}/> : <ChevronRight size={10}/>}
         <span style={{ color: t.fgSub, display: 'flex', alignItems: 'center' }}>{icon}</span>
         <span style={{ flex: 1 }}>{title}</span>
-        {badge && (
-          <span style={{
-            fontSize: 9, padding: '1px 6px', borderRadius: 4,
-            background: t.accentSoft, color: t.fgMuted,
-            border: `1px solid ${t.border}`,
-          }}>{badge}</span>
-        )}
+        {badge && <span style={{ fontSize: 9, padding: '1px 6px', borderRadius: 4, background: t.accentSoft, color: t.fgMuted, border: `1px solid ${t.border}` }}>{badge}</span>}
       </button>
       {open && (
         <div style={{ padding: '8px 12px 12px', display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
@@ -326,45 +233,38 @@ function Section({ icon, title, badge, defaultOpen = true, t, children }: Sectio
   );
 }
 
-function Preview({ content, t }: { content: string; t: TTokens }) {
-  return (
-    <div>
-      <div style={{
-        fontSize: 9, color: t.fgSub, marginBottom: 4,
-        textTransform: 'uppercase' as const, letterSpacing: '0.07em',
-      }}>Превью</div>
-      <pre style={{
-        fontSize: 10, color: t.fgMuted, background: t.inpBg,
-        border: `1px solid ${t.border}`, borderRadius: 6,
-        padding: '6px 8px', margin: 0, fontFamily: t.mono,
-        whiteSpace: 'pre-wrap' as const, maxHeight: 180, overflowY: 'auto',
-      }}>{content}</pre>
-    </div>
-  );
-}
-
 // ─── SitePanel ────────────────────────────────────────────────────────────────
 
 export default function SitePanel() {
   const t = useContext(ThemeTokensContext);
-  const [cfg, setCfg]         = useState<SiteConfig>({ ...DEFAULTS });
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving]   = useState(false);
-  const [saved,  setSaved]    = useState(false);
-  const [dirty,  setDirty]    = useState(false);
-  const cfgRef = useRef(cfg);
+  const [cfg, setCfg]           = useState<SiteConfig>({ ...DEFAULTS });
+  const [llm, setLlm]           = useState<LlmConfig>({ ...LLM_DEFAULTS });
+  const [robotsTxt, setRobotsTxt] = useState('');  // raw robots.txt text
+  const [loading, setLoading]   = useState(true);
+  const [saving, setSaving]     = useState(false);
+  const [saved, setSaved]       = useState(false);
+  const [dirty, setDirty]       = useState(false);
+
+  const cfgRef      = useRef(cfg);
+  const llmRef      = useRef(llm);
+  const robotsRef   = useRef(robotsTxt);
   useEffect(() => { cfgRef.current = cfg; }, [cfg]);
+  useEffect(() => { llmRef.current = llm; }, [llm]);
+  useEffect(() => { robotsRef.current = robotsTxt; }, [robotsTxt]);
 
   const inp = useInpStyle(t);
 
-  const set = (key: keyof SiteConfig) =>
+  const setC = (key: keyof SiteConfig) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setCfg(p => ({ ...p, [key]: e.target.value }));
       setDirty(true);
     };
-
-  const setVal = (key: keyof SiteConfig, val: string | boolean) => {
+  const setCVal = (key: keyof SiteConfig, val: string) => {
     setCfg(p => ({ ...p, [key]: val }));
+    setDirty(true);
+  };
+  const setL = (key: keyof LlmConfig, val: string | boolean) => {
+    setLlm(p => ({ ...p, [key]: val }));
     setDirty(true);
   };
 
@@ -373,30 +273,23 @@ export default function SitePanel() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      let merged: SiteConfig = { ...DEFAULTS };
-
       // 1. seo.ts
       const { content: seoContent } = await bridge.readFile(SEO_PATH);
       if (seoContent.trim()) {
         const parsed = parseSeoTs(seoContent);
-        merged = { ...merged, ...parsed };
+        setCfg(prev => ({ ...prev, ...parsed }));
       }
 
-      // 2. robots.txt — всегда читаем и парсим заново
+      // 2. robots.txt — читаем как сырой текст, отдаём пользователю напрямую
       const { content: robotsContent } = await bridge.readFile(ROBOTS_PATH);
-      if (robotsContent.trim()) {
-        const robotsParsed = parseRobotsTxt(robotsContent);
-        merged = { ...merged, ...robotsParsed };
-      }
+      setRobotsTxt(robotsContent);
 
       // 3. llm.txt
       const { content: llmContent } = await bridge.readFile(LLM_PATH);
       if (llmContent.trim()) {
-        const llmParsed = parseLlmTxt(llmContent);
-        merged = { ...merged, ...llmParsed };
+        const parsed = parseLlmTxt(llmContent);
+        setLlm(prev => ({ ...prev, ...parsed }));
       }
-
-      setCfg(merged);
     } catch (e: any) {
       toast.error('Ошибка загрузки: ' + e.message);
     } finally {
@@ -412,10 +305,9 @@ export default function SitePanel() {
   const save = useCallback(async () => {
     setSaving(true);
     try {
-      const c = cfgRef.current;
-      await bridge.writeFile(SEO_PATH,    buildSeoTs(c));
-      await bridge.writeFile(ROBOTS_PATH, buildRobotsTxt(c));
-      await bridge.writeFile(LLM_PATH,    buildLlmTxt(c));
+      await bridge.writeFile(SEO_PATH,    buildSeoTs(cfgRef.current));
+      await bridge.writeFile(ROBOTS_PATH, robotsRef.current);
+      await bridge.writeFile(LLM_PATH,    buildLlmTxt(cfgRef.current, llmRef.current));
       setDirty(false);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
@@ -456,10 +348,9 @@ export default function SitePanel() {
       }}>
         <div style={{
           fontSize: 11, color: t.fgMuted, fontFamily: t.mono,
-          padding: '3px 8px', borderRadius: 6,
-          background: t.accentSoft, border: `1px solid ${t.border}`,
-          overflow: 'hidden', textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap' as const, maxWidth: 160,
+          padding: '3px 8px', borderRadius: 6, background: t.accentSoft,
+          border: `1px solid ${t.border}`, overflow: 'hidden',
+          textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, maxWidth: 160,
         }}>
           {domainBadge}
         </div>
@@ -470,8 +361,8 @@ export default function SitePanel() {
         <button onClick={load} style={{
           display: 'flex', alignItems: 'center', gap: 4, padding: '5px 9px',
           borderRadius: 6, border: `1px solid ${t.border}`,
-          background: 'transparent', color: t.fgMuted,
-          cursor: 'pointer', fontSize: 11, fontFamily: t.mono,
+          background: 'transparent', color: t.fgMuted, cursor: 'pointer',
+          fontSize: 11, fontFamily: t.mono,
         }}
           onMouseEnter={e => (e.currentTarget.style.background = t.surfaceHov)}
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
@@ -489,15 +380,12 @@ export default function SitePanel() {
           {saving && <Loader2 size={10} style={{ animation: 'devSpinAnim 1s linear infinite' }}/>}
           {saved ? <><Check size={10}/> Сохранено</> : 'Сохранить'}
           {!saved && !saving && (
-            <span style={{
-              fontSize: 9, color: t.fgSub, background: t.inpBg,
-              border: `1px solid ${t.border}`, borderRadius: 3, padding: '1px 4px',
-            }}>Ctrl+S</span>
+            <span style={{ fontSize: 9, color: t.fgSub, background: t.inpBg, border: `1px solid ${t.border}`, borderRadius: 3, padding: '1px 4px' }}>Ctrl+S</span>
           )}
         </button>
       </div>
 
-      {/* Scrollable content */}
+      {/* Content */}
       <div style={{ flex: 1, overflowY: 'auto' }} className="adm-scroll">
 
         {/* ── Основное ── */}
@@ -505,39 +393,32 @@ export default function SitePanel() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
 
             <Field label="Домен / URL сайта" hint="https://example.com" wide t={t}>
-              <input value={cfg.siteUrl} onChange={set('siteUrl')}
-                placeholder="https://hub.opensophy.com" style={inp}/>
+              <input value={cfg.siteUrl} onChange={setC('siteUrl')} placeholder="https://hub.opensophy.com" style={inp}/>
             </Field>
 
             <Field label="Название сайта" wide t={t}>
-              <input value={cfg.siteTitle} onChange={set('siteTitle')}
-                placeholder="Hub — Opensophy" style={inp}/>
+              <input value={cfg.siteTitle} onChange={setC('siteTitle')} placeholder="Hub — Opensophy" style={inp}/>
             </Field>
 
             <Field label="Описание" hint="до 160 символов" wide t={t}>
-              <textarea value={cfg.siteDescription} onChange={set('siteDescription')}
+              <textarea value={cfg.siteDescription} onChange={setC('siteDescription')}
                 placeholder="Краткое описание сайта..." rows={3}
                 style={{ ...inp, resize: 'vertical' as const, lineHeight: 1.5 }}/>
-              <div style={{
-                fontSize: 9, marginTop: 2,
-                color: cfg.siteDescription.length > 160 ? t.danger : t.fgSub,
-              }}>
+              <div style={{ fontSize: 9, marginTop: 2, color: cfg.siteDescription.length > 160 ? t.danger : t.fgSub }}>
                 {cfg.siteDescription.length} / 160
               </div>
             </Field>
 
             <Field label="Ключевые слова" hint="через запятую" wide t={t}>
-              <input value={cfg.keywords} onChange={set('keywords')}
-                placeholder="opensophy, hub, AI" style={inp}/>
+              <input value={cfg.keywords} onChange={setC('keywords')} placeholder="opensophy, hub, AI" style={inp}/>
             </Field>
 
             <Field label="Автор" t={t}>
-              <input value={cfg.siteAuthor} onChange={set('siteAuthor')}
-                placeholder="Opensophy" style={inp}/>
+              <input value={cfg.siteAuthor} onChange={setC('siteAuthor')} placeholder="Opensophy" style={inp}/>
             </Field>
 
             <Field label="Язык" t={t}>
-              <Sel value={cfg.siteLang} onChange={v => setVal('siteLang', v)} t={t} options={[
+              <Sel value={cfg.siteLang} onChange={v => setCVal('siteLang', v)} t={t} options={[
                 { value: 'ru', label: 'ru — Русский' },
                 { value: 'en', label: 'en — English' },
                 { value: 'de', label: 'de — Deutsch' },
@@ -555,7 +436,7 @@ export default function SitePanel() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
 
             <Field label="Meta Robots" wide t={t}>
-              <Sel value={cfg.metaRobots} onChange={v => setVal('metaRobots', v)} t={t} options={[
+              <Sel value={cfg.metaRobots} onChange={v => setCVal('metaRobots', v)} t={t} options={[
                 { value: 'index, follow',     label: '✅ index, follow (по умолчанию)' },
                 { value: 'noindex, follow',   label: '🚫 noindex, follow' },
                 { value: 'index, nofollow',   label: 'index, nofollow' },
@@ -564,83 +445,96 @@ export default function SitePanel() {
             </Field>
 
             <Field label="OG Image" hint="путь к картинке" wide t={t}>
-              <input value={cfg.ogImage} onChange={set('ogImage')}
-                placeholder="/og-image.png" style={inp}/>
+              <input value={cfg.ogImage} onChange={setC('ogImage')} placeholder="/og-image.png" style={inp}/>
             </Field>
 
             <Field label="OG Type" t={t}>
-              <Sel value={cfg.ogType} onChange={v => setVal('ogType', v)} t={t} options={[
+              <Sel value={cfg.ogType} onChange={v => setCVal('ogType', v)} t={t} options={[
                 { value: 'website', label: 'website' },
                 { value: 'article', label: 'article' },
               ]}/>
             </Field>
 
             <Field label="OG Locale" t={t}>
-              <input value={cfg.ogLocale} onChange={set('ogLocale')}
-                placeholder="ru_RU" style={inp}/>
+              <input value={cfg.ogLocale} onChange={setC('ogLocale')} placeholder="ru_RU" style={inp}/>
             </Field>
 
             <Field label="Twitter Card" t={t}>
-              <Sel value={cfg.twitterCard} onChange={v => setVal('twitterCard', v)} t={t} options={[
+              <Sel value={cfg.twitterCard} onChange={v => setCVal('twitterCard', v)} t={t} options={[
                 { value: 'summary_large_image', label: 'summary_large_image' },
                 { value: 'summary',             label: 'summary' },
               ]}/>
             </Field>
 
             <Field label="Twitter @site" t={t}>
-              <input value={cfg.twitterSite} onChange={set('twitterSite')}
-                placeholder="@opensophy" style={inp}/>
+              <input value={cfg.twitterSite} onChange={setC('twitterSite')} placeholder="@opensophy" style={inp}/>
             </Field>
 
           </div>
         </Section>
 
-        {/* ── Robots.txt ── */}
-        <Section icon={<Globe size={10}/>} title="Robots.txt" badge="public/robots.txt" t={t} defaultOpen={false}>
-          <Toggle
-            value={cfg.robotsAllowAll}
-            onChange={v => setVal('robotsAllowAll', v)}
-            label="Разрешить индексирование всего сайта"
-            t={t}
-          />
-          {!cfg.robotsAllowAll && (
-            <Field label="Запрещённые пути (каждый на новой строке)" wide t={t}>
-              <textarea value={cfg.robotsDisallowPaths} onChange={set('robotsDisallowPaths')}
-                placeholder={'/api/\n/*.json$\n/private/'}
-                rows={4}
-                style={{ ...inp, resize: 'vertical' as const, lineHeight: 1.5 }}/>
-            </Field>
-          )}
-          <Preview content={buildRobotsTxt(cfg)} t={t}/>
+        {/* ── Robots.txt — прямое редактирование ── */}
+        <Section icon={<FileText size={10}/>} title="Robots.txt" badge="public/robots.txt" t={t} defaultOpen={false}>
+          <div style={{ fontSize: 10, color: t.fgSub, lineHeight: 1.6, padding: '2px 0' }}>
+            Прямое редактирование файла. Твой текущий <code style={{ background: t.inpBg, padding: '1px 4px', borderRadius: 3, fontSize: 9 }}>robots.txt</code> загружен как есть.
+          </div>
+          <Field label="Содержимое robots.txt" wide t={t}>
+            <textarea
+              value={robotsTxt}
+              onChange={e => { setRobotsTxt(e.target.value); setDirty(true); }}
+              rows={18}
+              spellCheck={false}
+              style={{
+                ...inp,
+                resize: 'vertical' as const,
+                lineHeight: 1.6,
+                fontFamily: t.mono,
+                fontSize: 11,
+                minHeight: 200,
+              }}
+            />
+          </Field>
+          <div style={{ fontSize: 9, color: t.fgSub, display: 'flex', gap: 16 }}>
+            <span>{robotsTxt.split('\n').length} строк</span>
+            <span>{robotsTxt.length} символов</span>
+          </div>
         </Section>
 
         {/* ── LLM.txt ── */}
         <Section icon={<Bot size={10}/>} title="LLM.txt / AI-боты" badge="public/llm.txt" t={t} defaultOpen={false}>
           <Toggle
-            value={cfg.llmEnabled}
-            onChange={v => setVal('llmEnabled', v)}
+            value={llm.enabled}
+            onChange={v => setL('enabled', v)}
             label="Разрешить AI-ботам (GPT, Claude, Perplexity) индексировать сайт"
             t={t}
           />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <Field label="Политика обучения AI" wide t={t}>
-              <Sel value={cfg.llmUsagePolicy} onChange={v => setVal('llmUsagePolicy', v)} t={t} options={[
+              <Sel value={llm.usagePolicy} onChange={v => setL('usagePolicy', v)} t={t} options={[
                 { value: 'allowed',                   label: '✅ Разрешено для обучения' },
                 { value: 'allowed-with-attribution',  label: '📝 Разрешено с указанием источника' },
                 { value: 'disallowed',                label: '🚫 Запрещено для обучения' },
               ]}/>
             </Field>
             <Field label="Контакт" hint="email или URL" wide t={t}>
-              <input value={cfg.llmContact} onChange={set('llmContact')}
-                placeholder="contact@example.com" style={inp}/>
+              <input value={llm.contact} onChange={e => setL('contact', e.target.value)} placeholder="contact@example.com" style={inp}/>
             </Field>
             <Field label="Описание контента для AI" wide t={t}>
-              <textarea value={cfg.llmDescription} onChange={set('llmDescription')}
+              <textarea value={llm.description} onChange={e => setL('description', e.target.value)}
                 placeholder="Документация по AI и кибербезопасности..." rows={3}
                 style={{ ...inp, resize: 'vertical' as const, lineHeight: 1.5 }}/>
             </Field>
           </div>
-          <Preview content={buildLlmTxt(cfg)} t={t}/>
+          {/* Превью */}
+          <div>
+            <div style={{ fontSize: 9, color: t.fgSub, marginBottom: 4, textTransform: 'uppercase' as const, letterSpacing: '0.07em' }}>Превью llm.txt</div>
+            <pre style={{
+              fontSize: 10, color: t.fgMuted, background: t.inpBg,
+              border: `1px solid ${t.border}`, borderRadius: 6,
+              padding: '6px 8px', margin: 0, fontFamily: t.mono,
+              whiteSpace: 'pre-wrap' as const, maxHeight: 160, overflowY: 'auto',
+            }}>{buildLlmTxt(cfg, llm)}</pre>
+          </div>
         </Section>
 
         <div style={{ height: 24 }}/>
