@@ -18,12 +18,12 @@ const KEY_SEARCH = 'hub:search';
 const THEME_CHANGE_EVENT = 'hub:theme-change';
 
 const getInitialTheme = (): boolean => {
-  if (typeof globalThis.window === 'undefined') return true;
+  if (globalThis.window === undefined) return true;
   return localStorage.getItem(KEY_THEME) !== 'light';
 };
 
 export const applyTheme = (isDark: boolean) => {
-  if (typeof globalThis.document === 'undefined') return;
+  if (globalThis.document === undefined) return;
   if (isDark) {
     document.documentElement.classList.add('dark');
     document.documentElement.style.colorScheme = 'dark';
@@ -45,8 +45,8 @@ function broadcastTheme(isDark: boolean) {
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isDark, setIsDark] = useState<boolean>(getInitialTheme);
-  const [isSidebarOpen, setIsSidebarOpenState] = useState(false);
-  const [isSearchOpen, setIsSearchOpenState] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useEffect(() => {
     applyTheme(isDark);
@@ -68,7 +68,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         applyTheme(next);
       }
       if (e.key === KEY_SEARCH && e.newValue !== null) {
-        setIsSearchOpenState(e.newValue === 'true');
+        setIsSearchOpen(e.newValue === 'true');
       }
     };
 
@@ -88,11 +88,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [isDark]);
 
   const setSidebarOpen = useCallback((open: boolean) => {
-    setIsSidebarOpenState(open);
+    setIsSidebarOpen(open);
   }, []);
 
   const setSearchOpen = useCallback((open: boolean) => {
-    setIsSearchOpenState(open);
+    setIsSearchOpen(open);
     try { localStorage.setItem(KEY_SEARCH, String(open)); } catch {}
     globalThis.window.dispatchEvent(
       new StorageEvent('storage', { key: KEY_SEARCH, newValue: String(open), storageArea: localStorage })
