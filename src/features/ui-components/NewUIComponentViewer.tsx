@@ -106,9 +106,16 @@ interface PillProps {
 }
 
 function Pill({ onClick, title, label, icon, t, active, danger }: Readonly<PillProps>) {
-  const bg    = active ? t.btnActBg  : t.btnBg;
-  const bdr   = active ? t.btnActBdr : t.btnBdr;
-  const color = danger ? t.dangerClr : active ? t.btnActClr : t.btnClr;
+  const bg  = active ? t.btnActBg  : t.btnBg;
+  const bdr = active ? t.btnActBdr : t.btnBdr;
+  let color: string;
+  if (danger) {
+    color = t.dangerClr;
+  } else if (active) {
+    color = t.btnActClr;
+  } else {
+    color = t.btnClr;
+  }
   return (
     <button
       onClick={onClick}
@@ -308,10 +315,13 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
       {/* Холст насыщенности/яркости */}
       <div
         ref={svRef}
-        onMouseDown={handleSvMouseDown}
-        aria-label="Выбор насыщенности и яркости"
-        aria-roledescription="двумерный слайдер цвета"
+        role="slider"
+        aria-label="Насыщенность и яркость"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(sat * 100)}
         tabIndex={0}
+        onMouseDown={handleSvMouseDown}
         style={{
           position: 'relative', width: '100%', height: 140, cursor: 'crosshair',
           background: `linear-gradient(to bottom, transparent, #000), linear-gradient(to right, #fff, ${hueColor})`,
@@ -328,10 +338,13 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
         {/* Слайдер оттенка */}
         <div
           ref={hueRef}
-          onMouseDown={handleHueMouseDown}
-          aria-label="Выбор оттенка"
-          aria-roledescription="слайдер оттенка"
+          role="slider"
+          aria-label="Оттенок"
+          aria-valuemin={0}
+          aria-valuemax={360}
+          aria-valuenow={Math.round(hue)}
           tabIndex={0}
+          onMouseDown={handleHueMouseDown}
           style={{
             position: 'relative', height: 10, borderRadius: 5, cursor: 'pointer',
             background: 'linear-gradient(to right,#f00 0%,#ff0 16.67%,#0f0 33.33%,#0ff 50%,#00f 66.67%,#f0f 83.33%,#f00 100%)',
@@ -641,8 +654,14 @@ const AiSelect: React.FC<{
               ...(dropUp ? { bottom: globalThis.window.innerHeight - rect.top + 4 } : { top: rect.bottom + 4 }),
             }}>
               {options.map(opt => {
-                // Вычисляем фон пункта отдельно, чтобы избежать вложенного тернарника
-                const optBg = hov === opt ? t.btnHov : opt === value ? t.btnBg : 'transparent';
+                let optBg: string;
+                if (hov === opt) {
+                  optBg = t.btnHov;
+                } else if (opt === value) {
+                  optBg = t.btnBg;
+                } else {
+                  optBg = 'transparent';
+                }
                 return (
                   <button key={opt} onClick={() => { onChange(opt); setOpen(false); }}
                     onMouseEnter={() => setHov(opt)} onMouseLeave={() => setHov(null)}
