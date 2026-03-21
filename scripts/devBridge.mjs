@@ -206,24 +206,34 @@ async function handleRunGenerate() {
 async function handleRenderPreview({ markdown }) {
   try {
     const utils = await loadUtils();
-    // Try dedicated render function first
+
+    // Option 1: dedicated export (fastest)
     if (typeof utils.renderMarkdownToHtml === 'function') {
-      const html = utils.renderMarkdownToHtml(markdown);
-      return { html };
+      return { html: utils.renderMarkdownToHtml(markdown) };
     }
-    // Fall back: write to temp file, parse with buildDocFromPath
+
+    // Option 2: use buildDocFromPath with a temp file in Docs/
     if (typeof utils.buildDocFromPath === 'function') {
-      const tmp = path.join(ROOT, '.dev-preview-tmp.md');
+      const tmp = path.join(DOCS_DIR, '.preview-tmp.md');
+      await fs.promises.mkdir(DOCS_DIR, { recursive: true });
       await fs.promises.writeFile(tmp, markdown, 'utf-8');
       try {
-        const doc = utils.buildDocFromPath(tmp, ROOT);
+        const doc = utils.buildDocFromPath(tmp, DOCS_DIR);
         await fs.promises.unlink(tmp).catch(() => {});
-        return { html: doc.content ?? doc.html ?? '' };
-      } catch {
+        const html = doc.content ?? doc.html ?? doc.body ?? '';
+        return { html };
+      } catch (e) {
         await fs.promises.unlink(tmp).catch(() => {});
+        return { html: '', error: `buildDocFromPath failed: ${e.message}` };
       }
     }
-    return { html: '', error: 'renderMarkdownToHtml not found in docUtils' };
+
+    // Option 3: preprocessMarkdownExtensions directly
+    if (typeof utils.preprocessMarkdownExtensions === 'function') {
+      return { html: utils.preprocessMarkdownExtensions(markdown) };
+    }
+
+    return { html: '', error: 'No render function found in docUtils. Add: export function renderMarkdownToHtml(md) { ... }' };
   } catch (err) {
     return { html: '', error: err.message };
   }
@@ -271,18 +281,25 @@ export function devBridgeIntegration() {
         unwatch();
         setTimeout(unwatch, 500);
 
-        // ── Intercept Vite HMR: block full-reload for Docs/ changes ────────
-        // Even after unwatching, Astro's own integration may still emit reloads.
-        // We intercept server.hot.send and drop any full-reload that comes from
-        // our managed directories so the browser page never reloads on its own.
+        // ── Track when bridge is writing — suppress only those reloads ────
+        // We use a short suppression window: after each bridge write, any
+        // full-reload that fires within 2s is from our file change, not from
+        // a real source code change. Source code changes still reload normally.
+        let suppressReloadUntil = 0;
+        const suppressReloadMs = 2000;
+
         const _hotSend = server.hot.send.bind(server.hot);
         server.hot.send = (payload, ...rest) => {
-          if (payload?.type === 'full-reload') {
-            // Block silent reloads triggered by Docs/ file writes
-            logger.info('[hub-dev] Blocked automatic full-reload (managed by bridge)');
+          if (payload?.type === 'full-reload' && Date.now() < suppressReloadUntil) {
+            logger.info('[hub-dev] Suppressed full-reload from Docs/ write');
             return;
           }
           return _hotSend(payload, ...rest);
+        };
+
+        // Expose suppressor so handlers can activate it before writing
+        global.__hubDevSuppressReload = () => {
+          suppressReloadUntil = Date.now() + suppressReloadMs;
         };
 
         const wss = new WebSocketServer({ port: 7777, host: '127.0.0.1' });
@@ -319,9 +336,11 @@ export function devBridgeIntegration() {
               ws.send(JSON.stringify({ id, ok: true, result }));
 
               if (MUTATING.has(action)) {
-                // Run generation silently — do NOT full-reload the page.
-                // The dev panel stays open, only the iframe inside it reloads via iframeKey.
-                // Full-reload only happens when action === 'runGenerate' (explicit button).
+                // Suppress any full-reload that Vite/Astro fires due to our file write,
+                // then regenerate the manifest. Page stays open, panel stays open.
+                if (typeof global.__hubDevSuppressReload === 'function') {
+                  global.__hubDevSuppressReload();
+                }
                 try {
                   const gen = await runGenerate();
                   logger.info(`[hub-dev] Regenerated (${gen.count} docs) after ${action}`);
