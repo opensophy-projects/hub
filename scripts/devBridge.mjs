@@ -259,11 +259,11 @@ export function devBridgeIntegration() {
               ws.send(JSON.stringify({ id, ok: true, result }));
 
               if (MUTATING.has(action)) {
-                // Run generation and reload browser — no delay needed since
-                // generate is synchronous in-process, not a child process
+                // Run generation silently — do NOT full-reload the page.
+                // The dev panel stays open, only the iframe inside it reloads via iframeKey.
+                // Full-reload only happens when action === 'runGenerate' (explicit button).
                 try {
                   const gen = await runGenerate();
-                  sendFullReload(server);
                   logger.info(`[hub-dev] Regenerated (${gen.count} docs) after ${action}`);
                   if (gen.stderr) logger.warn(`[hub-dev] Generate warnings: ${gen.stderr}`);
                 } catch (err) {
