@@ -14,16 +14,16 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 const KEY_THEME  = 'theme';
 const KEY_SEARCH = 'hub:search';
 
-// Custom event name для cross-island синхронизации внутри одной страницы
+// Имя кастомного события для синхронизации между островами на одной странице
 const THEME_CHANGE_EVENT = 'hub:theme-change';
 
 const getInitialTheme = (): boolean => {
-  if (typeof window === 'undefined') return true;
+  if (typeof globalThis.window === 'undefined') return true;
   return localStorage.getItem(KEY_THEME) !== 'light';
 };
 
 export const applyTheme = (isDark: boolean) => {
-  if (typeof document === 'undefined') return;
+  if (typeof globalThis.document === 'undefined') return;
   if (isDark) {
     document.documentElement.classList.add('dark');
     document.documentElement.style.colorScheme = 'dark';
@@ -35,22 +35,12 @@ export const applyTheme = (isDark: boolean) => {
   }
 };
 
+// Сохраняет тему и уведомляет все острова и вкладки об изменении
 function broadcastTheme(isDark: boolean) {
   try {
     localStorage.setItem(KEY_THEME, isDark ? 'dark' : 'light');
   } catch {}
-  // CustomEvent работает внутри одной страницы между всеми React islands
-  window.dispatchEvent(new CustomEvent(THEME_CHANGE_EVENT, { detail: { isDark } }));
-  // StorageEvent для других вкладок
-  try {
-    window.dispatchEvent(
-      new StorageEvent('storage', {
-        key: KEY_THEME,
-        newValue: isDark ? 'dark' : 'light',
-        storageArea: localStorage,
-      })
-    );
-  } catch {}
+  globalThis.window.dispatchEvent(new CustomEvent(THEME_CHANGE_EVENT, { detail: { isDark } }));
 }
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -63,14 +53,14 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [isDark]);
 
   useEffect(() => {
-    // Слушаем CustomEvent — работает между islands на одной странице
+    // Синхронизация темы между островами на одной странице
     const onCustom = (e: Event) => {
-      const detail = (e as CustomEvent<{ isDark: boolean }>).detail;
-      setIsDark(detail.isDark);
-      applyTheme(detail.isDark);
+      const { isDark: next } = (e as CustomEvent<{ isDark: boolean }>).detail;
+      setIsDark(next);
+      applyTheme(next);
     };
 
-    // Слушаем StorageEvent — работает между вкладками
+    // Синхронизация темы и поиска между вкладками
     const onStorage = (e: StorageEvent) => {
       if (e.key === KEY_THEME && e.newValue !== null) {
         const next = e.newValue !== 'light';
@@ -82,11 +72,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     };
 
-    window.addEventListener(THEME_CHANGE_EVENT, onCustom);
-    window.addEventListener('storage', onStorage);
+    globalThis.window.addEventListener(THEME_CHANGE_EVENT, onCustom);
+    globalThis.window.addEventListener('storage', onStorage);
     return () => {
-      window.removeEventListener(THEME_CHANGE_EVENT, onCustom);
-      window.removeEventListener('storage', onStorage);
+      globalThis.window.removeEventListener(THEME_CHANGE_EVENT, onCustom);
+      globalThis.window.removeEventListener('storage', onStorage);
     };
   }, []);
 
@@ -104,7 +94,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const setSearchOpen = useCallback((open: boolean) => {
     setIsSearchOpenState(open);
     try { localStorage.setItem(KEY_SEARCH, String(open)); } catch {}
-    window.dispatchEvent(
+    globalThis.window.dispatchEvent(
       new StorageEvent('storage', { key: KEY_SEARCH, newValue: String(open), storageArea: localStorage })
     );
   }, []);
