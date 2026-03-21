@@ -21,7 +21,7 @@ function renderKatex(tex, displayMode) {
   }
 }
 
-// Runs BEFORE marked so markdown doesn't mangle LaTeX. Code blocks protected first.
+// Запускается ДО marked, чтобы markdown не сломал LaTeX. Код-блоки защищаются первыми.
 export function preprocessKatex(content) {
   const protected_ = [];
 
@@ -354,11 +354,18 @@ function parseChartMeta(bodyLines) {
 
     const trimmed = line.trim();
     if (!trimmed) continue;
-    if (/^\|[\s\-:|]+\|$/.test(trimmed)) continue; // separator row |---|---|
+    if (/^\|[\s\-:|]+\|$/.test(trimmed)) continue; // строка-разделитель |---|---|
     if (trimmed.startsWith('|') && trimmed.endsWith('|')) dataLines.push(trimmed);
   }
 
   return { type, title, colors, dataLines };
+}
+
+// Первая колонка — метка оси X (строка), остальные — числа если возможно
+function parseCellValue(raw, isFirstColumn) {
+  if (isFirstColumn) return raw;
+  const num = Number(raw);
+  return raw !== '' && !Number.isNaN(num) ? num : raw;
 }
 
 function parseChartTableData(dataLines) {
@@ -370,9 +377,7 @@ function parseChartTableData(dataLines) {
     const cells = row.slice(1, -1).split('|').map(c => c.trim());
     const obj   = {};
     headers.forEach((h, idx) => {
-      const raw = cells[idx] ?? '';
-      // First column is the X-axis label; rest are numeric values
-      obj[h] = idx === 0 ? raw : (raw !== '' && !isNaN(Number(raw)) ? Number(raw) : raw);
+      obj[h] = parseCellValue(cells[idx] ?? '', idx === 0);
     });
     return obj;
   });
@@ -388,7 +393,7 @@ function handleChartBlock(trimmed, lines, i, output) {
   let jsonAttr = '[]';
   try {
     jsonAttr = JSON.stringify(data).replaceAll('"', '&quot;');
-  } catch { /* keep empty array */ }
+  } catch { /* оставляем пустой массив */ }
 
   output.push(
     `<div class="custom-chart" data-type="${escapeAttr(type)}" data-title="${escapeAttr(title)}" data-colors="${escapeAttr(colors)}" data-chart="${jsonAttr}"></div>`
@@ -427,7 +432,7 @@ export function preprocessMarkdownExtensions(content) {
   let withoutCode  = '';
   let searchFrom   = 0;
 
-  // Step 1: extract code blocks to protect them from further processing
+  // Шаг 1: извлекаем код-блоки чтобы защитить их от дальнейшей обработки
   while (true) {
     const open = content.indexOf('```', searchFrom);
     if (open === -1) { withoutCode += content.slice(searchFrom); break; }
@@ -439,7 +444,7 @@ export function preprocessMarkdownExtensions(content) {
     searchFrom = close + 3;
   }
 
-  // Step 2: GitHub-style alert blocks (:::note, :::tip, etc.)
+  // Шаг 2: GitHub-style блоки предупреждений (:::note, :::tip, etc.)
   const ALERT_TYPES     = new Set(['note', 'tip', 'important', 'warning', 'caution']);
   const ALERT_PREFIX_RE = /^:::([a-z]+)$/;
   const alertLines      = withoutCode.split('\n');
@@ -466,7 +471,7 @@ export function preprocessMarkdownExtensions(content) {
     }
   }
 
-  // Step 3: cards, columns, steps, math, chart — Step 4: restore code blocks
+  // Шаг 3: cards, columns, steps, math, chart — Шаг 4: восстанавливаем код-блоки
   return preprocessCustomBlocks(alertOutput.join('\n'), codeBlocks)
     .replaceAll(/___CODE_BLOCK_(\d+)___/g, (_match, index) => codeBlocks[Number.parseInt(index, 10)]);
 }
@@ -603,12 +608,12 @@ export function parseDoc(rawContent, mdPath, docsDir) {
   };
 }
 
-// Convenience wrapper: reads the file and parses it in one call
+// Удобная обёртка: читает файл и парсит за один вызов
 export function buildDocFromPath(mdPath, docsDir) {
   return parseDoc(readDoc(mdPath), mdPath, docsDir);
 }
 
-// Same pipeline as parseDoc but returns only the HTML string (used by devBridge → handleRenderPreview)
+// Тот же pipeline что parseDoc, но возвращает только HTML-строку (используется devBridge → handleRenderPreview)
 export function renderMarkdownToHtml(markdown) {
   let content = markdown;
   if (content.startsWith('---\n')) {
