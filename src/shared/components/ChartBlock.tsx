@@ -16,9 +16,12 @@ export type ChartType =
   | 'pie'  | 'pie-donut'
   | 'radar';
 
+// Строка данных: первый ключ — строковое имя категории, остальные — числовые значения
+export type ChartRow = Record<string, string | number>;
+
 interface ChartBlockProps {
   type: ChartType;
-  data: Record<string, unknown>[];
+  data: ChartRow[];
   title?: string;
   colors?: string[];
   isDark: boolean;
@@ -55,7 +58,7 @@ function tk(isDark: boolean) {
 
 // ─── Определение ключей данных ────────────────────────────────────────────────
 
-function detectKeys(data: Record<string, unknown>[]): { nameKey: string; valueKeys: string[] } {
+function detectKeys(data: ChartRow[]): { nameKey: string; valueKeys: string[] } {
   if (!data.length) return { nameKey: 'name', valueKeys: [] };
   const keys = Object.keys(data[0]);
   return { nameKey: keys[0] ?? 'name', valueKeys: keys.slice(1) };
@@ -177,7 +180,7 @@ function ap(t: ReturnType<typeof tk>) {
 // ─── Area ─────────────────────────────────────────────────────────────────────
 
 function renderArea(
-  data: Record<string, unknown>[],
+  data: ChartRow[],
   nameKey: string, valueKeys: string[], palette: string[],
   stacked: boolean, hidden: Set<string>, t: ReturnType<typeof tk>
 ) {
@@ -205,6 +208,12 @@ function renderArea(
 
 // ─── Bar ──────────────────────────────────────────────────────────────────────
 
+function getMaxBarSize(seriesCount: number): number {
+  if (seriesCount <= 1) return 72;
+  if (seriesCount <= 3) return 56;
+  return 40;
+}
+
 function getCategoryGap(rowCount: number): string {
   if (rowCount <= 3)  return '15%';
   if (rowCount <= 6)  return '20%';
@@ -213,7 +222,7 @@ function getCategoryGap(rowCount: number): string {
 }
 
 interface RenderBarOptions {
-  data: Record<string, unknown>[];
+  data: ChartRow[];
   nameKey: string;
   valueKeys: string[];
   palette: string[];
@@ -253,7 +262,7 @@ function renderBar({
 
   const useRowColors = isSingleSeries;
   const a = ap(t);
-  const maxSize = visible.length <= 1 ? 72 : visible.length <= 3 ? 56 : 40;
+  const maxSize = getMaxBarSize(visible.length);
   const bGap = visible.length <= 2 ? 3 : 2;
 
   return (
@@ -299,7 +308,7 @@ function renderBar({
 // ─── Pie ──────────────────────────────────────────────────────────────────────
 
 function renderPie(
-  data: Record<string, unknown>[],
+  data: ChartRow[],
   nameKey: string, valueKeys: string[], palette: string[],
   donut: boolean, hidden: Set<string>, t: ReturnType<typeof tk>
 ) {
@@ -335,7 +344,7 @@ function renderPie(
 // ─── Radar ────────────────────────────────────────────────────────────────────
 
 function renderRadar(
-  data: Record<string, unknown>[],
+  data: ChartRow[],
   nameKey: string, valueKeys: string[], palette: string[],
   hidden: Set<string>, t: ReturnType<typeof tk>
 ) {
