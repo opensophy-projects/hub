@@ -44,7 +44,7 @@ const slugify = (s: string) =>
    .replaceAll(/[^\w\s-]/g, '')
    .replaceAll(/\s+/g, '-')
    .replaceAll(/-+/g, '-')
-   .replace(/^-|-$/g, '');
+   .replaceAll(/^-|-$/g, '');
 
 const parseName = (name: string) => {
   const cleaned = name.replace(/\.md$/, '');
@@ -91,7 +91,7 @@ const serializeFM = (fm: FM, body: string): string => {
   for (const [k,v] of Object.entries(fm) as [keyof FM,string][]) {
     if (!v) continue;
     const needsQuotes = /[:#[\]{}&*!|>'",%@`]/.test(v);
-    const val = needsQuotes ? `"${v.replace(/"/g, '\\"')}"` : v;
+    const val = needsQuotes ? `"${v.replaceAll('"', String.raw`\"`)}"` : v;
     lines.push(`${k}: ${val}`);
   }
   return `---\n${lines.join('\n')}\n---\n\n${body}`;
@@ -228,15 +228,16 @@ function Modal({ onClose, children, width, t }: {
   readonly t: TTokens;
 }) {
   return createPortal(
-    <div
-      role="dialog"
-      aria-modal="true"
+    <dialog
+      open
       style={{
         position:'fixed', inset:0, zIndex:100020,
         background:'rgba(0,0,0,0.6)',
         display:'flex', alignItems:'center', justifyContent:'center',
+        border:'none', padding:0, margin:0, maxWidth:'100vw', maxHeight:'100vh', width:'100%',
       }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      onKeyDown={e => { if (e.key === 'Escape') onClose(); }}
     >
       <div
         style={{
@@ -249,7 +250,7 @@ function Modal({ onClose, children, width, t }: {
       >
         {children}
       </div>
-    </div>,
+    </dialog>,
     document.body
   );
 }
@@ -318,7 +319,8 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
     setSaving(true);
     try {
       const ic = icon.trim() || dIco[cfg.entryType];
-      const nm = `[${cfg.entryType}][${ic}]${title.trim()}${slug ? `{${slug}}` : ''}`;
+      const slugSuffix = slug ? `{${slug}}` : '';
+      const nm = `[${cfg.entryType}][${ic}]${title.trim()}${slugSuffix}`;
       if (isEdit && existing) {
         await saveEditEntry(existing, nm);
       } else {
@@ -365,6 +367,8 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
     fontSize:9, color:t.fgSub, textTransform:'uppercase',
     letterSpacing:'0.07em', marginBottom:4, display:'block',
   };
+  // Текст кнопки сохранения зависит от состояния и режима (создание/редактирование)
+  const saveBtnLabel = saving ? '...' : isEdit ? 'Применить' : 'Создать';
 
   return (
     <Modal onClose={onClose} width={isA && !isEdit ? 440 : 340} t={t}>
@@ -375,8 +379,9 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
         </span>
       </div>
       <div style={{marginBottom:10}}>
-        <label style={lbS}>Название *</label>
+        <label htmlFor="entry-title" style={lbS}>Название *</label>
         <input
+          id="entry-title"
           ref={ref as React.RefObject<HTMLInputElement>}
           value={title}
           onChange={e => setT(e.target.value)}
@@ -388,9 +393,9 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
         />
       </div>
       <div style={{marginBottom:10}}>
-        <label style={lbS}>URL Slug</label>
+        <label htmlFor="entry-slug" style={lbS}>URL Slug</label>
         <div style={{display:'flex', gap:6}}>
-          <input value={slug} onChange={e => { setSlug(e.target.value); setAuto(false); }} style={{...inp, flex:1}}/>
+          <input id="entry-slug" value={slug} onChange={e => { setSlug(e.target.value); setAuto(false); }} style={{...inp, flex:1}}/>
           <button
             onClick={() => { setAuto(true); setSlug(slugify(title)); }}
             style={{padding:'7px 10px', borderRadius:7, border:`1px solid ${t.border}`, background:t.surfaceHov, color:t.fgMuted, cursor:'pointer', fontSize:11, fontFamily:t.mono}}
@@ -398,8 +403,8 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
         </div>
       </div>
       <div style={{marginBottom: isA && !isEdit ? 14 : 10}}>
-        <label style={lbS}>Иконка lucide.dev</label>
-        <input value={icon} onChange={e => setIcon(e.target.value)} placeholder={dIco[cfg.entryType]} style={inp}/>
+        <label htmlFor="entry-icon" style={lbS}>Иконка lucide.dev</label>
+        <input id="entry-icon" value={icon} onChange={e => setIcon(e.target.value)} placeholder={dIco[cfg.entryType]} style={inp}/>
       </div>
       {isA && !isEdit && (
         <div style={{borderTop:`1px solid ${t.border}`, paddingTop:12, marginBottom:10}}>
@@ -411,8 +416,9 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
               {k:'lang', l:'Lang'},                     {k:'robots', l:'Robots'},
             ] as Array<{k: keyof FM; l: string; sp?: boolean; tp?: string}>).map(f => (
               <div key={f.k} style={{gridColumn: f.sp ? '1 / -1' : 'auto'}}>
-                <label style={lbS}>{f.l}</label>
+                <label htmlFor={`fm-${f.k}`} style={lbS}>{f.l}</label>
                 <input
+                  id={`fm-${f.k}`}
                   type={f.tp ?? 'text'}
                   value={fm[f.k]}
                   onChange={e => setFm(prev => ({...prev, [f.k]: e.target.value}))}
@@ -426,7 +432,7 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
       <div style={{display:'flex', gap:8, marginTop:16}}>
         <button onClick={onClose} style={{flex:1, padding:'8px', borderRadius:7, border:`1px solid ${t.border}`, background:'transparent', color:t.fgMuted, cursor:'pointer', fontSize:12, fontFamily:t.mono}}>Отмена</button>
         <button onClick={doSave} disabled={saving} style={{flex:1, padding:'8px', borderRadius:7, border:`1px solid ${t.borderStrong}`, background:t.surfaceHov, color:t.fg, cursor:'pointer', fontSize:12, fontWeight:600, fontFamily:t.mono}}>
-          {saving ? '...' : (isEdit ? 'Применить' : 'Создать')}
+          {saveBtnLabel}
         </button>
       </div>
     </Modal>
@@ -514,7 +520,7 @@ function BlockPicker({ onInsert, t }: { readonly onInsert: (c:string) => void; r
             {!sub ? BG[grp].items.map((item, ii) => (
               <button
                 key={item.label + ii}
-                onClick={() => { if (item.variants) { setSub(item); } else { onInsert(item.code!); setOpen(false); } }}
+                onClick={() => { if (item.variants) { setSub(item); } else { onInsert(item.code ?? ''); setOpen(false); } }}
                 style={rs()}
                 onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = t.surfaceHov}
                 onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
@@ -822,11 +828,15 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
 
   // Вес шрифта зависит от типа узла
   const fontWeight = p.type === 'N' ? 600 : p.type === 'C' ? 500 : 400;
+  // Иконка раскрытия для директории
+  const chevronIcon = isDir ? (expanded ? <ChevronDown size={11}/> : <ChevronRight size={11}/>) : null;
 
   return (
     <div>
       <div
         draggable
+        role="button"
+        tabIndex={0}
         onDragStart={e => { e.stopPropagation(); e.dataTransfer.setData('text/plain', entry.path); e.dataTransfer.effectAllowed = 'move'; }}
         onDragOver={e => { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'move'; setDragOverPath(entry.path); }}
         onDragLeave={e => { e.stopPropagation(); setDragOverPath(null); }}
@@ -834,6 +844,7 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
         onMouseEnter={() => setHov(true)}
         onMouseLeave={() => setHov(false)}
         onClick={() => { if (isDir) setExpanded(v => !v); else onSelect(entry.path); }}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { if (isDir) setExpanded(v => !v); else onSelect(entry.path); } }}
         style={{
           display:'flex', alignItems:'center', gap:5, cursor:'grab', userSelect:'none',
           padding:`4px 8px 4px ${8 + entry.depth * 14}px`,
@@ -844,7 +855,7 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
         }}
       >
         <span style={{width:14, height:14, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', color:t.fgSub}}>
-          {isDir ? (expanded ? <ChevronDown size={11}/> : <ChevronRight size={11}/>) : null}
+          {chevronIcon}
         </span>
         {p.type && <span style={{width:7, height:7, borderRadius:'50%', flexShrink:0, background:typeDot[p.type] ?? t.fgSub}}/>}
         {p.icon && <span style={{fontSize:9, color:t.fgSub, flexShrink:0, fontFamily:t.mono, maxWidth:60, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{p.icon}</span>}
@@ -887,9 +898,9 @@ export default function DocsPanel() {
   const [tree, setTree]             = useState<TreeEntry[]>([]);
   const [loading, setLoading]       = useState(true);
   const [selected, setSelected]     = useState<string|null>(null);
-  const [modalCfg, setModal]        = useState<{cfg:CC; existing?:TreeEntry}|null>(null);
-  const [toDelete, setToDelete]     = useState<TreeEntry|null>(null);
-  const [dragOverPath, setDragOver] = useState<string|null>(null);
+  const [modalCfg, setModalCfg]         = useState<{cfg:CC; existing?:TreeEntry}|null>(null);
+  const [toDelete, setToDelete]         = useState<TreeEntry|null>(null);
+  const [dragOverPath, setDragOverPath] = useState<string|null>(null);
   const [moving, setMoving]         = useState(false);
 
   const load = useCallback(async () => {
@@ -933,7 +944,7 @@ export default function DocsPanel() {
       parentPath: entry.path.split('/').slice(0, -1).join('/'),
       entryType: p.type as 'N'|'C',
     };
-    setModal({ cfg, existing: entry });
+    setModalCfg({ cfg, existing: entry });
   }, []);
 
   const handleDrop = useCallback(async (srcPath: string, dstPath: string) => {
@@ -951,7 +962,8 @@ export default function DocsPanel() {
       return;
     }
 
-    const srcName = srcPath.split('/').pop()!;
+    const srcName = srcPath.split('/').pop();
+    if (!srcName) return;
     const newPath = `${targetDir}/${srcName}`;
     if (newPath === srcPath) return;
 
@@ -991,11 +1003,11 @@ export default function DocsPanel() {
       </div>
     );
     return tree.map(e => (
-      <TreeNode key={e.path} entry={e} onCreate={cfg => setModal({cfg})}
+      <TreeNode key={e.path} entry={e} onCreate={cfg => setModalCfg({cfg})}
         onDelete={setToDelete} onEdit={handleEdit}
         onSelect={p => setSelected(p)} onDrop={handleDrop}
         selectedPath={selected ?? ''} dragOverPath={dragOverPath}
-        setDragOverPath={setDragOver} t={t}/>
+        setDragOverPath={setDragOverPath} t={t}/>
     ));
   };
 
@@ -1004,7 +1016,7 @@ export default function DocsPanel() {
       <MarkdownEditor filePath={selected} onClose={() => setSelected(null)} t={t}/>
       {modalCfg && (
         <EntryModal cfg={modalCfg.cfg} existing={modalCfg.existing}
-          onClose={() => setModal(null)} onDone={handleDone} t={t}/>
+          onClose={() => setModalCfg(null)} onDone={handleDone} t={t}/>
       )}
     </div>
   );
@@ -1012,7 +1024,7 @@ export default function DocsPanel() {
   return (
     <div style={{flex:1, display:'flex', flexDirection:'column', overflow:'hidden'}}>
       <div style={{display:'flex', alignItems:'center', gap:8, padding:'7px 10px', borderBottom:`1px solid ${t.border}`, flexShrink:0, background:t.surface}}>
-        <button onClick={() => setModal({cfg:{parentPath:'Docs', entryType:'N'}})} style={{display:'flex', alignItems:'center', gap:5, padding:'6px 12px', borderRadius:7, border:`1px solid ${t.borderStrong}`, background:t.surfaceHov, color:t.fg, fontSize:11, fontWeight:500, cursor:'pointer', fontFamily:t.mono}}>
+        <button onClick={() => setModalCfg({cfg:{parentPath:'Docs', entryType:'N'}})} style={{display:'flex', alignItems:'center', gap:5, padding:'6px 12px', borderRadius:7, border:`1px solid ${t.borderStrong}`, background:t.surfaceHov, color:t.fg, fontSize:11, fontWeight:500, cursor:'pointer', fontFamily:t.mono}}>
           <Plus size={12}/> Секция
         </button>
         <div style={{flex:1}}/>
@@ -1045,7 +1057,7 @@ export default function DocsPanel() {
 
       {modalCfg && (
         <EntryModal cfg={modalCfg.cfg} existing={modalCfg.existing}
-          onClose={() => setModal(null)} onDone={handleDone} t={t}/>
+          onClose={() => setModalCfg(null)} onDone={handleDone} t={t}/>
       )}
 
       {toDelete && (
