@@ -243,17 +243,24 @@ export default function DevPanel() {
           overflow: 'hidden', fontFamily: t.mono,
         }}>
 
-          {/* Шапка — тянуть для перемещения панели */}
-          <header
-            onMouseDown={onDragStart}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              padding: '10px 12px 9px',
-              background: t.surface, borderBottom: `1px solid ${t.border}`,
-              flexShrink: 0, cursor: 'move', userSelect: 'none',
-            }}
-          >
+          {/* Шапка — невидимая кнопка поверх для drag (нативный интерактивный элемент) */}
+          <header style={{
+            position: 'relative',
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '10px 12px 9px',
+            background: t.surface, borderBottom: `1px solid ${t.border}`,
+            flexShrink: 0, userSelect: 'none',
+          }}>
+            <button
+              aria-label="Переместить панель"
+              onMouseDown={onDragStart}
+              style={{
+                position: 'absolute', inset: 0, zIndex: 0,
+                background: 'transparent', border: 'none', cursor: 'move', padding: 0,
+              }}
+            />
             <div style={{
+              position: 'relative', zIndex: 1,
               width: 28, height: 28, borderRadius: 7, flexShrink: 0,
               background: t.accentSoft, border: `1px solid ${t.border}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -261,7 +268,7 @@ export default function DevPanel() {
               <UserCog size={13} style={{ color: t.fg }}/>
             </div>
 
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ position: 'relative', zIndex: 1, flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 11, fontWeight: 800, color: t.fg, letterSpacing: '0.06em' }}>
                   АДМИН ПАНЕЛЬ
@@ -290,6 +297,7 @@ export default function DevPanel() {
             <button
               onClick={() => setOpen(false)}
               style={{
+                position: 'relative', zIndex: 1,
                 width: 26, height: 26, borderRadius: 6, flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 border: `1px solid ${t.border}`, background: 'transparent',
