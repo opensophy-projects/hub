@@ -106,7 +106,7 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // clipboard недоступен — тихо игнорируем
+      // clipboard недоступен
     }
   };
 
