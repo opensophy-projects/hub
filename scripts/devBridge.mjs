@@ -266,41 +266,43 @@ export function devBridgeIntegration() {
     name: 'hub-dev-bridge',
     hooks: {
       'astro:server:setup': ({ server, logger }) => {
-        // ── Stop Vite from watching Docs/ and src/shared/data/ ──────────────
-        // Vite's chokidar watcher triggers full-reload on any file change inside
-        // these dirs. Since the dev bridge owns all writes here, we unwatch them
-        // so only the panel's iframe reloads — not the whole page.
-        const unwatch = () => {
-          server.watcher.unwatch(path.join(ROOT, 'Docs'));
-          server.watcher.unwatch(path.join(ROOT, 'Docs/**'));
-          server.watcher.unwatch(path.join(ROOT, 'src/shared/data'));
-          server.watcher.unwatch(path.join(ROOT, 'src/shared/data/**'));
-          logger.info('[hub-dev] Vite watcher disabled for Docs/ and src/shared/data/');
-        };
-        // Call immediately and after a tick (Astro may re-add watchers)
-        unwatch();
-        setTimeout(unwatch, 500);
-
-        // ── Track when bridge is writing — suppress only those reloads ────
-        // We use a short suppression window: after each bridge write, any
-        // full-reload that fires within 2s is from our file change, not from
-        // a real source code change. Source code changes still reload normally.
+        // ── Suppress full-reload caused by our own file writes ─────────────
+        // Strategy: unwatch Docs/ from chokidar, AND intercept hot.send to
+        // drop full-reloads that arrive within 2s of a bridge write.
+        // All wrapped in try/catch so a bad Vite version never breaks the server.
         let suppressReloadUntil = 0;
-        const suppressReloadMs = 2000;
 
-        const _hotSend = server.hot.send.bind(server.hot);
-        server.hot.send = (payload, ...rest) => {
-          if (payload?.type === 'full-reload' && Date.now() < suppressReloadUntil) {
-            logger.info('[hub-dev] Suppressed full-reload from Docs/ write');
-            return;
+        try {
+          const unwatch = () => {
+            try { server.watcher.unwatch(path.join(ROOT, 'Docs')); } catch {}
+            try { server.watcher.unwatch(path.join(ROOT, 'src/shared/data')); } catch {}
+          };
+          unwatch();
+          setTimeout(unwatch, 300);
+          setTimeout(unwatch, 1000);
+        } catch (e) {
+          logger.warn('[hub-dev] Could not unwatch dirs: ' + e.message);
+        }
+
+        try {
+          // server.hot exists in Vite 5+; server.ws in older Vite
+          const hotObj = server.hot ?? server.ws;
+          if (hotObj && typeof hotObj.send === 'function') {
+            const _origSend = hotObj.send.bind(hotObj);
+            hotObj.send = (payload, ...rest) => {
+              if (payload?.type === 'full-reload' && Date.now() < suppressReloadUntil) {
+                logger.info('[hub-dev] Suppressed full-reload (bridge write in progress)');
+                return;
+              }
+              return _origSend(payload, ...rest);
+            };
           }
-          return _hotSend(payload, ...rest);
-        };
+        } catch (e) {
+          logger.warn('[hub-dev] Could not intercept hot.send: ' + e.message);
+        }
 
-        // Expose suppressor so handlers can activate it before writing
-        global.__hubDevSuppressReload = () => {
-          suppressReloadUntil = Date.now() + suppressReloadMs;
-        };
+        // Activate suppressor window before mutating writes
+        const suppressReload = () => { suppressReloadUntil = Date.now() + 2000; };
 
         const wss = new WebSocketServer({ port: 7777, host: '127.0.0.1' });
         logger.info('[hub-dev] Bridge ready → ws://127.0.0.1:7777 | Press Ctrl+Shift+D in browser');
@@ -338,9 +340,7 @@ export function devBridgeIntegration() {
               if (MUTATING.has(action)) {
                 // Suppress any full-reload that Vite/Astro fires due to our file write,
                 // then regenerate the manifest. Page stays open, panel stays open.
-                if (typeof global.__hubDevSuppressReload === 'function') {
-                  global.__hubDevSuppressReload();
-                }
+                suppressReload();
                 try {
                   const gen = await runGenerate();
                   logger.info(`[hub-dev] Regenerated (${gen.count} docs) after ${action}`);
