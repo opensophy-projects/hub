@@ -84,14 +84,15 @@ const SUPPORTED_LANGUAGES = [
   'cpp', 'csharp', 'java',
 ] as const;
 
-const loadedLanguages = new Set<string>();
+const loadedLanguages  = new Set<string>();
 const pendingLanguages = new Map<string, Promise<void>>();
 
 async function loadLanguage(lang: string): Promise<void> {
   const normalized = LANG_ALIASES[lang] ?? lang;
   if (loadedLanguages.has(normalized)) return;
   const existing = pendingLanguages.get(normalized);
-  if (existing) return existing;
+  // Возвращаем уже идущую загрузку, если она есть
+  if (existing !== undefined) return existing;
   const promise = (async () => {
     try {
       const loaders: Record<string, () => Promise<{ default: unknown }>> = {
@@ -164,7 +165,7 @@ function buildHighlightedHtml(code: string, lang: string, lineNumColor: string, 
   ).join('\n');
 }
 
-function HighlightedText({ text, query }: { text: string; query: string }): JSX.Element {
+function HighlightedText({ text, query }: { readonly text: string; readonly query: string }): JSX.Element {
   if (!query) return <>{text}</>;
   const lower = text.toLowerCase(), lq = query.toLowerCase(), qLen = lq.length;
   const parts: JSX.Element[] = [];
@@ -185,7 +186,10 @@ function useHighlightedHtml(code: string, language: string, lineNumColor: string
     const norm = language?.trim() ? (LANG_ALIASES[language.toLowerCase().trim()] ?? language.toLowerCase().trim()) : '';
     let cancelled = false;
     (async () => {
-      if (!norm) { if (!cancelled) setHtml(''); return; }
+      if (!norm) {
+        if (!cancelled) setHtml('');
+        return;
+      }
       await loadLanguage(norm);
       if (cancelled) return;
       try { setHtml(buildHighlightedHtml(code, norm, lineNumColor, query)); }
@@ -197,10 +201,17 @@ function useHighlightedHtml(code: string, language: string, lineNumColor: string
 }
 
 interface BodyProps {
-  lines: string[]; matchedLines: Set<number>; searchQuery: string;
-  fg: string; codeBg: string; lineNum: string; highlightedHtml: string;
-  thumb: string; track: string; thumbHov: string;
-  maxHeight?: number | 'none';
+  readonly lines: string[];
+  readonly matchedLines: Set<number>;
+  readonly searchQuery: string;
+  readonly fg: string;
+  readonly codeBg: string;
+  readonly lineNum: string;
+  readonly highlightedHtml: string;
+  readonly thumb: string;
+  readonly track: string;
+  readonly thumbHov: string;
+  readonly maxHeight?: number | 'none';
 }
 
 const CodeBody = React.forwardRef<HTMLDivElement, BodyProps>(
@@ -257,14 +268,34 @@ const CodeBody = React.forwardRef<HTMLDivElement, BodyProps>(
 );
 CodeBody.displayName = 'CodeBody';
 
+// Вычисление цветов кнопки-таблетки в зависимости от состояния
+function pillColors(success: boolean, active: boolean, t: ReturnType<typeof tk>) {
+  const isDarkMode = document.documentElement.classList.contains('dark');
+  if (success) {
+    return {
+      bg:    isDarkMode ? 'rgba(34,197,94,0.16)' : 'rgba(34,197,94,0.14)',
+      bdr:   isDarkMode ? 'rgba(34,197,94,0.4)'  : 'rgba(34,197,94,0.5)',
+      color: '#22c55e',
+    };
+  }
+  return {
+    bg:    t.btnBg,
+    bdr:   active ? 'rgba(255,255,255,0.2)' : t.btnBdr,
+    color: t.btnClr,
+  };
+}
+
 function Pill({ onClick, title, label, icon, t, active, success, btnRef }: {
-  onClick: () => void; title: string; label: string; icon: React.ReactNode;
-  t: ReturnType<typeof tk>; active?: boolean; success?: boolean;
-  btnRef?: React.RefObject<HTMLButtonElement>;
+  readonly onClick: () => void;
+  readonly title: string;
+  readonly label: string;
+  readonly icon: React.ReactNode;
+  readonly t: ReturnType<typeof tk>;
+  readonly active?: boolean;
+  readonly success?: boolean;
+  readonly btnRef?: React.RefObject<HTMLButtonElement>;
 }) {
-  const bg    = success ? (document.documentElement.classList.contains('dark') ? 'rgba(34,197,94,0.16)' : 'rgba(34,197,94,0.14)') : t.btnBg;
-  const bdr   = success ? (document.documentElement.classList.contains('dark') ? 'rgba(34,197,94,0.4)' : 'rgba(34,197,94,0.5)') : active ? 'rgba(255,255,255,0.2)' : t.btnBdr;
-  const color = success ? '#22c55e' : t.btnClr;
+  const { bg, bdr, color } = pillColors(!!success, !!active, t);
   return (
     <button ref={btnRef} onClick={onClick} title={title} style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -283,12 +314,15 @@ function Pill({ onClick, title, label, icon, t, active, success, btnRef }: {
 }
 
 // ---------------------------------------------------------------------------
-// PortalMenu — scroll inside the menu itself does NOT close it
+// PortalMenu — скролл внутри меню его не закрывает
 // ---------------------------------------------------------------------------
 
 const PortalMenu: React.FC<{
-  pos: { top: number; left: number }; t: ReturnType<typeof tk>;
-  onClose: () => void; children: React.ReactNode; minWidth?: number;
+  readonly pos: { top: number; left: number };
+  readonly t: ReturnType<typeof tk>;
+  readonly onClose: () => void;
+  readonly children: React.ReactNode;
+  readonly minWidth?: number;
 }> = ({ pos, t, onClose, children, minWidth = 190 }) => {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -297,8 +331,7 @@ const PortalMenu: React.FC<{
       if (!ref.current?.contains(e.target as Node)) onClose();
     };
     const onScroll = (e: Event) => {
-      // If the scroll event target is inside the menu — don't close
-      if (ref.current && ref.current.contains(e.target as Node)) return;
+      if (ref.current?.contains(e.target as Node)) return;
       onClose();
     };
     document.addEventListener('mousedown', onMouse, true);
@@ -326,13 +359,13 @@ const PortalMenu: React.FC<{
   );
 };
 
-// FIX: LangPicker now closes on page scroll (the picker uses fixed positioning
-// based on getBoundingClientRect(), so it drifts when the page scrolls).
-// We attach a scroll listener that closes the picker when any scroll occurs
-// outside the picker's own DOM subtree.
+// Пикер языка подсветки синтаксиса
 function LangPicker({ currentLang, onSelect, onClose, anchorRect, t }: {
-  currentLang: string; onSelect: (l: string) => void; onClose: () => void;
-  anchorRect: DOMRect; t: ReturnType<typeof tk>;
+  readonly currentLang: string;
+  readonly onSelect: (l: string) => void;
+  readonly onClose: () => void;
+  readonly anchorRect: DOMRect;
+  readonly t: ReturnType<typeof tk>;
 }) {
   const pos = { top: anchorRect.bottom + 4, left: Math.max(8, anchorRect.right - 160) };
   return (
@@ -359,17 +392,17 @@ function LangPicker({ currentLang, onSelect, onClose, anchorRect, t }: {
 }
 
 function MobileMenu({ t, code, activeLang, onSelectLang, onFullscreen }: {
-  t: ReturnType<typeof tk>;
-  code: string;
-  activeLang: string;
-  onSelectLang: (l: string) => void;
-  onFullscreen: () => void;
+  readonly t: ReturnType<typeof tk>;
+  readonly code: string;
+  readonly activeLang: string;
+  readonly onSelectLang: (l: string) => void;
+  readonly onFullscreen: () => void;
 }) {
-  const [open, setOpen]     = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [open, setOpen]         = useState(false);
+  const [copied, setCopied]     = useState(false);
   const [showLang, setShowLang] = useState(false);
-  const [pos, setPos]       = useState({ top: 0, left: 0 });
-  const [langPos, setLangPos] = useState({ top: 0, left: 0 });
+  const [pos, setPos]           = useState({ top: 0, left: 0 });
+  const [langPos, setLangPos]   = useState({ top: 0, left: 0 });
   const ref = useRef<HTMLButtonElement>(null);
 
   const toggle = () => {
@@ -482,6 +515,13 @@ const PRE_PADDING      = 10;
 const COLLAPSED_HEIGHT = PRE_PADDING + VISIBLE_LINES * LINE_HEIGHT_PX + PRE_PADDING;
 const BORDER_RADIUS    = 12;
 
+// Склонение слова "строка" по количеству
+function pluralLines(n: number): string {
+  if (n === 1)  return 'строка';
+  if (n < 5)    return 'строки';
+  return 'строк';
+}
+
 export function CodeBlock({ code, language = '' }: CodeBlockProps) {
   const { isDark } = useContext(TableContext);
   const t = tk(isDark);
@@ -490,8 +530,6 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
   const [isCopied,     setIsCopied]     = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchQuery,  setSearchQuery]  = useState('');
-  // FIX: showLangPick is now managed separately from the rect so we can close
-  // on scroll without losing the anchor position.
   const [showLangPick, setShowLangPick] = useState(false);
   const [langBtnRect,  setLangBtnRect]  = useState<DOMRect | null>(null);
   const [activeLang,   setActiveLang]   = useState(language);
@@ -507,10 +545,7 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // FIX: close LangPicker when the page scrolls.
-  // The picker renders at a fixed pixel position computed via getBoundingClientRect().
-  // If the page scrolls after opening, the picker visually drifts away from its anchor.
-  // Closing on scroll prevents this stale-position UX bug.
+  // Закрытие пикера языка при скролле страницы (позиция вычислена через getBoundingClientRect и устаревает)
   useEffect(() => {
     if (!showLangPick) return;
     const onScroll = () => setShowLangPick(false);
@@ -520,17 +555,20 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
 
   const lines = useMemo(() => {
     const raw = code.split('\n');
-    if (raw[raw.length - 1] === '') raw.pop();
+    if (raw.at(-1) === '') raw.pop();
     return raw;
   }, [code]);
 
-  const isLong = lines.length > VISIBLE_LINES;
+  const isLong          = lines.length > VISIBLE_LINES;
   const highlightedHtml = useHighlightedHtml(code, activeLang, t.lineNum, searchQuery);
 
   const matchedLines = useMemo(() => {
     if (!searchQuery) return new Set<number>();
     const lq = searchQuery.toLowerCase();
-    return new Set(lines.reduce<number[]>((acc, l, i) => { if (l.toLowerCase().includes(lq)) acc.push(i); return acc; }, []));
+    return new Set(lines.reduce<number[]>((acc, l, i) => {
+      if (l.toLowerCase().includes(lq)) { acc.push(i); }
+      return acc;
+    }, []));
   }, [lines, searchQuery]);
 
   const handleCopy = useCallback(() => {
@@ -543,8 +581,6 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
     if (langBtnRef.current) setLangBtnRect(langBtnRef.current.getBoundingClientRect());
     setShowLangPick(p => !p);
   }, []);
-
-  const pluralLines = (n: number) => n === 1 ? 'строка' : n < 5 ? 'строки' : 'строк';
 
   const bodyProps = {
     lines, matchedLines, searchQuery,
@@ -589,8 +625,6 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
           <Pill onClick={handleCopy} title={isCopied ? 'Скопировано!' : 'Копировать'} label={isCopied ? 'Скопировано' : 'Копировать'} icon={isCopied ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />} t={t} success={isCopied} />
           <Pill btnRef={langBtnRef} onClick={handleLangClick} title="Сменить подсветку" label={activeLang || 'markdown'} icon={<Code2 size={14} />} t={t} active={showLangPick} />
           <Pill onClick={() => isModal ? setIsFullscreen(false) : setIsFullscreen(true)} title={isModal ? 'Свернуть' : 'Развернуть'} label={isModal ? 'Свернуть' : 'Развернуть'} icon={isModal ? <Minimize2 size={14} /> : <Maximize2 size={14} />} t={t} />
-          {/* FIX: LangPicker is closed on scroll via the useEffect above.
-              PortalMenu also independently closes on scroll events outside its DOM node. */}
           {showLangPick && langBtnRect && (
             <LangPicker currentLang={activeLang} onSelect={setActiveLang} onClose={() => setShowLangPick(false)} anchorRect={langBtnRect} t={t} />
           )}
