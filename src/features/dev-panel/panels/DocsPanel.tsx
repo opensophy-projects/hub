@@ -850,7 +850,7 @@ export default function DocsPanel() {
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
       <div style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',borderBottom:`1px solid ${t.border}`,flexShrink:0,background:t.surface}}>
         <button onClick={()=>setModal({cfg:{parentPath:'Docs',entryType:'N'}})} style={{display:'flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:7,border:`1px solid ${t.borderStrong}`,background:t.surfaceHov,color:t.fg,fontSize:11,fontWeight:500,cursor:'pointer',fontFamily:t.mono}}>
-          <Plus size={12}/> Nav Popover
+          <Plus size={12}/> Секция
         </button>
         <div style={{flex:1}}/>
         {moving && <Loader2 size={12} style={{color:t.fgMuted,animation:'devSpinAnim 1s linear infinite'}}/>}
