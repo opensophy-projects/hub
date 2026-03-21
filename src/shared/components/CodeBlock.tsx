@@ -1,8 +1,7 @@
 import React, { useState, useRef, useContext, useMemo, useEffect, useCallback } from 'react';
-import ReactDOM from 'react-dom';
 import {
   Copy, Check, Maximize2, Minimize2,
-  ChevronDown, ChevronUp, Search, X, Code2, MoreHorizontal,
+  ChevronDown, ChevronUp, Search, X, MoreHorizontal,
 } from 'lucide-react';
 import { TableContext } from '../lib/htmlParser';
 import Overlay from './Overlay';
@@ -35,11 +34,6 @@ function tk(isDark: boolean) {
     thumb:       'rgba(255,255,255,0.14)',
     thumbHov:    'rgba(255,255,255,0.26)',
     track:       'rgba(255,255,255,0.04)',
-    menuBg:      '#1a1a1a',
-    menuBdr:     'rgba(255,255,255,0.1)',
-    menuHov:     'rgba(255,255,255,0.07)',
-    menuClr:     'rgba(255,255,255,0.82)',
-    menuSub:     'rgba(255,255,255,0.35)',
   } : {
     outerBg:     '#E8E7E3',
     barBg:       '#d8d7d3',
@@ -65,11 +59,6 @@ function tk(isDark: boolean) {
     thumb:       'rgba(0,0,0,0.16)',
     thumbHov:    'rgba(0,0,0,0.28)',
     track:       'rgba(0,0,0,0.04)',
-    menuBg:      '#eceae6',
-    menuBdr:     'rgba(0,0,0,0.1)',
-    menuHov:     'rgba(0,0,0,0.06)',
-    menuClr:     'rgba(0,0,0,0.82)',
-    menuSub:     'rgba(0,0,0,0.38)',
   };
 }
 
@@ -78,12 +67,6 @@ const LANG_ALIASES: Record<string, string> = {
   yml: 'yaml', md: 'markdown', 'c++': 'cpp', cs: 'csharp',
 };
 
-const SUPPORTED_LANGUAGES = [
-  'javascript', 'typescript', 'python', 'bash', 'sql', 'json', 'xml',
-  'html', 'css', 'yaml', 'dockerfile', 'markdown', 'go', 'rust', 'php',
-  'cpp', 'csharp', 'java',
-] as const;
-
 const loadedLanguages  = new Set<string>();
 const pendingLanguages = new Map<string, Promise<void>>();
 
@@ -91,7 +74,6 @@ async function loadLanguage(lang: string): Promise<void> {
   const normalized = LANG_ALIASES[lang] ?? lang;
   if (loadedLanguages.has(normalized)) return;
   const existing = pendingLanguages.get(normalized);
-  // Возвращаем уже идущую загрузку, если она есть
   if (existing !== undefined) return existing;
   const promise = (async () => {
     try {
@@ -183,7 +165,9 @@ function HighlightedText({ text, query }: { readonly text: string; readonly quer
 function useHighlightedHtml(code: string, language: string, lineNumColor: string, query: string): string {
   const [html, setHtml] = useState('');
   useEffect(() => {
-    const norm = language?.trim() ? (LANG_ALIASES[language.toLowerCase().trim()] ?? language.toLowerCase().trim()) : '';
+    const norm = language?.trim()
+      ? (LANG_ALIASES[language.toLowerCase().trim()] ?? language.toLowerCase().trim())
+      : '';
     let cancelled = false;
     (async () => {
       if (!norm) {
@@ -268,23 +252,7 @@ const CodeBody = React.forwardRef<HTMLDivElement, BodyProps>(
 );
 CodeBody.displayName = 'CodeBody';
 
-// Вычисление цветов кнопки-таблетки в зависимости от состояния
-function pillColors(success: boolean, active: boolean, t: ReturnType<typeof tk>) {
-  const isDarkMode = document.documentElement.classList.contains('dark');
-  if (success) {
-    return {
-      bg:    isDarkMode ? 'rgba(34,197,94,0.16)' : 'rgba(34,197,94,0.14)',
-      bdr:   isDarkMode ? 'rgba(34,197,94,0.4)'  : 'rgba(34,197,94,0.5)',
-      color: '#22c55e',
-    };
-  }
-  return {
-    bg:    t.btnBg,
-    bdr:   active ? 'rgba(255,255,255,0.2)' : t.btnBdr,
-    color: t.btnClr,
-  };
-}
-
+// Кнопка-таблетка тулбара
 function Pill({ onClick, title, label, icon, t, active, success, btnRef }: {
   readonly onClick: () => void;
   readonly title: string;
@@ -295,7 +263,9 @@ function Pill({ onClick, title, label, icon, t, active, success, btnRef }: {
   readonly success?: boolean;
   readonly btnRef?: React.RefObject<HTMLButtonElement>;
 }) {
-  const { bg, bdr, color } = pillColors(!!success, !!active, t);
+  const bg    = success ? 'rgba(34,197,94,0.16)' : t.btnBg;
+  const bdr   = success ? 'rgba(34,197,94,0.4)'  : active ? 'rgba(255,255,255,0.2)' : t.btnBdr;
+  const color = success ? '#22c55e' : t.btnClr;
   return (
     <button ref={btnRef} onClick={onClick} title={title} style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -313,98 +283,38 @@ function Pill({ onClick, title, label, icon, t, active, success, btnRef }: {
   );
 }
 
-// ---------------------------------------------------------------------------
-// PortalMenu — скролл внутри меню его не закрывает
-// ---------------------------------------------------------------------------
-
-const PortalMenu: React.FC<{
-  readonly pos: { top: number; left: number };
-  readonly t: ReturnType<typeof tk>;
-  readonly onClose: () => void;
-  readonly children: React.ReactNode;
-  readonly minWidth?: number;
-}> = ({ pos, t, onClose, children, minWidth = 190 }) => {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const onMouse = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) onClose();
-    };
-    document.addEventListener('mousedown', onMouse, true);
-    return () => {
-      document.removeEventListener('mousedown', onMouse, true);
-    };
-  }, [onClose]);
-
-  return ReactDOM.createPortal(
-    <>
-      <style>{`@keyframes cbMenuIn{from{opacity:0;transform:translateY(-5px) scale(0.97)}to{opacity:1;transform:none}}`}</style>
-      <div ref={ref} style={{
-        position: 'fixed', top: pos.top, left: pos.left, minWidth, zIndex: 99999,
-        background: t.menuBg, border: `1px solid ${t.menuBdr}`,
-        borderRadius: 10,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-        overflow: 'hidden', animation: 'cbMenuIn 0.13s cubic-bezier(0.2,0,0,1)',
-      }}>
-        {children}
-      </div>
-    </>,
-    document.body,
-  );
-};
-
-// Пикер языка подсветки синтаксиса
-function LangPicker({ currentLang, onSelect, onClose, anchorRect, t }: {
-  readonly currentLang: string;
-  readonly onSelect: (l: string) => void;
-  readonly onClose: () => void;
-  readonly anchorRect: DOMRect;
-  readonly t: ReturnType<typeof tk>;
-}) {
-  const pos = { top: anchorRect.bottom + 4, left: Math.max(8, anchorRect.right - 160) };
-  return (
-    <PortalMenu pos={pos} t={t} onClose={onClose} minWidth={160}>
-      <div style={{ maxHeight: 240, overflowY: 'auto' }}>
-        {SUPPORTED_LANGUAGES.map(lang => (
-          <button key={lang} onClick={() => { onSelect(lang); onClose(); }} style={{
-            width: '100%', padding: '7px 12px',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            border: 'none', background: lang === currentLang ? t.btnBg : 'transparent',
-            color: t.menuClr, fontSize: 12, cursor: 'pointer', textAlign: 'left',
-            transition: 'background 0.1s',
-          }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.menuHov; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = lang === currentLang ? t.btnBg : 'transparent'; }}
-          >
-            <span>{lang}</span>
-            {lang === currentLang && <Check size={11} style={{ opacity: 0.6 }} />}
-          </button>
-        ))}
-      </div>
-    </PortalMenu>
-  );
-}
-
-function MobileMenu({ t, code, activeLang, onSelectLang, onFullscreen }: {
+// Мобильное меню: копировать + развернуть
+function MobileMenu({ t, code, onFullscreen }: {
   readonly t: ReturnType<typeof tk>;
   readonly code: string;
-  readonly activeLang: string;
-  readonly onSelectLang: (l: string) => void;
   readonly onFullscreen: () => void;
 }) {
-  const [open, setOpen]         = useState(false);
-  const [copied, setCopied]     = useState(false);
-  const [showLang, setShowLang] = useState(false);
-  const [pos, setPos]           = useState({ top: 0, left: 0 });
-  const [langPos, setLangPos]   = useState({ top: 0, left: 0 });
-  const ref = useRef<HTMLButtonElement>(null);
+  const [open, setOpen]     = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef    = useRef<HTMLDivElement>(null);
+
+  // Закрытие по клику вне меню
+  useEffect(() => {
+    if (!open) return;
+    const onMouse = (e: MouseEvent) => {
+      if (
+        menuRef.current?.contains(e.target as Node) ||
+        triggerRef.current?.contains(e.target as Node)
+      ) return;
+      setOpen(false);
+    };
+    document.addEventListener('mousedown', onMouse, true);
+    return () => document.removeEventListener('mousedown', onMouse, true);
+  }, [open]);
 
   const toggle = () => {
-    if (open) { setOpen(false); setShowLang(false); return; }
-    const r = ref.current?.getBoundingClientRect();
+    if (open) { setOpen(false); return; }
+    const r = triggerRef.current?.getBoundingClientRect();
     if (!r) return;
-    const mw = 210;
-    setPos({ top: r.bottom + 4, left: Math.max(8, Math.min(r.right - mw, window.innerWidth - mw - 8)) });
+    const mw = 200;
+    setMenuPos({ top: r.bottom + 4, left: Math.max(8, Math.min(r.right - mw, window.innerWidth - mw - 8)) });
     setOpen(true);
   };
 
@@ -414,85 +324,52 @@ function MobileMenu({ t, code, activeLang, onSelectLang, onFullscreen }: {
     setTimeout(() => { setCopied(false); }, 2000);
   };
 
-  const openLangPicker = () => {
-    const r = ref.current?.getBoundingClientRect();
-    if (!r) return;
-    const mw = 160;
-    setLangPos({ top: pos.top, left: Math.max(8, pos.left - mw - 4) });
-    setShowLang(v => !v);
-  };
-
-  const sLabel = (s: string) => (
-    <div style={{ padding: '7px 12px 3px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: t.menuSub }}>{s}</div>
-  );
-  const sep = <div style={{ height: 1, margin: '3px 0', background: t.menuBdr }} />;
-  const mRow = (onClick: () => void, icon: React.ReactNode, label: string, sub?: string, green?: boolean) => (
-    <button onClick={onClick} style={{
-      width: '100%', padding: sub ? '10px 14px' : '11px 14px',
-      display: 'flex', flexDirection: sub ? 'column' : 'row',
-      alignItems: sub ? 'flex-start' : 'center', gap: sub ? 2 : 10,
-      border: 'none', background: green ? 'rgba(34,197,94,0.12)' : 'transparent',
-      cursor: 'pointer', textAlign: 'left',
-      color: green ? '#22c55e' : t.menuClr,
-      fontSize: 13, fontWeight: green ? 600 : 400, transition: 'background 0.1s',
-    }}
-      onMouseEnter={e => { if (!green) (e.currentTarget as HTMLButtonElement).style.background = t.menuHov; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = green ? 'rgba(34,197,94,0.12)' : 'transparent'; }}
-    >
-      {!sub && <span style={{ opacity: green ? 1 : 0.6, flexShrink: 0, display: 'flex' }}>{icon}</span>}
-      <span style={{ flex: 1, fontWeight: 500 }}>{label}</span>
-      {sub && <span style={{ fontSize: 11, color: green ? 'rgba(34,197,94,0.7)' : t.menuSub }}>{sub}</span>}
-    </button>
-  );
+  const menuBg  = t.codeBg === '#0d0d0d' ? '#1a1a1a' : '#eceae6';
 
   return (
     <>
-      <button ref={ref} onClick={toggle} style={{
+      <button ref={triggerRef} onClick={toggle} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         width: 36, height: 36, borderRadius: 8,
         border: `1px solid ${t.btnBdr}`,
         background: open ? t.btnHov : t.btnBg,
-        color: t.btnClr, cursor: 'pointer', flexShrink: 0, transition: 'all 0.13s',
-      }}
-        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = open ? t.btnHov : t.btnBg; }}
-      >
+        color: t.btnClr, cursor: 'pointer', flexShrink: 0,
+      }}>
         <MoreHorizontal size={16} />
       </button>
 
       {open && (
-        <PortalMenu pos={pos} t={t} onClose={() => { setOpen(false); setShowLang(false); }} minWidth={210}>
-          {sLabel('Копировать')}
-          {mRow(doCopy, copied ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />, copied ? 'Скопировано!' : 'Скопировать код', undefined, copied)}
-          {sep}
-          {sLabel('Подсветка')}
-          {mRow(openLangPicker, <Code2 size={14} />, activeLang || 'markdown', 'Сменить язык')}
-          {sep}
-          {mRow(() => { onFullscreen(); setOpen(false); }, <Maximize2 size={14} />, 'Развернуть')}
-          <div style={{ height: 4 }} />
-        </PortalMenu>
-      )}
-
-      {open && showLang && (
-        <PortalMenu pos={langPos} t={t} onClose={() => setShowLang(false)} minWidth={160}>
-          <div style={{ maxHeight: 240, overflowY: 'auto' }}>
-            {SUPPORTED_LANGUAGES.map(lang => (
-              <button key={lang} onClick={() => { onSelectLang(lang); setShowLang(false); setOpen(false); }} style={{
-                width: '100%', padding: '7px 12px',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                border: 'none', background: lang === activeLang ? t.btnBg : 'transparent',
-                color: t.menuClr, fontSize: 12, cursor: 'pointer', textAlign: 'left',
-                transition: 'background 0.1s',
-              }}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.menuHov; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = lang === activeLang ? t.btnBg : 'transparent'; }}
-              >
-                <span>{lang}</span>
-                {lang === activeLang && <Check size={11} style={{ opacity: 0.6 }} />}
-              </button>
-            ))}
-          </div>
-        </PortalMenu>
+        <div ref={menuRef} style={{
+          position: 'fixed', top: menuPos.top, left: menuPos.left,
+          minWidth: 200, zIndex: 99999,
+          background: menuBg, border: `1px solid ${t.btnBdr}`,
+          borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          overflow: 'hidden',
+        }}>
+          <button onClick={doCopy} style={{
+            width: '100%', padding: '11px 14px',
+            display: 'flex', alignItems: 'center', gap: 10,
+            border: 'none', background: copied ? 'rgba(34,197,94,0.12)' : 'transparent',
+            color: copied ? '#22c55e' : t.btnClr,
+            fontSize: 13, fontWeight: copied ? 600 : 400,
+            cursor: 'pointer', textAlign: 'left',
+          }}>
+            <span style={{ display: 'flex', opacity: copied ? 1 : 0.6 }}>
+              {copied ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />}
+            </span>
+            <span>{copied ? 'Скопировано!' : 'Скопировать код'}</span>
+          </button>
+          <div style={{ height: 1, background: t.btnBdr }} />
+          <button onClick={() => { onFullscreen(); setOpen(false); }} style={{
+            width: '100%', padding: '11px 14px',
+            display: 'flex', alignItems: 'center', gap: 10,
+            border: 'none', background: 'transparent',
+            color: t.btnClr, fontSize: 13, cursor: 'pointer', textAlign: 'left',
+          }}>
+            <span style={{ display: 'flex', opacity: 0.6 }}><Maximize2 size={14} /></span>
+            <span>Развернуть</span>
+          </button>
+        </div>
       )}
     </>
   );
@@ -511,8 +388,8 @@ const BORDER_RADIUS    = 12;
 
 // Склонение слова "строка" по количеству
 function pluralLines(n: number): string {
-  if (n === 1)  return 'строка';
-  if (n < 5)    return 'строки';
+  if (n === 1) return 'строка';
+  if (n < 5)   return 'строки';
   return 'строк';
 }
 
@@ -524,13 +401,7 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
   const [isCopied,     setIsCopied]     = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchQuery,  setSearchQuery]  = useState('');
-  const [showLangPick, setShowLangPick] = useState(false);
-  const [langBtnRect,  setLangBtnRect]  = useState<DOMRect | null>(null);
-  const [activeLang,   setActiveLang]   = useState(language);
   const [isMobile,     setIsMobile]     = useState(false);
-  const langBtnRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => { setActiveLang(language); }, [language]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 580);
@@ -539,14 +410,6 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Закрытие пикера языка при скролле страницы (позиция вычислена через getBoundingClientRect и устаревает)
-  useEffect(() => {
-    if (!showLangPick) return;
-    const onScroll = () => setShowLangPick(false);
-    window.addEventListener('scroll', onScroll, { passive: true, capture: true });
-    return () => window.removeEventListener('scroll', onScroll, true);
-  }, [showLangPick]);
-
   const lines = useMemo(() => {
     const raw = code.split('\n');
     if (raw.at(-1) === '') raw.pop();
@@ -554,7 +417,7 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
   }, [code]);
 
   const isLong          = lines.length > VISIBLE_LINES;
-  const highlightedHtml = useHighlightedHtml(code, activeLang, t.lineNum, searchQuery);
+  const highlightedHtml = useHighlightedHtml(code, language, t.lineNum, searchQuery);
 
   const matchedLines = useMemo(() => {
     if (!searchQuery) return new Set<number>();
@@ -570,11 +433,6 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
   }, [code]);
-
-  const handleLangClick = useCallback(() => {
-    if (langBtnRef.current) setLangBtnRect(langBtnRef.current.getBoundingClientRect());
-    setShowLangPick(p => !p);
-  }, []);
 
   const bodyProps = {
     lines, matchedLines, searchQuery,
@@ -617,16 +475,12 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
       {!isMobile && (
         <>
           <Pill onClick={handleCopy} title={isCopied ? 'Скопировано!' : 'Копировать'} label={isCopied ? 'Скопировано' : 'Копировать'} icon={isCopied ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />} t={t} success={isCopied} />
-          <Pill btnRef={langBtnRef} onClick={handleLangClick} title="Сменить подсветку" label={activeLang || 'markdown'} icon={<Code2 size={14} />} t={t} active={showLangPick} />
           <Pill onClick={() => isModal ? setIsFullscreen(false) : setIsFullscreen(true)} title={isModal ? 'Свернуть' : 'Развернуть'} label={isModal ? 'Свернуть' : 'Развернуть'} icon={isModal ? <Minimize2 size={14} /> : <Maximize2 size={14} />} t={t} />
-          {showLangPick && langBtnRect && (
-            <LangPicker currentLang={activeLang} onSelect={setActiveLang} onClose={() => setShowLangPick(false)} anchorRect={langBtnRect} t={t} />
-          )}
         </>
       )}
 
       {isMobile && (
-        <MobileMenu t={t} code={code} activeLang={activeLang} onSelectLang={setActiveLang} onFullscreen={() => setIsFullscreen(true)} />
+        <MobileMenu t={t} code={code} onFullscreen={() => setIsFullscreen(true)} />
       )}
     </div>
   );
@@ -639,7 +493,7 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
       userSelect: 'none', background: t.outerBg, flexShrink: 0,
     }}>
       <span>{lines.length} {pluralLines(lines.length)}</span>
-      {activeLang && <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 10, opacity: 0.7 }}>{activeLang}</span>}
+      {language && <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 10, opacity: 0.7 }}>{language}</span>}
     </div>
   );
 
