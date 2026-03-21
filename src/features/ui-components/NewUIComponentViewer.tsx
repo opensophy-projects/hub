@@ -138,7 +138,7 @@ function Divider({ t }: Readonly<{ t: T }>) {
   return <div style={{ width: 1, height: 22, background: t.barBorder, margin: '0 2px', flexShrink: 0 }} />;
 }
 
-// ─── Section label ────────────────────────────────────────────────────────────
+// ─── Подпись секции ───────────────────────────────────────────────────────────
 
 function SectionLabel({ label, t }: Readonly<{ label: string; t: T }>) {
   return (
@@ -305,19 +305,47 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
 
   return (
     <div style={{ userSelect: 'none' }}>
-      {/* SV canvas */}
-      <div ref={svRef} onMouseDown={handleSvMouseDown} role="presentation"
-        style={{ position: 'relative', width: '100%', height: 140, cursor: 'crosshair', background: `linear-gradient(to bottom, transparent, #000), linear-gradient(to right, #fff, ${hueColor})` }}>
-        <div style={{ position: 'absolute', left: `${sat * 100}%`, top: `${(1 - val) * 100}%`, width: 13, height: 13, borderRadius: '50%', border: '2px solid #fff', boxShadow: '0 0 0 1px rgba(0,0,0,0.4),0 1px 4px rgba(0,0,0,0.5)', transform: 'translate(-50%,-50%)', pointerEvents: 'none' }} />
+      {/* Холст насыщенности/яркости */}
+      <div
+        ref={svRef}
+        onMouseDown={handleSvMouseDown}
+        aria-label="Выбор насыщенности и яркости"
+        aria-roledescription="двумерный слайдер цвета"
+        tabIndex={0}
+        style={{
+          position: 'relative', width: '100%', height: 140, cursor: 'crosshair',
+          background: `linear-gradient(to bottom, transparent, #000), linear-gradient(to right, #fff, ${hueColor})`,
+        }}
+      >
+        <div style={{
+          position: 'absolute', left: `${sat * 100}%`, top: `${(1 - val) * 100}%`,
+          width: 13, height: 13, borderRadius: '50%',
+          border: '2px solid #fff', boxShadow: '0 0 0 1px rgba(0,0,0,0.4),0 1px 4px rgba(0,0,0,0.5)',
+          transform: 'translate(-50%,-50%)', pointerEvents: 'none',
+        }} />
       </div>
       <div style={{ padding: '10px 12px 0' }}>
-        {/* Hue slider */}
-        <div ref={hueRef} onMouseDown={handleHueMouseDown} role="presentation"
-          style={{ position: 'relative', height: 10, borderRadius: 5, cursor: 'pointer', background: 'linear-gradient(to right,#f00 0%,#ff0 16.67%,#0f0 33.33%,#0ff 50%,#00f 66.67%,#f0f 83.33%,#f00 100%)' }}>
-          <div style={{ position: 'absolute', top: '50%', left: `${(hue / 360) * 100}%`, width: 16, height: 16, borderRadius: '50%', background: hueColor, border: '2px solid #fff', boxShadow: '0 0 0 1px rgba(0,0,0,0.3)', transform: 'translate(-50%,-50%)', pointerEvents: 'none' }} />
+        {/* Слайдер оттенка */}
+        <div
+          ref={hueRef}
+          onMouseDown={handleHueMouseDown}
+          aria-label="Выбор оттенка"
+          aria-roledescription="слайдер оттенка"
+          tabIndex={0}
+          style={{
+            position: 'relative', height: 10, borderRadius: 5, cursor: 'pointer',
+            background: 'linear-gradient(to right,#f00 0%,#ff0 16.67%,#0f0 33.33%,#0ff 50%,#00f 66.67%,#f0f 83.33%,#f00 100%)',
+          }}
+        >
+          <div style={{
+            position: 'absolute', top: '50%', left: `${(hue / 360) * 100}%`,
+            width: 16, height: 16, borderRadius: '50%',
+            background: hueColor, border: '2px solid #fff', boxShadow: '0 0 0 1px rgba(0,0,0,0.3)',
+            transform: 'translate(-50%,-50%)', pointerEvents: 'none',
+          }} />
         </div>
       </div>
-      {/* Hex + swatch + copy */}
+      {/* Hex + образец + копирование */}
       <div style={{ padding: '10px 12px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
         <div style={{ width: 22, height: 22, borderRadius: 5, flexShrink: 0, background: currentHex, border: `1px solid ${t.barBorder}` }} />
         <div style={{ flex: 1 }}>
@@ -339,7 +367,7 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
           }
         </button>
       </div>
-      {/* RGB / HSL read-only */}
+      {/* RGB / HSL только для чтения */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, margin: '8px 0 0', background: t.barBorder }}>
         {[{ label: 'RGB', value: currentRgb.join(', ') }, { label: 'HSL', value: `${currentHsl[0]}°, ${currentHsl[1]}%, ${currentHsl[2]}%` }].map(({ label, value: v }) => (
           <div key={label} style={{ background: t.outerBg, padding: '5px 12px' }}>
@@ -612,19 +640,23 @@ const AiSelect: React.FC<{
               overflow: 'auto', maxHeight: 240, animation: 'aiIn 0.13s ease',
               ...(dropUp ? { bottom: globalThis.window.innerHeight - rect.top + 4 } : { top: rect.bottom + 4 }),
             }}>
-              {options.map(opt => (
-                <button key={opt} onClick={() => { onChange(opt); setOpen(false); }}
-                  onMouseEnter={() => setHov(opt)} onMouseLeave={() => setHov(null)}
-                  style={{
-                    display: 'flex', alignItems: 'center', width: '100%',
-                    padding: '6px 11px', fontSize: 12, textAlign: 'left', cursor: 'pointer',
-                    border: 'none', color: t.fg,
-                    background: hov === opt ? t.btnHov : opt === value ? t.btnBg : 'transparent',
-                  }}>
-                  {opt === value && <span style={{ marginRight: 6, opacity: 0.5 }}>✓</span>}
-                  {opt}
-                </button>
-              ))}
+              {options.map(opt => {
+                // Вычисляем фон пункта отдельно, чтобы избежать вложенного тернарника
+                const optBg = hov === opt ? t.btnHov : opt === value ? t.btnBg : 'transparent';
+                return (
+                  <button key={opt} onClick={() => { onChange(opt); setOpen(false); }}
+                    onMouseEnter={() => setHov(opt)} onMouseLeave={() => setHov(null)}
+                    style={{
+                      display: 'flex', alignItems: 'center', width: '100%',
+                      padding: '6px 11px', fontSize: 12, textAlign: 'left', cursor: 'pointer',
+                      border: 'none', color: t.fg,
+                      background: optBg,
+                    }}>
+                    {opt === value && <span style={{ marginRight: 6, opacity: 0.5 }}>✓</span>}
+                    {opt}
+                  </button>
+                );
+              })}
             </div>
           </>,
           document.body,
@@ -842,7 +874,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
 
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: t.outerBg, display: 'flex', flexDirection: 'column' }}>
-      {/* Toolbar */}
+      {/* Тулбар */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', flexShrink: 0,
         borderBottom: `1px solid ${t.barBorder}`, background: t.barBg,
@@ -874,7 +906,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
         <Pill onClick={onClose} title="Свернуть (Esc)" label="Свернуть" icon={<Minimize2 size={14} />} t={t} />
       </div>
 
-      {/* Body */}
+      {/* Основная область */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
         <div style={{
           flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
