@@ -46,15 +46,20 @@ const slugify = (s: string) =>
    .replaceAll(/-+/g, '-')
    .replaceAll(/^-|-$/g, '');
 
+// Регексы с ограниченной длиной для защиты от ReDoS
+const RE_PN_TYPE = /^\[([NCA])\]/;
+const RE_PN_ICON = /^\[([^\]]{1,60})\]/;
+const RE_PN_SLUG = /^([^{]{1,300})\{([^{}]{1,200})\}$/;
+
 const parseName = (name: string) => {
   const cleaned = name.replace(/\.md$/, '');
-  const tm = /^\[([NCA])\]/.exec(cleaned);
+  const tm = RE_PN_TYPE.exec(cleaned);
   const type = (tm?.[1] ?? null) as 'N'|'C'|'A'|null;
   const rest = tm ? cleaned.slice(tm[0].length) : cleaned;
-  const im = /^\[([^\]]+)\]/.exec(rest);
+  const im = RE_PN_ICON.exec(rest);
   const icon = im?.[1] ?? null;
   const ai = im ? rest.slice(im[0].length) : rest;
-  const sm = /^(.+?)\{([^}]+)\}$/.exec(ai);
+  const sm = RE_PN_SLUG.exec(ai);
   return { type, icon, title: sm ? sm[1].trim() : ai.trim(), slug: sm ? sm[2].trim() : null };
 };
 
