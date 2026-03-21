@@ -1,12 +1,14 @@
 ---
 title: Полное руководство по Frontmatter и системе наименований в Hub
-description: Справочник по всем доступным полям frontmatter, новой системе [N]/[C]/[A] для именования папок и файлов, с примерами и рекомендациями.
+description: "Справочник по всем доступным полям frontmatter, новой системе [N]/[C]/[A] для именования папок и файлов, с примерами и рекомендациями."
 author: veilosophy
 date: 2026-03-07
-tags: frontmatter, документация, markdown, руководство, наименование
+tags: "frontmatter, документация, markdown, руководство, наименование"
+icon: chart-no-axes-column
 lang: ru
-robots: index, follow
+robots: "index, follow"
 ---
+
 
 # Система наименований папок и файлов
 
