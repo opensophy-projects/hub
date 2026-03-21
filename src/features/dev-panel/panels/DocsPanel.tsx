@@ -777,23 +777,25 @@ function MarkdownEditor({ filePath, onClose, t }: { filePath:string; onClose:()=
   );
 }
 
-// ─── Tree Node — fixed text visibility ────────────────────────────────────────
+// ─── Tree Node — with drag-and-drop ──────────────────────────────────────────
 
-function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, selectedPath, t }: {
+function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
+  selectedPath, dragOverPath, setDragOverPath, t }: {
   entry:TreeEntry; onCreate:(c:CC)=>void; onDelete:(e:TreeEntry)=>void;
   onEdit:(e:TreeEntry)=>void; onSelect:(p:string)=>void;
-  selectedPath:string; t:TTokens;
+  onDrop:(srcPath:string, dstPath:string)=>void;
+  selectedPath:string; dragOverPath:string|null;
+  setDragOverPath:(p:string|null)=>void; t:TTokens;
 }) {
   const [expanded,setExpanded] = useState(entry.depth<2);
   const [hov,setHov]           = useState(false);
-  const isDir   = entry.type==='dir';
-  const isActive= entry.path===selectedPath;
-  const p       = entry.parsed;
+  const isDir    = entry.type==='dir';
+  const isActive = entry.path===selectedPath;
+  const isDragOver = dragOverPath===entry.path;
+  const p        = entry.parsed;
 
-  // Type dot colors
   const typeDot: Record<string,string> = { N:'#22c55e', C:'#14b8a6', A:'#f59e0b' };
 
-  // Big action buttons — 28px touch target
   const actionBtn=(ico:React.ReactNode,tip:string,fn:()=>void,danger?:boolean)=>(
     <button key={tip} title={tip}
       onClick={e=>{ e.stopPropagation(); fn(); }}
@@ -810,57 +812,57 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, selectedPath, t
   return (
     <div>
       <div
+        draggable
+        onDragStart={e=>{ e.stopPropagation(); e.dataTransfer.setData('text/plain', entry.path); e.dataTransfer.effectAllowed='move'; }}
+        onDragOver={e=>{ e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect='move'; setDragOverPath(entry.path); }}
+        onDragLeave={e=>{ e.stopPropagation(); setDragOverPath(null); }}
+        onDrop={e=>{
+          e.preventDefault(); e.stopPropagation();
+          setDragOverPath(null);
+          const src = e.dataTransfer.getData('text/plain');
+          if (src && src !== entry.path) onDrop(src, entry.path);
+        }}
         onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
         onClick={()=>{ if(isDir)setExpanded(v=>!v); else onSelect(entry.path); }}
         style={{
-          display:'flex',alignItems:'center',gap:5,cursor:'pointer',userSelect:'none',
+          display:'flex',alignItems:'center',gap:5,cursor:'grab',userSelect:'none',
           padding:`4px 8px 4px ${8+entry.depth*14}px`,
           borderRadius:6,
-          background:isActive?t.surfaceHov:hov?t.surfaceHov:'transparent',
+          background: isDragOver
+            ? (isDir ? 'rgba(20,184,166,0.15)' : 'rgba(245,158,11,0.12)')
+            : isActive ? t.surfaceHov : hov ? t.surfaceHov : 'transparent',
+          outline: isDragOver ? `1.5px dashed ${isDir ? '#14b8a6' : '#f59e0b'}` : 'none',
+          outlineOffset: -1,
           minHeight:28,
+          transition:'background 0.1s',
         }}
       >
-        {/* Expand arrow — always reserve space */}
         <span style={{width:14,height:14,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',color:t.fgSub}}>
           {isDir ? (expanded?<ChevronDown size={11}/>:<ChevronRight size={11}/>) : null}
         </span>
 
-        {/* Type color dot */}
         {p.type && (
           <span style={{width:7,height:7,borderRadius:'50%',flexShrink:0,background:typeDot[p.type]??t.fgSub}}/>
         )}
 
-        {/* Icon name small */}
         {p.icon && (
-          <span style={{
-            fontSize:9,color:t.fgSub,flexShrink:0,fontFamily:t.mono,
-            maxWidth:60,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',
-          }}>
+          <span style={{fontSize:9,color:t.fgSub,flexShrink:0,fontFamily:t.mono,maxWidth:60,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
             {p.icon}
           </span>
         )}
 
-        {/* Title — this must always be visible */}
         <span style={{
-          fontSize:12,
-          color: isActive ? t.fg : t.fg,  // always full color
-          overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',
-          flex:1,
-          fontWeight: p.type==='N' ? 600 : p.type==='C' ? 500 : 400,
-          opacity: 1,  // never transparent
+          fontSize:12,color:t.fg,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',
+          flex:1,fontWeight:p.type==='N'?600:p.type==='C'?500:400,opacity:1,
         }}>
           {p.title || entry.name}
         </span>
 
-        {/* Action buttons — shown on hover, large enough to click */}
         {hov && (
           <div style={{display:'flex',gap:3,flexShrink:0}} onClick={e=>e.stopPropagation()}>
-            {/* Edit for all types */}
             {actionBtn(<Edit3 size={13}/>, 'Редактировать', ()=>onEdit(entry))}
-            {/* Add children for dirs */}
             {isDir && p.type==='N' && actionBtn(<FolderPlus size={13}/>, '+ Категория', ()=>onCreate({parentPath:entry.path,entryType:'C'}))}
             {isDir && (p.type==='N'||p.type==='C') && actionBtn(<FilePlus size={13}/>, '+ Статья', ()=>onCreate({parentPath:entry.path,entryType:'A'}))}
-            {/* Delete */}
             {actionBtn(<Trash2 size={13}/>, 'Удалить', ()=>onDelete(entry), true)}
           </div>
         )}
@@ -870,7 +872,9 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, selectedPath, t
         <div style={{marginLeft:8+entry.depth*14+7,borderLeft:`1px solid ${t.border}`}}>
           {entry.children.map(c=>(
             <TreeNode key={c.path} entry={c} onCreate={onCreate} onDelete={onDelete}
-              onEdit={onEdit} onSelect={onSelect} selectedPath={selectedPath} t={t}/>
+              onEdit={onEdit} onSelect={onSelect} onDrop={onDrop}
+              selectedPath={selectedPath} dragOverPath={dragOverPath}
+              setDragOverPath={setDragOverPath} t={t}/>
           ))}
         </div>
       )}
@@ -882,11 +886,13 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, selectedPath, t
 
 export default function DocsPanel() {
   const t = useContext(ThemeTokensContext);
-  const [tree,setTree]         = useState<TreeEntry[]>([]);
-  const [loading,setLoading]   = useState(true);
-  const [selected,setSelected] = useState<string|null>(null);
-  const [modalCfg,setModal]    = useState<{cfg:CC;existing?:TreeEntry}|null>(null);
-  const [toDelete,setToDelete] = useState<TreeEntry|null>(null);
+  const [tree,setTree]           = useState<TreeEntry[]>([]);
+  const [loading,setLoading]     = useState(true);
+  const [selected,setSelected]   = useState<string|null>(null);
+  const [modalCfg,setModal]      = useState<{cfg:CC;existing?:TreeEntry}|null>(null);
+  const [toDelete,setToDelete]   = useState<TreeEntry|null>(null);
+  const [dragOverPath,setDragOver] = useState<string|null>(null);
+  const [moving,setMoving]       = useState(false);
 
   const load = useCallback(async()=>{
     setLoading(true);
@@ -910,13 +916,10 @@ export default function DocsPanel() {
     setTimeout(()=>{ load(); if(fp)setSelected(fp); },400);
   },[load]);
 
-  // Edit existing entry
   const handleEdit = useCallback((entry: TreeEntry)=>{
     if (entry.type==='file') {
-      // For files — open editor directly
       setSelected(entry.path);
     } else {
-      // For dirs (N/C) — open edit modal
       const p = entry.parsed;
       const cfg: CC = {
         parentPath: entry.path.split('/').slice(0,-1).join('/'),
@@ -925,6 +928,57 @@ export default function DocsPanel() {
       setModal({ cfg, existing: entry });
     }
   },[]);
+
+  // ─── Drag-and-drop move ───────────────────────────────────────────────────
+  const handleDrop = useCallback(async (srcPath: string, dstPath: string) => {
+    // Find entries
+    const findEntry = (entries: TreeEntry[], path: string): TreeEntry|null => {
+      for (const e of entries) {
+        if (e.path === path) return e;
+        const found = findEntry(e.children, path);
+        if (found) return found;
+      }
+      return null;
+    };
+
+    const allEntries: TreeEntry[] = [];
+    const flatten = (entries: TreeEntry[]) => entries.forEach(e => { allEntries.push(e); flatten(e.children); });
+    flatten(tree);
+
+    const src = allEntries.find(e => e.path === srcPath);
+    const dst = allEntries.find(e => e.path === dstPath);
+    if (!src || !dst) return;
+
+    // Determine target directory
+    // If dst is a dir (N or C) — move into it
+    // If dst is a file (A) — move to the same parent dir as dst
+    const targetDir = dst.type === 'dir' ? dst.path : dst.path.split('/').slice(0,-1).join('/');
+
+    // Don't move into itself or its children
+    if (srcPath === targetDir || targetDir.startsWith(srcPath + '/')) {
+      toast.error('Нельзя переместить папку внутрь себя');
+      return;
+    }
+
+    const srcName = srcPath.split('/').pop()!;
+    const newPath = `${targetDir}/${srcName}`;
+    if (newPath === srcPath) return;
+
+    setMoving(true);
+    try {
+      if (src.type === 'dir') {
+        await renameDir(srcPath, newPath);
+      } else {
+        const { content } = await bridge.readFile(srcPath);
+        await bridge.writeFile(newPath, content);
+        await bridge.deleteFile(srcPath);
+        if (selected === srcPath) setSelected(newPath);
+      }
+      toast.success(`Перемещено → ${targetDir.split('/').pop()}`);
+      setTimeout(load, 400);
+    } catch(e:any) { toast.error(e.message); }
+    finally { setMoving(false); }
+  }, [tree, selected, load]);
 
   const fileCount = tree.reduce(function c(a:number,e:TreeEntry):number{
     return a+(e.type==='file'?1:0)+(e.children?e.children.reduce(c,0):0);
@@ -955,6 +1009,7 @@ export default function DocsPanel() {
           <Plus size={12}/> Nav Popover
         </button>
         <div style={{flex:1}}/>
+        {moving && <Loader2 size={12} style={{color:t.fgMuted,animation:'devSpinAnim 1s linear infinite'}}/>}
         <button onClick={load} style={{
           display:'flex',alignItems:'center',gap:4,padding:'6px 10px',borderRadius:6,
           border:`1px solid ${t.border}`,background:'transparent',color:t.fgMuted,
@@ -967,8 +1022,22 @@ export default function DocsPanel() {
         </button>
       </div>
 
+      {/* Hint */}
+      <div style={{padding:'4px 12px',fontSize:9,color:t.fgSub,background:t.surface,borderBottom:`1px solid ${t.border}`}}>
+        Перетащи страницу или категорию в другую папку
+      </div>
+
       {/* Tree */}
-      <div style={{flex:1,overflowY:'auto',padding:'4px'}} className="adm-scroll">
+      <div
+        style={{flex:1,overflowY:'auto',padding:'4px'}} className="adm-scroll"
+        onDragOver={e=>e.preventDefault()}
+        onDrop={e=>{
+          // Drop on root = move to Docs root
+          e.preventDefault();
+          const src = e.dataTransfer.getData('text/plain');
+          if (src) handleDrop(src, 'Docs');
+        }}
+      >
         {loading ? (
           <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,padding:24,color:t.fgMuted}}>
             <Loader2 size={14} style={{animation:'devSpinAnim 1s linear infinite'}}/>
@@ -982,7 +1051,9 @@ export default function DocsPanel() {
         ) : tree.map(e=>(
           <TreeNode key={e.path} entry={e} onCreate={cfg=>setModal({cfg})}
             onDelete={setToDelete} onEdit={handleEdit}
-            onSelect={p=>setSelected(p)} selectedPath={selected??''} t={t}/>
+            onSelect={p=>setSelected(p)} onDrop={handleDrop}
+            selectedPath={selected??''} dragOverPath={dragOverPath}
+            setDragOverPath={setDragOver} t={t}/>
         ))}
       </div>
 
