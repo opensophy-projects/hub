@@ -17,14 +17,14 @@ export function useTableControls(rows: Element[], headers: string[]) {
     return Array.from(
       new Set(
         rows.map((row) => {
-          const cells   = Array.from(row.querySelectorAll('td'));
+          const cells    = Array.from(row.querySelectorAll('td'));
           const cellHtml = cells[colIndex]?.innerHTML || '';
           return stripHtmlNormalize(cellHtml);
         })
       )
     )
       .filter(Boolean)
-      .sort();
+      .sort((a, b) => a.localeCompare(b));
   }, [rows]);
 
   const filteredAndSortedRows = useMemo(
@@ -35,7 +35,11 @@ export function useTableControls(rows: Element[], headers: string[]) {
   const toggleColumnVisibility = useCallback((colIndex: number) => {
     setState((prev) => {
       const next = new Set(prev.visibleColumns);
-      next.has(colIndex) ? next.delete(colIndex) : next.add(colIndex);
+      if (next.has(colIndex)) {
+        next.delete(colIndex);
+      } else {
+        next.add(colIndex);
+      }
       return { ...prev, visibleColumns: next };
     });
   }, []);
@@ -44,7 +48,11 @@ export function useTableControls(rows: Element[], headers: string[]) {
     setState((prev) => {
       const newFilters = new Map(prev.filters);
       const colFilters = new Set(newFilters.get(colIndex) ?? []);
-      colFilters.has(value) ? colFilters.delete(value) : colFilters.add(value);
+      if (colFilters.has(value)) {
+        colFilters.delete(value);
+      } else {
+        colFilters.add(value);
+      }
       if (colFilters.size === 0) newFilters.delete(colIndex);
       else newFilters.set(colIndex, colFilters);
       return { ...prev, filters: newFilters };
