@@ -1,7 +1,3 @@
-/**
- * DocsPanel v7
- */
-
 import React, {
   useState, useEffect, useCallback, useRef, useContext,
 } from 'react';
@@ -40,19 +36,25 @@ const TRANSLIT: Record<string,string> = {
   к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',
   х:'kh',ц:'ts',ч:'ch',ш:'sh',щ:'shch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya',
 };
+
+// Транслитерация + нормализация строки в slug
 const slugify = (s: string) =>
-  s.toLowerCase().replace(/[а-яё]/g, c => TRANSLIT[c]??c)
-   .replace(/[^\w\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
+  s.toLowerCase()
+   .replaceAll(/[а-яё]/g, c => TRANSLIT[c] ?? c)
+   .replaceAll(/[^\w\s-]/g, '')
+   .replaceAll(/\s+/g, '-')
+   .replaceAll(/-+/g, '-')
+   .replace(/^-|-$/g, '');
 
 const parseName = (name: string) => {
-  name = name.replace(/\.md$/, '');
-  const tm = name.match(/^\[([NCA])\]/);
+  const cleaned = name.replace(/\.md$/, '');
+  const tm = /^\[([NCA])\]/.exec(cleaned);
   const type = (tm?.[1] ?? null) as 'N'|'C'|'A'|null;
-  const rest = tm ? name.slice(tm[0].length) : name;
-  const im = rest.match(/^\[([^\]]+)\]/);
+  const rest = tm ? cleaned.slice(tm[0].length) : cleaned;
+  const im = /^\[([^\]]+)\]/.exec(rest);
   const icon = im?.[1] ?? null;
   const ai = im ? rest.slice(im[0].length) : rest;
-  const sm = ai.match(/^(.+?)\{([^}]+)\}$/);
+  const sm = /^(.+?)\{([^}]+)\}$/.exec(ai);
   return { type, icon, title: sm ? sm[1].trim() : ai.trim(), slug: sm ? sm[2].trim() : null };
 };
 
@@ -61,7 +63,8 @@ const buildTree = (flat: FlatEntry[]): TreeEntry[] => {
   const tree: TreeEntry[] = [];
   flat.forEach(e => m.set(e.path, { ...e, children:[], parsed:parseName(e.name) }));
   flat.forEach(e => {
-    const node = m.get(e.path)!;
+    const node = m.get(e.path);
+    if (!node) return;
     const parent = m.get(e.path.split('/').slice(0,-1).join('/'));
     if (parent) parent.children.push(node); else tree.push(node);
   });
@@ -74,10 +77,11 @@ const parseFM = (raw: string): { fm: FM; body: string } => {
   if (end === -1) return { fm:{...EMPTY_FM}, body:raw };
   const fm: FM = {...EMPTY_FM};
   raw.slice(4,end).split('\n').forEach(line => {
-    const ci = line.indexOf(':'); if (ci<1) return;
+    const ci = line.indexOf(':');
+    if (ci < 1) return;
     const k = line.slice(0,ci).trim() as keyof FM;
     const v = line.slice(ci+1).trim().replace(/^["']|["']$/g,'');
-    if (k in fm) (fm as any)[k] = v;
+    if (k in fm) (fm as Record<string,string>)[k] = v;
   });
   return { fm, body: raw.slice(end+5) };
 };
@@ -86,8 +90,9 @@ const serializeFM = (fm: FM, body: string): string => {
   const lines: string[] = [];
   for (const [k,v] of Object.entries(fm) as [keyof FM,string][]) {
     if (!v) continue;
-    const q = /[:#\[\]{}&*!|>'",%@`]/.test(v);
-    lines.push(`${k}: ${q ? `"${v.replace(/"/g,'\\"')}"` : v}`);
+    const needsQuotes = /[:#[\]{}&*!|>'",%@`]/.test(v);
+    const val = needsQuotes ? `"${v.replace(/"/g, '\\"')}"` : v;
+    lines.push(`${k}: ${val}`);
   }
   return `---\n${lines.join('\n')}\n---\n\n${body}`;
 };
@@ -216,23 +221,32 @@ const BG: { g: string; icon: React.ReactNode; items: BI[] }[] = [
   ]},
 ];
 
-// ─── Modal wrapper ────────────────────────────────────────────────────────────
-
 function Modal({ onClose, children, width, t }: {
-  onClose:()=>void; children:React.ReactNode; width?:number; t:TTokens;
+  readonly onClose: () => void;
+  readonly children: React.ReactNode;
+  readonly width?: number;
+  readonly t: TTokens;
 }) {
   return createPortal(
-    <div style={{
-      position:'fixed', inset:0, zIndex:100020,
-      background:'rgba(0,0,0,0.6)',
-      display:'flex', alignItems:'center', justifyContent:'center',
-    }} onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
-      <div style={{
-        background:t.bg, border:`1px solid ${t.borderStrong}`,
-        borderRadius:12, padding:22, width:width??360,
-        boxShadow:t.shadow, fontFamily:t.mono,
-        maxHeight:'90vh', overflowY:'auto',
-      }} onClick={e=>e.stopPropagation()}>
+    <div
+      role="dialog"
+      aria-modal="true"
+      style={{
+        position:'fixed', inset:0, zIndex:100020,
+        background:'rgba(0,0,0,0.6)',
+        display:'flex', alignItems:'center', justifyContent:'center',
+      }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        style={{
+          background:t.bg, border:`1px solid ${t.borderStrong}`,
+          borderRadius:12, padding:22, width:width ?? 360,
+          boxShadow:t.shadow, fontFamily:t.mono,
+          maxHeight:'90vh', overflowY:'auto',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
         {children}
       </div>
     </div>,
@@ -242,66 +256,104 @@ function Modal({ onClose, children, width, t }: {
 
 interface CC { parentPath: string; entryType: 'N'|'C'|'A'; }
 
+// Сохранение переименованного файла
+async function saveRenamedFile(existing: TreeEntry, nm: string, onDone: (fp?: string) => void) {
+  const parent = existing.path.split('/').slice(0, -1).join('/');
+  const newPath = `${parent}/${nm}.md`;
+  if (newPath === existing.path) {
+    toast.info('Имя не изменилось');
+    onDone();
+    return;
+  }
+  const { content } = await bridge.readFile(existing.path);
+  await bridge.writeFile(newPath, content);
+  await bridge.deleteFile(existing.path);
+  toast.success('Страница переименована');
+  onDone(newPath);
+}
+
+// Сохранение переименованной директории
+async function saveRenamedDir(existing: TreeEntry, nm: string, onDone: (fp?: string) => void) {
+  const parent = existing.path.split('/').slice(0, -1).join('/');
+  const newPath = `${parent}/${nm}`;
+  if (newPath === existing.path) {
+    toast.info('Имя не изменилось');
+    onDone();
+    return;
+  }
+  try {
+    await renameDir(existing.path, newPath);
+    toast.success('Переименовано');
+    onDone();
+  } catch (err: unknown) {
+    toast.error('Ошибка: ' + (err as Error).message);
+  }
+}
+
 function EntryModal({ cfg, existing, onClose, onDone, t }: {
-  cfg: CC; existing?: TreeEntry; onClose:()=>void; onDone:(fp?:string)=>void; t:TTokens;
+  readonly cfg: CC;
+  readonly existing?: TreeEntry;
+  readonly onClose: () => void;
+  readonly onDone: (fp?: string) => void;
+  readonly t: TTokens;
 }) {
   const isEdit = !!existing;
   const p = existing?.parsed;
-  const [title,setTitle] = useState(p?.title ?? '');
-  const [slug, setSlug]  = useState(p?.slug ?? (p?.title ? slugify(p.title) : ''));
-  const [icon, setIcon]  = useState(p?.icon ?? '');
-  const [auto, setAuto]  = useState(!isEdit);
-  const [fm, setFm]      = useState<FM>({...EMPTY_FM});
-  const [saving,setSaving] = useState(false);
+  const [title, setTitle] = useState(p?.title ?? '');
+  const [slug,  setSlug]  = useState(p?.slug ?? (p?.title ? slugify(p.title) : ''));
+  const [icon,  setIcon]  = useState(p?.icon ?? '');
+  const [auto,  setAuto]  = useState(!isEdit);
+  const [fm,    setFm]    = useState<FM>({...EMPTY_FM});
+  const [saving, setSaving] = useState(false);
   const ref = useRef<HTMLInputElement>(null);
-  useEffect(()=>{ setTimeout(()=>ref.current?.focus(),60); },[]);
+  useEffect(() => { setTimeout(() => ref.current?.focus(), 60); }, []);
 
-  const setT = (v:string) => { setTitle(v); if(auto) setSlug(slugify(v)); };
-  const isA = cfg.entryType==='A';
-  const lbl: Record<string,string> = {N:'Секция',C:'Категория',A:'Страница'};
-  const dIco: Record<string,string> = {N:'book',C:'folder',A:'file-text'};
+  const setT = (v: string) => { setTitle(v); if (auto) setSlug(slugify(v)); };
+  const isA = cfg.entryType === 'A';
+  const lbl: Record<string,string> = {N:'Секция', C:'Категория', A:'Страница'};
+  const dIco: Record<string,string> = {N:'book', C:'folder', A:'file-text'};
 
   const doSave = async () => {
-    if(!title.trim()) return;
+    if (!title.trim()) return;
     setSaving(true);
     try {
       const ic = icon.trim() || dIco[cfg.entryType];
-      const nm = `[${cfg.entryType}][${ic}]${title.trim()}${slug?`{${slug}}`:''}`;
+      const nm = `[${cfg.entryType}][${ic}]${title.trim()}${slug ? `{${slug}}` : ''}`;
       if (isEdit && existing) {
-        if (existing.type === 'file') {
-          const parent = existing.path.split('/').slice(0,-1).join('/');
-          const newPath = `${parent}/${nm}.md`;
-          if (newPath !== existing.path) {
-            const {content} = await bridge.readFile(existing.path);
-            await bridge.writeFile(newPath, content);
-            await bridge.deleteFile(existing.path);
-            toast.success('Страница переименована');
-            onDone(newPath);
-          } else { toast.info('Имя не изменилось'); onDone(); }
-        } else {
-          const parent = existing.path.split('/').slice(0,-1).join('/');
-          const newPath = `${parent}/${nm}`;
-          if (newPath !== existing.path) {
-            try {
-              await renameDir(existing.path, newPath);
-              toast.success('Переименовано');
-              onDone();
-            } catch(err: any) { toast.error('Ошибка: ' + err.message); }
-          } else { toast.info('Имя не изменилось'); onDone(); }
-        }
+        await saveEditEntry(existing, nm);
       } else {
-        if (isA) {
-          const fp = `${cfg.parentPath}/${nm}.md`;
-          await bridge.writeFile(fp, serializeFM({...fm,title:title.trim()},`# ${title.trim()}\n\nНачните писать здесь...\n`));
-          toast.success('Страница создана'); onDone(fp);
-        } else {
-          await bridge.mkdir(`${cfg.parentPath}/${nm}`);
-          toast.success('Создано'); onDone();
-        }
+        await saveNewEntry(nm);
       }
       onClose();
-    } catch(e:any){ toast.error(e.message); }
-    finally { setSaving(false); }
+    } catch (e: unknown) {
+      toast.error((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveEditEntry = async (existing: TreeEntry, nm: string) => {
+    if (existing.type === 'file') {
+      await saveRenamedFile(existing, nm, onDone);
+    } else {
+      await saveRenamedDir(existing, nm, onDone);
+    }
+  };
+
+  const saveNewEntry = async (nm: string) => {
+    if (isA) {
+      const fp = `${cfg.parentPath}/${nm}.md`;
+      await bridge.writeFile(fp, serializeFM(
+        { ...fm, title: title.trim() },
+        `# ${title.trim()}\n\nНачните писать здесь...\n`
+      ));
+      toast.success('Страница создана');
+      onDone(fp);
+    } else {
+      await bridge.mkdir(`${cfg.parentPath}/${nm}`);
+      toast.success('Создано');
+      onDone();
+    }
   };
 
   const inp: React.CSSProperties = {
@@ -315,151 +367,175 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
   };
 
   return (
-    <Modal onClose={onClose} width={isA&&!isEdit?440:340} t={t}>
-      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:16}}>
+    <Modal onClose={onClose} width={isA && !isEdit ? 440 : 340} t={t}>
+      <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:16}}>
         <Badge type={cfg.entryType}/>
-        <span style={{fontSize:13,fontWeight:700,color:t.fg}}>
+        <span style={{fontSize:13, fontWeight:700, color:t.fg}}>
           {isEdit ? 'Редактировать' : 'Создать'}: {lbl[cfg.entryType]}
         </span>
       </div>
       <div style={{marginBottom:10}}>
         <label style={lbS}>Название *</label>
-        <input ref={ref as any} value={title} onChange={e=>setT(e.target.value)}
-          onKeyDown={e=>{if(e.key==='Enter'&&!isA)doSave();if(e.key==='Escape')onClose();}}
-          style={inp}/>
+        <input
+          ref={ref as React.RefObject<HTMLInputElement>}
+          value={title}
+          onChange={e => setT(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter' && !isA) doSave();
+            if (e.key === 'Escape') onClose();
+          }}
+          style={inp}
+        />
       </div>
       <div style={{marginBottom:10}}>
         <label style={lbS}>URL Slug</label>
-        <div style={{display:'flex',gap:6}}>
-          <input value={slug} onChange={e=>{setSlug(e.target.value);setAuto(false);}} style={{...inp,flex:1}}/>
-          <button onClick={()=>{setAuto(true);setSlug(slugify(title));}}
-            style={{padding:'7px 10px',borderRadius:7,border:`1px solid ${t.border}`,background:t.surfaceHov,color:t.fgMuted,cursor:'pointer',fontSize:11,fontFamily:t.mono}}>↺</button>
+        <div style={{display:'flex', gap:6}}>
+          <input value={slug} onChange={e => { setSlug(e.target.value); setAuto(false); }} style={{...inp, flex:1}}/>
+          <button
+            onClick={() => { setAuto(true); setSlug(slugify(title)); }}
+            style={{padding:'7px 10px', borderRadius:7, border:`1px solid ${t.border}`, background:t.surfaceHov, color:t.fgMuted, cursor:'pointer', fontSize:11, fontFamily:t.mono}}
+          >↺</button>
         </div>
       </div>
-      <div style={{marginBottom:isA&&!isEdit?14:10}}>
+      <div style={{marginBottom: isA && !isEdit ? 14 : 10}}>
         <label style={lbS}>Иконка lucide.dev</label>
-        <input value={icon} onChange={e=>setIcon(e.target.value)} placeholder={dIco[cfg.entryType]} style={inp}/>
+        <input value={icon} onChange={e => setIcon(e.target.value)} placeholder={dIco[cfg.entryType]} style={inp}/>
       </div>
-      {isA&&!isEdit&&(
-        <div style={{borderTop:`1px solid ${t.border}`,paddingTop:12,marginBottom:10}}>
-          <div style={{...lbS,marginBottom:10}}>Frontmatter</div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'7px 10px'}}>
-            {([{k:'description',l:'Описание',sp:true},{k:'author',l:'Автор'},
-               {k:'date',l:'Дата',tp:'date'},{k:'tags',l:'Теги',sp:true},
-               {k:'lang',l:'Lang'},{k:'robots',l:'Robots'}] as any[]).map((f:any)=>(
-              <div key={f.k} style={{gridColumn:f.sp?'1 / -1':'auto'}}>
+      {isA && !isEdit && (
+        <div style={{borderTop:`1px solid ${t.border}`, paddingTop:12, marginBottom:10}}>
+          <div style={{...lbS, marginBottom:10}}>Frontmatter</div>
+          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'7px 10px'}}>
+            {([
+              {k:'description', l:'Описание', sp:true}, {k:'author', l:'Автор'},
+              {k:'date', l:'Дата', tp:'date'},          {k:'tags', l:'Теги', sp:true},
+              {k:'lang', l:'Lang'},                     {k:'robots', l:'Robots'},
+            ] as Array<{k: keyof FM; l: string; sp?: boolean; tp?: string}>).map(f => (
+              <div key={f.k} style={{gridColumn: f.sp ? '1 / -1' : 'auto'}}>
                 <label style={lbS}>{f.l}</label>
-                <input type={f.tp??'text'} value={(fm as any)[f.k]}
-                  onChange={e=>setFm(p2=>({...p2,[f.k]:e.target.value}))} style={inp}/>
+                <input
+                  type={f.tp ?? 'text'}
+                  value={fm[f.k]}
+                  onChange={e => setFm(prev => ({...prev, [f.k]: e.target.value}))}
+                  style={inp}
+                />
               </div>
             ))}
           </div>
         </div>
       )}
-      <div style={{display:'flex',gap:8,marginTop:16}}>
-        <button onClick={onClose} style={{flex:1,padding:'8px',borderRadius:7,border:`1px solid ${t.border}`,background:'transparent',color:t.fgMuted,cursor:'pointer',fontSize:12,fontFamily:t.mono}}>Отмена</button>
-        <button onClick={doSave} disabled={saving} style={{flex:1,padding:'8px',borderRadius:7,border:`1px solid ${t.borderStrong}`,background:t.surfaceHov,color:t.fg,cursor:'pointer',fontSize:12,fontWeight:600,fontFamily:t.mono}}>
-          {saving?'...':(isEdit?'Применить':'Создать')}
+      <div style={{display:'flex', gap:8, marginTop:16}}>
+        <button onClick={onClose} style={{flex:1, padding:'8px', borderRadius:7, border:`1px solid ${t.border}`, background:'transparent', color:t.fgMuted, cursor:'pointer', fontSize:12, fontFamily:t.mono}}>Отмена</button>
+        <button onClick={doSave} disabled={saving} style={{flex:1, padding:'8px', borderRadius:7, border:`1px solid ${t.borderStrong}`, background:t.surfaceHov, color:t.fg, cursor:'pointer', fontSize:12, fontWeight:600, fontFamily:t.mono}}>
+          {saving ? '...' : (isEdit ? 'Применить' : 'Создать')}
         </button>
       </div>
     </Modal>
   );
 }
 
-function BlockPicker({ onInsert, t }: { onInsert:(c:string)=>void; t:TTokens }) {
-  const [open,setOpen]  = useState(false);
-  const [grp,setGrp]    = useState(0);
-  const [sub,setSub]    = useState<BI|null>(null);
+function BlockPicker({ onInsert, t }: { readonly onInsert: (c:string) => void; readonly t: TTokens }) {
+  const [open, setOpen] = useState(false);
+  const [grp,  setGrp]  = useState(0);
+  const [sub,  setSub]  = useState<BI|null>(null);
   const btnRef  = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const [pos, setPos]   = useState({top:0,left:0});
+  const [pos, setPos] = useState({top:0, left:0});
   const MENU_W = 360;
 
   const toggle = () => {
-    if(open){setOpen(false);return;}
+    if (open) { setOpen(false); return; }
     const r = btnRef.current?.getBoundingClientRect();
-    if(!r) return;
-    const idealLeft = r.left + r.width/2 - MENU_W/2;
-    const clampedLeft = Math.max(8, Math.min(idealLeft, window.innerWidth - MENU_W - 8));
-    setPos({top: r.bottom+4, left: clampedLeft});
-    setOpen(true); setSub(null);
+    if (!r) return;
+    const idealLeft = r.left + r.width / 2 - MENU_W / 2;
+    const clampedLeft = Math.max(8, Math.min(idealLeft, globalThis.innerWidth - MENU_W - 8));
+    setPos({top: r.bottom + 4, left: clampedLeft});
+    setOpen(true);
+    setSub(null);
   };
 
-  // Use capture phase so we reliably detect outside clicks
-  // Check both the trigger button and the portal div via refs
-  useEffect(()=>{
-    if(!open) return;
-    const h=(e:MouseEvent)=>{
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => {
       const target = e.target as Node;
       const insideBtn  = btnRef.current?.contains(target) ?? false;
       const insideMenu = menuRef.current?.contains(target) ?? false;
-      if(!insideBtn && !insideMenu) setOpen(false);
+      if (!insideBtn && !insideMenu) setOpen(false);
     };
     document.addEventListener('mousedown', h, true);
-    return ()=>document.removeEventListener('mousedown', h, true);
-  },[open]);
+    return () => document.removeEventListener('mousedown', h, true);
+  }, [open]);
 
-  const rs = (active?:boolean):React.CSSProperties => ({
-    width:'100%',display:'flex',alignItems:'center',gap:7,padding:'6px 10px',
-    borderRadius:5,border:'none',cursor:'pointer',textAlign:'left' as const,
-    background:active?t.surfaceHov:'transparent',color:t.fg,fontSize:11,fontFamily:t.mono,
+  const rs = (active?: boolean): React.CSSProperties => ({
+    width:'100%', display:'flex', alignItems:'center', gap:7, padding:'6px 10px',
+    borderRadius:5, border:'none', cursor:'pointer', textAlign:'left' as const,
+    background: active ? t.surfaceHov : 'transparent', color:t.fg, fontSize:11, fontFamily:t.mono,
     justifyContent:'space-between' as const,
   });
 
   return (
     <>
-      <button ref={btnRef} onClick={toggle} title="Вставить блок"
+      <button
+        ref={btnRef}
+        onClick={toggle}
+        title="Вставить блок"
         style={{
-          display:'flex',alignItems:'center',justifyContent:'center',
-          padding:'3px 8px',height:22,borderRadius:5,
-          border:`1px solid ${open?t.borderStrong:t.border}`,
-          background:open?t.surfaceHov:'transparent',
-          color:open?t.fg:t.fgMuted,cursor:'pointer',fontSize:11,fontFamily:t.mono,gap:4,
+          display:'flex', alignItems:'center', justifyContent:'center',
+          padding:'3px 8px', height:22, borderRadius:5,
+          border:`1px solid ${open ? t.borderStrong : t.border}`,
+          background: open ? t.surfaceHov : 'transparent',
+          color: open ? t.fg : t.fgMuted, cursor:'pointer', fontSize:11, fontFamily:t.mono, gap:4,
         }}
-        onMouseEnter={e=>{ if(!open){(e.currentTarget as HTMLButtonElement).style.background=t.surfaceHov;(e.currentTarget as HTMLButtonElement).style.color=t.fg;} }}
-        onMouseLeave={e=>{ if(!open){(e.currentTarget as HTMLButtonElement).style.background='transparent';(e.currentTarget as HTMLButtonElement).style.color=t.fgMuted;} }}
+        onMouseEnter={e => { if (!open) { (e.currentTarget as HTMLButtonElement).style.background = t.surfaceHov; (e.currentTarget as HTMLButtonElement).style.color = t.fg; } }}
+        onMouseLeave={e => { if (!open) { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = t.fgMuted; } }}
       ><Plus size={11}/> Блок</button>
 
       {open && createPortal(
         <div ref={menuRef} style={{
-          position:'fixed',top:pos.top,left:pos.left,zIndex:100030,
-          width:MENU_W,maxHeight:340,
-          background:t.bg,border:`1px solid ${t.borderStrong}`,
-          borderRadius:10,boxShadow:t.shadow,
-          display:'flex',overflow:'hidden',fontFamily:t.mono,
+          position:'fixed', top:pos.top, left:pos.left, zIndex:100030,
+          width:MENU_W, maxHeight:340,
+          background:t.bg, border:`1px solid ${t.borderStrong}`,
+          borderRadius:10, boxShadow:t.shadow,
+          display:'flex', overflow:'hidden', fontFamily:t.mono,
         }}>
-          <div style={{width:100,borderRight:`1px solid ${t.border}`,overflowY:'auto',flexShrink:0}} className="adm-scroll">
-            {BG.map((g,gi)=>(
-              <button key={gi} onClick={()=>{ setGrp(gi); setSub(null); }} style={{
-                width:'100%',display:'flex',alignItems:'center',gap:6,
-                padding:'7px 9px',border:'none',textAlign:'left',cursor:'pointer',
-                background:grp===gi?t.surfaceHov:'transparent',
-                color:grp===gi?t.fg:t.fgMuted,fontSize:10,fontFamily:t.mono,
-                borderLeft:grp===gi?`2px solid ${t.fg}`:'2px solid transparent',
+          <div style={{width:100, borderRight:`1px solid ${t.border}`, overflowY:'auto', flexShrink:0}} className="adm-scroll">
+            {BG.map((g, gi) => (
+              <button key={g.g} onClick={() => { setGrp(gi); setSub(null); }} style={{
+                width:'100%', display:'flex', alignItems:'center', gap:6,
+                padding:'7px 9px', border:'none', textAlign:'left', cursor:'pointer',
+                background: grp === gi ? t.surfaceHov : 'transparent',
+                color: grp === gi ? t.fg : t.fgMuted, fontSize:10, fontFamily:t.mono,
+                borderLeft: grp === gi ? `2px solid ${t.fg}` : '2px solid transparent',
               }}>
-                {g.icon}<span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{g.g}</span>
+                {g.icon}<span style={{overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{g.g}</span>
               </button>
             ))}
           </div>
-          <div style={{flex:1,overflowY:'auto',padding:'4px'}} className="adm-scroll">
-            {!sub ? BG[grp].items.map((item,ii)=>(
-              <button key={ii} onClick={()=>{ if(item.variants){ setSub(item); } else { onInsert(item.code!); setOpen(false); } }}
-                style={rs()} onMouseEnter={e=>(e.currentTarget as HTMLButtonElement).style.background=t.surfaceHov}
-                onMouseLeave={e=>(e.currentTarget as HTMLButtonElement).style.background='transparent'}>
-                <div style={{display:'flex',alignItems:'center',gap:6}}><span style={{color:t.fgMuted}}>{item.icon}</span>{item.label}</div>
-                {item.variants&&<ChevronRight size={9} style={{color:t.fgSub,flexShrink:0}}/>}
+          <div style={{flex:1, overflowY:'auto', padding:'4px'}} className="adm-scroll">
+            {!sub ? BG[grp].items.map((item, ii) => (
+              <button
+                key={item.label + ii}
+                onClick={() => { if (item.variants) { setSub(item); } else { onInsert(item.code!); setOpen(false); } }}
+                style={rs()}
+                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = t.surfaceHov}
+                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
+              >
+                <div style={{display:'flex', alignItems:'center', gap:6}}><span style={{color:t.fgMuted}}>{item.icon}</span>{item.label}</div>
+                {item.variants && <ChevronRight size={9} style={{color:t.fgSub, flexShrink:0}}/>}
               </button>
             )) : (
               <>
-                <button onClick={()=>setSub(null)} style={{display:'flex',alignItems:'center',gap:4,padding:'5px 8px',border:'none',background:'transparent',color:t.fgMuted,cursor:'pointer',fontSize:10,fontFamily:t.mono,marginBottom:3}}>
+                <button onClick={() => setSub(null)} style={{display:'flex', alignItems:'center', gap:4, padding:'5px 8px', border:'none', background:'transparent', color:t.fgMuted, cursor:'pointer', fontSize:10, fontFamily:t.mono, marginBottom:3}}>
                   <ChevronRight size={9} style={{transform:'rotate(180deg)'}}/> Назад
                 </button>
-                <div style={{fontSize:9,color:t.fgSub,padding:'0 8px 5px',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.07em'}}>{sub.label}</div>
-                {sub.variants!.map((v,vi)=>(
-                  <button key={vi} onClick={()=>{ onInsert(v.code); setOpen(false); }}
-                    style={{...rs(),justifyContent:'flex-start'}}
-                    onMouseEnter={e=>(e.currentTarget as HTMLButtonElement).style.background=t.surfaceHov}
-                    onMouseLeave={e=>(e.currentTarget as HTMLButtonElement).style.background='transparent'}>
+                <div style={{fontSize:9, color:t.fgSub, padding:'0 8px 5px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em'}}>{sub.label}</div>
+                {sub.variants!.map((v, vi) => (
+                  <button
+                    key={v.label + vi}
+                    onClick={() => { onInsert(v.code); setOpen(false); }}
+                    style={{...rs(), justifyContent:'flex-start'}}
+                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = t.surfaceHov}
+                    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
+                  >
                     {v.label}
                   </button>
                 ))}
@@ -473,31 +549,31 @@ function BlockPicker({ onInsert, t }: { onInsert:(c:string)=>void; t:TTokens }) 
   );
 }
 
-function MarkdownEditor({ filePath, onClose, t }: { filePath:string; onClose:()=>void; t:TTokens }) {
-  const [fm,setFm]           = useState<FM>({...EMPTY_FM});
-  const [body,setBody]       = useState('');
-  const [loading,setLoading] = useState(true);
-  const [saving,setSaving]   = useState(false);
-  const [dirty,setDirty]     = useState(false);
-  const [fmOpen,setFmOpen]   = useState(false);
+function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; readonly onClose: () => void; readonly t: TTokens }) {
+  const [fm, setFm]           = useState<FM>({...EMPTY_FM});
+  const [body, setBody]       = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving]   = useState(false);
+  const [dirty, setDirty]     = useState(false);
+  const [fmOpen, setFmOpen]   = useState(false);
   const taRef    = useRef<HTMLTextAreaElement>(null);
   const fmRef    = useRef(fm);
   const bodyRef  = useRef(body);
-  useEffect(()=>{ fmRef.current=fm; },[fm]);
-  useEffect(()=>{ bodyRef.current=body; },[body]);
+  useEffect(() => { fmRef.current = fm; }, [fm]);
+  useEffect(() => { bodyRef.current = body; }, [body]);
 
-  const bcRef    = useRef<BroadcastChannel|null>(null);
+  const bcRef     = useRef<BroadcastChannel|null>(null);
   const liveTimer = useRef<ReturnType<typeof setTimeout>|null>(null);
 
-  useEffect(()=>{
-    if(typeof BroadcastChannel !== 'undefined') {
+  useEffect(() => {
+    if (typeof BroadcastChannel !== 'undefined') {
       bcRef.current = new BroadcastChannel('hub-dev-preview');
     }
-    return ()=>{ bcRef.current?.close(); };
-  },[]);
+    return () => { bcRef.current?.close(); };
+  }, []);
 
   const broadcastPreview = useCallback((md: string) => {
-    if(liveTimer.current) clearTimeout(liveTimer.current);
+    if (liveTimer.current) clearTimeout(liveTimer.current);
     liveTimer.current = setTimeout(async () => {
       try {
         const result = await bridge.renderPreview(md);
@@ -506,134 +582,149 @@ function MarkdownEditor({ filePath, onClose, t }: { filePath:string; onClose:()=
     }, 300);
   }, []);
 
-  const fileName = filePath.split('/').pop()?.replace(/\.md$/,'') ?? '';
+  const fileName = filePath.split('/').pop()?.replace(/\.md$/, '') ?? '';
   const isDark = t.bg === '#111112';
 
-  useEffect(()=>{
+  useEffect(() => {
     setLoading(true);
     bridge.readFile(filePath)
-      .then(({content})=>{
-        const {fm:f,body:b}=parseFM(content);
-        if(!f.icon){ const p=parseName(filePath.split('/').pop()??''); if(p.icon)f.icon=p.icon; }
+      .then(({ content }) => {
+        const { fm: f, body: b } = parseFM(content);
+        if (!f.icon) {
+          const p = parseName(filePath.split('/').pop() ?? '');
+          if (p.icon) f.icon = p.icon;
+        }
         setFm(f); setBody(b); setDirty(false);
         broadcastPreview(b);
       })
-      .catch(e=>toast.error(e.message))
-      .finally(()=>setLoading(false));
-  },[filePath, broadcastPreview]);
+      .catch(e => toast.error((e as Error).message))
+      .finally(() => setLoading(false));
+  }, [filePath, broadcastPreview]);
 
-  const save = useCallback(async()=>{
+  const save = useCallback(async () => {
     setSaving(true);
     try {
       await bridge.writeFile(filePath, serializeFM(fmRef.current, bodyRef.current));
-      setDirty(false); toast.success('Сохранено');
-    } catch(e:any){ toast.error(e.message); }
-    finally{ setSaving(false); }
-  },[filePath]);
+      setDirty(false);
+      toast.success('Сохранено');
+    } catch (e: unknown) {
+      toast.error((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }, [filePath]);
 
-  useEffect(()=>{
-    const h=(e:KeyboardEvent)=>{ if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();save();} };
-    window.addEventListener('keydown',h); return()=>window.removeEventListener('keydown',h);
-  },[save]);
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); save(); }
+    };
+    globalThis.addEventListener('keydown', h);
+    return () => globalThis.removeEventListener('keydown', h);
+  }, [save]);
 
-  const insertAtCursor = useCallback((snippet:string)=>{
-    const ta=taRef.current;
-    if(!ta){ setBody(p=>p+snippet); setDirty(true); return; }
-    const s=ta.selectionStart, e2=ta.selectionEnd;
-    const savedScroll=ta.scrollTop;
-    const nv=body.slice(0,s)+snippet+body.slice(e2);
+  const insertAtCursor = useCallback((snippet: string) => {
+    const ta = taRef.current;
+    if (!ta) { setBody(p => p + snippet); setDirty(true); return; }
+    const s = ta.selectionStart, e2 = ta.selectionEnd;
+    const savedScroll = ta.scrollTop;
+    const nv = body.slice(0, s) + snippet + body.slice(e2);
     setBody(nv); setDirty(true); broadcastPreview(nv);
-    requestAnimationFrame(()=>{
-      ta.focus(); ta.scrollTop=savedScroll;
-      ta.selectionStart=ta.selectionEnd=s+snippet.length;
+    requestAnimationFrame(() => {
+      ta.focus(); ta.scrollTop = savedScroll;
+      ta.selectionStart = ta.selectionEnd = s + snippet.length;
     });
-  },[body, broadcastPreview]);
+  }, [body, broadcastPreview]);
 
-  const handleInsert=(before:string,after='')=>{
-    const ta=taRef.current;
-    if(!ta){ insertAtCursor(before+after); return; }
-    const s=ta.selectionStart, e2=ta.selectionEnd, sel=body.slice(s,e2);
-    const savedScroll=ta.scrollTop;
-    const nv=body.slice(0,s)+before+sel+after+body.slice(e2);
+  const handleInsert = (before: string, after = '') => {
+    const ta = taRef.current;
+    if (!ta) { insertAtCursor(before + after); return; }
+    const s = ta.selectionStart, e2 = ta.selectionEnd, sel = body.slice(s, e2);
+    const savedScroll = ta.scrollTop;
+    const nv = body.slice(0, s) + before + sel + after + body.slice(e2);
     setBody(nv); setDirty(true); broadcastPreview(nv);
-    requestAnimationFrame(()=>{
-      ta.focus(); ta.scrollTop=savedScroll;
-      ta.selectionStart=s+before.length;
-      ta.selectionEnd=s+before.length+sel.length;
+    requestAnimationFrame(() => {
+      ta.focus(); ta.scrollTop = savedScroll;
+      ta.selectionStart = s + before.length;
+      ta.selectionEnd = s + before.length + sel.length;
     });
   };
 
   const handleChange = (v: string) => { setBody(v); setDirty(true); broadcastPreview(v); };
 
-  const handleTab=(e:React.KeyboardEvent<HTMLTextAreaElement>)=>{
-    if(e.key!=='Tab') return; e.preventDefault();
-    const ta=e.currentTarget, s=ta.selectionStart;
-    const savedScroll=ta.scrollTop;
-    const nv=body.slice(0,s)+'  '+body.slice(ta.selectionEnd);
+  const handleTab = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key !== 'Tab') return;
+    e.preventDefault();
+    const ta = e.currentTarget, s = ta.selectionStart;
+    const savedScroll = ta.scrollTop;
+    const nv = body.slice(0, s) + '  ' + body.slice(ta.selectionEnd);
     setBody(nv); setDirty(true); broadcastPreview(nv);
-    requestAnimationFrame(()=>{ ta.scrollTop=savedScroll; ta.selectionStart=ta.selectionEnd=s+2; });
+    requestAnimationFrame(() => { ta.scrollTop = savedScroll; ta.selectionStart = ta.selectionEnd = s + 2; });
   };
 
-  const inpS:React.CSSProperties={
-    width:'100%',padding:'4px 7px',borderRadius:5,
-    border:`1px solid ${t.border}`,background:t.inpBg,color:t.fg,
-    fontSize:11,outline:'none',fontFamily:t.mono,boxSizing:'border-box',
+  const inpS: React.CSSProperties = {
+    width:'100%', padding:'4px 7px', borderRadius:5,
+    border:`1px solid ${t.border}`, background:t.inpBg, color:t.fg,
+    fontSize:11, outline:'none', fontFamily:t.mono, boxSizing:'border-box',
   };
 
-  const toolBtn=(fn:()=>void,ico:React.ReactNode,tip:string)=>(
+  const toolBtn = (fn: () => void, ico: React.ReactNode, tip: string) => (
     <button key={tip} onClick={fn} title={tip} style={{
-      display:'flex',alignItems:'center',justifyContent:'center',
-      width:24,height:22,borderRadius:4,border:'none',
-      background:'transparent',color:t.fgMuted,cursor:'pointer',flexShrink:0,
+      display:'flex', alignItems:'center', justifyContent:'center',
+      width:24, height:22, borderRadius:4, border:'none',
+      background:'transparent', color:t.fgMuted, cursor:'pointer', flexShrink:0,
     }}
-      onMouseEnter={e=>{ (e.currentTarget as HTMLButtonElement).style.background=t.surfaceHov;(e.currentTarget as HTMLButtonElement).style.color=t.fg; }}
-      onMouseLeave={e=>{ (e.currentTarget as HTMLButtonElement).style.background='transparent';(e.currentTarget as HTMLButtonElement).style.color=t.fgMuted; }}
+      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.surfaceHov; (e.currentTarget as HTMLButtonElement).style.color = t.fg; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = t.fgMuted; }}
     >{ico}</button>
   );
 
-  if(loading) return (
-    <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center'}}>
-      <Loader2 size={18} style={{color:t.fgMuted,animation:'devSpinAnim 1s linear infinite'}}/>
+  if (loading) return (
+    <div style={{flex:1, display:'flex', alignItems:'center', justifyContent:'center'}}>
+      <Loader2 size={18} style={{color:t.fgMuted, animation:'devSpinAnim 1s linear infinite'}}/>
     </div>
   );
 
   return (
-    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
-      <div style={{display:'flex',alignItems:'center',gap:6,padding:'6px 10px',borderBottom:`1px solid ${t.border}`,background:t.surface,flexShrink:0}}>
-        <button onClick={onClose} style={{display:'flex',alignItems:'center',gap:4,padding:'5px 9px',borderRadius:6,border:`1px solid ${t.border}`,background:'transparent',color:t.fgMuted,cursor:'pointer',fontSize:11,fontFamily:t.mono,flexShrink:0}}
-          onMouseEnter={e=>(e.currentTarget as HTMLButtonElement).style.background=t.surfaceHov}
-          onMouseLeave={e=>(e.currentTarget as HTMLButtonElement).style.background='transparent'}
+    <div style={{flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0}}>
+      <div style={{display:'flex', alignItems:'center', gap:6, padding:'6px 10px', borderBottom:`1px solid ${t.border}`, background:t.surface, flexShrink:0}}>
+        <button onClick={onClose} style={{display:'flex', alignItems:'center', gap:4, padding:'5px 9px', borderRadius:6, border:`1px solid ${t.border}`, background:'transparent', color:t.fgMuted, cursor:'pointer', fontSize:11, fontFamily:t.mono, flexShrink:0}}
+          onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = t.surfaceHov}
+          onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
         >← Назад</button>
-        <span style={{flex:1,fontSize:11,color:t.fg,fontFamily:t.mono,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-          {fileName}{dirty&&<span style={{color:t.warning,marginLeft:5}}>●</span>}
+        <span style={{flex:1, fontSize:11, color:t.fg, fontFamily:t.mono, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+          {fileName}{dirty && <span style={{color:t.warning, marginLeft:5}}>●</span>}
         </span>
-        <button onClick={save} style={{display:'flex',alignItems:'center',gap:6,padding:'5px 12px',borderRadius:6,border:`1px solid ${dirty?t.borderStrong:t.border}`,background:dirty?t.surfaceHov:'transparent',color:dirty?t.fg:t.fgMuted,cursor:'pointer',fontSize:11,fontFamily:t.mono,flexShrink:0,fontWeight:dirty?600:400}}>
-          {saving&&<Loader2 size={11} style={{animation:'devSpinAnim 1s linear infinite'}}/>}
+        <button onClick={save} style={{display:'flex', alignItems:'center', gap:6, padding:'5px 12px', borderRadius:6, border:`1px solid ${dirty ? t.borderStrong : t.border}`, background:dirty ? t.surfaceHov : 'transparent', color:dirty ? t.fg : t.fgMuted, cursor:'pointer', fontSize:11, fontFamily:t.mono, flexShrink:0, fontWeight:dirty ? 600 : 400}}>
+          {saving && <Loader2 size={11} style={{animation:'devSpinAnim 1s linear infinite'}}/>}
           Сохранить
-          <span style={{fontSize:9,color:t.fgSub,background:t.inpBg,border:`1px solid ${t.border}`,borderRadius:3,padding:'1px 4px',fontFamily:t.mono}}>Ctrl+S</span>
+          <span style={{fontSize:9, color:t.fgSub, background:t.inpBg, border:`1px solid ${t.border}`, borderRadius:3, padding:'1px 4px', fontFamily:t.mono}}>Ctrl+S</span>
         </button>
       </div>
 
-      <div style={{borderBottom:`1px solid ${t.border}`,flexShrink:0}}>
-        <button onClick={()=>setFmOpen(v=>!v)} style={{width:'100%',display:'flex',alignItems:'center',gap:6,padding:'5px 10px',border:'none',background:t.surface,color:t.fgSub,fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.08em',cursor:'pointer',textAlign:'left',fontFamily:t.mono}}>
-          {fmOpen?<ChevronDown size={10}/>:<ChevronRight size={10}/>}
+      <div style={{borderBottom:`1px solid ${t.border}`, flexShrink:0}}>
+        <button onClick={() => setFmOpen(v => !v)} style={{width:'100%', display:'flex', alignItems:'center', gap:6, padding:'5px 10px', border:'none', background:t.surface, color:t.fgSub, fontSize:10, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em', cursor:'pointer', textAlign:'left', fontFamily:t.mono}}>
+          {fmOpen ? <ChevronDown size={10}/> : <ChevronRight size={10}/>}
           Frontmatter
-          {fm.title&&<span style={{fontWeight:400,letterSpacing:0,textTransform:'none',marginLeft:4,color:t.fgSub}}>— {fm.title.slice(0,30)}</span>}
+          {fm.title && <span style={{fontWeight:400, letterSpacing:0, textTransform:'none', marginLeft:4, color:t.fgSub}}>— {fm.title.slice(0, 30)}</span>}
         </button>
-        {fmOpen&&(
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'4px 8px',padding:'6px 10px 8px',background:t.surface}}>
-            {([{k:'title',l:'Title',sp:true},{k:'description',l:'Description',sp:true},
-               {k:'author',l:'Author'},{k:'date',l:'Date',tp:'date'},
-               {k:'updated',l:'Updated',tp:'date'},{k:'tags',l:'Tags',sp:true},
-               {k:'icon',l:'Icon'},{k:'lang',l:'Lang'},{k:'robots',l:'Robots'},
-            ] as Array<{k:keyof FM;l:string;sp?:boolean;tp?:string}>).map(f=>(
-              <div key={f.k} style={{gridColumn:f.sp?'1 / -1':'auto'}}>
-                <div style={{fontSize:9,color:t.fgSub,marginBottom:2,textTransform:'uppercase',letterSpacing:'0.06em'}}>{f.l}</div>
-                <input type={f.tp??'text'} value={fm[f.k]}
-                  onChange={e=>{
-                    const newFm = {...fm,[f.k]:e.target.value};
+        {fmOpen && (
+          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'4px 8px', padding:'6px 10px 8px', background:t.surface}}>
+            {([
+              {k:'title', l:'Title', sp:true},       {k:'description', l:'Description', sp:true},
+              {k:'author', l:'Author'},               {k:'date', l:'Date', tp:'date'},
+              {k:'updated', l:'Updated', tp:'date'},  {k:'tags', l:'Tags', sp:true},
+              {k:'icon', l:'Icon'},                   {k:'lang', l:'Lang'},
+              {k:'robots', l:'Robots'},
+            ] as Array<{k: keyof FM; l: string; sp?: boolean; tp?: string}>).map(f => (
+              <div key={f.k} style={{gridColumn: f.sp ? '1 / -1' : 'auto'}}>
+                <div style={{fontSize:9, color:t.fgSub, marginBottom:2, textTransform:'uppercase', letterSpacing:'0.06em'}}>{f.l}</div>
+                <input
+                  type={f.tp ?? 'text'}
+                  value={fm[f.k]}
+                  onChange={e => {
+                    const newFm = {...fm, [f.k]: e.target.value};
                     setFm(newFm); setDirty(true);
-                    if(liveTimer.current) clearTimeout(liveTimer.current);
+                    if (liveTimer.current) clearTimeout(liveTimer.current);
                     liveTimer.current = setTimeout(async () => {
                       try {
                         const result = await bridge.renderPreview(bodyRef.current);
@@ -641,112 +732,137 @@ function MarkdownEditor({ filePath, onClose, t }: { filePath:string; onClose:()=
                       } catch {}
                     }, 200);
                   }}
-                  style={inpS}/>
+                  style={inpS}
+                />
               </div>
             ))}
           </div>
         )}
       </div>
 
-      <div style={{display:'flex',alignItems:'center',gap:1,padding:'3px 8px',borderBottom:`1px solid ${t.border}`,background:t.surface,flexShrink:0}}>
-        {toolBtn(()=>handleInsert('**','**'), <Bold size={11}/>, 'Жирный')}
-        {toolBtn(()=>handleInsert('_','_'),   <Italic size={11}/>, 'Курсив')}
-        {toolBtn(()=>handleInsert('`','`'),   <Code size={11}/>, 'Код')}
-        {toolBtn(()=>handleInsert('\n## ',''), <Hash size={11}/>, 'H2')}
-        {toolBtn(()=>handleInsert('\n- ',''), <List size={11}/>, 'Список')}
-        {toolBtn(()=>handleInsert('[','](url)'), <Link size={11}/>, 'Ссылка')}
-        {toolBtn(()=>handleInsert('\n---\n',''), <Minus size={11}/>, 'HR')}
-        <div style={{width:1,height:14,background:t.border,margin:'0 3px'}}/>
+      <div style={{display:'flex', alignItems:'center', gap:1, padding:'3px 8px', borderBottom:`1px solid ${t.border}`, background:t.surface, flexShrink:0}}>
+        {toolBtn(() => handleInsert('**', '**'), <Bold size={11}/>,   'Жирный')}
+        {toolBtn(() => handleInsert('_', '_'),   <Italic size={11}/>, 'Курсив')}
+        {toolBtn(() => handleInsert('`', '`'),   <Code size={11}/>,   'Код')}
+        {toolBtn(() => handleInsert('\n## ', ''), <Hash size={11}/>,  'H2')}
+        {toolBtn(() => handleInsert('\n- ', ''), <List size={11}/>,   'Список')}
+        {toolBtn(() => handleInsert('[', '](url)'), <Link size={11}/>, 'Ссылка')}
+        {toolBtn(() => handleInsert('\n---\n', ''), <Minus size={11}/>, 'HR')}
+        <div style={{width:1, height:14, background:t.border, margin:'0 3px'}}/>
         <BlockPicker onInsert={insertAtCursor} t={t}/>
         <div style={{flex:1}}/>
-        <span style={{fontSize:10,color:t.fgSub}}>{body.trim().split(/\s+/).filter(Boolean).length} слов</span>
+        <span style={{fontSize:10, color:t.fgSub}}>{body.trim().split(/\s+/).filter(Boolean).length} слов</span>
       </div>
 
       <textarea
         ref={taRef}
         value={body}
-        onChange={e=>handleChange(e.target.value)}
+        onChange={e => handleChange(e.target.value)}
         onKeyDown={handleTab}
         spellCheck={false}
         placeholder="Начните писать..."
         style={{
-          flex:1,padding:'12px 14px',border:'none',
-          background:isDark?'#0d0d0e':'#eceae5',
-          color:isDark?'#e2e8f0':'#1e293b',
+          flex:1, padding:'12px 14px', border:'none',
+          background: isDark ? '#0d0d0e' : '#eceae5',
+          color: isDark ? '#e2e8f0' : '#1e293b',
           fontSize:12,
           fontFamily:'ui-monospace, "Cascadia Code", "Fira Code", monospace',
-          lineHeight:1.75,resize:'none',outline:'none',
-          scrollbarWidth:'thin',width:'100%',boxSizing:'border-box',
+          lineHeight:1.75, resize:'none', outline:'none',
+          scrollbarWidth:'thin', width:'100%', boxSizing:'border-box',
         } as React.CSSProperties}
       />
     </div>
   );
 }
 
+// Вычисляет стили фона и обводки для узла дерева в зависимости от состояния drag/active/hover
+function getNodeBackground(isDragOver: boolean, isDir: boolean, isActive: boolean, isHov: boolean, t: TTokens) {
+  if (isDragOver) return isDir ? 'rgba(20,184,166,0.15)' : 'rgba(245,158,11,0.12)';
+  if (isActive || isHov) return t.surfaceHov;
+  return 'transparent';
+}
+
+function getNodeOutline(isDragOver: boolean, isDir: boolean) {
+  if (!isDragOver) return 'none';
+  return `1.5px dashed ${isDir ? '#14b8a6' : '#f59e0b'}`;
+}
+
 function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
   selectedPath, dragOverPath, setDragOverPath, t }: {
-  entry:TreeEntry; onCreate:(c:CC)=>void; onDelete:(e:TreeEntry)=>void;
-  onEdit:(e:TreeEntry)=>void; onSelect:(p:string)=>void;
-  onDrop:(srcPath:string, dstPath:string)=>void;
-  selectedPath:string; dragOverPath:string|null;
-  setDragOverPath:(p:string|null)=>void; t:TTokens;
+  readonly entry: TreeEntry;
+  readonly onCreate: (c: CC) => void;
+  readonly onDelete: (e: TreeEntry) => void;
+  readonly onEdit: (e: TreeEntry) => void;
+  readonly onSelect: (p: string) => void;
+  readonly onDrop: (srcPath: string, dstPath: string) => void;
+  readonly selectedPath: string;
+  readonly dragOverPath: string|null;
+  readonly setDragOverPath: (p: string|null) => void;
+  readonly t: TTokens;
 }) {
-  const [expanded,setExpanded] = useState(entry.depth<2);
-  const [hov,setHov]           = useState(false);
-  const isDir      = entry.type==='dir';
-  const isActive   = entry.path===selectedPath;
-  const isDragOver = dragOverPath===entry.path;
-  const p          = entry.parsed;
+  const [expanded, setExpanded] = useState(entry.depth < 2);
+  const [hov, setHov]           = useState(false);
+  const isDir    = entry.type === 'dir';
+  const isActive = entry.path === selectedPath;
+  const isDragOver = dragOverPath === entry.path;
+  const p = entry.parsed;
   const typeDot: Record<string,string> = { N:'#22c55e', C:'#14b8a6', A:'#f59e0b' };
 
-  const actionBtn=(ico:React.ReactNode,tip:string,fn:()=>void,danger?:boolean)=>(
+  const actionBtn = (ico: React.ReactNode, tip: string, fn: () => void, danger?: boolean) => (
     <button key={tip} title={tip}
-      onClick={e=>{ e.stopPropagation(); fn(); }}
-      style={{width:28,height:28,borderRadius:5,border:'none',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',background:t.surfaceHov,color:danger?t.danger:t.fgMuted,cursor:'pointer'}}
-      onMouseEnter={e=>{ (e.currentTarget as HTMLButtonElement).style.color=danger?t.danger:t.fg; (e.currentTarget as HTMLButtonElement).style.background=danger?'rgba(239,68,68,0.1)':t.surfaceHov; }}
-      onMouseLeave={e=>{ (e.currentTarget as HTMLButtonElement).style.color=danger?t.danger:t.fgMuted; (e.currentTarget as HTMLButtonElement).style.background=t.surfaceHov; }}
+      onClick={e => { e.stopPropagation(); fn(); }}
+      style={{width:28, height:28, borderRadius:5, border:'none', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', background:t.surfaceHov, color:danger ? t.danger : t.fgMuted, cursor:'pointer'}}
+      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = danger ? t.danger : t.fg; (e.currentTarget as HTMLButtonElement).style.background = danger ? 'rgba(239,68,68,0.1)' : t.surfaceHov; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = danger ? t.danger : t.fgMuted; (e.currentTarget as HTMLButtonElement).style.background = t.surfaceHov; }}
     >{ico}</button>
   );
+
+  const nodeBg      = getNodeBackground(isDragOver, isDir, isActive, hov, t);
+  const nodeOutline = getNodeOutline(isDragOver, isDir);
+
+  // Вес шрифта зависит от типа узла
+  const fontWeight = p.type === 'N' ? 600 : p.type === 'C' ? 500 : 400;
 
   return (
     <div>
       <div
         draggable
-        onDragStart={e=>{ e.stopPropagation(); e.dataTransfer.setData('text/plain', entry.path); e.dataTransfer.effectAllowed='move'; }}
-        onDragOver={e=>{ e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect='move'; setDragOverPath(entry.path); }}
-        onDragLeave={e=>{ e.stopPropagation(); setDragOverPath(null); }}
-        onDrop={e=>{ e.preventDefault(); e.stopPropagation(); setDragOverPath(null); const src=e.dataTransfer.getData('text/plain'); if(src&&src!==entry.path) onDrop(src,entry.path); }}
-        onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
-        onClick={()=>{ if(isDir)setExpanded(v=>!v); else onSelect(entry.path); }}
+        onDragStart={e => { e.stopPropagation(); e.dataTransfer.setData('text/plain', entry.path); e.dataTransfer.effectAllowed = 'move'; }}
+        onDragOver={e => { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'move'; setDragOverPath(entry.path); }}
+        onDragLeave={e => { e.stopPropagation(); setDragOverPath(null); }}
+        onDrop={e => { e.preventDefault(); e.stopPropagation(); setDragOverPath(null); const src = e.dataTransfer.getData('text/plain'); if (src && src !== entry.path) onDrop(src, entry.path); }}
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => setHov(false)}
+        onClick={() => { if (isDir) setExpanded(v => !v); else onSelect(entry.path); }}
         style={{
-          display:'flex',alignItems:'center',gap:5,cursor:'grab',userSelect:'none',
-          padding:`4px 8px 4px ${8+entry.depth*14}px`,
+          display:'flex', alignItems:'center', gap:5, cursor:'grab', userSelect:'none',
+          padding:`4px 8px 4px ${8 + entry.depth * 14}px`,
           borderRadius:6,
-          background: isDragOver?(isDir?'rgba(20,184,166,0.15)':'rgba(245,158,11,0.12)'):isActive?t.surfaceHov:hov?t.surfaceHov:'transparent',
-          outline: isDragOver?`1.5px dashed ${isDir?'#14b8a6':'#f59e0b'}`:'none',
+          background: nodeBg,
+          outline: nodeOutline,
           outlineOffset:-1, minHeight:28, transition:'background 0.1s',
         }}
       >
-        <span style={{width:14,height:14,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',color:t.fgSub}}>
-          {isDir?(expanded?<ChevronDown size={11}/>:<ChevronRight size={11}/>):null}
+        <span style={{width:14, height:14, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', color:t.fgSub}}>
+          {isDir ? (expanded ? <ChevronDown size={11}/> : <ChevronRight size={11}/>) : null}
         </span>
-        {p.type && <span style={{width:7,height:7,borderRadius:'50%',flexShrink:0,background:typeDot[p.type]??t.fgSub}}/>}
-        {p.icon && <span style={{fontSize:9,color:t.fgSub,flexShrink:0,fontFamily:t.mono,maxWidth:60,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.icon}</span>}
-        <span style={{fontSize:12,color:t.fg,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,fontWeight:p.type==='N'?600:p.type==='C'?500:400}}>
+        {p.type && <span style={{width:7, height:7, borderRadius:'50%', flexShrink:0, background:typeDot[p.type] ?? t.fgSub}}/>}
+        {p.icon && <span style={{fontSize:9, color:t.fgSub, flexShrink:0, fontFamily:t.mono, maxWidth:60, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{p.icon}</span>}
+        <span style={{fontSize:12, color:t.fg, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, fontWeight}}>
           {p.title || entry.name}
         </span>
         {hov && (
-          <div style={{display:'flex',gap:3,flexShrink:0}} onClick={e=>e.stopPropagation()}>
-            {actionBtn(<Edit3 size={13}/>, 'Редактировать', ()=>onEdit(entry))}
-            {isDir&&p.type==='N'&&actionBtn(<FolderPlus size={13}/>, '+ Категория', ()=>onCreate({parentPath:entry.path,entryType:'C'}))}
-            {isDir&&(p.type==='N'||p.type==='C')&&actionBtn(<FilePlus size={13}/>, '+ Страница', ()=>onCreate({parentPath:entry.path,entryType:'A'}))}
-            {actionBtn(<Trash2 size={13}/>, 'Удалить', ()=>onDelete(entry), true)}
+          <div style={{display:'flex', gap:3, flexShrink:0}} onClick={e => e.stopPropagation()}>
+            {actionBtn(<Edit3 size={13}/>, 'Редактировать', () => onEdit(entry))}
+            {isDir && p.type === 'N' && actionBtn(<FolderPlus size={13}/>, '+ Категория', () => onCreate({parentPath:entry.path, entryType:'C'}))}
+            {isDir && (p.type === 'N' || p.type === 'C') && actionBtn(<FilePlus size={13}/>, '+ Страница', () => onCreate({parentPath:entry.path, entryType:'A'}))}
+            {actionBtn(<Trash2 size={13}/>, 'Удалить', () => onDelete(entry), true)}
           </div>
         )}
       </div>
-      {isDir&&expanded&&entry.children.length>0&&(
-        <div style={{marginLeft:8+entry.depth*14+7,borderLeft:`1px solid ${t.border}`}}>
-          {entry.children.map(c=>(
+      {isDir && expanded && entry.children.length > 0 && (
+        <div style={{marginLeft: 8 + entry.depth * 14 + 7, borderLeft:`1px solid ${t.border}`}}>
+          {entry.children.map(c => (
             <TreeNode key={c.path} entry={c} onCreate={onCreate} onDelete={onDelete}
               onEdit={onEdit} onSelect={onSelect} onDrop={onDrop}
               selectedPath={selectedPath} dragOverPath={dragOverPath}
@@ -758,50 +874,67 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
   );
 }
 
+// Рекурсивный подсчёт файлов в дереве
+function countFiles(entries: TreeEntry[]): number {
+  return entries.reduce((acc, e) => {
+    const childCount = e.children ? countFiles(e.children) : 0;
+    return acc + (e.type === 'file' ? 1 : 0) + childCount;
+  }, 0);
+}
+
 export default function DocsPanel() {
   const t = useContext(ThemeTokensContext);
-  const [tree,setTree]             = useState<TreeEntry[]>([]);
-  const [loading,setLoading]       = useState(true);
-  const [selected,setSelected]     = useState<string|null>(null);
-  const [modalCfg,setModal]        = useState<{cfg:CC;existing?:TreeEntry}|null>(null);
-  const [toDelete,setToDelete]     = useState<TreeEntry|null>(null);
-  const [dragOverPath,setDragOver] = useState<string|null>(null);
-  const [moving,setMoving]         = useState(false);
+  const [tree, setTree]             = useState<TreeEntry[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [selected, setSelected]     = useState<string|null>(null);
+  const [modalCfg, setModal]        = useState<{cfg:CC; existing?:TreeEntry}|null>(null);
+  const [toDelete, setToDelete]     = useState<TreeEntry|null>(null);
+  const [dragOverPath, setDragOver] = useState<string|null>(null);
+  const [moving, setMoving]         = useState(false);
 
-  const load = useCallback(async()=>{
+  const load = useCallback(async () => {
     setLoading(true);
-    try { const {entries}=await bridge.listDocs(); setTree(buildTree(entries)); }
-    catch(e:any){ toast.error(e.message); }
-    finally{ setLoading(false); }
-  },[]);
+    try {
+      const { entries } = await bridge.listDocs();
+      setTree(buildTree(entries));
+    } catch (e: unknown) {
+      toast.error((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  useEffect(()=>{ load(); },[load]);
+  useEffect(() => { load(); }, [load]);
 
-  const confirmDelete = async()=>{
-    if(!toDelete) return;
+  const confirmDelete = async () => {
+    if (!toDelete) return;
     try {
       await bridge.deleteFile(toDelete.path);
-      if(selected===toDelete.path) setSelected(null);
-      setToDelete(null); setTimeout(load,400); toast.success('Удалено');
-    } catch(e:any){ toast.error(e.message); }
+      if (selected === toDelete.path) setSelected(null);
+      setToDelete(null);
+      setTimeout(load, 400);
+      toast.success('Удалено');
+    } catch (e: unknown) {
+      toast.error((e as Error).message);
+    }
   };
 
-  const handleDone = useCallback((fp?:string)=>{
-    setTimeout(()=>{ load(); if(fp)setSelected(fp); },400);
-  },[load]);
+  const handleDone = useCallback((fp?: string) => {
+    setTimeout(() => { load(); if (fp) setSelected(fp); }, 400);
+  }, [load]);
 
-  const handleEdit = useCallback((entry: TreeEntry)=>{
-    if (entry.type==='file') {
+  const handleEdit = useCallback((entry: TreeEntry) => {
+    if (entry.type === 'file') {
       setSelected(entry.path);
-    } else {
-      const p = entry.parsed;
-      const cfg: CC = {
-        parentPath: entry.path.split('/').slice(0,-1).join('/'),
-        entryType: p.type as 'N'|'C',
-      };
-      setModal({ cfg, existing: entry });
+      return;
     }
-  },[]);
+    const p = entry.parsed;
+    const cfg: CC = {
+      parentPath: entry.path.split('/').slice(0, -1).join('/'),
+      entryType: p.type as 'N'|'C',
+    };
+    setModal({ cfg, existing: entry });
+  }, []);
 
   const handleDrop = useCallback(async (srcPath: string, dstPath: string) => {
     const allEntries: TreeEntry[] = [];
@@ -812,9 +945,10 @@ export default function DocsPanel() {
     const dst = allEntries.find(e => e.path === dstPath);
     if (!src || !dst) return;
 
-    const targetDir = dst.type === 'dir' ? dst.path : dst.path.split('/').slice(0,-1).join('/');
+    const targetDir = dst.type === 'dir' ? dst.path : dst.path.split('/').slice(0, -1).join('/');
     if (srcPath === targetDir || targetDir.startsWith(srcPath + '/')) {
-      toast.error('Нельзя переместить папку внутрь себя'); return;
+      toast.error('Нельзя переместить папку внутрь себя');
+      return;
     }
 
     const srcName = srcPath.split('/').pop()!;
@@ -833,82 +967,92 @@ export default function DocsPanel() {
       }
       toast.success(`Перемещено → ${targetDir.split('/').pop()}`);
       setTimeout(load, 400);
-    } catch(e:any) { toast.error(e.message); }
-    finally { setMoving(false); }
+    } catch (e: unknown) {
+      toast.error((e as Error).message);
+    } finally {
+      setMoving(false);
+    }
   }, [tree, selected, load]);
 
-  const fileCount = tree.reduce(function c(a:number,e:TreeEntry):number{
-    return a+(e.type==='file'?1:0)+(e.children?e.children.reduce(c,0):0);
-  },0);
+  const fileCount = countFiles(tree);
 
-  if(selected) return (
-    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      <MarkdownEditor filePath={selected} onClose={()=>setSelected(null)} t={t}/>
-      {modalCfg&&(
+  // Контент основного списка: загрузка / пусто / дерево
+  const renderTreeContent = () => {
+    if (loading) return (
+      <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:8, padding:24, color:t.fgMuted}}>
+        <Loader2 size={14} style={{animation:'devSpinAnim 1s linear infinite'}}/>
+        <span style={{fontSize:12}}>Загрузка...</span>
+      </div>
+    );
+    if (tree.length === 0) return (
+      <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:8, padding:28, color:t.fgMuted, textAlign:'center'}}>
+        <FolderOpen size={28} style={{opacity:0.3}}/>
+        <div style={{fontSize:12}}>Docs/ пуста. Создай Секция</div>
+      </div>
+    );
+    return tree.map(e => (
+      <TreeNode key={e.path} entry={e} onCreate={cfg => setModal({cfg})}
+        onDelete={setToDelete} onEdit={handleEdit}
+        onSelect={p => setSelected(p)} onDrop={handleDrop}
+        selectedPath={selected ?? ''} dragOverPath={dragOverPath}
+        setDragOverPath={setDragOver} t={t}/>
+    ));
+  };
+
+  if (selected) return (
+    <div style={{flex:1, display:'flex', flexDirection:'column', overflow:'hidden'}}>
+      <MarkdownEditor filePath={selected} onClose={() => setSelected(null)} t={t}/>
+      {modalCfg && (
         <EntryModal cfg={modalCfg.cfg} existing={modalCfg.existing}
-          onClose={()=>setModal(null)} onDone={handleDone} t={t}/>
+          onClose={() => setModal(null)} onDone={handleDone} t={t}/>
       )}
     </div>
   );
 
   return (
-    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      <div style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',borderBottom:`1px solid ${t.border}`,flexShrink:0,background:t.surface}}>
-        <button onClick={()=>setModal({cfg:{parentPath:'Docs',entryType:'N'}})} style={{display:'flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:7,border:`1px solid ${t.borderStrong}`,background:t.surfaceHov,color:t.fg,fontSize:11,fontWeight:500,cursor:'pointer',fontFamily:t.mono}}>
+    <div style={{flex:1, display:'flex', flexDirection:'column', overflow:'hidden'}}>
+      <div style={{display:'flex', alignItems:'center', gap:8, padding:'7px 10px', borderBottom:`1px solid ${t.border}`, flexShrink:0, background:t.surface}}>
+        <button onClick={() => setModal({cfg:{parentPath:'Docs', entryType:'N'}})} style={{display:'flex', alignItems:'center', gap:5, padding:'6px 12px', borderRadius:7, border:`1px solid ${t.borderStrong}`, background:t.surfaceHov, color:t.fg, fontSize:11, fontWeight:500, cursor:'pointer', fontFamily:t.mono}}>
           <Plus size={12}/> Секция
         </button>
         <div style={{flex:1}}/>
-        {moving && <Loader2 size={12} style={{color:t.fgMuted,animation:'devSpinAnim 1s linear infinite'}}/>}
-        <button onClick={load} style={{display:'flex',alignItems:'center',gap:4,padding:'6px 10px',borderRadius:6,border:`1px solid ${t.border}`,background:'transparent',color:t.fgMuted,cursor:'pointer',fontSize:11,fontFamily:t.mono}}
-          onMouseEnter={e=>(e.currentTarget as HTMLButtonElement).style.background=t.surfaceHov}
-          onMouseLeave={e=>(e.currentTarget as HTMLButtonElement).style.background='transparent'}
+        {moving && <Loader2 size={12} style={{color:t.fgMuted, animation:'devSpinAnim 1s linear infinite'}}/>}
+        <button onClick={load} style={{display:'flex', alignItems:'center', gap:4, padding:'6px 10px', borderRadius:6, border:`1px solid ${t.border}`, background:'transparent', color:t.fgMuted, cursor:'pointer', fontSize:11, fontFamily:t.mono}}
+          onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = t.surfaceHov}
+          onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
         >
           <RefreshCw size={11}/> Обновить
         </button>
       </div>
 
-      <div style={{padding:'4px 12px',fontSize:9,color:t.fgSub,background:t.surface,borderBottom:`1px solid ${t.border}`}}>
+      <div style={{padding:'4px 12px', fontSize:9, color:t.fgSub, background:t.surface, borderBottom:`1px solid ${t.border}`}}>
         Перетащи страницу или категорию в другую папку
       </div>
 
-      <div style={{flex:1,overflowY:'auto',padding:'4px'}} className="adm-scroll"
-        onDragOver={e=>e.preventDefault()}
-        onDrop={e=>{ e.preventDefault(); const src=e.dataTransfer.getData('text/plain'); if(src) handleDrop(src,'Docs'); }}
+      <div
+        style={{flex:1, overflowY:'auto', padding:'4px'}}
+        className="adm-scroll"
+        onDragOver={e => e.preventDefault()}
+        onDrop={e => { e.preventDefault(); const src = e.dataTransfer.getData('text/plain'); if (src) handleDrop(src, 'Docs'); }}
       >
-        {loading ? (
-          <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,padding:24,color:t.fgMuted}}>
-            <Loader2 size={14} style={{animation:'devSpinAnim 1s linear infinite'}}/>
-            <span style={{fontSize:12}}>Загрузка...</span>
-          </div>
-        ) : tree.length===0 ? (
-          <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8,padding:28,color:t.fgMuted,textAlign:'center'}}>
-            <FolderOpen size={28} style={{opacity:0.3}}/>
-            <div style={{fontSize:12}}>Docs/ пуста. Создай Секция</div>
-          </div>
-        ) : tree.map(e=>(
-          <TreeNode key={e.path} entry={e} onCreate={cfg=>setModal({cfg})}
-            onDelete={setToDelete} onEdit={handleEdit}
-            onSelect={p=>setSelected(p)} onDrop={handleDrop}
-            selectedPath={selected??''} dragOverPath={dragOverPath}
-            setDragOverPath={setDragOver} t={t}/>
-        ))}
+        {renderTreeContent()}
       </div>
 
-      <div style={{padding:'5px 10px',borderTop:`1px solid ${t.border}`,display:'flex',alignItems:'center',justifyContent:'space-between',fontSize:10,color:t.fgSub,background:t.surface,flexShrink:0}}>
+      <div style={{padding:'5px 10px', borderTop:`1px solid ${t.border}`, display:'flex', alignItems:'center', justifyContent:'space-between', fontSize:10, color:t.fgSub, background:t.surface, flexShrink:0}}>
         <span>{fileCount} страниц</span>
         <span style={{fontFamily:t.mono}}>Docs/</span>
       </div>
 
       {modalCfg && (
         <EntryModal cfg={modalCfg.cfg} existing={modalCfg.existing}
-          onClose={()=>setModal(null)} onDone={handleDone} t={t}/>
+          onClose={() => setModal(null)} onDone={handleDone} t={t}/>
       )}
 
       {toDelete && (
         <ConfirmDialog
-          message={`Удалить «${toDelete.parsed.title||toDelete.name}»?`}
+          message={`Удалить «${toDelete.parsed.title || toDelete.name}»?`}
           onConfirm={confirmDelete}
-          onCancel={()=>setToDelete(null)}
+          onCancel={() => setToDelete(null)}
           danger
           t={t}
         />
