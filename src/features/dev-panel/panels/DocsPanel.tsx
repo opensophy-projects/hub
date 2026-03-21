@@ -1,11 +1,10 @@
 /**
- * DocsPanel — объединённая панель Навигация + Страницы
- * - Дерево Docs/
- * - Создание Nav Popover / Категории / Статьи
- * - Редактор markdown с frontmatter
- * - Кнопка "Открыть" открывает реальную страницу в браузере
- * - Никаких .gitkeep/.keep — директории создаются через bridge.mkdir
- * - Генерация и перезагрузка браузера происходят автоматически на сервере
+ * DocsPanel v2
+ * - Split view: редактор слева, preview справа
+ * - Preview рендерит markdown мгновенно при каждом нажатии клавиши
+ * - Автосохранение с дебаунсом 800мс после остановки печати
+ * - После автосохранения bridge делает generate + full-reload сайта
+ * - Создание директорий через bridge.mkdir (без файлов-заглушек)
  */
 
 import React, {
@@ -20,8 +19,8 @@ import { marked } from 'marked';
 import {
   FolderOpen, Folder, FileText, Plus, Trash2,
   ChevronRight, ChevronDown, FolderPlus, FilePlus,
-  Loader2, Save, Eye, Bold, Italic, Code, Link, Hash, List,
-  RefreshCw,
+  Loader2, Save, Bold, Italic, Code, Link, Hash, List,
+  RefreshCw, Eye, Columns,
 } from 'lucide-react';
 
 marked.setOptions({ breaks: true, gfm: true });
@@ -137,16 +136,39 @@ function serializeFM(fm: FM, body: string): string {
   return `---\n${lines.join('\n')}\n---\n\n${body}`;
 }
 
+// ─── Preview styles ───────────────────────────────────────────────────────────
+
+const PREVIEW_CSS = `
+  .dp{font-size:13px;color:rgba(255,255,255,0.85);line-height:1.75;font-family:system-ui,sans-serif;padding:12px 14px;overflow-y:auto;height:100%}
+  .dp h1,.dp h2,.dp h3,.dp h4{color:rgba(255,255,255,0.96);margin-top:1.3em;margin-bottom:.4em;line-height:1.3}
+  .dp h1{font-size:1.6em;font-weight:700}
+  .dp h2{font-size:1.3em;font-weight:700;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:.25em}
+  .dp h3{font-size:1.1em;font-weight:700}
+  .dp h4{font-size:1em;font-weight:600}
+  .dp p{margin:.6em 0}
+  .dp code{background:rgba(255,255,255,0.09);padding:2px 5px;border-radius:3px;font-family:ui-monospace,monospace;font-size:.85em}
+  .dp pre{background:#080810;padding:10px 12px;border-radius:7px;overflow-x:auto;margin:.8em 0}
+  .dp pre code{background:none;padding:0}
+  .dp blockquote{border-left:3px solid rgba(124,92,252,0.7);padding:.1em .75em;margin:.7em 0;color:rgba(255,255,255,.6);background:rgba(124,92,252,0.06);border-radius:0 5px 5px 0}
+  .dp ul,.dp ol{padding-left:1.4em;margin:.4em 0}
+  .dp li{margin:.2em 0}
+  .dp a{color:#7c5cfc;text-decoration:underline}
+  .dp hr{border:none;border-top:1px solid rgba(255,255,255,0.1);margin:1.2em 0}
+  .dp table{border-collapse:collapse;width:100%;margin:.7em 0;font-size:.9em}
+  .dp td,.dp th{border:1px solid rgba(255,255,255,0.12);padding:5px 9px}
+  .dp th{background:rgba(255,255,255,0.07);font-weight:600}
+  .dp strong{color:rgba(255,255,255,.96);font-weight:700}
+  .dp em{font-style:italic}
+  .dp img{max-width:100%;border-radius:5px}
+  .dp del{opacity:.5;text-decoration:line-through}
+  .dp mark{background:rgba(253,224,71,0.3);color:#fde047;padding:1px 3px;border-radius:2px}
+`;
+
 // ─── Create Modal ─────────────────────────────────────────────────────────────
 
-interface CreateConfig {
-  parentPath: string;
-  entryType: 'N' | 'C' | 'A';
-}
+interface CreateConfig { parentPath: string; entryType: 'N' | 'C' | 'A'; }
 
-function CreateModal({
-  config, onClose, onCreated,
-}: {
+function CreateModal({ config, onClose, onCreated }: {
   config: CreateConfig;
   onClose: () => void;
   onCreated: (filePath?: string) => void;
@@ -163,7 +185,7 @@ function CreateModal({
 
   const handleTitle = (v: string) => {
     setTitle(v);
-    setFm(prev => ({ ...prev, title: v }));
+    setFm(p => ({ ...p, title: v }));
     if (autoSlug) setSlug(slugify(v));
   };
 
@@ -175,27 +197,18 @@ function CreateModal({
     if (!title.trim()) return;
     setSaving(true);
     try {
-      const ic        = icon.trim() || defaultIcons[config.entryType];
-      const iconPart  = ic ? `[${ic}]` : '';
-      const slugPart  = slug.trim() ? `{${slug.trim()}}` : '';
-      const entryName = `[${config.entryType}]${iconPart}${title.trim()}${slugPart}`;
+      const ic       = icon.trim() || defaultIcons[config.entryType];
+      const entryName = `[${config.entryType}][${ic}]${title.trim()}${slug.trim() ? `{${slug.trim()}}` : ''}`;
 
       if (isArticle) {
         const filePath = `${config.parentPath}/${entryName}.md`;
-        const content  = serializeFM(
-          { ...fm, title: title.trim() },
-          `# ${title.trim()}\n\nНачните писать здесь...\n`
-        );
-        await bridge.writeFile(filePath, content);
-        // bridge автоматически запустит generate + reload браузера
+        await bridge.writeFile(filePath, serializeFM({ ...fm, title: title.trim() },
+          `# ${title.trim()}\n\nНачните писать здесь...\n`));
         toast.success(`Статья "${title.trim()}" создана`);
         onCreated(filePath);
       } else {
-        // Создаём директорию напрямую — без файлов-заглушек
-        const dirPath = `${config.parentPath}/${entryName}`;
-        await bridge.mkdir(dirPath);
-        // bridge автоматически запустит generate + reload браузера
-        toast.success(`${config.entryType === 'N' ? 'Nav popover' : 'Категория'} "${title.trim()}" создана`);
+        await bridge.mkdir(`${config.parentPath}/${entryName}`);
+        toast.success(`"${title.trim()}" создана`);
         onCreated();
       }
       onClose();
@@ -206,119 +219,76 @@ function CreateModal({
     }
   };
 
-  const inputStyle: React.CSSProperties = {
+  const inp: React.CSSProperties = {
     width: '100%', padding: '6px 8px', borderRadius: 5,
-    border: `1px solid ${T.border}`,
-    background: T.bgHov, color: T.fg, fontSize: 11,
-    outline: 'none', boxSizing: 'border-box', fontFamily: T.mono,
+    border: `1px solid ${T.border}`, background: T.bgHov, color: T.fg,
+    fontSize: 11, outline: 'none', boxSizing: 'border-box' as const, fontFamily: T.mono,
   };
-  const labelStyle: React.CSSProperties = {
-    fontSize: 9, color: T.fgSub, textTransform: 'uppercase',
+  const lbl: React.CSSProperties = {
+    fontSize: 9, color: T.fgSub, textTransform: 'uppercase' as const,
     letterSpacing: '0.07em', marginBottom: 3, display: 'block',
   };
 
   return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, zIndex: 100010,
-        background: 'rgba(0,0,0,0.8)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        backdropFilter: 'blur(4px)',
-      }}
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div
-        style={{
-          background: T.bgPanel, border: `1px solid ${T.borderHov}`,
-          borderRadius: 12, width: isArticle ? 480 : 360,
-          maxHeight: '90vh', overflowY: 'auto',
-          padding: 20, boxShadow: '0 24px 64px rgba(0,0,0,0.7)',
-          fontFamily: T.mono,
-        }}
-        onKeyDown={e => {
-          if (e.key === 'Enter' && !isArticle) create();
-          if (e.key === 'Escape') onClose();
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+    <div style={{ position:'fixed',inset:0,zIndex:100010,background:'rgba(0,0,0,0.8)',
+      display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(4px)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ background:T.bgPanel,border:`1px solid ${T.borderHov}`,borderRadius:12,
+        width:isArticle?480:360,maxHeight:'90vh',overflowY:'auto',padding:20,
+        boxShadow:'0 24px 64px rgba(0,0,0,0.7)',fontFamily:T.mono }}
+        onKeyDown={e => { if(e.key==='Enter'&&!isArticle) create(); if(e.key==='Escape') onClose(); }}>
+
+        <div style={{ display:'flex',alignItems:'center',gap:8,marginBottom:16 }}>
           <Badge type={config.entryType} />
-          <span style={{ fontSize: 13, fontWeight: 700, color: T.fg }}>
-            Создать: {typeLabels[config.entryType]}
-          </span>
+          <span style={{ fontSize:13,fontWeight:700,color:T.fg }}>Создать: {typeLabels[config.entryType]}</span>
         </div>
 
-        <div style={{ marginBottom: 10 }}>
-          <label style={labelStyle}>Название *</label>
-          <input ref={inputRef} value={title} onChange={e => handleTitle(e.target.value)}
-            placeholder={isArticle ? 'Название статьи' : 'Название раздела'} style={inputStyle} />
+        <div style={{ marginBottom:10 }}>
+          <label style={lbl}>Название *</label>
+          <input ref={inputRef} value={title} onChange={e=>handleTitle(e.target.value)}
+            placeholder={isArticle?'Название статьи':'Название раздела'} style={inp}/>
         </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <label style={labelStyle}>URL Slug</label>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <input value={slug}
-              onChange={e => { setSlug(e.target.value); setAutoSlug(false); }}
-              placeholder="my-page-slug" style={{ ...inputStyle, flex: 1 }} />
-            <button onClick={() => { setAutoSlug(true); setSlug(slugify(title)); }}
-              style={{ padding: '5px 8px', borderRadius: 5, border: `1px solid ${T.border}`,
-                background: T.bgHov, color: T.fgMuted, fontSize: 10, cursor: 'pointer', fontFamily: T.mono }}>
-              ↺
-            </button>
+        <div style={{ marginBottom:10 }}>
+          <label style={lbl}>URL Slug</label>
+          <div style={{ display:'flex',gap:6 }}>
+            <input value={slug} onChange={e=>{setSlug(e.target.value);setAutoSlug(false);}}
+              placeholder="my-page-slug" style={{...inp,flex:1}}/>
+            <button onClick={()=>{setAutoSlug(true);setSlug(slugify(title));}}
+              style={{padding:'5px 8px',borderRadius:5,border:`1px solid ${T.border}`,
+                background:T.bgHov,color:T.fgMuted,fontSize:10,cursor:'pointer',fontFamily:T.mono}}>↺</button>
           </div>
         </div>
-
-        <div style={{ marginBottom: isArticle ? 16 : 10 }}>
-          <label style={labelStyle}>Иконка (lucide.dev)</label>
-          <input value={icon} onChange={e => setIcon(e.target.value)}
-            placeholder={defaultIcons[config.entryType]} style={inputStyle} />
+        <div style={{ marginBottom:isArticle?16:10 }}>
+          <label style={lbl}>Иконка (lucide.dev)</label>
+          <input value={icon} onChange={e=>setIcon(e.target.value)}
+            placeholder={defaultIcons[config.entryType]} style={inp}/>
         </div>
 
-        {isArticle && (
-          <>
-            <div style={{
-              borderTop: `1px solid ${T.border}`, paddingTop: 14, marginBottom: 12,
-              fontSize: 10, color: T.fgSub, textTransform: 'uppercase', letterSpacing: '0.08em',
-            }}>
-              Frontmatter статьи
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 10px', marginBottom: 10 }}>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label style={labelStyle}>Описание</label>
-                <input value={fm.description} onChange={e => setFm(p => ({ ...p, description: e.target.value }))}
-                  placeholder="Краткое описание для SEO" style={inputStyle} />
+        {isArticle && (<>
+          <div style={{borderTop:`1px solid ${T.border}`,paddingTop:14,marginBottom:12,
+            fontSize:10,color:T.fgSub,textTransform:'uppercase',letterSpacing:'0.08em'}}>
+            Frontmatter
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px 10px',marginBottom:10}}>
+            {([
+              {k:'description',l:'Описание',span:true},
+              {k:'author',l:'Автор'},{k:'date',l:'Дата',t:'date'},
+              {k:'tags',l:'Теги',span:true},
+              {k:'lang',l:'Lang'},{k:'robots',l:'Robots'},
+            ] as any[]).map(f=>(
+              <div key={f.k} style={{gridColumn:f.span?'1 / -1':'auto'}}>
+                <label style={lbl}>{f.l}</label>
+                <input type={f.t??'text'} value={(fm as any)[f.k]}
+                  onChange={e=>setFm(p=>({...p,[f.k]:e.target.value}))} style={inp}/>
               </div>
-              <div>
-                <label style={labelStyle}>Автор</label>
-                <input value={fm.author} onChange={e => setFm(p => ({ ...p, author: e.target.value }))}
-                  placeholder="veilosophy" style={inputStyle} />
-              </div>
-              <div>
-                <label style={labelStyle}>Дата</label>
-                <input type="date" value={fm.date} onChange={e => setFm(p => ({ ...p, date: e.target.value }))} style={inputStyle} />
-              </div>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label style={labelStyle}>Теги (через запятую)</label>
-                <input value={fm.tags} onChange={e => setFm(p => ({ ...p, tags: e.target.value }))}
-                  placeholder="linux, security, devops" style={inputStyle} />
-              </div>
-              <div>
-                <label style={labelStyle}>Lang</label>
-                <input value={fm.lang} onChange={e => setFm(p => ({ ...p, lang: e.target.value }))}
-                  placeholder="ru" style={inputStyle} />
-              </div>
-              <div>
-                <label style={labelStyle}>Robots</label>
-                <input value={fm.robots} onChange={e => setFm(p => ({ ...p, robots: e.target.value }))}
-                  placeholder="index, follow" style={inputStyle} />
-              </div>
-            </div>
-          </>
-        )}
+            ))}
+          </div>
+        </>)}
 
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+        <div style={{display:'flex',gap:8,marginTop:16}}>
           <Btn fullWidth onClick={onClose}>Отмена</Btn>
-          <Btn variant="accent" fullWidth loading={saving} onClick={create} style={{ fontWeight: 700 }}>
-            {isArticle ? 'Создать' : 'Создать'}
+          <Btn variant="accent" fullWidth loading={saving} onClick={create} style={{fontWeight:700}}>
+            Создать
           </Btn>
         </div>
       </div>
@@ -328,103 +298,77 @@ function CreateModal({
 
 // ─── Tree Node ─────────────────────────────────────────────────────────────────
 
-function ActionIconBtn({ icon, title, onClick, danger }: {
-  icon: React.ReactNode; title: string; onClick: () => void; danger?: boolean;
-}) {
-  const [hov, setHov] = useState(false);
-  return (
-    <button title={title} onClick={onClick}
-      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{
-        width: 20, height: 20, borderRadius: 4, border: 'none',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: hov ? (danger ? T.dangerSoft : T.bgActive) : 'transparent',
-        color: hov ? (danger ? T.danger : T.fg) : T.fgSub,
-        cursor: 'pointer',
-      }}
-    >{icon}</button>
-  );
-}
-
-function TreeNode({
-  entry, onCreateChild, onDelete, onSelect, selectedPath,
-}: {
+function TreeNode({ entry, onCreateChild, onDelete, onSelect, selectedPath }: {
   entry: TreeEntry;
-  onCreateChild: (cfg: CreateConfig) => void;
-  onDelete: (entry: TreeEntry) => void;
+  onCreateChild: (c: CreateConfig) => void;
+  onDelete: (e: TreeEntry) => void;
   onSelect: (path: string) => void;
   selectedPath: string;
 }) {
   const [expanded, setExpanded] = useState(entry.depth < 2);
-  const [hov, setHov]           = useState(false);
+  const [hov, setHov] = useState(false);
   const isDir    = entry.type === 'dir';
   const isActive = entry.path === selectedPath;
   const p = entry.parsed;
-  const colorMap: Record<string, string> = { N: T.accent, C: '#22c55e', A: '#f59e0b' };
-  const entryColor = colorMap[p.type ?? ''] ?? T.fgSub;
+  const clr: Record<string,string> = { N:T.accent, C:'#22c55e', A:'#f59e0b' };
 
   return (
     <div>
-      <div
-        onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-        onClick={() => { if (isDir) setExpanded(v => !v); else onSelect(entry.path); }}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 5,
-          padding: `4px 8px 4px ${10 + entry.depth * 14}px`,
-          borderRadius: 5, cursor: 'pointer',
-          background: isActive ? T.accentSoft : hov ? T.bgHov : 'transparent',
-          userSelect: 'none',
-        }}
-      >
+      <div onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
+        onClick={()=>{ if(isDir) setExpanded(v=>!v); else onSelect(entry.path); }}
+        style={{ display:'flex',alignItems:'center',gap:5,
+          padding:`4px 8px 4px ${10+entry.depth*14}px`,borderRadius:5,cursor:'pointer',
+          background:isActive?T.accentSoft:hov?T.bgHov:'transparent',userSelect:'none' }}>
         {isDir
-          ? (expanded
-              ? <ChevronDown  size={11} style={{ color: T.fgSub, flexShrink: 0 }} />
-              : <ChevronRight size={11} style={{ color: T.fgSub, flexShrink: 0 }} />)
-          : <span style={{ width: 11, flexShrink: 0 }} />
-        }
+          ? (expanded ? <ChevronDown size={11} style={{color:T.fgSub,flexShrink:0}}/>
+                      : <ChevronRight size={11} style={{color:T.fgSub,flexShrink:0}}/>)
+          : <span style={{width:11,flexShrink:0}}/>}
         {isDir
-          ? (expanded
-              ? <FolderOpen size={12} style={{ color: entryColor, flexShrink: 0 }} />
-              : <Folder     size={12} style={{ color: entryColor, flexShrink: 0 }} />)
-          : <FileText size={12} style={{ color: T.fgSub, flexShrink: 0 }} />
-        }
-        {p.type && <Badge type={p.type} />}
-        {p.icon && (
-          <span style={{ fontSize: 9, color: T.fgSub, flexShrink: 0 }}>⬡{p.icon}</span>
-        )}
-        <span style={{
-          fontSize: 12, color: isActive ? T.accent : T.fg,
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
-        }}>
-          {p.title || entry.name}
+          ? (expanded ? <FolderOpen size={12} style={{color:clr[p.type??'']??T.fgSub,flexShrink:0}}/>
+                      : <Folder size={12} style={{color:clr[p.type??'']??T.fgSub,flexShrink:0}}/>)
+          : <FileText size={12} style={{color:T.fgSub,flexShrink:0}}/>}
+        {p.type && <Badge type={p.type}/>}
+        {p.icon && <span style={{fontSize:9,color:T.fgSub,flexShrink:0}}>⬡{p.icon}</span>}
+        <span style={{fontSize:12,color:isActive?T.accent:T.fg,
+          overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1}}>
+          {p.title||entry.name}
         </span>
-        {p.slug && hov && (
-          <span style={{ fontSize: 9, color: T.fgSub, fontFamily: T.mono, flexShrink: 0 }}>
-            /{p.slug}
-          </span>
-        )}
-        {hov && (
-          <div style={{ display: 'flex', gap: 2, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-            {isDir && p.type === 'N' && (
-              <ActionIconBtn icon={<FolderPlus size={10}/>} title="Добавить категорию [C]"
-                onClick={() => onCreateChild({ parentPath: entry.path, entryType: 'C' })} />
+        {p.slug&&hov&&<span style={{fontSize:9,color:T.fgSub,fontFamily:T.mono,flexShrink:0}}>/{p.slug}</span>}
+        {hov&&(
+          <div style={{display:'flex',gap:2,flexShrink:0}} onClick={e=>e.stopPropagation()}>
+            {isDir&&p.type==='N'&&(
+              <button title="Добавить категорию" onClick={()=>onCreateChild({parentPath:entry.path,entryType:'C'})}
+                style={{width:18,height:18,borderRadius:3,border:'none',display:'flex',alignItems:'center',
+                  justifyContent:'center',background:'transparent',color:T.fgSub,cursor:'pointer'}}
+                onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.color=T.fg}}
+                onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.color=T.fgSub}}>
+                <FolderPlus size={10}/>
+              </button>
             )}
-            {isDir && (p.type === 'N' || p.type === 'C') && (
-              <ActionIconBtn icon={<FilePlus size={10}/>} title="Добавить статью [A]"
-                onClick={() => onCreateChild({ parentPath: entry.path, entryType: 'A' })} />
+            {isDir&&(p.type==='N'||p.type==='C')&&(
+              <button title="Добавить статью" onClick={()=>onCreateChild({parentPath:entry.path,entryType:'A'})}
+                style={{width:18,height:18,borderRadius:3,border:'none',display:'flex',alignItems:'center',
+                  justifyContent:'center',background:'transparent',color:T.fgSub,cursor:'pointer'}}
+                onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.color=T.fg}}
+                onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.color=T.fgSub}}>
+                <FilePlus size={10}/>
+              </button>
             )}
-            <ActionIconBtn icon={<Trash2 size={10}/>} title="Удалить" danger
-              onClick={() => onDelete(entry)} />
+            <button title="Удалить" onClick={()=>onDelete(entry)}
+              style={{width:18,height:18,borderRadius:3,border:'none',display:'flex',alignItems:'center',
+                justifyContent:'center',background:'transparent',color:T.fgSub,cursor:'pointer'}}
+              onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.color=T.danger}}
+              onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.color=T.fgSub}}>
+              <Trash2 size={10}/>
+            </button>
           </div>
         )}
       </div>
-
-      {isDir && expanded && entry.children.length > 0 && (
-        <div style={{ borderLeft: `1px solid ${T.border}`, marginLeft: 10 + entry.depth * 14 + 5 }}>
-          {entry.children.map(child => (
-            <TreeNode key={child.path} entry={child}
-              onCreateChild={onCreateChild} onDelete={onDelete}
-              onSelect={onSelect} selectedPath={selectedPath} />
+      {isDir&&expanded&&entry.children.length>0&&(
+        <div style={{borderLeft:`1px solid ${T.border}`,marginLeft:10+entry.depth*14+5}}>
+          {entry.children.map(child=>(
+            <TreeNode key={child.path} entry={child} onCreateChild={onCreateChild}
+              onDelete={onDelete} onSelect={onSelect} selectedPath={selectedPath}/>
           ))}
         </div>
       )}
@@ -432,35 +376,43 @@ function TreeNode({
   );
 }
 
-// ─── Markdown Editor ──────────────────────────────────────────────────────────
+// ─── Markdown Editor with live preview ───────────────────────────────────────
 
-function MarkdownEditor({
-  filePath, onClose,
-}: {
-  filePath: string;
-  onClose: () => void;
-}) {
+type ViewMode = 'editor' | 'split' | 'preview';
+
+function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: () => void }) {
   const [fm, setFm]           = useState<FM>({ ...EMPTY_FM });
   const [body, setBody]       = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
   const [dirty, setDirty]     = useState(false);
   const [fmOpen, setFmOpen]   = useState(false);
-  const taRef = useRef<HTMLTextAreaElement>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('split');
+  const taRef      = useRef<HTMLTextAreaElement>(null);
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fmRef      = useRef(fm);
+  const bodyRef    = useRef(body);
+
+  // Keep refs in sync
+  useEffect(() => { fmRef.current = fm; }, [fm]);
+  useEffect(() => { bodyRef.current = body; }, [body]);
 
   const fileName = filePath.split('/').pop()?.replace(/\.md$/, '') ?? '';
 
-  // Derive preview URL from file path
   const previewSlug = useMemo(() => {
     const parts = filePath.replace(/^Docs\//, '').split('/');
-    const slugParts: string[] = [];
-    for (const p of parts) {
+    return parts.map(p => {
       const parsed = parseName(p);
-      if (parsed.slug) slugParts.push(parsed.slug);
-      else if (parsed.title) slugParts.push(slugify(parsed.title));
-    }
-    return slugParts.join('/');
+      return parsed.slug ?? slugify(parsed.title);
+    }).filter(Boolean).join('/');
   }, [filePath]);
+
+  // Rendered markdown for preview
+  const previewHtml = useMemo(() => {
+    try { return marked(body) as string; }
+    catch { return '<p style="color:#ef4444">Ошибка парсинга</p>'; }
+  }, [body]);
 
   useEffect(() => {
     bridge.readFile(filePath)
@@ -472,11 +424,29 @@ function MarkdownEditor({
       .finally(() => setLoading(false));
   }, [filePath]);
 
+  // Autosave with debounce — 800ms after last keystroke
+  const scheduleAutosave = useCallback(() => {
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(async () => {
+      setAutoSaving(true);
+      try {
+        await bridge.writeFile(filePath, serializeFM(fmRef.current, bodyRef.current));
+        // bridge automatically runs generate + full-reload
+        setDirty(false);
+      } catch {
+        // Silent fail for autosave
+      } finally {
+        setAutoSaving(false);
+      }
+    }, 800);
+  }, [filePath]);
+
+  // Manual save (Ctrl+S) — immediate
   const save = useCallback(async () => {
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     setSaving(true);
     try {
-      await bridge.writeFile(filePath, serializeFM(fm, body));
-      // bridge автоматически запустит generate + reload
+      await bridge.writeFile(filePath, serializeFM(fmRef.current, bodyRef.current));
       setDirty(false);
       toast.success('Сохранено');
     } catch (e: any) {
@@ -484,7 +454,7 @@ function MarkdownEditor({
     } finally {
       setSaving(false);
     }
-  }, [filePath, fm, body]);
+  }, [filePath]);
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
@@ -494,13 +464,30 @@ function MarkdownEditor({
     return () => window.removeEventListener('keydown', h);
   }, [save]);
 
+  // Cleanup autosave timer on unmount
+  useEffect(() => {
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, []);
+
+  const handleBodyChange = (val: string) => {
+    setBody(val);
+    setDirty(true);
+    scheduleAutosave();
+  };
+
+  const handleFmChange = (k: keyof FM, v: string) => {
+    setFm(p => ({ ...p, [k]: v }));
+    setDirty(true);
+    scheduleAutosave();
+  };
+
   const handleInsert = (before: string, after = '') => {
     const ta = taRef.current;
     if (!ta) return;
     const s = ta.selectionStart, e = ta.selectionEnd;
     const sel = body.slice(s, e);
     const nv  = body.slice(0, s) + before + sel + after + body.slice(e);
-    setBody(nv); setDirty(true);
+    handleBodyChange(nv);
     setTimeout(() => {
       ta.focus();
       ta.selectionStart = s + before.length;
@@ -514,110 +501,96 @@ function MarkdownEditor({
     const ta = e.currentTarget;
     const s  = ta.selectionStart;
     const nv = body.slice(0, s) + '  ' + body.slice(ta.selectionEnd);
-    setBody(nv); setDirty(true);
+    handleBodyChange(nv);
     setTimeout(() => { ta.selectionStart = ta.selectionEnd = s + 2; }, 0);
   };
 
-  const inputStyle: React.CSSProperties = {
+  const inpStyle: React.CSSProperties = {
     width: '100%', padding: '4px 6px', borderRadius: 4,
-    border: `1px solid ${T.border}`,
-    background: T.bgHov, color: T.fg, fontSize: 10,
-    outline: 'none', fontFamily: T.mono, boxSizing: 'border-box',
+    border: `1px solid ${T.border}`, background: T.bgHov, color: T.fg,
+    fontSize: 10, outline: 'none', fontFamily: T.mono, boxSizing: 'border-box',
   };
 
+  const wordCount = body.trim().split(/\s+/).filter(Boolean).length;
+
   if (loading) return (
-    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Loader2 size={18} style={{ color: T.accent, animation: 'devSpinAnim 1s linear infinite' }} />
+    <div style={{ flex:1,display:'flex',alignItems:'center',justifyContent:'center' }}>
+      <Loader2 size={18} style={{ color:T.accent,animation:'devSpinAnim 1s linear infinite' }}/>
     </div>
   );
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
+    <div style={{ flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0 }}>
       {/* Toolbar */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 4, padding: '5px 8px',
-        borderBottom: `1px solid ${T.border}`, background: T.bgPanel, flexShrink: 0,
-      }}>
-        <button onClick={onClose} style={{
-          display: 'flex', alignItems: 'center', gap: 4, padding: '3px 7px',
-          borderRadius: 4, border: `1px solid ${T.border}`,
-          background: 'transparent', color: T.fgMuted, fontSize: 10, cursor: 'pointer', fontFamily: T.mono,
-        }}>← Назад</button>
-
-        <span style={{
-          fontSize: 11, color: T.fg, flex: 1,
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: T.mono,
-        }}>
-          {fileName}{dirty && <span style={{ color: T.warning, marginLeft: 4 }}>●</span>}
+      <div style={{ display:'flex',alignItems:'center',gap:4,padding:'5px 8px',
+        borderBottom:`1px solid ${T.border}`,background:T.bgPanel,flexShrink:0 }}>
+        <button onClick={onClose} style={{ display:'flex',alignItems:'center',gap:4,padding:'3px 7px',
+          borderRadius:4,border:`1px solid ${T.border}`,background:'transparent',
+          color:T.fgMuted,fontSize:10,cursor:'pointer',fontFamily:T.mono }}>
+          ← Назад
+        </button>
+        <span style={{ fontSize:11,color:T.fg,flex:1,overflow:'hidden',
+          textOverflow:'ellipsis',whiteSpace:'nowrap',fontFamily:T.mono }}>
+          {fileName}
+          {autoSaving && <span style={{ color:T.fgSub,marginLeft:6,fontSize:9 }}>сохраняется...</span>}
+          {!autoSaving && dirty && <span style={{ color:T.warning,marginLeft:4 }}>●</span>}
         </span>
 
-        <button
-          onClick={() => window.open(`/${previewSlug}`, '_blank')}
-          title="Открыть страницу на сайте"
-          style={{
-            display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px',
-            borderRadius: 4, border: `1px solid ${T.border}`,
-            background: 'transparent', color: T.fgMuted, fontSize: 10, cursor: 'pointer', fontFamily: T.mono,
-          }}
-        >
-          <Eye size={11} /> Открыть
+        {/* View mode toggle */}
+        {(['editor','split','preview'] as ViewMode[]).map(mode => {
+          const icons = { editor:<FileText size={11}/>, split:<Columns size={11}/>, preview:<Eye size={11}/> };
+          const active = viewMode === mode;
+          const labels = { editor:'MD', split:'Split', preview:'Preview' };
+          return (
+            <button key={mode} onClick={()=>setViewMode(mode)} title={mode}
+              style={{ display:'flex',alignItems:'center',gap:3,padding:'3px 7px',borderRadius:4,
+                border:`1px solid ${active?T.accent+'55':T.border}`,
+                background:active?T.accentSoft:'transparent',
+                color:active?T.accent:T.fgMuted,fontSize:9,cursor:'pointer',fontFamily:T.mono }}>
+              {icons[mode]} {labels[mode]}
+            </button>
+          );
+        })}
+
+        <button onClick={()=>window.open(`/${previewSlug}`,'_blank')}
+          style={{ display:'flex',alignItems:'center',gap:4,padding:'3px 8px',borderRadius:4,
+            border:`1px solid ${T.border}`,background:'transparent',
+            color:T.fgMuted,fontSize:10,cursor:'pointer',fontFamily:T.mono }}>
+          <Eye size={11}/> Открыть
         </button>
 
-        <Btn
-          icon={saving
-            ? <Loader2 size={11} style={{ animation: 'devSpinAnim 1s linear infinite' }} />
-            : <Save size={11} />
-          }
-          variant={dirty ? 'accent' : 'default'}
-          size="sm" loading={saving} onClick={save}
-        >
+        <Btn icon={saving
+          ? <Loader2 size={11} style={{animation:'devSpinAnim 1s linear infinite'}}/>
+          : <Save size={11}/>}
+          variant={dirty?'accent':'default'} size="sm" loading={saving} onClick={save}>
           Ctrl+S
         </Btn>
       </div>
 
-      {/* Frontmatter accordion */}
-      <div style={{ borderBottom: `1px solid ${T.border}`, flexShrink: 0 }}>
-        <button
-          onClick={() => setFmOpen(v => !v)}
-          style={{
-            width: '100%', display: 'flex', alignItems: 'center', gap: 5,
-            padding: '5px 10px', border: 'none', background: T.bgPanel,
-            color: T.fgSub, fontSize: 10, fontWeight: 700,
-            textTransform: 'uppercase', letterSpacing: '0.08em',
-            cursor: 'pointer', textAlign: 'left', fontFamily: T.mono,
-          }}
-        >
-          {fmOpen ? <ChevronDown size={10}/> : <ChevronRight size={10}/>}
+      {/* Frontmatter */}
+      <div style={{ borderBottom:`1px solid ${T.border}`,flexShrink:0 }}>
+        <button onClick={()=>setFmOpen(v=>!v)}
+          style={{ width:'100%',display:'flex',alignItems:'center',gap:5,padding:'5px 10px',
+            border:'none',background:T.bgPanel,color:T.fgSub,fontSize:10,fontWeight:700,
+            textTransform:'uppercase',letterSpacing:'0.08em',cursor:'pointer',textAlign:'left',fontFamily:T.mono }}>
+          {fmOpen?<ChevronDown size={10}/>:<ChevronRight size={10}/>}
           Frontmatter
-          {fm.title && (
-            <span style={{ fontWeight: 400, marginLeft: 6, fontSize: 9, color: T.fgSub }}>
-              — {fm.title.slice(0, 28)}
-            </span>
-          )}
+          {fm.title&&<span style={{fontWeight:400,marginLeft:6,fontSize:9,color:T.fgSub}}>— {fm.title.slice(0,28)}</span>}
         </button>
-        {fmOpen && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 8px', padding: '6px 10px 8px' }}>
+        {fmOpen&&(
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'4px 8px',padding:'6px 10px 8px'}}>
             {([
-              { k: 'title',       label: 'Title',       span: true   },
-              { k: 'description', label: 'Description', span: true   },
-              { k: 'author',      label: 'Author'                    },
-              { k: 'date',        label: 'Date',        type: 'date' },
-              { k: 'updated',     label: 'Updated',     type: 'date' },
-              { k: 'tags',        label: 'Tags',        span: true   },
-              { k: 'icon',        label: 'Icon'                      },
-              { k: 'lang',        label: 'Lang'                      },
-              { k: 'robots',      label: 'Robots'                    },
-            ] as Array<{ k: keyof FM; label: string; span?: boolean; type?: string }>).map(f => (
-              <div key={f.k} style={{ gridColumn: f.span ? '1 / -1' : 'auto' }}>
-                <div style={{ fontSize: 9, color: T.fgSub, marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  {f.label}
-                </div>
-                <input
-                  type={f.type ?? 'text'}
-                  value={fm[f.k]}
-                  onChange={e => { setFm(prev => ({ ...prev, [f.k]: e.target.value })); setDirty(true); }}
-                  style={inputStyle}
-                />
+              {k:'title',l:'Title',span:true},
+              {k:'description',l:'Description',span:true},
+              {k:'author',l:'Author'},{k:'date',l:'Date',t:'date'},
+              {k:'updated',l:'Updated',t:'date'},
+              {k:'tags',l:'Tags',span:true},
+              {k:'icon',l:'Icon'},{k:'lang',l:'Lang'},{k:'robots',l:'Robots'},
+            ] as Array<{k:keyof FM;l:string;span?:boolean;t?:string}>).map(f=>(
+              <div key={f.k} style={{gridColumn:f.span?'1 / -1':'auto'}}>
+                <div style={{fontSize:9,color:T.fgSub,marginBottom:2,textTransform:'uppercase',letterSpacing:'0.06em'}}>{f.l}</div>
+                <input type={f.t??'text'} value={fm[f.k]}
+                  onChange={e=>handleFmChange(f.k,e.target.value)} style={inpStyle}/>
               </div>
             ))}
           </div>
@@ -625,56 +598,60 @@ function MarkdownEditor({
       </div>
 
       {/* Syntax toolbar */}
-      <div style={{
-        display: 'flex', gap: 2, padding: '3px 8px',
-        borderBottom: `1px solid ${T.border}`, flexShrink: 0, background: T.bgPanel,
-      }}>
+      <div style={{display:'flex',gap:2,padding:'3px 8px',borderBottom:`1px solid ${T.border}`,
+        flexShrink:0,background:T.bgPanel}}>
         {[
-          { icon: <Bold size={11}/>,   b: '**',    a: '**'       },
-          { icon: <Italic size={11}/>, b: '_',     a: '_'        },
-          { icon: <Code size={11}/>,   b: '`',     a: '`'        },
-          { icon: <Hash size={11}/>,   b: '\n## ', a: ''         },
-          { icon: <List size={11}/>,   b: '\n- ',  a: ''         },
-          { icon: <Link size={11}/>,   b: '[',     a: '](url)'   },
-        ].map((btn, i) => (
-          <button key={i} onClick={() => handleInsert(btn.b, btn.a)}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              width: 22, height: 20, borderRadius: 3,
-              border: 'none', background: 'transparent', color: T.fgMuted, cursor: 'pointer',
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLButtonElement).style.background = T.bgHov;
-              (e.currentTarget as HTMLButtonElement).style.color = T.fg;
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
-              (e.currentTarget as HTMLButtonElement).style.color = T.fgMuted;
-            }}
-          >{btn.icon}</button>
+          {icon:<Bold size={11}/>,b:'**',a:'**'},{icon:<Italic size={11}/>,b:'_',a:'_'},
+          {icon:<Code size={11}/>,b:'`',a:'`'},{icon:<Hash size={11}/>,b:'\n## ',a:''},
+          {icon:<List size={11}/>,b:'\n- ',a:''},{icon:<Link size={11}/>,b:'[',a:'](url)'},
+        ].map((btn,i)=>(
+          <button key={i} onClick={()=>handleInsert(btn.b,btn.a)}
+            style={{display:'flex',alignItems:'center',justifyContent:'center',
+              width:22,height:20,borderRadius:3,border:'none',background:'transparent',
+              color:T.fgMuted,cursor:'pointer'}}
+            onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.background=T.bgHov;(e.currentTarget as HTMLButtonElement).style.color=T.fg}}
+            onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.background='transparent';(e.currentTarget as HTMLButtonElement).style.color=T.fgMuted}}>
+            {btn.icon}
+          </button>
         ))}
       </div>
 
-      {/* Markdown editor */}
-      <textarea
-        ref={taRef}
-        value={body}
-        onChange={e => { setBody(e.target.value); setDirty(true); }}
-        onKeyDown={handleTab}
-        spellCheck={false}
-        style={{
-          flex: 1, padding: '10px 12px',
-          border: 'none', background: T.bgHov,
-          color: '#e2e8f0', fontSize: 12,
-          fontFamily: T.mono, lineHeight: 1.75,
-          resize: 'none', outline: 'none',
-          scrollbarWidth: 'thin' as const,
-        }}
-      />
+      {/* Editor + Preview area */}
+      <div style={{flex:1,display:'flex',overflow:'hidden',minHeight:0}}>
+        {/* Markdown editor pane */}
+        {(viewMode==='editor'||viewMode==='split')&&(
+          <div style={{flex:1,display:'flex',flexDirection:'column',minWidth:0,
+            borderRight:viewMode==='split'?`1px solid ${T.border}`:'none'}}>
+            <div style={{padding:'2px 8px',fontSize:8,color:T.fgSub,background:T.bgPanel,
+              borderBottom:`1px solid ${T.border}44`,letterSpacing:'0.08em',flexShrink:0}}>
+              MARKDOWN
+            </div>
+            <textarea ref={taRef} value={body}
+              onChange={e=>handleBodyChange(e.target.value)}
+              onKeyDown={handleTab} spellCheck={false}
+              style={{flex:1,padding:'10px 12px',border:'none',background:T.bgHov,
+                color:'#e2e8f0',fontSize:12,fontFamily:T.mono,lineHeight:1.75,
+                resize:'none',outline:'none',scrollbarWidth:'thin' as const}}/>
+          </div>
+        )}
+
+        {/* Live preview pane */}
+        {(viewMode==='preview'||viewMode==='split')&&(
+          <div style={{flex:1,display:'flex',flexDirection:'column',minWidth:0,overflow:'hidden'}}>
+            <div style={{padding:'2px 8px',fontSize:8,color:T.fgSub,background:T.bgPanel,
+              borderBottom:`1px solid ${T.border}44`,letterSpacing:'0.08em',flexShrink:0}}>
+              PREVIEW — LIVE
+            </div>
+            <style>{PREVIEW_CSS}</style>
+            <div className="dp" style={{flex:1,overflowY:'auto',scrollbarWidth:'thin' as const}}
+              dangerouslySetInnerHTML={{__html:previewHtml}}/>
+          </div>
+        )}
+      </div>
 
       <StatusBar
-        left={`${body.trim().split(/\s+/).filter(Boolean).length} слов`}
-        right={dirty ? '● не сохранено' : '✓ сохранено'}
+        left={`${wordCount} слов · ${body.length} симв`}
+        right={autoSaving ? '⟳ автосохранение...' : dirty ? '● не сохранено' : '✓ сохранено'}
       />
     </div>
   );
@@ -695,7 +672,7 @@ export default function DocsPanel() {
       const { entries } = await bridge.listDocs();
       setTree(buildTree(entries));
     } catch (e: any) {
-      toast.error(`Ошибка загрузки: ${e.message}`);
+      toast.error(`Ошибка: ${e.message}`);
     } finally {
       setLoading(false);
     }
@@ -709,97 +686,69 @@ export default function DocsPanel() {
       await bridge.deleteFile(toDelete.path);
       if (selectedFile === toDelete.path) setSelected(null);
       setToDelete(null);
-      // Перезагружаем дерево после короткой задержки
-      // (bridge сам делает generate+reload в браузере)
-      setTimeout(load, 400);
-      toast.success(`Удалено: ${toDelete.parsed.title || toDelete.name}`);
+      setTimeout(load, 500);
+      toast.success(`Удалено`);
     } catch (e: any) {
       toast.error(`Ошибка: ${e.message}`);
     }
   };
 
   const handleCreated = useCallback((filePath?: string) => {
-    // Перезагружаем дерево после создания
-    setTimeout(() => {
-      load();
-      if (filePath) setSelected(filePath);
-    }, 400);
+    setTimeout(() => { load(); if (filePath) setSelected(filePath); }, 500);
   }, [load]);
 
-  const fileCount = tree.reduce(function count(acc: number, e: TreeEntry): number {
-    return acc + (e.type === 'file' ? 1 : 0) + (e.children ? e.children.reduce(count, 0) : 0);
+  const fileCount = tree.reduce(function c(acc: number, e: TreeEntry): number {
+    return acc + (e.type==='file'?1:0) + (e.children?e.children.reduce(c,0):0);
   }, 0);
 
   if (selectedFile) {
     return (
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <MarkdownEditor filePath={selectedFile} onClose={() => setSelected(null)} />
-        {createConfig && (
-          <CreateModal config={createConfig} onClose={() => setCreate(null)} onCreated={handleCreated} />
-        )}
+      <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+        <MarkdownEditor filePath={selectedFile} onClose={()=>setSelected(null)}/>
+        {createConfig&&<CreateModal config={createConfig} onClose={()=>setCreate(null)} onCreated={handleCreated}/>}
       </div>
     );
   }
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {/* Toolbar */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 6,
-        padding: '7px 10px', borderBottom: `1px solid ${T.border}`,
-        flexShrink: 0, background: T.bgPanel,
-      }}>
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <div style={{display:'flex',alignItems:'center',gap:6,padding:'7px 10px',
+        borderBottom:`1px solid ${T.border}`,flexShrink:0,background:T.bgPanel}}>
         <Btn icon={<Plus size={11}/>} variant="accent" size="sm"
-          onClick={() => setCreate({ parentPath: 'Docs', entryType: 'N' })}>
+          onClick={()=>setCreate({parentPath:'Docs',entryType:'N'})}>
           Nav Popover
         </Btn>
-        <div style={{ flex: 1 }} />
-        <Btn icon={<RefreshCw size={11}/>} size="sm" onClick={load}>
-          Обновить
-        </Btn>
+        <div style={{flex:1}}/>
+        <Btn icon={<RefreshCw size={11}/>} size="sm" onClick={load}>Обновить</Btn>
       </div>
 
-      {/* Tree */}
-      <div style={{ flex: 1, overflow: 'hidden' }}>
-        <ScrollArea style={{ height: '100%', padding: '6px' }}>
+      <div style={{flex:1,overflow:'hidden'}}>
+        <ScrollArea style={{height:'100%',padding:'6px'}}>
           {loading ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 24, color: T.fgSub }}>
-              <Loader2 size={14} style={{ animation: 'devSpinAnim 1s linear infinite' }} />
-              <span style={{ fontSize: 12 }}>Загрузка...</span>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,padding:24,color:T.fgSub}}>
+              <Loader2 size={14} style={{animation:'devSpinAnim 1s linear infinite'}}/>
+              <span style={{fontSize:12}}>Загрузка...</span>
             </div>
-          ) : tree.length === 0 ? (
-            <EmptyState
-              icon={<FolderOpen size={32} />}
-              title="Docs/ пуста"
-              desc="Создай первый Nav Popover чтобы начать"
-            />
+          ) : tree.length===0 ? (
+            <EmptyState icon={<FolderOpen size={32}/>} title="Docs/ пуста"
+              desc="Создай первый Nav Popover чтобы начать"/>
           ) : (
-            tree.map(entry => (
-              <TreeNode
-                key={entry.path}
-                entry={entry}
-                onCreateChild={setCreate}
-                onDelete={setToDelete}
-                onSelect={path => setSelected(path)}
-                selectedPath={selectedFile ?? ''}
-              />
+            tree.map(entry=>(
+              <TreeNode key={entry.path} entry={entry}
+                onCreateChild={setCreate} onDelete={setToDelete}
+                onSelect={path=>setSelected(path)} selectedPath={selectedFile??''}/>
             ))
           )}
         </ScrollArea>
       </div>
 
-      <StatusBar left={`${fileCount} файлов`} right="Docs/" />
+      <StatusBar left={`${fileCount} файлов`} right="Docs/"/>
 
-      {createConfig && (
-        <CreateModal config={createConfig} onClose={() => setCreate(null)} onCreated={handleCreated} />
-      )}
-      {toDelete && (
+      {createConfig&&<CreateModal config={createConfig} onClose={()=>setCreate(null)} onCreated={handleCreated}/>}
+      {toDelete&&(
         <ConfirmDialog
-          message={`Удалить "${toDelete.parsed.title || toDelete.name}"? Необратимо.`}
-          onConfirm={confirmDelete}
-          onCancel={() => setToDelete(null)}
-          danger
-        />
+          message={`Удалить "${toDelete.parsed.title||toDelete.name}"? Необратимо.`}
+          onConfirm={confirmDelete} onCancel={()=>setToDelete(null)} danger/>
       )}
     </div>
   );
