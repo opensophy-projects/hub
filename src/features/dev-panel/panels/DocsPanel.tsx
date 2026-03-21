@@ -543,9 +543,12 @@ function MarkdownEditor({ filePath, onClose, t }: { filePath:string; onClose:()=
     liveTimer.current = setTimeout(async () => {
       try {
         const result = await bridge.renderPreview(md);
-        // scrollToTop: false — не сбрасывать скролл при каждом символе,
-        // только при первой загрузке (контролируется в DocContent через liveHtml)
-        bcRef.current?.postMessage({ type: 'preview', html: result.html ?? '', scrollToTop: false });
+        // Передаём также актуальный frontmatter чтобы DocContent обновил hero секцию
+        bcRef.current?.postMessage({
+          type: 'preview',
+          html: result.html ?? '',
+          fm: fmRef.current,
+        });
       } catch {}
     }, 300);
   }, []);
@@ -698,7 +701,18 @@ function MarkdownEditor({ filePath, onClose, t }: { filePath:string; onClose:()=
               <div key={f.k} style={{gridColumn:f.sp?'1 / -1':'auto'}}>
                 <div style={{fontSize:9,color:t.fgSub,marginBottom:2,textTransform:'uppercase',letterSpacing:'0.06em'}}>{f.l}</div>
                 <input type={f.tp??'text'} value={fm[f.k]}
-                  onChange={e=>{setFm(p=>({...p,[f.k]:e.target.value}));setDirty(true);}}
+                  onChange={e=>{
+                    const newFm = {...fm,[f.k]:e.target.value};
+                    setFm(newFm); setDirty(true);
+                    // Обновляем hero секцию — шлём новый FM сразу
+                    if(liveTimer.current) clearTimeout(liveTimer.current);
+                    liveTimer.current = setTimeout(async () => {
+                      try {
+                        const result = await bridge.renderPreview(bodyRef.current);
+                        bcRef.current?.postMessage({ type: 'preview', html: result.html ?? '', fm: newFm });
+                      } catch {}
+                    }, 200);
+                  }}
                   style={inpS}/>
               </div>
             ))}
