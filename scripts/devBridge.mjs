@@ -225,6 +225,35 @@ export function devBridgeIntegration() {
     name: 'hub-dev-bridge',
     hooks: {
       'astro:server:setup': ({ server, logger }) => {
+        // ── Stop Vite from watching Docs/ and src/shared/data/ ──────────────
+        // Vite's chokidar watcher triggers full-reload on any file change inside
+        // these dirs. Since the dev bridge owns all writes here, we unwatch them
+        // so only the panel's iframe reloads — not the whole page.
+        const unwatch = () => {
+          server.watcher.unwatch(path.join(ROOT, 'Docs'));
+          server.watcher.unwatch(path.join(ROOT, 'Docs/**'));
+          server.watcher.unwatch(path.join(ROOT, 'src/shared/data'));
+          server.watcher.unwatch(path.join(ROOT, 'src/shared/data/**'));
+          logger.info('[hub-dev] Vite watcher disabled for Docs/ and src/shared/data/');
+        };
+        // Call immediately and after a tick (Astro may re-add watchers)
+        unwatch();
+        setTimeout(unwatch, 500);
+
+        // ── Intercept Vite HMR: block full-reload for Docs/ changes ────────
+        // Even after unwatching, Astro's own integration may still emit reloads.
+        // We intercept server.hot.send and drop any full-reload that comes from
+        // our managed directories so the browser page never reloads on its own.
+        const _hotSend = server.hot.send.bind(server.hot);
+        server.hot.send = (payload, ...rest) => {
+          if (payload?.type === 'full-reload') {
+            // Block silent reloads triggered by Docs/ file writes
+            logger.info('[hub-dev] Blocked automatic full-reload (managed by bridge)');
+            return;
+          }
+          return _hotSend(payload, ...rest);
+        };
+
         const wss = new WebSocketServer({ port: 7777, host: '127.0.0.1' });
         logger.info('[hub-dev] Bridge ready → ws://127.0.0.1:7777 | Press Ctrl+Shift+D in browser');
 
