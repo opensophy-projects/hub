@@ -130,48 +130,72 @@ export default function DevPanel() {
 
   const [open, setOpen] = useState(false);
   const [tab, setTab]   = useState('docs');
+
+  // Панель: right/top позиция + размер
+  // Используем right чтобы панель гарантированно не уходила за правый край
+  const [panelRight, setPanelRight] = useState(16);
+  const [panelTop,   setPanelTop]   = useState(40);
   const [size, setSize] = useState({ w: 520, h: 600 });
 
   const openPanel = () => {
-    setSize({
-      w: Math.min(520, window.innerWidth - 32),
-      h: Math.min(820, window.innerHeight - 56),
-    });
+    const w = Math.min(520, window.innerWidth - 32);
+    const h = Math.min(820, window.innerHeight - 56);
+    setSize({ w, h });
+    setPanelRight(16);
+    setPanelTop(40);
     setOpen(true);
   };
 
-  const dragging  = useRef(false);
-  const resizing  = useRef<'r'|'b'|'rb'|null>(null);
-  const startData = useRef({ mx: 0, my: 0, x: 0, y: 0, w: 0, h: 0 });
+  const interacting = useRef<'drag'|'r'|'b'|'rb'|null>(null);
+  const startData   = useRef({ mx:0, my:0, right:16, top:40, w:0, h:0 });
 
-  // Resize handles only (no drag)
+  const onDragStart = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button')) return;
+    e.preventDefault();
+    interacting.current = 'drag';
+    startData.current = { mx: e.clientX, my: e.clientY, right: panelRight, top: panelTop, w: size.w, h: size.h };
+    document.body.style.userSelect = 'none';
+  };
+
   const onResizeStart = (e: React.MouseEvent, dir: 'r'|'b'|'rb') => {
     e.preventDefault(); e.stopPropagation();
-    resizing.current = dir;
-    startData.current = { mx: e.clientX, my: e.clientY, x: 0, y: 0, w: size.w, h: size.h };
+    interacting.current = dir;
+    startData.current = { mx: e.clientX, my: e.clientY, right: panelRight, top: panelTop, w: size.w, h: size.h };
     document.body.style.userSelect = 'none';
   };
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       const d = startData.current;
-      if (resizing.current) {
-        const dx = e.clientX - d.mx, dy = e.clientY - d.my;
-        // Resize right edge: drag left = wider (panel is right-anchored)
-        if (resizing.current === 'r' || resizing.current === 'rb')
+      const mode = interacting.current;
+      if (!mode) return;
+      const dx = e.clientX - d.mx;
+      const dy = e.clientY - d.my;
+
+      if (mode === 'drag') {
+        // Двигаем панель: right уменьшается при движении вправо
+        const newRight = Math.max(0, Math.min(window.innerWidth - d.w, d.right - dx));
+        const newTop   = Math.max(0, Math.min(window.innerHeight - 60, d.top + dy));
+        setPanelRight(newRight);
+        setPanelTop(newTop);
+      } else {
+        // Resize: правый хэндл (left edge) — тянем влево = шире
+        if (mode === 'r' || mode === 'rb')
           setSize(s => ({ ...s, w: Math.max(380, Math.min(window.innerWidth - 32, d.w - dx)) }));
-        if (resizing.current === 'b' || resizing.current === 'rb')
+        if (mode === 'b' || mode === 'rb')
           setSize(s => ({ ...s, h: Math.max(300, Math.min(window.innerHeight - 40, d.h + dy)) }));
       }
     };
     const onUp = () => {
-      dragging.current = false;
-      resizing.current = null;
+      interacting.current = null;
       document.body.style.userSelect = '';
     };
     window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+    window.addEventListener('mouseup',   onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup',   onUp);
+    };
   }, []);
 
   // Keyboard
@@ -201,9 +225,8 @@ export default function DevPanel() {
       {open && (
         <div style={{
           position: 'fixed',
-          right: 16, top: 40,
-          width: Math.min(size.w, window.innerWidth - 32),
-          height: Math.min(size.h, window.innerHeight - 56),
+          right: panelRight, top: panelTop,
+          width: size.w, height: size.h,
           zIndex: 99999,
           background: t.bg,
           border: `1px solid ${t.borderStrong}`,
@@ -216,12 +239,14 @@ export default function DevPanel() {
 
           {/* ── Header (drag handle) ── */}
           <div
+            onMouseDown={onDragStart}
             style={{
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '10px 12px 9px',
               background: t.surface,
               borderBottom: `1px solid ${t.border}`,
               flexShrink: 0,
+              cursor: 'move',
               userSelect: 'none',
             }}
           >
