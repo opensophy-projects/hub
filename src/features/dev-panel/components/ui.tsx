@@ -98,7 +98,7 @@ export function ConfirmDialog({
               flex: 1,
               padding: '7px',
               borderRadius: 7,
-              border: `1px solid ${danger ? `${t.danger}66` : t.borderStrong}`,
+              border: `1px solid ${danger ? t.danger + '66' : t.borderStrong}`,
               background: danger ? 'rgba(239,68,68,0.12)' : t.surfaceHov,
               color: danger ? t.danger : t.fg,
               cursor: 'pointer',
