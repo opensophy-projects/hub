@@ -904,7 +904,6 @@ export default function DocsPanel() {
           onClose={()=>setModal(null)} onDone={handleDone} t={t}/>
       )}
 
-      {/* ↓ ИСПРАВЛЕНО: добавлен t={t} */}
       {toDelete && (
         <ConfirmDialog
           message={`Удалить «${toDelete.parsed.title||toDelete.name}»?`}
