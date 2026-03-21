@@ -128,21 +128,14 @@ export default function DevPanel() {
   const isDark = useIsDark();
   const t = React.useMemo(() => makeT(isDark), [isDark]);
 
-  const [open, setOpen]       = useState(false);
-  const [tab, setTab]         = useState('docs');
-
-  // Panel position & size (draggable + resizable)
-  const [pos, setPos]   = useState({ x: 0, y: 40 });
+  const [open, setOpen] = useState(false);
+  const [tab, setTab]   = useState('docs');
   const [size, setSize] = useState({ w: 520, h: 600 });
 
-  // При открытии — всегда пересчитываем позицию чтобы панель была полностью видна
   const openPanel = () => {
-    const w = Math.min(520, window.innerWidth - 32);
-    const h = Math.min(820, window.innerHeight - 80);
-    setSize({ w, h });
-    setPos({
-      x: Math.max(8, window.innerWidth - w - 16),
-      y: 40,
+    setSize({
+      w: Math.min(520, window.innerWidth - 32),
+      h: Math.min(820, window.innerHeight - 56),
     });
     setOpen(true);
   };
@@ -151,36 +144,22 @@ export default function DevPanel() {
   const resizing  = useRef<'r'|'b'|'rb'|null>(null);
   const startData = useRef({ mx: 0, my: 0, x: 0, y: 0, w: 0, h: 0 });
 
-  // Drag header
-  const onDragStart = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('button')) return;
-    e.preventDefault();
-    dragging.current = true;
-    startData.current = { mx: e.clientX, my: e.clientY, x: pos.x, y: pos.y, w: size.w, h: size.h };
-    document.body.style.userSelect = 'none';
-  };
-
-  // Resize handles
+  // Resize handles only (no drag)
   const onResizeStart = (e: React.MouseEvent, dir: 'r'|'b'|'rb') => {
     e.preventDefault(); e.stopPropagation();
     resizing.current = dir;
-    startData.current = { mx: e.clientX, my: e.clientY, x: pos.x, y: pos.y, w: size.w, h: size.h };
+    startData.current = { mx: e.clientX, my: e.clientY, x: 0, y: 0, w: size.w, h: size.h };
     document.body.style.userSelect = 'none';
   };
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       const d = startData.current;
-      if (dragging.current) {
-        setPos({
-          x: Math.max(0, Math.min(window.innerWidth - size.w, d.x + e.clientX - d.mx)),
-          y: Math.max(0, Math.min(window.innerHeight - 60, d.y + e.clientY - d.my)),
-        });
-      }
       if (resizing.current) {
         const dx = e.clientX - d.mx, dy = e.clientY - d.my;
+        // Resize right edge: drag left = wider (panel is right-anchored)
         if (resizing.current === 'r' || resizing.current === 'rb')
-          setSize(s => ({ ...s, w: Math.max(380, Math.min(900, d.w + dx)) }));
+          setSize(s => ({ ...s, w: Math.max(380, Math.min(window.innerWidth - 32, d.w - dx)) }));
         if (resizing.current === 'b' || resizing.current === 'rb')
           setSize(s => ({ ...s, h: Math.max(300, Math.min(window.innerHeight - 40, d.h + dy)) }));
       }
@@ -193,7 +172,7 @@ export default function DevPanel() {
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
     return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
-  }, [size.w]);
+  }, []);
 
   // Keyboard
   useEffect(() => {
@@ -222,8 +201,9 @@ export default function DevPanel() {
       {open && (
         <div style={{
           position: 'fixed',
-          left: pos.x, top: pos.y,
-          width: size.w, height: size.h,
+          right: 16, top: 40,
+          width: Math.min(size.w, window.innerWidth - 32),
+          height: Math.min(size.h, window.innerHeight - 56),
           zIndex: 99999,
           background: t.bg,
           border: `1px solid ${t.borderStrong}`,
@@ -232,19 +212,16 @@ export default function DevPanel() {
           display: 'flex', flexDirection: 'column',
           overflow: 'hidden',
           fontFamily: t.mono,
-          // No backdrop-filter, no blur
         }}>
 
           {/* ── Header (drag handle) ── */}
           <div
-            onMouseDown={onDragStart}
             style={{
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '10px 12px 9px',
               background: t.surface,
               borderBottom: `1px solid ${t.border}`,
               flexShrink: 0,
-              cursor: 'move',
               userSelect: 'none',
             }}
           >
