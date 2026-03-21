@@ -1,14 +1,5 @@
 /**
  * Hub Dev Panel — WebSocket Bridge v4
- *
- * Astro integration plugin.
- * Запускается ТОЛЬКО через astro:server:setup хук (только в astro dev).
- * В production build этот файл не используется.
- *
- * ws://127.0.0.1:7777 — только localhost
- *
- * Reload браузера: server.environments.client.hot.send({ type: 'full-reload' })
- * Это официальный Vite 6 API — работает в Astro 6.
  */
 
 import { WebSocketServer } from 'ws';
@@ -24,8 +15,18 @@ const BASE_URL   = 'https://hub.opensophy.com';
 
 // ─── Allowed paths ────────────────────────────────────────────────────────────
 
-const ALLOWED_WRITE = ['Docs/', 'src/shared/data/', 'public/'];
-const ALLOWED_READ  = [...ALLOWED_WRITE, 'src/shared/data/contacts.ts'];
+const ALLOWED_WRITE = [
+  'Docs/',
+  'src/shared/data/',
+  'src/app/layouts/',
+  'src/app/pages/',
+  'public/',
+];
+const ALLOWED_READ = [
+  ...ALLOWED_WRITE,
+  'src/shared/data/contacts.ts',
+  'src/shared/data/seo.ts',
+];
 
 function relPath(abs) {
   return path.relative(ROOT, abs).replaceAll('\\', '/');
@@ -40,19 +41,15 @@ function canRead(absPath) {
 }
 
 // ─── Inline generation ────────────────────────────────────────────────────────
-// Импортируем docUtils напрямую — без дочернего процесса.
-// Cache сбрасывается перед каждой генерацией чтобы подхватить новые файлы.
 
 let _utils = null;
 
 async function loadUtils() {
-  // Always reload to pick up any changes to docUtils itself
   const url = `${pathToFileURL(path.join(ROOT, 'scripts/docUtils.mjs'))}?bust=${Date.now()}`;
   _utils = await import(url);
   return _utils;
 }
 
-// pathToFileURL helper (node doesn't expose it directly in all envs)
 function pathToFileURL(p) {
   return 'file:///' + p.replaceAll('\\', '/').replace(/^\//, '');
 }
@@ -109,13 +106,9 @@ async function runGenerate() {
 
 function sendFullReload(server) {
   try {
-    // Vite 6 / Astro 6 official API
     server.environments.client.hot.send({ type: 'full-reload', path: '*' });
   } catch {
-    try {
-      // Fallback for older Vite versions
-      server.ws?.send({ type: 'full-reload', path: '*' });
-    } catch {}
+    try { server.ws?.send({ type: 'full-reload', path: '*' }); } catch {}
   }
 }
 
@@ -143,7 +136,13 @@ async function handleMkdir({ dirPath }) {
 async function handleReadFile({ filePath }) {
   const abs = path.isAbsolute(filePath) ? filePath : path.join(ROOT, filePath);
   if (!canRead(abs)) throw new Error(`Read not allowed: ${relPath(abs)}`);
-  return { content: await fs.promises.readFile(abs, 'utf-8') };
+  // Если файл не существует — возвращаем пустую строку вместо ошибки
+  try {
+    return { content: await fs.promises.readFile(abs, 'utf-8') };
+  } catch (err) {
+    if (err.code === 'ENOENT') return { content: '' };
+    throw err;
+  }
 }
 
 async function handleDeleteFile({ filePath }) {
@@ -199,20 +198,12 @@ async function handleRunGenerate() {
   return runGenerate();
 }
 
-// ─── renderPreview ───────────────────────────────────────────────────────────
-// Renders markdown using the real docUtils parser — same output as the site.
-// Falls back to a basic render if docUtils doesn't export renderMarkdownToHtml.
-
 async function handleRenderPreview({ markdown }) {
   try {
     const utils = await loadUtils();
-
-    // Option 1: dedicated export (fastest)
     if (typeof utils.renderMarkdownToHtml === 'function') {
       return { html: utils.renderMarkdownToHtml(markdown) };
     }
-
-    // Option 2: use buildDocFromPath with a temp file in Docs/
     if (typeof utils.buildDocFromPath === 'function') {
       const tmp = path.join(DOCS_DIR, '.preview-tmp.md');
       await fs.promises.mkdir(DOCS_DIR, { recursive: true });
@@ -220,20 +211,13 @@ async function handleRenderPreview({ markdown }) {
       try {
         const doc = utils.buildDocFromPath(tmp, DOCS_DIR);
         await fs.promises.unlink(tmp).catch(() => {});
-        const html = doc.content ?? doc.html ?? doc.body ?? '';
-        return { html };
+        return { html: doc.content ?? doc.html ?? doc.body ?? '' };
       } catch (e) {
         await fs.promises.unlink(tmp).catch(() => {});
         return { html: '', error: `buildDocFromPath failed: ${e.message}` };
       }
     }
-
-    // Option 3: preprocessMarkdownExtensions directly
-    if (typeof utils.preprocessMarkdownExtensions === 'function') {
-      return { html: utils.preprocessMarkdownExtensions(markdown) };
-    }
-
-    return { html: '', error: 'No render function found in docUtils. Add: export function renderMarkdownToHtml(md) { ... }' };
+    return { html: '', error: 'No render function found in docUtils.' };
   } catch (err) {
     return { html: '', error: err.message };
   }
@@ -256,7 +240,6 @@ const HANDLERS = {
   renderPreview: handleRenderPreview,
 };
 
-// Actions that require regeneration + browser reload
 const MUTATING = new Set(['writeFile', 'mkdir', 'deleteFile', 'runGenerate']);
 
 // ─── Astro integration ────────────────────────────────────────────────────────
@@ -266,10 +249,6 @@ export function devBridgeIntegration() {
     name: 'hub-dev-bridge',
     hooks: {
       'astro:server:setup': ({ server, logger }) => {
-        // ── Suppress full-reload caused by our own file writes ─────────────
-        // Strategy: unwatch Docs/ from chokidar, AND intercept hot.send to
-        // drop full-reloads that arrive within 2s of a bridge write.
-        // All wrapped in try/catch so a bad Vite version never breaks the server.
         let suppressReloadUntil = 0;
 
         try {
@@ -285,7 +264,6 @@ export function devBridgeIntegration() {
         }
 
         try {
-          // server.hot exists in Vite 5+; server.ws in older Vite
           const hotObj = server.hot ?? server.ws;
           if (hotObj && typeof hotObj.send === 'function') {
             const _origSend = hotObj.send.bind(hotObj);
@@ -301,7 +279,6 @@ export function devBridgeIntegration() {
           logger.warn('[hub-dev] Could not intercept hot.send: ' + e.message);
         }
 
-        // Activate suppressor window before mutating writes
         const suppressReload = () => { suppressReloadUntil = Date.now() + 2000; };
 
         const wss = new WebSocketServer({ port: 7777, host: '127.0.0.1' });
@@ -338,8 +315,6 @@ export function devBridgeIntegration() {
               ws.send(JSON.stringify({ id, ok: true, result }));
 
               if (MUTATING.has(action)) {
-                // Suppress any full-reload that Vite/Astro fires due to our file write,
-                // then regenerate the manifest. Page stays open, panel stays open.
                 suppressReload();
                 try {
                   const gen = await runGenerate();
