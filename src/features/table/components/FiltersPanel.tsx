@@ -140,10 +140,9 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
     })).filter(c => c.values.length > 0),
   [headers, getUniqueValuesForColumn]);
 
-  const totalActiveStr: string = Array.from(filters.values())
-    .reduce((s, v) => s + v.size, 0)
-    .toString();
-  const activeLabel: string = totalActiveStr !== '0' ? ('· ' + totalActiveStr + ' активно') : '';
+  let totalActive = 0;
+  for (const set of filters.values()) totalActive += set.size;
+  const activeLabel: string = totalActive === 0 ? '' : ('· ' + totalActive.toString() + ' активно');
 
   return (
     <div style={{ background: panelBg, borderBottom: `1px solid ${border}`, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
