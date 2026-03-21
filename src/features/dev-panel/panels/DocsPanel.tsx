@@ -100,7 +100,44 @@ const serializeFM = (fm: FM, body: string): string => {
   return `---\n${lines.join('\n')}\n---\n\n${body}`;
 };
 
-// ─── Block snippets ───────────────────────────────────────────────────────────
+// ─── Recursive rename helper ──────────────────────────────────────────────────
+// bridge has no rename — implement via listDocs + readFile + writeFile + deleteFile
+
+async function renameDir(oldPath: string, newPath: string): Promise<void> {
+  // 1. List all entries under old path
+  const { entries } = await bridge.listDocs();
+  const children = entries.filter(e => e.path.startsWith(oldPath + '/') || e.path === oldPath);
+
+  // 2. Create new dir
+  await bridge.mkdir(newPath);
+
+  // 3. Copy all files
+  const files = children.filter(e => e.type === 'file');
+  for (const file of files) {
+    const relPath = file.path.slice(oldPath.length); // e.g. /subdir/file.md
+    const { content } = await bridge.readFile(file.path);
+    await bridge.writeFile(newPath + relPath, content);
+  }
+
+  // 4. Delete old files (deleteFile with recursive=true for dirs)
+  // Delete files first, then the old dir
+  for (const file of files) {
+    await bridge.deleteFile(file.path);
+  }
+
+  // Delete subdirs (they should be empty now) - deleteFile handles dirs too
+  const dirs = children
+    .filter(e => e.type === 'dir' && e.path !== oldPath)
+    .sort((a, b) => b.path.length - a.path.length); // deepest first
+  for (const d of dirs) {
+    try { await bridge.deleteFile(d.path); } catch {}
+  }
+
+  // Finally delete old root dir
+  try { await bridge.deleteFile(oldPath); } catch {}
+}
+
+
 
 interface BV { label: string; code: string; }
 interface BI { label: string; icon: React.ReactNode; code?: string; variants?: BV[]; }
@@ -280,10 +317,21 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
             onDone();
           }
         } else {
-          // Directory rename — not possible without recursive copy
-          // Show hint to user
-          toast.info(`Папки переименовать нельзя через API. Новое имя: ${nm}\nПереименуйте вручную в файловой системе.`);
-          onDone();
+          // Directory rename: recursive copy + delete
+          const parent = existing.path.split('/').slice(0,-1).join('/');
+          const newPath = `${parent}/${nm}`;
+          if (newPath !== existing.path) {
+            try {
+              await renameDir(existing.path, newPath);
+              toast.success('Переименовано');
+              onDone();
+            } catch(err: any) {
+              toast.error('Ошибка: ' + err.message);
+            }
+          } else {
+            toast.info('Имя не изменилось');
+            onDone();
+          }
         }
       } else {
         // Create new
@@ -351,11 +399,6 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
               </div>
             ))}
           </div>
-        </div>
-      )}
-      {isEdit && existing?.type==='dir' && (
-        <div style={{padding:'8px 10px',borderRadius:7,background:t.surfaceHov,marginBottom:12,fontSize:11,color:t.fgMuted}}>
-          ⚠️ Папки переименовываются вручную в файловой системе. Здесь показано новое имя для справки.
         </div>
       )}
       <div style={{display:'flex',gap:8,marginTop:16}}>
@@ -500,7 +543,9 @@ function MarkdownEditor({ filePath, onClose, t }: { filePath:string; onClose:()=
     liveTimer.current = setTimeout(async () => {
       try {
         const result = await bridge.renderPreview(md);
-        bcRef.current?.postMessage({ type: 'preview', html: result.html ?? '' });
+        // scrollToTop: false — не сбрасывать скролл при каждом символе,
+        // только при первой загрузке (контролируется в DocContent через liveHtml)
+        bcRef.current?.postMessage({ type: 'preview', html: result.html ?? '', scrollToTop: false });
       } catch {}
     }, 300);
   }, []);
@@ -783,7 +828,7 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, selectedPath, t
             {actionBtn(<Edit3 size={13}/>, 'Редактировать', ()=>onEdit(entry))}
             {/* Add children for dirs */}
             {isDir && p.type==='N' && actionBtn(<FolderPlus size={13}/>, '+ Категория', ()=>onCreate({parentPath:entry.path,entryType:'C'}))}
-            {isDir && (p.type==='N'||p.type==='C') && actionBtn(<FilePlus size={13}/>, '+ Страница', ()=>onCreate({parentPath:entry.path,entryType:'A'}))}
+            {isDir && (p.type==='N'||p.type==='C') && actionBtn(<FilePlus size={13}/>, '+ Статья', ()=>onCreate({parentPath:entry.path,entryType:'A'}))}
             {/* Delete */}
             {actionBtn(<Trash2 size={13}/>, 'Удалить', ()=>onDelete(entry), true)}
           </div>
