@@ -261,6 +261,134 @@ function useExpandedPaths(currentDocSlug: string | undefined, activeNavSlug: str
   return [expandedPaths, setExpandedPaths];
 }
 
+// ─── Хук: состояние и логика панели навигации ─────────────────────────────────
+
+function useNavPanel(docs: Doc[], currentDocSlug: string | undefined) {
+  const [query, setQuery]             = useState('');
+  const [sectionOpen, setSectionOpen] = useState(false);
+  const sectionRef                    = useRef<HTMLDivElement>(null);
+
+  const sections                          = useNavSections(docs);
+  const [activeNavSlug, setActiveNavSlug] = useActiveNavSlug(sections);
+  const [expandedPaths, setExpandedPaths] = useExpandedPaths(currentDocSlug, activeNavSlug);
+
+  useEffect(() => {
+    if (!sectionOpen) return;
+    const h = (e: MouseEvent) => {
+      if (sectionRef.current && !sectionRef.current.contains(e.target as Node)) {
+        setSectionOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [sectionOpen]);
+
+  const navTree = useMemo(
+    () => buildTree(docs, query, activeNavSlug),
+    [docs, query, activeNavSlug],
+  );
+
+  const activeSection = sections.find(s => s.navSlug === activeNavSlug) ?? sections[0];
+
+  const togglePath = useCallback((path: string) => {
+    setExpandedPaths(prev => {
+      const n = new Set(prev);
+      if (n.has(path)) {
+        n.delete(path);
+      } else {
+        n.add(path);
+      }
+      return n;
+    });
+  }, []);
+
+  const handleSectionSelect = useCallback((slug: string) => {
+    storageSet('hub:activeNavSlug', slug);
+    setActiveNavSlug(slug);
+    setExpandedPaths(new Set());
+    setSectionOpen(false);
+  }, [setActiveNavSlug]);
+
+  return {
+    query, setQuery,
+    sectionOpen, setSectionOpen, sectionRef,
+    sections, activeNavSlug, expandedPaths,
+    navTree, activeSection,
+    togglePath, handleSectionSelect,
+  };
+}
+
+// ─── Хук: персистентное состояние десктопной панели ──────────────────────────
+
+function useDesktopPanel() {
+  const [activePanel, setActivePanel] = useState<PanelType>(() => {
+    try {
+      const s = sessionStorage.getItem('hub:activePanel');
+      if (s === 'nav' || s === 'toc' || s === 'contacts') return s as PanelType;
+    } catch (_e) { /* noop */ }
+    return null;
+  });
+
+  const [panelWidth, setPanelWidth] = useState<number>(() => {
+    try {
+      const w = Number(sessionStorage.getItem('hub:panelWidth'));
+      if (w >= PANEL_MIN && w <= PANEL_MAX) return w;
+    } catch (_e) { /* noop */ }
+    return PANEL_DEFAULT;
+  });
+
+  useEffect(() => {
+    try { sessionStorage.setItem('hub:activePanel', activePanel ?? ''); } catch (_e) { /* noop */ }
+  }, [activePanel]);
+
+  useEffect(() => {
+    try { sessionStorage.setItem('hub:panelWidth', String(panelWidth)); } catch (_e) { /* noop */ }
+  }, [panelWidth]);
+
+  const togglePanel = useCallback((panel: PanelType) => {
+    setActivePanel(prev => {
+      const next = prev === panel ? null : panel;
+      try { sessionStorage.setItem('hub:activePanel', next ?? ''); } catch (_e) { /* noop */ }
+      return next;
+    });
+  }, []);
+
+  return { activePanel, setActivePanel, panelWidth, setPanelWidth, togglePanel };
+}
+
+// ─── Хук: resize handle для панели ───────────────────────────────────────────
+
+function usePanelResize(panelWidth: number, setPanelWidth: (w: number) => void) {
+  const isDragging = useRef(false);
+  const dragStartX = useRef(0);
+  const dragStartW = useRef(0);
+
+  const onResizeMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isDragging.current = true;
+    dragStartX.current = e.clientX;
+    dragStartW.current = panelWidth;
+    document.body.style.cursor     = 'col-resize';
+    document.body.style.userSelect = 'none';
+    const onMove = (ev: MouseEvent) => {
+      if (!isDragging.current) return;
+      setPanelWidth(Math.max(PANEL_MIN, Math.min(PANEL_MAX,
+        dragStartW.current + ev.clientX - dragStartX.current)));
+    };
+    const onUp = () => {
+      isDragging.current             = false;
+      document.body.style.cursor     = '';
+      document.body.style.userSelect = '';
+      globalThis.removeEventListener('mousemove', onMove);
+      globalThis.removeEventListener('mouseup', onUp);
+    };
+    globalThis.addEventListener('mousemove', onMove);
+    globalThis.addEventListener('mouseup', onUp);
+  }, [panelWidth, setPanelWidth]);
+
+  return { onResizeMouseDown };
+}
+
 // ─── Дропдаун выбора раздела навигации ───────────────────────────────────────
 
 const SectionDropdown: React.FC<{
@@ -326,43 +454,18 @@ const NavTreeContent: React.FC<{
 // ─── NavPanelContent ─────────────────────────────────────────────────────────
 
 const NavPanelContent: React.FC<{
-  isDark: boolean; currentDocSlug?: string; onOpenSearch: () => void; mobile?: boolean;
-}> = ({ isDark, currentDocSlug, onOpenSearch: _onOpenSearch, mobile }) => {
+  isDark: boolean; currentDocSlug?: string; mobile?: boolean;
+}> = ({ isDark, currentDocSlug, mobile }) => {
   const t = tk(isDark);
   const { manifest: docs, loading, error } = useManifest();
-  const [query, setQuery]                 = useState('');
-  const [sectionOpen, setSectionOpen]     = useState(false);
-  const sectionRef = useRef<HTMLDivElement>(null);
 
-  const sections                          = useNavSections(docs as Doc[]);
-  const [activeNavSlug, setActiveNavSlug] = useActiveNavSlug(sections);
-  const [expandedPaths, setExpandedPaths] = useExpandedPaths(currentDocSlug, activeNavSlug);
-
-  // Закрытие дропдауна по клику вне
-  useEffect(() => {
-    if (!sectionOpen) return;
-    const h = (e: MouseEvent) => {
-      if (sectionRef.current && !sectionRef.current.contains(e.target as Node)) setSectionOpen(false);
-    };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, [sectionOpen]);
-
-  const navTree       = useMemo(() => buildTree(docs as Doc[], query, activeNavSlug), [docs, query, activeNavSlug]);
-  const activeSection = sections.find(s => s.navSlug === activeNavSlug) ?? sections[0];
-
-  const togglePath = (path: string) => setExpandedPaths(prev => {
-    const n = new Set(prev);
-    n.has(path) ? n.delete(path) : n.add(path);
-    return n;
-  });
-
-  const handleSectionSelect = (slug: string) => {
-    storageSet('hub:activeNavSlug', slug);
-    setActiveNavSlug(slug);
-    setExpandedPaths(new Set());
-    setSectionOpen(false);
-  };
+  const {
+    query, setQuery,
+    sectionOpen, setSectionOpen, sectionRef,
+    sections, activeNavSlug, expandedPaths,
+    navTree, activeSection,
+    togglePath, handleSectionSelect,
+  } = useNavPanel(docs as Doc[], currentDocSlug);
 
   const inputFontSize = mobile ? '1rem' : '0.855rem';
   const inputPadding  = mobile ? '0.6rem 0.6rem 0.6rem 2.4rem' : '0.45rem 0.5rem 0.45rem 2.1rem';
@@ -618,22 +721,11 @@ const DesktopNav: React.FC<{
 }> = ({ isDark, toggleTheme, currentDocSlug, toc, activeId }) => {
   const t = tk(isDark);
   const [railVisible, setRailVisible] = useState(true);
+  const [searchOpen, setSearchOpen]   = useState(false);
+  const [handleHov, setHandleHov]     = useState(false);
 
-  const [activePanel, setActivePanel] = useState<PanelType>(() => {
-    try {
-      const s = sessionStorage.getItem('hub:activePanel');
-      if (s === 'nav' || s === 'toc' || s === 'contacts') return s as PanelType;
-    } catch {}
-    return null;
-  });
-
-  const [panelWidth, setPanelWidth] = useState<number>(() => {
-    try {
-      const w = Number(sessionStorage.getItem('hub:panelWidth'));
-      if (w >= PANEL_MIN && w <= PANEL_MAX) return w;
-    } catch {}
-    return PANEL_DEFAULT;
-  });
+  const { activePanel, setActivePanel, panelWidth, setPanelWidth, togglePanel } = useDesktopPanel();
+  const { onResizeMouseDown } = usePanelResize(panelWidth, setPanelWidth);
 
   // Синхронизация CSS-переменной при первом рендере
   useEffect(() => {
@@ -644,55 +736,9 @@ const DesktopNav: React.FC<{
       const pw       = (w >= PANEL_MIN && w <= PANEL_MAX) ? w : PANEL_DEFAULT;
       const left     = RAIL_W + (hasPanel ? pw : 0);
       document.documentElement.style.setProperty('--nav-left', `${left}px`);
-    } catch {}
+    } catch (_e) { /* noop */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const [searchOpen, setSearchOpen]   = useState(false);
-  const [handleHov, setHandleHov]     = useState(false);
-  const isDragging = useRef(false);
-  const dragStartX = useRef(0);
-  const dragStartW = useRef(0);
-
-  const togglePanel = useCallback((panel: PanelType) => {
-    setActivePanel(prev => {
-      const next = prev === panel ? null : panel;
-      try { sessionStorage.setItem('hub:activePanel', next ?? ''); } catch {}
-      return next;
-    });
-  }, []);
-
-  const onResizeMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    isDragging.current = true;
-    dragStartX.current = e.clientX;
-    dragStartW.current = panelWidth;
-    document.body.style.cursor     = 'col-resize';
-    document.body.style.userSelect = 'none';
-    const onMove = (ev: MouseEvent) => {
-      if (!isDragging.current) return;
-      setPanelWidth(Math.max(PANEL_MIN, Math.min(PANEL_MAX, dragStartW.current + ev.clientX - dragStartX.current)));
-    };
-    const onUp = () => {
-      isDragging.current             = false;
-      document.body.style.cursor     = '';
-      document.body.style.userSelect = '';
-      globalThis.removeEventListener('mousemove', onMove);
-      globalThis.removeEventListener('mouseup', onUp);
-    };
-    globalThis.addEventListener('mousemove', onMove);
-    globalThis.addEventListener('mouseup', onUp);
-  }, [panelWidth]);
-
-  // Сохранение активной панели в сессии
-  useEffect(() => {
-    try { sessionStorage.setItem('hub:activePanel', activePanel ?? ''); } catch {}
-  }, [activePanel]);
-
-  // Сохранение ширины панели в сессии
-  useEffect(() => {
-    try { sessionStorage.setItem('hub:panelWidth', String(panelWidth)); } catch {}
-  }, [panelWidth]);
 
   // Обновление CSS-переменной отступа контента
   useEffect(() => {
@@ -701,7 +747,9 @@ const DesktopNav: React.FC<{
     return () => { document.documentElement.style.removeProperty('--nav-left'); };
   }, [railVisible, activePanel, panelWidth]);
 
-  const panelTitles: Record<Exclude<PanelType, null>, string> = { nav: 'Навигация', toc: 'Оглавление', contacts: 'Контакты' };
+  const panelTitles: Record<Exclude<PanelType, null>, string> = {
+    nav: 'Навигация', toc: 'Оглавление', contacts: 'Контакты',
+  };
 
   return (
     <>
@@ -750,7 +798,7 @@ const DesktopNav: React.FC<{
             <>
               <PanelHeader title={panelTitles[activePanel]} isDark={isDark} onClose={() => setActivePanel(null)} />
               <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                {activePanel === 'nav'      && <NavPanelContent isDark={isDark} currentDocSlug={currentDocSlug} onOpenSearch={() => setSearchOpen(true)} />}
+                {activePanel === 'nav'      && <NavPanelContent isDark={isDark} currentDocSlug={currentDocSlug} />}
                 {activePanel === 'toc'      && <div style={{ flex: 1, overflowY: 'auto' }}><TocPanelContent toc={toc} activeId={activeId} isDark={isDark} /></div>}
                 {activePanel === 'contacts' && <div style={{ overflowY: 'auto' }}><ContactsPanelContent isDark={isDark} /></div>}
               </div>
@@ -864,7 +912,7 @@ const MobilePanel: React.FC<{
 
       {/* Контент панели */}
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        {type === 'nav'      && <NavPanelContent isDark={isDark} currentDocSlug={currentDocSlug} onOpenSearch={() => {}} mobile />}
+        {type === 'nav'      && <NavPanelContent isDark={isDark} currentDocSlug={currentDocSlug} mobile />}
         {type === 'toc'      && <div style={{ flex: 1, overflowY: 'auto' }}><TocPanelContent toc={toc} activeId={activeId} isDark={isDark} onItemClick={onClose} mobile /></div>}
         {type === 'contacts' && <div style={{ overflowY: 'auto' }}><ContactsPanelContent isDark={isDark} mobile /></div>}
       </div>
