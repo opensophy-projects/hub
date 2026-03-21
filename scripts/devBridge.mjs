@@ -14,7 +14,7 @@ const SITEMAP    = path.join(ROOT, 'public/sitemap.xml');
 const BASE_URL   = 'https://hub.opensophy.com';
 
 // Адреса локального хоста, которым разрешено подключение
-const LOCALHOST_IPS = ['::1', '127.0.0.1', '::ffff:127.0.0.1'];
+const LOCALHOST_IPS = new Set(['::1', '127.0.0.1', '::ffff:127.0.0.1']);
 
 // ─── Разрешённые пути ─────────────────────────────────────────────────────────
 
@@ -290,7 +290,7 @@ export function devBridgeIntegration() {
 
         wss.on('connection', (ws, req) => {
           const ip = req.socket.remoteAddress ?? '';
-          if (!LOCALHOST_IPS.includes(ip)) {
+          if (!LOCALHOST_IPS.has(ip)) {
             logger.warn(`[hub-dev] Rejected from ${ip}`);
             ws.close(1008, 'Forbidden');
             return;
