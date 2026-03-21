@@ -1,9 +1,3 @@
-/**
- * ContactsPanel — патч v6
- * - Кнопка: "Сохранить" (без "contacts.ts")
- * - Тема из ThemeTokensContext
- */
-
 import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { bridge } from '../useDevBridge';
 import { ThemeTokensContext } from '../DevPanel';
@@ -16,7 +10,7 @@ function parseContacts(ts: string): Contact[] {
   const matches = [...ts.matchAll(/\{([^}]+)\}/g)];
   const result: Contact[] = [];
   for (const m of matches) {
-    const block = m[1];
+    const block    = m[1];
     const href     = block.match(/href:\s*'([^']+)'/)?.[1] ?? '';
     const title    = block.match(/title:\s*'([^']+)'/)?.[1] ?? '';
     const subtitle = block.match(/subtitle:\s*'([^']+)'/)?.[1] ?? '';
@@ -45,22 +39,23 @@ ${items}
 }
 
 function ContactRow({ contact, index, onChange, onDelete, t }: {
-  contact: Contact; index: number;
-  onChange: (c: Contact) => void; onDelete: () => void;
-  t: ReturnType<typeof import('../DevPanel').makeT>;
+  readonly contact: Contact;
+  readonly index: number;
+  readonly onChange: (c: Contact) => void;
+  readonly onDelete: () => void;
+  readonly t: ReturnType<typeof import('../DevPanel').makeT>;
 }) {
   const set = (key: keyof Contact, val: string) => onChange({ ...contact, [key]: val });
+
   const fieldStyle: React.CSSProperties = {
     flex: 1, padding: '5px 8px', borderRadius: 5,
     border: `1px solid ${t.border}`,
     background: t.inpBg, color: t.fg, fontSize: 11,
     outline: 'none', fontFamily: t.mono, minWidth: 0,
   };
+
   return (
-    <div style={{
-      border: `1px solid ${t.border}`, borderRadius: 8,
-      marginBottom: 8, overflow: 'hidden',
-    }}>
+    <div style={{ border: `1px solid ${t.border}`, borderRadius: 8, marginBottom: 8, overflow: 'hidden' }}>
       <div style={{
         display: 'flex', alignItems: 'center', gap: 6,
         padding: '6px 10px', background: t.surface,
@@ -72,27 +67,23 @@ function ContactRow({ contact, index, onChange, onDelete, t }: {
         </span>
         <span style={{
           fontSize: 9, padding: '1px 5px', borderRadius: 3,
-          background: t.surfaceHov,
-          color: t.fgMuted,
+          background: t.surfaceHov, color: t.fgMuted,
         }}>
           {contact.href.startsWith('mailto:') ? 'email' : 'external'}
         </span>
-        <button onClick={onDelete} style={{
-          display: 'flex', padding: 3, borderRadius: 4,
-          border: 'none', background: 'transparent', color: t.fgSub, cursor: 'pointer',
-        }}
-          onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = t.danger}
-          onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = t.fgSub}
+        <button
+          onClick={onDelete}
+          style={{ display: 'flex', padding: 3, borderRadius: 4, border: 'none', background: 'transparent', color: t.fgSub, cursor: 'pointer' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = t.danger; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = t.fgSub; }}
         >
           <Trash2 size={11}/>
         </button>
       </div>
       <div style={{ padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 5 }}>
         <div style={{ display: 'flex', gap: 6 }}>
-          <input value={contact.title} onChange={e => set('title', e.target.value)}
-            placeholder="Название (GitHub, Telegram...)" style={fieldStyle}/>
-          <input value={contact.subtitle} onChange={e => set('subtitle', e.target.value)}
-            placeholder="Подпись" style={fieldStyle}/>
+          <input value={contact.title}    onChange={e => set('title',    e.target.value)} placeholder="Название (GitHub, Telegram...)" style={fieldStyle}/>
+          <input value={contact.subtitle} onChange={e => set('subtitle', e.target.value)} placeholder="Подпись"                        style={fieldStyle}/>
         </div>
         <input value={contact.href} onChange={e => set('href', e.target.value)}
           placeholder="https://... или mailto:..."
@@ -125,7 +116,8 @@ export default function ContactsPanel() {
     setSaving(true); setError('');
     try {
       await bridge.writeContacts(serializeContacts(contacts));
-      setSaved(true); setTimeout(() => setSaved(false), 2500);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
       toast.success('Контакты сохранены');
     } catch (e: unknown) { setError((e as Error).message); }
     finally { setSaving(false); }
@@ -134,6 +126,15 @@ export default function ContactsPanel() {
   const addContact = () =>
     setContacts(prev => [...prev, { href: '', title: '', subtitle: '', external: true }]);
 
+  // Коллбэки вынесены из JSX, чтобы не превышать допустимую глубину вложенности функций
+  const handleChange = useCallback((i: number, nc: Contact) => {
+    setContacts(prev => prev.map((x, idx) => idx === i ? nc : x));
+  }, []);
+
+  const handleDelete = useCallback((i: number) => {
+    setContacts(prev => prev.filter((_, idx) => idx !== i));
+  }, []);
+
   if (loading) return (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fgSub, gap: 8 }}>
       <Loader2 size={14} style={{ animation: 'devSpinAnim 1s linear infinite' }}/>
@@ -141,24 +142,33 @@ export default function ContactsPanel() {
     </div>
   );
 
+  // Фон кнопки "Сохранить" в состоянии saved зависит от текущей темы
+  const savedBg = t.bg === '#111112' ? 'rgba(34,197,94,0.1)' : 'rgba(22,163,74,0.08)';
+
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div style={{ flex: 1, overflowY: 'auto', padding: '10px 12px' }} className="adm-scroll">
         {contacts.map((c, i) => (
-          <ContactRow key={i} contact={c} index={i} t={t}
-            onChange={nc => setContacts(prev => prev.map((x, idx) => idx === i ? nc : x))}
-            onDelete={() => setContacts(prev => prev.filter((_, idx) => idx !== i))}
+          <ContactRow
+            key={c.href || `new-${i}`}
+            contact={c}
+            index={i}
+            t={t}
+            onChange={nc => handleChange(i, nc)}
+            onDelete={() => handleDelete(i)}
           />
         ))}
-        <button onClick={addContact} style={{
-          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          padding: '9px', borderRadius: 7,
-          border: `1px dashed ${t.border}`,
-          background: 'transparent', color: t.fgMuted,
-          fontSize: 11, cursor: 'pointer', fontFamily: t.mono,
-        }}
+        <button
+          onClick={addContact}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            padding: '9px', borderRadius: 7,
+            border: `1px dashed ${t.border}`,
+            background: 'transparent', color: t.fgMuted,
+            fontSize: 11, cursor: 'pointer', fontFamily: t.mono,
+          }}
           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = t.borderStrong; (e.currentTarget as HTMLButtonElement).style.color = t.fg; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = t.border; (e.currentTarget as HTMLButtonElement).style.color = t.fgMuted; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = t.border;       (e.currentTarget as HTMLButtonElement).style.color = t.fgMuted; }}
         >
           <Plus size={13}/> Добавить контакт
         </button>
@@ -174,23 +184,29 @@ export default function ContactsPanel() {
         padding: '8px 12px', borderTop: `1px solid ${t.border}`,
         background: t.surface, flexShrink: 0, display: 'flex', gap: 8,
       }}>
-        <button onClick={load} style={{
-          display: 'flex', alignItems: 'center', gap: 5,
-          padding: '6px 11px', borderRadius: 7,
-          border: `1px solid ${t.border}`, background: 'transparent', color: t.fgMuted,
-          fontSize: 11, cursor: 'pointer', fontFamily: t.mono,
-        }}>
+        <button
+          onClick={load}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 5,
+            padding: '6px 11px', borderRadius: 7,
+            border: `1px solid ${t.border}`, background: 'transparent', color: t.fgMuted,
+            fontSize: 11, cursor: 'pointer', fontFamily: t.mono,
+          }}
+        >
           Обновить
         </button>
-        {/* FIX: "Сохранить" только, без contacts.ts */}
-        <button onClick={handleSave} disabled={saving} style={{
-          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          padding: '6px 12px', borderRadius: 7,
-          border: `1px solid ${saved ? t.success + '66' : t.borderStrong}`,
-          background: saved ? (t.bg === '#111112' ? 'rgba(34,197,94,0.1)' : 'rgba(22,163,74,0.08)') : t.surfaceHov,
-          color: saved ? t.success : t.fg,
-          fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: t.mono,
-        }}>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          style={{
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            padding: '6px 12px', borderRadius: 7,
+            border: `1px solid ${saved ? t.success + '66' : t.borderStrong}`,
+            background: saved ? savedBg : t.surfaceHov,
+            color: saved ? t.success : t.fg,
+            fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: t.mono,
+          }}
+        >
           {saving && <Loader2 size={11} style={{ animation: 'devSpinAnim 1s linear infinite' }}/>}
           {saved ? 'Сохранено!' : 'Сохранить'}
         </button>
