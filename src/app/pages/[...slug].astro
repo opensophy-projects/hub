@@ -8,15 +8,13 @@ import {
   buildDocFromPath,
 } from '../../../scripts/docUtils.mjs';
 
-const docsDir = path.join(process.cwd(), 'Docs');
-
-// ─── Dev mode: disable prerendering so pages are resolved on every request ────
-// This means newly created pages appear instantly without server restart.
-// In production (output: static) this file is not used — build uses getStaticPaths.
+// In dev: render on every request so new pages appear without server restart
 export const prerender = import.meta.env.DEV ? false : true;
 
-// ─── Production: generate all static paths at build time ──────────────────────
 export async function getStaticPaths() {
+  // getStaticPaths runs in its own scope — variables must be defined here
+  const docsDir = path.join(process.cwd(), 'Docs');
+
   if (!fs.existsSync(docsDir)) {
     console.warn('Docs directory not found');
     return [];
@@ -42,9 +40,10 @@ export async function getStaticPaths() {
   return paths;
 }
 
-// ─── Resolve doc for this request ─────────────────────────────────────────────
+// ─── Resolve doc ──────────────────────────────────────────────────────────────
 
 const { slug } = Astro.params;
+const docsDir = path.join(process.cwd(), 'Docs');
 let doc: any = null;
 
 if (import.meta.env.DEV) {
@@ -64,7 +63,6 @@ if (import.meta.env.DEV) {
     }
   }
 } else {
-  // Production: doc comes from getStaticPaths props
   doc = (Astro.props as any).doc ?? null;
 }
 
