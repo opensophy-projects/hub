@@ -493,18 +493,29 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
               {previewLoading&&<Loader2 size={9} style={{color:T.fgSub,animation:'devSpinAnim 1s linear infinite'}}/>}
             </div>
             <iframe
-              srcDoc={[
-                '<!DOCTYPE html><html><head>',
-                '<meta charset="utf-8"/>',
-                '<base href="/" target="_blank"/>',
-                '<link rel="stylesheet" href="/styles/global.css"/>',
-                '<link rel="stylesheet" href="/styles/prose.css"/>',
-                '<style>body{margin:0;padding:16px 20px;box-sizing:border-box}</style>',
-                '</head><body class="dark"><main><article class="prose content-body">',
-                previewHtml,
-                '</article></main></body></html>',
-              ].join('')}
-              style={{flex:1,border:'none',background:'transparent',width:'100%'}}
+              srcDoc={`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<base href="/" target="_blank"/>
+<link rel="stylesheet" href="/styles/global.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"/>
+<style>
+  html,body{margin:0;padding:0;background:transparent}
+  body{padding:16px 20px;box-sizing:border-box;font-family:system-ui,sans-serif}
+</style>
+</head>
+<body class="dark">
+<article class="prose">
+${previewHtml}
+</article>
+<script>
+  /* Re-run any chart/custom component init if needed */
+  document.dispatchEvent(new Event('preview-ready'));
+<\/script>
+</body>
+</html>`}
+              style={{flex:1,border:'none',background:'transparent',width:'100%',height:'100%'}}
               title="preview"
             />
           </div>
