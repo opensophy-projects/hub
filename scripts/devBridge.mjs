@@ -199,6 +199,36 @@ async function handleRunGenerate() {
   return runGenerate();
 }
 
+// ─── renderPreview ───────────────────────────────────────────────────────────
+// Renders markdown using the real docUtils parser — same output as the site.
+// Falls back to a basic render if docUtils doesn't export renderMarkdownToHtml.
+
+async function handleRenderPreview({ markdown }) {
+  try {
+    const utils = await loadUtils();
+    // Try dedicated render function first
+    if (typeof utils.renderMarkdownToHtml === 'function') {
+      const html = utils.renderMarkdownToHtml(markdown);
+      return { html };
+    }
+    // Fall back: write to temp file, parse with buildDocFromPath
+    if (typeof utils.buildDocFromPath === 'function') {
+      const tmp = path.join(ROOT, '.dev-preview-tmp.md');
+      await fs.promises.writeFile(tmp, markdown, 'utf-8');
+      try {
+        const doc = utils.buildDocFromPath(tmp, ROOT);
+        await fs.promises.unlink(tmp).catch(() => {});
+        return { html: doc.content ?? doc.html ?? '' };
+      } catch {
+        await fs.promises.unlink(tmp).catch(() => {});
+      }
+    }
+    return { html: '', error: 'renderMarkdownToHtml not found in docUtils' };
+  } catch (err) {
+    return { html: '', error: err.message };
+  }
+}
+
 // ─── Dispatch ─────────────────────────────────────────────────────────────────
 
 const HANDLERS = {
@@ -213,6 +243,7 @@ const HANDLERS = {
   uploadAsset:   handleUploadAsset,
   uploadFavicon: handleUploadFavicon,
   runGenerate:   handleRunGenerate,
+  renderPreview: handleRenderPreview,
 };
 
 // Actions that require regeneration + browser reload
