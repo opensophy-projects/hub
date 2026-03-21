@@ -68,11 +68,13 @@ export const SEO_CONFIG = {
 
 // ─── Парсинг seo.ts ───────────────────────────────────────────────────────────
 
+// Лимит длины значения защищает от ReDoS при незакрытых кавычках
+const RE_SEO_FIELD = /^\s*(\w+):\s*["']([^"'\n]{0,500})["'],?\s*$/gm;
+
 function parseSeoTs(content: string): Partial<SiteConfig> {
   const result: Record<string, string> = {};
-  const re = /^\s*(\w+):\s*["']([^"'\n]*)["'],?\s*$/gm;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(content)) !== null) {
+  while ((m = RE_SEO_FIELD.exec(content)) !== null) {
     result[m[1]] = m[2];
   }
   return result as Partial<SiteConfig>;
@@ -205,9 +207,9 @@ export default function SitePanel() {
   const cfgRef    = useRef(cfg);
   const robotsRef = useRef(robotsTxt);
   const llmRef    = useRef(llmTxt);
-  useEffect(() => { cfgRef.current = cfg; },       [cfg]);
+  useEffect(() => { cfgRef.current = cfg; },          [cfg]);
   useEffect(() => { robotsRef.current = robotsTxt; }, [robotsTxt]);
-  useEffect(() => { llmRef.current = llmTxt; },    [llmTxt]);
+  useEffect(() => { llmRef.current = llmTxt; },       [llmTxt]);
 
   const inp = useInpStyle(t);
 
