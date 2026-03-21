@@ -1,13 +1,7 @@
-/**
- * Toast notifications для Dev Panel
- */
-
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { CheckCircle, XCircle, Info, AlertTriangle, X } from 'lucide-react';
 import { T } from './ui';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -17,8 +11,7 @@ interface ToastItem {
   message: string;
 }
 
-// ─── Store (module-level singleton) ──────────────────────────────────────────
-
+// Глобальное хранилище уведомлений (синглтон)
 type Listener = (toasts: ToastItem[]) => void;
 let toasts: ToastItem[] = [];
 const listeners = new Set<Listener>();
@@ -39,16 +32,13 @@ function removeToast(id: string) {
   notify();
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
-
+// Публичное API для вызова уведомлений
 export const toast = {
   success: (msg: string) => addToast('success', msg),
   error:   (msg: string) => addToast('error',   msg),
   info:    (msg: string) => addToast('info',     msg),
   warning: (msg: string) => addToast('warning',  msg),
 };
-
-// ─── Toast config ─────────────────────────────────────────────────────────────
 
 const TOAST_CONFIG: Record<ToastType, {
   icon: React.FC<{ size: number }>;
@@ -62,9 +52,7 @@ const TOAST_CONFIG: Record<ToastType, {
   warning: { icon: AlertTriangle, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.25)' },
 };
 
-// ─── Single Toast ─────────────────────────────────────────────────────────────
-
-function Toast({ item, onClose }: { item: ToastItem; onClose: () => void }) {
+function Toast({ item, onClose }: { readonly item: ToastItem; readonly onClose: () => void }) {
   const cfg = TOAST_CONFIG[item.type];
   const Icon = cfg.icon;
   const [visible, setVisible] = useState(false);
@@ -107,8 +95,7 @@ function Toast({ item, onClose }: { item: ToastItem; onClose: () => void }) {
   );
 }
 
-// ─── ToastContainer ───────────────────────────────────────────────────────────
-
+// Монтируется через портал в document.body
 export function ToastContainer() {
   const [items, setItems] = useState<ToastItem[]>([]);
 
