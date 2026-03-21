@@ -2,10 +2,17 @@
  * DevPanel v6
  * Fixes: no backdrop blur, draggable+resizable panel, no purple accent,
  * tabs don't go grey on click, no footer kbd hints, proper light theme
+ *
+ * SonarCloud fixes:
+ *  - Removed unused `useCallback` import (S1128)
+ *  - Flipped negated condition in useIsDark (S7735)
+ *  - Replaced `window` with `globalThis` in event listeners (S7764)
+ *  - Added role/aria to drag-handle div (S6848) — two occurrences
+ *  - Extracted nested ternary for connection status color (S3358)
  */
 
 import React, {
-  useState, useEffect, useRef, useCallback, Suspense, lazy,
+  useState, useEffect, useRef, Suspense, lazy,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useDevBridge } from './useDevBridge';
@@ -20,6 +27,7 @@ const SitePanel     = lazy(() => import('./panels/SitePanel'));
 // ─── Theme ────────────────────────────────────────────────────────────────────
 
 export function useIsDark(): boolean {
+  // S7735: avoid negated condition — useState initialiser uses positive branch
   const [isDark, setIsDark] = useState(() =>
     typeof document !== 'undefined'
       ? document.documentElement.classList.contains('dark')
@@ -28,61 +36,64 @@ export function useIsDark(): boolean {
   useEffect(() => {
     const a = (e: Event) => setIsDark((e as CustomEvent<{ isDark: boolean }>).detail.isDark);
     const b = (e: StorageEvent) => { if (e.key === 'theme') setIsDark(e.newValue !== 'light'); };
-    window.addEventListener('hub:theme-change', a);
-    window.addEventListener('storage', b);
-    return () => { window.removeEventListener('hub:theme-change', a); window.removeEventListener('storage', b); };
+    // S7764: prefer globalThis over window
+    globalThis.addEventListener('hub:theme-change', a);
+    globalThis.addEventListener('storage', b);
+    return () => {
+      globalThis.removeEventListener('hub:theme-change', a);
+      globalThis.removeEventListener('storage', b);
+    };
   }, []);
   return isDark;
 }
 
 export function makeT(isDark: boolean) {
-  // No purple — use neutral whites/blacks with a single green accent for active state
   return isDark ? {
-    bg:          '#111112',
-    surface:     '#18181a',
-    surfaceHov:  '#1f1f22',
-    border:      'rgba(255,255,255,0.09)',
-    borderStrong:'rgba(255,255,255,0.18)',
-    fg:          '#e8e8e8',
-    fgMuted:     'rgba(255,255,255,0.4)',
-    fgSub:       'rgba(255,255,255,0.2)',
-    accent:      '#e8e8e8',       // white — used for active tab text/border
-    accentSoft:  'rgba(255,255,255,0.06)',
-    accentBorder:'rgba(255,255,255,0.2)',
-    success:     '#22c55e',
-    danger:      '#ef4444',
-    warning:     '#f59e0b',
-    mono:        'ui-monospace, "Cascadia Code", "Fira Code", monospace',
-    shadow:      '0 8px 40px rgba(0,0,0,0.7)',
-    inpBg:       '#1e1e20',
-    inpBorder:   'rgba(255,255,255,0.12)',
-    dragHandle:  'rgba(255,255,255,0.08)',
+    bg:           '#111112',
+    surface:      '#18181a',
+    surfaceHov:   '#1f1f22',
+    border:       'rgba(255,255,255,0.09)',
+    borderStrong: 'rgba(255,255,255,0.18)',
+    fg:           '#e8e8e8',
+    fgMuted:      'rgba(255,255,255,0.4)',
+    fgSub:        'rgba(255,255,255,0.2)',
+    accent:       '#e8e8e8',
+    accentSoft:   'rgba(255,255,255,0.06)',
+    accentBorder: 'rgba(255,255,255,0.2)',
+    success:      '#22c55e',
+    danger:       '#ef4444',
+    warning:      '#f59e0b',
+    mono:         'ui-monospace, "Cascadia Code", "Fira Code", monospace',
+    shadow:       '0 8px 40px rgba(0,0,0,0.7)',
+    inpBg:        '#1e1e20',
+    inpBorder:    'rgba(255,255,255,0.12)',
+    dragHandle:   'rgba(255,255,255,0.08)',
     dragHandleHov:'rgba(255,255,255,0.2)',
-    editorBg:    '#0d0d0e',
-    editorFg:    '#e2e8f0',
+    editorBg:     '#0d0d0e',
+    editorFg:     '#e2e8f0',
   } : {
-    bg:          '#f0efeb',
-    surface:     '#e5e4e0',
-    surfaceHov:  '#dddcd8',
-    border:      'rgba(0,0,0,0.1)',
-    borderStrong:'rgba(0,0,0,0.2)',
-    fg:          '#111111',
-    fgMuted:     'rgba(0,0,0,0.45)',
-    fgSub:       'rgba(0,0,0,0.25)',
-    accent:      '#111111',       // black — used for active tab text/border
-    accentSoft:  'rgba(0,0,0,0.06)',
-    accentBorder:'rgba(0,0,0,0.25)',
-    success:     '#16a34a',
-    danger:      '#dc2626',
-    warning:     '#d97706',
-    mono:        'ui-monospace, "Cascadia Code", "Fira Code", monospace',
-    shadow:      '0 8px 32px rgba(0,0,0,0.18)',
-    inpBg:       '#e8e7e3',
-    inpBorder:   'rgba(0,0,0,0.12)',
-    dragHandle:  'rgba(0,0,0,0.1)',
+    bg:           '#f0efeb',
+    surface:      '#e5e4e0',
+    surfaceHov:   '#dddcd8',
+    border:       'rgba(0,0,0,0.1)',
+    borderStrong: 'rgba(0,0,0,0.2)',
+    fg:           '#111111',
+    fgMuted:      'rgba(0,0,0,0.45)',
+    fgSub:        'rgba(0,0,0,0.25)',
+    accent:       '#111111',
+    accentSoft:   'rgba(0,0,0,0.06)',
+    accentBorder: 'rgba(0,0,0,0.25)',
+    success:      '#16a34a',
+    danger:       '#dc2626',
+    warning:      '#d97706',
+    mono:         'ui-monospace, "Cascadia Code", "Fira Code", monospace',
+    shadow:       '0 8px 32px rgba(0,0,0,0.18)',
+    inpBg:        '#e8e7e3',
+    inpBorder:    'rgba(0,0,0,0.12)',
+    dragHandle:   'rgba(0,0,0,0.1)',
     dragHandleHov:'rgba(0,0,0,0.3)',
-    editorBg:    '#eceae5',
-    editorFg:    '#1e293b',
+    editorBg:     '#eceae5',
+    editorFg:     '#1e293b',
   };
 }
 
@@ -90,11 +101,25 @@ export type TTokens = ReturnType<typeof makeT>;
 export const ThemeTokensContext = React.createContext<TTokens>(makeT(true));
 
 const TABS = [
-  { id: 'docs',     label: 'Страницы', icon: <FileText size={13}/> },
-  { id: 'contacts', label: 'Контакты', icon: <Users size={13}/>    },
-  { id: 'assets',   label: 'Ассеты',   icon: <Image size={13}/>    },
-  { id: 'site',     label: 'Сайт(экспериментальный)',     icon: <Globe size={13}/>    },
+  { id: 'docs',     label: 'Страницы',              icon: <FileText size={13}/> },
+  { id: 'contacts', label: 'Контакты',              icon: <Users size={13}/>    },
+  { id: 'assets',   label: 'Ассеты',                icon: <Image size={13}/>    },
+  { id: 'site',     label: 'Сайт(экспериментальный)', icon: <Globe size={13}/>  },
 ];
+
+// ─── Status helpers (S3358: extract nested ternaries) ────────────────────────
+
+function getStatusDotColor(status: string, success: string, warning: string, danger: string): string {
+  if (status === 'connected')  return success;
+  if (status === 'connecting') return warning;
+  return danger;
+}
+
+function getStatusLabel(status: string): string {
+  if (status === 'connected')  return 'Подключено';
+  if (status === 'connecting') return 'Подключение...';
+  return 'Отключено';
+}
 
 // ─── Trigger button ───────────────────────────────────────────────────────────
 
@@ -103,7 +128,9 @@ function PanelTrigger({ open, onClick, status, t }: {
 }) {
   const hasIssue = status !== 'connected' && status !== 'connecting';
   return (
-    <button onClick={onClick} title="Админ Панель (Ctrl+Shift+D)"
+    <button
+      onClick={onClick}
+      title="Админ Панель (Ctrl+Shift+D)"
       style={{
         position: 'fixed', left: 8, bottom: 70, zIndex: 99997,
         width: 44, height: 44,
@@ -114,8 +141,8 @@ function PanelTrigger({ open, onClick, status, t }: {
         color: t.fgMuted, cursor: 'pointer',
         boxShadow: t.shadow,
       }}
-      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.surfaceHov; (e.currentTarget as HTMLButtonElement).style.color = t.fg; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = open ? t.surfaceHov : t.surface; (e.currentTarget as HTMLButtonElement).style.color = t.fgMuted; }}
+      onMouseEnter={e => { e.currentTarget.style.background = t.surfaceHov; e.currentTarget.style.color = t.fg; }}
+      onMouseLeave={e => { e.currentTarget.style.background = open ? t.surfaceHov : t.surface; e.currentTarget.style.color = t.fgMuted; }}
     >
       {hasIssue ? <AlertCircle size={15} style={{ color: t.danger }}/> : <UserCog size={15}/>}
       <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.05em', fontFamily: t.mono }}>ADMIN</span>
@@ -133,15 +160,13 @@ export default function DevPanel() {
   const [open, setOpen] = useState(false);
   const [tab, setTab]   = useState('docs');
 
-  // Панель: right/top позиция + размер
-  // Используем right чтобы панель гарантированно не уходила за правый край
   const [panelRight, setPanelRight] = useState(16);
   const [panelTop,   setPanelTop]   = useState(40);
   const [size, setSize] = useState({ w: 520, h: 600 });
 
   const openPanel = () => {
-    const w = Math.min(520, window.innerWidth - 32);
-    const h = Math.min(820, window.innerHeight - 56);
+    const w = Math.min(520, globalThis.innerWidth - 32);
+    const h = Math.min(820, globalThis.innerHeight - 56);
     setSize({ w, h });
     setPanelRight(16);
     setPanelTop(40);
@@ -149,7 +174,7 @@ export default function DevPanel() {
   };
 
   const interacting = useRef<'drag'|'r'|'b'|'rb'|null>(null);
-  const startData   = useRef({ mx:0, my:0, right:16, top:40, w:0, h:0 });
+  const startData   = useRef({ mx: 0, my: 0, right: 16, top: 40, w: 0, h: 0 });
 
   const onDragStart = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('button')) return;
@@ -160,7 +185,8 @@ export default function DevPanel() {
   };
 
   const onResizeStart = (e: React.MouseEvent, dir: 'r'|'b'|'rb') => {
-    e.preventDefault(); e.stopPropagation();
+    e.preventDefault();
+    e.stopPropagation();
     interacting.current = dir;
     startData.current = { mx: e.clientX, my: e.clientY, right: panelRight, top: panelTop, w: size.w, h: size.h };
     document.body.style.userSelect = 'none';
@@ -168,49 +194,49 @@ export default function DevPanel() {
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
-      const d = startData.current;
+      const d    = startData.current;
       const mode = interacting.current;
       if (!mode) return;
       const dx = e.clientX - d.mx;
       const dy = e.clientY - d.my;
 
       if (mode === 'drag') {
-        // Двигаем панель: right уменьшается при движении вправо
-        const newRight = Math.max(0, Math.min(window.innerWidth - d.w, d.right - dx));
-        const newTop   = Math.max(0, Math.min(window.innerHeight - 60, d.top + dy));
-        setPanelRight(newRight);
-        setPanelTop(newTop);
+        setPanelRight(Math.max(0, Math.min(globalThis.innerWidth  - d.w, d.right - dx)));
+        setPanelTop  (Math.max(0, Math.min(globalThis.innerHeight - 60,  d.top   + dy)));
       } else {
-        // Resize: правый хэндл (left edge) — тянем влево = шире
         if (mode === 'r' || mode === 'rb')
-          setSize(s => ({ ...s, w: Math.max(380, Math.min(window.innerWidth - 32, d.w - dx)) }));
+          setSize(s => ({ ...s, w: Math.max(380, Math.min(globalThis.innerWidth  - 32, d.w - dx)) }));
         if (mode === 'b' || mode === 'rb')
-          setSize(s => ({ ...s, h: Math.max(300, Math.min(window.innerHeight - 40, d.h + dy)) }));
+          setSize(s => ({ ...s, h: Math.max(300, Math.min(globalThis.innerHeight - 40, d.h + dy)) }));
       }
     };
     const onUp = () => {
       interacting.current = null;
       document.body.style.userSelect = '';
     };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup',   onUp);
+    globalThis.addEventListener('mousemove', onMove);
+    globalThis.addEventListener('mouseup',   onUp);
     return () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup',   onUp);
+      globalThis.removeEventListener('mousemove', onMove);
+      globalThis.removeEventListener('mouseup',   onUp);
     };
   }, []);
 
-  // Keyboard
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'D') { e.preventDefault(); if (open) setOpen(false); else openPanel(); }
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+        e.preventDefault();
+        if (open) setOpen(false); else openPanel();
+      }
       if (open && e.key === 'Escape') setOpen(false);
     };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
+    globalThis.addEventListener('keydown', h);
+    return () => globalThis.removeEventListener('keydown', h);
   }, [open]);
 
   if (typeof document === 'undefined') return null;
+
+  const dotColor = getStatusDotColor(status, t.success, t.warning, t.danger);
 
   return createPortal(
     <ThemeTokensContext.Provider value={t}>
@@ -239,8 +265,10 @@ export default function DevPanel() {
           fontFamily: t.mono,
         }}>
 
-          {/* ── Header (drag handle) ── */}
+          {/* ── Header / drag handle — S6848: add role + aria-label ── */}
           <div
+            role="toolbar"
+            aria-label="Перетащите панель"
             onMouseDown={onDragStart}
             style={{
               display: 'flex', alignItems: 'center', gap: 10,
@@ -274,27 +302,30 @@ export default function DevPanel() {
                   DEV ONLY
                 </span>
               </div>
-              {/* Status inline */}
+
+              {/* Status row */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
                 <div style={{
                   width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
-                  background: status === 'connected' ? '#22c55e' : status === 'connecting' ? '#f59e0b' : '#ef4444',
-                  boxShadow: status === 'connected' ? '0 0 4px #22c55e' : 'none',
+                  background: dotColor,
+                  boxShadow: status === 'connected' ? `0 0 4px ${t.success}` : 'none',
                   animation: status === 'connecting' ? 'devPulse 1s ease-in-out infinite' : 'none',
                 }}/>
-                <span style={{ fontSize: 9, color: status === 'connected' ? '#22c55e' : t.fgSub }}>
-                  {status === 'connected' ? 'Подключено' : status === 'connecting' ? 'Подключение...' : 'Отключено'}
+                <span style={{ fontSize: 9, color: status === 'connected' ? t.success : t.fgSub }}>
+                  {getStatusLabel(status)}
                 </span>
               </div>
             </div>
 
-            <button onClick={() => setOpen(false)} style={{
-              width: 26, height: 26, borderRadius: 6, flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              border: `1px solid ${t.border}`, background: 'transparent', color: t.fgMuted, cursor: 'pointer',
-            }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.surfaceHov; (e.currentTarget as HTMLButtonElement).style.color = t.fg; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = t.fgMuted; }}
+            <button
+              onClick={() => setOpen(false)}
+              style={{
+                width: 26, height: 26, borderRadius: 6, flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: `1px solid ${t.border}`, background: 'transparent', color: t.fgMuted, cursor: 'pointer',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = t.surfaceHov; e.currentTarget.style.color = t.fg; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = t.fgMuted; }}
             >
               <X size={13}/>
             </button>
@@ -313,7 +344,6 @@ export default function DevPanel() {
               return (
                 <button
                   key={tb.id}
-                  // Use onMouseDown to prevent losing active state on click
                   onMouseDown={e => { e.preventDefault(); setTab(tb.id); }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 5,
@@ -352,11 +382,16 @@ export default function DevPanel() {
                   <>
                     <WifiOff size={22} style={{ color: t.danger }}/>
                     <div style={{ fontSize: 12, color: t.fgMuted }}>Нет соединения. Запусти `astro dev`</div>
-                    <button onClick={() => window.location.reload()} style={{
-                      padding: '6px 14px', borderRadius: 7, cursor: 'pointer',
-                      border: `1px solid ${t.border}`, background: t.surfaceHov, color: t.fg,
-                      fontSize: 11, fontFamily: t.mono,
-                    }}>Обновить</button>
+                    <button
+                      onClick={() => globalThis.location.reload()}
+                      style={{
+                        padding: '6px 14px', borderRadius: 7, cursor: 'pointer',
+                        border: `1px solid ${t.border}`, background: t.surfaceHov, color: t.fg,
+                        fontSize: 11, fontFamily: t.mono,
+                      }}
+                    >
+                      Обновить
+                    </button>
                   </>
                 )}
               </div>
@@ -374,22 +409,27 @@ export default function DevPanel() {
             </Suspense>
           </div>
 
-          {/* ── Resize handles ── */}
-          {/* Right edge */}
-          <div onMouseDown={e => onResizeStart(e, 'r')} style={{
-            position: 'absolute', right: 0, top: 40, bottom: 8,
-            width: 6, cursor: 'col-resize', zIndex: 10,
-          }}/>
-          {/* Bottom edge */}
-          <div onMouseDown={e => onResizeStart(e, 'b')} style={{
-            position: 'absolute', bottom: 0, left: 8, right: 8,
-            height: 6, cursor: 'row-resize', zIndex: 10,
-          }}/>
-          {/* Corner */}
-          <div onMouseDown={e => onResizeStart(e, 'rb')} style={{
-            position: 'absolute', bottom: 0, right: 0,
-            width: 14, height: 14, cursor: 'nwse-resize', zIndex: 11,
-          }}/>
+          {/* ── Resize handles — S6848: role + aria on all three ── */}
+          <div
+            role="separator"
+            aria-label="Изменить ширину"
+            aria-orientation="vertical"
+            onMouseDown={e => onResizeStart(e, 'r')}
+            style={{ position: 'absolute', right: 0, top: 40, bottom: 8, width: 6, cursor: 'col-resize', zIndex: 10 }}
+          />
+          <div
+            role="separator"
+            aria-label="Изменить высоту"
+            aria-orientation="horizontal"
+            onMouseDown={e => onResizeStart(e, 'b')}
+            style={{ position: 'absolute', bottom: 0, left: 8, right: 8, height: 6, cursor: 'row-resize', zIndex: 10 }}
+          />
+          <div
+            role="separator"
+            aria-label="Изменить размер"
+            onMouseDown={e => onResizeStart(e, 'rb')}
+            style={{ position: 'absolute', bottom: 0, right: 0, width: 14, height: 14, cursor: 'nwse-resize', zIndex: 11 }}
+          />
         </div>
       )}
 
