@@ -112,7 +112,7 @@ const Highlight = memo(function Highlight({ text, query }: { text: string; query
   );
 });
 
-// ─── Color theme ──────────────────────────────────────────────────────────────
+// ─── Цветовая схема ───────────────────────────────────────────────────────────
 
 function makeColors(isDark: boolean) {
   return isDark ? {
@@ -332,7 +332,7 @@ function useSearchFilters(docs: DocMeta[]) {
   const allTypenames = useMemo(() => {
     const s = new Set<string>();
     docs.forEach(d => { if (d.typename?.trim()) s.add(d.typename.trim()); });
-    return Array.from(s).sort();
+    return Array.from(s).sort((a, b) => a.localeCompare(b));
   }, [docs]);
 
   const allCategories = useMemo(() => {
@@ -346,7 +346,7 @@ function useSearchFilters(docs: DocMeta[]) {
   const allTags = useMemo(() => {
     const s = new Set<string>();
     docs.forEach(d => d.tags?.forEach(t => s.add(t)));
-    return Array.from(s).sort();
+    return Array.from(s).sort((a, b) => a.localeCompare(b));
   }, [docs]);
 
   const hasUpdatedDocs = useMemo(() => docs.some(d => d.updated), [docs]);
@@ -436,10 +436,10 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   });
 
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
+    const check = () => setIsMobile(globalThis.window.innerWidth < 768);
     check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
+    globalThis.window.addEventListener('resize', check);
+    return () => globalThis.window.removeEventListener('resize', check);
   }, []);
 
   useEffect(() => {
@@ -565,7 +565,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
 
       <div style={panelStyle}>
 
-        {/* ── Search row ── */}
+        {/* ── Строка поиска ── */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: '10px',
           padding: '0 14px',
@@ -644,7 +644,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
           </button>
         </div>
 
-        {/* ── Filter panel ── */}
+        {/* ── Панель фильтров ── */}
         {showFilters && (
           <div
             className="sp-scroll"
@@ -747,7 +747,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
           </div>
         )}
 
-        {/* ── Results ── */}
+        {/* ── Результаты ── */}
         <div
           ref={listRef}
           className="sp-scroll"
@@ -824,7 +824,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
           )}
         </div>
 
-        {/* ── Footer (desktop only) ── */}
+        {/* ── Подвал (только десктоп) ── */}
         {!isMobile && (
           <div style={{
             borderTop: `1px solid ${C.divider}`,
