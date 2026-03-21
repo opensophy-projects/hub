@@ -1,8 +1,7 @@
 /**
  * DocsPanel v4
- * - Preview через bridge.renderPreview() → реальный docUtils.mjs
- * - НЕТ автосохранения — только Ctrl+S или кнопка
- * - Режимы: MD | Split | Preview
+ * - Только MD редактор, без preview
+ * - Сохранение Ctrl+S — результат сразу на сайте
  */
 
 import React, {
@@ -17,7 +16,7 @@ import {
   FolderOpen, Folder, FileText, Plus, Trash2,
   ChevronRight, ChevronDown, FolderPlus, FilePlus,
   Loader2, Save, Bold, Italic, Code, Link, Hash, List,
-  Eye, Columns, RefreshCw,
+  RefreshCw,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -277,7 +276,7 @@ function TreeNode({ entry, onCreateChild, onDelete, onSelect, selectedPath }: {
 
 // ─── Markdown Editor ──────────────────────────────────────────────────────────
 
-type ViewMode = 'editor'|'split'|'preview';
+type ViewMode = 'editor';
 
 function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>void }) {
   const [fm, setFm]           = useState<FM>({...EMPTY_FM});
@@ -286,10 +285,8 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
   const [saving, setSaving]   = useState(false);
   const [dirty, setDirty]     = useState(false);
   const [fmOpen, setFmOpen]   = useState(false);
-  const [viewMode, setMode]   = useState<ViewMode>('split');
-  const [previewHtml, setPreviewHtml]       = useState('');
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const previewDebounce = useRef<ReturnType<typeof setTimeout>|null>(null);
+  const [viewMode, setMode]   = useState<ViewMode>('editor');
+
   const taRef   = useRef<HTMLTextAreaElement>(null);
   const fmRef   = useRef(fm);
   const bodyRef = useRef(body);
@@ -318,25 +315,6 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
       .finally(() => setLoading(false));
   }, [filePath]);
 
-  // Debounced server-side preview
-  useEffect(() => {
-    if (viewMode === 'editor') return;
-    if (previewDebounce.current) clearTimeout(previewDebounce.current);
-    previewDebounce.current = setTimeout(async () => {
-      setPreviewLoading(true);
-      try {
-        const result = await bridge.renderPreview(body);
-        setPreviewHtml(result.html ?? '');
-      } catch {
-        // keep last html on error
-      } finally {
-        setPreviewLoading(false);
-      }
-    }, 700);
-    return () => { if (previewDebounce.current) clearTimeout(previewDebounce.current); };
-  }, [body, viewMode]);
-
-  useEffect(() => () => { if (previewDebounce.current) clearTimeout(previewDebounce.current); }, []);
 
   // Save
   const save = useCallback(async () => {
@@ -385,21 +363,8 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
     </div>
   );
 
-  // Build srcDoc as a plain string — no template literals with embedded expressions
-  const iframeSrc = [
-    '<!DOCTYPE html><html><head>',
-    '<meta charset="utf-8"/>',
-    '<base href="/" target="_blank"/>',
-    '<link rel="stylesheet" href="/styles/global.css"/>',
-    '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"/>',
-    '<style>html,body{margin:0;padding:0;background:transparent}',
-    'body{padding:16px 20px;box-sizing:border-box;font-family:system-ui,sans-serif}</style>',
-    '</head><body class="dark"><article class="prose">',
-    previewHtml,
-    '</article></body></html>',
-  ].join('');
 
-  return (
+  return ( (
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
       {/* Toolbar */}
       <div style={{display:'flex',alignItems:'center',gap:4,padding:'5px 8px',
@@ -411,22 +376,7 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
           textOverflow:'ellipsis',whiteSpace:'nowrap',fontFamily:T.mono}}>
           {fileName}{dirty&&<span style={{color:T.warning,marginLeft:4}}>●</span>}
         </span>
-        {(['editor','split','preview'] as ViewMode[]).map(mode=>{
-          const icons:Record<ViewMode,React.ReactNode> = {
-            editor:<FileText size={10}/>,split:<Columns size={10}/>,preview:<Eye size={10}/>
-          };
-          const lbls:Record<ViewMode,string> = {editor:'MD',split:'Split',preview:'Preview'};
-          const active = viewMode===mode;
-          return (
-            <button key={mode} onClick={()=>setMode(mode)}
-              style={{display:'flex',alignItems:'center',gap:3,padding:'3px 6px',borderRadius:4,
-                border:`1px solid ${active?T.accent+'55':T.border}`,
-                background:active?T.accentSoft:'transparent',
-                color:active?T.accent:T.fgMuted,fontSize:9,cursor:'pointer',fontFamily:T.mono}}>
-              {icons[mode]} {lbls[mode]}
-            </button>
-          );
-        })}
+
         <button onClick={()=>window.open(`/${previewSlug}`,'_blank')}
           style={{display:'flex',alignItems:'center',gap:3,padding:'3px 6px',borderRadius:4,
             border:`1px solid ${T.border}`,background:'transparent',
@@ -487,9 +437,7 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
 
       {/* Editor + Preview */}
       <div style={{flex:1,display:'flex',overflow:'hidden',minHeight:0}}>
-        {(viewMode==='editor'||viewMode==='split')&&(
-          <div style={{flex:1,display:'flex',flexDirection:'column',minWidth:0,
-            borderRight:viewMode==='split'?`1px solid ${T.border}`:'none'}}>
+        <div style={{flex:1,display:'flex',flexDirection:'column',minWidth:0}}>
             <div style={{padding:'2px 8px',fontSize:8,color:T.fgSub,background:T.bgPanel,
               borderBottom:`1px solid ${T.border}44`,letterSpacing:'0.08em',flexShrink:0}}>
               MARKDOWN
@@ -500,23 +448,9 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
               style={{flex:1,padding:'10px 12px',border:'none',background:T.bgHov,
                 color:'#e2e8f0',fontSize:12,fontFamily:T.mono,lineHeight:1.75,
                 resize:'none',outline:'none',scrollbarWidth:'thin' as const}}/>
-          </div>
-        )}
-        {(viewMode==='preview'||viewMode==='split')&&(
-          <div style={{flex:1,display:'flex',flexDirection:'column',minWidth:0,overflow:'hidden'}}>
-            <div style={{padding:'2px 8px',fontSize:8,color:T.accent,background:T.bgPanel,
-              borderBottom:`1px solid ${T.border}44`,letterSpacing:'0.08em',flexShrink:0,
-              display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-              <span>LIVE PREVIEW</span>
-              {previewLoading&&<Loader2 size={9} style={{color:T.fgSub,animation:'devSpinAnim 1s linear infinite'}}/>}
-            </div>
-            <iframe
-              srcDoc={iframeSrc}
-              style={{flex:1,border:'none',background:'transparent',width:'100%',height:'100%'}}
-              title="preview"
-            />
-          </div>
-        )}
+        </div>
+
+
       </div>
 
       <StatusBar
