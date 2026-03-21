@@ -14,15 +14,12 @@ import { toast } from '../components/Toast';
 import {
   T, Btn, ScrollArea, EmptyState, StatusBar, Badge, ConfirmDialog,
 } from '../components/ui';
-import { marked } from 'marked';
 import {
   FolderOpen, Folder, FileText, Plus, Trash2,
   ChevronRight, ChevronDown, FolderPlus, FilePlus,
   Loader2, Save, Bold, Italic, Code, Link, Hash, List,
-  RefreshCw, Eye, Columns, Globe,
+  Eye, Columns,
 } from 'lucide-react';
-
-marked.setOptions({ breaks: true, gfm: true });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -100,89 +97,7 @@ function serializeFM(fm: FM, body: string): string {
 // ─── Markdown renderer with custom blocks ─────────────────────────────────────
 // Реализуем те же кастомные блоки что и в docUtils.mjs но на клиенте
 
-function renderCustomBlocks(md: string): string {
-  // :::note / :::tip / :::warning / :::caution / :::important
-  md = md.replace(/^:::(\w+)\s*\n([\s\S]*?)^:::\s*$/gm, (_, type, content) => {
-    const alertTypes = ['note','tip','important','warning','caution'];
-    if (alertTypes.includes(type)) {
-      const colors: Record<string,string> = {
-        note:'#3b82f6', tip:'#22c55e', important:'#a855f7',
-        warning:'#f59e0b', caution:'#ef4444',
-      };
-      const labels: Record<string,string> = {
-        note:'Примечание', tip:'Совет', important:'Важно',
-        warning:'Предупреждение', caution:'Осторожно',
-      };
-      const c = colors[type] ?? '#3b82f6';
-      return `<div style="border-left:3px solid ${c};padding:0.5em 0.75em;margin:0.8em 0;background:${c}22;border-radius:0 6px 6px 0">
-<strong style="color:${c};font-size:0.8em;text-transform:uppercase;letter-spacing:0.06em">${labels[type]}</strong>
-<div>${marked(content.trim()) as string}</div></div>\n`;
-    }
-    return `<div class="custom-block custom-${type}">${marked(content.trim()) as string}</div>\n`;
-  });
-
-  // :::details summary
-  md = md.replace(/^:::details\s+(.*?)\n([\s\S]*?)^:::\s*$/gm, (_, summary, content) => {
-    return `<details><summary>${summary.trim()}</summary><div>${marked(content.trim()) as string}</div></details>\n`;
-  });
-
-  // :::cards / :::card
-  md = md.replace(/^:::card(?:s)?\s*(?:\[([^\]]*)\])?\s*\n([\s\S]*?)^:::\s*$/gm, (_, params, content) => {
-    return `<div style="border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:1em;margin:0.8em 0;background:rgba(255,255,255,0.03)">${marked(content.trim()) as string}</div>\n`;
-  });
-
-  // :::steps
-  md = md.replace(/^:::steps\s*\n([\s\S]*?)^:::\s*$/gm, (_, content) => {
-    return `<div style="border-left:2px solid rgba(124,92,252,0.5);padding-left:1em;margin:0.8em 0">${marked(content.trim()) as string}</div>\n`;
-  });
-
-  return md;
-}
-
-function renderMarkdown(raw: string): string {
-  try {
-    // 1. Remove frontmatter
-    let md = raw;
-    if (md.startsWith('---\n')) {
-      const end = md.indexOf('\n---\n', 4);
-      if (end !== -1) md = md.slice(end + 5);
-    }
-    // 2. Process custom blocks first
-    md = renderCustomBlocks(md);
-    // 3. Render remaining markdown
-    return marked(md) as string;
-  } catch {
-    return '<p style="color:#ef4444">Ошибка парсинга</p>';
-  }
-}
-
-// ─── Preview CSS ──────────────────────────────────────────────────────────────
-
-const PREVIEW_CSS = `
-  .dp-wrap{font-size:13px;color:rgba(255,255,255,0.85);line-height:1.75;font-family:system-ui,sans-serif;padding:14px;overflow-y:auto;height:100%;box-sizing:border-box}
-  .dp-wrap h1,.dp-wrap h2,.dp-wrap h3,.dp-wrap h4{color:rgba(255,255,255,0.96);margin-top:1.3em;margin-bottom:.4em;line-height:1.3}
-  .dp-wrap h1{font-size:1.6em;font-weight:700}
-  .dp-wrap h2{font-size:1.3em;font-weight:700;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:.25em}
-  .dp-wrap h3{font-size:1.1em;font-weight:700}
-  .dp-wrap p{margin:.6em 0}
-  .dp-wrap code{background:rgba(255,255,255,0.09);padding:2px 5px;border-radius:3px;font-family:ui-monospace,monospace;font-size:.85em}
-  .dp-wrap pre{background:#080810;padding:10px 12px;border-radius:7px;overflow-x:auto;margin:.8em 0}
-  .dp-wrap pre code{background:none;padding:0}
-  .dp-wrap blockquote{border-left:3px solid rgba(124,92,252,0.7);padding:.1em .75em;margin:.7em 0;color:rgba(255,255,255,.6);background:rgba(124,92,252,0.06);border-radius:0 5px 5px 0}
-  .dp-wrap ul,.dp-wrap ol{padding-left:1.4em;margin:.4em 0}
-  .dp-wrap li{margin:.2em 0}
-  .dp-wrap a{color:#7c5cfc;text-decoration:underline}
-  .dp-wrap hr{border:none;border-top:1px solid rgba(255,255,255,0.1);margin:1.2em 0}
-  .dp-wrap table{border-collapse:collapse;width:100%;margin:.7em 0;font-size:.9em}
-  .dp-wrap td,.dp-wrap th{border:1px solid rgba(255,255,255,0.12);padding:5px 9px}
-  .dp-wrap th{background:rgba(255,255,255,0.07);font-weight:600}
-  .dp-wrap strong{color:rgba(255,255,255,.96);font-weight:700}
-  .dp-wrap em{font-style:italic}
-  .dp-wrap img{max-width:100%;border-radius:5px}
-  .dp-wrap del{opacity:.5;text-decoration:line-through}
-  .dp-wrap details{border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:.5em;margin:.7em 0}
-  .dp-wrap summary{cursor:pointer;font-weight:600;padding:.2em 0}
-`;
+// Preview is rendered server-side via bridge.renderPreview() → docUtils.mjs
 
 // ─── Create Modal ─────────────────────────────────────────────────────────────
 
@@ -363,7 +278,7 @@ function TreeNode({ entry, onCreateChild, onDelete, onSelect, selectedPath }: {
 
 // ─── Markdown Editor ──────────────────────────────────────────────────────────
 
-type ViewMode = 'editor'|'split'|'preview'|'site'|'split-site';
+type ViewMode = 'editor'|'split'|'preview';
 
 function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>void }) {
   const [fm, setFm]           = useState<FM>({...EMPTY_FM});
@@ -373,7 +288,6 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
   const [dirty, setDirty]     = useState(false);
   const [fmOpen, setFmOpen]   = useState(false);
   const [viewMode, setMode]   = useState<ViewMode>('split');
-  const [iframeKey, setIframeKey] = useState(0);
   const debounceTimer = useRef<ReturnType<typeof setTimeout>|null>(null);
   const taRef   = useRef<HTMLTextAreaElement>(null);
   const fmRef   = useRef(fm);
@@ -388,8 +302,6 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
       .filter(Boolean).join('/');
   }, [filePath]);
 
-  // Live preview — rendered on every keystroke, NO save triggered
-  const previewHtml = useMemo(() => renderMarkdown(body), [body]);
 
   useEffect(() => {
     bridge.readFile(filePath)
@@ -407,34 +319,33 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
       .finally(() => setLoading(false));
   }, [filePath]);
 
-  // Silent save — no toast, used for debounced autosave in split-site mode
-  const silentSave = useCallback(async () => {
-    try {
-      await bridge.writeFile(filePath, serializeFM(fmRef.current, bodyRef.current));
-      setDirty(false);
-      setIframeKey(k => k + 1);
-    } catch {}
-  }, [filePath]);
-
-  // Schedule debounced save — only fires in split-site mode
-  const scheduleSave = useCallback((mode: ViewMode) => {
-    if (mode !== 'split-site') return;
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => { silentSave(); }, 900);
-  }, [silentSave]);
+  // Debounced server-side preview — fires 600ms after user stops typing
+  useEffect(() => {
+    if (viewMode === 'editor') return; // no need to render if not visible
+    if (previewDebounce.current) clearTimeout(previewDebounce.current);
+    previewDebounce.current = setTimeout(async () => {
+      setPreviewLoading(true);
+      try {
+        const { html } = await bridge.renderPreview(body);
+        setPreviewHtml(html);
+      } catch {
+        // bridge unavailable — keep last html
+      } finally {
+        setPreviewLoading(false);
+      }
+    }, 600);
+    return () => { if (previewDebounce.current) clearTimeout(previewDebounce.current); };
+  }, [body, viewMode]);
 
   // Cleanup on unmount
-  useEffect(() => {
-    return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
-  }, []);
+  useEffect(() => () => { if (previewDebounce.current) clearTimeout(previewDebounce.current); }, []);
 
-  // SAVE — Ctrl+S or button, always works in all modes
+  // SAVE — Ctrl+S or button
   const save = useCallback(async () => {
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
     setSaving(true);
     try {
       await bridge.writeFile(filePath, serializeFM(fmRef.current, bodyRef.current));
-      setDirty(false); setIframeKey(k => k + 1);
+      setDirty(false);
       toast.success('Сохранено и опубликовано');
     } catch (e: any) { toast.error(e.message); }
     finally { setSaving(false); }
@@ -452,7 +363,7 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
     const ta = taRef.current; if (!ta) return;
     const s=ta.selectionStart, e=ta.selectionEnd, sel=body.slice(s,e);
     const nv = body.slice(0,s)+before+sel+after+body.slice(e);
-    setBody(nv); setDirty(true); scheduleSave(viewMode);
+    setBody(nv); setDirty(true);
     setTimeout(()=>{ ta.focus(); ta.selectionStart=s+before.length; ta.selectionEnd=s+before.length+sel.length; },0);
   };
 
@@ -460,7 +371,7 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
     if (e.key!=='Tab') return; e.preventDefault();
     const ta=e.currentTarget, s=ta.selectionStart;
     const nv=body.slice(0,s)+'  '+body.slice(ta.selectionEnd);
-    setBody(nv); setDirty(true); scheduleSave(viewMode);
+    setBody(nv); setDirty(true);
     setTimeout(()=>{ ta.selectionStart=ta.selectionEnd=s+2; },0);
   };
 
@@ -488,9 +399,9 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
           textOverflow:'ellipsis',whiteSpace:'nowrap',fontFamily:T.mono}}>
           {fileName}{dirty&&<span style={{color:T.warning,marginLeft:4}}>●</span>}
         </span>
-        {(['editor','split','preview','split-site','site'] as ViewMode[]).map(mode=>{
-          const icons = {editor:<FileText size={10}/>,split:<Columns size={10}/>,preview:<Eye size={10}/>,'split-site':<Globe size={10}/>,site:<Globe size={10}/>};
-          const lbls  = {editor:'MD',split:'Split',preview:'Preview','split-site':'MD+Сайт',site:'Сайт'};
+        {(['editor','split','preview'] as ViewMode[]).map(mode=>{
+          const icons:Record<ViewMode,React.ReactNode> = {editor:<FileText size={10}/>,split:<Columns size={10}/>,preview:<Eye size={10}/>};
+          const lbls:Record<ViewMode,string>  = {editor:'MD',split:'Split',preview:'Preview'};
           const active = viewMode===mode;
           return (
             <button key={mode} onClick={()=>setMode(mode)}
@@ -528,7 +439,7 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
               <div key={f.k} style={{gridColumn:f.span?'1 / -1':'auto'}}>
                 <div style={{fontSize:9,color:T.fgSub,marginBottom:2,textTransform:'uppercase',letterSpacing:'0.06em'}}>{f.l}</div>
                 <input type={f.t??'text'} value={fm[f.k]}
-                  onChange={e=>{setFm(p=>({...p,[f.k]:e.target.value}));setDirty(true);scheduleSave(viewMode);}}
+                  onChange={e=>{setFm(p=>({...p,[f.k]:e.target.value}));setDirty(true);}}
                   style={inpS}/>
               </div>
             ))}
@@ -556,53 +467,47 @@ function MarkdownEditor({ filePath, onClose }: { filePath: string; onClose: ()=>
 
       {/* Editor + Preview */}
       <div style={{flex:1,display:'flex',overflow:'hidden',minHeight:0}}>
-        {(viewMode==='editor'||viewMode==='split'||viewMode==='split-site')&&(
+        {(viewMode==='editor'||viewMode==='split')&&(
           <div style={{flex:1,display:'flex',flexDirection:'column',minWidth:0,
-            borderRight:(viewMode==='split'||viewMode==='split-site')?`1px solid ${T.border}`:'none'}}>
+            borderRight:viewMode==='split'?`1px solid ${T.border}`:'none'}}>
             <div style={{padding:'2px 8px',fontSize:8,color:T.fgSub,background:T.bgPanel,
               borderBottom:`1px solid ${T.border}44`,letterSpacing:'0.08em',flexShrink:0}}>
               MARKDOWN
             </div>
             <textarea ref={taRef} value={body}
-              onChange={e=>{setBody(e.target.value);setDirty(true);scheduleSave(viewMode);}}
+              onChange={e=>{setBody(e.target.value);setDirty(true);}}
               onKeyDown={handleTab} spellCheck={false}
               style={{flex:1,padding:'10px 12px',border:'none',background:T.bgHov,
                 color:'#e2e8f0',fontSize:12,fontFamily:T.mono,lineHeight:1.75,
                 resize:'none',outline:'none',scrollbarWidth:'thin' as const}}/>
           </div>
         )}
-        {(viewMode==='preview'||viewMode==='split')&&viewMode!=='split-site'&&(
+        {(viewMode==='preview'||viewMode==='split')&&(
           <div style={{flex:1,display:'flex',flexDirection:'column',minWidth:0,overflow:'hidden'}}>
             <div style={{padding:'2px 8px',fontSize:8,color:T.accent,background:T.bgPanel,
-              borderBottom:`1px solid ${T.border}44`,letterSpacing:'0.08em',flexShrink:0}}>
-              LIVE PREVIEW
-            </div>
-            <style>{PREVIEW_CSS}</style>
-            <div className="dp-wrap"
-              style={{flex:1,overflowY:'auto',scrollbarWidth:'thin' as const}}
-              dangerouslySetInnerHTML={{__html:previewHtml}}/>
-          </div>
-        )}
-        {(viewMode==='site'||viewMode==='split-site')&&(
-          <div style={{flex:1,display:'flex',flexDirection:'column',minWidth:0,overflow:'hidden'}}>
-            <div style={{padding:'2px 8px',fontSize:8,color:'#22c55e',background:T.bgPanel,
               borderBottom:`1px solid ${T.border}44`,letterSpacing:'0.08em',flexShrink:0,
               display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-              <span>САЙТ — Ctrl+S для обновления</span>
-              <button onClick={()=>setIframeKey(k=>k+1)}
-                style={{background:'transparent',border:'none',cursor:'pointer',
-                  color:T.fgSub,fontSize:9,padding:'0 4px',fontFamily:T.mono}}>
-                ↺
-              </button>
+              <span>LIVE PREVIEW</span>
+              {previewLoading&&<Loader2 size={9} style={{color:T.fgSub,animation:'devSpinAnim 1s linear infinite'}}/>}
             </div>
             <iframe
-              key={iframeKey}
-              src={`/${previewSlug}`}
-              style={{flex:1,border:'none',background:'#fff'}}
-              title="site preview"
+              srcDoc={[
+                '<!DOCTYPE html><html><head>',
+                '<meta charset="utf-8"/>',
+                '<base href="/" target="_blank"/>',
+                '<link rel="stylesheet" href="/styles/global.css"/>',
+                '<link rel="stylesheet" href="/styles/prose.css"/>',
+                '<style>body{margin:0;padding:16px 20px;box-sizing:border-box}</style>',
+                '</head><body class="dark"><main><article class="prose content-body">',
+                previewHtml,
+                '</article></main></body></html>',
+              ].join('')}
+              style={{flex:1,border:'none',background:'transparent',width:'100%'}}
+              title="preview"
             />
           </div>
         )}
+
       </div>
 
       <StatusBar
