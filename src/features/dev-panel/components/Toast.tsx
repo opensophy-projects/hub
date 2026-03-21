@@ -2,7 +2,7 @@
  * Toast notifications для Dev Panel
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { CheckCircle, XCircle, Info, AlertTriangle, X } from 'lucide-react';
 import { T } from './ui';
@@ -56,10 +56,10 @@ const TOAST_CONFIG: Record<ToastType, {
   bg: string;
   border: string;
 }> = {
-  success: { icon: CheckCircle,  color: '#22c55e', bg: 'rgba(34,197,94,0.08)',   border: 'rgba(34,197,94,0.25)'  },
-  error:   { icon: XCircle,      color: '#ef4444', bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.25)'  },
-  info:    { icon: Info,         color: '#7c5cfc', bg: 'rgba(124,92,252,0.08)',  border: 'rgba(124,92,252,0.25)' },
-  warning: { icon: AlertTriangle,color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.25)' },
+  success: { icon: CheckCircle,   color: '#22c55e', bg: 'rgba(34,197,94,0.08)',   border: 'rgba(34,197,94,0.25)'  },
+  error:   { icon: XCircle,       color: '#ef4444', bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.25)'  },
+  info:    { icon: Info,          color: '#7c5cfc', bg: 'rgba(124,92,252,0.08)',  border: 'rgba(124,92,252,0.25)' },
+  warning: { icon: AlertTriangle, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.25)' },
 };
 
 // ─── Single Toast ─────────────────────────────────────────────────────────────
@@ -70,7 +70,6 @@ function Toast({ item, onClose }: { item: ToastItem; onClose: () => void }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // trigger enter animation
     const t = setTimeout(() => setVisible(true), 10);
     return () => clearTimeout(t);
   }, []);
