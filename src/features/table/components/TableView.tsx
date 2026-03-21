@@ -23,39 +23,57 @@ interface TableViewProps {
   fullscreen?: boolean;
 }
 
-function tok(isDark: boolean) {
-  return isDark ? {
-    thBg:       '#111111',
-    thColor:    'rgba(255,255,255,0.35)',
-    thBorder:   'rgba(255,255,255,0.07)',
-    thActColor: 'rgba(255,255,255,0.82)',
-    rowEven:    '#0a0a0a',
-    rowOdd:     '#111111',
-    rowHover:   '#1a1a1a',
-    cellBorder: 'rgba(255,255,255,0.05)',
-    cellColor:  'rgba(255,255,255,0.82)',
-    fadeTo:     '#0a0a0a',
-    thumb:      'rgba(255,255,255,0.14)',
-    thumbHov:   'rgba(255,255,255,0.26)',
-    track:      'rgba(255,255,255,0.04)',
-  } : {
-    thBg:       '#d8d7d3',
-    thColor:    'rgba(0,0,0,0.38)',
-    thBorder:   'rgba(0,0,0,0.08)',
-    thActColor: 'rgba(0,0,0,0.85)',
-    rowEven:    '#E8E7E3',
-    rowOdd:     '#d8d7d3',
-    rowHover:   '#cccbc6',
-    cellBorder: 'rgba(0,0,0,0.06)',
-    cellColor:  'rgba(0,0,0,0.85)',
-    fadeTo:     '#E8E7E3',
-    thumb:      'rgba(0,0,0,0.16)',
-    thumbHov:   'rgba(0,0,0,0.28)',
-    track:      'rgba(0,0,0,0.04)',
-  };
+const DARK_TOK = {
+  thBg:       '#111111',
+  thColor:    'rgba(255,255,255,0.35)',
+  thBorder:   'rgba(255,255,255,0.07)',
+  thActColor: 'rgba(255,255,255,0.82)',
+  rowEven:    '#0a0a0a',
+  rowOdd:     '#111111',
+  rowHover:   '#1a1a1a',
+  cellBorder: 'rgba(255,255,255,0.05)',
+  cellColor:  'rgba(255,255,255,0.82)',
+  fadeTo:     '#0a0a0a',
+  thumb:      'rgba(255,255,255,0.14)',
+  thumbHov:   'rgba(255,255,255,0.26)',
+  track:      'rgba(255,255,255,0.04)',
+};
+
+const LIGHT_TOK = {
+  thBg:       '#d8d7d3',
+  thColor:    'rgba(0,0,0,0.38)',
+  thBorder:   'rgba(0,0,0,0.08)',
+  thActColor: 'rgba(0,0,0,0.85)',
+  rowEven:    '#E8E7E3',
+  rowOdd:     '#d8d7d3',
+  rowHover:   '#cccbc6',
+  cellBorder: 'rgba(0,0,0,0.06)',
+  cellColor:  'rgba(0,0,0,0.85)',
+  fadeTo:     '#E8E7E3',
+  thumb:      'rgba(0,0,0,0.16)',
+  thumbHov:   'rgba(0,0,0,0.28)',
+  track:      'rgba(0,0,0,0.04)',
+};
+
+type Tok = typeof DARK_TOK;
+
+function tok(isDark: boolean): Tok {
+  return isDark ? DARK_TOK : LIGHT_TOK;
 }
 
-type Tok = ReturnType<typeof tok>;
+// Переводит выравнивание колонки в justify-content для flex-контейнера заголовка
+function alignToJustify(align: ColumnAlignment): string {
+  if (align === 'center') return 'center';
+  if (align === 'right')  return 'flex-end';
+  return 'flex-start';
+}
+
+// Определяет фоновый цвет строки по состоянию hover и чётности
+function rowBg(t: Tok, hov: boolean, even: boolean): string {
+  if (hov)  return t.rowHover;
+  if (even) return t.rowEven;
+  return t.rowOdd;
+}
 
 export const TableView: React.FC<TableViewProps> = ({
   isDark, headers, rows, visibleColumns, searchQuery,
@@ -110,9 +128,9 @@ export const TableView: React.FC<TableViewProps> = ({
       <div
         className="tb-scroll-wrap"
         style={{
-          flex: fullscreen ? 1 : undefined,
-          display: fullscreen ? 'flex' : undefined,
-          flexDirection: fullscreen ? 'column' : undefined,
+          flex:          fullscreen ? 1         : undefined,
+          display:       fullscreen ? 'flex'    : undefined,
+          flexDirection: fullscreen ? 'column'  : undefined,
           minHeight: 0,
           overflow: 'hidden',
         }}
@@ -128,12 +146,6 @@ export const TableView: React.FC<TableViewProps> = ({
           }}
           {...dragHandlers}
         >
-          {/*
-            FIX: table needs BOTH width:100% (fill container) and minWidth:max-content
-            (allow horizontal scroll when content is wider).
-            The inline style overrides the .prose table { width: auto } from global.css
-            which was the root cause — it made the table shrink to content width.
-          */}
           <table style={{
             borderCollapse: 'separate',
             borderSpacing: 0,
@@ -164,6 +176,7 @@ export const TableView: React.FC<TableViewProps> = ({
                 <TableRow
                   key={`r${idx}-${row.cells[0]?.slice(0, 20)}`}
                   t={t} row={row} rowIndex={idx}
+                  headers={headers}
                   visibleColumns={visibleColumns}
                   searchQuery={searchQuery}
                 />
@@ -203,8 +216,7 @@ const TableHead: React.FC<{
         }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 5,
-            justifyContent: headerAlignments[i] === 'center' ? 'center'
-              : headerAlignments[i] === 'right' ? 'flex-end' : 'flex-start',
+            justifyContent: alignToJustify(headerAlignments[i] ?? null),
           }}>
             <span>{header}</span>
             <SortIcon direction={sortColumn === i ? sortDirection : 'none'} isDark={isDark} />
@@ -277,11 +289,12 @@ const CellContent: React.FC<{ html: string; searchQuery: string }> = ({ html, se
 
 const TableRow: React.FC<{
   t: Tok; row: ParsedRow; rowIndex: number;
+  headers: string[];
   visibleColumns: Set<number>; searchQuery: string;
-}> = ({ t, row, rowIndex, visibleColumns, searchQuery }) => {
+}> = ({ t, row, rowIndex, headers, visibleColumns, searchQuery }) => {
   const [hov, setHov] = useState(false);
   const even = rowIndex % 2 === 0;
-  const bg   = hov ? t.rowHover : even ? t.rowEven : t.rowOdd;
+  const bg   = rowBg(t, hov, even);
 
   return (
     <tr
@@ -290,7 +303,7 @@ const TableRow: React.FC<{
       onMouseLeave={() => setHov(false)}
     >
       {row.cells.map((cell, i) => visibleColumns.has(i) ? (
-        <td key={i} style={{
+        <td key={headers[i] ?? i} style={{
           padding: '0.65rem 1rem',
           textAlign: row.alignments[i] || 'left',
           borderBottom: `1px solid ${t.cellBorder}`,
