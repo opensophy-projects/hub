@@ -165,4 +165,7 @@ export const bridge = {
 
   runGenerate: () =>
     send<{ ok: boolean; stdout: string; stderr: string }>('runGenerate'),
+
+  renderPreview: (markdown: string) =>
+    send<{ html: string; error?: string }>('renderPreview', { markdown }),
 };
