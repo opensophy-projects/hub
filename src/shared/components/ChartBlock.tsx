@@ -24,14 +24,14 @@ interface ChartBlockProps {
   isDark: boolean;
 }
 
-// ─── Default palette ──────────────────────────────────────────────────────────
+// ─── Цветовая палитра по умолчанию ───────────────────────────────────────────
 
 const DEFAULT_COLORS = [
   '#7234ff', '#22c55e', '#f59e0b', '#3b82f6',
   '#ef4444', '#ec4899', '#14b8a6', '#f97316',
 ];
 
-// ─── Tokens ───────────────────────────────────────────────────────────────────
+// ─── Токены темы ──────────────────────────────────────────────────────────────
 
 function tk(isDark: boolean) {
   return {
@@ -53,7 +53,7 @@ function tk(isDark: boolean) {
   };
 }
 
-// ─── Key detection ────────────────────────────────────────────────────────────
+// ─── Определение ключей данных ────────────────────────────────────────────────
 
 function detectKeys(data: Record<string, unknown>[]): { nameKey: string; valueKeys: string[] } {
   if (!data.length) return { nameKey: 'name', valueKeys: [] };
@@ -61,7 +61,7 @@ function detectKeys(data: Record<string, unknown>[]): { nameKey: string; valueKe
   return { nameKey: keys[0] ?? 'name', valueKeys: keys.slice(1) };
 }
 
-// ─── Tooltips ─────────────────────────────────────────────────────────────────
+// ─── Тултипы ─────────────────────────────────────────────────────────────────
 
 const CustomTooltip: React.FC<{
   active?: boolean;
@@ -78,8 +78,8 @@ const CustomTooltip: React.FC<{
       pointerEvents: 'none',
     }}>
       {label && <div style={{ fontWeight: 600, marginBottom: 4, opacity: 0.7 }}>{label}</div>}
-      {payload.map((entry, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+      {payload.map(entry => (
+        <div key={entry.name} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
           <div style={{ width: 8, height: 8, borderRadius: 2, background: entry.color, flexShrink: 0 }} />
           <span style={{ opacity: 0.7 }}>{entry.name}:</span>
           <span style={{ fontWeight: 600 }}>{entry.value}</span>
@@ -112,7 +112,7 @@ const PieTooltip: React.FC<{
   );
 };
 
-// ─── Custom Legend ────────────────────────────────────────────────────────────
+// ─── Легенда ──────────────────────────────────────────────────────────────────
 
 interface LegendItem { key: string; color: string; }
 
@@ -159,7 +159,7 @@ const CustomLegend: React.FC<{
   );
 };
 
-// ─── Chart height ─────────────────────────────────────────────────────────────
+// ─── Высота графика ───────────────────────────────────────────────────────────
 
 function chartHeight(type: ChartType, rowCount: number): number {
   if (type === 'bar-horizontal') return Math.max(100, rowCount * 40 + 36);
@@ -168,13 +168,13 @@ function chartHeight(type: ChartType, rowCount: number): number {
   return 210;
 }
 
-// ─── Axis props ───────────────────────────────────────────────────────────────
+// ─── Пропсы осей ─────────────────────────────────────────────────────────────
 
 function ap(t: ReturnType<typeof tk>) {
   return { tick: { fill: t.axisText, fontSize: 11 }, axisLine: false, tickLine: false };
 }
 
-// ─── AREA ─────────────────────────────────────────────────────────────────────
+// ─── Area ─────────────────────────────────────────────────────────────────────
 
 function renderArea(
   data: Record<string, unknown>[],
@@ -203,17 +203,7 @@ function renderArea(
   );
 }
 
-// ─── BAR ──────────────────────────────────────────────────────────────────────
-//
-// FIX: when there is only one value series (single column of data), each bar
-// gets its own color from the palette (like a pie chart does).
-// When there are multiple series, each series keeps its own single color.
-//
-// Bar sizing strategy:
-//   barCategoryGap — space between groups as % of category width.
-//     Fewer rows → more gap → bars look thin, so we reduce the gap.
-//   barGap — gap between bars within a group (multi-series).
-//   maxBarSize — hard upper cap so bars don't become too wide on few rows.
+// ─── Bar ──────────────────────────────────────────────────────────────────────
 
 function getCategoryGap(rowCount: number): string {
   if (rowCount <= 3)  return '15%';
@@ -222,35 +212,48 @@ function getCategoryGap(rowCount: number): string {
   return '30%';
 }
 
-function renderBar(
-  data: Record<string, unknown>[],
-  nameKey: string, valueKeys: string[], palette: string[],
-  stacked: boolean, horizontal: boolean,
-  hidden: Set<string>, t: ReturnType<typeof tk>
-) {
-  // For horizontal single-series charts the legend is keyed by ROW name,
-  // so we filter the data rows instead of the series list.
+interface RenderBarOptions {
+  data: Record<string, unknown>[];
+  nameKey: string;
+  valueKeys: string[];
+  palette: string[];
+  stacked: boolean;
+  horizontal: boolean;
+  hidden: Set<string>;
+  t: ReturnType<typeof tk>;
+}
+
+function getBarRadius(
+  stacked: boolean,
+  horizontal: boolean,
+  isLastVisible: boolean
+): [number, number, number, number] {
+  if (!stacked) {
+    return horizontal ? [0, 3, 3, 0] : [3, 3, 0, 0];
+  }
+  if (isLastVisible) {
+    return horizontal ? [0, 3, 3, 0] : [3, 3, 0, 0];
+  }
+  return [0, 0, 0, 0];
+}
+
+function renderBar({
+  data, nameKey, valueKeys, palette,
+  stacked, horizontal, hidden, t,
+}: RenderBarOptions) {
   const isSingleSeries = valueKeys.length === 1;
 
-  let visibleData = data;
-  let visible = valueKeys;
+  // Для горизонтальных одиночных серий скрываем строки по имени, иначе — по ключу серии
+  const visibleData = (isSingleSeries && horizontal)
+    ? data.filter(d => !hidden.has(String(d[nameKey])))
+    : data;
+  const visible = (!isSingleSeries || !horizontal)
+    ? valueKeys.filter(k => !hidden.has(k))
+    : valueKeys;
 
-  if (isSingleSeries && horizontal) {
-    // hidden contains row nameKey values (e.g. "Python", "JavaScript")
-    visibleData = data.filter(d => !hidden.has(String(d[nameKey])));
-  } else {
-    // hidden contains series/column keys
-    visible = valueKeys.filter(k => !hidden.has(k));
-  }
-
-  // useRowColors: only when the data itself has one value column (not just one visible after hiding)
   const useRowColors = isSingleSeries;
-
   const a = ap(t);
-
-  // maxBarSize scales down when there are many series so groups stay compact
   const maxSize = visible.length <= 1 ? 72 : visible.length <= 3 ? 56 : 40;
-  // barGap: tighter for many series
   const bGap = visible.length <= 2 ? 3 : 2;
 
   return (
@@ -269,11 +272,8 @@ function renderBar(
       {visible.map((key) => {
         const idx = valueKeys.indexOf(key);
         const seriesColor = palette[idx % palette.length];
-        // For stacked: only the last visible series gets rounded top corners
         const isLastVisible = visible.indexOf(key) === visible.length - 1;
-        const radius: [number, number, number, number] = stacked
-          ? (isLastVisible ? (horizontal ? [0,3,3,0] : [3,3,0,0]) : [0,0,0,0])
-          : (horizontal ? [0,3,3,0] : [3,3,0,0]);
+        const radius = getBarRadius(stacked, horizontal, isLastVisible);
         return (
           <Bar key={key} dataKey={key} fill={seriesColor}
             radius={radius}
@@ -281,10 +281,12 @@ function renderBar(
             maxBarSize={maxSize} isAnimationActive={false}
           >
             {useRowColors && visibleData.map((_, rowIdx) => {
-              // find original row index for correct palette color
               const origIdx = data.indexOf(visibleData[rowIdx]);
               return (
-                <Cell key={`cell-${rowIdx}`} fill={palette[(origIdx === -1 ? rowIdx : origIdx) % palette.length]} />
+                <Cell
+                  key={`cell-${String(visibleData[rowIdx][nameKey])}`}
+                  fill={palette[(origIdx === -1 ? rowIdx : origIdx) % palette.length]}
+                />
               );
             })}
           </Bar>
@@ -294,7 +296,7 @@ function renderBar(
   );
 }
 
-// ─── PIE ──────────────────────────────────────────────────────────────────────
+// ─── Pie ──────────────────────────────────────────────────────────────────────
 
 function renderPie(
   data: Record<string, unknown>[],
@@ -313,10 +315,12 @@ function renderPie(
         style={{ outline: 'none' }}
         isAnimationActive={false}
       >
-        {visibleData.map((entry, i) => {
-          const origIdx = data.findIndex(d => d[nameKey] === entry[nameKey]);
+        {visibleData.map((entry) => {
+          const rowName = String(entry[nameKey]);
+          const origIdx = data.findIndex(d => String(d[nameKey]) === rowName);
           return (
-            <Cell key={i}
+            <Cell
+              key={rowName}
               fill={palette[origIdx % palette.length]}
               style={{ outline: 'none', cursor: 'default' }}
             />
@@ -328,7 +332,7 @@ function renderPie(
   );
 }
 
-// ─── RADAR ────────────────────────────────────────────────────────────────────
+// ─── Radar ────────────────────────────────────────────────────────────────────
 
 function renderRadar(
   data: Record<string, unknown>[],
@@ -356,6 +360,14 @@ function renderRadar(
   );
 }
 
+// ─── Склонение слова "запись" ─────────────────────────────────────────────────
+
+function pluralRecords(n: number): string {
+  if (n === 1) return 'запись';
+  if (n < 5)   return 'записи';
+  return 'записей';
+}
+
 // ─── ChartBlock ───────────────────────────────────────────────────────────────
 
 const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDark }) => {
@@ -375,19 +387,10 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
 
   const isEmpty = !data.length || !valueKeys.length;
 
-  // Legend items:
-  // - pie / pie-donut → one item per data row
-  // - bar/bar-horizontal with single value series → one item per data row (keyed by row name)
-  // - everything else → one item per value series (keyed by column name)
   const legendItems: LegendItem[] = useMemo(() => {
-    if (type === 'pie' || type === 'pie-donut') {
-      return data.map((d, i) => ({
-        key:   String(d[nameKey]),
-        color: palette[i % palette.length],
-      }));
-    }
-    const isSingleSeries = (type === 'bar' || type === 'bar-horizontal') && valueKeys.length === 1;
-    if (isSingleSeries) {
+    const isPie = type === 'pie' || type === 'pie-donut';
+    const isSingleBar = (type === 'bar' || type === 'bar-horizontal') && valueKeys.length === 1;
+    if (isPie || isSingleBar) {
       return data.map((d, i) => ({
         key:   String(d[nameKey]),
         color: palette[i % palette.length],
@@ -405,9 +408,9 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
     switch (type) {
       case 'area':           return renderArea(data, nameKey, valueKeys, palette, false, hidden, t);
       case 'area-stacked':   return renderArea(data, nameKey, valueKeys, palette, true,  hidden, t);
-      case 'bar':            return renderBar(data, nameKey, valueKeys, palette, false, false, hidden, t);
-      case 'bar-stacked':    return renderBar(data, nameKey, valueKeys, palette, true,  false, hidden, t);
-      case 'bar-horizontal': return renderBar(data, nameKey, valueKeys, palette, false, true,  hidden, t);
+      case 'bar':            return renderBar({ data, nameKey, valueKeys, palette, stacked: false, horizontal: false, hidden, t });
+      case 'bar-stacked':    return renderBar({ data, nameKey, valueKeys, palette, stacked: true,  horizontal: false, hidden, t });
+      case 'bar-horizontal': return renderBar({ data, nameKey, valueKeys, palette, stacked: false, horizontal: true,  hidden, t });
       case 'pie':            return renderPie(data, nameKey, valueKeys, palette, false, hidden, t);
       case 'pie-donut':      return renderPie(data, nameKey, valueKeys, palette, true,  hidden, t);
       case 'radar':          return renderRadar(data, nameKey, valueKeys, palette, hidden, t);
@@ -475,10 +478,7 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           borderTop: `1px solid ${t.footerBdr}`, userSelect: 'none',
         }}>
-          <span>
-            {data.length}{' '}
-            {data.length === 1 ? 'запись' : data.length < 5 ? 'записи' : 'записей'}
-          </span>
+          <span>{data.length}{' '}{pluralRecords(data.length)}</span>
           <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 10, opacity: 0.6 }}>
             {type}
           </span>
@@ -488,7 +488,7 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
   );
 };
 
-// ─── Context-aware export ─────────────────────────────────────────────────────
+// ─── Экспорт с контекстом ─────────────────────────────────────────────────────
 
 export const ChartBlockWithContext: React.FC<Omit<ChartBlockProps, 'isDark'>> = (props) => {
   const { isDark } = useContext(TableContext);
