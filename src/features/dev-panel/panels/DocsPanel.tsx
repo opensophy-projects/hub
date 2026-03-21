@@ -593,22 +593,32 @@ function MarkdownEditor({ filePath, onClose, t }: { filePath:string; onClose:()=
   const insertAtCursor = useCallback((snippet:string)=>{
     const ta=taRef.current;
     if(!ta){ setBody(p=>p+snippet); setDirty(true); return; }
-    const s=ta.selectionStart,e2=ta.selectionEnd;
+    const s=ta.selectionStart, e2=ta.selectionEnd;
+    const savedScroll=ta.scrollTop;
     const nv=body.slice(0,s)+snippet+body.slice(e2);
     setBody(nv); setDirty(true);
-    // Broadcast live preview
     broadcastPreview(nv);
-    requestAnimationFrame(()=>{ ta.focus(); ta.selectionStart=ta.selectionEnd=s+snippet.length; });
+    requestAnimationFrame(()=>{
+      ta.focus();
+      ta.scrollTop=savedScroll;
+      ta.selectionStart=ta.selectionEnd=s+snippet.length;
+    });
   },[body, broadcastPreview]);
 
   const handleInsert=(before:string,after='')=>{
     const ta=taRef.current;
     if(!ta){ insertAtCursor(before+after); return; }
-    const s=ta.selectionStart,e2=ta.selectionEnd,sel=body.slice(s,e2);
+    const s=ta.selectionStart, e2=ta.selectionEnd, sel=body.slice(s,e2);
+    const savedScroll=ta.scrollTop;
     const nv=body.slice(0,s)+before+sel+after+body.slice(e2);
     setBody(nv); setDirty(true);
     broadcastPreview(nv);
-    requestAnimationFrame(()=>{ ta.focus(); ta.selectionStart=s+before.length; ta.selectionEnd=s+before.length+sel.length; });
+    requestAnimationFrame(()=>{
+      ta.focus();
+      ta.scrollTop=savedScroll;
+      ta.selectionStart=s+before.length;
+      ta.selectionEnd=s+before.length+sel.length;
+    });
   };
 
   const handleChange = (v: string) => {
@@ -618,11 +628,12 @@ function MarkdownEditor({ filePath, onClose, t }: { filePath:string; onClose:()=
 
   const handleTab=(e:React.KeyboardEvent<HTMLTextAreaElement>)=>{
     if(e.key!=='Tab') return; e.preventDefault();
-    const ta=e.currentTarget,s=ta.selectionStart;
+    const ta=e.currentTarget, s=ta.selectionStart;
+    const savedScroll=ta.scrollTop;
     const nv=body.slice(0,s)+'  '+body.slice(ta.selectionEnd);
     setBody(nv); setDirty(true);
     broadcastPreview(nv);
-    requestAnimationFrame(()=>{ ta.selectionStart=ta.selectionEnd=s+2; });
+    requestAnimationFrame(()=>{ ta.scrollTop=savedScroll; ta.selectionStart=ta.selectionEnd=s+2; });
   };
 
   const inpS:React.CSSProperties={
