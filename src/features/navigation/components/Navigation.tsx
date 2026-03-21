@@ -429,6 +429,27 @@ const NavPanelContent: React.FC<{
   );
 };
 
+// ─── Вспомогательные функции для стилей оглавления ──────────────────────────
+
+function tocBorderColor(isActive: boolean, glowOp: number, isDark: boolean, accent: string): string {
+  if (isActive)        return accent;
+  if (glowOp > 0)      return isDark ? `rgba(255,255,255,${glowOp})` : `rgba(0,0,0,${glowOp})`;
+  return 'transparent';
+}
+
+function tocShadow(isActive: boolean, glowOp: number, isDark: boolean, accent: string): string {
+  if (isActive)   return `inset 3px 0 10px -2px ${accent}88`;
+  if (glowOp > 0) return isDark
+    ? `inset 3px 0 8px -3px rgba(255,255,255,${glowOp * 0.35})`
+    : `inset 3px 0 8px -3px rgba(0,0,0,${glowOp * 0.35})`;
+  return 'none';
+}
+
+function tocColor(isActive: boolean, opacity: number, isDark: boolean, accent: string): string {
+  if (isActive) return accent;
+  return isDark ? `rgba(255,255,255,${opacity})` : `rgba(0,0,0,${opacity})`;
+}
+
 // ─── Вычисление стилей элемента оглавления по активности ────────────────────
 
 function getTocItemStyle(item: TocItem, dist: number, activeId: string, isDark: boolean, mobile: boolean) {
@@ -449,18 +470,6 @@ function getTocItemStyle(item: TocItem, dist: number, activeId: string, isDark: 
     glowOp  = Math.max(0, 0.5 - dist * 0.16);
   }
 
-  let borderClr: string;
-  if (isActive)        borderClr = t.accent;
-  else if (glowOp > 0) borderClr = isDark ? `rgba(255,255,255,${glowOp})` : `rgba(0,0,0,${glowOp})`;
-  else                 borderClr = 'transparent';
-
-  const glowShadowDark  = `inset 3px 0 8px -3px rgba(255,255,255,${glowOp * 0.35})`;
-  const glowShadowLight = `inset 3px 0 8px -3px rgba(0,0,0,${glowOp * 0.35})`;
-  let shadow: string;
-  if (isActive)        shadow = `inset 3px 0 10px -2px ${t.accent}88`;
-  else if (glowOp > 0) shadow = isDark ? glowShadowDark : glowShadowLight;
-  else                 shadow = 'none';
-
   const baseFontSize = mobile ? 1 : 0.82;
   const fontSizeStep = mobile ? 0.05 : 0.04;
   const fontSize     = `${baseFontSize - (item.level - 2) * fontSizeStep}rem`;
@@ -468,11 +477,15 @@ function getTocItemStyle(item: TocItem, dist: number, activeId: string, isDark: 
     ? 14 + (item.level - 2) * 18
     : 12 + (item.level - 2) * 14;
 
-  let color: string;
-  if (isActive) color = t.accent;
-  else          color = isDark ? `rgba(255,255,255,${opacity})` : `rgba(0,0,0,${opacity})`;
-
-  return { isActive, hasActive, borderClr, shadow, fontSize, paddingLeft, color };
+  return {
+    isActive,
+    hasActive,
+    borderClr: tocBorderColor(isActive, glowOp, isDark, t.accent),
+    shadow:    tocShadow(isActive, glowOp, isDark, t.accent),
+    fontSize,
+    paddingLeft,
+    color:     tocColor(isActive, opacity, isDark, t.accent),
+  };
 }
 
 // ─── TocPanelContent ──────────────────────────────────────────────────────────
