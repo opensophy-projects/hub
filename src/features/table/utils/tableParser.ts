@@ -33,8 +33,6 @@ export function parseTableHtml(tableHtml: string): ParsedTable {
 
   const headerElements = Array.from(table.querySelectorAll('thead th'));
 
-  // FIX: was th.innerHTML — HTML tags rendered as literal text in <span>{header}</span>.
-  // textContent gives the plain string that actually displays correctly.
   const headers = headerElements.map((th) => th.textContent?.trim() || '');
   const headerAlignments = headerElements.map(getAlignment);
 
