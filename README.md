@@ -1,6 +1,6 @@
 <div align="center">
 
-<img width="1536" height="1024" alt="banner" src="https://github.com/user-attachments/assets/adfc2080-a48b-4328-9cdc-3b122b5c5fe8" />
+<img width="1536" height="1024" alt="banner" src="https://github.com/user-attachments/assets/0abdee80-dc2c-4cd5-a710-6a4b744e0166" />
 
 # Opensophy Hub
 
