@@ -1,36 +1,36 @@
 import { useState, useEffect } from 'react';
 
-const BREAKPOINT_MD = 768;
+/** Для контентного layout */
+export const BREAKPOINT_MD  = 768;
 
-/**
- * Возвращает true если ширина >= 768px.
- * Инициализируется false чтобы не показывать sidebar на мобильных при hydration.
- * Слушает astro:after-swap для корректной работы после SPA-навигации.
- */
-export function useIsDesktop(): boolean {
-  const [isDesktop, setIsDesktop] = useState(false);
+/** Для навигации (Navigation.tsx — rail vs bottom bar) */
+export const BREAKPOINT_NAV = 1000;
 
+function useBreakpoint(bp: number): boolean {
+  const [above, setAbove] = useState(false);
   useEffect(() => {
-    const check = () => setIsDesktop(window.innerWidth >= BREAKPOINT_MD);
-    
-    // Проверяем сразу
+    const check = () => setAbove(window.innerWidth >= bp);
     check();
-    
-    // Слушаем resize
     window.addEventListener('resize', check, { passive: true });
-    
-    // После SPA-навигации Astro пересоздаёт острова — нужно перепроверить
     document.addEventListener('astro:after-swap', check);
     document.addEventListener('astro:page-load', check);
-    
     return () => {
       window.removeEventListener('resize', check);
       document.removeEventListener('astro:after-swap', check);
       document.removeEventListener('astro:page-load', check);
     };
-  }, []);
+  }, [bp]);
+  return above;
+}
 
-  return isDesktop;
+/** Desktop для контента (≥768px) */
+export function useIsDesktop(): boolean {
+  return useBreakpoint(BREAKPOINT_MD);
+}
+
+/** Desktop для навигации (≥1000px) */
+export function useIsDesktopNav(): boolean {
+  return useBreakpoint(BREAKPOINT_NAV);
 }
 
 export function useIsMobile(): boolean {
