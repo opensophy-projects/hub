@@ -180,23 +180,9 @@
 
 ## 🚀 Deploy
 
-<table>
-<tr>
-<td width="50%">
-
-### ⚡ Открыть в Bolt
-
-[![Open in Bolt](https://img.shields.io/badge/Open%20in-Bolt.new-7C3AED?style=for-the-badge&logo=lightning&logoColor=white)](https://bolt.new/~/github-tejvnjhm-xmbdzn3v)
-
-</td>
-<td width="50%">
+[![Open in Bolt](https://bolt.new/static/open-in-bolt.svg)](https://bolt.new/~/github-tejvnjhm-xmbdzn3v)
 
 деплой на любой хостинг: Vercel, Netlify, Cloudflare Pages, GitHub Pages, VPS.
-
-</td>
-</tr>
-</table>
-
 
 ---
 
