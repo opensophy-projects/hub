@@ -21,31 +21,14 @@ import {
   Mail, X, Home, AlertTriangle,
   FolderOpen, List, PanelLeft, ArrowUp,
 } from 'lucide-react';
+import { useIsDesktopNav } from '@/shared/hooks/useBreakpoint';
 
 const LazyUnifiedSearchPanel = lazy(() => import('./UnifiedSearchPanel'));
 
-const BREAKPOINT    = 1000;
 const RAIL_W        = 64;
 const PANEL_DEFAULT = 280;
 const PANEL_MIN     = 220;
 const PANEL_MAX     = 500;
-
-function useIsDesktop(): boolean {
-  const [v, setV] = useState(false);
-  useEffect(() => {
-    const check = () => setV(globalThis.innerWidth > BREAKPOINT);
-    check();
-    globalThis.addEventListener('resize', check, { passive: true });
-    document.addEventListener('astro:after-swap', check);
-    document.addEventListener('astro:page-load', check);
-    return () => {
-      globalThis.removeEventListener('resize', check);
-      document.removeEventListener('astro:after-swap', check);
-      document.removeEventListener('astro:page-load', check);
-    };
-  }, []);
-  return v;
-}
 
 export interface TocItem { id: string; text: string; level: number; }
 interface CategoryPathItem { slug: string; title: string; icon: string | null; }
@@ -65,7 +48,6 @@ interface NavigationProps {
   activeHeadingId?: string;
 }
 
-// Цвета для светлой и тёмной темы
 const DARK_TOKENS = {
   railBg:      '#0d0d0d',
   panelBg:     '#0d0d0d',
@@ -325,7 +307,7 @@ function useDesktopPanel() {
     try {
       const s = sessionStorage.getItem('hub:activePanel');
       if (s === 'nav' || s === 'toc' || s === 'contacts') return s as PanelType;
-    } catch { /* noop */ } // NOSONAR
+    } catch { /* noop */ }
     return null;
   });
 
@@ -333,22 +315,22 @@ function useDesktopPanel() {
     try {
       const w = Number(sessionStorage.getItem('hub:panelWidth'));
       if (w >= PANEL_MIN && w <= PANEL_MAX) return w;
-    } catch { /* noop */ } // NOSONAR
+    } catch { /* noop */ }
     return PANEL_DEFAULT;
   });
 
   useEffect(() => {
-    try { sessionStorage.setItem('hub:activePanel', activePanel ?? ''); } catch { /* noop */ } // NOSONAR
+    try { sessionStorage.setItem('hub:activePanel', activePanel ?? ''); } catch { /* noop */ }
   }, [activePanel]);
 
   useEffect(() => {
-    try { sessionStorage.setItem('hub:panelWidth', String(panelWidth)); } catch { /* noop */ } // NOSONAR
+    try { sessionStorage.setItem('hub:panelWidth', String(panelWidth)); } catch { /* noop */ }
   }, [panelWidth]);
 
   const togglePanel = useCallback((panel: PanelType) => {
     setActivePanel(prev => {
       const next = prev === panel ? null : panel;
-      try { sessionStorage.setItem('hub:activePanel', next ?? ''); } catch { /* noop */ } // NOSONAR
+      try { sessionStorage.setItem('hub:activePanel', next ?? ''); } catch { /* noop */ }
       return next;
     });
   }, []);
@@ -736,7 +718,7 @@ const DesktopNav: React.FC<{
       const pw       = (w >= PANEL_MIN && w <= PANEL_MAX) ? w : PANEL_DEFAULT;
       const left     = RAIL_W + (hasPanel ? pw : 0);
       document.documentElement.style.setProperty('--nav-left', `${left}px`);
-    } catch { /* noop */ } // NOSONAR
+    } catch { /* noop */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -805,7 +787,6 @@ const DesktopNav: React.FC<{
             </>
           )}
           {activePanel && (
-            // Ручка изменения ширины панели — нативная кнопка для доступности
             <button
               onMouseDown={onResizeMouseDown}
               onMouseEnter={() => setHandleHov(true)}
@@ -854,7 +835,6 @@ const MobilePanel: React.FC<{
 }> = ({ type, onClose, isDark, currentDocSlug, toc, activeId }) => {
   const t = tk(isDark);
 
-  // Блокировка скролла страницы и закрытие по Escape
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -875,7 +855,6 @@ const MobilePanel: React.FC<{
     }}>
       <style>{`@keyframes mobPanelIn{from{transform:translateY(100%)}to{transform:translateY(0)}}`}</style>
 
-      {/* Шапка панели */}
       <div style={{
         flexShrink: 0,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -910,7 +889,6 @@ const MobilePanel: React.FC<{
         </button>
       </div>
 
-      {/* Контент панели */}
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {type === 'nav'      && <NavPanelContent isDark={isDark} currentDocSlug={currentDocSlug} mobile />}
         {type === 'toc'      && <div style={{ flex: 1, overflowY: 'auto' }}><TocPanelContent toc={toc} activeId={activeId} isDark={isDark} onItemClick={onClose} mobile /></div>}
@@ -1003,7 +981,7 @@ const MobileNav: React.FC<{
 
 const Navigation: React.FC<NavigationProps> = ({ currentDocSlug, toc = [], activeHeadingId = '' }) => {
   const { isDark, toggleTheme } = useTheme();
-  const isDesktop = useIsDesktop();
+  const isDesktop = useIsDesktopNav();
 
   if (isDesktop) {
     return <DesktopNav isDark={isDark} toggleTheme={toggleTheme} currentDocSlug={currentDocSlug} toc={toc} activeId={activeHeadingId} />;
