@@ -312,6 +312,17 @@ html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .
 
 /* ─── Таблицы вне prose ───────────────────────────────────────────────────── */
 
-.prose .not-prose table, .not-prose table { width: 100% !important; min-width: max-content; }
+/*
+ * FIX: убрано "width: 100% !important; min-width: max-content" — эта комбинация
+ * растягивала таблицы с малым числом колонок на всю ширину контейнера, оставляя
+ * пустое место справа на планшетных размерах (~660–764px).
+ *
+ * Правильная комбинация: width:auto + min-width:100%
+ * - min-width:100% — таблица занимает не меньше ширины контейнера
+ * - width:auto     — браузер сжимает таблицу по контенту, не шире контейнера
+ *   (горизонтальный скролл для широких таблиц по-прежнему работает через
+ *   .tb-scroll-wrap / .tb-scroll)
+ */
+.prose .not-prose table, .not-prose table { width: auto; min-width: 100%; }
 .tb-scroll-wrap { width: 100%; min-width: 0; }
 .tb-scroll { width: 100%; min-width: 0; }
