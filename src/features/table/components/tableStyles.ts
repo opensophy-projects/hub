@@ -7,16 +7,9 @@ export function getTableStyles(isDark: boolean): string {
   const markColor    = isDark ? '#fbbf24'                : '#92400e';
 
   return `
-    table {
+    .tb-table {
       border-collapse: separate;
       border-spacing: 0;
-      /*
-       * width:max-content — таблица занимает ровно столько места,
-       * сколько нужно её контенту. Скролл — через .tb-scroll-wrap (overflow:auto).
-       * Внешний контейнер (TableWithControls, inline-block + max-width:100%)
-       * ограничивает максимум шириной страницы.
-       */
-      width: max-content;
       table-layout: auto;
     }
     th, td {

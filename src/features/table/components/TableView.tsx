@@ -82,6 +82,9 @@ export const TableView: React.FC<TableViewProps> = ({
   const t = useMemo(() => tok(isDark), [isDark]);
   const { scrollRef, dragStyle, dragHandlers } = useDragScroll();
 
+  const visibleColumnCount = headers.reduce((acc, _, i) => acc + (visibleColumns.has(i) ? 1 : 0), 0);
+  const isSmallColumnTable = visibleColumnCount <= 4;
+
   return (
     <>
       <style>{getTableStyles(isDark)}</style>
@@ -107,6 +110,7 @@ export const TableView: React.FC<TableViewProps> = ({
           overflow-y: hidden;
           max-width: 100%;
         }
+
       `}</style>
 
       <div
@@ -129,10 +133,11 @@ export const TableView: React.FC<TableViewProps> = ({
           }}
           {...dragHandlers}
         >
-          <table style={{
+          <table className="tb-table" style={{
             borderCollapse: 'separate',
             borderSpacing: 0,
-            width: 'max-content',
+            width: isSmallColumnTable ? '100%' : 'max-content',
+            minWidth: isSmallColumnTable ? '100%' : 'max-content',
             tableLayout: 'auto',
           }}>
             <TableHead

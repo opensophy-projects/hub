@@ -208,10 +208,10 @@ const CopyButton: React.FC<{ isDark: boolean; tableHtml: string }> = ({ isDark, 
 // ─── Мобильное меню ⋯ — закрывается при скролле ──────────────────────────────
 const MobileMenu: React.FC<{
   isDark: boolean; tableHtml: string;
-  showFilters: boolean; onToggleFilters: () => void;
+  onToggleFilters: () => void;
   activeFilterCount: number; onResetFilters: () => void;
   onFullscreen: () => void;
-}> = ({ isDark, tableHtml, showFilters, onToggleFilters, activeFilterCount, onResetFilters, onFullscreen }) => {
+}> = ({ isDark, tableHtml, onToggleFilters, activeFilterCount, onResetFilters, onFullscreen }) => {
   const [open, setOpen]     = useState(false);
   const [copied, setCopied] = useState<CopyFormat | null>(null);
   const [pos, setPos]       = useState({ top: 0, left: 0 });
@@ -321,7 +321,7 @@ export const TableControlsBar: React.FC<TableControlsBarProps> = ({
 
   return (
     <>
-      <style>{`.tb-desk{display:flex!important}.tb-mob{display:none!important}@media(max-width:480px){.tb-desk{display:none!important}.tb-mob{display:flex!important}}`}</style>
+      <style>{`.tb-desk{display:flex!important}.tb-mob{display:none!important}@media(max-width:820px){.tb-desk{display:none!important}.tb-mob{display:flex!important}}`}</style>
       <div style={{
         display: 'flex', alignItems: 'center', gap: 6,
         padding: '8px 8px',
@@ -360,7 +360,7 @@ export const TableControlsBar: React.FC<TableControlsBarProps> = ({
         </div>
 
         <div className="tb-mob" style={{ flexShrink: 0 }}>
-          <MobileMenu isDark={isDark} tableHtml={tableHtml} showFilters={showFilters} onToggleFilters={onToggleFilters} activeFilterCount={activeFilterCount} onResetFilters={onResetFilters} onFullscreen={onFullscreen} />
+          <MobileMenu isDark={isDark} tableHtml={tableHtml} onToggleFilters={onToggleFilters} activeFilterCount={activeFilterCount} onResetFilters={onResetFilters} onFullscreen={onFullscreen} />
         </div>
       </div>
     </>
