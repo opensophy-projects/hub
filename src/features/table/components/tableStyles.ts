@@ -11,14 +11,12 @@ export function getTableStyles(isDark: boolean): string {
       border-collapse: separate;
       border-spacing: 0;
       /*
-       * width:auto — таблица не растягивается шире своего контента.
-       * min-width:100% — занимает не менее ширины .tb-scroll (скролл-контейнера).
-       * Внешний контейнер (TableWithControls) использует display:grid +
-       * width:fit-content + min-width:100% — он сжимается под таблицу,
-       * а не наоборот.
+       * width:max-content — таблица занимает ровно столько места,
+       * сколько нужно её контенту. Скролл — через .tb-scroll-wrap (overflow:auto).
+       * Внешний контейнер (TableWithControls, inline-block + max-width:100%)
+       * ограничивает максимум шириной страницы.
        */
-      width: auto;
-      min-width: 100%;
+      width: max-content;
       table-layout: auto;
     }
     th, td {
