@@ -45,18 +45,30 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
 
   return (
     /*
-      FIX: not-prose class is here so that global.css rule
-      ".prose .not-prose table { width: 100% !important }" applies.
-      Also added display:block and explicit width/boxSizing so the
-      wrapper doesn't accidentally shrink.
-    */
+     * FIX: внешний wrapper использует display:grid + width:fit-content + min-width:100%.
+     *
+     * Проблема была в том, что контейнер всегда растягивался на 100% родителя
+     * (через width:100% на всей цепочке), а таблица с малым числом колонок
+     * оставалась узкой — появлялось пустое место справа на планшетных размерах.
+     *
+     * Решение:
+     * - display:grid на outer wrapper переключает его в grid-контейнер.
+     *   Grid по умолчанию растягивает дочерние элементы на всю ширину трека,
+     *   поэтому тулбар и таблица будут одинаковой ширины.
+     * - width: fit-content — outer wrapper сжимается до ширины самого широкого
+     *   дочернего элемента (обычно это строка тулбара или широкая таблица).
+     * - min-width: 100% — не даёт контейнеру быть уже родителя, если таблица
+     *   сама по себе уже (это сохраняет корректный вид для узких таблиц).
+     * - Горизонтальный скролл для широких таблиц работает как прежде через
+     *   .tb-scroll-wrap / .tb-scroll внутри TableView.
+     */
     <div
       className="not-prose"
       style={{
         margin: '1.25rem 0',
-        display: 'block',
-        width: '100%',
-        minWidth: 0,
+        display: 'grid',
+        width: 'fit-content',
+        minWidth: '100%',
         boxSizing: 'border-box',
       }}
     >
@@ -68,7 +80,7 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
         overflow: 'clip',
         display: 'flex',
         flexDirection: 'column',
-        width: '100%',
+        // Не задаём width:100% здесь — grid-трек сам растянет до нужной ширины
         minWidth: 0,
         boxSizing: 'border-box',
       }}>
