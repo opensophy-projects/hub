@@ -11,16 +11,15 @@ export function getTableStyles(isDark: boolean): string {
       border-collapse: separate;
       border-spacing: 0;
       /*
-       * FIX: width:auto + min-width:100% вместо width:100% + min-width:max-content.
-       * - min-width:100% гарантирует, что таблица заполняет контейнер,
-       *   когда её контент уже контейнера.
-       * - width:auto позволяет таблице расти за пределы контейнера
-       *   при широком контенте, что запускает горизонтальный скролл.
-       * - Это устраняет пустое место справа на планшетных размерах (~660–764px)
-       *   при таблицах с малым числом колонок.
+       * width:auto — таблица не растягивается шире своего контента.
+       * min-width:100% — занимает не менее ширины .tb-scroll (скролл-контейнера).
+       * Внешний контейнер (TableWithControls) использует display:grid +
+       * width:fit-content + min-width:100% — он сжимается под таблицу,
+       * а не наоборот.
        */
       width: auto;
       min-width: 100%;
+      table-layout: auto;
     }
     th, td {
       padding: 0.65rem 1rem;
