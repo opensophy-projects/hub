@@ -10,12 +10,19 @@ export function getTableStyles(isDark: boolean): string {
     table {
       border-collapse: separate;
       border-spacing: 0;
-      /* FIX: was "width: auto" — that makes the table shrink to content width.
-         width: 100% stretches it to fill the scroll container.
-         min-width: max-content ensures it never gets narrower than its content
-         (so horizontal scroll still works when content is wider than container). */
-      width: 100%;
-      min-width: max-content;
+      /*
+       * FIX: была комбинация width:100% + min-width:max-content.
+       * width:100% заставляла таблицу с малым числом колонок растягиваться
+       * на весь контейнер, оставляя пустое место справа на планшетных размерах.
+       *
+       * Правильная комбинация: width:auto + min-width:100%.
+       * - min-width:100% гарантирует, что таблица заполняет контейнер,
+       *   когда её контент уже контейнера.
+       * - width:auto позволяет таблице расти за пределы контейнера
+       *   при широком контенте, что запускает горизонтальный скролл.
+       */
+      width: auto;
+      min-width: 100%;
     }
     th, td {
       padding: 0.65rem 1rem;
