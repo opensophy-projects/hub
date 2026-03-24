@@ -92,7 +92,6 @@ export const TableView: React.FC<TableViewProps> = ({
           -webkit-overflow-scrolling: touch;
           scrollbar-width: thin;
           scrollbar-color: ${t.thumb} ${t.track};
-          width: 100%;
           display: block;
           touch-action: pan-x pan-y;
         }
@@ -102,26 +101,11 @@ export const TableView: React.FC<TableViewProps> = ({
         .tb-scroll::-webkit-scrollbar-thumb:hover { background: ${t.thumbHov}; }
         .tb-scroll::-webkit-scrollbar-corner { background: transparent; }
 
-        .tb-scroll-wrap { position: relative; width: 100%; min-width: 0; }
-        .tb-scroll-wrap::after {
-          content: '';
-          position: absolute;
-          top: 0; right: 0; bottom: 0;
-          width: 20px;
-          background: linear-gradient(to right, transparent, ${t.fadeTo});
-          pointer-events: none;
-          opacity: 0.8;
-          z-index: 1;
-        }
-        .tb-scroll-wrap::before {
-          content: '';
-          position: absolute;
-          top: 0; left: 0; bottom: 0;
-          width: 20px;
-          background: linear-gradient(to left, transparent, ${t.fadeTo});
-          pointer-events: none;
-          opacity: 0.8;
-          z-index: 1;
+        .tb-scroll-wrap {
+          position: relative;
+          overflow-x: auto;
+          overflow-y: hidden;
+          max-width: 100%;
         }
       `}</style>
 
@@ -132,7 +116,6 @@ export const TableView: React.FC<TableViewProps> = ({
           display:       fullscreen ? 'flex'    : undefined,
           flexDirection: fullscreen ? 'column'  : undefined,
           minHeight: 0,
-          overflow: 'hidden',
         }}
       >
         <div
@@ -149,15 +132,7 @@ export const TableView: React.FC<TableViewProps> = ({
           <table style={{
             borderCollapse: 'separate',
             borderSpacing: 0,
-            /*
-             * FIX: width:auto + min-width:100% — таблица занимает не менее ширины
-             * контейнера, но не растягивается шире своего контента.
-             * Устраняет пустое место справа на планшетных размерах (~660–764px)
-             * при таблицах с малым числом колонок.
-             * Горизонтальный скролл для широких таблиц работает как прежде.
-             */
-            width: 'auto',
-            minWidth: '100%',
+            width: 'max-content',
             tableLayout: 'auto',
           }}>
             <TableHead
