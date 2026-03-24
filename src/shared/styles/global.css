@@ -313,10 +313,10 @@ html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .
 /* ─── Таблицы вне prose ───────────────────────────────────────────────────── */
 
 /*
- * FIX: убрано переопределение ширины таблицы — теперь этим управляет
- * TableWithControls через display:grid + width:fit-content + min-width:100%.
- * Таблица сама задаёт ширину контейнеру, а не наоборот.
- * .tb-scroll-wrap и .tb-scroll обеспечивают горизонтальный скролл.
+ * Убраны все переопределения ширины таблицы.
+ * Ширина управляется через TableWithControls (display:inline-block + max-width:100%)
+ * и TableView (table width:max-content, .tb-scroll-wrap overflow:auto).
+ * Любые width/min-width здесь только ломают эту логику.
  */
-.tb-scroll-wrap { width: 100%; min-width: 0; }
-.tb-scroll { width: 100%; min-width: 0; }
+.tb-scroll-wrap { max-width: 100%; }
+.tb-scroll { display: block; }
