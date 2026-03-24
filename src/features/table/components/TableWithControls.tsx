@@ -45,30 +45,28 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
 
   return (
     /*
-     * FIX: внешний wrapper использует display:grid + width:fit-content + min-width:100%.
+     * ФИНАЛЬНЫЙ ФИХ:
      *
-     * Проблема была в том, что контейнер всегда растягивался на 100% родителя
-     * (через width:100% на всей цепочке), а таблица с малым числом колонок
-     * оставалась узкой — появлялось пустое место справа на планшетных размерах.
+     * Проблема: тулбар (поиск + кнопки) всегда был width:100%, тянул весь
+     * контейнер на полную ширину страницы. Таблица с 2-3 колонками оставалась
+     * узкой, а справа появлялось пустое место.
      *
-     * Решение:
-     * - display:grid на outer wrapper переключает его в grid-контейнер.
-     *   Grid по умолчанию растягивает дочерние элементы на всю ширину трека,
-     *   поэтому тулбар и таблица будут одинаковой ширины.
-     * - width: fit-content — outer wrapper сжимается до ширины самого широкого
-     *   дочернего элемента (обычно это строка тулбара или широкая таблица).
-     * - min-width: 100% — не даёт контейнеру быть уже родителя, если таблица
-     *   сама по себе уже (это сохраняет корректный вид для узких таблиц).
-     * - Горизонтальный скролл для широких таблиц работает как прежде через
-     *   .tb-scroll-wrap / .tb-scroll внутри TableView.
+     * Решение: внешний wrapper — display:inline-block + max-width:100%.
+     * - inline-block сжимается до ширины самого широкого дочернего элемента
+     * - max-width:100% не даёт вылезти за родителя
+     * - Дочерний flex-контейнер (.inner) тянется на 100% wrapper'а
+     * - Таблица внутри — width:max-content, скролл через overflow:auto на .tb-scroll-wrap
+     *
+     * Итог: узкая таблица → контейнер узкий, широкая таблица → скролл.
      */
     <div
       className="not-prose"
       style={{
         margin: '1.25rem 0',
-        display: 'grid',
-        width: 'fit-content',
-        minWidth: '100%',
+        display: 'inline-block',
+        width: '100%',
+        maxWidth: '100%',
+        verticalAlign: 'top',
         boxSizing: 'border-box',
       }}
     >
@@ -78,9 +76,10 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
         background: outerBg,
         boxShadow: outerShadow,
         overflow: 'clip',
-        display: 'flex',
+        display: 'inline-flex',
         flexDirection: 'column',
-        // Не задаём width:100% здесь — grid-трек сам растянет до нужной ширины
+        width: '100%',
+        maxWidth: '100%',
         minWidth: 0,
         boxSizing: 'border-box',
       }}>
