@@ -149,8 +149,14 @@ export const TableView: React.FC<TableViewProps> = ({
           <table style={{
             borderCollapse: 'separate',
             borderSpacing: 0,
-            width: '100%',
-            minWidth: 'max-content',
+            /*
+             * FIX: width:auto + min-width:100% вместо width:100% + min-width:max-content.
+             * Это устраняет пустое место справа на планшетных размерах (660–764px)
+             * при таблицах с малым числом колонок, при этом горизонтальный скролл
+             * для широких таблиц работает как прежде.
+             */
+            width: 'auto',
+            minWidth: '100%',
             tableLayout: 'auto',
           }}>
             <TableHead
