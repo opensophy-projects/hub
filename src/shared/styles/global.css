@@ -312,6 +312,16 @@ html:not(.dark) .hljs-meta, html:not(.dark) .hljs-selector-id, html:not(.dark) .
 
 /* ─── Таблицы вне prose ───────────────────────────────────────────────────── */
 
-.prose .not-prose table, .not-prose table { width: 100% !important; min-width: max-content; }
+/*
+  Интерактивная таблица рендерится внутри .prose, но обёрнута в .not-prose.
+  На мобильных .prose table становится display:block, из‑за чего у not-prose
+  таблиц ломается нативный table-layout и появляется «пустое поле» справа.
+*/
+.prose .not-prose table,
+.not-prose table {
+  display: table !important;
+  width: 100% !important;
+  min-width: max-content;
+}
 .tb-scroll-wrap { width: 100%; min-width: 0; }
 .tb-scroll { width: 100%; min-width: 0; }
