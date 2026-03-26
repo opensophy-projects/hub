@@ -4,7 +4,7 @@ description: Вторая часть серии о Linux для DevOps и DevSec
 author: veilosophy
 date: 2026-03-26
 tags: Linux, пользователи, группы, безопасность, DevOps, DevSecOps, администрирование
-keywords: Linux пользователи и группы, UID GID Linux, /etc/passwd shadow, sudo su Linux, useradd usermod, управление доступом Linux
+keywords: Linux пользователи и группы, UID GID Linux, /etc/passwd shadow, пользователи, группы , useradd usermod, управление доступом Linux
 robots: index, follow
 lang: ru
 ---
