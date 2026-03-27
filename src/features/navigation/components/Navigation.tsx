@@ -62,20 +62,20 @@ const DARK_TOKENS = {
   accent:      '#ffffff',
   accentSoft:  'rgba(255,255,255,0.08)',
   // ── search input — darker inset to give depth on dark bg ──
-  inputBg:         '#161618',
+  inputBg:         '#161616',
   inputBorder:     'rgba(255,255,255,0.13)',
   inputBorderFocus:'rgba(255,255,255,0.30)',
   inputShadow:     'inset 0 1px 3px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05)',
   inputShadowFocus:'0 0 0 2px rgba(255,255,255,0.09)',
   inputClr:        'rgba(255,255,255,0.88)',
   // ── section selector button ──
-  sectionBg:       '#1a1a1c',
-  sectionBorder:   'rgba(255,255,255,0.13)',
-  sectionShadow:   '0 1px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
+  sectionBg:       '#161616',
+  sectionBorder:   'rgba(255,255,255,0.12)',
+  sectionShadow:   '0 1px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
   // ── section dropdown ──
-  dropdownBg:      '#1e1e22',
-  dropdownBorder:  'rgba(255,255,255,0.11)',
-  dropdownShadow:  '0 8px 32px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.06)',
+  dropdownBg:      '#111113',
+  dropdownBorder:  'rgba(255,255,255,0.10)',
+  dropdownShadow:  '0 8px 32px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.07)',
   mobBg:       '#0a0a0a',
   panelFullBg: '#0f0f0f',
   surface:     '#141414',
@@ -223,15 +223,15 @@ const CategoryNode: React.FC<{
   const expanded = expandedPaths.has(path);
   const total    = countDocs(node);
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
       <button onClick={() => onToggle(path)} style={{
         width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: mobile ? '10px 14px' : '8px 10px', borderRadius: '8px',
         fontSize: mobile ? '1rem' : '0.875rem', fontWeight: 600,
         border: `1px solid ${expanded ? t.elevatedBorder : t.border}`,
         background: expanded
-          ? (isDark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.08)')
-          : (isDark ? '#131313' : '#deddd9'),
+          ? (isDark ? '#181818' : 'rgba(0,0,0,0.08)')
+          : (isDark ? '#111113' : '#deddd9'),
         boxShadow: expanded ? t.elevatedShadowSoft : 'none',
         color: t.fg, cursor: 'pointer', textAlign: 'left',
       }}>
@@ -245,7 +245,15 @@ const CategoryNode: React.FC<{
         {total > 0 && <span style={{ fontSize: '0.72rem', padding: '2px 7px', borderRadius: '5px', background: t.accentSoft, color: t.fgMuted, flexShrink: 0 }}>{total}</span>}
       </button>
       {expanded && (
-        <div style={{ marginLeft: '0.65rem', paddingLeft: '0.45rem', marginTop: '2px' }}>
+        <div style={{
+          marginLeft: '0.65rem',
+          paddingLeft: '0.45rem',
+          marginTop: '4px',
+          marginBottom: '4px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '2px',
+        }}>
           {[...node.docs].sort((a, b) => a.title.localeCompare(b.title)).map(doc => (
             <DocLink key={doc.id} doc={doc} isDark={isDark} isActive={currentDocSlug === doc.slug} onClick={onDocClick} mobile={mobile} onPreviewChange={onDocHoverChange} />
           ))}
@@ -416,9 +424,9 @@ const NavTreeContent: React.FC<{
   );
   if (loading) return <div style={{ padding: '2rem', textAlign: 'center', fontSize: mobile ? '0.95rem' : '0.8rem', color: t.fgMuted }}>Загрузка...</div>;
   return (
-    <nav>
+    <nav style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
       {navTree.docs.length > 0 && (
-        <div style={{ marginBottom: '6px' }}>
+        <div style={{ marginBottom: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
           {[...navTree.docs].sort((a, b) => a.title.localeCompare(b.title)).map(doc => (
             <DocLink key={doc.id} doc={doc} isDark={isDark} isActive={currentDocSlug === doc.slug} mobile={mobile} onPreviewChange={onDocHoverChange} />
           ))}
