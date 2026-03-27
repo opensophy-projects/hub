@@ -52,8 +52,8 @@ interface NavigationProps {
 // ─── Theme tokens ─────────────────────────────────────────────────────────────
 
 const DARK_TOKENS = {
-  railBg:      '#0d0d0d',
-  panelBg:     '#0d0d0d',
+  railBg:      '#161616',
+  panelBg:     '#161616',
   border:      'rgba(255,255,255,0.08)',
   fg:          'rgba(255,255,255,0.85)',
   fgMuted:     'rgba(255,255,255,0.38)',
