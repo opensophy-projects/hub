@@ -73,7 +73,7 @@ const DARK_TOKENS = {
   sectionBorder:   'rgba(255,255,255,0.12)',
   sectionShadow:   '0 1px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
   // ── section dropdown ──
-  dropdownBg:      '#111113',
+  dropdownBg:      '#161616',
   dropdownBorder:  'rgba(255,255,255,0.10)',
   dropdownShadow:  '0 8px 32px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.07)',
   mobBg:       '#161616',
