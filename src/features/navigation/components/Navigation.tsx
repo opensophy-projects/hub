@@ -52,8 +52,8 @@ interface NavigationProps {
 // ─── Theme tokens ─────────────────────────────────────────────────────────────
 
 const DARK_TOKENS = {
-  railBg:      '#161616',
-  panelBg:     '#161616',
+  railBg:      '#121111',
+  panelBg:     '#121111',
   border:      'rgba(255,255,255,0.08)',
   fg:          'rgba(255,255,255,0.85)',
   fgMuted:     'rgba(255,255,255,0.38)',
@@ -62,23 +62,23 @@ const DARK_TOKENS = {
   accent:      '#ffffff',
   accentSoft:  'rgba(255,255,255,0.08)',
   // ── search input — darker inset to give depth on dark bg ──
-  inputBg:         '#161616',
+  inputBg:         '#121111',
   inputBorder:     'rgba(255,255,255,0.13)',
   inputBorderFocus:'rgba(255,255,255,0.30)',
   inputShadow:     'inset 0 1px 3px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05)',
   inputShadowFocus:'0 0 0 2px rgba(255,255,255,0.09)',
   inputClr:        'rgba(255,255,255,0.88)',
   // ── section selector button ──
-  sectionBg:       '#161616',
+  sectionBg:       '#121111',
   sectionBorder:   'rgba(255,255,255,0.12)',
   sectionShadow:   '0 1px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
   // ── section dropdown ──
-  dropdownBg:      '#161616',
+  dropdownBg:      '#121111',
   dropdownBorder:  'rgba(255,255,255,0.10)',
   dropdownShadow:  '0 8px 32px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.07)',
-  mobBg:       '#161616',
-  panelFullBg: '#161616',
-  surface:     '#161616',
+  mobBg:       '#121111',
+  panelFullBg: '#121111',
+  surface:     '#121111',
   elevatedBorder:     'rgba(255,255,255,0.18)',
   elevatedShadow:     '0 8px 24px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.04)',
   elevatedShadowSoft: '0 2px 10px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.03)',
