@@ -231,7 +231,7 @@ const CategoryNode: React.FC<{
         border: `1px solid ${expanded ? t.elevatedBorder : t.border}`,
         background: expanded
           ? (isDark ? '#181818' : 'rgba(0,0,0,0.08)')
-          : (isDark ? '#111113' : '#deddd9'),
+          : (isDark ? '#0F0F0F' : '#deddd9'),
         boxShadow: expanded ? t.elevatedShadowSoft : 'none',
         color: t.fg, cursor: 'pointer', textAlign: 'left',
       }}>
