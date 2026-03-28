@@ -1,4 +1,4 @@
-import { useState, useLayoutEffect, useEffect } from 'react';
+import { useState, useLayoutEffect, useEffect, useRef } from 'react';
 
 interface TableOfContentsItem {
   id: string;
@@ -57,10 +57,22 @@ function scanHeadings(): TableOfContentsItem[] {
 const useIsomorphicLayoutEffect =
   globalThis.window === undefined ? useEffect : useLayoutEffect;
 
-export function useTableOfContents<T>(dependency: T): TableOfContentsItem[] {
+export function useTableOfContents<T extends { id?: string; slug?: string; content?: string }>(
+  dependency: T
+): TableOfContentsItem[] {
   const [toc, setToc] = useState<TableOfContentsItem[]>([]);
 
+  // Используем slug + content как ключ зависимости для точного обнаружения смены страницы
+  const depKey = `${dependency?.id ?? ''}-${dependency?.slug ?? ''}`;
+  const depKeyRef = useRef('');
+
   useIsomorphicLayoutEffect(() => {
+    // Сброс TOC при смене страницы (slug изменился)
+    if (depKey !== depKeyRef.current) {
+      depKeyRef.current = depKey;
+      setToc([]);
+    }
+
     // Синхронный скан до отрисовки браузером
     const items = scanHeadings();
     if (items.length > 0) {
@@ -71,17 +83,25 @@ export function useTableOfContents<T>(dependency: T): TableOfContentsItem[] {
     // Фолбэк: наблюдаем за [data-article-content], отключаемся после первого успешного скана
     const container = document.querySelector('[data-article-content]') ?? document.body;
 
+    let disconnected = false;
+
     const observer = new MutationObserver(() => {
+      if (disconnected) return;
       const found = scanHeadings();
       if (found.length > 0) {
         setToc(found);
         observer.disconnect();
+        disconnected = true;
       }
     });
 
     observer.observe(container, { childList: true, subtree: true });
-    return () => observer.disconnect();
-  }, [dependency]);
+    return () => {
+      disconnected = true;
+      observer.disconnect();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [depKey]);
 
   return toc;
 }
