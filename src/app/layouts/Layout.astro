@@ -15,11 +15,27 @@ let SEO_CONFIG = {
   siteAuthor:      'Opensophy',
   keywords:        'opensophy, hub, документация',
   metaRobots:      'index, follow',
+  canonicalBase:   '',
   ogImage:         '/og-image.png',
   ogType:          'website',
   ogLocale:        'ru_RU',
+  ogSiteName:      '',
   twitterCard:     'summary_large_image',
   twitterSite:     '',
+  twitterCreator:  '',
+  geoRegion:       '',
+  geoPlacename:    '',
+  geoPosition:     '',
+  icbm:            '',
+  themeColor:      '',
+  colorScheme:     '',
+  viewport:        'width=device-width, initial-scale=1.0',
+  rating:          '',
+  revisitAfter:    '',
+  copyright:       '',
+  googleVerify:    '',
+  yandexVerify:    '',
+  bingVerify:      '',
 };
 
 try {
@@ -56,7 +72,9 @@ const {
 } = Astro.props;
 
 const baseUrl  = SEO_CONFIG.siteUrl.replace(/\/$/, '');
+const canonicalBase = (SEO_CONFIG.canonicalBase || SEO_CONFIG.siteUrl).replace(/\/$/, '');
 const fullUrl  = new URL(url, baseUrl).href;
+const canonicalUrl = new URL(url, canonicalBase).href;
 const imageUrl = image
   ? new URL(image, baseUrl).href
   : new URL(SEO_CONFIG.ogImage, baseUrl).href;
@@ -64,13 +82,15 @@ const imageUrl = image
 const pageTitle = title === SEO_CONFIG.siteTitle
   ? title
   : `${title} — ${SEO_CONFIG.siteTitle}`;
+
+const ogSiteName = SEO_CONFIG.ogSiteName || SEO_CONFIG.siteTitle;
 ---
 
 <!doctype html>
 <html lang={lang}>
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content={SEO_CONFIG.viewport || 'width=device-width, initial-scale=1.0'} />
 
     <!-- Theme init (runs before paint) -->
     <script is:inline>
@@ -89,12 +109,20 @@ const pageTitle = title === SEO_CONFIG.siteTitle
       })();
     </script>
 
-    <!-- SEO -->
+    <!-- SEO Core -->
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
-    <meta name="keywords"    content={keywords} />
-    <meta name="robots"      content={robots} />
-    {SEO_CONFIG.siteAuthor && <meta name="author" content={author || SEO_CONFIG.siteAuthor} />}
+    {keywords && <meta name="keywords" content={keywords} />}
+    <meta name="robots" content={robots} />
+    {(author || SEO_CONFIG.siteAuthor) && <meta name="author" content={author || SEO_CONFIG.siteAuthor} />}
+    {SEO_CONFIG.copyright && <meta name="copyright" content={SEO_CONFIG.copyright} />}
+    {SEO_CONFIG.rating && <meta name="rating" content={SEO_CONFIG.rating} />}
+    {SEO_CONFIG.revisitAfter && <meta name="revisit-after" content={SEO_CONFIG.revisitAfter} />}
+    {SEO_CONFIG.colorScheme && <meta name="color-scheme" content={SEO_CONFIG.colorScheme} />}
+    {SEO_CONFIG.themeColor && <meta name="theme-color" content={SEO_CONFIG.themeColor} />}
+
+    <!-- Canonical -->
+    <link rel="canonical" href={canonicalUrl} />
 
     <!-- Open Graph -->
     <meta property="og:title"       content={title} />
@@ -103,14 +131,15 @@ const pageTitle = title === SEO_CONFIG.siteTitle
     <meta property="og:url"         content={fullUrl} />
     <meta property="og:image"       content={imageUrl} />
     <meta property="og:locale"      content={SEO_CONFIG.ogLocale} />
-    <meta property="og:site_name"   content={SEO_CONFIG.siteTitle} />
+    <meta property="og:site_name"   content={ogSiteName} />
 
-    <!-- Twitter -->
+    <!-- Twitter / X -->
     <meta name="twitter:card"        content={SEO_CONFIG.twitterCard} />
     <meta name="twitter:title"       content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image"       content={imageUrl} />
-    {SEO_CONFIG.twitterSite && <meta name="twitter:site" content={SEO_CONFIG.twitterSite} />}
+    {SEO_CONFIG.twitterSite    && <meta name="twitter:site"    content={SEO_CONFIG.twitterSite} />}
+    {SEO_CONFIG.twitterCreator && <meta name="twitter:creator" content={SEO_CONFIG.twitterCreator} />}
 
     <!-- Article meta -->
     {type === 'article' && author && <meta name="author" content={author} />}
@@ -121,8 +150,18 @@ const pageTitle = title === SEO_CONFIG.siteTitle
       </>
     )}
 
-    <link rel="canonical" href={fullUrl} />
-    <link rel="icon"      href="/favicon.png" />
+    <!-- GEO / Геолокация -->
+    {SEO_CONFIG.geoRegion    && <meta name="geo.region"    content={SEO_CONFIG.geoRegion} />}
+    {SEO_CONFIG.geoPlacename && <meta name="geo.placename" content={SEO_CONFIG.geoPlacename} />}
+    {SEO_CONFIG.geoPosition  && <meta name="geo.position"  content={SEO_CONFIG.geoPosition} />}
+    {SEO_CONFIG.icbm         && <meta name="ICBM"          content={SEO_CONFIG.icbm} />}
+
+    <!-- Search Engine Verification -->
+    {SEO_CONFIG.googleVerify && <meta name="google-site-verification" content={SEO_CONFIG.googleVerify} />}
+    {SEO_CONFIG.yandexVerify && <meta name="yandex-verification"      content={SEO_CONFIG.yandexVerify} />}
+    {SEO_CONFIG.bingVerify   && <meta name="msvalidate.01"             content={SEO_CONFIG.bingVerify} />}
+
+    <link rel="icon" href="/favicon.png" />
 
     <ClientRouter />
 
