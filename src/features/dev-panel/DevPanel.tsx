@@ -11,7 +11,6 @@ const SitePanel     = lazy(() => import('./panels/SitePanel'));
 
 // ─── Тема ────────────────────────────────────────────────────────────────────
 
-// Слушает класс .dark на <html> и событие hub:theme-change
 export function useIsDark(): boolean {
   const [isDark, setIsDark] = useState(() =>
     typeof document === 'undefined'
@@ -89,10 +88,15 @@ const TABS = [
   { id: 'docs',     label: 'Страницы',          icon: <FileText size={13}/> },
   { id: 'contacts', label: 'Контакты',           icon: <Users size={13}/>    },
   { id: 'assets',   label: 'Ассеты',             icon: <Image size={13}/>    },
-  { id: 'site',     label: 'Сайт (эксперимент)', icon: <Globe size={13}/>    },
+  { id: 'site',     label: 'Сайт (SEO/GEO)',     icon: <Globe size={13}/>    },
 ];
 
-// ─── Хелперы статуса соединения ──────────────────────────────────────────────
+const MIN_W = 380;
+const MAX_W = 900;
+const MIN_H = 280;
+const MAX_H_MARGIN = 40;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getStatusColor(status: string, success: string, warning: string, danger: string): string {
   if (status === 'connected')  return success;
@@ -106,7 +110,7 @@ function getStatusLabel(status: string): string {
   return 'Отключено';
 }
 
-// ─── Кнопка-триггер (левый нижний угол) ──────────────────────────────────────
+// ─── Кнопка-триггер ──────────────────────────────────────────────────────────
 
 function PanelTrigger({ open, onClick, status, t }: Readonly<{
   open: boolean;
@@ -136,6 +140,12 @@ function PanelTrigger({ open, onClick, status, t }: Readonly<{
   );
 }
 
+// ─── Типы для drag/resize ─────────────────────────────────────────────────────
+
+type InteractMode = 'drag' | 'resize-r' | 'resize-b' | 'resize-l' | 'resize-t' | 'resize-rb' | 'resize-lb' | 'resize-rt' | 'resize-lt' | null;
+
+interface PanelRect { x: number; y: number; w: number; h: number; }
+
 // ─── Основной компонент ───────────────────────────────────────────────────────
 
 export default function DevPanel() {
@@ -146,62 +156,108 @@ export default function DevPanel() {
   const [open, setOpen] = useState(false);
   const [tab,  setTab]  = useState('docs');
 
-  const [panelRight, setPanelRight] = useState(16);
-  const [panelTop,   setPanelTop]   = useState(40);
-  const [size,       setSize]       = useState({ w: 520, h: 600 });
+  // Позиция и размер панели
+  const [rect, setRect] = useState<PanelRect>({ x: 16, y: 40, w: 520, h: 600 });
+
+  const interacting = useRef<InteractMode>(null);
+  const startData   = useRef({ mx: 0, my: 0, rect: { x: 0, y: 0, w: 0, h: 0 } });
 
   const openPanel = () => {
-    setSize({ w: Math.min(520, globalThis.innerWidth - 32), h: Math.min(820, globalThis.innerHeight - 56) });
-    setPanelRight(16);
-    setPanelTop(40);
+    setRect(r => ({
+      ...r,
+      w: Math.min(520, globalThis.innerWidth - 32),
+      h: Math.min(820, globalThis.innerHeight - 56),
+    }));
     setOpen(true);
   };
 
-  // Сохраняет начальные координаты между событиями mousemove
-  const interacting = useRef<'drag' | 'r' | 'b' | 'rb' | null>(null);
-  const startData   = useRef({ mx: 0, my: 0, right: 16, top: 40, w: 0, h: 0 });
-
-  const onDragStart = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('button')) return;
-    e.preventDefault();
-    interacting.current = 'drag';
-    startData.current = { mx: e.clientX, my: e.clientY, right: panelRight, top: panelTop, w: size.w, h: size.h };
-    document.body.style.userSelect = 'none';
+  // Клампим rect чтобы панель не вышла за экран
+  const clampRect = (r: PanelRect): PanelRect => {
+    const maxH = globalThis.innerHeight - MAX_H_MARGIN;
+    const w = Math.max(MIN_W, Math.min(MAX_W, r.w));
+    const h = Math.max(MIN_H, Math.min(maxH, r.h));
+    const x = Math.max(0, Math.min(globalThis.innerWidth - w, r.x));
+    const y = Math.max(0, Math.min(globalThis.innerHeight - 60, r.y));
+    return { x, y, w, h };
   };
 
-  const onResizeStart = (e: React.MouseEvent, dir: 'r' | 'b' | 'rb') => {
+  const startInteract = (mode: InteractMode, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    interacting.current = dir;
-    startData.current = { mx: e.clientX, my: e.clientY, right: panelRight, top: panelTop, w: size.w, h: size.h };
+    interacting.current = mode;
+    startData.current   = { mx: e.clientX, my: e.clientY, rect: { ...rect } };
     document.body.style.userSelect = 'none';
+    document.body.style.cursor = getCursor(mode);
   };
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
-      const d    = startData.current;
       const mode = interacting.current;
       if (!mode) return;
+      const d  = startData.current;
       const dx = e.clientX - d.mx;
       const dy = e.clientY - d.my;
-      if (mode === 'drag') {
-        setPanelRight(Math.max(0, Math.min(globalThis.innerWidth  - d.w, d.right - dx)));
-        setPanelTop  (Math.max(0, Math.min(globalThis.innerHeight - 60,  d.top   + dy)));
-      } else {
-        if (mode === 'r' || mode === 'rb')
-          setSize(s => ({ ...s, w: Math.max(380, Math.min(globalThis.innerWidth  - 32, d.w - dx)) }));
-        if (mode === 'b' || mode === 'rb')
-          setSize(s => ({ ...s, h: Math.max(300, Math.min(globalThis.innerHeight - 40, d.h + dy)) }));
-      }
+      const maxH = globalThis.innerHeight - MAX_H_MARGIN;
+
+      setRect(() => {
+        let { x, y, w, h } = d.rect;
+        switch (mode) {
+          case 'drag':
+            x = Math.max(0, Math.min(globalThis.innerWidth - w,  d.rect.x + dx));
+            y = Math.max(0, Math.min(globalThis.innerHeight - 60, d.rect.y + dy));
+            break;
+          case 'resize-r':
+            w = Math.max(MIN_W, Math.min(MAX_W, d.rect.w + dx));
+            break;
+          case 'resize-l':
+            w = Math.max(MIN_W, Math.min(MAX_W, d.rect.w - dx));
+            x = d.rect.x + d.rect.w - w;
+            break;
+          case 'resize-b':
+            h = Math.max(MIN_H, Math.min(maxH, d.rect.h + dy));
+            break;
+          case 'resize-t':
+            h = Math.max(MIN_H, Math.min(maxH, d.rect.h - dy));
+            y = d.rect.y + d.rect.h - h;
+            break;
+          case 'resize-rb':
+            w = Math.max(MIN_W, Math.min(MAX_W, d.rect.w + dx));
+            h = Math.max(MIN_H, Math.min(maxH, d.rect.h + dy));
+            break;
+          case 'resize-lb':
+            w = Math.max(MIN_W, Math.min(MAX_W, d.rect.w - dx));
+            x = d.rect.x + d.rect.w - w;
+            h = Math.max(MIN_H, Math.min(maxH, d.rect.h + dy));
+            break;
+          case 'resize-rt':
+            w = Math.max(MIN_W, Math.min(MAX_W, d.rect.w + dx));
+            h = Math.max(MIN_H, Math.min(maxH, d.rect.h - dy));
+            y = d.rect.y + d.rect.h - h;
+            break;
+          case 'resize-lt':
+            w = Math.max(MIN_W, Math.min(MAX_W, d.rect.w - dx));
+            x = d.rect.x + d.rect.w - w;
+            h = Math.max(MIN_H, Math.min(maxH, d.rect.h - dy));
+            y = d.rect.y + d.rect.h - h;
+            break;
+        }
+        return clampRect({ x, y, w, h });
+      });
     };
-    const onUp = () => { interacting.current = null; document.body.style.userSelect = ''; };
+
+    const onUp = () => {
+      interacting.current = null;
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    };
+
     globalThis.addEventListener('mousemove', onMove);
     globalThis.addEventListener('mouseup',   onUp);
     return () => {
       globalThis.removeEventListener('mousemove', onMove);
       globalThis.removeEventListener('mouseup',   onUp);
     };
-  }, []);
+  }, [rect]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -216,10 +272,17 @@ export default function DevPanel() {
 
   const dotColor = getStatusColor(status, t.success, t.warning, t.danger);
 
-  // Базовые стили для невидимых кнопок-ресайзеров
-  const resizeBtn: React.CSSProperties = {
-    position: 'absolute', padding: 0, border: 'none', background: 'transparent', zIndex: 10,
-  };
+  // Общий стиль для resize-handles (невидимые полосы по краям)
+  const rh = (style: React.CSSProperties, mode: InteractMode): React.ReactElement => (
+    <div
+      key={mode}
+      onMouseDown={e => startInteract(mode, e)}
+      style={{
+        position: 'absolute', zIndex: 10,
+        ...style,
+      }}
+    />
+  );
 
   return createPortal(
     <ThemeTokensContext.Provider value={t}>
@@ -235,32 +298,37 @@ export default function DevPanel() {
 
       {open && (
         <div style={{
-          position: 'fixed', right: panelRight, top: panelTop,
-          width: size.w, height: size.h, zIndex: 99999,
-          background: t.bg, border: `1px solid ${t.borderStrong}`,
-          borderRadius: 12, boxShadow: t.shadow,
-          display: 'flex', flexDirection: 'column',
-          overflow: 'hidden', fontFamily: t.mono,
+          position: 'fixed',
+          left: rect.x,
+          top:  rect.y,
+          width:  rect.w,
+          height: rect.h,
+          zIndex: 99999,
+          background: t.bg,
+          border: `1px solid ${t.borderStrong}`,
+          borderRadius: 12,
+          boxShadow: t.shadow,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          fontFamily: t.mono,
         }}>
 
-          {/* Шапка — невидимая кнопка поверх для drag (нативный интерактивный элемент) */}
-          <header style={{
-            position: 'relative',
-            display: 'flex', alignItems: 'center', gap: 10,
-            padding: '10px 12px 9px',
-            background: t.surface, borderBottom: `1px solid ${t.border}`,
-            flexShrink: 0, userSelect: 'none',
-          }}>
-            <button
-              aria-label="Переместить панель"
-              onMouseDown={onDragStart}
-              style={{
-                position: 'absolute', inset: 0, zIndex: 0,
-                background: 'transparent', border: 'none', cursor: 'move', padding: 0,
-              }}
-            />
+          {/* Шапка — drag area (весь header кликабелен для перетаскивания) */}
+          <header
+            onMouseDown={e => {
+              // Не начинать drag если клик по кнопке
+              if ((e.target as HTMLElement).closest('button')) return;
+              startInteract('drag', e);
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '10px 12px 9px',
+              background: t.surface, borderBottom: `1px solid ${t.border}`,
+              flexShrink: 0, userSelect: 'none', cursor: 'move',
+            }}
+          >
             <div style={{
-              position: 'relative', zIndex: 1,
               width: 28, height: 28, borderRadius: 7, flexShrink: 0,
               background: t.accentSoft, border: `1px solid ${t.border}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -268,7 +336,7 @@ export default function DevPanel() {
               <UserCog size={13} style={{ color: t.fg }}/>
             </div>
 
-            <div style={{ position: 'relative', zIndex: 1, flex: 1, minWidth: 0 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 11, fontWeight: 800, color: t.fg, letterSpacing: '0.06em' }}>
                   АДМИН ПАНЕЛЬ
@@ -297,7 +365,6 @@ export default function DevPanel() {
             <button
               onClick={() => setOpen(false)}
               style={{
-                position: 'relative', zIndex: 1,
                 width: 26, height: 26, borderRadius: 6, flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 border: `1px solid ${t.border}`, background: 'transparent',
@@ -339,7 +406,7 @@ export default function DevPanel() {
             })}
           </div>
 
-          {/* Контент — оверлей при отсутствии соединения */}
+          {/* Контент */}
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
             {status !== 'connected' && (
               <div style={{
@@ -383,16 +450,20 @@ export default function DevPanel() {
             </Suspense>
           </div>
 
-          {/* Ресайз-хэндлы: правый край, нижний край, угол */}
-          <button aria-label="Изменить ширину панели"  onMouseDown={e => onResizeStart(e, 'r')}
-            style={{ ...resizeBtn, right: 0, top: 40, bottom: 8, width: 6, cursor: 'col-resize' }}
-          />
-          <button aria-label="Изменить высоту панели"  onMouseDown={e => onResizeStart(e, 'b')}
-            style={{ ...resizeBtn, bottom: 0, left: 8, right: 8, height: 6, cursor: 'row-resize' }}
-          />
-          <button aria-label="Изменить размер панели"  onMouseDown={e => onResizeStart(e, 'rb')}
-            style={{ ...resizeBtn, bottom: 0, right: 0, width: 14, height: 14, cursor: 'nwse-resize', zIndex: 11 }}
-          />
+          {/* ── Resize handles — все 8 направлений ── */}
+          {/* Правый край */}
+          {rh({ right: 0, top: 8, bottom: 8, width: 6, cursor: 'col-resize' }, 'resize-r')}
+          {/* Левый край */}
+          {rh({ left: 0, top: 8, bottom: 8, width: 6, cursor: 'col-resize' }, 'resize-l')}
+          {/* Нижний край */}
+          {rh({ bottom: 0, left: 8, right: 8, height: 6, cursor: 'row-resize' }, 'resize-b')}
+          {/* Верхний край */}
+          {rh({ top: 0, left: 8, right: 8, height: 6, cursor: 'row-resize' }, 'resize-t')}
+          {/* Углы */}
+          {rh({ bottom: 0, right: 0, width: 14, height: 14, cursor: 'nwse-resize' }, 'resize-rb')}
+          {rh({ bottom: 0, left: 0,  width: 14, height: 14, cursor: 'nesw-resize' }, 'resize-lb')}
+          {rh({ top: 0,    right: 0, width: 14, height: 14, cursor: 'nesw-resize' }, 'resize-rt')}
+          {rh({ top: 0,    left: 0,  width: 14, height: 14, cursor: 'nwse-resize' }, 'resize-lt')}
         </div>
       )}
 
@@ -400,4 +471,19 @@ export default function DevPanel() {
     </ThemeTokensContext.Provider>,
     document.body
   );
+}
+
+function getCursor(mode: InteractMode): string {
+  switch (mode) {
+    case 'drag':      return 'move';
+    case 'resize-r':
+    case 'resize-l':  return 'col-resize';
+    case 'resize-b':
+    case 'resize-t':  return 'row-resize';
+    case 'resize-rb':
+    case 'resize-lt': return 'nwse-resize';
+    case 'resize-lb':
+    case 'resize-rt': return 'nesw-resize';
+    default:          return '';
+  }
 }
