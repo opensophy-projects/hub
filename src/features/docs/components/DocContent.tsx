@@ -60,11 +60,10 @@ interface DocHeroProps {
   doc: DocContentProps['doc'];
   isDark: boolean;
   readTime: number;
-  liveFM?: LiveFM | null;  // ← оверрайд от dev панели
+  liveFM?: LiveFM | null;
 }
 
 const DocHero: React.FC<DocHeroProps> = ({ doc, isDark, readTime, liveFM }) => {
-  // Мержим live FM поверх оригинального doc
   const title       = liveFM?.title?.trim()       || doc.title;
   const description = liveFM?.description?.trim() || doc.description;
   const author      = liveFM?.author?.trim()       || doc.author;
@@ -143,6 +142,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const { isDark } = useTheme();
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
 
+  // Передаём doc целиком — useTableOfContents теперь отслеживает slug для сброса
   const toc            = useTableOfContents(doc);
   const progressBarRef = useScrollProgress();
   const activeId       = useActiveHeading(toc);
@@ -178,10 +178,13 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const [liveHtml, setLiveHtml] = useState<string | null>(null);
   const [liveFM,   setLiveFM]   = useState<LiveFM | null>(null);
 
-  // ─── Dev live preview (BroadcastChannel) ─────────────────────────────────
-  // Получаем html (body) + fm (frontmatter) от dev панели.
-  // fm обновляет hero секцию (title, description, author, date, updated).
-  // html обновляет контент статьи.
+  // Сброс live preview при смене страницы
+  useEffect(() => {
+    setLiveHtml(null);
+    setLiveFM(null);
+  }, [doc.slug]);
+
+  // Dev live preview (BroadcastChannel)
   useEffect(() => {
     if (typeof BroadcastChannel === 'undefined') return;
     const ch = new BroadcastChannel('hub-dev-preview');
@@ -206,6 +209,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
         style={{ position: 'fixed', top: 0, left: 0, height: '2px', width: '0%', background: isDark ? '#fff' : '#000', zIndex: 999, transition: 'none' }}
       />
 
+      {/* TOC всегда получает актуальный toc и activeId */}
       <Navigation currentDocSlug={doc.slug} toc={toc} activeHeadingId={activeId} />
 
       <main
@@ -217,7 +221,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
           transition:   'none',
         }}
       >
-        {/* liveFM передаётся в hero → title/description/author/date обновляются в реальном времени */}
         <DocHero doc={doc} isDark={isDark} readTime={readTime} liveFM={liveFM} />
 
         <article style={{ padding: '2rem 2rem 3rem' }}>
