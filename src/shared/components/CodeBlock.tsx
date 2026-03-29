@@ -542,8 +542,23 @@ function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuer
   );
 }
 
-// ─── TabBar ────────────────────────────────────
- 
+// ─── Табы ─────────────────────────────────────────────────────────────────────
+
+export interface CodeTab {
+  label: string;
+  code: string;
+  language: string;
+}
+
+interface TabBarProps {
+  readonly tabs: CodeTab[];
+  readonly activeIdx: number;
+  readonly onSelect: (idx: number) => void;
+  readonly t: ReturnType<typeof tk>;
+}
+
+// ─── TabBar — показывает только label, без дублирования language ──────────────
+
 function TabBar({ tabs, activeIdx, onSelect, t }: TabBarProps) {
   return (
     <div style={{
@@ -563,8 +578,8 @@ function TabBar({ tabs, activeIdx, onSelect, t }: TabBarProps) {
               key={`${tab.label}-${i}`}
               onClick={() => onSelect(i)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '9px 14px',
+                display: 'flex', alignItems: 'center',
+                padding: '9px 16px',
                 border: 'none',
                 borderBottom: `2px solid ${active ? t.fg : 'transparent'}`,
                 background: active ? t.tabActive : t.tabInactive,
@@ -573,12 +588,12 @@ function TabBar({ tabs, activeIdx, onSelect, t }: TabBarProps) {
                 cursor: 'pointer', flexShrink: 0,
                 outline: 'none',
                 fontFamily: 'ui-monospace, monospace',
-                transition: 'color 0.1s, background 0.1s',
                 whiteSpace: 'nowrap',
               }}
               onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = t.tabActive; }}
               onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = t.tabInactive; }}
             >
+              {/* Только label — никакого дублирования с language */}
               {tab.label}
             </button>
           );
@@ -587,7 +602,6 @@ function TabBar({ tabs, activeIdx, onSelect, t }: TabBarProps) {
     </div>
   );
 }
- 
 
 // ─── Основной компонент CodeBlock ─────────────────────────────────────────────
 
