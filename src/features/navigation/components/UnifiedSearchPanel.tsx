@@ -580,7 +580,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleInputKeyDown}
-            placeholder="Поиск по документам…"
+            placeholder="Поиск…"
             style={{
               flex: 1, border: 'none', outline: 'none',
               background: 'transparent', color: C.fg,
