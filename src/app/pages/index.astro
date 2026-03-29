@@ -15,17 +15,10 @@ if (fs.existsSync(welcomeMdPath)) {
   welcomeDoc.slug = '';
 }
 
-// SEO defaults из глобального конфига
-let globalSeo = { siteTitle: 'Hub — Opensophy', siteDescription: 'Hub проекта Opensophy.', keywords: '', siteLang: 'ru' };
-try {
-  const mod = await import('@/shared/data/seo');
-  if (mod?.SEO_CONFIG) globalSeo = { ...globalSeo, ...mod.SEO_CONFIG };
-} catch {}
-
-const title       = welcomeDoc?.title       || globalSeo.siteTitle;
-const description = welcomeDoc?.description || globalSeo.siteDescription;
-const keywords    = welcomeDoc?.keywords    || globalSeo.keywords;
-const lang        = welcomeDoc?.lang        || globalSeo.siteLang;
+const title       = welcomeDoc?.title       || 'Hub — Opensophy';
+const description = welcomeDoc?.description || 'Hub проекта Opensophy.';
+const keywords    = welcomeDoc?.keywords    || '';
+const lang        = welcomeDoc?.lang        || 'ru';
 ---
 
 <Layout
