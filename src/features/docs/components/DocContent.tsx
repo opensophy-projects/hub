@@ -1,4 +1,4 @@
-import React, { useState, useMemo, Suspense, lazy, useEffect } from 'react';
+import React, { useState, useMemo, Suspense, lazy, useEffect, useRef, useCallback } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
 import Navigation from '@/features/navigation/components/Navigation';
@@ -20,7 +20,6 @@ interface DocContentProps {
   };
 }
 
-// FM override — то что приходит из dev панели в реальном времени
 interface LiveFM {
   title?: string; description?: string; author?: string;
   date?: string; updated?: string; tags?: string; icon?: string; lang?: string; robots?: string;
@@ -38,12 +37,25 @@ function estimateReadTime(content: string): number {
 
 function useActiveHeading(toc: { id: string; text: string; level: number }[]): string {
   const [activeId, setActiveId] = useState('');
+
+  useEffect(() => {
+    // При смене TOC (новая страница) сбрасываем активный заголовок
+    setActiveId('');
+  }, [toc]);
+
   useEffect(() => {
     if (!toc.length) return;
-    const els = toc.map(({ id }) => document.getElementById(id)).filter((el): el is HTMLElement => el !== null);
+    const els = toc
+      .map(({ id }) => document.getElementById(id))
+      .filter((el): el is HTMLElement => el !== null);
+
+    if (!els.length) return;
+
     const obs = new IntersectionObserver(
       entries => {
-        const visible = entries.filter(e => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        const visible = entries
+          .filter(e => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
         if (visible.length) setActiveId(visible[0].target.id);
       },
       { rootMargin: '-10% 0px -70% 0px', threshold: 0 }
@@ -51,6 +63,7 @@ function useActiveHeading(toc: { id: string; text: string; level: number }[]): s
     els.forEach(el => obs.observe(el));
     return () => obs.disconnect();
   }, [toc]);
+
   return activeId;
 }
 
@@ -97,9 +110,24 @@ const DocHero: React.FC<DocHeroProps> = ({ doc, isDark, readTime, liveFM }) => {
           </div>
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-          {fmtDate && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: metaClr }}><CalendarDays size={13} style={{ opacity: 0.7 }} />{fmtDate}</span>}
-          {fmtUpdated && <><span style={{ color: metaClr, fontSize: '0.7rem' }}>·</span><span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: metaClr }}><RefreshCw size={13} style={{ opacity: 0.7 }} />Обновлено: {fmtUpdated}</span></>}
-          {doc.typename?.trim() && <span style={{ fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: metaClr, background: badgeBg, border: `1px solid ${badgeBdr}`, borderRadius: '6px', padding: '2px 8px' }}>{doc.typename}</span>}
+          {fmtDate && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: metaClr }}>
+              <CalendarDays size={13} style={{ opacity: 0.7 }} />{fmtDate}
+            </span>
+          )}
+          {fmtUpdated && (
+            <>
+              <span style={{ color: metaClr, fontSize: '0.7rem' }}>·</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: metaClr }}>
+                <RefreshCw size={13} style={{ opacity: 0.7 }} />Обновлено: {fmtUpdated}
+              </span>
+            </>
+          )}
+          {doc.typename?.trim() && (
+            <span style={{ fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: metaClr, background: badgeBg, border: `1px solid ${badgeBdr}`, borderRadius: '6px', padding: '2px 8px' }}>
+              {doc.typename}
+            </span>
+          )}
         </div>
         <h1 style={{ fontSize: 'clamp(1.6rem,4vw,2.8rem)', fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.02em', color: isDark ? '#ffffff' : '#0a0a0a', margin: '0 0 1rem 0', fontFamily: 'system-ui,-apple-system,sans-serif', maxWidth: '820px' }}>
           {title}
@@ -142,11 +170,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const { isDark } = useTheme();
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
 
-  // Передаём doc целиком — useTableOfContents теперь отслеживает slug для сброса
-  const toc            = useTableOfContents(doc);
-  const progressBarRef = useScrollProgress();
-  const activeId       = useActiveHeading(toc);
-
   const [isDesktop, setIsDesktop] = useState(false);
   const [navLeft, setNavLeft]     = useState('0px');
 
@@ -175,31 +198,57 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
     return () => observer.disconnect();
   }, [isDesktop]);
 
+  // ── Live preview via BroadcastChannel ────────────────────────────────────
   const [liveHtml, setLiveHtml] = useState<string | null>(null);
   const [liveFM,   setLiveFM]   = useState<LiveFM | null>(null);
+  // Версионный счётчик — инкрементируется при каждом live-обновлении контента.
+  // Передаётся в useTableOfContents как часть зависимости, чтобы
+  // вызвать пересканирование заголовков после ре-рендера.
+  const [contentVersion, setContentVersion] = useState(0);
 
-  // Сброс live preview при смене страницы
+  // Сбрасываем live state при смене страницы
   useEffect(() => {
     setLiveHtml(null);
     setLiveFM(null);
+    setContentVersion(v => v + 1); // сигнализируем о смене страницы
   }, [doc.slug]);
 
-  // Dev live preview (BroadcastChannel)
   useEffect(() => {
     if (typeof BroadcastChannel === 'undefined') return;
     const ch = new BroadcastChannel('hub-dev-preview');
     ch.onmessage = (e) => {
       if (e.data?.type !== 'preview') return;
-      if (e.data.html !== undefined) setLiveHtml(e.data.html);
-      if (e.data.fm   !== undefined) setLiveFM(e.data.fm);
+      if (e.data.html !== undefined) {
+        setLiveHtml(e.data.html);
+        // Инкрементируем после установки нового HTML, чтобы useTableOfContents
+        // пересканировал заголовки когда React уже отрендерил новый контент
+        setContentVersion(v => v + 1);
+      }
+      if (e.data.fm !== undefined) setLiveFM(e.data.fm);
     };
     return () => ch.close();
   }, []);
 
   const htmlContent  = liveHtml ?? doc.content ?? '';
+
+  // Объект зависимости для TOC — содержит slug + версию контента.
+  // Когда меняется slug ИЛИ приходит live preview — TOC пересканируется.
+  const tocDep = useMemo(
+    () => ({ id: doc.id, slug: doc.slug, _v: contentVersion }),
+    [doc.id, doc.slug, contentVersion]
+  );
+
+  const toc      = useTableOfContents(tocDep);
+  const activeId = useActiveHeading(toc);
+
+  const progressBarRef = useScrollProgress();
+
   const contentNodes = useMemo(() => parseHtmlToReact(htmlContent), [htmlContent]);
   const readTime     = useMemo(() => estimateReadTime(doc.content || ''), [doc.content]);
-  const tableCtx     = useMemo(() => ({ onTableClick: (html: string) => setFullscreenTableHtml(html), isDark }), [isDark]);
+  const tableCtx     = useMemo(
+    () => ({ onTableClick: (html: string) => setFullscreenTableHtml(html), isDark }),
+    [isDark]
+  );
 
   return (
     <div style={{ minHeight: '100vh' }}>
@@ -209,7 +258,6 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
         style={{ position: 'fixed', top: 0, left: 0, height: '2px', width: '0%', background: isDark ? '#fff' : '#000', zIndex: 999, transition: 'none' }}
       />
 
-      {/* TOC всегда получает актуальный toc и activeId */}
       <Navigation currentDocSlug={doc.slug} toc={toc} activeHeadingId={activeId} />
 
       <main
