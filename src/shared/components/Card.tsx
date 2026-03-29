@@ -1,6 +1,7 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { TableContext } from '../lib/htmlParser';
 import LucideIcon from './LucideIcon';
+import Overlay from './Overlay';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -8,6 +9,7 @@ export interface CardProps {
   title?: string;
   icon?: string;
   color?: string;
+  image?: string;
   children?: React.ReactNode;
   isDark?: boolean;
 }
@@ -86,17 +88,63 @@ function getCardStyles(isDark: boolean, hasAccent: boolean, accentColor: string)
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
-const Card: React.FC<CardProps> = ({ title, icon, color, children, isDark = false }) => {
+const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark = false }) => {
   const accentColor = color || (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)');
   const hasAccent   = !!color;
   const iconColor   = getIconColor(hasAccent, accentColor, isDark);
   const s           = getCardStyles(isDark, hasAccent, accentColor);
+
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   return (
     <>
       <style>{cardHoverStyle}</style>
       <div style={s.card} className={`${CARD_HOVER_CLASS} ${isDark ? 'card-dark' : 'card-light'}`}>
         {hasAccent && <div style={s.accentBar} />}
+
+        {/* Изображение карточки */}
+        {image && (
+          <>
+            <button
+              type="button"
+              onClick={() => setLightboxOpen(true)}
+              aria-label="Открыть изображение"
+              style={{
+                display: 'block', padding: 0, border: 'none',
+                background: 'transparent', cursor: 'zoom-in',
+                width: '100%', overflow: 'hidden',
+                borderRadius: hasAccent ? '11px 11px 0 0' : '11px 11px 0 0',
+                flexShrink: 0,
+              }}
+            >
+              <img
+                src={image}
+                alt={title ?? 'card image'}
+                style={{
+                  display: 'block', width: '100%',
+                  height: '160px', objectFit: 'cover',
+                  transition: 'opacity 0.2s, transform 0.2s',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.opacity = '0.88';
+                  e.currentTarget.style.transform = 'scale(1.02)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.opacity = '1';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              />
+            </button>
+
+            {/* Разделитель */}
+            <div style={{
+              height: '1px',
+              background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)',
+              flexShrink: 0,
+            }} />
+          </>
+        )}
+
         <div style={s.body}>
           {icon && (
             <div style={s.iconWrap}>
@@ -107,6 +155,40 @@ const Card: React.FC<CardProps> = ({ title, icon, color, children, isDark = fals
           {children && <div style={s.content}>{children}</div>}
         </div>
       </div>
+
+      {/* Лайтбокс для изображения карточки */}
+      {lightboxOpen && image && (
+        <Overlay onClose={() => setLightboxOpen(false)} backdropCursor="zoom-out">
+          <div style={{ position: 'relative' }}>
+            <img
+              src={image}
+              alt={title ?? 'card image'}
+              style={{
+                maxWidth: '90vw', maxHeight: '90vh',
+                objectFit: 'contain', borderRadius: '10px',
+                boxShadow: '0 8px 60px rgba(0,0,0,0.8)',
+                userSelect: 'none', display: 'block',
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setLightboxOpen(false)}
+              aria-label="Закрыть"
+              style={{
+                position: 'fixed', top: '1.25rem', right: '1.25rem',
+                background: 'rgba(255,255,255,0.12)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: '8px', color: '#fff',
+                width: '36px', height: '36px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', fontSize: '18px', lineHeight: 1, zIndex: 1,
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        </Overlay>
+      )}
     </>
   );
 };
