@@ -6,45 +6,6 @@ import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import ErrorBoundary from '@/shared/components/ErrorBoundary';
 import DevPanelLoader from '@/features/dev-panel/DevPanelLoader';
 
-// SEO defaults — управляется через Dev Panel → вкладка "Сайт"
-let SEO_CONFIG = {
-  siteTitle:       'Hub — Opensophy',
-  siteDescription: 'Hub проекта Opensophy.',
-  siteUrl:         'https://hub.opensophy.com',
-  siteLang:        'ru',
-  siteAuthor:      'Opensophy',
-  keywords:        'opensophy, hub, документация',
-  metaRobots:      'index, follow',
-  canonicalBase:   '',
-  ogImage:         '/og-image.png',
-  ogType:          'website',
-  ogLocale:        'ru_RU',
-  ogSiteName:      '',
-  twitterCard:     'summary_large_image',
-  twitterSite:     '',
-  twitterCreator:  '',
-  geoRegion:       '',
-  geoPlacename:    '',
-  geoPosition:     '',
-  icbm:            '',
-  themeColor:      '',
-  colorScheme:     '',
-  viewport:        'width=device-width, initial-scale=1.0',
-  rating:          '',
-  revisitAfter:    '',
-  copyright:       '',
-  googleVerify:    '',
-  yandexVerify:    '',
-  bingVerify:      '',
-};
-
-try {
-  const mod = await import('@/shared/data/seo');
-  if (mod?.SEO_CONFIG) SEO_CONFIG = { ...SEO_CONFIG, ...mod.SEO_CONFIG };
-} catch {
-  // seo.ts ещё не создан — используем дефолты выше
-}
-
 interface Props {
   title?: string;
   description?: string;
@@ -53,116 +14,108 @@ interface Props {
   type?: 'website' | 'article';
   author?: string;
   date?: string;
+  updated?: string;
   keywords?: string;
   robots?: string;
   lang?: string;
 }
 
+const SITE = {
+  name:        'Hub — Opensophy',
+  description: 'Hub проекта Opensophy — центр знаний по ИИ и кибербезопасности.',
+  url:         'https://hub.opensophy.com',
+  lang:        'ru',
+  author:      'Opensophy',
+  keywords:    'opensophy, hub, документация, AI, кибербезопасность',
+  ogImage:     '/og-image.png',
+  ogLocale:    'ru_RU',
+  twitterCard: 'summary_large_image',
+  twitterSite: '@opensophy',
+  themeColor:  '#0a0a0a',
+};
+
 const {
-  title       = SEO_CONFIG.siteTitle,
-  description = SEO_CONFIG.siteDescription,
+  title       = SITE.name,
+  description = SITE.description,
   image,
-  url = '/',
-  type = 'website',
-  author,
+  url         = '/',
+  type        = 'website',
+  author      = SITE.author,
   date,
-  keywords = SEO_CONFIG.keywords,
-  robots   = SEO_CONFIG.metaRobots,
-  lang     = SEO_CONFIG.siteLang,
+  updated,
+  keywords    = SITE.keywords,
+  robots      = 'index, follow',
+  lang        = SITE.lang,
 } = Astro.props;
 
-const baseUrl  = SEO_CONFIG.siteUrl.replace(/\/$/, '');
-const canonicalBase = (SEO_CONFIG.canonicalBase || SEO_CONFIG.siteUrl).replace(/\/$/, '');
-const fullUrl  = new URL(url, baseUrl).href;
-const canonicalUrl = new URL(url, canonicalBase).href;
-const imageUrl = image
-  ? new URL(image, baseUrl).href
-  : new URL(SEO_CONFIG.ogImage, baseUrl).href;
-
-const pageTitle = title === SEO_CONFIG.siteTitle
-  ? title
-  : `${title} — ${SEO_CONFIG.siteTitle}`;
-
-const ogSiteName = SEO_CONFIG.ogSiteName || SEO_CONFIG.siteTitle;
+const pageTitle    = title === SITE.name ? title : `${title} — ${SITE.name}`;
+const canonicalUrl = new URL(url, SITE.url).href;
+const imageUrl     = image ? new URL(image, SITE.url).href : new URL(SITE.ogImage, SITE.url).href;
+const publishedISO = date    ? new Date(date).toISOString()    : undefined;
+const updatedISO   = updated ? new Date(updated).toISOString() : publishedISO;
 ---
 
 <!doctype html>
 <html lang={lang}>
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content={SEO_CONFIG.viewport || 'width=device-width, initial-scale=1.0'} />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Theme init (runs before paint) -->
+    <!-- Theme: runs before paint, prevents flash -->
     <script is:inline>
       (function () {
-        var theme = localStorage.getItem('theme');
-        if (!theme) theme = 'dark';
-        var dark = theme !== 'light';
-        if (dark) {
-          document.documentElement.classList.add('dark');
-          document.documentElement.style.colorScheme = 'dark';
-        } else {
-          document.documentElement.classList.remove('dark');
-          document.documentElement.style.colorScheme = 'light';
-        }
-        document.documentElement.style.backgroundColor = dark ? '#0a0a0a' : '#E8E7E3';
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
       })();
     </script>
 
-    <!-- SEO Core -->
+    <!-- Primary SEO -->
     <title>{pageTitle}</title>
-    <meta name="description" content={description} />
-    {keywords && <meta name="keywords" content={keywords} />}
-    <meta name="robots" content={robots} />
-    {(author || SEO_CONFIG.siteAuthor) && <meta name="author" content={author || SEO_CONFIG.siteAuthor} />}
-    {SEO_CONFIG.copyright && <meta name="copyright" content={SEO_CONFIG.copyright} />}
-    {SEO_CONFIG.rating && <meta name="rating" content={SEO_CONFIG.rating} />}
-    {SEO_CONFIG.revisitAfter && <meta name="revisit-after" content={SEO_CONFIG.revisitAfter} />}
-    {SEO_CONFIG.colorScheme && <meta name="color-scheme" content={SEO_CONFIG.colorScheme} />}
-    {SEO_CONFIG.themeColor && <meta name="theme-color" content={SEO_CONFIG.themeColor} />}
-
-    <!-- Canonical -->
-    <link rel="canonical" href={canonicalUrl} />
+    <meta name="description"  content={description} />
+    <meta name="keywords"     content={keywords} />
+    <meta name="author"       content={author} />
+    <meta name="robots"       content={robots} />
+    <meta name="theme-color"  content={SITE.themeColor} />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="canonical"     href={canonicalUrl} />
 
     <!-- Open Graph -->
-    <meta property="og:title"       content={title} />
-    <meta property="og:description" content={description} />
-    <meta property="og:type"        content={type === 'article' ? 'article' : SEO_CONFIG.ogType} />
-    <meta property="og:url"         content={fullUrl} />
-    <meta property="og:image"       content={imageUrl} />
-    <meta property="og:locale"      content={SEO_CONFIG.ogLocale} />
-    <meta property="og:site_name"   content={ogSiteName} />
+    <meta property="og:site_name"    content={SITE.name} />
+    <meta property="og:title"        content={title} />
+    <meta property="og:description"  content={description} />
+    <meta property="og:type"         content={type === 'article' ? 'article' : 'website'} />
+    <meta property="og:url"          content={canonicalUrl} />
+    <meta property="og:image"        content={imageUrl} />
+    <meta property="og:image:width"  content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale"       content={SITE.ogLocale} />
 
     <!-- Twitter / X -->
-    <meta name="twitter:card"        content={SEO_CONFIG.twitterCard} />
+    <meta name="twitter:card"        content={SITE.twitterCard} />
+    <meta name="twitter:site"        content={SITE.twitterSite} />
     <meta name="twitter:title"       content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image"       content={imageUrl} />
-    {SEO_CONFIG.twitterSite    && <meta name="twitter:site"    content={SEO_CONFIG.twitterSite} />}
-    {SEO_CONFIG.twitterCreator && <meta name="twitter:creator" content={SEO_CONFIG.twitterCreator} />}
 
-    <!-- Article meta -->
-    {type === 'article' && author && <meta name="author" content={author} />}
-    {type === 'article' && date && (
-      <>
-        <meta property="article:published_time" content={new Date(date).toISOString()} />
-        <meta property="article:modified_time"  content={new Date(date).toISOString()} />
-      </>
+    <!-- Article-specific -->
+    {type === 'article' && publishedISO && (
+      <meta property="article:published_time" content={publishedISO} />
+    )}
+    {type === 'article' && updatedISO && (
+      <meta property="article:modified_time" content={updatedISO} />
+    )}
+    {type === 'article' && (
+      <meta property="article:author" content={author} />
     )}
 
-    <!-- GEO / Геолокация -->
-    {SEO_CONFIG.geoRegion    && <meta name="geo.region"    content={SEO_CONFIG.geoRegion} />}
-    {SEO_CONFIG.geoPlacename && <meta name="geo.placename" content={SEO_CONFIG.geoPlacename} />}
-    {SEO_CONFIG.geoPosition  && <meta name="geo.position"  content={SEO_CONFIG.geoPosition} />}
-    {SEO_CONFIG.icbm         && <meta name="ICBM"          content={SEO_CONFIG.icbm} />}
+    <!-- Favicon -->
+    <link rel="icon"             href="/favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
 
-    <!-- Search Engine Verification -->
-    {SEO_CONFIG.googleVerify && <meta name="google-site-verification" content={SEO_CONFIG.googleVerify} />}
-    {SEO_CONFIG.yandexVerify && <meta name="yandex-verification"      content={SEO_CONFIG.yandexVerify} />}
-    {SEO_CONFIG.bingVerify   && <meta name="msvalidate.01"             content={SEO_CONFIG.bingVerify} />}
-
-    <link rel="icon" href="/favicon.png" />
-
+    <!-- Astro SPA transitions -->
     <ClientRouter />
 
     <style is:global>
@@ -174,8 +127,8 @@ const ogSiteName = SEO_CONFIG.ogSiteName || SEO_CONFIG.siteTitle;
         font-display: swap;
       }
       :root {
-        --font-sans: system-ui, -apple-system, sans-serif;
-        --font-mono: ui-monospace, monospace;
+        --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        --font-mono: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
       }
       html {
         font-family: var(--font-sans);
@@ -188,6 +141,7 @@ const ogSiteName = SEO_CONFIG.ogSiteName || SEO_CONFIG.siteTitle;
       body { margin: 0; padding: 0; overflow-x: hidden; }
     </style>
   </head>
+
   <body>
     <ErrorBoundary>
       <ThemeProvider>
@@ -197,19 +151,14 @@ const ogSiteName = SEO_CONFIG.ogSiteName || SEO_CONFIG.siteTitle;
 
     <DevPanelLoader client:only="react" />
 
-    <!-- Theme sync after SPA navigation -->
+    <!-- Re-apply theme after SPA navigation -->
     <script is:inline>
       document.addEventListener('astro:after-swap', function () {
-        var theme = localStorage.getItem('theme') || 'dark';
-        var dark  = theme !== 'light';
-        if (dark) {
-          document.documentElement.classList.add('dark');
-          document.documentElement.style.colorScheme = 'dark';
-        } else {
-          document.documentElement.classList.remove('dark');
-          document.documentElement.style.colorScheme = 'light';
-        }
-        document.documentElement.style.backgroundColor = dark ? '#0a0a0a' : '#E8E7E3';
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
       });
     </script>
   </body>
