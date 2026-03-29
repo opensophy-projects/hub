@@ -1,6 +1,7 @@
-import React, { createContext, lazy, Suspense } from 'react';
+import React, { createContext, lazy, Suspense, useState, useCallback } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
 import { CodeBlock } from '../components/CodeBlock';
+import type { CodeTab } from '../components/CodeBlock';
 import TableWithControls from '@/features/table/components/TableWithControls';
 import Alert from '../components/Alert';
 import NewUIComponentViewer from '@/features/ui-components/NewUIComponentViewer';
@@ -10,6 +11,7 @@ import { ColumnsWithContext } from '../components/Columns';
 import { StepperWithContext } from '../components/Stepper';
 import type { StepData, StepStatus } from '../components/Stepper';
 import type { ColumnsLayout } from '../components/Columns';
+import { Link } from 'lucide-react';
 
 const LazyChartBlock = lazy(() => import('../components/ChartBlock'));
 
@@ -36,8 +38,9 @@ export const SANITIZE_ATTR = [
   'href', 'src', 'alt', 'title', 'class', 'id',
   'data-language', 'data-lang', 'data-alert-type',
   'data-cols', 'data-layout', 'data-status', 'data-title',
-  'data-color', 'data-icon',
+  'data-color', 'data-icon', 'data-image',
   'data-chart', 'data-colors', 'data-type',
+  'data-tabs',
   'type', 'checked', 'disabled', 'open', 'style', 'align',
   'xmlns', 'viewBox', 'd', 'fill', 'stroke', 'stroke-width',
   'width', 'height', 'x', 'y', 'x1', 'y1', 'x2', 'y2',
@@ -51,7 +54,6 @@ export const SANITIZE_ATTR = [
 const sanitizeHtml = (html: string): string =>
   DOMPurify.sanitize(html, { ALLOWED_TAGS: SANITIZE_TAGS, ALLOWED_ATTR: SANITIZE_ATTR, ALLOW_DATA_ATTR: true });
 
-// Транслитерация текста заголовка в slug для id
 function slugifyHeading(text: string): string {
   return text
     .toLowerCase()
@@ -60,6 +62,71 @@ function slugifyHeading(text: string): string {
     .replaceAll(/-+/g, '-')
     .replaceAll(/^-|-$/g, '');
 }
+
+// ─── Компонент заголовка с якорной ссылкой ────────────────────────────────────
+
+interface HeadingWithAnchorProps {
+  level: number;
+  id: string;
+  innerHtml: string;
+  style?: React.CSSProperties;
+}
+
+const HeadingWithAnchor: React.FC<HeadingWithAnchorProps> = ({ level, id, innerHtml, style }) => {
+  const [copied, setCopied] = useState(false);
+  const [hovered, setHovered] = useState(false);
+
+  const Tag = `h${level}` as keyof JSX.IntrinsicElements;
+
+  const handleCopy = useCallback(async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const url = `${globalThis.location.href.split('#')[0]}#${id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback: выделяем URL
+    }
+  }, [id]);
+
+  return (
+    <Tag
+      id={id}
+      style={{ ...style, position: 'relative', display: 'flex', alignItems: 'center', gap: '0.4em' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <span dangerouslySetInnerHTML={{ __html: innerHtml }} />
+      <a
+        href={`#${id}`}
+        onClick={handleCopy}
+        aria-label="Скопировать ссылку на раздел"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          opacity: hovered ? 1 : 0,
+          color: 'inherit',
+          textDecoration: 'none',
+          flexShrink: 0,
+          padding: '2px 4px',
+          borderRadius: '4px',
+          background: copied ? 'rgba(34,197,94,0.12)' : 'transparent',
+          border: copied ? '1px solid rgba(34,197,94,0.3)' : '1px solid transparent',
+          transition: 'opacity 0.15s, background 0.15s',
+          cursor: 'pointer',
+        }}
+        title={copied ? 'Ссылка скопирована!' : 'Скопировать ссылку'}
+      >
+        {copied
+          ? <span style={{ fontSize: '0.65em', color: '#22c55e', fontWeight: 600, letterSpacing: '0.02em' }}>✓</span>
+          : <Link size={Math.max(12, (level === 2 ? 16 : level === 3 ? 14 : 12))} style={{ opacity: 0.45 }} />
+        }
+      </a>
+    </Tag>
+  );
+};
 
 const TAG_STYLES: Record<number, React.CSSProperties> = {
   1: { fontSize: 'clamp(1.4rem,3vw,2.25rem)',    fontWeight: 700, marginTop: '2rem',    marginBottom: '1rem',    lineHeight: 1.2,  scrollMarginTop: '5rem' },
@@ -97,14 +164,28 @@ const processHeadingElement = (element: Element, tagName: string, key: string, e
   const text  = element.textContent || '';
   const id    = element.id || slugifyHeading(text);
   const level = Number.parseInt(tagName[1], 10);
-  const Tag   = tagName as keyof JSX.IntrinsicElements;
-  elements.push(
-    React.createElement(Tag, {
-      key, id,
-      style: TAG_STYLES[level],
-      dangerouslySetInnerHTML: { __html: element.innerHTML },
-    })
-  );
+
+  // Заголовки h2, h3, h4 получают якорную кнопку; h1, h5, h6 — без неё
+  if (level >= 2 && level <= 4) {
+    elements.push(
+      React.createElement(HeadingWithAnchor, {
+        key,
+        level,
+        id,
+        innerHtml: element.innerHTML,
+        style: TAG_STYLES[level],
+      })
+    );
+  } else {
+    const Tag = tagName as keyof JSX.IntrinsicElements;
+    elements.push(
+      React.createElement(Tag, {
+        key, id,
+        style: TAG_STYLES[level],
+        dangerouslySetInnerHTML: { __html: element.innerHTML },
+      })
+    );
+  }
 };
 
 const processListElement = (element: Element, tagName: string, key: string, elements: React.ReactNode[]) => {
@@ -213,7 +294,13 @@ const processCardElement = (element: Element, key: string, elements: React.React
   elements.push(
     React.createElement(
       CardWithContext,
-      { key, color: element.dataset.color, title: element.dataset.title, icon: element.dataset.icon },
+      {
+        key,
+        color: element.dataset.color || undefined,
+        title: element.dataset.title || undefined,
+        icon:  element.dataset.icon  || undefined,
+        image: element.dataset.image || undefined,
+      },
       ...contentElements
     )
   );
@@ -278,6 +365,40 @@ const processChartElement = (element: Element, key: string, elements: React.Reac
       { key, fallback: React.createElement('div', { style: { height: 320 } }) },
       React.createElement(LazyChartBlock, { type, data, title, colors: palette })
     )
+  );
+};
+
+// ─── Обработчик custom-tabs (код с вкладками) ─────────────────────────────────
+
+const processTabsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  const raw = element.dataset.tabs || '[]';
+  let tabs: CodeTab[] = [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) tabs = parsed as CodeTab[];
+  } catch { /* невалидный JSON */ }
+
+  if (tabs.length === 0) return;
+
+  // Один таб — обычный CodeBlock
+  if (tabs.length === 1) {
+    elements.push(
+      React.createElement(CodeBlock, {
+        key,
+        code:     tabs[0].code,
+        language: tabs[0].language,
+      })
+    );
+    return;
+  }
+
+  elements.push(
+    React.createElement(CodeBlock, {
+      key,
+      code:     tabs[0].code,
+      language: tabs[0].language,
+      tabs,
+    })
   );
 };
 
@@ -352,6 +473,7 @@ const DIV_CLASS_HANDLERS: Array<[string, (el: Element, key: string, els: React.R
   ['custom-card',     processCardElement],
   ['custom-columns',  processColumnsElement],
   ['custom-steps',    processStepsElement],
+  ['custom-tabs',     processTabsElement],
 ];
 
 const processDivElement = (
@@ -455,7 +577,6 @@ const processParagraphElement = (
         if (text) kids.push(text);
       } else if (child.nodeType === Node.ELEMENT_NODE) {
         const el  = child as Element;
-        // dataset.katexIdx соответствует data-katex-idx
         const idx = el.dataset.katexIdx;
         if (idx !== undefined) {
           const stored = katexStore[Number.parseInt(idx, 10)];
@@ -544,7 +665,6 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
     const inner = el.innerHTML;
     const idx   = katexStore.push({ tag, cls, inner }) - 1;
     const placeholder = rawDoc.createElement(tag);
-    // Запись индекса через dataset (эквивалентно data-katex-idx)
     placeholder.dataset.katexIdx = String(idx);
     el.replaceWith(placeholder);
   });
@@ -570,7 +690,6 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       const element = node as Element;
       const tagName = element.tagName.toLowerCase();
 
-      // Проверяем наличие заглушки KaTeX по dataset
       const katexIdx = element.dataset.katexIdx;
       if (katexIdx !== undefined) {
         const stored = katexStore[Number.parseInt(katexIdx, 10)];
