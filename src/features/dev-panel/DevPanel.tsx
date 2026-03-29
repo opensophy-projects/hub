@@ -2,12 +2,11 @@ import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { createPortal } from 'react-dom';
 import { useDevBridge } from './useDevBridge';
 import { ToastContainer } from './components/Toast';
-import { FileText, Users, Image, Globe, X, UserCog, WifiOff, Loader2, AlertCircle } from 'lucide-react';
+import { FileText, Users, Image, X, UserCog, WifiOff, Loader2, AlertCircle } from 'lucide-react';
 
 const DocsPanel     = lazy(() => import('./panels/DocsPanel'));
 const ContactsPanel = lazy(() => import('./panels/ContactsPanel'));
 const AssetsPanel   = lazy(() => import('./panels/AssetsPanel'));
-const SitePanel     = lazy(() => import('./panels/SitePanel'));
 
 // ─── Тема ────────────────────────────────────────────────────────────────────
 
@@ -82,41 +81,69 @@ export function makeT(isDark: boolean) {
 export type TTokens = ReturnType<typeof makeT>;
 export const ThemeTokensContext = React.createContext<TTokens>(makeT(true));
 
-// ─── Константы ───────────────────────────────────────────────────────────────
+// ─── Табы (без Сайта) ────────────────────────────────────────────────────────
 
 const TABS = [
-  { id: 'docs',     label: 'Страницы',          icon: <FileText size={13}/> },
-  { id: 'contacts', label: 'Контакты',           icon: <Users size={13}/>    },
-  { id: 'assets',   label: 'Ассеты',             icon: <Image size={13}/>    },
-  { id: 'site',     label: 'Сайт (SEO/GEO)',     icon: <Globe size={13}/>    },
+  { id: 'docs',     label: 'Страницы',  icon: <FileText size={13}/> },
+  { id: 'contacts', label: 'Контакты',  icon: <Users size={13}/>    },
+  { id: 'assets',   label: 'Ассеты',    icon: <Image size={13}/>    },
 ];
+
+// ─── Размеры панели ───────────────────────────────────────────────────────────
 
 const MIN_W = 380;
 const MAX_W = 900;
 const MIN_H = 280;
 const MAX_H_MARGIN = 40;
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Типы drag/resize ─────────────────────────────────────────────────────────
 
-function getStatusColor(status: string, success: string, warning: string, danger: string): string {
+type InteractMode =
+  | 'drag'
+  | 'resize-r' | 'resize-l' | 'resize-b' | 'resize-t'
+  | 'resize-rb' | 'resize-lb' | 'resize-rt' | 'resize-lt'
+  | null;
+
+function getCursor(mode: InteractMode): string {
+  switch (mode) {
+    case 'drag':                    return 'move';
+    case 'resize-r': case 'resize-l': return 'col-resize';
+    case 'resize-b': case 'resize-t': return 'row-resize';
+    case 'resize-rb': case 'resize-lt': return 'nwse-resize';
+    case 'resize-lb': case 'resize-rt': return 'nesw-resize';
+    default:                         return '';
+  }
+}
+
+interface PanelRect { x: number; y: number; w: number; h: number; }
+
+function clampRect(r: PanelRect): PanelRect {
+  const maxH = globalThis.innerHeight - MAX_H_MARGIN;
+  const w = Math.max(MIN_W, Math.min(MAX_W, r.w));
+  const h = Math.max(MIN_H, Math.min(maxH, r.h));
+  const x = Math.max(0, Math.min(globalThis.innerWidth - w, r.x));
+  const y = Math.max(0, Math.min(globalThis.innerHeight - 60, r.y));
+  return { x, y, w, h };
+}
+
+// ─── Хелперы статуса ─────────────────────────────────────────────────────────
+
+function statusColor(status: string, success: string, warning: string, danger: string): string {
   if (status === 'connected')  return success;
   if (status === 'connecting') return warning;
   return danger;
 }
 
-function getStatusLabel(status: string): string {
+function statusLabel(status: string): string {
   if (status === 'connected')  return 'Подключено';
   if (status === 'connecting') return 'Подключение...';
   return 'Отключено';
 }
 
-// ─── Кнопка-триггер ──────────────────────────────────────────────────────────
+// ─── Trigger button ───────────────────────────────────────────────────────────
 
 function PanelTrigger({ open, onClick, status, t }: Readonly<{
-  open: boolean;
-  onClick: () => void;
-  status: string;
-  t: TTokens;
+  open: boolean; onClick: () => void; status: string; t: TTokens;
 }>) {
   const hasIssue = status !== 'connected' && status !== 'connecting';
   return (
@@ -126,7 +153,8 @@ function PanelTrigger({ open, onClick, status, t }: Readonly<{
       style={{
         position: 'fixed', left: 8, bottom: 70, zIndex: 99997,
         width: 44, height: 44,
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center', gap: 2,
         borderRadius: 10, border: `1px solid ${t.border}`,
         background: open ? t.surfaceHov : t.surface,
         color: t.fgMuted, cursor: 'pointer', boxShadow: t.shadow,
@@ -134,19 +162,16 @@ function PanelTrigger({ open, onClick, status, t }: Readonly<{
       onMouseEnter={e => { e.currentTarget.style.background = t.surfaceHov; e.currentTarget.style.color = t.fg; }}
       onMouseLeave={e => { e.currentTarget.style.background = open ? t.surfaceHov : t.surface; e.currentTarget.style.color = t.fgMuted; }}
     >
-      {hasIssue ? <AlertCircle size={15} style={{ color: t.danger }}/> : <UserCog size={15}/>}
+      {hasIssue
+        ? <AlertCircle size={15} style={{ color: t.danger }}/>
+        : <UserCog size={15}/>
+      }
       <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.05em', fontFamily: t.mono }}>ADMIN</span>
     </button>
   );
 }
 
-// ─── Типы для drag/resize ─────────────────────────────────────────────────────
-
-type InteractMode = 'drag' | 'resize-r' | 'resize-b' | 'resize-l' | 'resize-t' | 'resize-rb' | 'resize-lb' | 'resize-rt' | 'resize-lt' | null;
-
-interface PanelRect { x: number; y: number; w: number; h: number; }
-
-// ─── Основной компонент ───────────────────────────────────────────────────────
+// ─── Главный компонент ────────────────────────────────────────────────────────
 
 export default function DevPanel() {
   const { status } = useDevBridge();
@@ -155,8 +180,6 @@ export default function DevPanel() {
 
   const [open, setOpen] = useState(false);
   const [tab,  setTab]  = useState('docs');
-
-  // Позиция и размер панели
   const [rect, setRect] = useState<PanelRect>({ x: 16, y: 40, w: 520, h: 600 });
 
   const interacting = useRef<InteractMode>(null);
@@ -171,23 +194,13 @@ export default function DevPanel() {
     setOpen(true);
   };
 
-  // Клампим rect чтобы панель не вышла за экран
-  const clampRect = (r: PanelRect): PanelRect => {
-    const maxH = globalThis.innerHeight - MAX_H_MARGIN;
-    const w = Math.max(MIN_W, Math.min(MAX_W, r.w));
-    const h = Math.max(MIN_H, Math.min(maxH, r.h));
-    const x = Math.max(0, Math.min(globalThis.innerWidth - w, r.x));
-    const y = Math.max(0, Math.min(globalThis.innerHeight - 60, r.y));
-    return { x, y, w, h };
-  };
-
   const startInteract = (mode: InteractMode, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     interacting.current = mode;
     startData.current   = { mx: e.clientX, my: e.clientY, rect: { ...rect } };
     document.body.style.userSelect = 'none';
-    document.body.style.cursor = getCursor(mode);
+    document.body.style.cursor     = getCursor(mode);
   };
 
   useEffect(() => {
@@ -203,52 +216,26 @@ export default function DevPanel() {
         let { x, y, w, h } = d.rect;
         switch (mode) {
           case 'drag':
-            x = Math.max(0, Math.min(globalThis.innerWidth - w,  d.rect.x + dx));
-            y = Math.max(0, Math.min(globalThis.innerHeight - 60, d.rect.y + dy));
+            x = d.rect.x + dx;
+            y = d.rect.y + dy;
             break;
-          case 'resize-r':
-            w = Math.max(MIN_W, Math.min(MAX_W, d.rect.w + dx));
-            break;
-          case 'resize-l':
-            w = Math.max(MIN_W, Math.min(MAX_W, d.rect.w - dx));
-            x = d.rect.x + d.rect.w - w;
-            break;
-          case 'resize-b':
-            h = Math.max(MIN_H, Math.min(maxH, d.rect.h + dy));
-            break;
-          case 'resize-t':
-            h = Math.max(MIN_H, Math.min(maxH, d.rect.h - dy));
-            y = d.rect.y + d.rect.h - h;
-            break;
-          case 'resize-rb':
-            w = Math.max(MIN_W, Math.min(MAX_W, d.rect.w + dx));
-            h = Math.max(MIN_H, Math.min(maxH, d.rect.h + dy));
-            break;
-          case 'resize-lb':
-            w = Math.max(MIN_W, Math.min(MAX_W, d.rect.w - dx));
-            x = d.rect.x + d.rect.w - w;
-            h = Math.max(MIN_H, Math.min(maxH, d.rect.h + dy));
-            break;
-          case 'resize-rt':
-            w = Math.max(MIN_W, Math.min(MAX_W, d.rect.w + dx));
-            h = Math.max(MIN_H, Math.min(maxH, d.rect.h - dy));
-            y = d.rect.y + d.rect.h - h;
-            break;
-          case 'resize-lt':
-            w = Math.max(MIN_W, Math.min(MAX_W, d.rect.w - dx));
-            x = d.rect.x + d.rect.w - w;
-            h = Math.max(MIN_H, Math.min(maxH, d.rect.h - dy));
-            y = d.rect.y + d.rect.h - h;
-            break;
+          case 'resize-r':  w = d.rect.w + dx; break;
+          case 'resize-l':  w = d.rect.w - dx; x = d.rect.x + d.rect.w - Math.max(MIN_W, Math.min(MAX_W, w)); break;
+          case 'resize-b':  h = d.rect.h + dy; break;
+          case 'resize-t':  h = d.rect.h - dy; y = d.rect.y + d.rect.h - Math.max(MIN_H, Math.min(maxH, h)); break;
+          case 'resize-rb': w = d.rect.w + dx; h = d.rect.h + dy; break;
+          case 'resize-lb': w = d.rect.w - dx; x = d.rect.x + d.rect.w - Math.max(MIN_W, Math.min(MAX_W, w)); h = d.rect.h + dy; break;
+          case 'resize-rt': w = d.rect.w + dx; h = d.rect.h - dy; y = d.rect.y + d.rect.h - Math.max(MIN_H, Math.min(maxH, h)); break;
+          case 'resize-lt': w = d.rect.w - dx; x = d.rect.x + d.rect.w - Math.max(MIN_W, Math.min(MAX_W, w)); h = d.rect.h - dy; y = d.rect.y + d.rect.h - Math.max(MIN_H, Math.min(maxH, h)); break;
         }
         return clampRect({ x, y, w, h });
       });
     };
 
     const onUp = () => {
-      interacting.current = null;
+      interacting.current        = null;
       document.body.style.userSelect = '';
-      document.body.style.cursor = '';
+      document.body.style.cursor     = '';
     };
 
     globalThis.addEventListener('mousemove', onMove);
@@ -257,11 +244,14 @@ export default function DevPanel() {
       globalThis.removeEventListener('mousemove', onMove);
       globalThis.removeEventListener('mouseup',   onUp);
     };
-  }, [rect]);
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'D') { e.preventDefault(); if (open) setOpen(false); else openPanel(); }
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+        e.preventDefault();
+        if (open) setOpen(false); else openPanel();
+      }
       if (open && e.key === 'Escape') setOpen(false);
     };
     globalThis.addEventListener('keydown', onKey);
@@ -270,17 +260,14 @@ export default function DevPanel() {
 
   if (typeof document === 'undefined') return null;
 
-  const dotColor = getStatusColor(status, t.success, t.warning, t.danger);
+  const dotClr = statusColor(status, t.success, t.warning, t.danger);
 
-  // Общий стиль для resize-handles (невидимые полосы по краям)
-  const rh = (style: React.CSSProperties, mode: InteractMode): React.ReactElement => (
+  // Resize handle helper
+  const rh = (style: React.CSSProperties, mode: InteractMode) => (
     <div
-      key={mode}
+      key={String(mode)}
       onMouseDown={e => startInteract(mode, e)}
-      style={{
-        position: 'absolute', zIndex: 10,
-        ...style,
-      }}
+      style={{ position: 'absolute', zIndex: 10, ...style }}
     />
   );
 
@@ -289,43 +276,50 @@ export default function DevPanel() {
       <style>{`
         @keyframes devPulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
         @keyframes devSpin   { to{transform:rotate(360deg)} }
-        .adm-scroll::-webkit-scrollbar { width:4px; height:4px }
+        .adm-scroll::-webkit-scrollbar       { width:4px; height:4px }
         .adm-scroll::-webkit-scrollbar-track { background:transparent }
         .adm-scroll::-webkit-scrollbar-thumb { background:rgba(128,128,128,0.2); border-radius:4px }
       `}</style>
 
-      <PanelTrigger open={open} onClick={() => open ? setOpen(false) : openPanel()} status={status} t={t}/>
+      <PanelTrigger
+        open={open}
+        onClick={() => open ? setOpen(false) : openPanel()}
+        status={status}
+        t={t}
+      />
 
       {open && (
         <div style={{
           position: 'fixed',
-          left: rect.x,
-          top:  rect.y,
+          left:   rect.x,
+          top:    rect.y,
           width:  rect.w,
           height: rect.h,
           zIndex: 99999,
-          background: t.bg,
-          border: `1px solid ${t.borderStrong}`,
+          background:   t.bg,
+          border:       `1px solid ${t.borderStrong}`,
           borderRadius: 12,
-          boxShadow: t.shadow,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          fontFamily: t.mono,
+          boxShadow:    t.shadow,
+          display:      'flex',
+          flexDirection:'column',
+          overflow:     'hidden',
+          fontFamily:   t.mono,
         }}>
 
-          {/* Шапка — drag area (весь header кликабелен для перетаскивания) */}
+          {/* ── Шапка (drag по всей области заголовка) ─────────────────────── */}
           <header
             onMouseDown={e => {
-              // Не начинать drag если клик по кнопке
               if ((e.target as HTMLElement).closest('button')) return;
               startInteract('drag', e);
             }}
             style={{
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '10px 12px 9px',
-              background: t.surface, borderBottom: `1px solid ${t.border}`,
-              flexShrink: 0, userSelect: 'none', cursor: 'move',
+              background: t.surface,
+              borderBottom: `1px solid ${t.border}`,
+              flexShrink: 0,
+              userSelect: 'none',
+              cursor: 'move',
             }}
           >
             <div style={{
@@ -352,12 +346,12 @@ export default function DevPanel() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
                 <div style={{
                   width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
-                  background: dotColor,
+                  background: dotClr,
                   boxShadow: status === 'connected' ? `0 0 4px ${t.success}` : 'none',
                   animation: status === 'connecting' ? 'devPulse 1s ease-in-out infinite' : 'none',
                 }}/>
                 <span style={{ fontSize: 9, color: status === 'connected' ? t.success : t.fgSub }}>
-                  {getStatusLabel(status)}
+                  {statusLabel(status)}
                 </span>
               </div>
             </div>
@@ -377,7 +371,7 @@ export default function DevPanel() {
             </button>
           </header>
 
-          {/* Табы */}
+          {/* ── Табы ──────────────────────────────────────────────────────── */}
           <div style={{
             display: 'flex', background: t.surface,
             borderBottom: `1px solid ${t.border}`,
@@ -406,13 +400,14 @@ export default function DevPanel() {
             })}
           </div>
 
-          {/* Контент */}
+          {/* ── Контент ───────────────────────────────────────────────────── */}
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
             {status !== 'connected' && (
               <div style={{
                 position: 'absolute', inset: 0, zIndex: 10,
                 background: isDark ? 'rgba(17,17,18,0.93)' : 'rgba(240,239,235,0.93)',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10,
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', gap: 10,
               }}>
                 {status === 'connecting' ? (
                   <>
@@ -446,24 +441,18 @@ export default function DevPanel() {
               {tab === 'docs'     && <DocsPanel/>}
               {tab === 'contacts' && <ContactsPanel/>}
               {tab === 'assets'   && <AssetsPanel/>}
-              {tab === 'site'     && <SitePanel/>}
             </Suspense>
           </div>
 
-          {/* ── Resize handles — все 8 направлений ── */}
-          {/* Правый край */}
-          {rh({ right: 0, top: 8, bottom: 8, width: 6, cursor: 'col-resize' }, 'resize-r')}
-          {/* Левый край */}
-          {rh({ left: 0, top: 8, bottom: 8, width: 6, cursor: 'col-resize' }, 'resize-l')}
-          {/* Нижний край */}
-          {rh({ bottom: 0, left: 8, right: 8, height: 6, cursor: 'row-resize' }, 'resize-b')}
-          {/* Верхний край */}
-          {rh({ top: 0, left: 8, right: 8, height: 6, cursor: 'row-resize' }, 'resize-t')}
-          {/* Углы */}
-          {rh({ bottom: 0, right: 0, width: 14, height: 14, cursor: 'nwse-resize' }, 'resize-rb')}
-          {rh({ bottom: 0, left: 0,  width: 14, height: 14, cursor: 'nesw-resize' }, 'resize-lb')}
-          {rh({ top: 0,    right: 0, width: 14, height: 14, cursor: 'nesw-resize' }, 'resize-rt')}
-          {rh({ top: 0,    left: 0,  width: 14, height: 14, cursor: 'nwse-resize' }, 'resize-lt')}
+          {/* ── Resize handles (все 8 направлений) ──────────────────────── */}
+          {rh({ right: 0,  top: 8,    bottom: 8,  width: 6,  cursor: 'col-resize'  }, 'resize-r')}
+          {rh({ left: 0,   top: 8,    bottom: 8,  width: 6,  cursor: 'col-resize'  }, 'resize-l')}
+          {rh({ bottom: 0, left: 8,   right: 8,   height: 6, cursor: 'row-resize'  }, 'resize-b')}
+          {rh({ top: 0,    left: 8,   right: 8,   height: 6, cursor: 'row-resize'  }, 'resize-t')}
+          {rh({ bottom: 0, right: 0,  width: 14,  height: 14, cursor: 'nwse-resize'}, 'resize-rb')}
+          {rh({ bottom: 0, left: 0,   width: 14,  height: 14, cursor: 'nesw-resize'}, 'resize-lb')}
+          {rh({ top: 0,    right: 0,  width: 14,  height: 14, cursor: 'nesw-resize'}, 'resize-rt')}
+          {rh({ top: 0,    left: 0,   width: 14,  height: 14, cursor: 'nwse-resize'}, 'resize-lt')}
         </div>
       )}
 
@@ -471,19 +460,4 @@ export default function DevPanel() {
     </ThemeTokensContext.Provider>,
     document.body
   );
-}
-
-function getCursor(mode: InteractMode): string {
-  switch (mode) {
-    case 'drag':      return 'move';
-    case 'resize-r':
-    case 'resize-l':  return 'col-resize';
-    case 'resize-b':
-    case 'resize-t':  return 'row-resize';
-    case 'resize-rb':
-    case 'resize-lt': return 'nwse-resize';
-    case 'resize-lb':
-    case 'resize-rt': return 'nesw-resize';
-    default:          return '';
-  }
 }
