@@ -498,7 +498,7 @@ const NavPanelContent: React.FC<{
           <Search size={iconSize} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: t.fgSub, pointerEvents: 'none' }} />
           <input
             type="text"
-            placeholder="Фильтр по названию..."
+            placeholder="Поиск..."
             value={query}
             onChange={e => setQuery(e.target.value)}
             onFocus={() => setFocused(true)}
