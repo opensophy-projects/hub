@@ -95,6 +95,7 @@ const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark
   const s           = getCardStyles(isDark, hasAccent, accentColor);
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
 
   return (
     <>
@@ -102,7 +103,7 @@ const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark
       <div style={s.card} className={`${CARD_HOVER_CLASS} ${isDark ? 'card-dark' : 'card-light'}`}>
         {hasAccent && <div style={s.accentBar} />}
 
-        {/* Изображение карточки */}
+        {/* ── Изображение карточки — адаптивное ───────────────────────────── */}
         {image && (
           <>
             <button
@@ -110,20 +111,36 @@ const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark
               onClick={() => setLightboxOpen(true)}
               aria-label="Открыть изображение"
               style={{
-                display: 'block', padding: 0, border: 'none',
-                background: 'transparent', cursor: 'zoom-in',
-                width: '100%', overflow: 'hidden',
-                borderRadius: hasAccent ? '11px 11px 0 0' : '11px 11px 0 0',
+                padding: 0, border: 'none',
+                background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
+                cursor: 'zoom-in',
+                width: '100%',
+                maxHeight: '280px',
+                overflow: 'hidden',
                 flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
               <img
                 src={image}
                 alt={title ?? 'card image'}
+                onLoad={() => setImgLoaded(true)}
                 style={{
-                  display: 'block', width: '100%',
-                  height: '160px', objectFit: 'cover',
+                  display: 'block',
+                  width: '100%',
+                  // Адаптивная высота: изображение сохраняет пропорции
+                  height: 'auto',
+                  // Но не выше 280px и не ниже 120px
+                  maxHeight: '280px',
+                  minHeight: imgLoaded ? undefined : '120px',
+                  objectFit: 'contain',        // сохраняем пропорции, не обрезаем
+                  objectPosition: 'center',
                   transition: 'opacity 0.2s, transform 0.2s',
+                  // Лёгкий padding чтобы не прилипало к краям
+                  padding: '8px',
+                  boxSizing: 'border-box',
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.opacity = '0.88';
