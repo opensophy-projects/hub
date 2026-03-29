@@ -64,7 +64,7 @@ export function parseEntryName(name) {
     slug  = slugMatch[2].trim();
   } else {
     title = afterIcon.trim();
-    slug  = slugify(title);
+    slug  = title.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '');
   }
 
   return { type: entryType, icon, title, slug };
@@ -90,31 +90,15 @@ export function parseCategoryName(folderName) {
   if (matchWithSlug) return { title: matchWithSlug[2].trim(), slug: matchWithSlug[3].trim(), icon: matchWithSlug[1].trim() };
 
   const matchWithIcon = folderName.match(/^\[([^\]]+)\]([^\n]+)$/);
-  if (matchWithIcon) return { title: matchWithIcon[2].trim(), slug: slugify(matchWithIcon[2].trim()), icon: matchWithIcon[1].trim() };
+  if (matchWithIcon) {
+    const t = matchWithIcon[2].trim();
+    return { title: t, slug: t.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, ''), icon: matchWithIcon[1].trim() };
+  }
 
   const matchSlugOnly = folderName.match(/^([^{]+)\{([^}]+)\}$/);
   if (matchSlugOnly) return { title: matchSlugOnly[1].trim(), slug: matchSlugOnly[2].trim(), icon: null };
 
-  return { title: folderName, slug: slugify(folderName), icon: null };
-}
-
-// ─── Slugify ──────────────────────────────────────────────────────────────────
-
-const TRANSLIT_MAP = {
-  а:'a',  б:'b',  в:'v',  г:'g',  д:'d',  е:'e',  ё:'yo', ж:'zh', з:'z',  и:'i',
-  й:'y',  к:'k',  л:'l',  м:'m',  н:'n',  о:'o',  п:'p',  р:'r',  с:'s',  т:'t',
-  у:'u',  ф:'f',  х:'kh', ц:'ts', ч:'ch', ш:'sh', щ:'shch', ъ:'', ы:'y',
-  ь:'',   э:'e',  ю:'yu', я:'ya',
-};
-
-export function slugify(str) {
-  return str
-    .toLowerCase()
-    .replaceAll(/[а-яё]/g, (ch) => TRANSLIT_MAP[ch] ?? ch)
-    .replaceAll(/[^\w\s-]/g, '')
-    .replaceAll(/\s+/g, '-')
-    .replaceAll(/-+/g, '-')
-    .replaceAll(/^-|-$/g, '');
+  return { title: folderName, slug: folderName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, ''), icon: null };
 }
 
 // ─── File system ──────────────────────────────────────────────────────────────
@@ -401,7 +385,7 @@ function handleChartBlock(trimmed, lines, i, output) {
   return endIndex + 1;
 }
 
-// ─── Tabs block handler (НОВЫЙ) ───────────────────────────────────────────────
+// ─── Tabs block handler ───────────────────────────────────────────────────────
 //
 // Синтаксис:
 //   :::tabs
@@ -446,6 +430,9 @@ function handleTabsBlock(trimmed, lines, i, codeBlocks, output) {
 
     // Извлекаем язык и код из ```lang ... ```
     const codeMatch = restoredBody.trim().match(/^```([^\n]*)\n([\s\S]*?)```\s*$/);
+    // language используется ТОЛЬКО для подсветки синтаксиса (highlight.js)
+    // label — человекочитаемое название вкладки, отображается в TabBar
+    // НЕ передаём language как display-имя, чтобы не было дублирования
     let lang = '';
     let code = restoredBody.trim();
 
