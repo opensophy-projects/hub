@@ -21,11 +21,9 @@ function renderKatex(tex, displayMode) {
   }
 }
 
-// Запускается ДО marked, чтобы markdown не сломал LaTeX. Код-блоки защищаются первыми.
 export function preprocessKatex(content) {
   const protected_ = [];
 
-  // S7781: use replaceAll instead of replace+/g flag
   let result = content.replaceAll(/```[\s\S]*?```/g, (match) => {
     protected_.push(match);
     return `___PROTECTED_${protected_.length - 1}___`;
@@ -244,7 +242,7 @@ function parseInnerBlocks(bodyStr, innerTag) {
   return results;
 }
 
-// ─── Card builder ─────────────────────────────────────────────────────────────
+// ─── Card builder (с поддержкой [image]) ─────────────────────────────────────
 
 function buildCardHtml(params, body, codeBlocks) {
   const color = params.color ? escapeAttr(params.color) : '';
@@ -258,8 +256,13 @@ function buildCardHtml(params, body, codeBlocks) {
   const icon = iconMatch ? escapeAttr(iconMatch[1].trim()) : '';
   if (iconMatch) remaining = remaining.replace(iconMatch[0], '');
 
+  // Поддержка [image]url
+  const imageMatch = remaining.match(/^\[image\]([^\n]+)$/m);
+  const image = imageMatch ? escapeAttr(imageMatch[1].trim()) : '';
+  if (imageMatch) remaining = remaining.replace(imageMatch[0], '');
+
   const contentHtml = markedWithCodeBlocks(remaining.trim(), codeBlocks);
-  return `<div class="custom-card" data-color="${color}" data-title="${title}" data-icon="${icon}">${contentHtml}</div>`;
+  return `<div class="custom-card" data-color="${color}" data-title="${title}" data-icon="${icon}" data-image="${image}">${contentHtml}</div>`;
 }
 
 // ─── Block handlers ───────────────────────────────────────────────────────────
@@ -335,8 +338,6 @@ function handleMathBlock(trimmed, lines, i, output) {
 
 // ─── Chart block handler ──────────────────────────────────────────────────────
 
-// S3776: extracted helpers to reduce cognitive complexity of handleChartBlock
-
 function parseChartMeta(bodyLines) {
   let type   = 'bar';
   let title  = '';
@@ -354,14 +355,13 @@ function parseChartMeta(bodyLines) {
 
     const trimmed = line.trim();
     if (!trimmed) continue;
-    if (/^\|[\s\-:|]+\|$/.test(trimmed)) continue; // строка-разделитель |---|---|
+    if (/^\|[\s\-:|]+\|$/.test(trimmed)) continue;
     if (trimmed.startsWith('|') && trimmed.endsWith('|')) dataLines.push(trimmed);
   }
 
   return { type, title, colors, dataLines };
 }
 
-// Первая колонка — метка оси X (строка), остальные — числа если возможно
 function parseCellValue(raw, isFirstColumn) {
   if (isFirstColumn) return raw;
   const num = Number(raw);
@@ -401,6 +401,74 @@ function handleChartBlock(trimmed, lines, i, output) {
   return endIndex + 1;
 }
 
+// ─── Tabs block handler (НОВЫЙ) ───────────────────────────────────────────────
+//
+// Синтаксис:
+//   :::tabs
+//   :::tab[JavaScript]
+//   ```javascript
+//   const x = 1;
+//   ```
+//   :::
+//   :::tab[TypeScript]
+//   ```typescript
+//   const x: number = 1;
+//   ```
+//   :::
+//   :::
+
+function handleTabsBlock(trimmed, lines, i, codeBlocks, output) {
+  if (!/^:::tabs\s*$/.test(trimmed)) return null;
+  const { body, endIndex } = collectBlockBody(lines, i + 1);
+
+  const tabs = [];
+  const tabLines = body.split('\n');
+  const tabOpenRe = /^:::tab(?:\[([^\]]*)\])?\s*$/;
+  let j = 0;
+
+  while (j < tabLines.length) {
+    const openMatch = tabLines[j].trim().match(tabOpenRe);
+    if (!openMatch) { j++; continue; }
+
+    const label = openMatch[1]?.trim() ?? `Вкладка ${tabs.length + 1}`;
+    j++;
+
+    const bodyLines = [];
+    while (j < tabLines.length) {
+      if (tabLines[j].trim() === ':::') { j++; break; }
+      bodyLines.push(tabLines[j]);
+      j++;
+    }
+
+    // Восстанавливаем код-блоки
+    const tabBody = bodyLines.join('\n');
+    const restoredBody = tabBody.replaceAll(/___CODE_BLOCK_(\d+)___/g, (_, idx) => codeBlocks[Number.parseInt(idx, 10)] ?? '');
+
+    // Извлекаем язык и код из ```lang ... ```
+    const codeMatch = restoredBody.trim().match(/^```([^\n]*)\n([\s\S]*?)```\s*$/);
+    let lang = '';
+    let code = restoredBody.trim();
+
+    if (codeMatch) {
+      lang = codeMatch[1].trim();
+      code = codeMatch[2];
+      if (code.endsWith('\n')) code = code.slice(0, -1);
+    }
+
+    tabs.push({ label, language: lang, code });
+  }
+
+  if (tabs.length === 0) return endIndex + 1;
+
+  let jsonAttr = '[]';
+  try {
+    jsonAttr = JSON.stringify(tabs).replaceAll('"', '&quot;');
+  } catch { /* оставляем пустой массив */ }
+
+  output.push(`<div class="custom-tabs" data-tabs="${jsonAttr}"></div>`);
+  return endIndex + 1;
+}
+
 // ─── Custom block preprocessor ────────────────────────────────────────────────
 
 function preprocessCustomBlocks(content, codeBlocks) {
@@ -416,7 +484,8 @@ function preprocessCustomBlocks(content, codeBlocks) {
       handleColumnsBlock(trimmed, lines, i, codeBlocks, output) ??
       handleStepsBlock(trimmed, lines, i, codeBlocks, output) ??
       handleMathBlock(trimmed, lines, i, output) ??
-      handleChartBlock(trimmed, lines, i, output);
+      handleChartBlock(trimmed, lines, i, output) ??
+      handleTabsBlock(trimmed, lines, i, codeBlocks, output);
 
     if (nextI == null) { output.push(lines[i]); i++; }
     else               { i = nextI; }
@@ -432,7 +501,6 @@ export function preprocessMarkdownExtensions(content) {
   let withoutCode  = '';
   let searchFrom   = 0;
 
-  // Шаг 1: извлекаем код-блоки чтобы защитить их от дальнейшей обработки
   while (true) {
     const open = content.indexOf('```', searchFrom);
     if (open === -1) { withoutCode += content.slice(searchFrom); break; }
@@ -444,7 +512,6 @@ export function preprocessMarkdownExtensions(content) {
     searchFrom = close + 3;
   }
 
-  // Шаг 2: GitHub-style блоки предупреждений (:::note, :::tip, etc.)
   const ALERT_TYPES     = new Set(['note', 'tip', 'important', 'warning', 'caution']);
   const ALERT_PREFIX_RE = /^:::([a-z]+)$/;
   const alertLines      = withoutCode.split('\n');
@@ -471,7 +538,6 @@ export function preprocessMarkdownExtensions(content) {
     }
   }
 
-  // Шаг 3: cards, columns, steps, math, chart — Шаг 4: восстанавливаем код-блоки
   return preprocessCustomBlocks(alertOutput.join('\n'), codeBlocks)
     .replaceAll(/___CODE_BLOCK_(\d+)___/g, (_match, index) => codeBlocks[Number.parseInt(index, 10)]);
 }
@@ -608,12 +674,10 @@ export function parseDoc(rawContent, mdPath, docsDir) {
   };
 }
 
-// Удобная обёртка: читает файл и парсит за один вызов
 export function buildDocFromPath(mdPath, docsDir) {
   return parseDoc(readDoc(mdPath), mdPath, docsDir);
 }
 
-// Тот же pipeline что parseDoc, но возвращает только HTML-строку (используется devBridge → handleRenderPreview)
 export function renderMarkdownToHtml(markdown) {
   let content = markdown;
   if (content.startsWith('---\n')) {
