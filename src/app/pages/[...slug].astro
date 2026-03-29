@@ -3,75 +3,38 @@ import Layout from '@/app/layouts/Layout.astro';
 import DocContent from '@/features/docs/components/DocContent';
 import fs from 'node:fs';
 import path from 'node:path';
-import {
-  scanDocsDirectoryRecursive,
-  buildDocFromPath,
-} from '../../../scripts/docUtils.mjs';
+import { buildDocFromPath } from '../../../scripts/docUtils.mjs';
 
-export const prerender = import.meta.env.DEV ? false : true;
+const docsDir       = path.join(process.cwd(), 'Docs');
+const welcomeMdPath = path.join(docsDir, 'welcome.md');
 
-export async function getStaticPaths() {
-  const docsDir = path.join(process.cwd(), 'Docs');
-  if (!fs.existsSync(docsDir)) return [];
-
-  const allMdFiles = scanDocsDirectoryRecursive(docsDir);
-  const seen = new Map<string, string>();
-  const paths: Array<{ params: { slug: string }; props: { doc: any } }> = [];
-
-  for (const mdPath of allMdFiles) {
-    const doc = buildDocFromPath(mdPath, docsDir);
-    if (!doc.slug) continue;
-    if (seen.has(doc.slug)) {
-      console.warn(`[slug dedup] Duplicate slug "${doc.slug}", skipping ${mdPath}`);
-      continue;
-    }
-    seen.set(doc.slug, mdPath);
-    paths.push({ params: { slug: doc.slug }, props: { doc } });
-  }
-  return paths;
+let welcomeDoc = null;
+if (fs.existsSync(welcomeMdPath)) {
+  welcomeDoc = buildDocFromPath(welcomeMdPath, docsDir);
+  welcomeDoc.id   = 'welcome';
+  welcomeDoc.slug = '';
 }
 
-const { slug } = Astro.params;
-const docsDir = path.join(process.cwd(), 'Docs');
-let doc: any = null;
-
-if (import.meta.env.DEV) {
-  if (slug && fs.existsSync(docsDir)) {
-    const allMdFiles = scanDocsDirectoryRecursive(docsDir);
-    for (const mdPath of allMdFiles) {
-      try {
-        const candidate = buildDocFromPath(mdPath, docsDir);
-        if (candidate.slug === slug) { doc = candidate; break; }
-      } catch (e) {
-        console.warn(`[slug] Failed to build doc from ${mdPath}:`, e);
-      }
-    }
-  }
-} else {
-  doc = (Astro.props as any).doc ?? null;
-}
-
-if (!doc || !slug) return Astro.redirect('/404');
-
-// Глобальный язык как фолбэк
-let globalLang = 'ru';
-try {
-  const mod = await import('@/shared/data/seo');
-  if (mod?.SEO_CONFIG?.siteLang) globalLang = mod.SEO_CONFIG.siteLang;
-} catch {}
+const title       = welcomeDoc?.title       || 'Hub — Opensophy';
+const description = welcomeDoc?.description || 'Hub проекта Opensophy.';
+const keywords    = welcomeDoc?.keywords    || '';
+const lang        = welcomeDoc?.lang        || 'ru';
 ---
 
 <Layout
-  title={doc.title}
-  description={doc.description}
-  image={doc.image}
-  url={`/${slug}`}
-  type="article"
-  author={doc.author}
-  date={doc.date}
-  keywords={doc.keywords}
-  robots={doc.robots}
-  lang={doc.lang || globalLang}
+  title={title}
+  description={description}
+  url="/"
+  type="website"
+  keywords={keywords}
+  robots="index, follow"
+  lang={lang}
 >
-  <DocContent client:only="react" doc={doc} />
+  {welcomeDoc ? (
+    <DocContent client:only="react" doc={welcomeDoc} />
+  ) : (
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;">
+      <p>Загрузка...</p>
+    </div>
+  )}
 </Layout>
