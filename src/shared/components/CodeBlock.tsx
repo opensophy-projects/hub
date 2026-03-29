@@ -34,6 +34,9 @@ function tk(isDark: boolean) {
     thumb:       'rgba(255,255,255,0.14)',
     thumbHov:    'rgba(255,255,255,0.26)',
     track:       'rgba(255,255,255,0.04)',
+    tabActive:   'rgba(255,255,255,0.1)',
+    tabActiveBdr:'rgba(255,255,255,0.2)',
+    tabInactive: 'transparent',
   } : {
     outerBg:     '#E8E7E3',
     barBg:       '#d8d7d3',
@@ -59,6 +62,9 @@ function tk(isDark: boolean) {
     thumb:       'rgba(0,0,0,0.16)',
     thumbHov:    'rgba(0,0,0,0.28)',
     track:       'rgba(0,0,0,0.04)',
+    tabActive:   'rgba(0,0,0,0.1)',
+    tabActiveBdr:'rgba(0,0,0,0.2)',
+    tabInactive: 'transparent',
   };
 }
 
@@ -252,7 +258,6 @@ const CodeBody = React.forwardRef<HTMLDivElement, BodyProps>(
 );
 CodeBody.displayName = 'CodeBody';
 
-// Кнопка-таблетка тулбара
 function Pill({ onClick, title, label, icon, t, active, success, btnRef }: {
   readonly onClick: () => void;
   readonly title: string;
@@ -286,7 +291,6 @@ function Pill({ onClick, title, label, icon, t, active, success, btnRef }: {
   );
 }
 
-// Мобильное меню: копировать + развернуть
 function MobileMenu({ t, code, onFullscreen }: {
   readonly t: ReturnType<typeof tk>;
   readonly code: string;
@@ -298,7 +302,6 @@ function MobileMenu({ t, code, onFullscreen }: {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef    = useRef<HTMLDivElement>(null);
 
-  // Закрытие по клику вне меню
   useEffect(() => {
     if (!open) return;
     const onMouse = (e: MouseEvent) => {
@@ -378,41 +381,36 @@ function MobileMenu({ t, code, onFullscreen }: {
   );
 }
 
-interface CodeBlockProps {
+// ─── Одиночный блок кода (внутренний) ────────────────────────────────────────
+
+interface SingleCodeBlockProps {
   readonly code: string;
-  readonly language?: string;
+  readonly language: string;
+  readonly isModal?: boolean;
+  readonly searchQuery: string;
+  readonly setSearchQuery: (v: string) => void;
+  readonly isCopied: boolean;
+  readonly handleCopy: () => void;
+  readonly isFullscreen: boolean;
+  readonly setIsFullscreen: (v: boolean) => void;
+  readonly isExpanded: boolean;
+  readonly setIsExpanded: (v: boolean) => void;
+  readonly isMobile: boolean;
+  readonly t: ReturnType<typeof tk>;
 }
 
 const VISIBLE_LINES    = 7;
 const LINE_HEIGHT_PX   = 21;
 const PRE_PADDING      = 10;
 const COLLAPSED_HEIGHT = PRE_PADDING + VISIBLE_LINES * LINE_HEIGHT_PX + PRE_PADDING;
-const BORDER_RADIUS    = 12;
 
-// Склонение слова "строка" по количеству
 function pluralLines(n: number): string {
   if (n === 1) return 'строка';
   if (n < 5)   return 'строки';
   return 'строк';
 }
 
-export function CodeBlock({ code, language = '' }: CodeBlockProps) {
-  const { isDark } = useContext(TableContext);
-  const t = tk(isDark);
-
-  const [isExpanded,   setIsExpanded]   = useState(false);
-  const [isCopied,     setIsCopied]     = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [searchQuery,  setSearchQuery]  = useState('');
-  const [isMobile,     setIsMobile]     = useState(false);
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 580);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
-
+function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuery, isCopied, handleCopy, isFullscreen, setIsFullscreen, isExpanded, setIsExpanded, isMobile, t }: SingleCodeBlockProps) {
   const lines = useMemo(() => {
     const raw = code.split('\n');
     if (raw.at(-1) === '') raw.pop();
@@ -431,19 +429,13 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
     }, []));
   }, [lines, searchQuery]);
 
-  const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(code);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
-  }, [code]);
-
   const bodyProps = {
     lines, matchedLines, searchQuery,
     fg: t.fg, codeBg: t.codeBg, lineNum: t.lineNum, highlightedHtml,
     thumb: t.thumb, track: t.track, thumbHov: t.thumbHov,
   };
 
-  const renderToolbar = (isModal: boolean) => (
+  const toolbar = (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px',
       borderBottom: `1px solid ${t.barBorder}`,
@@ -488,7 +480,7 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
     </div>
   );
 
-  const renderFooter = () => (
+  const footer = (
     <div style={{
       padding: '6px 12px', borderTop: `1px solid ${t.barBorder}`,
       fontSize: 11, color: t.footerClr,
@@ -500,6 +492,184 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
     </div>
   );
 
+  if (isModal) {
+    return (
+      <>
+        {toolbar}
+        <div style={{ flex: 1, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          <CodeBody {...bodyProps} maxHeight="none" />
+        </div>
+        {footer}
+      </>
+    );
+  }
+
+  return (
+    <>
+      {toolbar}
+      <div style={{ position: 'relative', overflow: 'hidden', maxHeight: isExpanded ? 'none' : COLLAPSED_HEIGHT }}>
+        <CodeBody {...bodyProps} />
+        {isLong && !isExpanded && (
+          <div style={{
+            position: 'absolute', bottom: 0, left: 0, right: 0,
+            height: LINE_HEIGHT_PX * 2.5,
+            background: `linear-gradient(to bottom, transparent, ${t.fadeTo})`,
+            pointerEvents: 'none',
+          }} />
+        )}
+      </div>
+      {isLong && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          style={{
+            width: '100%', padding: '7px 12px', background: t.barBg,
+            border: 'none', borderTop: `1px solid ${t.barBorder}`,
+            color: t.footerClr, fontSize: 11, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+            transition: 'background 0.13s',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = t.barBg; }}
+        >
+          {isExpanded
+            ? <><ChevronUp size={13} /><span>Скрыть</span></>
+            : <><ChevronDown size={13} /><span>Открыть полностью ({lines.length} строк)</span></>
+          }
+        </button>
+      )}
+      {footer}
+    </>
+  );
+}
+
+// ─── Табы ─────────────────────────────────────────────────────────────────────
+
+export interface CodeTab {
+  label: string;
+  code: string;
+  language: string;
+}
+
+interface TabBarProps {
+  readonly tabs: CodeTab[];
+  readonly activeIdx: number;
+  readonly onSelect: (idx: number) => void;
+  readonly t: ReturnType<typeof tk>;
+}
+
+function TabBar({ tabs, activeIdx, onSelect, t }: TabBarProps) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center',
+      background: t.barBg,
+      borderBottom: `1px solid ${t.barBorder}`,
+      overflowX: 'auto',
+      scrollbarWidth: 'none',
+      flexShrink: 0,
+    }}>
+      <style>{`.cb-tabs::-webkit-scrollbar{display:none}`}</style>
+      <div className="cb-tabs" style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+        {tabs.map((tab, i) => {
+          const active = i === activeIdx;
+          return (
+            <button
+              key={`${tab.label}-${i}`}
+              onClick={() => onSelect(i)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '9px 14px',
+                border: 'none',
+                borderBottom: `2px solid ${active ? t.fg : 'transparent'}`,
+                background: active ? t.tabActive : t.tabInactive,
+                color: active ? t.fg : t.fgMuted,
+                fontSize: 12, fontWeight: active ? 600 : 400,
+                cursor: 'pointer', flexShrink: 0,
+                outline: 'none',
+                fontFamily: 'ui-monospace, monospace',
+                transition: 'color 0.1s, background 0.1s',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = t.tabActive; }}
+              onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = t.tabInactive; }}
+            >
+              {tab.language && (
+                <span style={{
+                  fontSize: 9, fontWeight: 700, letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  color: active ? t.fg : t.fgMuted,
+                  opacity: active ? 0.6 : 0.4,
+                }}>
+                  {tab.language}
+                </span>
+              )}
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Основной компонент CodeBlock ─────────────────────────────────────────────
+
+interface CodeBlockProps {
+  readonly code: string;
+  readonly language?: string;
+  // Поддержка табов: если передан массив вкладок, используется режим табов
+  readonly tabs?: CodeTab[];
+}
+
+export function CodeBlock({ code, language = '', tabs }: CodeBlockProps) {
+  const { isDark } = useContext(TableContext);
+  const t = tk(isDark);
+
+  const [activeTab,    setActiveTab]    = useState(0);
+  const [isExpanded,   setIsExpanded]   = useState(false);
+  const [isCopied,     setIsCopied]     = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [searchQuery,  setSearchQuery]  = useState('');
+  const [isMobile,     setIsMobile]     = useState(false);
+
+  const hasTabs = tabs && tabs.length > 1;
+
+  // При переключении таба — сбрасываем поиск и состояние expand
+  useEffect(() => {
+    setSearchQuery('');
+    setIsExpanded(false);
+  }, [activeTab]);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 580);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  const currentCode     = hasTabs ? tabs[activeTab].code     : code;
+  const currentLanguage = hasTabs ? tabs[activeTab].language : language;
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(currentCode);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  }, [currentCode]);
+
+  const sharedProps = {
+    code:            currentCode,
+    language:        currentLanguage,
+    searchQuery,
+    setSearchQuery,
+    isCopied,
+    handleCopy,
+    isFullscreen,
+    setIsFullscreen,
+    isExpanded,
+    setIsExpanded,
+    isMobile,
+    t,
+  };
+
   if (isFullscreen) {
     return (
       <Overlay onClose={() => setIsFullscreen(false)} zIndex={10000} backdropCursor="default">
@@ -509,11 +679,10 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
           background: t.outerBg, boxShadow: t.modalShadow,
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
         }}>
-          {renderToolbar(true)}
-          <div style={{ flex: 1, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-            <CodeBody {...bodyProps} maxHeight="none" />
-          </div>
-          {renderFooter()}
+          {hasTabs && (
+            <TabBar tabs={tabs} activeIdx={activeTab} onSelect={setActiveTab} t={t} />
+          )}
+          <SingleCodeContent {...sharedProps} isModal />
         </div>
       </Overlay>
     );
@@ -522,43 +691,15 @@ export function CodeBlock({ code, language = '' }: CodeBlockProps) {
   return (
     <div className="not-prose" style={{ margin: '1.25rem 0' }}>
       <div style={{
-        borderRadius: BORDER_RADIUS, border: `1px solid ${t.outerBorder}`,
+        borderRadius: 12, border: `1px solid ${t.outerBorder}`,
         background: t.outerBg, boxShadow: t.outerShadow,
         overflow: 'clip', display: 'flex', flexDirection: 'column',
         width: '100%', minWidth: 0,
       }}>
-        {renderToolbar(false)}
-        <div style={{ position: 'relative', overflow: 'hidden', maxHeight: isExpanded ? 'none' : COLLAPSED_HEIGHT }}>
-          <CodeBody {...bodyProps} />
-          {isLong && !isExpanded && (
-            <div style={{
-              position: 'absolute', bottom: 0, left: 0, right: 0,
-              height: LINE_HEIGHT_PX * 2.5,
-              background: `linear-gradient(to bottom, transparent, ${t.fadeTo})`,
-              pointerEvents: 'none',
-            }} />
-          )}
-        </div>
-        {isLong && (
-          <button
-            onClick={() => setIsExpanded(p => !p)}
-            style={{
-              width: '100%', padding: '7px 12px', background: t.barBg,
-              border: 'none', borderTop: `1px solid ${t.barBorder}`,
-              color: t.footerClr, fontSize: 11, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-              transition: 'background 0.13s',
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = t.barBg; }}
-          >
-            {isExpanded
-              ? <><ChevronUp size={13} /><span>Скрыть</span></>
-              : <><ChevronDown size={13} /><span>Открыть полностью ({lines.length} строк)</span></>
-            }
-          </button>
+        {hasTabs && (
+          <TabBar tabs={tabs} activeIdx={activeTab} onSelect={setActiveTab} t={t} />
         )}
-        {renderFooter()}
+        <SingleCodeContent {...sharedProps} />
       </div>
     </div>
   );
