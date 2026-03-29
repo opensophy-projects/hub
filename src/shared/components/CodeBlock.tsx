@@ -542,21 +542,8 @@ function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuer
   );
 }
 
-// ─── Табы ─────────────────────────────────────────────────────────────────────
-
-export interface CodeTab {
-  label: string;
-  code: string;
-  language: string;
-}
-
-interface TabBarProps {
-  readonly tabs: CodeTab[];
-  readonly activeIdx: number;
-  readonly onSelect: (idx: number) => void;
-  readonly t: ReturnType<typeof tk>;
-}
-
+// ─── TabBar ────────────────────────────────────
+ 
 function TabBar({ tabs, activeIdx, onSelect, t }: TabBarProps) {
   return (
     <div style={{
@@ -592,16 +579,6 @@ function TabBar({ tabs, activeIdx, onSelect, t }: TabBarProps) {
               onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = t.tabActive; }}
               onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = t.tabInactive; }}
             >
-              {tab.language && (
-                <span style={{
-                  fontSize: 9, fontWeight: 700, letterSpacing: '0.06em',
-                  textTransform: 'uppercase',
-                  color: active ? t.fg : t.fgMuted,
-                  opacity: active ? 0.6 : 0.4,
-                }}>
-                  {tab.language}
-                </span>
-              )}
               {tab.label}
             </button>
           );
@@ -610,6 +587,7 @@ function TabBar({ tabs, activeIdx, onSelect, t }: TabBarProps) {
     </div>
   );
 }
+ 
 
 // ─── Основной компонент CodeBlock ─────────────────────────────────────────────
 
