@@ -95,7 +95,6 @@ const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark
   const s           = getCardStyles(isDark, hasAccent, accentColor);
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [imgLoaded, setImgLoaded] = useState(false);
 
   return (
     <>
@@ -103,7 +102,7 @@ const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark
       <div style={s.card} className={`${CARD_HOVER_CLASS} ${isDark ? 'card-dark' : 'card-light'}`}>
         {hasAccent && <div style={s.accentBar} />}
 
-        {/* ── Изображение карточки — адаптивное ───────────────────────────── */}
+        {/* ── Изображение карточки — адаптивное, сохраняет пропорции ──────── */}
         {image && (
           <>
             <button
@@ -111,49 +110,51 @@ const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark
               onClick={() => setLightboxOpen(true)}
               aria-label="Открыть изображение"
               style={{
-                padding: 0, border: 'none',
-                background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
+                padding: 0,
+                border: 'none',
+                background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
                 cursor: 'zoom-in',
                 width: '100%',
-                maxHeight: '280px',
-                overflow: 'hidden',
-                flexShrink: 0,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                overflow: 'hidden',
+                flexShrink: 0,
+                // Минимальная высота пока картинка грузится
+                minHeight: '80px',
+                // Максимум — чтобы очень высокие картинки не разрывали сетку
+                maxHeight: '300px',
               }}
             >
               <img
                 src={image}
                 alt={title ?? 'card image'}
-                onLoad={() => setImgLoaded(true)}
                 style={{
                   display: 'block',
                   width: '100%',
-                  // Адаптивная высота: изображение сохраняет пропорции
+                  // Высота авто — картинка сохраняет свои пропорции
                   height: 'auto',
-                  // Но не выше 280px и не ниже 120px
-                  maxHeight: '280px',
-                  minHeight: imgLoaded ? undefined : '120px',
-                  objectFit: 'contain',        // сохраняем пропорции, не обрезаем
+                  // Но не выше 300px
+                  maxHeight: '300px',
+                  // contain — не обрезаем, показываем целиком с letterbox если нужно
+                  objectFit: 'contain',
                   objectPosition: 'center',
-                  transition: 'opacity 0.2s, transform 0.2s',
-                  // Лёгкий padding чтобы не прилипало к краям
-                  padding: '8px',
+                  // Небольшой padding чтобы не прилипало к краям карточки
+                  padding: '6px',
                   boxSizing: 'border-box',
                 }}
                 onMouseEnter={e => {
-                  e.currentTarget.style.opacity = '0.88';
-                  e.currentTarget.style.transform = 'scale(1.02)';
+                  (e.currentTarget as HTMLImageElement).style.opacity = '0.88';
+                  (e.currentTarget as HTMLImageElement).style.transform = 'scale(1.02)';
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.opacity = '1';
-                  e.currentTarget.style.transform = 'scale(1)';
+                  (e.currentTarget as HTMLImageElement).style.opacity = '1';
+                  (e.currentTarget as HTMLImageElement).style.transform = 'scale(1)';
                 }}
               />
             </button>
 
-            {/* Разделитель */}
+            {/* Разделитель между изображением и телом карточки */}
             <div style={{
               height: '1px',
               background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)',
@@ -220,10 +221,12 @@ const CardGrid: React.FC<CardGridProps> = ({ cols = 2, children }) => {
     gridTemplateColumns: `repeat(${safeCols}, 1fr)`,
     gap: '1rem',
     margin: '1.5rem 0',
+    // align-items: stretch — все карточки в строке одной высоты
+    alignItems: 'stretch',
   };
 
   const styleTag = `
-    .card-grid-${safeCols} { grid-template-columns: repeat(${safeCols}, 1fr); }
+    .card-grid-${safeCols} { grid-template-columns: repeat(${safeCols}, 1fr); align-items: stretch; }
     @media (max-width: 640px) {
       .card-grid-${safeCols} { grid-template-columns: 1fr !important; }
     }
