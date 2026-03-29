@@ -31,22 +31,15 @@ const EMPTY_FM: FM = {
   updated:'', tags:'', icon:'', lang:'ru', robots:'index, follow',
 };
 
-const TRANSLIT: Record<string,string> = {
-  а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'yo',ж:'zh',з:'z',и:'i',й:'y',
-  к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',
-  х:'kh',ц:'ts',ч:'ch',ш:'sh',щ:'shch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya',
-};
-
-// Транслитерация + нормализация строки в slug
-const slugify = (s: string) =>
+// ─── Простая нормализация в slug (без транслита) ──────────────────────────────
+const toSlug = (s: string) =>
   s.toLowerCase()
-   .replaceAll(/[а-яё]/g, c => TRANSLIT[c] ?? c)
-   .replaceAll(/[^\w\s-]/g, '')
-   .replaceAll(/\s+/g, '-')
-   .replaceAll(/-+/g, '-')
-   .replaceAll(/^-|-$/g, '');
+   .replace(/\s+/g, '-')
+   .replace(/[^\w-]/g, '')
+   .replace(/-+/g, '-')
+   .replace(/^-|-$/g, '');
 
-// Регексы с ограниченной длиной для защиты от ReDoS
+// Регексы с ограниченной длиной совпадения для защиты от ReDoS
 const RE_PN_TYPE = /^\[([NCA])\]/;
 const RE_PN_ICON = /^\[([^\]]{1,60})\]/;
 const RE_PN_SLUG = /^([^{]{1,300})\{([^{}]{1,200})\}$/;
@@ -168,11 +161,12 @@ const BG: { g: string; icon: React.ReactNode; items: BI[] }[] = [
   ]},
   { g:'Карточки', icon:<LayoutGrid size={11}/>, items:[
     { label:'Карточка', icon:<LayoutGrid size={10}/>, variants:[
-      {label:'Простая',    code:'\n:::card\n[title]Заголовок\nОписание.\n:::\n'},
-      {label:'С иконкой',  code:'\n:::card\n[title]Заголовок\n[icon]rocket\nОписание.\n:::\n'},
-      {label:'Синяя',      code:'\n:::card[color=#3b82f6]\n[title]Заголовок\n[icon]book-open\nОписание.\n:::\n'},
-      {label:'Зелёная',    code:'\n:::card[color=#22c55e]\n[title]Заголовок\n[icon]check-circle\nОписание.\n:::\n'},
-      {label:'Красная',    code:'\n:::card[color=#ef4444]\n[title]Заголовок\n[icon]shield-alert\nОписание.\n:::\n'},
+      {label:'Простая',      code:'\n:::card\n[title]Заголовок\nОписание.\n:::\n'},
+      {label:'С иконкой',    code:'\n:::card\n[title]Заголовок\n[icon]rocket\nОписание.\n:::\n'},
+      {label:'С картинкой',  code:'\n:::card\n[title]Заголовок\n[image]/assets/image.png\nОписание.\n:::\n'},
+      {label:'Синяя',        code:'\n:::card[color=#3b82f6]\n[title]Заголовок\n[icon]book-open\nОписание.\n:::\n'},
+      {label:'Зелёная',      code:'\n:::card[color=#22c55e]\n[title]Заголовок\n[icon]check-circle\nОписание.\n:::\n'},
+      {label:'Красная',      code:'\n:::card[color=#ef4444]\n[title]Заголовок\n[icon]shield-alert\nОписание.\n:::\n'},
     ]},
     {label:'Сетка 2×2', icon:<LayoutGrid size={10}/>, code:'\n:::cards[cols=2]\n:::card[color=#3b82f6]\n[title]Первая\n[icon]book-open\nОписание.\n:::\n:::card[color=#22c55e]\n[title]Вторая\n[icon]code-2\nОписание.\n:::\n:::card[color=#f59e0b]\n[title]Третья\n[icon]layers\nОписание.\n:::\n:::card[color=#ef4444]\n[title]Четвёртая\n[icon]shield-check\nОписание.\n:::\n:::\n'},
     {label:'Сетка 3×1', icon:<LayoutGrid size={10}/>, code:'\n:::cards[cols=3]\n:::card[color=#8b5cf6]\n[title]Первая\n[icon]zap\nОписание.\n:::\n:::card[color=#06b6d4]\n[title]Вторая\n[icon]plug\nОписание.\n:::\n:::card[color=#f43f5e]\n[title]Третья\n[icon]life-buoy\nОписание.\n:::\n:::\n'},
@@ -315,7 +309,7 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
   const isEdit = !!existing;
   const p = existing?.parsed;
   const [title, setTitle] = useState(p?.title ?? '');
-  const [slug,  setSlug]  = useState(p?.slug ?? (p?.title ? slugify(p.title) : ''));
+  const [slug,  setSlug]  = useState(p?.slug ?? (p?.title ? toSlug(p.title) : ''));
   const [icon,  setIcon]  = useState(p?.icon ?? '');
   const [auto,  setAuto]  = useState(!isEdit);
   const [fm,    setFm]    = useState<FM>({...EMPTY_FM});
@@ -323,7 +317,7 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => { setTimeout(() => ref.current?.focus(), 60); }, []);
 
-  const setT = (v: string) => { setTitle(v); if (auto) setSlug(slugify(v)); };
+  const setT = (v: string) => { setTitle(v); if (auto) setSlug(toSlug(v)); };
   const isA = cfg.entryType === 'A';
   const lbl: Record<string,string> = {N:'Секция', C:'Категория', A:'Страница'};
   const dIco: Record<string,string> = {N:'book', C:'folder', A:'file-text'};
@@ -381,7 +375,6 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
     fontSize:9, color:t.fgSub, textTransform:'uppercase',
     letterSpacing:'0.07em', marginBottom:4, display:'block',
   };
-  // Текст кнопки сохранения зависит от состояния и режима (создание/редактирование)
   const idleLabel = isEdit ? 'Применить' : 'Создать';
   const saveBtnLabel = saving ? '...' : idleLabel;
 
@@ -412,7 +405,7 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
         <div style={{display:'flex', gap:6}}>
           <input id="entry-slug" value={slug} onChange={e => { setSlug(e.target.value); setAuto(false); }} style={{...inp, flex:1}}/>
           <button
-            onClick={() => { setAuto(true); setSlug(slugify(title)); }}
+            onClick={() => { setAuto(true); setSlug(toSlug(title)); }}
             style={{padding:'7px 10px', borderRadius:7, border:`1px solid ${t.border}`, background:t.surfaceHov, color:t.fgMuted, cursor:'pointer', fontSize:11, fontFamily:t.mono}}
           >↺</button>
         </div>
@@ -796,7 +789,6 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
   );
 }
 
-// Вычисляет стили фона и обводки для узла дерева в зависимости от состояния drag/active/hover
 function getNodeBackground(isDragOver: boolean, isDir: boolean, isActive: boolean, isHov: boolean, t: TTokens) {
   if (isDragOver) return isDir ? 'rgba(20,184,166,0.15)' : 'rgba(245,158,11,0.12)';
   if (isActive || isHov) return t.surfaceHov;
@@ -841,10 +833,8 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
   const nodeBg      = getNodeBackground(isDragOver, isDir, isActive, hov, t);
   const nodeOutline = getNodeOutline(isDragOver, isDir);
 
-  // Вес шрифта зависит от типа узла
   const fontWeightMap: Record<string, number> = { N: 600, C: 500, A: 400 };
   const fontWeight = p.type ? (fontWeightMap[p.type] ?? 400) : 400;
-  // Иконка раскрытия для директории
   const expandIcon  = expanded ? <ChevronDown size={11}/> : <ChevronRight size={11}/>;
   const chevronIcon = isDir ? expandIcon : null;
 
@@ -906,7 +896,6 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
   );
 }
 
-// Рекурсивный подсчёт файлов в дереве
 function countFiles(entries: TreeEntry[]): number {
   return entries.reduce((acc, e) => {
     const childCount = e.children ? countFiles(e.children) : 0;
@@ -1009,7 +998,6 @@ export default function DocsPanel() {
 
   const fileCount = countFiles(tree);
 
-  // Контент основного списка: загрузка / пусто / дерево
   const renderTreeContent = () => {
     if (loading) return (
       <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:8, padding:24, color:t.fgMuted}}>
