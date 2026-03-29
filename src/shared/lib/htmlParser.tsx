@@ -180,201 +180,198 @@ const processTableElement = (element: Element, key: string, elements: React.Reac
   );
 };
 
-function decodeDataChartAttr(raw: string | null): string | null {
-  if (!raw) return null;
-  const t = raw.trim();
-  if (!t) return null;
-  if (t.startsWith('{') || t.startsWith('[')) return t;
-  try {
-    return decodeURIComponent(t);
-  } catch {
-    return t;
-  }
-}
-
-const processChartElement = (element: Element, key: string, elements: React.ReactNode[]) => {
-  const decoded = decodeDataChartAttr(element.getAttribute('data-chart'));
-  if (!decoded) return;
-
-  try {
-    const parsed = JSON.parse(decoded) as {
-      labels: string[];
-      values: number[];
-      type?: string;
-      colors?: string[];
-      title?: string;
-    };
-    elements.push(
-      <Suspense key={key} fallback={<div className="text-slate-400">Загрузка графика...</div>}>
-        <LazyChartBlock
-          chartData={{
-            labels: parsed.labels || [],
-            values: parsed.values || [],
-            type:   parsed.type || 'bar',
-            colors: parsed.colors || undefined,
-            title:  parsed.title || undefined,
-          }}
-        />
-      </Suspense>
-    );
-  } catch {
-    // ignore malformed chart JSON
-  }
+const processInlineElement = (tag: string, element: Element, key: string, elements: React.ReactNode[]) => {
+  elements.push(
+    React.createElement(tag, {
+      key,
+      dangerouslySetInnerHTML: { __html: element.innerHTML },
+    })
+  );
 };
 
-const parseTabTitle = (raw: string): { title: string; icon?: string; status?: string } => {
-  let title = (raw || '').trim();
-  let icon: string | undefined;
-  let status: string | undefined;
-
-  const statusMatch = title.match(/\[(ok|warn|danger|info)\]\s*$/i);
-  if (statusMatch) {
-    status = statusMatch[1].toLowerCase();
-    title = title.replace(/\[(ok|warn|danger|info)\]\s*$/i, '').trim();
-  }
-
-  const iconMatch = title.match(/^\[icon:([a-z0-9-]+)\]\s*/i);
-  if (iconMatch) {
-    icon = iconMatch[1];
-    title = title.replace(/^\[icon:[a-z0-9-]+\]\s*/i, '').trim();
-  }
-
-  return { title, icon, status };
-};
-
-const processTabsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
-  const rawTabs = element.getAttribute('data-tabs') || '';
-  if (!rawTabs) return;
-
-  const tabBlocks = rawTabs.split('|||').map(s => s.trim()).filter(Boolean);
-  const tabs: CodeTab[] = tabBlocks.map((block, idx) => {
-    const [rawTitle, ...contentParts] = block.split(':::');
-    const parsed = parseTabTitle(rawTitle || `Tab ${idx + 1}`);
-    return {
-      title: parsed.title || `Tab ${idx + 1}`,
-      icon: parsed.icon,
-      status: parsed.status as StepStatus | undefined,
-      code: (contentParts.join(':::') || '').trim(),
-      language: element.getAttribute('data-language') || element.getAttribute('data-lang') || '',
-    };
-  });
-
-  if (!tabs.length) return;
-  elements.push(React.createElement(CodeBlock, { key, tabs }));
+const processDetailsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  const summary     = element.querySelector('summary');
+  const summaryText = summary?.textContent || 'Подробности';
+  const contentHTML = summary ? element.innerHTML.replace(summary.outerHTML, '') : element.innerHTML;
+  const contentElements = parseHtmlToReact(contentHTML);
+  elements.push(
+    React.createElement(
+      'details',
+      { key, open: element.hasAttribute('open'), className: 'my-4' },
+      React.createElement('summary', null, summaryText),
+      React.createElement('div', { className: 'details-content pt-2 pb-3' }, ...contentElements)
+    )
+  );
 };
 
 const processAlertElement = (element: Element, key: string, elements: React.ReactNode[]) => {
-  const type = (element.getAttribute('data-alert-type') || 'info') as 'info' | 'success' | 'warning' | 'error';
-  const title = element.getAttribute('data-title') || undefined;
-  elements.push(
-    React.createElement(Alert, {
-      key,
-      type,
-      title,
-      content: element.innerHTML,
-    })
-  );
-};
-
-const parseColumnsLayout = (value: string | null): ColumnsLayout | undefined => {
-  if (!value) return undefined;
-  const v = value.trim().toLowerCase();
-  if (v === 'equal' || v === 'sidebar-right' || v === 'sidebar-left' || v === 'golden') return v;
-  return undefined;
-};
-
-const processColumnsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
-  const colsRaw = element.getAttribute('data-cols') || '2';
-  const cols = Math.max(1, Math.min(4, Number.parseInt(colsRaw, 10) || 2));
-  const layout = parseColumnsLayout(element.getAttribute('data-layout'));
-
-  const childCards = Array.from(element.children).filter(ch => ch.tagName.toLowerCase() === 'div');
-  if (childCards.length === 0) return;
-
-  const items = childCards.map((cardEl) => ({
-    title: cardEl.getAttribute('data-title') || '',
-    content: cardEl.innerHTML,
-    color: cardEl.getAttribute('data-color') || undefined,
-    icon: cardEl.getAttribute('data-icon') || undefined,
-    image: cardEl.getAttribute('data-image') || undefined,
-  }));
-
-  elements.push(
-    React.createElement(ColumnsWithContext, {
-      key,
-      columns: cols,
-      layout,
-      items,
-    })
-  );
-};
-
-const processCardsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
-  const childCards = Array.from(element.children).filter(ch => ch.tagName.toLowerCase() === 'div');
-  const items = childCards.map((cardEl) => ({
-    title: cardEl.getAttribute('data-title') || '',
-    content: cardEl.innerHTML,
-    color: cardEl.getAttribute('data-color') || undefined,
-    icon: cardEl.getAttribute('data-icon') || undefined,
-    image: cardEl.getAttribute('data-image') || undefined,
-  }));
-
-  elements.push(
-    React.createElement(CardGridWithContext, {
-      key,
-      items,
-    })
-  );
+  const alertType = element.dataset.alertType as 'note' | 'tip' | 'important' | 'warning' | 'caution';
+  if (!alertType) return;
+  const contentElements = parseHtmlToReact(element.innerHTML);
+  elements.push(React.createElement(Alert, { key, type: alertType }, ...contentElements));
 };
 
 const processCardElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  const contentElements = parseHtmlToReact(element.innerHTML);
   elements.push(
-    React.createElement(CardWithContext, {
-      key,
-      title: element.getAttribute('data-title') || '',
-      color: element.getAttribute('data-color') || undefined,
-      icon: element.getAttribute('data-icon') || undefined,
-      image: element.getAttribute('data-image') || undefined,
-      content: element.innerHTML,
-    })
+    React.createElement(
+      CardWithContext,
+      {
+        key,
+        color: element.dataset.color || undefined,
+        title: element.dataset.title || undefined,
+        icon:  element.dataset.icon  || undefined,
+        image: element.dataset.image || undefined,
+      },
+      ...contentElements
+    )
   );
 };
 
-const normalizeStatus = (raw: string | null): StepStatus => {
-  const v = (raw || '').trim().toLowerCase();
-  if (v === 'done' || v === 'active' || v === 'pending' || v === 'error') return v;
-  return 'pending';
+const processCardGridElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  const cols = Number.parseInt(element.dataset.cols || '2', 10);
+  const cardElements: React.ReactNode[] = [];
+  for (const [i, child] of Array.from(element.children).entries()) {
+    if (child.classList.contains('custom-card')) processCardElement(child, `${key}-card-${i}`, cardElements);
+  }
+  elements.push(React.createElement(CardGridWithContext, { key, cols }, ...cardElements));
 };
 
-const processStepperElement = (element: Element, key: string, elements: React.ReactNode[]) => {
-  const stepNodes = Array.from(element.children).filter(ch => ch.tagName.toLowerCase() === 'div');
-  const steps: StepData[] = stepNodes.map((stepEl, idx) => ({
-    title: stepEl.getAttribute('data-title') || `Шаг ${idx + 1}`,
-    content: stepEl.innerHTML,
-    status: normalizeStatus(stepEl.getAttribute('data-status')),
-  }));
+const processColumnsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  const layout = (element.dataset.layout || 'equal') as ColumnsLayout;
+  const colElements: React.ReactNode[] = [];
+  for (const [i, col] of Array.from(element.children).entries()) {
+    if (col.classList.contains('custom-col')) {
+      const colContent = parseHtmlToReact(col.innerHTML);
+      colElements.push(React.createElement('div', { key: `${key}-col-${i}` }, ...colContent));
+    }
+  }
+  elements.push(React.createElement(ColumnsWithContext, { key, layout }, ...colElements));
+};
 
-  if (!steps.length) return;
+const processStepsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  const steps: StepData[] = [];
+  for (const stepEl of Array.from(element.children)) {
+    if (stepEl.classList.contains('custom-step')) {
+      const contentNodes = parseHtmlToReact(stepEl.innerHTML);
+      steps.push({
+        title:   stepEl.dataset.title || '',
+        status:  (stepEl.dataset.status || 'default') as StepStatus,
+        color:   stepEl.dataset.color || undefined,
+        content: React.createElement(React.Fragment, null, ...contentNodes),
+      });
+    }
+  }
   elements.push(React.createElement(StepperWithContext, { key, steps }));
 };
 
-const processNewUIComponentElement = (element: Element, key: string, elements: React.ReactNode[]) => {
-  const componentName = element.getAttribute('data-component');
-  if (!componentName) return;
+const processChartElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  const type   = (element.dataset.type   || 'bar') as import('../components/ChartBlock').ChartType;
+  const title  =  element.dataset.title  || undefined;
+  const colors =  element.dataset.colors || '';
+
+  const palette = colors
+    ? colors.split(',').map(c => c.trim()).filter(Boolean)
+    : undefined;
+
+  let data: Record<string, unknown>[] = [];
+  const raw = element.dataset.chart || '[]';
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) data = parsed;
+  } catch { /* невалидный JSON — пустой чарт */ }
+
   elements.push(
-    React.createElement(NewUIComponentViewer, {
+    React.createElement(
+      Suspense,
+      { key, fallback: React.createElement('div', { style: { height: 320 } }) },
+      React.createElement(LazyChartBlock, { type, data, title, colors: palette })
+    )
+  );
+};
+
+// ─── Обработчик custom-tabs (код с вкладками) ─────────────────────────────────
+
+const processTabsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  const raw = element.dataset.tabs || '[]';
+  let tabs: CodeTab[] = [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) tabs = parsed as CodeTab[];
+  } catch { /* невалидный JSON */ }
+
+  if (tabs.length === 0) return;
+
+  // Один таб — обычный CodeBlock
+  if (tabs.length === 1) {
+    elements.push(
+      React.createElement(CodeBlock, {
+        key,
+        code:     tabs[0].code,
+        language: tabs[0].language,
+      })
+    );
+    return;
+  }
+
+  elements.push(
+    React.createElement(CodeBlock, {
       key,
-      componentName,
-      props: element.getAttribute('data-props') || undefined,
+      code:     tabs[0].code,
+      language: tabs[0].language,
+      tabs,
     })
   );
+};
+
+const processUIComponent = (
+  element: Element,
+  key: string,
+  textContent: string,
+  elements: React.ReactNode[]
+): boolean => {
+  const match = /\[uic:([a-z-]+)\]/.exec(textContent);
+  if (!match) return false;
+  elements.push(
+    React.createElement('div', { key, className: 'my-6' },
+      React.createElement(NewUIComponentViewer, { componentId: match[1] })
+    )
+  );
+  return true;
+};
+
+const processTextNode = (node: ChildNode, key: string, elements: React.ReactNode[]) => {
+  const text = node.textContent || '';
+  if (text.trim()) elements.push(React.createElement('span', { key }, text));
+};
+
+const processFigureElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+  const img        = element.querySelector('img');
+  const figcaption = element.querySelector('figcaption');
+
+  if (img) {
+    const title =
+      figcaption?.textContent?.trim() ||
+      img.getAttribute('title') ||
+      undefined;
+    elements.push(React.createElement(ImageCard, {
+      key,
+      src:   img.getAttribute('src')  || '',
+      alt:   img.getAttribute('alt')  || 'Image',
+      title,
+    }));
+    return;
+  }
+
+  const children = parseHtmlToReact(element.innerHTML);
+  elements.push(React.createElement('figure', { key }, ...children));
 };
 
 const processKatexBlock = (element: Element, key: string, elements: React.ReactNode[]) => {
   elements.push(
     React.createElement('div', {
       key,
-      className: 'katex-block my-4 overflow-x-auto',
+      className: 'katex-block not-prose',
       dangerouslySetInnerHTML: { __html: element.innerHTML },
     })
   );
@@ -390,53 +387,253 @@ const processKatexInline = (element: Element, key: string, elements: React.React
   );
 };
 
-const processElement = (element: Element, key: string, elements: React.ReactNode[]) => {
-  const tagName = element.tagName.toLowerCase();
+const DIV_CLASS_HANDLERS: Array<[string, (el: Element, key: string, els: React.ReactNode[]) => void]> = [
+  ['katex-block',     processKatexBlock],
+  ['custom-alert',    processAlertElement],
+  ['custom-chart',    processChartElement],
+  ['custom-cardgrid', processCardGridElement],
+  ['custom-card',     processCardElement],
+  ['custom-columns',  processColumnsElement],
+  ['custom-steps',    processStepsElement],
+  ['custom-tabs',     processTabsElement],
+];
 
-  if (tagName === 'pre') return processPreElement(element, key, elements);
-  if (tagName === 'code') return processCodeElement(element, key, elements);
-  if (/^h[1-6]$/.test(tagName)) return processHeadingElement(element, tagName, key, elements);
-  if (tagName === 'ul' || tagName === 'ol') return processListElement(element, tagName, key, elements);
-  if (tagName === 'a') return processLinkElement(element, key, elements);
-  if (tagName === 'img') return processImageElement(element, key, elements);
-  if (tagName === 'blockquote') return processBlockquoteElement(element, key, elements);
-  if (tagName === 'table') return processTableElement(element, key, elements);
-
-  if (tagName === 'div' && element.hasAttribute('data-chart')) return processChartElement(element, key, elements);
-  if (tagName === 'div' && element.hasAttribute('data-tabs')) return processTabsElement(element, key, elements);
-  if (tagName === 'div' && element.hasAttribute('data-alert-type')) return processAlertElement(element, key, elements);
-  if (tagName === 'div' && element.hasAttribute('data-cols')) return processColumnsElement(element, key, elements);
-  if (tagName === 'div' && element.classList.contains('cards-grid')) return processCardsElement(element, key, elements);
-  if (tagName === 'div' && element.classList.contains('card-item')) return processCardElement(element, key, elements);
-  if (tagName === 'div' && element.classList.contains('stepper')) return processStepperElement(element, key, elements);
-  if (tagName === 'div' && element.hasAttribute('data-component')) return processNewUIComponentElement(element, key, elements);
-  if (tagName === 'div' && element.classList.contains('katex-display')) return processKatexBlock(element, key, elements);
-  if (tagName === 'span' && element.classList.contains('katex')) return processKatexInline(element, key, elements);
-
-  elements.push(
-    React.createElement(tagName, {
-      key,
-      dangerouslySetInnerHTML: { __html: element.innerHTML },
-    })
-  );
+const processDivElement = (
+  element: Element,
+  key: string,
+  elements: React.ReactNode[],
+  processNodes: (nodes: NodeListOf<ChildNode>, parentKey: string) => void
+): void => {
+  for (const [cls, handler] of DIV_CLASS_HANDLERS) {
+    if (element.classList.contains(cls)) {
+      handler(element, key, elements);
+      return;
+    }
+  }
+  if (element.childNodes.length > 0) processNodes(element.childNodes, key);
 };
 
-const parseHtmlToReact = (html: string): React.ReactNode[] => {
-  if (!html) return [];
-  const safeHtml = sanitizeHtml(html);
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(`<div>${safeHtml}</div>`, 'text/html');
-  const root = doc.body.firstElementChild;
-  if (!root) return [];
+function getImgFromLink(el: Element): Element | null {
+  const nonEmpty = Array.from(el.childNodes).filter(
+    (n) => !(n.nodeType === Node.TEXT_NODE && !n.textContent?.trim())
+  );
+  if (nonEmpty.length === 1 && (nonEmpty[0] as Element).tagName?.toLowerCase() === 'img') {
+    return nonEmpty[0] as Element;
+  }
+  return null;
+}
 
-  const elements: React.ReactNode[] = [];
-  Array.from(root.children).forEach((el, index) => {
-    processElement(el, `el-${index}`, elements);
+function isBrOrEmpty(node: ChildNode): boolean {
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    return (node as Element).tagName.toLowerCase() === 'br';
+  }
+  if (node.nodeType === Node.TEXT_NODE) {
+    return !node.textContent?.trim();
+  }
+  return false;
+}
+
+type ParagraphRun = { type: 'img'; el: Element } | { type: 'text'; html: string };
+
+function splitParagraphIntoRuns(element: Element): ParagraphRun[] {
+  const result: ParagraphRun[] = [];
+  let textBuffer = '';
+
+  const flushText = () => {
+    if (!textBuffer.trim()) { textBuffer = ''; return; }
+    const tmp = document.createElement('div');
+    tmp.innerHTML = textBuffer.trim();
+    while (tmp.firstChild && isBrOrEmpty(tmp.firstChild)) tmp.firstChild.remove();
+    while (tmp.lastChild  && isBrOrEmpty(tmp.lastChild))  tmp.lastChild.remove();
+    const cleaned = tmp.innerHTML.trim();
+    if (cleaned) result.push({ type: 'text', html: cleaned });
+    textBuffer = '';
+  };
+
+  for (const node of Array.from(element.childNodes)) {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el  = node as Element;
+      const tag = el.tagName.toLowerCase();
+      if (tag === 'img') { flushText(); result.push({ type: 'img', el }); continue; }
+      if (tag === 'a') {
+        const img = getImgFromLink(el);
+        if (img) { flushText(); result.push({ type: 'img', el: img }); continue; }
+      }
+      textBuffer += el.outerHTML;
+    } else if (node.nodeType === Node.TEXT_NODE) {
+      textBuffer += node.textContent ?? '';
+    }
+  }
+
+  flushText();
+  return result;
+}
+
+const processParagraphElement = (
+  element: Element,
+  key: string,
+  elements: React.ReactNode[],
+  katexStore: Array<{ tag: 'div' | 'span'; cls: string; inner: string }>
+): void => {
+  if (processUIComponent(element, key, element.textContent || '', elements)) return;
+
+  const hasKatex = element.querySelector('[data-katex-idx]');
+  const hasImg   = element.querySelector('img');
+
+  if (!hasKatex && !hasImg) {
+    elements.push(
+      React.createElement('p', {
+        key,
+        dangerouslySetInnerHTML: { __html: element.innerHTML },
+      })
+    );
+    return;
+  }
+
+  if (hasKatex && !hasImg) {
+    const kids: React.ReactNode[] = [];
+    Array.from(element.childNodes).forEach((child, ci) => {
+      const ckey = `${key}-k${ci}`;
+      if (child.nodeType === Node.TEXT_NODE) {
+        const text = child.textContent ?? '';
+        if (text) kids.push(text);
+      } else if (child.nodeType === Node.ELEMENT_NODE) {
+        const el  = child as Element;
+        const idx = el.dataset.katexIdx;
+        if (idx !== undefined) {
+          const stored = katexStore[Number.parseInt(idx, 10)];
+          if (stored) {
+            kids.push(
+              React.createElement(stored.tag, {
+                key: ckey,
+                className: stored.cls,
+                dangerouslySetInnerHTML: { __html: stored.inner },
+              })
+            );
+            return;
+          }
+        }
+        kids.push(
+          React.createElement('span', {
+            key: ckey,
+            dangerouslySetInnerHTML: { __html: el.outerHTML },
+          })
+        );
+      }
+    });
+    elements.push(React.createElement('p', { key }, ...kids));
+    return;
+  }
+
+  const runs = splitParagraphIntoRuns(element);
+  runs.forEach((run, i) => {
+    const runKey = `${key}-r${i}`;
+    if (run.type === 'img') {
+      elements.push(React.createElement(ImageCard, {
+        key: runKey,
+        src:   run.el.getAttribute('src')   || '',
+        alt:   run.el.getAttribute('alt')   || 'Image',
+        title: run.el.getAttribute('title') || undefined,
+      }));
+    } else {
+      elements.push(
+        React.createElement('p', {
+          key: runKey,
+          dangerouslySetInnerHTML: { __html: run.html },
+        })
+      );
+    }
+  });
+};
+
+const HEADING_TAGS = new Set(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']);
+const INLINE_TAGS  = new Set(['strong', 'em', 'u', 'del', 'sub', 'sup']);
+
+const processElement = (
+  element: Element,
+  tagName: string,
+  key: string,
+  elements: React.ReactNode[],
+  processNodes: (nodes: NodeListOf<ChildNode>, parentKey: string) => void
+) => {
+  if (HEADING_TAGS.has(tagName)) { processHeadingElement(element, tagName, key, elements); return; }
+  if (INLINE_TAGS.has(tagName))  { processInlineElement(tagName, element, key, elements); return; }
+
+  switch (tagName) {
+    case 'pre':        return processPreElement(element, key, elements);
+    case 'code':       return processCodeElement(element, key, elements);
+    case 'ul':
+    case 'ol':         return processListElement(element, tagName, key, elements);
+    case 'a':          return processLinkElement(element, key, elements);
+    case 'img':        return processImageElement(element, key, elements);
+    case 'figure':     return processFigureElement(element, key, elements);
+    case 'blockquote': return processBlockquoteElement(element, key, elements);
+    case 'table':      return processTableElement(element, key, elements);
+    case 'hr':         elements.push(React.createElement('hr', { key })); return;
+    case 'details':    return processDetailsElement(element, key, elements);
+    default:
+      if (element.childNodes.length > 0) processNodes(element.childNodes, key);
+  }
+};
+
+export const parseHtmlToReact = (html: string): React.ReactNode[] => {
+  const rawDoc = new DOMParser().parseFromString(html, 'text/html');
+
+  const katexStore: Array<{ tag: 'div' | 'span'; cls: string; inner: string }> = [];
+
+  rawDoc.querySelectorAll('div.katex-block, span.katex-inline').forEach((el) => {
+    const tag   = el.tagName.toLowerCase() as 'div' | 'span';
+    const cls   = el.className;
+    const inner = el.innerHTML;
+    const idx   = katexStore.push({ tag, cls, inner }) - 1;
+    const placeholder = rawDoc.createElement(tag);
+    placeholder.dataset.katexIdx = String(idx);
+    el.replaceWith(placeholder);
   });
 
+  const sanitized = DOMPurify.sanitize(rawDoc.body.innerHTML, {
+    ALLOWED_TAGS: [...SANITIZE_TAGS],
+    ALLOWED_ATTR: [...SANITIZE_ATTR],
+    ADD_ATTR: ['data-katex-idx'],
+    ALLOW_DATA_ATTR: true,
+    FORCE_BODY: false,
+  });
+
+  const doc      = new DOMParser().parseFromString(sanitized, 'text/html');
+  const elements: React.ReactNode[] = [];
+
+  const processNodes = (nodes: NodeListOf<ChildNode>, parentKey = '') => {
+    Array.from(nodes).forEach((node, index) => {
+      const key = `${parentKey}-${index}`;
+
+      if (node.nodeType === Node.TEXT_NODE)    { processTextNode(node, key, elements); return; }
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+      const element = node as Element;
+      const tagName = element.tagName.toLowerCase();
+
+      const katexIdx = element.dataset.katexIdx;
+      if (katexIdx !== undefined) {
+        const stored = katexStore[Number.parseInt(katexIdx, 10)];
+        if (stored) {
+          elements.push(
+            React.createElement(stored.tag, {
+              key,
+              className: stored.cls,
+              dangerouslySetInnerHTML: { __html: stored.inner },
+            })
+          );
+          return;
+        }
+      }
+
+      if (tagName === 'div') { processDivElement(element, key, elements, processNodes); return; }
+      if (tagName === 'p')   { processParagraphElement(element, key, elements, katexStore); return; }
+
+      processElement(element, tagName, key, elements, processNodes);
+    });
+  };
+
+  processNodes(doc.body.childNodes);
   return elements;
 };
-
-export function renderMarkdownHtml(html: string): React.ReactNode[] {
-  return parseHtmlToReact(html);
-}
