@@ -1,4 +1,4 @@
-import { useState, useLayoutEffect, useEffect, useRef } from 'react';
+import { useState, useLayoutEffect, useEffect, useRef, useCallback } from 'react';
 
 interface TableOfContentsItem {
   id: string;
@@ -43,65 +43,89 @@ function scanHeadings(): TableOfContentsItem[] {
       heading.id = id;
     }
 
-    items.push({
-      id: heading.id,
-      text,
-      level: Number.parseInt(heading.tagName[1], 10),
-    });
+    items.push({ id: heading.id, text, level: Number.parseInt(heading.tagName[1], 10) });
   });
 
   return items;
 }
 
-// useLayoutEffect на клиенте, useEffect на сервере (SSR-безопасность)
+// useLayoutEffect на клиенте, useEffect на сервере
 const useIsomorphicLayoutEffect =
-  globalThis.window === undefined ? useEffect : useLayoutEffect;
+  typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
 export function useTableOfContents<T extends { id?: string; slug?: string; content?: string }>(
   dependency: T
 ): TableOfContentsItem[] {
   const [toc, setToc] = useState<TableOfContentsItem[]>([]);
 
-  // Используем slug + content как ключ зависимости для точного обнаружения смены страницы
-  const depKey = `${dependency?.id ?? ''}-${dependency?.slug ?? ''}`;
-  const depKeyRef = useRef('');
+  // Стабильный ключ смены страницы — slug или id
+  const pageKey = `${dependency?.id ?? ''}-${dependency?.slug ?? ''}`;
+  const pageKeyRef = useRef('');
+  const observerRef = useRef<MutationObserver | null>(null);
 
-  useIsomorphicLayoutEffect(() => {
-    // Сброс TOC при смене страницы (slug изменился)
-    if (depKey !== depKeyRef.current) {
-      depKeyRef.current = depKey;
-      setToc([]);
+  const doScan = useCallback(() => {
+    const found = scanHeadings();
+    if (found.length > 0) {
+      setToc(found);
+      return true;
     }
+    return false;
+  }, []);
 
-    // Синхронный скан до отрисовки браузером
-    const items = scanHeadings();
-    if (items.length > 0) {
-      setToc(items);
-      return;
-    }
+  const startObserver = useCallback(() => {
+    // Отключаем предыдущий
+    observerRef.current?.disconnect();
 
-    // Фолбэк: наблюдаем за [data-article-content], отключаемся после первого успешного скана
     const container = document.querySelector('[data-article-content]') ?? document.body;
-
-    let disconnected = false;
-
     const observer = new MutationObserver(() => {
-      if (disconnected) return;
-      const found = scanHeadings();
-      if (found.length > 0) {
-        setToc(found);
+      if (doScan()) {
         observer.disconnect();
-        disconnected = true;
+        observerRef.current = null;
       }
     });
-
     observer.observe(container, { childList: true, subtree: true });
+    observerRef.current = observer;
+    return observer;
+  }, [doScan]);
+
+  // Основной эффект — срабатывает при смене страницы
+  useIsomorphicLayoutEffect(() => {
+    const isNewPage = pageKey !== pageKeyRef.current;
+    if (isNewPage) {
+      pageKeyRef.current = pageKey;
+      setToc([]); // сразу сбрасываем старое оглавление
+    }
+
+    // Пробуем синхронный скан
+    if (!doScan()) {
+      startObserver();
+    }
+
     return () => {
-      disconnected = true;
-      observer.disconnect();
+      observerRef.current?.disconnect();
+      observerRef.current = null;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [depKey]);
+  }, [pageKey]);
+
+  // Слушаем BroadcastChannel — когда dev panel обновляет контент,
+  // нужно пересканировать заголовки
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return;
+
+    const ch = new BroadcastChannel('hub-dev-preview');
+    ch.onmessage = (e) => {
+      if (e.data?.type !== 'preview') return;
+      // Даём React время перерендерить новый HTML, потом сканируем
+      setTimeout(() => {
+        if (!doScan()) {
+          startObserver();
+        }
+      }, 100);
+    };
+
+    return () => ch.close();
+  }, [doScan, startObserver]);
 
   return toc;
 }
