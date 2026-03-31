@@ -536,7 +536,7 @@ const processParagraphElement = (
               React.createElement(stored.tag, {
                 key:                     ckey,
                 className:               stored.cls,
-                dangerouslySetInnerHTML: { __html: stored.inner },
+                dangerouslySetInnerHTML: { __html: sanitizeHtml(stored.inner) },
               }),
             );
             return;
