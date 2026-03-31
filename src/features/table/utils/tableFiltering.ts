@@ -2,9 +2,9 @@ import type { TableControlsState, ParsedRow } from '../types/table';
 
 // Извлекает чистый текст из HTML-строки, нормализуя пробелы
 export function stripHtmlNormalize(html: string): string {
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  return (div.textContent || div.innerText || '').split(/\s+/).join(' ').trim();
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  return (doc.body.textContent || '').split(/\s+/).join(' ').trim();
 }
 
 // Парсит строки таблицы и применяет фильтрацию, поиск и сортировку
