@@ -547,7 +547,7 @@ const processParagraphElement = (
         kids.push(
           React.createElement('span', {
             key:                     ckey,
-            dangerouslySetInnerHTML: { __html: el.outerHTML },
+            dangerouslySetInnerHTML: { __html: sanitizeHtml(el.outerHTML) },
           }),
         );
       }
