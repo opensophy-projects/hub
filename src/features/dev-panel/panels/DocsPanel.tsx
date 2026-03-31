@@ -39,7 +39,7 @@ const toSlug = (s: string): string => {
   for (const ch of s.toLowerCase()) {
     if (/\s/.test(ch)) {
       if (!prevDash) { chars.push('-'); prevDash = true; }
-    } else if (/[\w]/.test(ch)) {
+    } else if (/\w/.test(ch)) {
       chars.push(ch);
       prevDash = ch === '-';
     } else if (ch === '-') {
