@@ -389,13 +389,12 @@ const processKatexBlock = (element: Element, key: string, elements: React.ReactN
   );
 };
 
-// Аналогично processKatexBlock — содержимое санитизировано выше по потоку
 const processKatexInline = (element: Element, key: string, elements: React.ReactNode[]) => {
   elements.push(
     React.createElement('span', {
       key,
       className: 'katex-inline',
-      dangerouslySetInnerHTML: { __html: element.innerHTML },
+      dangerouslySetInnerHTML: { __html: sanitizeHtml(element.innerHTML) },
     }),
   );
 };
