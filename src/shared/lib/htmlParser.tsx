@@ -384,7 +384,7 @@ const processKatexBlock = (element: Element, key: string, elements: React.ReactN
     React.createElement('div', {
       key,
       className: 'katex-block not-prose',
-      dangerouslySetInnerHTML: { __html: element.innerHTML },
+      dangerouslySetInnerHTML: { __html: sanitizeHtml(element.innerHTML) },
     }),
   );
 };
