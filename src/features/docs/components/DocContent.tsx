@@ -1,4 +1,4 @@
-import React, { useState, useMemo, Suspense, lazy, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useMemo, Suspense, lazy, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
 import Navigation from '@/features/navigation/components/Navigation';
