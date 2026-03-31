@@ -34,10 +34,11 @@ const EMPTY_FM: FM = {
 // ─── Простая нормализация в slug (без транслита) ──────────────────────────────
 const toSlug = (s: string) =>
   s.toLowerCase()
-   .replace(/\s+/g, '-')
-   .replace(/[^\w-]/g, '')
-   .replace(/-+/g, '-')
-   .replace(/^-|-$/g, '');
+   .replaceAll(/\s+/g, '-')
+   .replaceAll(/[^\w-]/g, '')
+   .replaceAll(/-+/g, '-')
+   .replace(/^-+/, '')
+   .replace(/-+$/, '');
 
 // Регексы с ограниченной длиной совпадения для защиты от ReDoS
 const RE_PN_TYPE = /^\[([NCA])\]/;
