@@ -131,12 +131,31 @@ function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // NOSONAR
 }
 
+function highlightTextMatches(text: string, query: string): string {
+  const lowerText = text.toLowerCase();
+  const lowerQuery = query.toLowerCase();
+  const queryLen = query.length;
+
+  let result = '';
+  let lastIdx = 0;
+  let idx = lowerText.indexOf(lowerQuery);
+
+  while (idx !== -1) {
+    result += text.slice(lastIdx, idx);
+    result += `<mark style="background:#854d0e;color:#fff;border-radius:2px;padding:0 1px;">${text.slice(idx, idx + queryLen)}</mark>`;
+    lastIdx = idx + queryLen;
+    idx = lowerText.indexOf(lowerQuery, lastIdx);
+  }
+
+  result += text.slice(lastIdx);
+  return result;
+}
+
 function injectSearchHighlight(html: string, query: string): string {
   if (!query) return html;
-  const re = new RegExp(`(${escapeRegex(query)})`, 'gi');
   return html.replace(/(<[^>]*>)|([^<]+)/g, (_, tag, text) => { // NOSONAR
     if (tag) return tag;
-    return text.replace(re, '<mark style="background:#854d0e;color:#fff;border-radius:2px;padding:0 1px;">$1</mark>'); // NOSONAR
+    return highlightTextMatches(text, query);
   });
 }
 
