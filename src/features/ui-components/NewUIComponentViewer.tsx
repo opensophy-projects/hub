@@ -96,9 +96,13 @@ function Pill({ onClick, title, label, icon, t, active, danger }: Readonly<{
   const bg  = active ? t.btnActBg  : t.btnBg;
   const bdr = active ? t.btnActBdr : t.btnBdr;
   let color: string;
-  if (danger)       color = t.dangerClr;
-  else if (active)  color = t.btnActClr;
-  else              color = t.btnClr;
+  if (danger) {
+    color = t.dangerClr;
+  } else if (active) {
+    color = t.btnActClr;
+  } else {
+    color = t.btnClr;
+  }
   return (
     <button onClick={onClick} title={title} style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -147,33 +151,57 @@ const FIELD_GROUPS: Array<{
   ]},
 ];
 
-// ─── Color utils ──────────────────────────────────────────────────────────────
+// ─── Утилиты для работы с цветом ──────────────────────────────────────────────
 
 function hsvToRgb(h: number, s: number, v: number): [number, number, number] {
-  const f = (n: number) => { const k = (n + h / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); };
+  const f = (n: number) => {
+    const k = (n + h / 60) % 6;
+    return v - v * s * Math.max(0, Math.min(k, 4 - k, 1));
+  };
   return [Math.round(f(5) * 255), Math.round(f(3) * 255), Math.round(f(1) * 255)];
 }
+
 function rgbToHsv(r: number, g: number, b: number): [number, number, number] {
   r /= 255; g /= 255; b /= 255;
   const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
   let h = 0;
-  if (d !== 0) { if (max === r) h = ((g - b) / d + 6) % 6; else if (max === g) h = (b - r) / d + 2; else h = (r - g) / d + 4; h *= 60; }
+  if (d !== 0) {
+    if (max === r) {
+      h = ((g - b) / d + 6) % 6;
+    } else if (max === g) {
+      h = (b - r) / d + 2;
+    } else {
+      h = (r - g) / d + 4;
+    }
+    h *= 60;
+  }
   return [h, max === 0 ? 0 : d / max, max];
 }
-function rgbToHex(r: number, g: number, b: number): string { return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join(''); }
+
+function rgbToHex(r: number, g: number, b: number): string {
+  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
 function hexToRgb(hex: string): [number, number, number] | null {
   const c = hex.replace('#', '');
-  if (c.length !== 6) return null;
+  if (c.length !== 6) { return null; }
   const n = Number.parseInt(c, 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
+
 function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   r /= 255; g /= 255; b /= 255;
   const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2;
-  if (max === min) return [0, 0, Math.round(l * 100)];
+  if (max === min) { return [0, 0, Math.round(l * 100)]; }
   const d = max - min, s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
   let h = 0;
-  if (max === r) h = ((g - b) / d + 6) % 6; else if (max === g) h = (b - r) / d + 2; else h = (r - g) / d + 4;
+  if (max === r) {
+    h = ((g - b) / d + 6) % 6;
+  } else if (max === g) {
+    h = (b - r) / d + 2;
+  } else {
+    h = (r - g) / d + 4;
+  }
   return [Math.round(h * 60), Math.round(s * 100), Math.round(l * 100)];
 }
 
@@ -185,43 +213,66 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
   const [copied, setCopied] = useState(false);
   const svRef = useRef<HTMLDivElement>(null);
   const hueRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    if (!value) return;
-    const rgb = hexToRgb(value); if (!rgb) return;
+    if (!value) { return; }
+    const rgb = hexToRgb(value);
+    if (!rgb) { return; }
     const [h, s, v] = rgbToHsv(...rgb);
     setHue(h); setSat(s); setVal(v); setHexInput(value.replace('#', ''));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
   const currentRgb = useMemo(() => hsvToRgb(hue, sat, val), [hue, sat, val]);
   const currentHex = useMemo(() => rgbToHex(...currentRgb), [currentRgb]);
   const currentHsl = useMemo(() => rgbToHsl(...currentRgb), [currentRgb]);
-  const hueColor = useMemo(() => rgbToHex(...hsvToRgb(hue, 1, 1)), [hue]);
-  const emit = useCallback((h: number, s: number, v: number) => { const hex = rgbToHex(...hsvToRgb(h, s, v)); onChange(hex); setHexInput(hex.replace('#', '')); }, [onChange]);
+  const hueColor   = useMemo(() => rgbToHex(...hsvToRgb(hue, 1, 1)), [hue]);
+
+  const emit = useCallback((h: number, s: number, v: number) => {
+    const hex = rgbToHex(...hsvToRgb(h, s, v));
+    onChange(hex);
+    setHexInput(hex.replace('#', ''));
+  }, [onChange]);
+
   const handleSvDrag = useCallback((e: MouseEvent | React.MouseEvent) => {
-    const el = svRef.current; if (!el) return;
+    const el = svRef.current;
+    if (!el) { return; }
     const rect = el.getBoundingClientRect();
     const s = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     const v = Math.max(0, Math.min(1, 1 - (e.clientY - rect.top) / rect.height));
     setSat(s); setVal(v); emit(hue, s, v);
   }, [hue, emit]);
+
   const handleSvMouseDown = useCallback((e: React.MouseEvent) => {
     handleSvDrag(e);
     const onMove = (ev: MouseEvent) => handleSvDrag(ev);
-    const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
-    window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+    const onUp = () => {
+      globalThis.removeEventListener('mousemove', onMove);
+      globalThis.removeEventListener('mouseup', onUp);
+    };
+    globalThis.addEventListener('mousemove', onMove);
+    globalThis.addEventListener('mouseup', onUp);
   }, [handleSvDrag]);
+
   const handleHueDrag = useCallback((e: MouseEvent | React.MouseEvent) => {
-    const el = hueRef.current; if (!el) return;
+    const el = hueRef.current;
+    if (!el) { return; }
     const rect = el.getBoundingClientRect();
     const h = Math.max(0, Math.min(360, ((e.clientX - rect.left) / rect.width) * 360));
     setHue(h); emit(h, sat, val);
   }, [sat, val, emit]);
+
   const handleHueMouseDown = useCallback((e: React.MouseEvent) => {
     handleHueDrag(e);
     const onMove = (ev: MouseEvent) => handleHueDrag(ev);
-    const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
-    window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+    const onUp = () => {
+      globalThis.removeEventListener('mousemove', onMove);
+      globalThis.removeEventListener('mouseup', onUp);
+    };
+    globalThis.addEventListener('mousemove', onMove);
+    globalThis.addEventListener('mouseup', onUp);
   }, [handleHueDrag]);
+
   return (
     <div style={{ userSelect: 'none' }}>
       <div ref={svRef} role="slider" aria-label="Насыщенность и яркость" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(sat * 100)} tabIndex={0} onMouseDown={handleSvMouseDown}
@@ -241,13 +292,20 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
           <input value={hexInput} onChange={e => {
             const raw = e.target.value; setHexInput(raw);
             const clean = raw.replace('#', '');
-            if (clean.length === 6) { const rgb = hexToRgb('#' + clean); if (rgb) { const [h, s, v] = rgbToHsv(...rgb); setHue(h); setSat(s); setVal(v); onChange('#' + clean); } }
-            if (clean === '') onChange(undefined);
+            if (clean.length === 6) {
+              const rgb = hexToRgb('#' + clean);
+              if (rgb) {
+                const [h, s, v] = rgbToHsv(...rgb);
+                setHue(h); setSat(s); setVal(v); onChange('#' + clean);
+              }
+            }
+            if (clean === '') { onChange(undefined); }
           }} placeholder="4287f5" style={{ width: '100%', padding: '3px 6px', borderRadius: 5, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: t.inpClr, fontSize: 11, fontFamily: 'ui-monospace,monospace', outline: 'none', boxSizing: 'border-box' }} />
         </div>
         <button onClick={async () => { await navigator.clipboard.writeText(currentHex); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
           style={{ width: 22, height: 22, borderRadius: 5, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: copied ? '#22c55e' : t.fg, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          {copied ? <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          {copied
+            ? <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
             : <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><rect x="4" y="1" width="8" height="10" rx="2" stroke="currentColor" strokeWidth="1.3" /><rect x="1" y="3" width="8" height="10" rx="2" stroke="currentColor" strokeWidth="1.3" fill={t.inpBg} /></svg>}
         </button>
       </div>
@@ -271,13 +329,21 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
   );
 };
 
-function getDecimalPlaces(step: number): number { if (step >= 1) return 0; if (step >= 0.1) return 1; return 2; }
+function getDecimalPlaces(step: number): number {
+  if (step >= 1) { return 0; }
+  if (step >= 0.1) { return 1; }
+  return 2;
+}
 
 const NumberInput: React.FC<{ value: number; onChange: (v: number) => void; min: number; max: number; step: number; t: T }> = ({ value, onChange, min, max, step, t }) => {
   const [editing, setEditing] = useState(false);
   const [raw, setRaw] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-  const commit = () => { const n = Number.parseFloat(raw); if (!Number.isNaN(n)) onChange(Math.min(max, Math.max(min, n))); setEditing(false); };
+  const commit = () => {
+    const n = Number.parseFloat(raw);
+    if (!Number.isNaN(n)) { onChange(Math.min(max, Math.max(min, n))); }
+    setEditing(false);
+  };
   const places = getDecimalPlaces(step);
   const numStr = places > 0 ? value.toFixed(places) : String(Math.round(value));
   return (
@@ -285,7 +351,10 @@ const NumberInput: React.FC<{ value: number; onChange: (v: number) => void; min:
       <input type="range" min={min} max={max} step={step} value={value} onChange={e => onChange(Number(e.target.value))} style={{ flex: 1, accentColor: t.fg, cursor: 'pointer', height: 3, minWidth: 0 }} />
       {editing ? (
         <input ref={inputRef} type="number" value={raw} min={min} max={max} step={step} onChange={e => setRaw(e.target.value)} onBlur={commit}
-          onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false); }}
+          onKeyDown={e => {
+            if (e.key === 'Enter') { commit(); }
+            if (e.key === 'Escape') { setEditing(false); }
+          }}
           style={{ width: 46, padding: '2px 4px', borderRadius: 5, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: t.inpClr, fontSize: 11, textAlign: 'center', outline: 'none', fontFamily: 'ui-monospace,monospace', flexShrink: 0 }} />
       ) : (
         <button onClick={() => { setRaw(String(value)); setEditing(true); setTimeout(() => inputRef.current?.select(), 0); }}
@@ -373,39 +442,66 @@ const AiSelect: React.FC<{ label: string; value: string; options: string[]; onCh
   const ref = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const pRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    if (!open) return;
-    const h = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node) && !pRef.current?.contains(e.target as Node)) setOpen(false); };
+    if (!open) { return; }
+    const h = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node) && !pRef.current?.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, [open]);
-  const computeDropUp = (r: DOMRect) => { const h = Math.min(options.length * 34 + 48, 240); return window.innerHeight - r.bottom < h && r.top > h; };
+
+  const computeDropUp = (r: DOMRect) => {
+    const h = Math.min(options.length * 34 + 48, 240);
+    return globalThis.innerHeight - r.bottom < h && r.top > h;
+  };
+
   useEffect(() => {
-    if (!open || !btnRef.current) return;
-    const upd = () => { if (!btnRef.current) return; const r = btnRef.current.getBoundingClientRect(); setRect(r); setW(r.width); setDropUp(computeDropUp(r)); };
+    if (!open || !btnRef.current) { return; }
+    const upd = () => {
+      if (!btnRef.current) { return; }
+      const r = btnRef.current.getBoundingClientRect();
+      setRect(r); setW(r.width); setDropUp(computeDropUp(r));
+    };
     upd();
-    window.addEventListener('scroll', upd, true); window.addEventListener('resize', upd);
-    return () => { window.removeEventListener('scroll', upd, true); window.removeEventListener('resize', upd); };
+    globalThis.addEventListener('scroll', upd, true);
+    globalThis.addEventListener('resize', upd);
+    return () => {
+      globalThis.removeEventListener('scroll', upd, true);
+      globalThis.removeEventListener('resize', upd);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, options.length]);
+
   return (
     <div style={{ padding: '6px 12px' }}>
       <div style={{ fontSize: 10, fontWeight: 600, color: t.fgMuted, marginBottom: 4, letterSpacing: '0.02em' }}>{label}</div>
       <div ref={ref} style={{ position: 'relative' }}>
-        <button ref={btnRef} onClick={() => { if (!btnRef.current) return; const r = btnRef.current.getBoundingClientRect(); setRect(r); setW(r.width); setDropUp(computeDropUp(r)); setOpen(v => !v); }}
+        <button ref={btnRef} onClick={() => {
+          if (!btnRef.current) { return; }
+          const r = btnRef.current.getBoundingClientRect();
+          setRect(r); setW(r.width); setDropUp(computeDropUp(r)); setOpen(v => !v);
+        }}
           style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 8px', borderRadius: 6, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: t.fg, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
           <span>{value}</span>
           <svg width="9" height="9" viewBox="0 0 10 10" style={{ opacity: 0.4, transform: open ? 'rotate(180deg)' : 'none' }}><path d="M2 3 L5 7 L8 3" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" /></svg>
         </button>
         {open && rect && createPortal(
-          <div ref={pRef} style={{ position: 'fixed', left: rect.left, width: w, zIndex: 99999, background: t.barBg, border: `1px solid ${t.inpBdr}`, borderRadius: 8, boxShadow: t.modalShadow, overflow: 'auto', maxHeight: 240, ...(dropUp ? { bottom: window.innerHeight - rect.top + 4 } : { top: rect.bottom + 4 }) }}>
-            {options.map(opt => (
-              <button key={opt} onClick={() => { onChange(opt); setOpen(false); }} onMouseEnter={() => setHov(opt)} onMouseLeave={() => setHov(null)}
-                style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '6px 11px', fontSize: 12, textAlign: 'left', cursor: 'pointer', border: 'none', color: t.fg, background: hov === opt ? t.btnHov : opt === value ? t.btnBg : 'transparent' }}>
+          <div ref={pRef} style={{ position: 'fixed', left: rect.left, width: w, zIndex: 99999, background: t.barBg, border: `1px solid ${t.inpBdr}`, borderRadius: 8, boxShadow: t.modalShadow, overflow: 'auto', maxHeight: 240, ...(dropUp ? { bottom: globalThis.innerHeight - rect.top + 4 } : { top: rect.bottom + 4 }) }}>
+            {options.map(opt => {
+              let optBg: string;
+              if (hov === opt) { optBg = t.btnHov; }
+              else if (opt === value) { optBg = t.btnBg; }
+              else { optBg = 'transparent'; }
+              return <button key={opt} onClick={() => { onChange(opt); setOpen(false); }} onMouseEnter={() => setHov(opt)} onMouseLeave={() => setHov(null)}
+                style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '6px 11px', fontSize: 12, textAlign: 'left', cursor: 'pointer', border: 'none', color: t.fg, background: optBg }}>
                 {opt === value && <span style={{ marginRight: 6, opacity: 0.5 }}>✓</span>}
                 {opt}
-              </button>
-            ))}
+              </button>;
+            })}
           </div>,
           document.body,
         )}
@@ -415,8 +511,13 @@ const AiSelect: React.FC<{ label: string; value: string; options: string[]; onCh
 };
 
 const SpecificSidebar: React.FC<{ config: ComponentConfig; componentProps: ComponentPropsMap; onChange: (name: string, v: PropValue) => void; t: T }> = ({ config, componentProps, onChange, t }) => {
-  const visibleProps = useMemo(() => config.specificProps?.length ? config.props.filter((p: PropDefinition) => config.specificProps!.includes(p.name)) : config.props, [config]);
-  if (!visibleProps.length) return <div style={{ padding: '20px 12px', textAlign: 'center', fontSize: 12, color: t.fgMuted }}>Нет специфических настроек</div>;
+  const visibleProps = useMemo(
+    () => config.specificProps?.length
+      ? config.props.filter((p: PropDefinition) => config.specificProps!.includes(p.name))
+      : config.props,
+    [config],
+  );
+  if (!visibleProps.length) { return <div style={{ padding: '20px 12px', textAlign: 'center', fontSize: 12, color: t.fgMuted }}>Нет специфических настроек</div>; }
   return (
     <div>
       {visibleProps.map((prop: PropDefinition, i: number) => (
@@ -459,7 +560,7 @@ const SettingsContent: React.FC<{ activeTab: TabType; onTabSelect: (t: TabType) 
   </div>
 );
 
-// ─── ComponentRender — без Suspense fallback чтобы избежать flash ──────────────
+// ─── Рендер компонента без Suspense fallback во избежание flash ───────────────
 
 interface ComponentRenderProps {
   Component: AnyComponent;
@@ -508,7 +609,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & { config: ComponentConfig
   const isMobile = useIsMobile();
   useEffect(() => {
     document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { onClose(); } };
     document.addEventListener('keydown', onKey);
     return () => { document.body.style.overflow = ''; document.removeEventListener('keydown', onKey); };
   }, [onClose]);
@@ -538,8 +639,6 @@ const FullscreenModal: React.FC<ComponentRenderProps & { config: ComponentConfig
   );
 };
 
-// ─── PreviewPanel — убран overflow:clip, добавлен minHeight на контент ──────────
-
 const PreviewPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; onRefresh: () => void; onFullscreen: () => void; onOpenSettings: () => void; t: T; loading: boolean }> = ({ config, Component, componentProps, universalProps, refreshKey, isDark, onRefresh, onFullscreen, onOpenSettings, t, loading }) => (
   <div style={{ borderRadius: 12, border: `1px solid ${t.outerBorder}`, background: t.outerBg, boxShadow: t.outerShadow, display: 'flex', flexDirection: 'column', width: '100%', minWidth: 0, overflow: 'hidden' }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', borderBottom: `1px solid ${t.barBorder}`, background: t.barBg, flexWrap: 'nowrap', minWidth: 0 }}>
@@ -550,9 +649,8 @@ const PreviewPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; o
       <Pill onClick={onOpenSettings} title="Настройки"     label="Настройки"  icon={<Settings  size={14} />} t={t} />
     </div>
 
-    {/* Контент — всегда одна высота, нет прыжков */}
+    {/* Область предпросмотра фиксированной высоты без прыжков */}
     <div style={{ minHeight: 380, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, color: t.fg, position: 'relative' }}>
-      {/* Скелетон — показывается поверх пока грузится, плавно исчезает */}
       {loading && (
         <div style={{
           position: 'absolute', inset: 0,
@@ -603,6 +701,13 @@ const SettingsPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; 
   );
 };
 
+// ─── Вспомогательная функция для скрытия оверлея после двух rAF ──────────────
+function scheduleHideLoading(setLoading: (v: boolean) => void) {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => setLoading(false));
+  });
+}
+
 // ─── UIComponentViewer ────────────────────────────────────────────────────────
 
 const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) => {
@@ -615,7 +720,6 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
   const [componentProps, setComponentProps] = useState<ComponentPropsMap>({});
   const [universalProps, setUniversalProps] = useState<UniversalProps>(DEFAULT_UNIVERSAL_PROPS);
   const [componentData,  setComponentData]  = useState<LoadedComponentData | null>(null);
-  // Отдельный флаг загрузки — не заменяем весь компонент, только показываем оверлей
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -625,10 +729,7 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
         setComponentData(data);
         setComponentProps(getDefaultProps(data.config));
       }
-      // Небольшая задержка чтобы компонент успел отрендериться перед скрытием оверлея
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => setLoading(false));
-      });
+      scheduleHideLoading(setLoading);
     });
   }, [componentId]);
 
@@ -643,13 +744,12 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
     setUniversalProps(prev => ({ ...prev, [key]: value })), []);
 
   const handleReset = useCallback(() => {
-    if (!componentData) return;
+    if (!componentData) { return; }
     setComponentProps(getDefaultProps(componentData.config));
     setUniversalProps(DEFAULT_UNIVERSAL_PROPS);
     setRefreshKey(k => k + 1);
   }, [componentData]);
 
-  // Пока данных нет — показываем скелетон в той же структуре (без замены DOM)
   const placeholderConfig: ComponentConfig = useMemo(() => ({
     id: componentId, name: '…', description: '', props: [], specificProps: [],
   }), [componentId]);
