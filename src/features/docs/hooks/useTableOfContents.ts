@@ -44,7 +44,7 @@ function scanHeadings(): TableOfContentsItem[] {
 
 // useLayoutEffect на клиенте, useEffect на сервере
 const useIsomorphicLayoutEffect =
-  typeof globalThis.window === 'undefined' ? useEffect : useLayoutEffect;
+  globalThis.window === undefined ? useEffect : useLayoutEffect;
 
 export function useTableOfContents<T extends { id?: string; slug?: string; content?: string }>(
   dependency: T
