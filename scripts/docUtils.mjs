@@ -45,7 +45,18 @@ export function preprocessKatex(content) {
   return result.replaceAll(/___PROTECTED_(\d+)___/g, (_, i) => protected_[Number.parseInt(i, 10)]);
 }
 
-// ─── Entry name parser ────────────────────────────────────────────────────────
+// ─── Slug-генератор ───────────────────────────────────────────────────────────
+
+function toSlug(str) {
+  return str
+    .toLowerCase()
+    .replaceAll(/\s+/g, '-')
+    .replaceAll(/[^\w-]/g, '')
+    .replaceAll(/-+/g, '-')
+    .replaceAll(/^-|-$/g, '');
+}
+
+// ─── Парсер имён записей ──────────────────────────────────────────────────────
 
 export function parseEntryName(name) {
   const typeMatch = name.match(/^\[([NCA])\]/);
@@ -64,13 +75,13 @@ export function parseEntryName(name) {
     slug  = slugMatch[2].trim();
   } else {
     title = afterIcon.trim();
-    slug  = title.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    slug  = toSlug(title);
   }
 
   return { type: entryType, icon, title, slug };
 }
 
-// ─── Nav / category parsers ───────────────────────────────────────────────────
+// ─── Парсеры навигации и категорий ───────────────────────────────────────────
 
 export function parseNavPopoverFolder(folderName) {
   const entry = parseEntryName(folderName);
@@ -92,16 +103,16 @@ export function parseCategoryName(folderName) {
   const matchWithIcon = folderName.match(/^\[([^\]]+)\]([^\n]+)$/);
   if (matchWithIcon) {
     const t = matchWithIcon[2].trim();
-    return { title: t, slug: t.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, ''), icon: matchWithIcon[1].trim() };
+    return { title: t, slug: toSlug(t), icon: matchWithIcon[1].trim() };
   }
 
   const matchSlugOnly = folderName.match(/^([^{]+)\{([^}]+)\}$/);
   if (matchSlugOnly) return { title: matchSlugOnly[1].trim(), slug: matchSlugOnly[2].trim(), icon: null };
 
-  return { title: folderName, slug: folderName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, ''), icon: null };
+  return { title: folderName, slug: toSlug(folderName), icon: null };
 }
 
-// ─── File system ──────────────────────────────────────────────────────────────
+// ─── Файловая система ─────────────────────────────────────────────────────────
 
 export function scanDocsDirectoryRecursive(baseDir) {
   const results = [];
@@ -145,7 +156,7 @@ export function extractFrontMatter(content) {
   return { metadata, content: rest };
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Вспомогательные функции ──────────────────────────────────────────────────
 
 function escapeAttr(str) {
   return String(str)
@@ -171,7 +182,7 @@ function markedWithCodeBlocks(str, codeBlocks) {
   return marked(restored);
 }
 
-// ─── Block body collector ─────────────────────────────────────────────────────
+// ─── Сборщик тела блока ───────────────────────────────────────────────────────
 
 function collectBlockBody(lines, startAfterIndex) {
   const bodyLines = [];
@@ -197,7 +208,7 @@ function collectBlockBody(lines, startAfterIndex) {
   return { body: bodyLines.join('\n'), endIndex: i - 1 };
 }
 
-// ─── Inner block parser ───────────────────────────────────────────────────────
+// ─── Парсер вложенных блоков ──────────────────────────────────────────────────
 
 function parseInnerBlocks(bodyStr, innerTag) {
   const lines   = bodyStr.split('\n');
@@ -206,7 +217,7 @@ function parseInnerBlocks(bodyStr, innerTag) {
   let i = 0;
 
   while (i < lines.length) {
-    const openMatch = lines[i].trim().match(openRe);
+    const openMatch = openRe.exec(lines[i].trim());
     if (!openMatch) { i++; continue; }
 
     const params     = parseParams(openMatch[1] ?? '');
@@ -226,7 +237,7 @@ function parseInnerBlocks(bodyStr, innerTag) {
   return results;
 }
 
-// ─── Card builder (с поддержкой [image]) ─────────────────────────────────────
+// ─── Построитель карточки ─────────────────────────────────────────────────────
 
 function buildCardHtml(params, body, codeBlocks) {
   const color = params.color ? escapeAttr(params.color) : '';
@@ -240,7 +251,6 @@ function buildCardHtml(params, body, codeBlocks) {
   const icon = iconMatch ? escapeAttr(iconMatch[1].trim()) : '';
   if (iconMatch) remaining = remaining.replace(iconMatch[0], '');
 
-  // Поддержка [image]url
   const imageMatch = remaining.match(/^\[image\]([^\n]+)$/m);
   const image = imageMatch ? escapeAttr(imageMatch[1].trim()) : '';
   if (imageMatch) remaining = remaining.replace(imageMatch[0], '');
@@ -249,7 +259,7 @@ function buildCardHtml(params, body, codeBlocks) {
   return `<div class="custom-card" data-color="${color}" data-title="${title}" data-icon="${icon}" data-image="${image}">${contentHtml}</div>`;
 }
 
-// ─── Block handlers ───────────────────────────────────────────────────────────
+// ─── Обработчики блоков ───────────────────────────────────────────────────────
 
 function handleCardsBlock(trimmed, lines, i, codeBlocks, output) {
   const match = trimmed.match(/^:::cards(?:\[([^\]]*)\])?\s*$/);
@@ -320,7 +330,7 @@ function handleMathBlock(trimmed, lines, i, output) {
   return j + 1;
 }
 
-// ─── Chart block handler ──────────────────────────────────────────────────────
+// ─── Обработчик блока chart ───────────────────────────────────────────────────
 
 function parseChartMeta(bodyLines) {
   let type   = 'bar';
@@ -385,33 +395,33 @@ function handleChartBlock(trimmed, lines, i, output) {
   return endIndex + 1;
 }
 
-// ─── Tabs block handler ───────────────────────────────────────────────────────
-//
-// Синтаксис:
-//   :::tabs
-//   :::tab[JavaScript]
-//   ```javascript
-//   const x = 1;
-//   ```
-//   :::
-//   :::tab[TypeScript]
-//   ```typescript
-//   const x: number = 1;
-//   ```
-//   :::
-//   :::
+// ─── Обработчик блока tabs ────────────────────────────────────────────────────
 
-function handleTabsBlock(trimmed, lines, i, codeBlocks, output) {
-  if (!/^:::tabs\s*$/.test(trimmed)) return null;
-  const { body, endIndex } = collectBlockBody(lines, i + 1);
+const TAB_OPEN_RE = /^:::tab(?:\[([^\]]*)\])?\s*$/;
+const CODE_BLOCK_RE = /^```([^\n]*)\n([\s\S]*?)```\s*$/;
 
-  const tabs = [];
+function parseTabEntry(label, bodyLines, codeBlocks) {
+  const tabBody = bodyLines.join('\n');
+  const restoredBody = tabBody.replaceAll(/___CODE_BLOCK_(\d+)___/g, (_, idx) => codeBlocks[Number.parseInt(idx, 10)] ?? '');
+
+  const codeMatch = CODE_BLOCK_RE.exec(restoredBody.trim());
+  if (!codeMatch) {
+    return { label, language: '', code: restoredBody.trim() };
+  }
+
+  const lang = codeMatch[1].trim();
+  let code = codeMatch[2];
+  if (code.endsWith('\n')) code = code.slice(0, -1);
+  return { label, language: lang, code };
+}
+
+function parseTabsFromBody(body, codeBlocks) {
   const tabLines = body.split('\n');
-  const tabOpenRe = /^:::tab(?:\[([^\]]*)\])?\s*$/;
+  const tabs = [];
   let j = 0;
 
   while (j < tabLines.length) {
-    const openMatch = tabLines[j].trim().match(tabOpenRe);
+    const openMatch = TAB_OPEN_RE.exec(tabLines[j].trim());
     if (!openMatch) { j++; continue; }
 
     const label = openMatch[1]?.trim() ?? `Вкладка ${tabs.length + 1}`;
@@ -424,27 +434,17 @@ function handleTabsBlock(trimmed, lines, i, codeBlocks, output) {
       j++;
     }
 
-    // Восстанавливаем код-блоки
-    const tabBody = bodyLines.join('\n');
-    const restoredBody = tabBody.replaceAll(/___CODE_BLOCK_(\d+)___/g, (_, idx) => codeBlocks[Number.parseInt(idx, 10)] ?? '');
-
-    // Извлекаем язык и код из ```lang ... ```
-    const codeMatch = restoredBody.trim().match(/^```([^\n]*)\n([\s\S]*?)```\s*$/);
-    // language используется ТОЛЬКО для подсветки синтаксиса (highlight.js)
-    // label — человекочитаемое название вкладки, отображается в TabBar
-    // НЕ передаём language как display-имя, чтобы не было дублирования
-    let lang = '';
-    let code = restoredBody.trim();
-
-    if (codeMatch) {
-      lang = codeMatch[1].trim();
-      code = codeMatch[2];
-      if (code.endsWith('\n')) code = code.slice(0, -1);
-    }
-
-    tabs.push({ label, language: lang, code });
+    tabs.push(parseTabEntry(label, bodyLines, codeBlocks));
   }
 
+  return tabs;
+}
+
+function handleTabsBlock(trimmed, lines, i, codeBlocks, output) {
+  if (!/^:::tabs\s*$/.test(trimmed)) return null;
+  const { body, endIndex } = collectBlockBody(lines, i + 1);
+
+  const tabs = parseTabsFromBody(body, codeBlocks);
   if (tabs.length === 0) return endIndex + 1;
 
   let jsonAttr = '[]';
@@ -456,7 +456,7 @@ function handleTabsBlock(trimmed, lines, i, codeBlocks, output) {
   return endIndex + 1;
 }
 
-// ─── Custom block preprocessor ────────────────────────────────────────────────
+// ─── Препроцессор кастомных блоков ───────────────────────────────────────────
 
 function preprocessCustomBlocks(content, codeBlocks) {
   const lines  = content.split('\n');
@@ -481,7 +481,7 @@ function preprocessCustomBlocks(content, codeBlocks) {
   return output.join('\n');
 }
 
-// ─── Markdown extensions preprocessor ────────────────────────────────────────
+// ─── Препроцессор расширений Markdown ────────────────────────────────────────
 
 export function preprocessMarkdownExtensions(content) {
   const codeBlocks = [];
@@ -506,7 +506,8 @@ export function preprocessMarkdownExtensions(content) {
   let j = 0;
 
   while (j < alertLines.length) {
-    const alertType = ALERT_PREFIX_RE.exec(alertLines[j])?.[1];
+    const alertMatch = ALERT_PREFIX_RE.exec(alertLines[j]);
+    const alertType  = alertMatch?.[1];
 
     if (alertType && ALERT_TYPES.has(alertType)) {
       const bodyLines = [];
@@ -529,7 +530,7 @@ export function preprocessMarkdownExtensions(content) {
     .replaceAll(/___CODE_BLOCK_(\d+)___/g, (_match, index) => codeBlocks[Number.parseInt(index, 10)]);
 }
 
-// ─── Content helpers ──────────────────────────────────────────────────────────
+// ─── Обработка синтаксиса изображений ────────────────────────────────────────
 
 export function processImageSyntax(content) {
   return content.replaceAll(
@@ -547,7 +548,7 @@ export function getFirstParagraph(content) {
   return '';
 }
 
-// ─── Doc info ─────────────────────────────────────────────────────────────────
+// ─── Информация о документе ───────────────────────────────────────────────────
 
 export function getDocInfo(fullPath, docsDir) {
   const relativePath = path.relative(docsDir, fullPath);
@@ -619,13 +620,11 @@ export function getDocInfo(fullPath, docsDir) {
   };
 }
 
-// ─── Doc IO ───────────────────────────────────────────────────────────────────
+// ─── Чтение и сборка документов ───────────────────────────────────────────────
 
 export function readDoc(mdPath) {
   return fs.readFileSync(mdPath, 'utf-8');
 }
-
-// ─── Doc builder ──────────────────────────────────────────────────────────────
 
 export function parseDoc(rawContent, mdPath, docsDir) {
   const { metadata, content: cleanContent } = extractFrontMatter(rawContent);
