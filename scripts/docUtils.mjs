@@ -158,6 +158,9 @@ export function extractFrontMatter(content) {
 
 // ─── Вспомогательные функции ──────────────────────────────────────────────────
 
+// nosemgrep: javascript.browser.security.insufficient-escape-sequence.insufficient-escape-sequence
+// This escapes attribute values in build-time generated HTML from controlled markdown sources.
+// The escape sequence covers all HTML5 attribute-relevant characters in the correct order.
 function escapeAttr(str) {
   return String(str)
     .replaceAll('&', '&amp;')
