@@ -81,7 +81,7 @@ export function makeT(isDark: boolean) {
 export type TTokens = ReturnType<typeof makeT>;
 export const ThemeTokensContext = React.createContext<TTokens>(makeT(true));
 
-// ─── Табы (без Сайта) ────────────────────────────────────────────────────────
+// ─── Табы ────────────────────────────────────────────────────────────────────
 
 const TABS = [
   { id: 'docs',     label: 'Страницы',  icon: <FileText size={13}/> },
@@ -106,12 +106,12 @@ type InteractMode =
 
 function getCursor(mode: InteractMode): string {
   switch (mode) {
-    case 'drag':                    return 'move';
-    case 'resize-r': case 'resize-l': return 'col-resize';
-    case 'resize-b': case 'resize-t': return 'row-resize';
+    case 'drag':                       return 'move';
+    case 'resize-r': case 'resize-l':  return 'col-resize';
+    case 'resize-b': case 'resize-t':  return 'row-resize';
     case 'resize-rb': case 'resize-lt': return 'nwse-resize';
     case 'resize-lb': case 'resize-rt': return 'nesw-resize';
-    default:                         return '';
+    default:                            return '';
   }
 }
 
@@ -140,7 +140,7 @@ function statusLabel(status: string): string {
   return 'Отключено';
 }
 
-// ─── Trigger button ───────────────────────────────────────────────────────────
+// ─── Кнопка открытия панели ───────────────────────────────────────────────────
 
 function PanelTrigger({ open, onClick, status, t }: Readonly<{
   open: boolean; onClick: () => void; status: string; t: TTokens;
@@ -233,7 +233,7 @@ export default function DevPanel() {
     };
 
     const onUp = () => {
-      interacting.current        = null;
+      interacting.current            = null;
       document.body.style.userSelect = '';
       document.body.style.cursor     = '';
     };
@@ -262,12 +262,44 @@ export default function DevPanel() {
 
   const dotClr = statusColor(status, t.success, t.warning, t.danger);
 
-  // Resize handle helper
-  const rh = (style: React.CSSProperties, mode: InteractMode) => (
-    <div
+  // Хелпер resize-ручки: button со скрытым визуалом, доступный с клавиатуры
+  const rh = (style: React.CSSProperties, mode: InteractMode, label: string) => (
+    <button
       key={String(mode)}
+      aria-label={label}
       onMouseDown={e => startInteract(mode, e)}
-      style={{ position: 'absolute', zIndex: 10, ...style }}
+      onKeyDown={e => {
+        // Управление размером с клавиатуры: стрелки ±10px
+        const STEP = 10;
+        const arrows: Record<string, [number, number]> = {
+          ArrowRight: [STEP, 0], ArrowLeft: [-STEP, 0],
+          ArrowDown:  [0, STEP], ArrowUp:   [0, -STEP],
+        };
+        if (!arrows[e.key]) return;
+        e.preventDefault();
+        const [dx, dy] = arrows[e.key];
+        setRect(r => {
+          let { x, y, w, h } = r;
+          const maxH = globalThis.innerHeight - MAX_H_MARGIN;
+          switch (mode) {
+            case 'resize-r':  w += dx; break;
+            case 'resize-l':  w -= dx; x += dx; break;
+            case 'resize-b':  h += dy; break;
+            case 'resize-t':  h -= dy; y += dy; break;
+            case 'resize-rb': w += dx; h += dy; break;
+            case 'resize-lb': w -= dx; x += dx; h += dy; break;
+            case 'resize-rt': w += dx; h -= dy; y += dy; break;
+            case 'resize-lt': w -= dx; x += dx; h -= dy; y += dy; break;
+          }
+          return clampRect({ x, y, w: Math.max(MIN_W, Math.min(MAX_W, w)), h: Math.max(MIN_H, Math.min(maxH, h)) });
+        });
+      }}
+      style={{
+        position: 'absolute', zIndex: 10,
+        background: 'transparent', border: 'none', padding: 0,
+        outline: 'none',
+        ...style,
+      }}
     />
   );
 
@@ -296,21 +328,36 @@ export default function DevPanel() {
           width:  rect.w,
           height: rect.h,
           zIndex: 99999,
-          background:   t.bg,
-          border:       `1px solid ${t.borderStrong}`,
-          borderRadius: 12,
-          boxShadow:    t.shadow,
-          display:      'flex',
-          flexDirection:'column',
-          overflow:     'hidden',
-          fontFamily:   t.mono,
+          background:    t.bg,
+          border:        `1px solid ${t.borderStrong}`,
+          borderRadius:  12,
+          boxShadow:     t.shadow,
+          display:       'flex',
+          flexDirection: 'column',
+          overflow:      'hidden',
+          fontFamily:    t.mono,
         }}>
 
-          {/* ── Шапка (drag по всей области заголовка) ─────────────────────── */}
-          <header
+          {/* ── Шапка — drag по всей области заголовка ──────────────────── */}
+          <div
+            role="toolbar"
+            aria-label="Перетащить панель"
+            tabIndex={0}
             onMouseDown={e => {
               if ((e.target as HTMLElement).closest('button')) return;
               startInteract('drag', e);
+            }}
+            onKeyDown={e => {
+              // Перемещение панели с клавиатуры
+              const STEP = 20;
+              const map: Record<string, [number, number]> = {
+                ArrowRight: [STEP, 0], ArrowLeft: [-STEP, 0],
+                ArrowDown:  [0, STEP], ArrowUp:   [0, -STEP],
+              };
+              if (!map[e.key]) return;
+              e.preventDefault();
+              const [dx, dy] = map[e.key];
+              setRect(r => clampRect({ ...r, x: r.x + dx, y: r.y + dy }));
             }}
             style={{
               display: 'flex', alignItems: 'center', gap: 10,
@@ -369,7 +416,7 @@ export default function DevPanel() {
             >
               <X size={13}/>
             </button>
-          </header>
+          </div>
 
           {/* ── Табы ──────────────────────────────────────────────────────── */}
           <div style={{
@@ -444,15 +491,15 @@ export default function DevPanel() {
             </Suspense>
           </div>
 
-          {/* ── Resize handles (все 8 направлений) ──────────────────────── */}
-          {rh({ right: 0,  top: 8,    bottom: 8,  width: 6,  cursor: 'col-resize'  }, 'resize-r')}
-          {rh({ left: 0,   top: 8,    bottom: 8,  width: 6,  cursor: 'col-resize'  }, 'resize-l')}
-          {rh({ bottom: 0, left: 8,   right: 8,   height: 6, cursor: 'row-resize'  }, 'resize-b')}
-          {rh({ top: 0,    left: 8,   right: 8,   height: 6, cursor: 'row-resize'  }, 'resize-t')}
-          {rh({ bottom: 0, right: 0,  width: 14,  height: 14, cursor: 'nwse-resize'}, 'resize-rb')}
-          {rh({ bottom: 0, left: 0,   width: 14,  height: 14, cursor: 'nesw-resize'}, 'resize-lb')}
-          {rh({ top: 0,    right: 0,  width: 14,  height: 14, cursor: 'nesw-resize'}, 'resize-rt')}
-          {rh({ top: 0,    left: 0,   width: 14,  height: 14, cursor: 'nwse-resize'}, 'resize-lt')}
+          {/* ── Resize-ручки (все 8 направлений) ────────────────────────── */}
+          {rh({ right: 0,  top: 8,    bottom: 8,  width: 6,  cursor: 'col-resize'   }, 'resize-r',  'Изменить ширину справа')}
+          {rh({ left: 0,   top: 8,    bottom: 8,  width: 6,  cursor: 'col-resize'   }, 'resize-l',  'Изменить ширину слева')}
+          {rh({ bottom: 0, left: 8,   right: 8,   height: 6, cursor: 'row-resize'   }, 'resize-b',  'Изменить высоту снизу')}
+          {rh({ top: 0,    left: 8,   right: 8,   height: 6, cursor: 'row-resize'   }, 'resize-t',  'Изменить высоту сверху')}
+          {rh({ bottom: 0, right: 0,  width: 14,  height: 14, cursor: 'nwse-resize' }, 'resize-rb', 'Изменить размер: правый нижний угол')}
+          {rh({ bottom: 0, left: 0,   width: 14,  height: 14, cursor: 'nesw-resize' }, 'resize-lb', 'Изменить размер: левый нижний угол')}
+          {rh({ top: 0,    right: 0,  width: 14,  height: 14, cursor: 'nesw-resize' }, 'resize-rt', 'Изменить размер: правый верхний угол')}
+          {rh({ top: 0,    left: 0,   width: 14,  height: 14, cursor: 'nwse-resize' }, 'resize-lt', 'Изменить размер: левый верхний угол')}
         </div>
       )}
 
