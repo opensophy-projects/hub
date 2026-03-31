@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { marked } from 'marked';
 import katex from 'katex';
+import he from 'he';
 
 marked.setOptions({ breaks: true, gfm: true });
 
@@ -159,12 +160,7 @@ export function extractFrontMatter(content) {
 // ─── Вспомогательные функции ──────────────────────────────────────────────────
 
 function escapeAttr(str) {
-  return String(str)
-    .replaceAll('&', '&amp;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;');
+  return he.escape(String(str));
 }
 
 function parseParams(paramStr) {
