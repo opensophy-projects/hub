@@ -111,7 +111,7 @@ const processHeadingElement = (element: Element, tagName: string, key: string, e
       key,
       id,
       style: TAG_STYLES[level],
-      dangerouslySetInnerHTML: { __html: element.innerHTML },
+      dangerouslySetInnerHTML: { __html: sanitizeHtml(element.innerHTML) },
     }),
   );
 };
