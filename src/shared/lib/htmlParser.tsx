@@ -461,7 +461,7 @@ function splitParagraphIntoRuns(element: Element): ParagraphRun[] {
     // Временный узел используется только для очистки пустых br с краёв буфера,
     // не для рендеринга напрямую
     const tmp = document.createElement('div');
-    tmp.innerHTML = textBuffer.trim();
+    tmp.innerHTML = sanitizeHtml(textBuffer.trim());
     while (tmp.firstChild && isBrOrEmpty(tmp.firstChild)) tmp.firstChild.remove();
     while (tmp.lastChild  && isBrOrEmpty(tmp.lastChild))  tmp.lastChild.remove();
 
