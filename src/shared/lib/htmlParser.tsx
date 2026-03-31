@@ -571,11 +571,10 @@ const processParagraphElement = (
         }),
       );
     } else {
-      // run.html получен из уже санитизированного документа через splitParagraphIntoRuns
       elements.push(
         React.createElement('p', {
           key:                     runKey,
-          dangerouslySetInnerHTML: { __html: run.html },
+          dangerouslySetInnerHTML: { __html: sanitizeHtml(run.html) },
         }),
       );
     }
