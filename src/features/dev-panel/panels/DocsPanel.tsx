@@ -31,14 +31,30 @@ const EMPTY_FM: FM = {
   updated:'', tags:'', icon:'', lang:'ru', robots:'index, follow',
 };
 
-// ─── Простая нормализация в slug (без транслита) ──────────────────────────────
-const toSlug = (s: string) =>
-  s.toLowerCase()
-   .replaceAll(/\s+/g, '-')
-   .replaceAll(/[^\w-]/g, '')
-   .replaceAll(/-+/g, '-')
-   .replace(/^-+/, '')
-   .replace(/-+$/, '');
+// Безопасная нормализация строки в slug без ReDoS-уязвимостей
+const toSlug = (s: string): string => {
+  const chars: string[] = [];
+  let prevDash = false;
+
+  for (const ch of s.toLowerCase()) {
+    if (/\s/.test(ch)) {
+      if (!prevDash) { chars.push('-'); prevDash = true; }
+    } else if (/[\w]/.test(ch)) {
+      chars.push(ch);
+      prevDash = ch === '-';
+    } else if (ch === '-') {
+      if (!prevDash) { chars.push('-'); prevDash = true; }
+    }
+  }
+
+  // Убираем ведущий и завершающий дефис
+  let start = 0;
+  let end = chars.length;
+  while (start < end && chars[start] === '-') start++;
+  while (end > start && chars[end - 1] === '-') end--;
+
+  return chars.slice(start, end).join('');
+};
 
 // Регексы с ограниченной длиной совпадения для защиты от ReDoS
 const RE_PN_TYPE = /^\[([NCA])\]/;
@@ -266,7 +282,6 @@ function Modal({ onClose, children, width, t }: {
 
 interface CC { parentPath: string; entryType: 'N'|'C'|'A'; }
 
-// Сохранение переименованного файла
 async function saveRenamedFile(existing: TreeEntry, nm: string, onDone: (fp?: string) => void) {
   const parent = existing.path.split('/').slice(0, -1).join('/');
   const newPath = `${parent}/${nm}.md`;
@@ -282,7 +297,6 @@ async function saveRenamedFile(existing: TreeEntry, nm: string, onDone: (fp?: st
   onDone(newPath);
 }
 
-// Сохранение переименованной директории
 async function saveRenamedDir(existing: TreeEntry, nm: string, onDone: (fp?: string) => void) {
   const parent = existing.path.split('/').slice(0, -1).join('/');
   const newPath = `${parent}/${nm}`;
