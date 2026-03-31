@@ -7,6 +7,57 @@ interface ComponentWrapperProps extends UniversalProps {
   isDark?: boolean;
 }
 
+// Вычисляет CSS-трансформации на основе параметров позиции и поворота
+function buildTransformParts(offsetX: number, offsetY: number, rotateZ: number): string[] {
+  return [
+    (offsetX !== 0 || offsetY !== 0) && `translate(${offsetX}px, ${offsetY}px)`,
+    rotateZ !== 0 && `rotateZ(${rotateZ}deg)`,
+  ].filter(Boolean) as string[];
+}
+
+// Вычисляет CSS-фильтры на основе параметров размытия, яркости, контраста и насыщенности
+function buildFilterParts(blur: number, brightness: number, contrast: number, saturate: number): string[] {
+  return [
+    blur !== 0       && `blur(${blur}px)`,
+    brightness !== 1 && `brightness(${brightness})`,
+    contrast !== 1   && `contrast(${contrast})`,
+    saturate !== 1   && `saturate(${saturate})`,
+  ].filter(Boolean) as string[];
+}
+
+// Вычисляет стили цвета в зависимости от режима colorMode
+function buildColorStyle(
+  colorMode: string,
+  color: string | undefined,
+  gradientFrom: string | undefined,
+  gradientTo: string | undefined,
+  gradientAngle: number,
+  isDark: boolean,
+): CSSProperties {
+  if (colorMode === 'solid' && color) {
+    return { color };
+  }
+
+  if (colorMode === 'gradient' && gradientFrom && gradientTo) {
+    return {
+      background:           `linear-gradient(${gradientAngle}deg, ${gradientFrom}, ${gradientTo})`,
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor:  'transparent',
+      backgroundClip:       'text',
+    };
+  }
+
+  // В режиме original ставим дефолтный цвет по теме —
+  // иначе компонент наследует цвет от фона и становится невидимым
+  return { color: isDark ? '#e8e8e8' : '#1a1a1a' };
+}
+
+// Базовые стили для сглаживания шрифта, общие для всех вариантов
+const FONT_SMOOTHING: CSSProperties = {
+  WebkitFontSmoothing: 'antialiased' as const,
+  MozOsxFontSmoothing: 'grayscale'   as const,
+};
+
 export const ComponentWrapper: React.FC<ComponentWrapperProps> = ({
   children,
   className = '',
@@ -48,53 +99,25 @@ export const ComponentWrapper: React.FC<ComponentWrapperProps> = ({
   const contentStyle = useMemo<CSSProperties>(() => {
     if (!enableUniversalProps) return {};
 
-    const useZoomForScale = scale !== 1;
+    const colorStyle      = buildColorStyle(colorMode, color, gradientFrom, gradientTo, gradientAngle, isDark);
+    const animationStyle  = animationSpeed !== 1 ? { '--animation-speed-multiplier': animationSpeed } as CSSProperties : {};
 
-    const transformParts = [
-      (offsetX !== 0 || offsetY !== 0) && `translate(${offsetX}px, ${offsetY}px)`,
-      rotateZ !== 0 && `rotateZ(${rotateZ}deg)`,
-    ].filter(Boolean);
-
-    const filterParts = [
-      blur !== 0       && `blur(${blur}px)`,
-      brightness !== 1 && `brightness(${brightness})`,
-      contrast !== 1   && `contrast(${contrast})`,
-      saturate !== 1   && `saturate(${saturate})`,
-    ].filter(Boolean);
-
-    const colorStyle: CSSProperties = {};
-    if (colorMode === 'solid' && color) {
-      colorStyle.color = color;
-    } else if (colorMode === 'gradient' && gradientFrom && gradientTo) {
-      colorStyle.background           = `linear-gradient(${gradientAngle}deg, ${gradientFrom}, ${gradientTo})`;
-      colorStyle.WebkitBackgroundClip = 'text';
-      colorStyle.WebkitTextFillColor  = 'transparent';
-      colorStyle.backgroundClip       = 'text';
-    } else {
-      // В режиме original ставим дефолтный цвет по теме —
-      // иначе компонент наследует цвет от фона и становится невидимым
-      colorStyle.color = isDark ? '#e8e8e8' : '#1a1a1a';
-    }
-
-    // Если ничего кроме дефолтного цвета не изменено — возвращаем только цвет
+    // Если трансформации, фильтры и прозрачность не применяются — возвращаем только цвет
     if (!hasTransform && !hasFilter && !hasOpacity) {
-      return {
-        ...colorStyle,
-        ...(animationSpeed !== 1 ? { '--animation-speed-multiplier': animationSpeed } as CSSProperties : {}),
-        WebkitFontSmoothing: 'antialiased' as const,
-        MozOsxFontSmoothing: 'grayscale'   as const,
-      };
+      return { ...colorStyle, ...animationStyle, ...FONT_SMOOTHING };
     }
+
+    const transformParts = buildTransformParts(offsetX, offsetY, rotateZ);
+    const filterParts    = buildFilterParts(blur, brightness, contrast, saturate);
 
     return {
-      ...(useZoomForScale           ? { zoom:      scale                   } : {}),
-      ...(transformParts.length > 0 ? { transform: transformParts.join(' ')} : {}),
-      ...(filterParts.length    > 0 ? { filter:    filterParts.join(' ')   } : {}),
-      ...(hasOpacity                ? { opacity                            } : {}),
-      ...(animationSpeed !== 1      ? { '--animation-speed-multiplier': animationSpeed } as CSSProperties : {}),
+      ...(scale !== 1                ? { zoom:      scale                    } : {}),
+      ...(transformParts.length > 0  ? { transform: transformParts.join(' ') } : {}),
+      ...(filterParts.length > 0     ? { filter:    filterParts.join(' ')    } : {}),
+      ...(hasOpacity                 ? { opacity                             } : {}),
+      ...animationStyle,
       ...colorStyle,
-      WebkitFontSmoothing: 'antialiased' as const,
-      MozOsxFontSmoothing: 'grayscale'   as const,
+      ...FONT_SMOOTHING,
     };
   }, [
     enableUniversalProps, isDark,
