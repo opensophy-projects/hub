@@ -501,12 +501,11 @@ const processParagraphElement = (
   const hasKatex = element.querySelector('[data-katex-idx]');
   const hasImg   = element.querySelector('img');
 
-  // Элемент приходит из уже санитизированного DOMPurify-документа — innerHTML безопасен
   if (!hasKatex && !hasImg) {
     elements.push(
       React.createElement('p', {
         key,
-        dangerouslySetInnerHTML: { __html: element.innerHTML },
+        dangerouslySetInnerHTML: { __html: sanitizeHtml(element.innerHTML) },
       }),
     );
     return;
