@@ -7,12 +7,15 @@ interface ComponentWrapperProps extends UniversalProps {
   isDark?: boolean;
 }
 
+// Предикат для фильтрации массива: убирает false-значения и сужает тип до string
+const isString = (x: string | false): x is string => x !== false;
+
 // Вычисляет CSS-трансформации на основе параметров позиции и поворота
 function buildTransformParts(offsetX: number, offsetY: number, rotateZ: number): string[] {
   return [
     (offsetX !== 0 || offsetY !== 0) && `translate(${offsetX}px, ${offsetY}px)`,
     rotateZ !== 0 && `rotateZ(${rotateZ}deg)`,
-  ].filter(Boolean) as string[];
+  ].filter(isString);
 }
 
 // Вычисляет CSS-фильтры на основе параметров размытия, яркости, контраста и насыщенности
@@ -22,7 +25,7 @@ function buildFilterParts(blur: number, brightness: number, contrast: number, sa
     brightness !== 1 && `brightness(${brightness})`,
     contrast !== 1   && `contrast(${contrast})`,
     saturate !== 1   && `saturate(${saturate})`,
-  ].filter(Boolean) as string[];
+  ].filter(isString);
 }
 
 // Вычисляет стили цвета в зависимости от режима colorMode
@@ -100,7 +103,7 @@ export const ComponentWrapper: React.FC<ComponentWrapperProps> = ({
     if (!enableUniversalProps) return {};
 
     const colorStyle      = buildColorStyle(colorMode, color, gradientFrom, gradientTo, gradientAngle, isDark);
-    const animationStyle  = animationSpeed !== 1 ? { '--animation-speed-multiplier': animationSpeed } as CSSProperties : {};
+    const animationStyle  = animationSpeed === 1 ? {} : { '--animation-speed-multiplier': animationSpeed } as CSSProperties;
 
     // Если трансформации, фильтры и прозрачность не применяются — возвращаем только цвет
     if (!hasTransform && !hasFilter && !hasOpacity) {
@@ -111,7 +114,7 @@ export const ComponentWrapper: React.FC<ComponentWrapperProps> = ({
     const filterParts    = buildFilterParts(blur, brightness, contrast, saturate);
 
     return {
-      ...(scale !== 1                ? { zoom:      scale                    } : {}),
+      ...(scale === 1                ? {}  : { zoom: scale }),
       ...(transformParts.length > 0  ? { transform: transformParts.join(' ') } : {}),
       ...(filterParts.length > 0     ? { filter:    filterParts.join(' ')    } : {}),
       ...(hasOpacity                 ? { opacity                             } : {}),
