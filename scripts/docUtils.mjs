@@ -158,13 +158,16 @@ export function extractFrontMatter(content) {
 
 // ─── Вспомогательные функции ──────────────────────────────────────────────────
 
+const HTML_ESCAPE_MAP = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
+
 function escapeAttr(str) {
-  return String(str)
-    .replaceAll('&', '&amp;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;');
+  return String(str).replace(/[&<>"']/g, (char) => HTML_ESCAPE_MAP[char]);
 }
 
 function parseParams(paramStr) {
