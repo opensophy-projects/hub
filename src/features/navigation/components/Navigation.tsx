@@ -399,11 +399,29 @@ function getSectionItemBackground(isActive: boolean, isDark: boolean): string {
   return isDark ? 'rgba(255,255,255,0.12)' : tk(false).accentSoft;
 }
 
+const SectionItemIcon: React.FC<{
+  navSlug: string; navIcon: string; isActive: boolean; mobile: boolean; t: ReturnType<typeof tk>;
+}> = ({ navSlug, navIcon, isActive, mobile, t }) => {
+  const size = mobile ? 15 : 13;
+  if (navSlug === '') {
+    return <Home size={size} style={{ color: t.fgMuted }} />;
+  }
+  return (
+    <span style={{ color: isActive ? t.accent : t.fgMuted, display: 'flex', alignItems: 'center' }}>
+      {navIcon ? <LucideIcon name={navIcon} size={size} /> : <FolderOpen size={size} />}
+    </span>
+  );
+};
+
 const SectionDropdown: React.FC<{
   sections: NavSection[]; activeNavSlug: string; mobile: boolean; isDark: boolean; onSelect: (slug: string) => void;
 }> = ({ sections, activeNavSlug, mobile, isDark, onSelect }) => {
   const t = tk(isDark);
-  const isLastOdd = (s: NavSection) => sections.length % 2 === 1 && sections[sections.length - 1]?.navSlug === s.navSlug;
+  const lastSection = sections[sections.length - 1];
+  const isLastOdd = (s: NavSection) => sections.length % 2 === 1 && lastSection?.navSlug === s.navSlug;
+  const padding  = mobile ? '0.7rem 1rem' : '0.55rem 0.75rem';
+  const fontSize = mobile ? '1rem' : '0.875rem';
+  const minHeight = mobile ? '46px' : '40px';
   return (
     <>
       {sections.map(s => {
@@ -412,21 +430,16 @@ const SectionDropdown: React.FC<{
           <button key={s.navSlug} onClick={() => onSelect(s.navSlug)}
             style={{
               width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem',
-              padding: mobile ? '0.7rem 1rem' : '0.55rem 0.75rem',
-              fontSize: mobile ? '1rem' : '0.875rem',
+              padding, fontSize,
               border: `1px solid ${getSectionItemBorder(isActive, isDark)}`,
               borderRadius: '10px', cursor: 'pointer', textAlign: 'left',
               background: getSectionItemBackground(isActive, isDark),
               color:      isActive ? t.accent : t.fg,
               fontWeight: isActive ? 600 : 400,
-              minHeight: mobile ? '46px' : '40px',
+              minHeight,
               gridColumn: isLastOdd(s) ? '1 / -1' : undefined,
             }}>
-            {s.navSlug === ''
-              ? <Home size={mobile ? 15 : 13} style={{ color: t.fgMuted }} />
-              : <span style={{ color: isActive ? t.accent : t.fgMuted, display: 'flex', alignItems: 'center' }}>
-                  {s.navIcon ? <LucideIcon name={s.navIcon} size={mobile ? 15 : 13} /> : <FolderOpen size={mobile ? 15 : 13} />}
-                </span>}
+            <SectionItemIcon navSlug={s.navSlug} navIcon={s.navIcon} isActive={isActive} mobile={mobile} t={t} />
             <span>{s.navTitle}</span>
           </button>
         );
@@ -838,7 +851,8 @@ const DesktopNav: React.FC<{
   }, []);
 
   useEffect(() => {
-    const left = railVisible ? (RAIL_W + (activePanel ? panelWidth : 0)) : 0;
+    const panelOffset = activePanel ? panelWidth : 0;
+    const left = railVisible ? RAIL_W + panelOffset : 0;
     document.documentElement.style.setProperty('--nav-left', `${left}px`);
     return () => { document.documentElement.style.removeProperty('--nav-left'); };
   }, [railVisible, activePanel, panelWidth]);
