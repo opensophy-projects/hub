@@ -168,12 +168,11 @@ const processImageElement = (element: Element, key: string, elements: React.Reac
   );
 };
 
-// Элемент приходит из уже санитизированного DOMPurify-документа — innerHTML безопасен
 const processBlockquoteElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   elements.push(
     React.createElement('blockquote', {
       key,
-      dangerouslySetInnerHTML: { __html: element.innerHTML },
+      dangerouslySetInnerHTML: { __html: sanitizeHtml(element.innerHTML) },
     }),
   );
 };
