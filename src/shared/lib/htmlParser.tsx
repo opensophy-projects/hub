@@ -116,13 +116,12 @@ const processHeadingElement = (element: Element, tagName: string, key: string, e
   );
 };
 
-// Элемент приходит из уже санитизированного DOMPurify-документа — innerHTML безопасен
 const processListElement = (element: Element, tagName: string, key: string, elements: React.ReactNode[]) => {
   const hasTaskList = element.querySelector('input[type="checkbox"]');
   elements.push(
     React.createElement(tagName, {
       key,
-      dangerouslySetInnerHTML: { __html: element.innerHTML },
+      dangerouslySetInnerHTML: { __html: sanitizeHtml(element.innerHTML) },
       className: hasTaskList ? 'task-list' : undefined,
     }),
   );
