@@ -61,18 +61,15 @@ const DARK_TOKENS = {
   hov:         'rgba(255,255,255,0.05)',
   accent:      '#ffffff',
   accentSoft:  'rgba(255,255,255,0.08)',
-  // ── search input — darker inset to give depth on dark bg ──
   inputBg:         '#0F0F0F',
   inputBorder:     'rgba(255,255,255,0.13)',
   inputBorderFocus:'rgba(255,255,255,0.30)',
   inputShadow:     'inset 0 1px 3px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05)',
   inputShadowFocus:'0 0 0 2px rgba(255,255,255,0.09)',
   inputClr:        'rgba(255,255,255,0.88)',
-  // ── section selector button ──
   sectionBg:       '#0F0F0F',
   sectionBorder:   'rgba(255,255,255,0.12)',
   sectionShadow:   '0 1px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
-  // ── section dropdown ──
   dropdownBg:      '#0F0F0F',
   dropdownBorder:  'rgba(255,255,255,0.10)',
   dropdownShadow:  '0 8px 32px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.07)',
@@ -213,6 +210,13 @@ const DocLink: React.FC<{
 
 // ─── CategoryNode ─────────────────────────────────────────────────────────────
 
+function getCategoryNodeBackground(expanded: boolean, isDark: boolean): string {
+  if (expanded) {
+    return isDark ? '#181818' : 'rgba(0,0,0,0.08)';
+  }
+  return isDark ? '#0F0F0F' : '#deddd9';
+}
+
 const CategoryNode: React.FC<{
   node: NavNode; path: string; expandedPaths: Set<string>;
   onToggle: (p: string) => void; isDark: boolean; currentDocSlug?: string;
@@ -229,9 +233,7 @@ const CategoryNode: React.FC<{
         padding: mobile ? '10px 14px' : '8px 10px', borderRadius: '8px',
         fontSize: mobile ? '1rem' : '0.875rem', fontWeight: 600,
         border: `1px solid ${expanded ? t.elevatedBorder : t.border}`,
-        background: expanded
-          ? (isDark ? '#181818' : 'rgba(0,0,0,0.08)')
-          : (isDark ? '#0F0F0F' : '#deddd9'),
+        background: getCategoryNodeBackground(expanded, isDark),
         boxShadow: expanded ? t.elevatedShadowSoft : 'none',
         color: t.fg, cursor: 'pointer', textAlign: 'left',
       }}>
@@ -314,7 +316,11 @@ function useNavPanel(docs: Doc[], currentDocSlug: string | undefined) {
 
   useEffect(() => {
     if (!sectionOpen) return;
-    const h = (e: MouseEvent) => { if (sectionRef.current && !sectionRef.current.contains(e.target as Node)) setSectionOpen(false); };
+    const h = (e: MouseEvent) => {
+      if (sectionRef.current && !sectionRef.current.contains(e.target as Node)) {
+        setSectionOpen(false);
+      }
+    };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, [sectionOpen]);
@@ -358,21 +364,46 @@ function usePanelResize(panelWidth: number, setPanelWidth: (w: number) => void) 
   const dragStartX = useRef(0);
   const dragStartW = useRef(0);
   const onResizeMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault(); isDragging.current = true; dragStartX.current = e.clientX; dragStartW.current = panelWidth;
-    document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none';
-    const onMove = (ev: MouseEvent) => { if (!isDragging.current) return; setPanelWidth(Math.max(PANEL_MIN, Math.min(PANEL_MAX, dragStartW.current + ev.clientX - dragStartX.current))); };
-    const onUp   = () => { isDragging.current = false; document.body.style.cursor = ''; document.body.style.userSelect = ''; globalThis.removeEventListener('mousemove', onMove); globalThis.removeEventListener('mouseup', onUp); };
-    globalThis.addEventListener('mousemove', onMove); globalThis.addEventListener('mouseup', onUp);
+    e.preventDefault();
+    isDragging.current = true;
+    dragStartX.current = e.clientX;
+    dragStartW.current = panelWidth;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    const onMove = (ev: MouseEvent) => {
+      if (!isDragging.current) return;
+      setPanelWidth(Math.max(PANEL_MIN, Math.min(PANEL_MAX, dragStartW.current + ev.clientX - dragStartX.current)));
+    };
+    const onUp = () => {
+      isDragging.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      globalThis.removeEventListener('mousemove', onMove);
+      globalThis.removeEventListener('mouseup', onUp);
+    };
+    globalThis.addEventListener('mousemove', onMove);
+    globalThis.addEventListener('mouseup', onUp);
   }, [panelWidth, setPanelWidth]);
   return { onResizeMouseDown };
 }
 
 // ─── SectionDropdown ──────────────────────────────────────────────────────────
 
+function getSectionItemBorder(isActive: boolean, isDark: boolean): string {
+  if (isActive) return 'var(--elevated-border)';
+  return isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+}
+
+function getSectionItemBackground(isActive: boolean, isDark: boolean): string {
+  if (!isActive) return isDark ? 'rgba(255,255,255,0.04)' : 'transparent';
+  return isDark ? 'rgba(255,255,255,0.12)' : tk(false).accentSoft;
+}
+
 const SectionDropdown: React.FC<{
   sections: NavSection[]; activeNavSlug: string; mobile: boolean; isDark: boolean; onSelect: (slug: string) => void;
 }> = ({ sections, activeNavSlug, mobile, isDark, onSelect }) => {
   const t = tk(isDark);
+  const isLastOdd = (s: NavSection) => sections.length % 2 === 1 && sections[sections.length - 1]?.navSlug === s.navSlug;
   return (
     <>
       {sections.map(s => {
@@ -383,15 +414,13 @@ const SectionDropdown: React.FC<{
               width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem',
               padding: mobile ? '0.7rem 1rem' : '0.55rem 0.75rem',
               fontSize: mobile ? '1rem' : '0.875rem',
-              border: `1px solid ${isActive ? t.elevatedBorder : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)')}`,
+              border: `1px solid ${getSectionItemBorder(isActive, isDark)}`,
               borderRadius: '10px', cursor: 'pointer', textAlign: 'left',
-              background: isActive
-                ? (isDark ? 'rgba(255,255,255,0.12)' : t.accentSoft)
-                : (isDark ? 'rgba(255,255,255,0.04)' : 'transparent'),
+              background: getSectionItemBackground(isActive, isDark),
               color:      isActive ? t.accent : t.fg,
               fontWeight: isActive ? 600 : 400,
               minHeight: mobile ? '46px' : '40px',
-              gridColumn: (sections.length % 2 === 1 && sections[sections.length - 1]?.navSlug === s.navSlug) ? '1 / -1' : undefined,
+              gridColumn: isLastOdd(s) ? '1 / -1' : undefined,
             }}>
             {s.navSlug === ''
               ? <Home size={mobile ? 15 : 13} style={{ color: t.fgMuted }} />
@@ -476,6 +505,11 @@ const DocHoverPreview: React.FC<{ isDark: boolean; payload: { doc: Doc; rect: DO
 
 // ─── NavPanelContent ──────────────────────────────────────────────────────────
 
+function getSectionOpenBorder(sectionOpen: boolean, isDark: boolean): string {
+  if (!sectionOpen) return tk(isDark).sectionBorder;
+  return isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)';
+}
+
 const NavPanelContent: React.FC<{
   isDark: boolean; currentDocSlug?: string; mobile?: boolean;
 }> = ({ isDark, currentDocSlug, mobile }) => {
@@ -492,7 +526,7 @@ const NavPanelContent: React.FC<{
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
 
-      {/* Search input */}
+      {/* Строка поиска */}
       <div style={{ flexShrink: 0, padding: mobile ? '12px 14px' : '10px', borderBottom: `1px solid ${t.border}` }}>
         <div style={{ position: 'relative' }}>
           <Search size={iconSize} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: t.fgSub, pointerEvents: 'none' }} />
@@ -519,7 +553,7 @@ const NavPanelContent: React.FC<{
         </div>
       </div>
 
-      {/* Section selector */}
+      {/* Выбор раздела */}
       {sections.length > 1 && activeSection && (
         <div style={{ flexShrink: 0, padding: mobile ? '10px 14px' : '8px 10px', borderBottom: `1px solid ${t.border}`, position: 'relative' }} ref={sectionRef}>
           <button
@@ -528,7 +562,7 @@ const NavPanelContent: React.FC<{
               width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: mobile ? '0.55rem 0.85rem' : '0.4rem 0.65rem',
               borderRadius: '8px', fontSize: mobile ? '1rem' : '0.875rem',
-              border: `1px solid ${sectionOpen ? (isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)') : t.sectionBorder}`,
+              border: `1px solid ${getSectionOpenBorder(sectionOpen, isDark)}`,
               background: t.sectionBg,
               color: t.fg,
               cursor: 'pointer',
@@ -563,7 +597,7 @@ const NavPanelContent: React.FC<{
         </div>
       )}
 
-      {/* Tree */}
+      {/* Дерево навигации */}
       <div style={{ flex: 1, overflowY: 'auto', padding: mobile ? '8px 6px' : '6px' }}>
         <NavTreeContent
           error={!!error} loading={loading} navTree={navTree}
@@ -601,7 +635,6 @@ function getTocItemStyle(item: TocItem, dist: number, activeId: string, isDark: 
   if (!hasActive)    { opacity = 0.65; glowOp = 0; }
   else if (isActive) { opacity = 1;    glowOp = 1; }
   else { opacity = Math.max(0.32, 0.82 - dist * 0.18); glowOp = Math.max(0, 0.5 - dist * 0.16); }
-  // Increased base font size: 0.92rem (was 0.82rem)
   const baseFontSize = mobile ? 1.05 : 0.92;
   const fontSizeStep = mobile ? 0.05 : 0.04;
   const fontSize     = `${baseFontSize - (item.level - 2) * fontSizeStep}rem`;
@@ -616,6 +649,16 @@ function getTocItemStyle(item: TocItem, dist: number, activeId: string, isDark: 
 }
 
 // ─── TocPanelContent ──────────────────────────────────────────────────────────
+
+function getTocItemBackground(isActive: boolean, isDark: boolean): string {
+  if (!isActive) return 'transparent';
+  return isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
+}
+
+function getTocItemFontWeight(isActive: boolean, level: number): number {
+  if (isActive) return 600;
+  return level === 2 ? 500 : 400;
+}
 
 const TocPanelContent: React.FC<{
   toc: TocItem[]; activeId: string; isDark: boolean; onItemClick?: () => void; mobile?: boolean;
@@ -632,8 +675,8 @@ const TocPanelContent: React.FC<{
       {toc.map((item, index) => {
         const dist  = Math.abs(index - activeIndex);
         const style = getTocItemStyle(item, dist, activeId, isDark, mobile);
-        const bg    = !style.isActive ? 'transparent' : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)');
-        const fw    = style.isActive ? 600 : (item.level === 2 ? 500 : 400);
+        const bg    = getTocItemBackground(style.isActive, isDark);
+        const fw    = getTocItemFontWeight(style.isActive, item.level);
         return (
           <button key={item.id}
             onClick={() => { scrollToElement(item.id); onItemClick?.(); }}
@@ -696,12 +739,17 @@ const PanelHeader: React.FC<{ title: string; isDark: boolean; onClose: () => voi
 
 // ─── RailBtn ─────────────────────────────────────────────────────────────────
 
+function getRailBtnColor(isActive: boolean | undefined, hov: boolean, t: ReturnType<typeof tk>): string {
+  if (isActive) return t.accent;
+  return hov ? t.fg : t.fgMuted;
+}
+
 const RailBtn: React.FC<{
   icon: React.ReactNode; label: string; isActive?: boolean; isDark: boolean; onClick: () => void; title?: string;
 }> = ({ icon, label, isActive, isDark, onClick, title }) => {
   const t = tk(isDark);
   const [hov, setHov] = useState(false);
-  const btnColor = isActive ? t.accent : (hov ? t.fg : t.fgMuted);
+  const btnColor = getRailBtnColor(isActive, hov, t);
   return (
     <button onClick={onClick} title={title}
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
@@ -714,6 +762,18 @@ const RailBtn: React.FC<{
 
 // ─── PanelResizeToggle ────────────────────────────────────────────────────────
 
+function getPanelToggleBorder(hov: boolean, isDark: boolean): string {
+  if (!hov) return tk(isDark).border;
+  return isDark ? 'rgba(255,255,255,0.26)' : 'rgba(0,0,0,0.2)';
+}
+
+function getPanelToggleBackground(hov: boolean, isDark: boolean): string {
+  if (hov) {
+    return isDark ? '#1c1c1c' : '#cfcec9';
+  }
+  return isDark ? '#141414' : '#dbdad6';
+}
+
 const PanelResizeToggle: React.FC<{
   isDark: boolean; panelOpen: boolean; panelWidth: number; onToggle: () => void; onResizeMouseDown: (e: React.MouseEvent) => void;
 }> = ({ isDark, panelOpen, panelWidth, onToggle, onResizeMouseDown }) => {
@@ -721,9 +781,21 @@ const PanelResizeToggle: React.FC<{
   const [hov, setHov] = useState(false);
   const handleMouseDown = (e: React.MouseEvent) => {
     const startX = e.clientX; let didDrag = false;
-    const onMove = (ev: MouseEvent) => { if (didDrag) return; if (Math.abs(ev.clientX - startX) > 4) { didDrag = true; onResizeMouseDown(e); } };
-    const onUp   = () => { if (!didDrag) onToggle(); globalThis.removeEventListener('mousemove', onMove); globalThis.removeEventListener('mouseup', onUp); };
-    globalThis.addEventListener('mousemove', onMove); globalThis.addEventListener('mouseup', onUp); e.preventDefault();
+    const onMove = (ev: MouseEvent) => {
+      if (didDrag) return;
+      if (Math.abs(ev.clientX - startX) > 4) {
+        didDrag = true;
+        onResizeMouseDown(e);
+      }
+    };
+    const onUp = () => {
+      if (!didDrag) onToggle();
+      globalThis.removeEventListener('mousemove', onMove);
+      globalThis.removeEventListener('mouseup', onUp);
+    };
+    globalThis.addEventListener('mousemove', onMove);
+    globalThis.addEventListener('mouseup', onUp);
+    e.preventDefault();
   };
   const x = RAIL_W + (panelOpen ? panelWidth : 0);
   return (
@@ -732,8 +804,8 @@ const PanelResizeToggle: React.FC<{
         title={panelOpen ? 'Свернуть / ресайз' : 'Развернуть'}
         style={{
           width: 18, height: 52, borderRadius: '0 12px 12px 0', borderLeft: 'none',
-          border: `1px solid ${hov ? (isDark ? 'rgba(255,255,255,0.26)' : 'rgba(0,0,0,0.2)') : t.border}`,
-          background: hov ? (isDark ? '#1c1c1c' : '#cfcec9') : (isDark ? '#141414' : '#dbdad6'),
+          border: `1px solid ${getPanelToggleBorder(hov, isDark)}`,
+          background: getPanelToggleBackground(hov, isDark),
           color: hov ? t.fg : t.fgMuted, cursor: 'pointer', padding: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: hov ? t.elevatedShadowSoft : 'none',
@@ -827,7 +899,7 @@ const DesktopNav: React.FC<{
 
       {railVisible && (
         <PanelResizeToggle isDark={isDark} panelOpen={!!activePanel} panelWidth={panelWidth} onResizeMouseDown={onResizeMouseDown}
-          onToggle={() => { if (activePanel) setActivePanel(null); else togglePanel('nav'); }} />
+          onToggle={() => { if (activePanel) { setActivePanel(null); } else { togglePanel('nav'); } }} />
       )}
 
       <AnimatePresence>
@@ -844,7 +916,13 @@ const DesktopNav: React.FC<{
 // ─── Mobile panel ─────────────────────────────────────────────────────────────
 
 function tocSectionLabel(count: number): string {
-  if (count === 1) return 'раздел'; if (count < 5) return 'раздела'; return 'разделов';
+  if (count === 1) {
+    return 'раздел';
+  }
+  if (count < 5) {
+    return 'раздела';
+  }
+  return 'разделов';
 }
 
 const MobilePanel: React.FC<{
