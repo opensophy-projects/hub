@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { marked } from 'marked';
 import katex from 'katex';
+import he from 'he';
 
 marked.setOptions({ breaks: true, gfm: true });
 
