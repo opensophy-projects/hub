@@ -127,29 +127,31 @@ function escapeHtml(str: string): string {
   return str.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
+function highlightTextMatches(text: string, query: string): string {
+  const lowerText = text.toLowerCase();
+  const lowerQuery = query.toLowerCase();
+  const queryLen = query.length;
+
+  let result = '';
+  let lastIdx = 0;
+  let idx = lowerText.indexOf(lowerQuery);
+
+  while (idx !== -1) {
+    result += text.slice(lastIdx, idx);
+    result += `<mark style="background:#854d0e;color:#fff;border-radius:2px;padding:0 1px;">${text.slice(idx, idx + queryLen)}</mark>`;
+    lastIdx = idx + queryLen;
+    idx = lowerText.indexOf(lowerQuery, lastIdx);
+  }
+
+  result += text.slice(lastIdx);
+  return result;
+}
+
 function injectSearchHighlight(html: string, query: string): string {
   if (!query) return html;
-  const lowerQuery = query.toLowerCase();
-  const qLen = query.length;
   return html.replace(/(<[^>]*>)|([^<]+)/g, (_, tag, text) => { // NOSONAR
     if (tag) return tag;
-    // Case-insensitive search using indexOf instead of RegExp to avoid ReDoS
-    const lowerText = text.toLowerCase();
-    let result = '';
-    let cur = 0;
-    while (cur < text.length) {
-      const idx = lowerText.indexOf(lowerQuery, cur);
-      if (idx === -1) {
-        result += text.slice(cur);
-        break;
-      }
-      if (idx > cur) {
-        result += text.slice(cur, idx);
-      }
-      result += `<mark style="background:#854d0e;color:#fff;border-radius:2px;padding:0 1px;">${text.slice(idx, idx + qLen)}</mark>`;
-      cur = idx + qLen;
-    }
-    return result;
+    return highlightTextMatches(text, query);
   });
 }
 
@@ -606,7 +608,6 @@ function TabBar({ tabs, activeIdx, onSelect, t }: TabBarProps) {
               onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = t.tabActive; }}
               onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = t.tabInactive; }}
             >
-              {/* Только label — никакого дублирования с language */}
               {tab.label}
             </button>
           );
@@ -621,7 +622,6 @@ function TabBar({ tabs, activeIdx, onSelect, t }: TabBarProps) {
 interface CodeBlockProps {
   readonly code: string;
   readonly language?: string;
-  // Поддержка табов: если передан массив вкладок, используется режим табов
   readonly tabs?: CodeTab[];
 }
 
@@ -638,7 +638,6 @@ export function CodeBlock({ code, language = '', tabs }: CodeBlockProps) {
 
   const hasTabs = tabs && tabs.length > 1;
 
-  // При переключении таба — сбрасываем поиск и состояние expand
   useEffect(() => {
     setSearchQuery('');
     setIsExpanded(false);
