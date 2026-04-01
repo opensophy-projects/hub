@@ -159,8 +159,20 @@ export function extractFrontMatter(content) {
 
 // ─── Вспомогательные функции ──────────────────────────────────────────────────
 
+const HTML_ESCAPE_MAP = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
+
 function escapeAttr(str) {
-  return he.escape(String(str));
+  return String(str).replace(/[&<>"']/g, (char) => HTML_ESCAPE_MAP[char]);
+}
+
+function escapeRegExp(str) {
+  return String(str).replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function parseParams(paramStr) {
@@ -209,7 +221,7 @@ function collectBlockBody(lines, startAfterIndex) {
 function parseInnerBlocks(bodyStr, innerTag) {
   const lines   = bodyStr.split('\n');
   const results = [];
-  const openRe  = new RegExp(String.raw`^:::${innerTag}(?:\[([^\]]*)\])?(?:\s+(\S.*))?\s*$`);
+  const openRe  = new RegExp(String.raw`^:::${escapeRegExp(innerTag)}(?:\[([^\]]*)\])?(?:\s+(\S.*))?\s*$`);
   let i = 0;
 
   while (i < lines.length) {
@@ -382,7 +394,7 @@ function handleChartBlock(trimmed, lines, i, output) {
 
   let jsonAttr = '[]';
   try {
-    jsonAttr = JSON.stringify(data).replaceAll('"', '&quot;');
+    jsonAttr = escapeAttr(JSON.stringify(data));
   } catch { /* оставляем пустой массив */ }
 
   output.push(
@@ -445,7 +457,7 @@ function handleTabsBlock(trimmed, lines, i, codeBlocks, output) {
 
   let jsonAttr = '[]';
   try {
-    jsonAttr = JSON.stringify(tabs).replaceAll('"', '&quot;');
+    jsonAttr = escapeAttr(JSON.stringify(tabs));
   } catch { /* оставляем пустой массив */ }
 
   output.push(`<div class="custom-tabs" data-tabs="${jsonAttr}"></div>`);

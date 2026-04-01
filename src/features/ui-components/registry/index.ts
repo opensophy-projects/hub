@@ -60,7 +60,7 @@ export const registry = {
         const component = mod['default'] ?? Object.values(mod).find(v => typeof v === 'function');
         if (component) return component as AnyComponent;
       } catch (e) {
-        console.warn(`[registry] failed to load ${candidate}:`, e);
+        console.warn('[registry] failed to load %s:', candidate, e);
       }
     }
 
@@ -69,7 +69,7 @@ export const registry = {
   },
 
   preloadComponent(id: string): void {
-    this.loadComponent(id).catch(e => console.warn(`[registry] preload failed: ${id}`, e));
+    this.loadComponent(id).catch(e => console.warn('[registry] preload failed: %s', id, e));
   },
 
   hasComponent(id: string): boolean {
