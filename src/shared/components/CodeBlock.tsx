@@ -127,16 +127,29 @@ function escapeHtml(str: string): string {
   return str.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
-function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // NOSONAR
-}
-
 function injectSearchHighlight(html: string, query: string): string {
   if (!query) return html;
-  const re = new RegExp(`(${escapeRegex(query)})`, 'gi');
+  const lowerQuery = query.toLowerCase();
+  const qLen = query.length;
   return html.replace(/(<[^>]*>)|([^<]+)/g, (_, tag, text) => { // NOSONAR
     if (tag) return tag;
-    return text.replace(re, '<mark style="background:#854d0e;color:#fff;border-radius:2px;padding:0 1px;">$1</mark>'); // NOSONAR
+    // Case-insensitive search using indexOf instead of RegExp to avoid ReDoS
+    const lowerText = text.toLowerCase();
+    let result = '';
+    let cur = 0;
+    while (cur < text.length) {
+      const idx = lowerText.indexOf(lowerQuery, cur);
+      if (idx === -1) {
+        result += text.slice(cur);
+        break;
+      }
+      if (idx > cur) {
+        result += text.slice(cur, idx);
+      }
+      result += `<mark style="background:#854d0e;color:#fff;border-radius:2px;padding:0 1px;">${text.slice(idx, idx + qLen)}</mark>`;
+      cur = idx + qLen;
+    }
+    return result;
   });
 }
 
