@@ -194,12 +194,11 @@ const processTableElement = (element: Element, key: string, elements: React.Reac
   );
 };
 
-// Элемент приходит из уже санитизированного DOMPurify-документа — innerHTML безопасен
 const processInlineElement = (tag: string, element: Element, key: string, elements: React.ReactNode[]) => {
   elements.push(
     React.createElement(tag, {
       key,
-      dangerouslySetInnerHTML: { __html: element.innerHTML },
+      dangerouslySetInnerHTML: { __html: sanitizeHtml(element.innerHTML) },
     }),
   );
 };
@@ -385,18 +384,17 @@ const processKatexBlock = (element: Element, key: string, elements: React.ReactN
     React.createElement('div', {
       key,
       className: 'katex-block not-prose',
-      dangerouslySetInnerHTML: { __html: element.innerHTML },
+      dangerouslySetInnerHTML: { __html: sanitizeHtml(element.innerHTML) },
     }),
   );
 };
 
-// Аналогично processKatexBlock — содержимое санитизировано выше по потоку
 const processKatexInline = (element: Element, key: string, elements: React.ReactNode[]) => {
   elements.push(
     React.createElement('span', {
       key,
       className: 'katex-inline',
-      dangerouslySetInnerHTML: { __html: element.innerHTML },
+      dangerouslySetInnerHTML: { __html: sanitizeHtml(element.innerHTML) },
     }),
   );
 };
@@ -502,12 +500,11 @@ const processParagraphElement = (
   const hasKatex = element.querySelector('[data-katex-idx]');
   const hasImg   = element.querySelector('img');
 
-  // Элемент приходит из уже санитизированного DOMPurify-документа — innerHTML безопасен
   if (!hasKatex && !hasImg) {
     elements.push(
       React.createElement('p', {
         key,
-        dangerouslySetInnerHTML: { __html: element.innerHTML },
+        dangerouslySetInnerHTML: { __html: sanitizeHtml(element.innerHTML) },
       }),
     );
     return;
@@ -537,7 +534,7 @@ const processParagraphElement = (
               React.createElement(stored.tag, {
                 key:                     ckey,
                 className:               stored.cls,
-                dangerouslySetInnerHTML: { __html: stored.inner },
+                dangerouslySetInnerHTML: { __html: sanitizeHtml(stored.inner) },
               }),
             );
             return;
@@ -547,7 +544,7 @@ const processParagraphElement = (
         kids.push(
           React.createElement('span', {
             key:                     ckey,
-            dangerouslySetInnerHTML: { __html: el.outerHTML },
+            dangerouslySetInnerHTML: { __html: sanitizeHtml(el.outerHTML) },
           }),
         );
       }
@@ -571,11 +568,10 @@ const processParagraphElement = (
         }),
       );
     } else {
-      // run.html получен из уже санитизированного документа через splitParagraphIntoRuns
       elements.push(
         React.createElement('p', {
           key:                     runKey,
-          dangerouslySetInnerHTML: { __html: run.html },
+          dangerouslySetInnerHTML: { __html: sanitizeHtml(run.html) },
         }),
       );
     }
