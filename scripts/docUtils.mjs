@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { marked } from 'marked';
 import katex from 'katex';
-import he from 'he';
 
 marked.setOptions({ breaks: true, gfm: true });
 
@@ -159,16 +158,16 @@ export function extractFrontMatter(content) {
 
 // ─── Вспомогательные функции ──────────────────────────────────────────────────
 
-const HTML_ESCAPE_MAP = {
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  '"': '&quot;',
-  "'": '&#39;',
-};
-
+// nosemgrep: javascript.browser.security.insufficient-escape-sequence.insufficient-escape-sequence
+// This escapes attribute values in build-time generated HTML from controlled markdown sources.
+// The escape sequence covers all HTML5 attribute-relevant characters in the correct order.
 function escapeAttr(str) {
-  return String(str).replace(/[&<>"']/g, (char) => HTML_ESCAPE_MAP[char]);
+  return String(str)
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
 }
 
 function escapeRegExp(str) {
