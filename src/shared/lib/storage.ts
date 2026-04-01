@@ -5,7 +5,7 @@
 
 function warn(action: string, key: string, err: unknown): void {
   if (process.env.NODE_ENV !== 'production') {
-    console.warn(`[storage] ${action} key "${key}" failed:`, err);
+    console.warn('[storage] %s key "%s" failed:', action, key, err);
   }
 }
 
