@@ -618,7 +618,7 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
   rawDoc.querySelectorAll('div.katex-block, span.katex-inline').forEach((el) => {
     const tag   = el.tagName.toLowerCase() as 'div' | 'span';
     const cls   = el.className;
-    const inner = el.innerHTML;
+    const inner = sanitizeHtml(el.innerHTML);
     const idx   = katexStore.push({ tag, cls, inner }) - 1;
     const placeholder = rawDoc.createElement(tag);
     placeholder.dataset.katexIdx = String(idx);
