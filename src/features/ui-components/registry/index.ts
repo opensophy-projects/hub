@@ -69,7 +69,7 @@ export const registry = {
   },
 
   preloadComponent(id: string): void {
-    this.loadComponent(id).catch(e => console.warn(`[registry] preload failed: ${id}`, e));
+    this.loadComponent(id).catch(e => console.warn('[registry] preload failed: %s', id, e));
   },
 
   hasComponent(id: string): boolean {
