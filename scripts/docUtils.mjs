@@ -170,6 +170,10 @@ function escapeAttr(str) {
   return String(str).replace(/[&<>"']/g, (char) => HTML_ESCAPE_MAP[char]);
 }
 
+function escapeRegExp(str) {
+  return String(str).replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function parseParams(paramStr) {
   const params = {};
   if (!paramStr) return params;
@@ -216,7 +220,7 @@ function collectBlockBody(lines, startAfterIndex) {
 function parseInnerBlocks(bodyStr, innerTag) {
   const lines   = bodyStr.split('\n');
   const results = [];
-  const openRe  = new RegExp(String.raw`^:::${innerTag}(?:\[([^\]]*)\])?(?:\s+(\S.*))?\s*$`);
+  const openRe  = new RegExp(String.raw`^:::${escapeRegExp(innerTag)}(?:\[([^\]]*)\])?(?:\s+(\S.*))?\s*$`);
   let i = 0;
 
   while (i < lines.length) {
