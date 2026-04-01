@@ -29,7 +29,7 @@ robots: "index, follow"
 
 В июле 2025 года инженер из команды Claude Code в Anthropic — **Brian Cherny** — написал в X следующее:
 
-> *«Pretty much 100% of our code is written by Claude Code + Opus 4.5. For me personally it has been 100% for two+ months now, I don't even make small edits by hand. I shipped 22 PRs yesterday and 27 the day before, each one 100% written by Claude.»*
+> «Практически 100% нашего кода написано Claude Code + Opus 4.5. Лично для меня это уже 100% на протяжении двух с лишним месяцев — я даже не делаю правок вручную. Вчера я закрыл 22 пулл-реквеста, позавчера — 27, и каждый из них написан Claude полностью.»
 >
 > — [Brian Cherny, @bcherny](https://x.com/bcherny/status/2015979257038831967)
 
