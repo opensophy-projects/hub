@@ -389,7 +389,7 @@ function handleChartBlock(trimmed, lines, i, output) {
 
   let jsonAttr = '[]';
   try {
-    jsonAttr = JSON.stringify(data).replaceAll('"', '&quot;');
+    jsonAttr = escapeAttr(JSON.stringify(data));
   } catch { /* оставляем пустой массив */ }
 
   output.push(
@@ -452,7 +452,7 @@ function handleTabsBlock(trimmed, lines, i, codeBlocks, output) {
 
   let jsonAttr = '[]';
   try {
-    jsonAttr = JSON.stringify(tabs).replaceAll('"', '&quot;');
+    jsonAttr = escapeAttr(JSON.stringify(tabs));
   } catch { /* оставляем пустой массив */ }
 
   output.push(`<div class="custom-tabs" data-tabs="${jsonAttr}"></div>`);
