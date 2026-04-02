@@ -1,0 +1,66 @@
+{
+  "id": "gradient-text",
+  "name": "Gradient Text",
+  "description": "Текст с анимированным градиентом. Поддерживает горизонтальное, вертикальное и диагональное движение, yoyo-режим и опциональную градиентную рамку.",
+  "category": "text",
+  "main": "GradientText.tsx",
+  "props": [
+    {
+      "name": "text",
+      "type": "string",
+      "default": "Gradient Text",
+      "description": "Текст с градиентом",
+      "control": "text"
+    },
+    {
+      "name": "animationSpeed",
+      "type": "number",
+      "default": 8,
+      "description": "Скорость анимации (с на цикл)",
+      "control": "number",
+      "min": 1,
+      "max": 30,
+      "step": 1
+    },
+    {
+      "name": "direction",
+      "type": "string",
+      "default": "horizontal",
+      "description": "Направление движения градиента",
+      "control": "select",
+      "options": ["horizontal", "vertical", "diagonal"]
+    },
+    {
+      "name": "yoyo",
+      "type": "boolean",
+      "default": true,
+      "description": "Туда-обратно (иначе — бесконечный цикл)",
+      "control": "checkbox"
+    },
+    {
+      "name": "showBorder",
+      "type": "boolean",
+      "default": false,
+      "description": "Показывать градиентную рамку",
+      "control": "checkbox"
+    },
+    {
+      "name": "pauseOnHover",
+      "type": "boolean",
+      "default": false,
+      "description": "Пауза при наведении",
+      "control": "checkbox"
+    },
+    {
+      "name": "className",
+      "type": "string",
+      "default": "text-5xl font-bold",
+      "description": "CSS классы",
+      "control": "text"
+    }
+  ],
+  "specificProps": ["text", "animationSpeed", "direction", "yoyo", "showBorder", "pauseOnHover"],
+  "tags": ["animation", "text", "gradient", "motion", "color"],
+  "author": "davidhdev",
+  "version": "1.0.0"
+}
