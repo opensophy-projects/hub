@@ -1,40 +1,16 @@
 ---
 import Layout from '@/app/layouts/Layout.astro';
-import DocContent from '@/features/docs/components/DocContent';
-import fs from 'node:fs';
-import path from 'node:path';
-import { buildDocFromPath } from '../../../scripts/docUtils.mjs';
-
-const docsDir       = path.join(process.cwd(), 'Docs');
-const welcomeMdPath = path.join(docsDir, 'welcome.md');
-
-let welcomeDoc = null;
-if (fs.existsSync(welcomeMdPath)) {
-  welcomeDoc = buildDocFromPath(welcomeMdPath, docsDir);
-  welcomeDoc.id   = 'welcome';
-  welcomeDoc.slug = '';
-}
-
-const title       = welcomeDoc?.title       || 'Hub — Opensophy';
-const description = welcomeDoc?.description || 'Hub проекта Opensophy.';
-const keywords    = welcomeDoc?.keywords    || '';
-const lang        = welcomeDoc?.lang        || 'ru';
+import GeneralPageWrapper from '@/features/general/components/GeneralPageWrapper';
 ---
 
 <Layout
-  title={title}
-  description={description}
+  title="Opensophy — Кибербезопасность. Разработка. Open-source."
+  description="Opensophy — проект, который разрабатывает open-source проекты и практические туториалы для всех: от опытных специалистов до тех, кто только делает первые шаги в IT."
   url="/"
   type="website"
-  keywords={keywords}
+  keywords="opensophy, кибербезопасность, разработка, open-source, IT, туториалы"
   robots="index, follow"
-  lang={lang}
+  lang="ru"
 >
-  {welcomeDoc ? (
-    <DocContent client:only="react" doc={welcomeDoc} />
-  ) : (
-    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;">
-      <p>Загрузка...</p>
-    </div>
-  )}
+  <GeneralPageWrapper client:only="react" />
 </Layout>
