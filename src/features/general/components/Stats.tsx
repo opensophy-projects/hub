@@ -191,7 +191,7 @@ export const Stats: React.FC<StatsProps> = ({ isNegative }) => {
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
               <h2
                 className={`text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.0] ${isNegative ? 'text-white' : 'text-black'}`}
-                style={{ fontFamily: 'UnifixSP, sans-serif' }}
+                style={{ fontFamily: 'customfont, sans-serif' }}
               >
                 Наши статьи
               </h2>
