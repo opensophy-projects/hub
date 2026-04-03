@@ -138,7 +138,7 @@ const LandingContent: React.FC = () => {
           position: 'absolute',
           left: '50%',
           top: '50%',
-          transform: 'translate(-60%, -50%)',
+          transform: 'translate(-80%, -50%)',
           zIndex: 10,
           textAlign: 'center',
           padding: '0 1.5rem',
