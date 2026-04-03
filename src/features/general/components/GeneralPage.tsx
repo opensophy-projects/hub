@@ -23,7 +23,7 @@ const SERVICE_DATA: ServiceEntry[] = [
     accentColor: '#6366f1',
     items: [
       { title: 'Разработка сайта', description: 'Современный сайт с использованием ИИ-инструментов под любой стек. Автоматическое выявление уязвимостей прямо в процессе разработки.' },
-      { title: 'Тестирование сайта', description: 'Комлексная проверка на удобство и функциональность. Выявление проблем UX и рекомендации по улучшению.' },
+      { title: 'Тестирование сайта', description: 'Комплексная проверка на удобство и функциональность. Выявление проблем UX и рекомендации по улучшению.' },
     ],
   },
   {
@@ -381,36 +381,18 @@ const GeneralPage: React.FC = () => {
 
   return (
     /*
+     * GeneralPage рендерится ВНУТРИ Hub Layout — Hub Navigation уже присутствует.
+     * Собственный NavBar не нужен.
      * Тема синхронизируется с Hub через hub:theme-change и localStorage.
      */
-    <div className={`landing-grid-bg min-h-screen relative flex flex-col ${isNegative ? 'text-white' : 'text-black'} ${isNegative ? 'landing-grid-bg--dark' : 'landing-grid-bg--light'}`}>
+    <div
+      className={`min-h-screen relative flex flex-col ${isNegative ? 'text-white' : 'text-black'}`}
+    >
       <style>{`
         @keyframes accordion-down { from { height: 0; opacity: 0; } to { height: var(--radix-accordion-content-height); opacity: 1; } }
         @keyframes accordion-up   { from { height: var(--radix-accordion-content-height); opacity: 1; } to { height: 0; opacity: 0; } }
         .animate-accordion-down { animation: accordion-down 0.2s ease-out; }
         .animate-accordion-up   { animation: accordion-up   0.2s ease-out; }
-        .landing-grid-bg {
-          --landing-grid-size: 46px;
-          --landing-grid-line: rgba(255,255,255,0.06);
-          --landing-grid-glow: rgba(114, 52, 255, 0.24);
-          background-image:
-            linear-gradient(to right, var(--landing-grid-line) 1px, transparent 1px),
-            linear-gradient(to bottom, var(--landing-grid-line) 1px, transparent 1px),
-            radial-gradient(circle at 20% 8%, var(--landing-grid-glow), transparent 45%);
-          background-size:
-            var(--landing-grid-size) var(--landing-grid-size),
-            var(--landing-grid-size) var(--landing-grid-size),
-            100% 100%;
-          background-attachment: fixed;
-        }
-        .landing-grid-bg--light {
-          --landing-grid-line: rgba(0,0,0,0.1);
-          --landing-grid-glow: rgba(114, 52, 255, 0.16);
-        }
-        .landing-grid-bg--dark {
-          --landing-grid-line: rgba(255,255,255,0.06);
-          --landing-grid-glow: rgba(114, 52, 255, 0.24);
-        }
       `}</style>
 
       <div className={`absolute inset-0 ${bg}`} />
@@ -427,26 +409,21 @@ const GeneralPage: React.FC = () => {
             style={{ background: isNegative ? 'linear-gradient(to bottom, transparent, #0a0a0a)' : 'linear-gradient(to bottom, transparent, #E8E7E3)' }}
           />
           <div className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-            <div className={cn('relative rounded-[1.25rem] border-[0.75px] p-2 md:rounded-[1.5rem] md:p-3', borderColor)}>
-              <GlowingEffect spread={50} glow={true} disabled={false} proximity={68} inactiveZone={0.01} borderWidth={3} isNegative={isNegative} />
-              <div className={cn('relative rounded-xl border-[0.75px] p-8 sm:p-10 md:p-14', isNegative ? 'bg-[#0a0a0a]/85 border-white/10' : 'bg-[#E8E7E3]/85 border-black/10')}>
-                <div className="flex flex-col items-center justify-center text-center">
-                  <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, ease: 'easeOut' }} className="flex flex-col items-center">
-                    <motion.div
-                      initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
-                      className={`text-xs sm:text-sm md:text-base font-semibold uppercase tracking-widest mb-4 sm:mb-6 md:mb-8 ${labelColor}`}
-                    >
-                      КИБЕРБЕЗОПАСНОСТЬ. РАЗРАБОТКА. OPEN-SOURCE.
-                    </motion.div>
-                    <h1
-                      className={`text-[clamp(2.8rem,12vw,10rem)] font-bold tracking-[0.10em] drop-shadow-lg leading-none mb-4 sm:mb-6 md:mb-8 ${isNegative ? 'text-white' : 'text-black'}`}
-                      style={{ fontFamily: 'customfont, sans-serif' }}
-                    >
-                      Opensophy
-                    </h1>
-                  </motion.div>
-                </div>
-              </div>
+            <div className="flex flex-col items-center justify-center text-center">
+              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, ease: 'easeOut' }} className="flex flex-col items-center">
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
+                  className={`text-xs sm:text-sm md:text-base font-semibold uppercase tracking-widest mb-4 sm:mb-6 md:mb-8 ${labelColor}`}
+                >
+                  КИБЕРБЕЗОПАСНОСТЬ. РАЗРАБОТКА. OPEN-SOURCE.
+                </motion.div>
+                <h1
+                  className={`text-[clamp(2.8rem,12vw,10rem)] font-bold tracking-[0.10em] drop-shadow-lg leading-none mb-4 sm:mb-6 md:mb-8 ${isNegative ? 'text-white' : 'text-black'}`}
+                  style={{ fontFamily: 'customfont, sans-serif' }}
+                >
+                  Opensophy
+                </h1>
+              </motion.div>
             </div>
           </div>
         </section>
@@ -599,4 +576,4 @@ const GeneralPage: React.FC = () => {
   );
 };
 
-export default GeneralPage;
+export default GeneralPage
