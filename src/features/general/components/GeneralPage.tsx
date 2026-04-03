@@ -116,7 +116,7 @@ const LandingContent: React.FC = () => {
 
       <Navigation />
 
-      {/* ── HERO — логотип строго по центру видимой зоны */}
+      {/* ── HERO */}
       <section
         style={{
           position: 'relative',
@@ -142,12 +142,15 @@ const LandingContent: React.FC = () => {
           background: `linear-gradient(to bottom, transparent, ${bg})`,
         }} />
 
+        {/* ← ВАЖНО: компенсация navOffset */}
         <div style={{
-          position: 'relative', zIndex: 10,
+          position: 'relative',
+          zIndex: 10,
           textAlign: 'center',
           padding: '0 1.5rem',
           maxWidth: '900px',
           width: '100%',
+          transform: navOffset > 0 ? `translateX(-${navOffset / 2}px)` : 'none',
         }}>
           <h1 style={{
             fontSize: 'clamp(3.5rem, 14vw, 11rem)',
@@ -163,7 +166,7 @@ const LandingContent: React.FC = () => {
         </div>
       </section>
 
-      {/* ── О ПРОЕКТЕ — на всю ширину, без ограничения контейнера */}
+      {/* ── О ПРОЕКТЕ */}
       <section
         style={{
           marginLeft: navOffset > 0 ? `${navOffset}px` : 0,
