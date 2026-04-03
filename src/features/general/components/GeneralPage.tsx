@@ -121,9 +121,6 @@ const LandingContent: React.FC = () => {
         style={{
           position: 'relative',
           minHeight: '100svh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
           overflow: 'hidden',
           marginLeft: navOffset > 0 ? `${navOffset}px` : 0,
         }}
@@ -142,15 +139,17 @@ const LandingContent: React.FC = () => {
           background: `linear-gradient(to bottom, transparent, ${bg})`,
         }} />
 
-        {/* ← ВАЖНО: компенсация navOffset */}
+        {/* 🔥 ВОТ ГЛАВНОЕ ИСПРАВЛЕНИЕ */}
         <div style={{
-          position: 'relative',
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
           zIndex: 10,
           textAlign: 'center',
           padding: '0 1.5rem',
           maxWidth: '900px',
           width: '100%',
-          transform: navOffset > 0 ? `translateX(-${navOffset / 2}px)` : 'none',
         }}>
           <h1 style={{
             fontSize: 'clamp(3.5rem, 14vw, 11rem)',
