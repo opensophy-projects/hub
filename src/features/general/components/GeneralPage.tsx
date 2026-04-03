@@ -171,7 +171,8 @@ const LandingContent: React.FC = () => {
 
         <p
           style={{
-            fontSize: 'clamp(1.5rem, 3vw, 2.4rem)',
+            fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', // увеличили размер
+            fontWeight: 500, // слегка жирнее
             lineHeight: 1.55,
             margin: 0,
             maxWidth: '100%',
