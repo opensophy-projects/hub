@@ -208,7 +208,7 @@ export const Stats: React.FC<StatsProps> = ({ isNegative }) => {
             className={cn('py-8 mb-12 sm:mb-16 border-y', borderColor)}
           >
             <p className={`text-5xl sm:text-6xl font-bold mb-2 tabular-nums ${isNegative ? 'text-white' : 'text-black'}`}>
-              <AnimatedNumber target="13000+" inView={inView} delay={200} isNegative={isNegative} />
+              <AnimatedNumber target="10000+" inView={inView} delay={200} isNegative={isNegative} />
             </p>
             <p className={`text-sm sm:text-base ${textMuted}`}>просмотров в среднем на статью</p>
           </motion.div>
