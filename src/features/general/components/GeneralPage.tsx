@@ -267,7 +267,6 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, text, isNegative
       }}>
         {icon}
       </div>
-      {/* Заголовок карточки — крупный, как текст секции «О проекте» */}
       <div style={{
         fontSize:   'clamp(1.1rem, 1.8vw, 1.4rem)',
         fontWeight: 700,
@@ -279,7 +278,6 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, text, isNegative
       }}>
         {title}
       </div>
-      {/* Текст карточки — крупный, как в «О проекте» */}
       <div style={{
         fontSize:   'clamp(0.95rem, 1.4vw, 1.1rem)',
         color:      textC,
@@ -294,8 +292,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, text, isNegative
   );
 };
 
-// ─── SmoothDeclineChart — плавный спуск с тултипом ──────────────────────────
-// График: уязвимости от 200 до 0, плавно убывают. При наведении — тултип.
+// ─── SmoothDeclineChart — плавный спуск 200→0 с тултипом ────────────────────
 
 interface SmoothDeclineChartProps {
   isNegative: boolean;
@@ -343,20 +340,22 @@ const SmoothDeclineChart: React.FC<SmoothDeclineChartProps> = ({ isNegative, inV
   const padBottom = 16;
   const chartH    = h - padTop - padBottom;
 
-  // Плавный S-образный спуск: начинается почти горизонтально, потом плавно снижается к нулю
+  // FIX: S-кривая убывает строго от 1.0 до 0.0
+  // Первая точка = 200, последняя = 0
   const n = 80;
   const pts = Array.from({ length: n }, (_, i) => {
     const t = i / (n - 1);
-    // Логистическая функция для плавного убывания (S-кривая вниз)
-    // Начинается высоко, плавно опускается, к концу почти касается дна
-    const sigmoid = 1 / (1 + Math.exp((t - 0.55) * 7));
-    // Добавляем лёгкую волнистость для реализма
-    const noise = Math.sin(t * 12) * 0.015 + Math.sin(t * 7.3) * 0.01;
-    const yN = Math.max(0, Math.min(1, sigmoid + noise));
+    // Логистическая функция + принудительное обнуление в конце
+    const sigmoid = 1 / (1 + Math.exp((t - 0.52) * 7));
+    // Умножаем на (1 - t^2) чтобы хвост гарантированно касался 0
+    const forced = sigmoid * Math.pow(1 - t, 0.6);
+    // Лёгкая волнистость только в начале (затухает к концу)
+    const noise = Math.sin(t * 12) * 0.012 * (1 - t) + Math.sin(t * 7.3) * 0.008 * (1 - t);
+    const yN = Math.max(0, Math.min(1, forced + noise));
     return {
       x: t * w,
       y: padTop + (1 - yN) * chartH,
-      value: Math.round(yN * 200), // уязвимости: 200 → 0
+      value: Math.round(yN * 200), // 200 → 0
     };
   });
 
@@ -380,9 +379,12 @@ const SmoothDeclineChart: React.FC<SmoothDeclineChartProps> = ({ isNegative, inV
   const clipW    = Math.max(0, progress * w + 8);
   const clipId   = `sd-clip-${Math.round(w)}`;
   const gradId   = `sd-grad-${Math.round(w)}`;
+  // Градиент для затемнения левой части
+  const fadeId   = `sd-fade-${Math.round(w)}`;
 
   const lineColor = isNegative ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.65)';
   const areaTop   = isNegative ? 'rgba(255,255,255,0.11)' : 'rgba(0,0,0,0.07)';
+  const bgColor   = isNegative ? '#0a0a0a' : '#E8E7E3';
 
   // Наведение мыши — найти ближайшую точку по X
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
@@ -391,7 +393,6 @@ const SmoothDeclineChart: React.FC<SmoothDeclineChartProps> = ({ isNegative, inV
     const mouseX = ((e.clientX - rect.left) / rect.width) * w;
     const idx = Math.max(0, Math.min(n - 1, Math.round((mouseX / w) * (n - 1))));
     const pt = pts[idx];
-    // Координаты тултипа в пикселях контейнера
     const px = (pt.x / w) * rect.width;
     const py = ((pt.y) / h) * rect.height;
     setTooltip({ x: px, y: py, value: pt.value });
@@ -425,6 +426,12 @@ const SmoothDeclineChart: React.FC<SmoothDeclineChartProps> = ({ isNegative, inV
             <stop offset="0%"   stopColor={areaTop} />
             <stop offset="100%" stopColor="rgba(0,0,0,0)" />
           </linearGradient>
+          {/* Левое затемнение — эффект "часть проекта" */}
+          <linearGradient id={fadeId} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stopColor={bgColor} stopOpacity="1" />
+            <stop offset="18%"  stopColor={bgColor} stopOpacity="0.7" />
+            <stop offset="35%"  stopColor={bgColor} stopOpacity="0" />
+          </linearGradient>
         </defs>
 
         <path d={areaPath} fill={`url(#${gradId})`} clipPath={`url(#${clipId})`} />
@@ -436,6 +443,9 @@ const SmoothDeclineChart: React.FC<SmoothDeclineChartProps> = ({ isNegative, inV
           strokeLinecap="round"
           clipPath={`url(#${clipId})`}
         />
+
+        {/* Левое затемнение поверх графика */}
+        <rect x={0} y={0} width={w} height={h} fill={`url(#${fadeId})`} style={{ pointerEvents: 'none' }} />
 
         {/* Точка при наведении */}
         {tooltip && (
@@ -449,7 +459,7 @@ const SmoothDeclineChart: React.FC<SmoothDeclineChartProps> = ({ isNegative, inV
         )}
       </svg>
 
-      {/* Тултип — в пикселях поверх SVG */}
+      {/* Тултип */}
       {tooltip && (
         <div style={{
           position:     'absolute',
@@ -526,7 +536,6 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
       }}
     >
       <style>{`
-        /* ── Верхняя зона: текст справа + график ── */
         .sec-top {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -554,7 +563,6 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
             order: 1;
           }
         }
-        /* ── Карточки ── */
         .sec-cards-area {
           padding: clamp(2rem, 4vw, 3rem) clamp(2rem, 6vw, 5rem) clamp(3rem, 8vw, 6rem);
           box-sizing: border-box;
@@ -571,14 +579,13 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
         }
       `}</style>
 
-      {/* ── Верхняя зона: график слева, текст справа ── */}
       <div className="sec-top">
         {/* График */}
         <div className="sec-chart-col">
           <SmoothDeclineChart isNegative={isNegative} inView={inView} />
         </div>
 
-        {/* Текст — крупный, как секция «О проекте» */}
+        {/* Текст */}
         <div className="sec-text-col">
           <p style={{
             fontSize:      '1rem',
@@ -614,7 +621,7 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
         </div>
       </div>
 
-      {/* ── Карточки ── */}
+      {/* Карточки */}
       <div className="sec-cards-area">
         <div className="sec-cards">
           <div style={{ gridColumn: '1 / -1' }}>
@@ -638,6 +645,248 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
             title="Open Source"
             text="Рассказываем про open source инструменты безопасности. Делимся опытом бесплатных решений, которые сделают ваш проект безопаснее."
           />
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ─── EcosystemCard ────────────────────────────────────────────────────────────
+
+interface EcosystemCardProps {
+  title: string;
+  description: string;
+  tag: string;
+  isNegative: boolean;
+  accent?: string;
+}
+
+const EcosystemCard: React.FC<EcosystemCardProps> = ({ title, description, tag, isNegative, accent }) => {
+  const border = isNegative ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)';
+  const bg     = isNegative ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
+  const titleC = isNegative ? 'rgba(255,255,255,0.92)'  : 'rgba(0,0,0,0.88)';
+  const textC  = isNegative ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
+  const tagBg  = isNegative ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
+  const tagClr = isNegative ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
+  const accentLine = accent ?? (isNegative ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)');
+
+  return (
+    <div style={{
+      position:     'relative',
+      border:       `1px solid ${border}`,
+      background:   bg,
+      borderRadius: 16,
+      padding:      '1.75rem',
+      display:      'flex',
+      flexDirection:'column',
+      gap:          '0.6rem',
+      overflow:     'hidden',
+      minHeight:    '180px',
+    }}>
+      {/* Тонкая цветная полоска сверху */}
+      <div style={{
+        position:     'absolute',
+        top:          0,
+        left:         '1.75rem',
+        right:        '1.75rem',
+        height:       '1px',
+        background:   accentLine,
+        borderRadius: '0 0 2px 2px',
+      }} />
+
+      <GlowingEffect
+        spread={50}
+        glow
+        disabled={false}
+        proximity={80}
+        inactiveZone={0.01}
+        borderWidth={1}
+        isNegative={isNegative}
+      />
+
+      {/* Tag */}
+      <div style={{
+        display:      'inline-flex',
+        alignSelf:    'flex-start',
+        padding:      '3px 10px',
+        borderRadius: 6,
+        background:   tagBg,
+        fontSize:     '0.68rem',
+        fontWeight:   600,
+        letterSpacing:'0.1em',
+        textTransform:'uppercase',
+        color:        tagClr,
+        fontFamily:   'Inter, system-ui, sans-serif',
+        position:     'relative',
+        zIndex:       1,
+        marginBottom: '0.25rem',
+      }}>
+        {tag}
+      </div>
+
+      <div style={{
+        fontSize:   'clamp(1rem, 1.6vw, 1.25rem)',
+        fontWeight: 700,
+        color:      titleC,
+        lineHeight: 1.25,
+        fontFamily: 'Inter, system-ui, sans-serif',
+        position:   'relative',
+        zIndex:     1,
+      }}>
+        {title}
+      </div>
+
+      <div style={{
+        fontSize:   'clamp(0.85rem, 1.2vw, 0.95rem)',
+        color:      textC,
+        lineHeight: 1.65,
+        fontFamily: 'Inter, system-ui, sans-serif',
+        position:   'relative',
+        zIndex:     1,
+        marginTop:  '0.25rem',
+        flex:       1,
+      }}>
+        {description}
+      </div>
+    </div>
+  );
+};
+
+// ─── EcosystemSection ─────────────────────────────────────────────────────────
+
+interface EcosystemSectionProps {
+  isNegative: boolean;
+  navOffset?: number;
+}
+
+const PROJECTS = [
+  {
+    title:       'Opensophy Hub',
+    description: 'Центр знаний: документация, туториалы и гайды по безопасности и разработке в одном месте.',
+    tag:         'Документация',
+    accent:      'rgba(114, 52, 255, 0.6)',
+  },
+  {
+    title:       'SecScan CLI',
+    description: 'Утилита командной строки для быстрого статического анализа кода на уязвимости прямо в терминале.',
+    tag:         'Инструмент',
+    accent:      'rgba(34, 197, 94, 0.5)',
+  },
+  {
+    title:       'DevSecOps Playbook',
+    description: 'Готовые шаблоны CI/CD пайплайнов с интеграцией SAST, DAST и SCA для популярных платформ.',
+    tag:         'Шаблоны',
+    accent:      'rgba(59, 130, 246, 0.5)',
+  },
+  {
+    title:       'VulnDB Lite',
+    description: 'Локальная база уязвимостей с поиском по CVE, CVSS и зависимостям без отправки данных в облако.',
+    tag:         'База данных',
+    accent:      'rgba(239, 68, 68, 0.45)',
+  },
+  {
+    title:       'Hardening Guide',
+    description: 'Пошаговые инструкции по харденингу Linux-серверов, Docker-контейнеров и облачных конфигураций.',
+    tag:         'Гайд',
+    accent:      'rgba(245, 158, 11, 0.5)',
+  },
+  {
+    title:       'Threat Model Kit',
+    description: 'Набор шаблонов и методологий для построения моделей угроз в ваших продуктах и инфраструктуре.',
+    tag:         'Методология',
+    accent:      'rgba(236, 72, 153, 0.45)',
+  },
+];
+
+const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffset = 0 }) => {
+  const bg       = isNegative ? '#0a0a0a' : '#E8E7E3';
+  const textMain = isNegative ? '#ffffff' : '#000000';
+  const textMut  = isNegative ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)';
+  const textSub  = isNegative ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)';
+  const divider  = isNegative ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+
+  return (
+    <section
+      style={{
+        background: bg,
+        marginLeft: navOffset > 0 ? `${navOffset}px` : 0,
+        width:      '100%',
+        boxSizing:  'border-box',
+        overflow:   'hidden',
+        borderTop:  `1px solid ${divider}`,
+      }}
+    >
+      <style>{`
+        .eco-inner {
+          padding: clamp(4rem, 8vw, 7rem) clamp(2rem, 6vw, 5rem);
+          box-sizing: border-box;
+        }
+        .eco-header {
+          text-align: center;
+          margin-bottom: clamp(3rem, 5vw, 4.5rem);
+        }
+        .eco-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1rem;
+        }
+        @media (max-width: 900px) {
+          .eco-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 560px) {
+          .eco-grid { grid-template-columns: 1fr; }
+        }
+      `}</style>
+
+      <div className="eco-inner">
+        {/* Заголовок */}
+        <div className="eco-header">
+          <p style={{
+            fontSize:      '1rem',
+            fontWeight:    600,
+            color:         textMut,
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            margin:        '0 0 1.5rem',
+            fontFamily:    'Inter, sans-serif',
+          }}>
+            ЭКОСИСТЕМА
+          </p>
+          <h2 style={{
+            fontSize:   'clamp(2rem, 5vw, 3.5rem)',
+            fontWeight: 500,
+            lineHeight: 1.15,
+            margin:     '0 auto 1.25rem',
+            color:      textMain,
+            fontFamily: 'Inter, sans-serif',
+            maxWidth:   '640px',
+          }}>
+            Наши проекты
+          </h2>
+          <p style={{
+            fontSize:   'clamp(0.95rem, 1.5vw, 1.1rem)',
+            color:      textSub,
+            lineHeight: 1.7,
+            margin:     '0 auto',
+            maxWidth:   '480px',
+            fontFamily: 'Inter, sans-serif',
+          }}>
+            Все инструменты и материалы распространяются под открытыми лицензиями — бесплатно, навсегда.
+          </p>
+        </div>
+
+        {/* Сетка карточек */}
+        <div className="eco-grid">
+          {PROJECTS.map((project) => (
+            <EcosystemCard
+              key={project.title}
+              title={project.title}
+              description={project.description}
+              tag={project.tag}
+              isNegative={isNegative}
+              accent={project.accent}
+            />
+          ))}
         </div>
       </div>
     </section>
@@ -697,7 +946,7 @@ const LandingContent: React.FC = () => {
 
       <Navigation />
 
-      {/* ── Hero ──────────────────────────────────────────────────────── */}
+      {/* Hero */}
       <section
         style={{
           position:  'relative',
@@ -745,7 +994,7 @@ const LandingContent: React.FC = () => {
         </div>
       </section>
 
-      {/* ── О проекте ─────────────────────────────────────────────────── */}
+      {/* О проекте */}
       <section
         style={{
           marginLeft: navOffset > 0 ? `${navOffset}px` : 0,
@@ -783,8 +1032,11 @@ const LandingContent: React.FC = () => {
         </p>
       </section>
 
-      {/* ── Безопасность ──────────────────────────────────────────────── */}
+      {/* Безопасность */}
       <SecuritySection isNegative={isNegative} navOffset={navOffset} />
+
+      {/* Экосистема */}
+      <EcosystemSection isNegative={isNegative} navOffset={navOffset} />
     </div>
   );
 };
