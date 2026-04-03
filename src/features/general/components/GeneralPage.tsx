@@ -157,17 +157,18 @@ const LandingContent: React.FC = () => {
         }}
       >
         <p
-          style={{
-            fontSize: '0.72rem',
-            color: isNegative ? 'rgba(255,255,255,0.32)' : 'rgba(0,0,0,0.32)',
-            marginBottom: '2rem',
-            marginTop: 0,
-            fontFamily: 'Inter, sans-serif',
-            letterSpacing: '0.14em',
-          }}
-        >
-          о проекте
-        </p>
+  style={{
+    fontSize: '0.85rem', // увеличили размер
+    fontWeight: 500,      // сделали чуть жирнее
+    color: isNegative ? 'rgba(255,255,255,0.32)' : 'rgba(0,0,0,0.32)',
+    marginBottom: '2rem',
+    marginTop: 0,
+    fontFamily: 'Inter, sans-serif',
+    letterSpacing: '0.14em',
+  }}
+>
+  о проекте
+</p>
 
         <p
           style={{
