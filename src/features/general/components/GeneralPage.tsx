@@ -294,18 +294,20 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, text, isNegative
   );
 };
 
-// ─── CliffChart — крутой спуск "\" ───────────────────────────────────────────
-// График начинается высоко слева и резко уходит вниз вправо (экспоненциальный спуск)
+// ─── SmoothDeclineChart — плавный спуск с тултипом ──────────────────────────
+// График: уязвимости от 200 до 0, плавно убывают. При наведении — тултип.
 
-interface CliffChartProps {
+interface SmoothDeclineChartProps {
   isNegative: boolean;
   inView: boolean;
 }
 
-const CliffChart: React.FC<CliffChartProps> = ({ isNegative, inView }) => {
-  const containerRef  = useRef<HTMLDivElement>(null);
-  const [dim, setDim] = useState({ w: 800, h: 260 });
+const SmoothDeclineChart: React.FC<SmoothDeclineChartProps> = ({ isNegative, inView }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const svgRef       = useRef<SVGSVGElement>(null);
+  const [dim, setDim]     = useState({ w: 800, h: 260 });
   const [progress, setProgress] = useState(0);
+  const [tooltip, setTooltip]   = useState<{ x: number; y: number; value: number } | null>(null);
   const rafRef = useRef<number>(0);
 
   useEffect(() => {
@@ -324,7 +326,7 @@ const CliffChart: React.FC<CliffChartProps> = ({ isNegative, inView }) => {
   useEffect(() => {
     if (!inView) return;
     let start: number | null = null;
-    const dur = 1800;
+    const dur = 2000;
     const animate = (ts: number) => {
       if (!start) start = ts;
       const p     = Math.min((ts - start) / dur, 1);
@@ -337,62 +339,87 @@ const CliffChart: React.FC<CliffChartProps> = ({ isNegative, inView }) => {
   }, [inView]);
 
   const { w, h } = dim;
-  const padX = 0;
-  const padTop = 8;
-  const padBottom = 8;
-  const chartW = w - padX * 2;
-  const chartH = h - padTop - padBottom;
+  const padTop    = 20;
+  const padBottom = 16;
+  const chartH    = h - padTop - padBottom;
 
-  // Экспоненциальный крутой спуск: начало вверху-слева, конец внизу-справа
-  // Используем степенную функцию с большим показателем для «обрыва»
-  const n = 60;
-  const cliffPoints = Array.from({ length: n }, (_, i) => {
-    const t  = i / (n - 1);
-    // Экспонента: медленно падает в начале, очень резко в конце
-    // pow(t, 0.35) даёт быстрый старт падения → крутой обрыв слева
-    const yN = 1 - Math.pow(t, 0.28);
+  // Плавный S-образный спуск: начинается почти горизонтально, потом плавно снижается к нулю
+  const n = 80;
+  const pts = Array.from({ length: n }, (_, i) => {
+    const t = i / (n - 1);
+    // Логистическая функция для плавного убывания (S-кривая вниз)
+    // Начинается высоко, плавно опускается, к концу почти касается дна
+    const sigmoid = 1 / (1 + Math.exp((t - 0.55) * 7));
+    // Добавляем лёгкую волнистость для реализма
+    const noise = Math.sin(t * 12) * 0.015 + Math.sin(t * 7.3) * 0.01;
+    const yN = Math.max(0, Math.min(1, sigmoid + noise));
     return {
-      x: padX + t * chartW,
+      x: t * w,
       y: padTop + (1 - yN) * chartH,
+      value: Math.round(yN * 200), // уязвимости: 200 → 0
     };
   });
 
-  // Smooth bezier path
-  const buildPath = (pts: { x: number; y: number }[]) => {
-    if (pts.length < 2) return '';
-    let d = `M ${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)}`;
-    for (let i = 0; i < pts.length - 1; i++) {
-      const cp1x = pts[i].x + (pts[i + 1].x - (i > 0 ? pts[i - 1].x : pts[i].x)) / 5;
-      const cp1y = pts[i].y + (pts[i + 1].y - (i > 0 ? pts[i - 1].y : pts[i].y)) / 5;
-      const cp2x = pts[i + 1].x - (i + 2 < pts.length ? pts[i + 2].x - pts[i].x : pts[i + 1].x - pts[i].x) / 5;
-      const cp2y = pts[i + 1].y - (i + 2 < pts.length ? pts[i + 2].y - pts[i].y : pts[i + 1].y - pts[i].y) / 5;
-      d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${pts[i + 1].x.toFixed(2)} ${pts[i + 1].y.toFixed(2)}`;
+  // Smooth bezier
+  const buildPath = (points: { x: number; y: number }[]) => {
+    if (points.length < 2) return '';
+    let d = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const cp1x = points[i].x + (points[i + 1].x - (i > 0 ? points[i - 1].x : points[i].x)) / 5;
+      const cp1y = points[i].y + (points[i + 1].y - (i > 0 ? points[i - 1].y : points[i].y)) / 5;
+      const cp2x = points[i + 1].x - (i + 2 < points.length ? points[i + 2].x - points[i].x : points[i + 1].x - points[i].x) / 5;
+      const cp2y = points[i + 1].y - (i + 2 < points.length ? points[i + 2].y - points[i].y : points[i + 1].y - points[i].y) / 5;
+      d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${points[i + 1].x.toFixed(1)} ${points[i + 1].y.toFixed(1)}`;
     }
     return d;
   };
 
-  const linePath  = buildPath(cliffPoints);
-  const baseY     = padTop + chartH;
-  const areaPath  = `${linePath} L ${(padX + chartW).toFixed(2)} ${baseY} L ${padX.toFixed(2)} ${baseY} Z`;
-  const clipWidth = Math.max(0, progress * w + 8);
-  const clipId    = `cliff-clip-${Math.round(w)}`;
-  const gradId    = `cliff-grad-${Math.round(w)}`;
+  const baseY    = padTop + chartH;
+  const linePath = buildPath(pts);
+  const areaPath = `${linePath} L ${w.toFixed(1)} ${baseY} L 0 ${baseY} Z`;
+  const clipW    = Math.max(0, progress * w + 8);
+  const clipId   = `sd-clip-${Math.round(w)}`;
+  const gradId   = `sd-grad-${Math.round(w)}`;
 
-  const lineColor = isNegative ? 'rgba(255,255,255,0.72)' : 'rgba(0,0,0,0.6)';
-  const areaTop   = isNegative ? 'rgba(255,255,255,0.13)' : 'rgba(0,0,0,0.09)';
+  const lineColor = isNegative ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.65)';
+  const areaTop   = isNegative ? 'rgba(255,255,255,0.11)' : 'rgba(0,0,0,0.07)';
+
+  // Наведение мыши — найти ближайшую точку по X
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const mouseX = ((e.clientX - rect.left) / rect.width) * w;
+    const idx = Math.max(0, Math.min(n - 1, Math.round((mouseX / w) * (n - 1))));
+    const pt = pts[idx];
+    // Координаты тултипа в пикселях контейнера
+    const px = (pt.x / w) * rect.width;
+    const py = ((pt.y) / h) * rect.height;
+    setTooltip({ x: px, y: py, value: pt.value });
+  };
+
+  const handleMouseLeave = () => setTooltip(null);
+
+  const tooltipBg     = isNegative ? 'rgba(30,30,30,0.95)'   : 'rgba(255,255,255,0.95)';
+  const tooltipBorder = isNegative ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
+  const tooltipText   = isNegative ? '#ffffff' : '#000000';
+  const tooltipMuted  = isNegative ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)';
+  const dotColor      = isNegative ? '#ffffff' : '#000000';
 
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
       <svg
+        ref={svgRef}
         width="100%"
         height="100%"
         viewBox={`0 0 ${w} ${h}`}
         preserveAspectRatio="none"
-        style={{ display: 'block', overflow: 'visible' }}
+        style={{ display: 'block', overflow: 'visible', cursor: 'crosshair' }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
       >
         <defs>
           <clipPath id={clipId}>
-            <rect x={0} y={0} width={clipWidth} height={h} />
+            <rect x={0} y={0} width={clipW} height={h} />
           </clipPath>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%"   stopColor={areaTop} />
@@ -405,11 +432,59 @@ const CliffChart: React.FC<CliffChartProps> = ({ isNegative, inView }) => {
           d={linePath}
           fill="none"
           stroke={lineColor}
-          strokeWidth={2}
+          strokeWidth={1.8}
           strokeLinecap="round"
           clipPath={`url(#${clipId})`}
         />
+
+        {/* Точка при наведении */}
+        {tooltip && (
+          <circle
+            cx={(tooltip.x / (svgRef.current?.getBoundingClientRect().width ?? 1)) * w}
+            cy={(tooltip.y / (svgRef.current?.getBoundingClientRect().height ?? 1)) * h}
+            r={4}
+            fill={dotColor}
+            style={{ pointerEvents: 'none' }}
+          />
+        )}
       </svg>
+
+      {/* Тултип — в пикселях поверх SVG */}
+      {tooltip && (
+        <div style={{
+          position:     'absolute',
+          left:         tooltip.x,
+          top:          tooltip.y,
+          transform:    'translate(-50%, -110%)',
+          background:   tooltipBg,
+          border:       `1px solid ${tooltipBorder}`,
+          borderRadius: 10,
+          padding:      '8px 14px',
+          pointerEvents:'none',
+          whiteSpace:   'nowrap',
+          zIndex:       10,
+          backdropFilter: 'blur(8px)',
+          boxShadow:    '0 4px 20px rgba(0,0,0,0.18)',
+        }}>
+          <div style={{
+            fontSize:   '1.1rem',
+            fontWeight: 700,
+            color:      tooltipText,
+            fontFamily: 'Inter, system-ui, sans-serif',
+            lineHeight: 1.2,
+          }}>
+            {tooltip.value}
+          </div>
+          <div style={{
+            fontSize:   '0.72rem',
+            color:      tooltipMuted,
+            fontFamily: 'Inter, system-ui, sans-serif',
+            marginTop:  2,
+          }}>
+            уязвимостей и ошибок
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -434,7 +509,7 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
     return () => observer.disconnect();
   }, []);
 
-  const bg      = isNegative ? '#0a0a0a' : '#E8E7E3';
+  const bg       = isNegative ? '#0a0a0a' : '#E8E7E3';
   const textMain = isNegative ? '#ffffff' : '#000000';
   const textMut  = isNegative ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)';
   const iconClr  = isNegative ? 'rgba(255,255,255,0.6)'  : 'rgba(0,0,0,0.55)';
@@ -451,38 +526,43 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
       }}
     >
       <style>{`
-        /* ── Зона графика с наложенным текстом (как Supabase) ── */
-        .cliff-zone {
-          position: relative;
-          width: 100%;
-          height: clamp(260px, 35vw, 420px);
-          padding: clamp(2.5rem, 5vw, 4rem) clamp(2rem, 6vw, 5rem) 0;
+        /* ── Верхняя зона: текст справа + график ── */
+        .sec-top {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          align-items: center;
+          gap: clamp(2rem, 4vw, 4rem);
+          padding: clamp(3rem, 6vw, 5rem) clamp(2rem, 6vw, 5rem) 0;
           box-sizing: border-box;
         }
-        .cliff-text-overlay {
-          position: absolute;
-          top: clamp(2.5rem, 5vw, 4rem);
-          left: clamp(2rem, 6vw, 5rem);
-          right: clamp(2rem, 6vw, 5rem);
-          z-index: 2;
-          pointer-events: none;
-          max-width: 520px;
+        .sec-chart-col {
+          min-width: 0;
+          height: clamp(200px, 28vw, 340px);
         }
-        .cliff-svg-wrap {
-          position: absolute;
-          inset: 0;
-          z-index: 1;
+        .sec-text-col {
+          min-width: 0;
+        }
+        @media (max-width: 800px) {
+          .sec-top {
+            grid-template-columns: 1fr;
+          }
+          .sec-chart-col {
+            order: 2;
+            height: clamp(180px, 45vw, 280px);
+          }
+          .sec-text-col {
+            order: 1;
+          }
         }
         /* ── Карточки ── */
         .sec-cards-area {
-          padding: 0 clamp(2rem, 6vw, 5rem) clamp(3rem, 8vw, 6rem);
+          padding: clamp(2rem, 4vw, 3rem) clamp(2rem, 6vw, 5rem) clamp(3rem, 8vw, 6rem);
           box-sizing: border-box;
         }
         .sec-cards {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 1rem;
-          margin-top: 2rem;
         }
         @media (max-width: 560px) {
           .sec-cards {
@@ -491,53 +571,52 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
         }
       `}</style>
 
-      {/* ── Зона графика + текст поверх ── */}
-      <div className="cliff-zone">
-        {/* Текст поверх графика — крупный, как на Supabase */}
-        <div className="cliff-text-overlay">
+      {/* ── Верхняя зона: график слева, текст справа ── */}
+      <div className="sec-top">
+        {/* График */}
+        <div className="sec-chart-col">
+          <SmoothDeclineChart isNegative={isNegative} inView={inView} />
+        </div>
+
+        {/* Текст — крупный, как секция «О проекте» */}
+        <div className="sec-text-col">
           <p style={{
-            fontSize:      '0.65rem',
-            fontWeight:    700,
+            fontSize:      '1rem',
+            fontWeight:    600,
             color:         textMut,
             letterSpacing: '0.14em',
             textTransform: 'uppercase',
-            margin:        '0 0 0.75rem',
-            fontFamily:    'Inter, system-ui, sans-serif',
+            margin:        '0 0 2rem',
+            fontFamily:    'Inter, sans-serif',
           }}>
             БЕЗОПАСНОСТЬ
           </p>
           <h2 style={{
-            fontSize:   'clamp(2rem, 4vw, 3.2rem)',
-            fontWeight: 700,
-            lineHeight: 1.1,
-            margin:     '0 0 1rem',
+            fontSize:   'clamp(1.75rem, 3.5vw, 2.6rem)',
+            fontWeight: 500,
+            lineHeight: 1.55,
+            margin:     '0 0 1.5rem',
             color:      textMain,
-            fontFamily: 'Inter, system-ui, sans-serif',
+            fontFamily: 'Inter, sans-serif',
           }}>
-            Безопасность<br />прежде всего
+            Безопасность прежде всего
           </h2>
           <p style={{
-            fontSize:   'clamp(0.95rem, 1.4vw, 1.1rem)',
-            lineHeight: 1.65,
-            color:      textMut,
+            fontSize:   'clamp(1.75rem, 3.5vw, 2.6rem)',
+            fontWeight: 500,
+            lineHeight: 1.55,
             margin:     0,
-            fontFamily: 'Inter, system-ui, sans-serif',
+            color:      textMut,
+            fontFamily: 'Inter, sans-serif',
           }}>
-            Безопасность и качество кода — главный приоритет,
-            особенно на фоне интеграции ИИ в разработку
+            Безопасность и качество кода — главный приоритет, особенно на фоне интеграции ИИ в разработку
           </p>
-        </div>
-
-        {/* График — абсолютно поверх всей зоны */}
-        <div className="cliff-svg-wrap">
-          <CliffChart isNegative={isNegative} inView={inView} />
         </div>
       </div>
 
       {/* ── Карточки ── */}
       <div className="sec-cards-area">
         <div className="sec-cards">
-          {/* Широкая карточка */}
           <div style={{ gridColumn: '1 / -1' }}>
             <FeatureCard
               isNegative={isNegative}
