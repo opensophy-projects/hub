@@ -3,10 +3,6 @@
  *
  * Desktop (>1000px): Rail 64px + slide-out panel + resize handle
  * Mobile (≤1000px):  Bottom bar centered + full-screen panels (like search)
- *
- * CHANGES:
- * - "Главная" убрана из дропдауна секций
- * - Внизу рейла добавлена иконка Home (ссылка на /)
  */
 
 import React, {
@@ -417,43 +413,32 @@ const SectionItemIcon: React.FC<{
   );
 };
 
-// ─── ИЗМЕНЕНИЕ: "Главная" убрана из дропдауна — фильтруем navSlug === '' ─────
 const SectionDropdown: React.FC<{
   sections: NavSection[]; activeNavSlug: string; mobile: boolean; isDark: boolean; onSelect: (slug: string) => void;
 }> = ({ sections, activeNavSlug, mobile, isDark, onSelect }) => {
   const t = tk(isDark);
-
-  // Фильтруем "Главную" — она теперь только в рейле
-  const filteredSections = sections.filter(s => s.navSlug !== '');
-
-  const lastSection = filteredSections[filteredSections.length - 1];
-  const isLastOdd = (s: NavSection) => filteredSections.length % 2 === 1 && lastSection?.navSlug === s.navSlug;
-  const padding   = mobile ? '0.7rem 1rem' : '0.55rem 0.75rem';
-  const fontSize  = mobile ? '1rem' : '0.875rem';
+  const lastSection = sections[sections.length - 1];
+  const isLastOdd = (s: NavSection) => sections.length % 2 === 1 && lastSection?.navSlug === s.navSlug;
+  const padding  = mobile ? '0.7rem 1rem' : '0.55rem 0.75rem';
+  const fontSize = mobile ? '1rem' : '0.875rem';
   const minHeight = mobile ? '46px' : '40px';
-
   return (
     <>
-      {filteredSections.map(s => {
+      {sections.map(s => {
         const isActive = s.navSlug === activeNavSlug;
-
-        const itemStyle: React.CSSProperties = {
-          width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem',
-          padding, fontSize,
-          border: `1px solid ${getSectionItemBorder(isActive, isDark)}`,
-          borderRadius: '10px', cursor: 'pointer', textAlign: 'left',
-          background: getSectionItemBackground(isActive, isDark),
-          color:      isActive ? t.accent : t.fg,
-          fontWeight: isActive ? 600 : 400,
-          minHeight,
-          gridColumn: isLastOdd(s) ? '1 / -1' : undefined,
-          textDecoration: 'none',
-          boxSizing: 'border-box',
-        };
-
         return (
           <button key={s.navSlug} onClick={() => onSelect(s.navSlug)}
-            style={{ ...itemStyle, border: `1px solid ${getSectionItemBorder(isActive, isDark)}` }}>
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem',
+              padding, fontSize,
+              border: `1px solid ${getSectionItemBorder(isActive, isDark)}`,
+              borderRadius: '10px', cursor: 'pointer', textAlign: 'left',
+              background: getSectionItemBackground(isActive, isDark),
+              color:      isActive ? t.accent : t.fg,
+              fontWeight: isActive ? 600 : 400,
+              minHeight,
+              gridColumn: isLastOdd(s) ? '1 / -1' : undefined,
+            }}>
             <SectionItemIcon navSlug={s.navSlug} navIcon={s.navIcon} isActive={isActive} mobile={mobile} t={t} />
             <span>{s.navTitle}</span>
           </button>
@@ -551,9 +536,6 @@ const NavPanelContent: React.FC<{
   const [hoverPreview, setHoverPreview] = useState<{ doc: Doc; rect: DOMRect } | null>(null);
   const [focused, setFocused]           = useState(false);
 
-  // Фильтруем секции без Главной для отображения в дропдауне
-  const sectionsForDropdown = sections.filter(s => s.navSlug !== '');
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
 
@@ -584,8 +566,8 @@ const NavPanelContent: React.FC<{
         </div>
       </div>
 
-      {/* Выбор раздела — показываем только если есть разделы (кроме Главной) */}
-      {sectionsForDropdown.length > 0 && activeSection && activeSection.navSlug !== '' && (
+      {/* Выбор раздела */}
+      {sections.length > 1 && activeSection && (
         <div style={{ flexShrink: 0, padding: mobile ? '10px 14px' : '8px 10px', borderBottom: `1px solid ${t.border}`, position: 'relative' }} ref={sectionRef}>
           <button
             onClick={() => setSectionOpen(v => !v)}
@@ -600,7 +582,9 @@ const NavPanelContent: React.FC<{
               boxShadow: t.sectionShadow,
             }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden' }}>
-              <LucideIcon name={activeSection.navIcon} size={iconSize} />
+              {activeSection.navSlug === ''
+                ? <Home size={iconSize} style={{ color: t.fgMuted, flexShrink: 0 }} />
+                : <LucideIcon name={activeSection.navIcon} size={iconSize} />}
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeSection.navTitle}</span>
             </div>
             <ChevronDown size={mobile ? 14 : 12} style={{ color: t.fgMuted, flexShrink: 0, transform: sectionOpen ? 'rotate(180deg)' : 'none' }} />
@@ -789,44 +773,6 @@ const RailBtn: React.FC<{
   );
 };
 
-// ─── HomeRailLink — иконка дома внизу рейла ───────────────────────────────────
-
-const HomeRailLink: React.FC<{ t: ReturnType<typeof tk> }> = ({ t }) => {
-  const [hov, setHov] = useState(false);
-  return (
-    <a
-      href="/"
-      title="Главная"
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        width: RAIL_W - 8,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '5px',
-        padding: '10px 4px',
-        border: '1px solid transparent',
-        background: 'transparent',
-        color: hov ? t.fg : t.fgMuted,
-        borderRadius: '12px',
-        flexShrink: 0,
-        textDecoration: 'none',
-        marginBottom: '4px',
-        cursor: 'pointer',
-      }}
-    >
-      <span style={{ width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Home size={18} />
-      </span>
-      <span style={{ fontSize: '10px', fontWeight: 500, lineHeight: 1.1, letterSpacing: '0.01em', textAlign: 'center' }}>
-        Главная
-      </span>
-    </a>
-  );
-};
-
 // ─── PanelResizeToggle ────────────────────────────────────────────────────────
 
 function getPanelToggleBorder(hov: boolean, isDark: boolean): string {
@@ -917,12 +863,9 @@ const DesktopNav: React.FC<{
     <>
       {railVisible && (
         <aside style={{ position: 'fixed', left: 0, top: 0, height: '100vh', width: RAIL_W, background: t.railBg, borderRight: `1px solid ${t.border}`, display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 50, padding: '8px 0', gap: '2px' }}>
-          {/* Логотип */}
           <div style={{ width: RAIL_W, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <img src="/favicon.png" alt="hub" style={{ width: 28, height: 28, objectFit: 'contain' }} />
           </div>
-
-          {/* Основные кнопки */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: 1, width: '100%', padding: '2px 0' }}>
             <RailBtn icon={<PanelLeft size={18} />}                         label="Панель"     isDark={isDark} onClick={() => setRailVisible(false)}                                              title="Скрыть" />
             <RailBtn icon={isDark ? <Sun size={18} /> : <Moon size={18} />} label="Тема"       isDark={isDark} onClick={toggleTheme}                                                              title={isDark ? 'Светлая' : 'Тёмная'} />
@@ -931,12 +874,6 @@ const DesktopNav: React.FC<{
             <RailBtn icon={<List size={18} />}                              label="Оглавление" isDark={isDark} isActive={activePanel === 'toc'}      onClick={() => togglePanel('toc')}      title="Оглавление" />
             <RailBtn icon={<ArrowUp size={18} />}                           label="Наверх"     isDark={isDark} onClick={() => globalThis.scrollTo({ top: 0, behavior: 'smooth' })}               title="Наверх" />
             <RailBtn icon={<Mail size={18} />}                              label="Контакты"   isDark={isDark} isActive={activePanel === 'contacts'} onClick={() => togglePanel('contacts')} title="Контакты" />
-
-            {/* Распорка — толкает иконку Главной вниз */}
-            <div style={{ flex: 1 }} />
-
-            {/* Иконка Главной внизу рейла */}
-            <HomeRailLink t={t} />
           </div>
         </aside>
       )}
@@ -1075,9 +1012,7 @@ const MobileNav: React.FC<{
         <MobBtn label="Поиск"      icon={<Search size={22} />}                            isDark={isDark} onClick={() => { setSheet(null); setSearchOpen(true); }}                   isActive={false} />
         <MobBtn label="Разделы"    icon={<FolderOpen size={22} />}                        isDark={isDark} onClick={() => toggle('nav')}                                              isActive={sheet === 'nav'} />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <a href="/" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
-            <img src="/favicon.png" alt="hub" style={{ width: 38, height: 38, objectFit: 'contain' }} />
-          </a>
+          <img src="/favicon.png" alt="hub" style={{ width: 38, height: 38, objectFit: 'contain' }} />
         </div>
         <MobBtn label="Оглавление" icon={<List size={22} />}                              isDark={isDark} onClick={() => toggle('toc')}                                              isActive={sheet === 'toc'} />
         <MobBtn label="Наверх"     icon={<ArrowUp size={22} />}                           isDark={isDark} onClick={() => { setSheet(null); globalThis.scrollTo({ top: 0, behavior: 'smooth' }); }} isActive={false} />
