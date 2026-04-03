@@ -179,7 +179,7 @@ const LandingContent: React.FC = () => {
           }}
         >
           <ShinyText
-            text="Opensophy — open-source проект для IT-специалистов."
+            text="Opensophy — open-source проект для IT-специалистов. Инструменты, туториалы и материалы по безопасности, разработке и инфраструктуре — в открытом доступе."
             speed={4}
             color={shinyBase}
             shineColor={shinyGlow}
