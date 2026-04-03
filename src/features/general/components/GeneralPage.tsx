@@ -90,26 +90,23 @@ const LandingContent: React.FC = () => {
 
   const bg        = isNegative ? '#0a0a0a' : '#E8E7E3';
   const textMain  = isNegative ? '#ffffff' : '#000000';
-  const textMuted = isNegative ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
-  const labelCol  = isNegative ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
+  const shinyBase = isNegative ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.35)';
+  const shinyGlow = isNegative ? '#ffffff'                : '#000000';
 
   return (
     <div style={{ minHeight: '100vh', background: bg, color: textMain }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap');
-        .about-title {
-          font-family: 'UnifixSP', sans-serif;
-          letter-spacing: 0.18em;
-        }
-        .about-main {
-          font-family: 'Inter', sans-serif;
-          font-weight: 400;
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Crimson+Pro:wght@200;300&display=swap');
+        .lp-body {
+          font-family: 'Crimson Pro', 'Cormorant Garamond', Georgia, serif;
+          font-weight: 200;
           letter-spacing: 0.01em;
         }
-        .about-secondary {
-          font-family: 'Inter', sans-serif;
+        .lp-label {
+          font-family: 'Crimson Pro', 'Cormorant Garamond', Georgia, serif;
           font-weight: 300;
-          letter-spacing: 0.01em;
+          font-style: italic;
+          letter-spacing: 0.14em;
         }
       `}</style>
 
@@ -132,16 +129,27 @@ const LandingContent: React.FC = () => {
         </div>
 
         <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0, height: '35%',
+          pointerEvents: 'none',
+          background: `linear-gradient(to bottom, transparent, ${bg})`,
+        }} />
+
+        <div style={{
           position: 'absolute',
           left: '50%',
           top: '50%',
-          transform: 'translate(-85%, -50%)',
+          transform: 'translate(-75%, -50%)',
           zIndex: 10,
+          textAlign: 'center',
+          padding: '0 1.5rem',
+          maxWidth: '900px',
+          width: '100%',
         }}>
           <h1 style={{
             fontSize: 'clamp(3.5rem, 14vw, 11rem)',
             fontWeight: 700,
             letterSpacing: '0.08em',
+            lineHeight: 1,
             margin: 0,
             fontFamily: 'customfont, sans-serif',
             color: textMain,
@@ -155,73 +163,45 @@ const LandingContent: React.FC = () => {
         style={{
           marginLeft: navOffset > 0 ? `${navOffset}px` : 0,
           padding: 'clamp(4rem, 10vw, 8rem) clamp(2rem, 6vw, 5rem)',
+          width: '100%',
+          boxSizing: 'border-box',
         }}
       >
         <p
-          className="about-title"
+          className="lp-label"
           style={{
-            fontSize: '0.75rem',
-            color: labelCol,
-            marginBottom: '2.5rem',
+            fontSize: '0.72rem',
+            color: isNegative ? 'rgba(255,255,255,0.32)' : 'rgba(0,0,0,0.32)',
+            marginBottom: '2rem',
+            marginTop: 0,
           }}
         >
-          О ПРОЕКТЕ
+          о проекте
         </p>
 
-        <div
+        <p
+          className="lp-body"
           style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr',
-            gap: '2.5rem',
-            maxWidth: '1100px',
+            fontSize: 'clamp(1.5rem, 3vw, 2.4rem)',
+            lineHeight: 1.55,
+            margin: 0,
+            maxWidth: '100%',
           }}
         >
-          <p
-            className="about-main"
-            style={{
-              fontSize: 'clamp(1.1rem, 1.6vw, 1.5rem)',
-              lineHeight: 1.7,
-              color: textMuted,
-            }}
-          >
-            Opensophy — проект, который разрабатывает open-source проекты и практические туториалы для всех: от опытных специалистов до тех, кто только делает первые шаги в IT.
-          </p>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-            <p
-              className="about-secondary"
-              style={{
-                fontSize: 'clamp(0.95rem, 1.2vw, 1.1rem)',
-                lineHeight: 1.7,
-                color: textMuted,
-              }}
-            >
-              Мы создаём инструменты, шаблоны и образовательные материалы в открытом доступе — чтобы каждый мог использовать их в работе и учёбе.
-            </p>
-
-            <p
-              className="about-secondary"
-              style={{
-                fontSize: 'clamp(0.95rem, 1.2vw, 1.1rem)',
-                lineHeight: 1.7,
-                color: textMuted,
-              }}
-            >
-              Параллельно оказываем профессиональные услуги: проверяем сайты и код на уязвимости, ищем утечки данных, разрабатываем сайты и помогаем с тестированием.
-            </p>
-
-            <p
-              className="about-secondary"
-              style={{
-                fontSize: 'clamp(0.95rem, 1.2vw, 1.1rem)',
-                lineHeight: 1.7,
-                color: textMuted,
-              }}
-            >
-              Мы верим, что безопасность и качество кода должны быть доступны каждому — поэтому делимся знаниями открыто и работаем честно.
-            </p>
-          </div>
-        </div>
+          <ShinyText
+            text="Opensophy — open-source проект для IT-специалистов."
+            speed={4}
+            color={shinyBase}
+            shineColor={shinyGlow}
+          />
+          {' '}
+          <ShinyText
+            text="Инструменты, туториалы и материалы по безопасности, разработке и инфраструктуре — в открытом доступе."
+            speed={5.5}
+            color={shinyBase}
+            shineColor={shinyGlow}
+          />
+        </p>
       </section>
     </div>
   );
