@@ -201,7 +201,7 @@ export const Stats: React.FC<StatsProps> = ({ isNegative }) => {
             </div>
           </motion.div>
 
-          {/* Один счётчик — 13к+ просмотров в среднем на статью */}
+          {/* Один счётчик — 10к+ просмотров в среднем на статью */}
           <motion.div
             initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }} viewport={{ once: true }}
