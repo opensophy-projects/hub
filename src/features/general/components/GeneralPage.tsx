@@ -60,7 +60,6 @@ const LandingContent: React.FC = () => {
     return localStorage.getItem('theme') !== 'light';
   });
 
-  // Ширина рейла + панели навигации — для компенсации сдвига логотипа
   const [navOffset, setNavOffset] = useState(0);
 
   useEffect(() => {
@@ -78,7 +77,6 @@ const LandingContent: React.FC = () => {
     };
   }, []);
 
-  // Следим за CSS-переменной --nav-left для точной компенсации рейла
   useEffect(() => {
     const readOffset = () => {
       const val = getComputedStyle(document.documentElement)
@@ -96,32 +94,29 @@ const LandingContent: React.FC = () => {
 
   const bg        = isNegative ? '#0a0a0a' : '#E8E7E3';
   const textMain  = isNegative ? '#ffffff' : '#000000';
-  const textMuted = isNegative ? 'rgba(255,255,255,0.32)' : 'rgba(0,0,0,0.32)';
-  const shinyBase = isNegative ? 'rgba(255,255,255,0.48)' : 'rgba(0,0,0,0.42)';
+  const shinyBase = isNegative ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.35)';
   const shinyGlow = isNegative ? '#ffffff'                : '#000000';
 
   return (
     <div style={{ minHeight: '100vh', background: bg, color: textMain }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Crimson+Pro:wght@200;300&display=swap');
+        .lp-body {
+          font-family: 'Crimson Pro', 'Cormorant Garamond', Georgia, serif;
+          font-weight: 200;
+          letter-spacing: 0.01em;
+        }
         .lp-label {
-          font-family: 'Cormorant Garamond', Georgia, serif;
+          font-family: 'Crimson Pro', 'Cormorant Garamond', Georgia, serif;
           font-weight: 300;
           font-style: italic;
           letter-spacing: 0.14em;
-        }
-        .lp-body {
-          font-family: 'Cormorant Garamond', Georgia, serif;
-          font-weight: 300;
-          letter-spacing: 0.01em;
         }
       `}</style>
 
       <Navigation />
 
-      {/* ── HERO ──
-          marginLeft компенсирует рейл навигации, чтобы логотип
-          был строго по центру видимой части экрана, а не страницы целиком */}
+      {/* ── HERO — логотип строго по центру видимой зоны */}
       <section
         style={{
           position: 'relative',
@@ -141,7 +136,6 @@ const LandingContent: React.FC = () => {
           />
         </div>
 
-        {/* Fade снизу */}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0, height: '35%',
           pointerEvents: 'none',
@@ -169,19 +163,20 @@ const LandingContent: React.FC = () => {
         </div>
       </section>
 
-      {/* ── О ПРОЕКТЕ ── */}
+      {/* ── О ПРОЕКТЕ — на всю ширину, без ограничения контейнера */}
       <section
         style={{
           marginLeft: navOffset > 0 ? `${navOffset}px` : 0,
           padding: 'clamp(4rem, 10vw, 8rem) clamp(2rem, 6vw, 5rem)',
-          maxWidth: '1000px',
+          width: '100%',
+          boxSizing: 'border-box',
         }}
       >
         <p
           className="lp-label"
           style={{
             fontSize: '0.72rem',
-            color: textMuted,
+            color: isNegative ? 'rgba(255,255,255,0.32)' : 'rgba(0,0,0,0.32)',
             marginBottom: '2rem',
             marginTop: 0,
           }}
@@ -192,10 +187,10 @@ const LandingContent: React.FC = () => {
         <p
           className="lp-body"
           style={{
-            fontSize: 'clamp(1.65rem, 3.5vw, 2.6rem)',
-            lineHeight: 1.5,
+            fontSize: 'clamp(1.5rem, 3vw, 2.4rem)',
+            lineHeight: 1.55,
             margin: 0,
-            maxWidth: '860px',
+            maxWidth: '100%',
           }}
         >
           <ShinyText
