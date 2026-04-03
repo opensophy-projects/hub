@@ -184,13 +184,6 @@ const LandingContent: React.FC = () => {
             color={shinyBase}
             shineColor={shinyGlow}
           />
-          {' '}
-          <ShinyText
-            text="Инструменты, туториалы и материалы по безопасности, разработке и инфраструктуре — в открытом доступе."
-            speed={5.5}
-            color={shinyBase}
-            shineColor={shinyGlow}
-          />
         </p>
       </section>
     </div>
