@@ -167,7 +167,7 @@ const LandingContent: React.FC = () => {
             letterSpacing: '0.14em',
           }}
         >
-          о проекте
+          О ПРОЕКТЕ
         </p>
 
         <p
