@@ -413,32 +413,49 @@ const SectionItemIcon: React.FC<{
   );
 };
 
+// ─── ИЗМЕНЕНИЕ: "Главная" теперь рендерится как <a href="/"> ─────────────────
 const SectionDropdown: React.FC<{
   sections: NavSection[]; activeNavSlug: string; mobile: boolean; isDark: boolean; onSelect: (slug: string) => void;
 }> = ({ sections, activeNavSlug, mobile, isDark, onSelect }) => {
   const t = tk(isDark);
   const lastSection = sections[sections.length - 1];
   const isLastOdd = (s: NavSection) => sections.length % 2 === 1 && lastSection?.navSlug === s.navSlug;
-  const padding  = mobile ? '0.7rem 1rem' : '0.55rem 0.75rem';
-  const fontSize = mobile ? '1rem' : '0.875rem';
+  const padding   = mobile ? '0.7rem 1rem' : '0.55rem 0.75rem';
+  const fontSize  = mobile ? '1rem' : '0.875rem';
   const minHeight = mobile ? '46px' : '40px';
+
   return (
     <>
       {sections.map(s => {
         const isActive = s.navSlug === activeNavSlug;
+
+        const itemStyle: React.CSSProperties = {
+          width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem',
+          padding, fontSize,
+          border: `1px solid ${getSectionItemBorder(isActive, isDark)}`,
+          borderRadius: '10px', cursor: 'pointer', textAlign: 'left',
+          background: getSectionItemBackground(isActive, isDark),
+          color:      isActive ? t.accent : t.fg,
+          fontWeight: isActive ? 600 : 400,
+          minHeight,
+          gridColumn: isLastOdd(s) ? '1 / -1' : undefined,
+          textDecoration: 'none',
+          boxSizing: 'border-box',
+        };
+
+        // "Главная" — прямая ссылка на лендинг
+        if (s.navSlug === '') {
+          return (
+            <a key="home-link" href="/" style={itemStyle}>
+              <SectionItemIcon navSlug={s.navSlug} navIcon={s.navIcon} isActive={isActive} mobile={mobile} t={t} />
+              <span>{s.navTitle}</span>
+            </a>
+          );
+        }
+
         return (
           <button key={s.navSlug} onClick={() => onSelect(s.navSlug)}
-            style={{
-              width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem',
-              padding, fontSize,
-              border: `1px solid ${getSectionItemBorder(isActive, isDark)}`,
-              borderRadius: '10px', cursor: 'pointer', textAlign: 'left',
-              background: getSectionItemBackground(isActive, isDark),
-              color:      isActive ? t.accent : t.fg,
-              fontWeight: isActive ? 600 : 400,
-              minHeight,
-              gridColumn: isLastOdd(s) ? '1 / -1' : undefined,
-            }}>
+            style={{ ...itemStyle, border: `1px solid ${getSectionItemBorder(isActive, isDark)}` }}>
             <SectionItemIcon navSlug={s.navSlug} navIcon={s.navIcon} isActive={isActive} mobile={mobile} t={t} />
             <span>{s.navTitle}</span>
           </button>
