@@ -168,7 +168,7 @@ export const Stats: React.FC<StatsProps> = ({ isNegative }) => {
         <div className="lg:max-w-7xl lg:mx-auto px-4 sm:px-6 md:px-8">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="mb-12 sm:mb-16">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-              <h2 className={`text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.0] ${textMain}`} style={{ fontFamily: 'UnifixSP, sans-serif' }}>Наши статьи</h2>
+              <h2 className={`text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.0] ${textMain}`} style={{ fontFamily: 'customfont, sans-serif' }}>Наши статьи</h2>
               <p className={`text-base sm:text-lg leading-relaxed max-w-sm md:text-right ${textSub}`}>IT-материалы для студентов, специалистов и всех, кто хочет разобраться в теме</p>
             </div>
           </motion.div>
