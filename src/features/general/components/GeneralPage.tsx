@@ -68,7 +68,7 @@ const ServicesSection: React.FC<{ isNegative: boolean }> = ({ isNegative }) => {
             className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-16 sm:mb-20 md:mb-24">
             <div>
               <p className={`text-xs font-bold uppercase tracking-widest mb-4 ${textMuted}`}>ЧТО МЫ ПРЕДЛАГАЕМ</p>
-              <h2 className={`text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.0] ${textMain}`} style={{ fontFamily: 'UnifixSP, sans-serif' }}>НАШИ УСЛУГИ</h2>
+              <h2 className={`text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.0] ${textMain}`} style={{ fontFamily: 'customfont, sans-serif' }}>НАШИ УСЛУГИ</h2>
             </div>
             <p className={`text-base sm:text-lg leading-relaxed max-w-xs md:max-w-sm md:text-right ${textMuted}`}>
               Комплексная поддержка ваших цифровых продуктов — от безопасности до визуала
@@ -84,7 +84,7 @@ const ServicesSection: React.FC<{ isNegative: boolean }> = ({ isNegative }) => {
                     <span className={`text-xs font-mono flex-shrink-0 transition-colors duration-300 ${isOpen ? '' : textMuted}`} style={{ color: isOpen ? service.accentColor : undefined }}>{service.num}</span>
                     <div className="flex-1 min-w-0 overflow-hidden flex items-baseline gap-4">
                       <span className={`font-bold leading-none whitespace-nowrap transition-colors duration-300 flex-shrink-0 ${textMain}`}
-                        style={{ fontFamily: 'UnifixSP, sans-serif', fontSize: 'clamp(1.1rem, 2.8vw, 3.5rem)', color: isOpen ? service.accentColor : undefined }}>
+                        style={{ fontFamily: 'customfont, sans-serif', fontSize: 'clamp(1.1rem, 2.8vw, 3.5rem)', color: isOpen ? service.accentColor : undefined }}>
                         {service.title}
                       </span>
                       <span className={`text-sm whitespace-nowrap hidden sm:block transition-opacity duration-300 ${textMuted}`} style={{ opacity: isOpen ? 0 : 1 }}>{service.subtitle}</span>
@@ -172,7 +172,7 @@ const ProjectsSection: React.FC<{ isNegative: boolean }> = ({ isNegative }) => {
         <div className="lg:max-w-7xl lg:mx-auto px-4 sm:px-6 md:px-8">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }}
             className="flex items-start justify-between mb-12 sm:mb-14">
-            <h2 className={`text-3xl sm:text-4xl md:text-5xl font-bold ${textMain}`} style={{ fontFamily: 'UnifixSP, sans-serif' }}>Наши проекты</h2>
+            <h2 className={`text-3xl sm:text-4xl md:text-5xl font-bold ${textMain}`} style={{ fontFamily: 'customfont, sans-serif' }}>Наши проекты</h2>
             <div className="flex items-center gap-2 mt-1">
               <button onClick={() => navigate(-1)} className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full border flex items-center justify-center transition-all duration-200 ${btnBorder}`} aria-label="Предыдущий проект">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -191,7 +191,7 @@ const ProjectsSection: React.FC<{ isNegative: boolean }> = ({ isNegative }) => {
                   <img src={isHub ? "/logohub.png" : "/elementlogo.png"} alt={isHub ? "Hub" : "Element"} className="w-full h-full object-contain" />
                 </div>
                 <div>
-                  <p className={`text-3xl sm:text-4xl font-bold ${textMain}`} style={{ fontFamily: 'UnifixSP, sans-serif' }}>{isHub ? 'hub' : 'element'}</p>
+                  <p className={`text-3xl sm:text-4xl font-bold ${textMain}`} style={{ fontFamily: 'customfont, sans-serif' }}>{isHub ? 'hub' : 'element'}</p>
                   <p className={`text-sm mt-1 leading-snug ${textMuted}`}>{isHub ? 'Open-source платформа для документации и контента' : 'UI-библиотека компонентов для React'}</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -350,7 +350,7 @@ const GeneralPage: React.FC = () => {
                   КИБЕРБЕЗОПАСНОСТЬ. РАЗРАБОТКА. OPEN-SOURCE.
                 </motion.div>
                 <h1 className={`text-[clamp(2.8rem,12vw,10rem)] font-bold tracking-[0.10em] drop-shadow-lg leading-none mb-4 sm:mb-6 md:mb-8 ${isNegative ? 'text-white' : 'text-black'}`}
-                  style={{ fontFamily: 'UnifixSP, sans-serif' }}>
+                  style={{ fontFamily: 'customfont, sans-serif' }}>
                   Opensophy
                 </h1>
               </motion.div>
@@ -380,7 +380,7 @@ const GeneralPage: React.FC = () => {
               </motion.div>
 
               <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} viewport={{ once: true }} className="mb-10 sm:mb-14 text-center">
-                <h2 className={`text-4xl sm:text-5xl md:text-6xl font-bold mb-4 ${isNegative ? 'text-white' : 'text-black'}`} style={{ fontFamily: 'UnifixSP, sans-serif' }}>НАШ ПОДХОД</h2>
+                <h2 className={`text-4xl sm:text-5xl md:text-6xl font-bold mb-4 ${isNegative ? 'text-white' : 'text-black'}`} style={{ fontFamily: 'customfont, sans-serif' }}>НАШ ПОДХОД</h2>
                 <p className={`text-lg sm:text-xl ${isNegative ? 'text-white/50' : 'text-black/40'}`}>6 ключевых принципов, которыми мы руководствуемся в работе</p>
               </motion.div>
 
@@ -428,7 +428,7 @@ const GeneralPage: React.FC = () => {
               <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true }} className="mb-12 sm:mb-16">
                 <p className={`text-xs font-bold uppercase tracking-widest mb-4 ${labelColor}`}>ВОПРОСЫ И СВЯЗЬ</p>
                 <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-                  <h2 className={`text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.0] ${isNegative ? 'text-white' : 'text-black'}`} style={{ fontFamily: 'UnifixSP, sans-serif' }}>Частые вопросы</h2>
+                  <h2 className={`text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.0] ${isNegative ? 'text-white' : 'text-black'}`} style={{ fontFamily: 'customfont, sans-serif' }}>Частые вопросы</h2>
                   <p className={`text-base sm:text-lg leading-relaxed max-w-sm md:text-right ${labelColor}`}>Ответы на частые вопросы об Opensophy</p>
                 </div>
               </motion.div>
