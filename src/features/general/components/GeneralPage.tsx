@@ -4,8 +4,6 @@ import { SingularityShaders } from './SingularityShaders';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import Navigation from '@/features/navigation/components/Navigation';
 
-// ─── ShinyText ────────────────────────────────────────────────────────────────
-
 interface ShinyTextProps {
   text: string;
   speed?: number;
@@ -51,8 +49,6 @@ const ShinyText: React.FC<ShinyTextProps> = ({
     </motion.span>
   );
 };
-
-// ─── Контент ──────────────────────────────────────────────────────────────────
 
 const LandingContent: React.FC = () => {
   const [isNegative, setIsNegative] = useState(() => {
@@ -116,7 +112,6 @@ const LandingContent: React.FC = () => {
 
       <Navigation />
 
-      {/* ── HERO */}
       <section
         style={{
           position: 'relative',
@@ -139,12 +134,11 @@ const LandingContent: React.FC = () => {
           background: `linear-gradient(to bottom, transparent, ${bg})`,
         }} />
 
-        {/* 🔥 ВОТ ГЛАВНОЕ ИСПРАВЛЕНИЕ */}
         <div style={{
           position: 'absolute',
           left: '50%',
           top: '50%',
-          transform: 'translate(-50%, -50%)',
+          transform: 'translate(-56%, -50%)',
           zIndex: 10,
           textAlign: 'center',
           padding: '0 1.5rem',
@@ -165,7 +159,6 @@ const LandingContent: React.FC = () => {
         </div>
       </section>
 
-      {/* ── О ПРОЕКТЕ */}
       <section
         style={{
           marginLeft: navOffset > 0 ? `${navOffset}px` : 0,
@@ -213,8 +206,6 @@ const LandingContent: React.FC = () => {
     </div>
   );
 };
-
-// ─── Экспорт ──────────────────────────────────────────────────────────────────
 
 const GeneralPage: React.FC = () => (
   <ThemeProvider>
