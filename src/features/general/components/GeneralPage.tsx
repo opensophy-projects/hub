@@ -96,18 +96,7 @@ const LandingContent: React.FC = () => {
   return (
     <div style={{ minHeight: '100vh', background: bg, color: textMain }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Crimson+Pro:wght@200;300&display=swap');
-        .lp-body {
-          font-family: 'Crimson Pro', 'Cormorant Garamond', Georgia, serif;
-          font-weight: 200;
-          letter-spacing: 0.01em;
-        }
-        .lp-label {
-          font-family: 'Crimson Pro', 'Cormorant Garamond', Georgia, serif;
-          font-weight: 300;
-          font-style: italic;
-          letter-spacing: 0.14em;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap');
       `}</style>
 
       <Navigation />
@@ -168,24 +157,25 @@ const LandingContent: React.FC = () => {
         }}
       >
         <p
-          className="lp-label"
           style={{
             fontSize: '0.72rem',
             color: isNegative ? 'rgba(255,255,255,0.32)' : 'rgba(0,0,0,0.32)',
             marginBottom: '2rem',
             marginTop: 0,
+            fontFamily: 'Inter, sans-serif',
+            letterSpacing: '0.14em',
           }}
         >
           о проекте
         </p>
 
         <p
-          className="lp-body"
           style={{
             fontSize: 'clamp(1.5rem, 3vw, 2.4rem)',
             lineHeight: 1.55,
             margin: 0,
             maxWidth: '100%',
+            fontFamily: 'Inter, sans-serif',
           }}
         >
           <ShinyText
