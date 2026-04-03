@@ -1,15 +1,67 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useMotionValue, useAnimationFrame, useTransform, motion } from 'framer-motion';
 import { SingularityShaders } from './SingularityShaders';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import Navigation from '@/features/navigation/components/Navigation';
 
-// ─── Контент (внутри ThemeProvider) ──────────────────────────────────────────
+// ─── ShinyText ────────────────────────────────────────────────────────────────
+
+interface ShinyTextProps {
+  text: string;
+  speed?: number;
+  color?: string;
+  shineColor?: string;
+  spread?: number;
+}
+
+const ShinyText: React.FC<ShinyTextProps> = ({
+  text,
+  speed = 4,
+  color = 'rgba(255,255,255,0.55)',
+  shineColor = 'rgba(255,255,255,0.95)',
+  spread = 110,
+}) => {
+  const progress   = useMotionValue(0);
+  const elapsedRef = useRef(0);
+  const lastRef    = useRef<number | null>(null);
+
+  useAnimationFrame(time => {
+    if (lastRef.current === null) { lastRef.current = time; return; }
+    elapsedRef.current += time - lastRef.current;
+    lastRef.current = time;
+    const p = (elapsedRef.current % (speed * 1000)) / (speed * 1000) * 100;
+    progress.set(p);
+  });
+
+  const backgroundPosition = useTransform(progress, p => `${150 - p * 2}% center`);
+
+  return (
+    <motion.span
+      style={{
+        backgroundImage: `linear-gradient(${spread}deg, ${color} 0%, ${color} 35%, ${shineColor} 50%, ${color} 65%, ${color} 100%)`,
+        backgroundSize: '200% auto',
+        WebkitBackgroundClip: 'text',
+        backgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        backgroundPosition,
+        display: 'inline',
+      }}
+    >
+      {text}
+    </motion.span>
+  );
+};
+
+// ─── Контент ──────────────────────────────────────────────────────────────────
 
 const LandingContent: React.FC = () => {
   const [isNegative, setIsNegative] = useState(() => {
     if (typeof window === 'undefined') return true;
     return localStorage.getItem('theme') !== 'light';
   });
+
+  // Ширина рейла + панели навигации — для компенсации сдвига логотипа
+  const [navOffset, setNavOffset] = useState(0);
 
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
@@ -26,38 +78,61 @@ const LandingContent: React.FC = () => {
     };
   }, []);
 
-  const bg       = isNegative ? '#0a0a0a' : '#E8E7E3';
-  const textMain = isNegative ? '#ffffff' : '#000000';
-  const textMuted = isNegative ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)';
+  // Следим за CSS-переменной --nav-left для точной компенсации рейла
+  useEffect(() => {
+    const readOffset = () => {
+      const val = getComputedStyle(document.documentElement)
+        .getPropertyValue('--nav-left').trim();
+      setNavOffset(val ? parseInt(val, 10) : 0);
+    };
+    readOffset();
+    const observer = new MutationObserver(readOffset);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['style'],
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  const bg        = isNegative ? '#0a0a0a' : '#E8E7E3';
+  const textMain  = isNegative ? '#ffffff' : '#000000';
+  const textMuted = isNegative ? 'rgba(255,255,255,0.32)' : 'rgba(0,0,0,0.32)';
+  const shinyBase = isNegative ? 'rgba(255,255,255,0.48)' : 'rgba(0,0,0,0.42)';
+  const shinyGlow = isNegative ? '#ffffff'                : '#000000';
 
   return (
     <div style={{ minHeight: '100vh', background: bg, color: textMain }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap');
-        .landing-label {
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap');
+        .lp-label {
           font-family: 'Cormorant Garamond', Georgia, serif;
           font-weight: 300;
           font-style: italic;
           letter-spacing: 0.14em;
         }
-        .landing-body {
+        .lp-body {
           font-family: 'Cormorant Garamond', Georgia, serif;
           font-weight: 300;
-          letter-spacing: 0.015em;
+          letter-spacing: 0.01em;
         }
       `}</style>
 
       <Navigation />
 
-      {/* ── HERO ── */}
-      <section style={{
-        position: 'relative',
-        minHeight: '100svh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-      }}>
+      {/* ── HERO ──
+          marginLeft компенсирует рейл навигации, чтобы логотип
+          был строго по центру видимой части экрана, а не страницы целиком */}
+      <section
+        style={{
+          position: 'relative',
+          minHeight: '100svh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          marginLeft: navOffset > 0 ? `${navOffset}px` : 0,
+        }}
+      >
         <div style={{ position: 'absolute', inset: 0 }}>
           <SingularityShaders
             speed={0.8} intensity={1.1} size={1.05}
@@ -75,8 +150,10 @@ const LandingContent: React.FC = () => {
 
         <div style={{
           position: 'relative', zIndex: 10,
-          textAlign: 'center', padding: '0 1.5rem',
-          maxWidth: '860px', width: '100%',
+          textAlign: 'center',
+          padding: '0 1.5rem',
+          maxWidth: '900px',
+          width: '100%',
         }}>
           <h1 style={{
             fontSize: 'clamp(3.5rem, 14vw, 11rem)',
@@ -93,17 +170,19 @@ const LandingContent: React.FC = () => {
       </section>
 
       {/* ── О ПРОЕКТЕ ── */}
-      <section style={{
-        padding: 'clamp(4rem, 10vw, 8rem) clamp(1.5rem, 5vw, 4rem)',
-        maxWidth: '900px',
-        margin: '0 auto',
-      }}>
+      <section
+        style={{
+          marginLeft: navOffset > 0 ? `${navOffset}px` : 0,
+          padding: 'clamp(4rem, 10vw, 8rem) clamp(2rem, 6vw, 5rem)',
+          maxWidth: '1000px',
+        }}
+      >
         <p
-          className="landing-label"
+          className="lp-label"
           style={{
             fontSize: '0.72rem',
             color: textMuted,
-            marginBottom: '1.5rem',
+            marginBottom: '2rem',
             marginTop: 0,
           }}
         >
@@ -111,22 +190,34 @@ const LandingContent: React.FC = () => {
         </p>
 
         <p
-          className="landing-body"
+          className="lp-body"
           style={{
-            fontSize: 'clamp(1.4rem, 3.2vw, 2.2rem)',
-            lineHeight: 1.55,
-            color: textMain,
+            fontSize: 'clamp(1.65rem, 3.5vw, 2.6rem)',
+            lineHeight: 1.5,
             margin: 0,
+            maxWidth: '860px',
           }}
         >
-          Opensophy — open-source проект для IT-специалистов. Инструменты, туториалы и материалы по безопасности, разработке и инфраструктуре — в открытом доступе.
+          <ShinyText
+            text="Opensophy — open-source проект для IT-специалистов."
+            speed={4}
+            color={shinyBase}
+            shineColor={shinyGlow}
+          />
+          {' '}
+          <ShinyText
+            text="Инструменты, туториалы и материалы по безопасности, разработке и инфраструктуре — в открытом доступе."
+            speed={5.5}
+            color={shinyBase}
+            shineColor={shinyGlow}
+          />
         </p>
       </section>
     </div>
   );
 };
 
-// ─── Экспорт ─────────────────────────────────────────────────────────────────
+// ─── Экспорт ──────────────────────────────────────────────────────────────────
 
 const GeneralPage: React.FC = () => (
   <ThemeProvider>
