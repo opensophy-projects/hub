@@ -520,7 +520,7 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
           <FeatureCard
             isNegative={isNegative}
             title="Open Source"
-            text="Рассказываем про open source инструменты. Делимся опытом бесплатных решений, которые сделают ваш проект безопаснее."
+            text="Рассказываем про open source инструменты. Делимся опытом бесплатных решений, которые сделают ваш проект безопаснее и многое другое."
           />
         </div>
       </div>
