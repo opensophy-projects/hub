@@ -20,6 +20,7 @@ import {
   Search, Sun, Moon, ChevronDown, ChevronRight,
   Mail, X, Home, AlertTriangle,
   FolderOpen, List, PanelLeft, ArrowUp, ChevronLeft,
+  Crown,
 } from 'lucide-react';
 import { useIsDesktopNav } from '@/shared/hooks/useBreakpoint';
 
@@ -207,6 +208,40 @@ const DocLink: React.FC<{
     </a>
   );
 });
+
+// ─── HomePageLink — ссылка на главную страницу (GeneralPage) ─────────────────
+
+const HomePageLink: React.FC<{
+  isDark: boolean; isActive: boolean; onClick?: () => void; mobile?: boolean;
+}> = ({ isDark, isActive, onClick, mobile }) => {
+  const t = tk(isDark);
+  return (
+    <a
+      href="/"
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: '0.5rem',
+        padding: mobile ? '10px 14px' : '8px 10px',
+        borderRadius: '8px', fontSize: mobile ? '1rem' : '0.875rem',
+        textDecoration: 'none',
+        border: `1px solid ${isActive ? t.elevatedBorder : 'transparent'}`,
+        color: isActive ? t.accent : t.fg, fontWeight: isActive ? 600 : 400,
+        background: isActive ? t.accentSoft : 'transparent',
+        boxShadow: isActive ? t.elevatedShadowSoft : 'none',
+        lineHeight: 1.4,
+      }}
+    >
+      <span style={{ flexShrink: 0, width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fgMuted }}>
+        <Crown size={14} />
+      </span>
+      <span style={{ minWidth: 0 }}>
+        <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.35 }}>
+          Главная
+        </span>
+      </span>
+    </a>
+  );
+};
 
 // ─── CategoryNode ─────────────────────────────────────────────────────────────
 
@@ -454,9 +489,15 @@ const NavTreeContent: React.FC<{
   error: boolean; loading: boolean; navTree: NavNode;
   currentDocSlug: string | undefined; expandedPaths: Set<string>;
   onToggle: (p: string) => void; isDark: boolean; mobile: boolean | undefined;
+  activeNavSlug: string;
+  onDocClick?: () => void;
   onDocHoverChange?: (payload: { doc: Doc; rect: DOMRect } | null) => void;
-}> = ({ error, loading, navTree, currentDocSlug, expandedPaths, onToggle, isDark, mobile, onDocHoverChange }) => {
+}> = ({ error, loading, navTree, currentDocSlug, expandedPaths, onToggle, isDark, mobile, activeNavSlug, onDocClick, onDocHoverChange }) => {
   const t = tk(isDark);
+
+  // Determine if current path is the home page (/)
+  const isHomePage = typeof window !== 'undefined' && window.location.pathname === '/';
+
   if (error) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', padding: '2rem', textAlign: 'center' }}>
       <AlertTriangle size={22} style={{ color: 'rgba(251,191,36,0.7)' }} />
@@ -465,17 +506,27 @@ const NavTreeContent: React.FC<{
     </div>
   );
   if (loading) return <div style={{ padding: '2rem', textAlign: 'center', fontSize: mobile ? '0.95rem' : '0.8rem', color: t.fgMuted }}>Загрузка...</div>;
+
   return (
     <nav style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+      {/* Главная страница — всегда показываем в секции "Главная" */}
+      {activeNavSlug === '' && (
+        <HomePageLink
+          isDark={isDark}
+          isActive={isHomePage}
+          onClick={onDocClick}
+          mobile={mobile}
+        />
+      )}
       {navTree.docs.length > 0 && (
         <div style={{ marginBottom: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
           {[...navTree.docs].sort((a, b) => a.title.localeCompare(b.title)).map(doc => (
-            <DocLink key={doc.id} doc={doc} isDark={isDark} isActive={currentDocSlug === doc.slug} mobile={mobile} onPreviewChange={onDocHoverChange} />
+            <DocLink key={doc.id} doc={doc} isDark={isDark} isActive={currentDocSlug === doc.slug} onClick={onDocClick} mobile={mobile} onPreviewChange={onDocHoverChange} />
           ))}
         </div>
       )}
       {Object.entries(navTree.children).sort(([a], [b]) => a.localeCompare(b)).map(([key, node]) => (
-        <CategoryNode key={key} node={node} path={key} expandedPaths={expandedPaths} onToggle={onToggle} isDark={isDark} currentDocSlug={currentDocSlug} mobile={mobile} onDocHoverChange={onDocHoverChange} />
+        <CategoryNode key={key} node={node} path={key} expandedPaths={expandedPaths} onToggle={onToggle} isDark={isDark} currentDocSlug={currentDocSlug} onDocClick={onDocClick} mobile={mobile} onDocHoverChange={onDocHoverChange} />
       ))}
     </nav>
   );
@@ -616,6 +667,8 @@ const NavPanelContent: React.FC<{
           error={!!error} loading={loading} navTree={navTree}
           currentDocSlug={currentDocSlug} expandedPaths={expandedPaths}
           onToggle={togglePath} isDark={isDark} mobile={mobile}
+          activeNavSlug={activeNavSlug}
+          onDocClick={undefined}
           onDocHoverChange={setHoverPreview}
         />
       </div>
