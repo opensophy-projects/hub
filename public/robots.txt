@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://hub.opensophy.com/sitemap.xml
+Sitemap: https://opensophy.com/sitemap.xml
