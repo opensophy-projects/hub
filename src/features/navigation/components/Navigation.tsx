@@ -57,8 +57,9 @@ const DARK_TOKENS = {
   panelBg:     '#0F0F0F',
   border:      'rgba(255,255,255,0.08)',
   fg:          'rgba(255,255,255,0.85)',
-  fgMuted:     'rgba(255,255,255,0.38)',
-  fgSub:       'rgba(255,255,255,0.22)',
+  // FIX: повышен контраст fgMuted и fgSub — было 0.38/0.22
+  fgMuted:     'rgba(255,255,255,0.55)',
+  fgSub:       'rgba(255,255,255,0.38)',
   hov:         'rgba(255,255,255,0.05)',
   accent:      '#ffffff',
   accentSoft:  'rgba(255,255,255,0.08)',
@@ -87,8 +88,9 @@ const LIGHT_TOKENS = {
   panelBg:     '#E0DFDb',
   border:      'rgba(0,0,0,0.08)',
   fg:          'rgba(0,0,0,0.85)',
-  fgMuted:     'rgba(0,0,0,0.38)',
-  fgSub:       'rgba(0,0,0,0.22)',
+  // FIX: повышен контраст fgMuted и fgSub — было 0.38/0.22
+  fgMuted:     'rgba(0,0,0,0.55)',
+  fgSub:       'rgba(0,0,0,0.38)',
   hov:         'rgba(0,0,0,0.04)',
   accent:      '#000000',
   accentSoft:  'rgba(0,0,0,0.07)',
@@ -209,7 +211,7 @@ const DocLink: React.FC<{
   );
 });
 
-// ─── HomePageLink — ссылка на главную страницу (GeneralPage) ─────────────────
+// ─── HomePageLink ─────────────────────────────────────────────────────────────
 
 const HomePageLink: React.FC<{
   isDark: boolean; isActive: boolean; onClick?: () => void; mobile?: boolean;
@@ -471,11 +473,14 @@ const SectionDropdown: React.FC<{
               background: getSectionItemBackground(isActive, isDark),
               color:      isActive ? t.accent : t.fg,
               fontWeight: isActive ? 600 : 400,
+              // FIX: высота auto чтобы длинный текст не обрезался
               minHeight,
+              height: 'auto',
               gridColumn: isLastOdd(s) ? '1 / -1' : undefined,
             }}>
             <SectionItemIcon navSlug={s.navSlug} navIcon={s.navIcon} isActive={isActive} mobile={mobile} t={t} />
-            <span>{s.navTitle}</span>
+            {/* FIX: убран whiteSpace:'nowrap', добавлен wordBreak и lineHeight */}
+            <span style={{ wordBreak: 'break-word', lineHeight: 1.3, minWidth: 0 }}>{s.navTitle}</span>
           </button>
         );
       })}
@@ -495,7 +500,6 @@ const NavTreeContent: React.FC<{
 }> = ({ error, loading, navTree, currentDocSlug, expandedPaths, onToggle, isDark, mobile, activeNavSlug, onDocClick, onDocHoverChange }) => {
   const t = tk(isDark);
 
-  // Determine if current path is the home page (/)
   const isHomePage = typeof window !== 'undefined' && window.location.pathname === '/';
 
   if (error) return (
@@ -509,7 +513,6 @@ const NavTreeContent: React.FC<{
 
   return (
     <nav style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-      {/* Главная страница — всегда показываем в секции "Главная" */}
       {activeNavSlug === '' && (
         <HomePageLink
           isDark={isDark}
@@ -632,11 +635,12 @@ const NavPanelContent: React.FC<{
               cursor: 'pointer',
               boxShadow: t.sectionShadow,
             }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden', minWidth: 0, flex: 1 }}>
               {activeSection.navSlug === ''
                 ? <Home size={iconSize} style={{ color: t.fgMuted, flexShrink: 0 }} />
                 : <LucideIcon name={activeSection.navIcon} size={iconSize} />}
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeSection.navTitle}</span>
+              {/* FIX: убран whiteSpace:'nowrap', добавлен wordBreak */}
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-word', lineHeight: 1.3 }}>{activeSection.navTitle}</span>
             </div>
             <ChevronDown size={mobile ? 14 : 12} style={{ color: t.fgMuted, flexShrink: 0, transform: sectionOpen ? 'rotate(180deg)' : 'none' }} />
           </button>
@@ -653,7 +657,8 @@ const NavPanelContent: React.FC<{
               zIndex: 100, overflow: 'hidden',
               boxShadow: t.dropdownShadow,
             }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '8px', padding: '8px' }}>
+              {/* FIX: grid убран, используем flex-column чтобы текст не обрезался */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '8px' }}>
                 <SectionDropdown sections={sections} activeNavSlug={activeNavSlug} mobile={!!mobile} isDark={isDark} onSelect={handleSectionSelect} />
               </div>
             </div>
