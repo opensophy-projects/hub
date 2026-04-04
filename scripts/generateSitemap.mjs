@@ -8,7 +8,7 @@ const __dirname  = path.dirname(__filename);
 const manifestPath = path.join(__dirname, '../public/data/docs/manifest.json');
 const sitemapPath  = path.join(__dirname, '../public/sitemap.xml');
 
-const BASE_URL = 'https://hub.opensophy.com';
+const BASE_URL = 'https://opensophy.com';
 
 // ─── Terminal helpers (same minimal style) ────────────────────────────────────
 
