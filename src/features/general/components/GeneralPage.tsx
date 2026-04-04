@@ -135,7 +135,6 @@ const GlowingEffectInline = memo(({
     globalThis.addEventListener('scroll', handleScroll, { passive: true });
     document.body.addEventListener('pointermove', handlePointerMove, { passive: true });
     return () => {
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
       globalThis.removeEventListener('scroll', handleScroll);
       document.body.removeEventListener('pointermove', handlePointerMove);
     };
@@ -607,7 +606,7 @@ const EcoCard: React.FC<EcoCardProps> = ({
         </div>
 
         <div style={{
-          fontSize:   'clamp(0.85rem, 1.2vw, 0.9rem)',
+          fontSize:   'clamp(0.9rem, 1.3vw, 1rem)',
           color:      textC,
           lineHeight: 1.65,
           fontFamily: 'Inter, system-ui, sans-serif',
@@ -616,7 +615,6 @@ const EcoCard: React.FC<EcoCardProps> = ({
           {description}
         </div>
 
-        {/* Single link */}
         {link && (
           <a
             href={link}
@@ -639,7 +637,6 @@ const EcoCard: React.FC<EcoCardProps> = ({
           </a>
         )}
 
-        {/* Multiple links */}
         {extraLinks && extraLinks.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.25rem' }}>
             {extraLinks.map(el => (
@@ -677,7 +674,6 @@ interface EcosystemSectionProps {
   navOffset?: number;
 }
 
-// Shorter words so rotating text fits on one line on desktop
 const ROTATING_WORDS = [
   'студентов',
   'разработчиков',
@@ -688,7 +684,6 @@ const ROTATING_WORDS = [
 const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffset = 0 }) => {
   const bg       = isNegative ? '#0a0a0a' : '#E8E7E3';
   const textMut  = isNegative ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)';
-  const textSub  = isNegative ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.28)';
   const textMain = isNegative ? '#ffffff' : '#000000';
   const iconClr  = isNegative ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.65)';
   const iconBg   = isNegative ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
@@ -710,7 +705,6 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
           box-sizing: border-box;
         }
         .eco-header {
-          text-align: center;
           margin-bottom: clamp(3rem, 5vw, 4.5rem);
         }
         .eco-cards {
@@ -730,21 +724,18 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
         .eco-rotating-text span {
           overflow: visible !important;
         }
-        /* Desktop: heading on one line */
         .eco-heading-inline {
           display: flex;
           flex-direction: row;
           align-items: baseline;
-          justify-content: center;
           gap: 0.35em;
           flex-wrap: nowrap;
           white-space: nowrap;
         }
-        /* Mobile: two lines */
         @media (max-width: 640px) {
           .eco-heading-inline {
             flex-direction: column;
-            align-items: center;
+            align-items: flex-start;
             white-space: normal;
             gap: 0.1em;
           }
@@ -759,22 +750,22 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             color:         textMut,
             letterSpacing: '0.14em',
             textTransform: 'uppercase',
-            margin:        '0 0 1.5rem',
+            margin:        '0 0 2rem',
             fontFamily:    'Inter, sans-serif',
           }}>
             Экосистема
           </p>
 
-          {/* One-line heading on desktop, two lines on mobile */}
-          <h2 style={{
-            fontSize:       'clamp(2rem, 5vw, 3.4rem)',
-            fontWeight:     500,
-            lineHeight:     1.3,
-            margin:         '0 auto 1.25rem',
-            fontFamily:     'Inter, sans-serif',
+          {/* Заголовок в стиле О ПРОЕКТЕ — крупный, shiny */}
+          <div style={{
+            fontSize:   'clamp(1.75rem, 3.5vw, 2.6rem)',
+            fontWeight: 500,
+            lineHeight: 1.55,
+            margin:     '0 0 1.5rem',
+            fontFamily: 'Inter, sans-serif',
           }}>
             <div className="eco-heading-inline">
-              <span style={{ color: textMut, display: 'block' }}>
+              <span style={{ color: textMut }}>
                 <ShinyText
                   text="Создаём для"
                   speed={5}
@@ -807,21 +798,28 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
                 />
               </span>
             </div>
-          </h2>
+          </div>
 
+          {/* Большой описательный текст как в О ПРОЕКТЕ */}
           <p style={{
-            fontSize:   'clamp(0.9rem, 1.4vw, 1rem)',
-            color:      textSub,
-            lineHeight: 1.7,
-            margin:     '0 auto',
-            maxWidth:   '480px',
+            fontSize:   'clamp(1.75rem, 3.5vw, 2.6rem)',
+            fontWeight: 500,
+            lineHeight: 1.55,
+            margin:     0,
+            maxWidth:   '100%',
             fontFamily: 'Inter, sans-serif',
+            color:      textMut,
           }}>
-            Все инструменты и материалы распространяются под открытыми лицензиями — бесплатно, навсегда.
+            <ShinyText
+              text="Все инструменты и материалы распространяются под открытыми лицензиями — бесплатно, навсегда."
+              speed={4}
+              color={shinyBase}
+              shineColor={shinyGlow}
+            />
           </p>
         </div>
 
-        {/* Cards: order = UI библиотека, Hub — платформа, Образовательный контент, Заказные проекты */}
+        {/* Cards */}
         <div className="eco-cards">
           <EcoCard
             isNegative={isNegative}
@@ -858,376 +856,6 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             ]}
           />
         </div>
-      </div>
-    </section>
-  );
-};
-
-// ─── ServicesSection ──────────────────────────────────────────────────────────
-
-interface ServiceItem {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}
-
-interface ServiceGroup {
-  num: string;
-  title: string;
-  subtitle?: string;
-  items: ServiceItem[];
-}
-
-// Icon components for services
-const IconCode: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />
-  </svg>
-);
-
-const IconMonitor: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="3" width="20" height="14" rx="2" />
-    <line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" />
-  </svg>
-);
-
-const IconShield: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-  </svg>
-);
-
-const IconKey: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="7.5" cy="15.5" r="5.5" />
-    <path d="M21 2l-9.6 9.6" /><path d="M15.5 7.5l3 3L22 7l-3-3" />
-  </svg>
-);
-
-const IconZap: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-  </svg>
-);
-
-const IconSearch: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-  </svg>
-);
-
-const IconFileSearch: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-    <polyline points="14 2 14 8 20 8" />
-    <circle cx="11" cy="15" r="2" /><path d="M13.414 17.414L15 19" />
-  </svg>
-);
-
-const IconPenTool: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 19l7-7 3 3-7 7-3-3z" />
-    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
-    <path d="M2 2l7.586 7.586" />
-    <circle cx="11" cy="11" r="2" />
-  </svg>
-);
-
-const IconLayout: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="18" height="18" rx="2" />
-    <line x1="3" y1="9" x2="21" y2="9" />
-    <line x1="9" y1="21" x2="9" y2="9" />
-  </svg>
-);
-
-const SERVICE_GROUPS: ServiceGroup[] = [
-  {
-    num: '01',
-    title: 'Разработка',
-    items: [
-      {
-        icon: null, // set dynamically
-        title: 'Разработка сайта',
-        description: 'Современный сайт с использованием ИИ-инструментов под любой стек. Автоматическое выявление уязвимостей прямо в процессе разработки.',
-      },
-      {
-        icon: null,
-        title: 'Тестирование сайта',
-        description: 'Комплексная проверка на удобство и функциональность. Выявление проблем UX и рекомендации по улучшению.',
-      },
-    ],
-  },
-  {
-    num: '02',
-    title: 'Кибербезопасность',
-    subtitle: 'Защита ваших данных и систем от угроз.',
-    items: [
-      {
-        icon: null,
-        title: 'Проверка утечек секретов и доступов',
-        description: 'Поиск паролей, токенов, API-ключей и конфиденциальных данных в открытых источниках до того, как ими воспользуются злоумышленники.',
-      },
-      {
-        icon: null,
-        title: 'Автоматизация безопасности проекта',
-        description: 'Подключаем инструменты автоматической проверки кода и инфраструктуры. Уязвимости находятся автоматически — ещё до того, как код попадает в продакшн.',
-      },
-      {
-        icon: null,
-        title: 'Проверка сайта на уязвимости',
-        description: 'Автоматическая проверка на типовые уязвимости без вмешательства в работу сайта. Официально, с подтверждением от владельца — не пентест.',
-      },
-      {
-        icon: null,
-        title: 'Анализ кода на безопасность',
-        description: 'Быстрая проверка исходного кода на уязвимости и проблемные места до выхода в продакшн.',
-      },
-    ],
-  },
-  {
-    num: '03',
-    title: 'Дизайн',
-    subtitle: 'Визуальная идентичность и интерфейсы.',
-    items: [
-      {
-        icon: null,
-        title: 'Разработка логотипа',
-        description: 'Уникальный и запоминающийся логотип для вашего бренда. Концепция, цветовая палитра и типографика, отражающие ценности бизнеса.',
-      },
-      {
-        icon: null,
-        title: 'UI/UX аудит',
-        description: 'Анализ интерфейса на соответствие современным стандартам. Конкретные рекомендации по улучшению пользовательского опыта.',
-      },
-    ],
-  },
-];
-
-// Map icon components to service items
-const SERVICE_ICONS: Record<string, (color: string) => React.ReactNode> = {
-  'Разработка сайта':                       c => <IconCode color={c} />,
-  'Тестирование сайта':                     c => <IconMonitor color={c} />,
-  'Проверка утечек секретов и доступов':    c => <IconKey color={c} />,
-  'Автоматизация безопасности проекта':     c => <IconZap color={c} />,
-  'Проверка сайта на уязвимости':           c => <IconSearch color={c} />,
-  'Анализ кода на безопасность':            c => <IconFileSearch color={c} />,
-  'Разработка логотипа':                    c => <IconPenTool color={c} />,
-  'UI/UX аудит':                            c => <IconLayout color={c} />,
-};
-
-interface ServiceCardProps {
-  title: string;
-  description: string;
-  isNegative: boolean;
-}
-
-const ServiceCard: React.FC<ServiceCardProps> = ({ title, description, isNegative }) => {
-  const [hov, setHov] = useState(false);
-  const iconColor  = isNegative ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.55)';
-  const iconBgBase = isNegative ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
-  const iconBgHov  = isNegative ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
-  const border     = isNegative ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
-  const borderHov  = isNegative ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.14)';
-  const bg         = isNegative ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
-  const bgHov      = isNegative ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
-  const titleC     = isNegative ? 'rgba(255,255,255,0.88)' : 'rgba(0,0,0,0.88)';
-  const textC      = isNegative ? 'rgba(255,255,255,0.48)' : 'rgba(0,0,0,0.52)';
-  const iconBorderC= isNegative ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
-
-  const iconFn = SERVICE_ICONS[title];
-
-  return (
-    <div
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        display:       'flex',
-        alignItems:    'flex-start',
-        gap:           '1rem',
-        padding:       '1.1rem 1.25rem',
-        borderRadius:  '12px',
-        border:        `1px solid ${hov ? borderHov : border}`,
-        background:    hov ? bgHov : bg,
-        cursor:        'default',
-        transition:    'border-color 0.15s, background 0.15s',
-      }}
-    >
-      {/* Icon */}
-      <div style={{
-        width:          38,
-        height:         38,
-        borderRadius:   9,
-        background:     hov ? iconBgHov : iconBgBase,
-        border:         `1px solid ${iconBorderC}`,
-        display:        'flex',
-        alignItems:     'center',
-        justifyContent: 'center',
-        flexShrink:     0,
-        marginTop:      '1px',
-        transition:     'background 0.15s',
-      }}>
-        {iconFn ? iconFn(iconColor) : <IconScan color={iconColor} />}
-      </div>
-
-      {/* Text */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{
-          fontSize:   '0.92rem',
-          fontWeight: 600,
-          color:      titleC,
-          lineHeight: 1.3,
-          marginBottom: '0.35rem',
-          fontFamily: 'Inter, system-ui, sans-serif',
-        }}>
-          {title}
-        </div>
-        <div style={{
-          fontSize:   '0.82rem',
-          color:      textC,
-          lineHeight: 1.6,
-          fontFamily: 'Inter, system-ui, sans-serif',
-        }}>
-          {description}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-interface ServicesSectionProps {
-  isNegative: boolean;
-  navOffset?: number;
-}
-
-const ServicesSection: React.FC<ServicesSectionProps> = ({ isNegative, navOffset = 0 }) => {
-  const bg        = isNegative ? '#0a0a0a' : '#E8E7E3';
-  const textMain  = isNegative ? '#ffffff' : '#000000';
-  const textMut   = isNegative ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)';
-  const textSub   = isNegative ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)';
-  const numColor  = isNegative ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
-  const divColor  = isNegative ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
-
-  return (
-    <section style={{
-      background: bg,
-      marginLeft: navOffset > 0 ? `${navOffset}px` : 0,
-      width:      '100%',
-      boxSizing:  'border-box',
-      overflow:   'hidden',
-    }}>
-      <style>{`
-        .srv-inner {
-          padding: clamp(4rem, 8vw, 7rem) clamp(2rem, 6vw, 5rem);
-          box-sizing: border-box;
-        }
-        .srv-group {
-          display: grid;
-          grid-template-columns: 240px 1fr;
-          gap: clamp(2rem, 4vw, 4rem);
-          margin-bottom: clamp(3rem, 5vw, 4rem);
-          align-items: start;
-        }
-        .srv-items {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 0.75rem;
-        }
-        @media (max-width: 900px) {
-          .srv-group {
-            grid-template-columns: 1fr;
-            gap: 1.5rem;
-          }
-        }
-        @media (max-width: 640px) {
-          .srv-items { grid-template-columns: 1fr; }
-        }
-      `}</style>
-
-      <div className="srv-inner">
-        {/* Header */}
-        <div style={{ marginBottom: 'clamp(3rem, 5vw, 4.5rem)' }}>
-          <p style={{
-            fontSize:      '1rem',
-            fontWeight:    600,
-            color:         textMut,
-            letterSpacing: '0.14em',
-            textTransform: 'uppercase',
-            margin:        '0 0 1.25rem',
-            fontFamily:    'Inter, sans-serif',
-          }}>
-            Услуги
-          </p>
-          <h2 style={{
-            fontSize:   'clamp(2rem, 4vw, 3.2rem)',
-            fontWeight: 500,
-            lineHeight: 1.2,
-            margin:     0,
-            color:      textMain,
-            fontFamily: 'Inter, sans-serif',
-          }}>
-            Наши услуги
-          </h2>
-        </div>
-
-        {/* Groups */}
-        {SERVICE_GROUPS.map((group, gi) => (
-          <div key={group.num}>
-            {gi > 0 && (
-              <div style={{ height: 1, background: divColor, margin: 'clamp(2.5rem, 4vw, 3.5rem) 0' }} />
-            )}
-            <div className="srv-group">
-              {/* Left: number + title */}
-              <div style={{ position: 'relative' }}>
-                <div style={{
-                  fontSize:      'clamp(4rem, 8vw, 6rem)',
-                  fontWeight:    700,
-                  color:         numColor,
-                  lineHeight:    1,
-                  fontFamily:    'Inter, sans-serif',
-                  letterSpacing: '-0.04em',
-                  marginBottom:  '0.5rem',
-                  userSelect:    'none',
-                }}>
-                  {group.num}
-                </div>
-                <div style={{
-                  fontSize:   'clamp(1.2rem, 2vw, 1.5rem)',
-                  fontWeight: 700,
-                  color:      textMain,
-                  lineHeight: 1.2,
-                  fontFamily: 'Inter, sans-serif',
-                  marginBottom: group.subtitle ? '0.5rem' : 0,
-                }}>
-                  {group.title}
-                </div>
-                {group.subtitle && (
-                  <div style={{
-                    fontSize:   '0.85rem',
-                    color:      textSub,
-                    lineHeight: 1.5,
-                    fontFamily: 'Inter, sans-serif',
-                  }}>
-                    {group.subtitle}
-                  </div>
-                )}
-              </div>
-
-              {/* Right: service cards */}
-              <div className="srv-items">
-                {group.items.map(item => (
-                  <ServiceCard
-                    key={item.title}
-                    title={item.title}
-                    description={item.description}
-                    isNegative={isNegative}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        ))}
       </div>
     </section>
   );
@@ -1367,9 +995,6 @@ const LandingContent: React.FC = () => {
 
       {/* Экосистема */}
       <EcosystemSection isNegative={isNegative} navOffset={navOffset} />
-
-      {/* Наши услуги */}
-      <ServicesSection isNegative={isNegative} navOffset={navOffset} />
     </div>
   );
 };
