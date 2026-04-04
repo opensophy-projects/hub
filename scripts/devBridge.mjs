@@ -11,7 +11,7 @@ const DOCS_DIR   = path.join(ROOT, 'Docs');
 const OUTPUT_DIR = path.join(ROOT, 'public/data/docs');
 const MANIFEST   = path.join(OUTPUT_DIR, 'manifest.json');
 const SITEMAP    = path.join(ROOT, 'public/sitemap.xml');
-const BASE_URL   = 'https://hub.opensophy.com';
+const BASE_URL   = 'https://opensophy.com';
 
 // Адреса локального хоста, которым разрешено подключение
 const LOCALHOST_IPS = new Set(['::1', '127.0.0.1', '::ffff:127.0.0.1']);
