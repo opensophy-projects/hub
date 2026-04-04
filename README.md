@@ -11,7 +11,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react)](https://react.dev)
 [![Bundle](https://img.shields.io/badge/bundle-~460KB%20gzip-brightgreen?style=flat-square)](#)
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-hub.opensophy.com-8B5CF6?style=flat-square)](https://hub.opensophy.com)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-hub.opensophy.com-8B5CF6?style=flat-square)](https://opensophy.com)
 [![CodeFactor](https://www.codefactor.io/repository/github/opensophy-projects/hub/badge)](https://www.codefactor.io/repository/github/opensophy-projects/hub)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=opensophy-projects_hub&metric=alert_status)](https://sonarcloud.io/project/overview?id=opensophy-projects_hub)
 
