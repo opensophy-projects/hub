@@ -300,7 +300,7 @@ lang: en
 Каноническая ссылка на оригинал если контент продублирован на нескольких URL.
 
 ```yaml
-canonical: https://hub.opensophy.com/article/original
+canonical: https://opensophy.com/article/original
 # или если дублей нет:
 canonical: null
 ```
