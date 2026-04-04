@@ -1,7 +1,7 @@
 {
-  "name": "opensophy-hub",
+  "name": "opensophy-center",
   "private": true,
-  "version": "3.4.0",
+  "version": "3.4.1",
   "type": "module",
   "scripts": {
     "dev": "npm run generate && astro dev",
@@ -55,6 +55,7 @@
     "devalue": ">=5.6.3",
     "diff": ">=8.0.3",
     "svgo": ">=4.0.1",
-    "dompurify": ">=3.3.2"
+    "dompurify": ">=3.3.2",
+    "defu": ">=6.1.5"
   }
 }
