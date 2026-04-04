@@ -849,7 +849,7 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             icon={<IconBriefcase color={iconClr} />}
             iconBg={iconBg}
             title="Заказные проекты"
-            description="Документация, технический контент, аудит безопасности и GEO-оптимизация под ваши задачи."
+            description="Документация, технический контент, аудит безопасности под ваши задачи."
             extraLinks={[
               { href: 'mailto:opensophy@gmail.com', label: 'Связаться по email' },
               { href: 'https://habr.com/ru/users/opensophy/', label: 'Обсудить на Habr' },
