@@ -3,6 +3,7 @@ import { useMotionValue, useAnimationFrame, useTransform, motion } from 'framer-
 import { SingularityShaders } from './SingularityShaders';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import Navigation from '@/features/navigation/components/Navigation';
+import { GlowingEffect } from '@/features/general/components/ui/GlowingEffect';
 
 // ─── ShinyText ────────────────────────────────────────────────────────────────
 
@@ -52,11 +53,11 @@ const ShinyText: React.FC<ShinyTextProps> = ({
   );
 };
 
-// ─── GlowingEffect ───────────────────────────────────────────────────────────
+// ─── GlowingEffect (встроенный, для карточек без tailwind) ───────────────────
 
 const easeOutQuint = (x: number): number => 1 - Math.pow(1 - x, 5);
 
-interface GlowingEffectProps {
+interface GlowingEffectInlineProps {
   blur?: number;
   inactiveZone?: number;
   proximity?: number;
@@ -68,7 +69,7 @@ interface GlowingEffectProps {
   isNegative?: boolean;
 }
 
-const GlowingEffect: React.FC<GlowingEffectProps> = memo(({
+const GlowingEffectInline = memo(({
   blur = 0,
   inactiveZone = 0.7,
   proximity = 0,
@@ -78,66 +79,63 @@ const GlowingEffect: React.FC<GlowingEffectProps> = memo(({
   borderWidth = 1,
   disabled = true,
   isNegative = false,
-}) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const lastPosition = useRef({ x: 0, y: 0 });
+}: GlowingEffectInlineProps) => {
+  const containerRef      = useRef<HTMLDivElement>(null);
+  const lastPosition      = useRef({ x: 0, y: 0 });
   const animationFrameRef = useRef<number>(0);
 
-  const animateAngleTransition = useCallback(
-    (element: HTMLDivElement, startValue: number, endValue: number, duration: number) => {
-      const startTime = performance.now();
-      const animateValue = (currentTime: number) => {
-        const elapsed  = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const value    = startValue + (endValue - startValue) * easeOutQuint(progress);
-        element.style.setProperty('--start', String(value));
-        if (progress < 1) requestAnimationFrame(animateValue);
-      };
-      requestAnimationFrame(animateValue);
-    },
-    []
-  );
+  const animateAngleTransition = useCallback((
+    element: HTMLDivElement,
+    startValue: number,
+    endValue: number,
+    duration: number,
+  ) => {
+    const startTime = performance.now();
+    const animateValue = (currentTime: number) => {
+      const elapsed  = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const value    = startValue + (endValue - startValue) * easeOutQuint(progress);
+      element.style.setProperty('--start', String(value));
+      if (progress < 1) requestAnimationFrame(animateValue);
+    };
+    requestAnimationFrame(animateValue);
+  }, []);
 
-  const handleMove = useCallback(
-    (e?: MouseEvent | { x: number; y: number }) => {
-      if (!containerRef.current) return;
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = requestAnimationFrame(() => {
-        const element = containerRef.current;
-        if (!element) return;
-        const { left, top, width, height } = element.getBoundingClientRect();
-        const mouseX = e?.x ?? lastPosition.current.x;
-        const mouseY = e?.y ?? lastPosition.current.y;
-        if (e) lastPosition.current = { x: mouseX, y: mouseY };
-        const center             = [left + width * 0.5, top + height * 0.5];
-        const distanceFromCenter = Math.hypot(mouseX - center[0], mouseY - center[1]);
-        const inactiveRadius     = 0.5 * Math.min(width, height) * inactiveZone;
-        if (distanceFromCenter < inactiveRadius) { element.style.setProperty('--active', '0'); return; }
-        const isActive =
-          mouseX > left - proximity &&
-          mouseX < left + width  + proximity &&
-          mouseY > top  - proximity &&
-          mouseY < top  + height + proximity;
-        element.style.setProperty('--active', isActive ? '1' : '0');
-        if (!isActive) return;
-        const currentAngle = Number.parseFloat(element.style.getPropertyValue('--start')) || 0;
-        let targetAngle    = (180 * Math.atan2(mouseY - center[1], mouseX - center[0])) / Math.PI + 90;
-        const angleDiff    = ((targetAngle - currentAngle + 180) % 360) - 180;
-        animateAngleTransition(element, currentAngle, currentAngle + angleDiff, movementDuration * 1000);
-      });
-    },
-    [inactiveZone, proximity, movementDuration, animateAngleTransition]
-  );
+  const handleMove = useCallback((e?: MouseEvent | { x: number; y: number }) => {
+    if (!containerRef.current) return;
+    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    animationFrameRef.current = requestAnimationFrame(() => {
+      const element = containerRef.current;
+      if (!element) return;
+      const { left, top, width, height } = element.getBoundingClientRect();
+      const mouseX = e?.x ?? lastPosition.current.x;
+      const mouseY = e?.y ?? lastPosition.current.y;
+      if (e) lastPosition.current = { x: mouseX, y: mouseY };
+      const center             = [left + width * 0.5, top + height * 0.5];
+      const distanceFromCenter = Math.hypot(mouseX - center[0], mouseY - center[1]);
+      const inactiveRadius     = 0.5 * Math.min(width, height) * inactiveZone;
+      if (distanceFromCenter < inactiveRadius) { element.style.setProperty('--active', '0'); return; }
+      const isActive =
+        mouseX > left - proximity && mouseX < left + width  + proximity &&
+        mouseY > top  - proximity && mouseY < top  + height + proximity;
+      element.style.setProperty('--active', isActive ? '1' : '0');
+      if (!isActive) return;
+      const currentAngle = Number.parseFloat(element.style.getPropertyValue('--start')) || 0;
+      let targetAngle    = (180 * Math.atan2(mouseY - center[1], mouseX - center[0])) / Math.PI + 90;
+      const angleDiff    = ((targetAngle - currentAngle + 180) % 360) - 180;
+      animateAngleTransition(element, currentAngle, currentAngle + angleDiff, movementDuration * 1000);
+    });
+  }, [inactiveZone, proximity, movementDuration, animateAngleTransition]);
 
   useEffect(() => {
     if (disabled) return;
     const handleScroll      = () => handleMove();
     const handlePointerMove = (e: PointerEvent) => handleMove(e);
-    window.addEventListener('scroll',            handleScroll,      { passive: true });
+    globalThis.addEventListener('scroll', handleScroll, { passive: true });
     document.body.addEventListener('pointermove', handlePointerMove, { passive: true });
     return () => {
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-      window.removeEventListener('scroll', handleScroll);
+      globalThis.removeEventListener('scroll', handleScroll);
       document.body.removeEventListener('pointermove', handlePointerMove);
     };
   }, [handleMove, disabled]);
@@ -146,49 +144,45 @@ const GlowingEffect: React.FC<GlowingEffectProps> = memo(({
     ? `repeating-conic-gradient(from 236.84deg at 50% 50%, #ffffff, #ffffff calc(25% / var(--repeating-conic-gradient-times)))`
     : `repeating-conic-gradient(from 236.84deg at 50% 50%, #000000, #000000 calc(25% / var(--repeating-conic-gradient-times)))`;
 
+  if (disabled) return null;
+
   return (
-    <>
-      <div style={{ position: 'absolute', inset: -1, borderRadius: 'inherit', border: 'none', opacity: 0, pointerEvents: 'none' }} />
-      <div
-        ref={containerRef}
-        style={{
-          '--blur':                           `${blur}px`,
-          '--spread':                         spread,
-          '--start':                          '0',
-          '--active':                         '0',
-          '--glowingeffect-border-width':     `${borderWidth}px`,
-          '--repeating-conic-gradient-times': '5',
-          '--gradient':                       gradient,
-          position:                           'absolute',
-          inset:                              0,
-          borderRadius:                       'inherit',
-          opacity:                            1,
-          pointerEvents:                      'none',
-        } as React.CSSProperties}
-      >
-        <div
-          style={{
-            borderRadius:        'inherit',
-            position:            'absolute',
-            inset:               `calc(-1 * var(--glowingeffect-border-width))`,
-            border:              `var(--glowingeffect-border-width) solid transparent`,
-            background:          'var(--gradient)',
-            backgroundAttachment:'fixed',
-            opacity:             'var(--active)' as any,
-            transition:          'opacity 300ms',
-            WebkitMaskImage:     'linear-gradient(#0000,#0000), conic-gradient(from calc((var(--start) - var(--spread)) * 1deg), #00000000 0deg, #fff, #00000000 calc(var(--spread) * 2deg))',
-            maskImage:           'linear-gradient(#0000,#0000), conic-gradient(from calc((var(--start) - var(--spread)) * 1deg), #00000000 0deg, #fff, #00000000 calc(var(--spread) * 2deg))',
-            WebkitMaskClip:      'padding-box, border-box',
-            maskClip:            'padding-box, border-box',
-            WebkitMaskComposite: 'intersect',
-            maskComposite:       'intersect',
-          } as React.CSSProperties}
-        />
-      </div>
-    </>
+    <div
+      ref={containerRef}
+      style={{
+        '--blur':                           `${blur}px`,
+        '--spread':                         spread,
+        '--start':                          '0',
+        '--active':                         '0',
+        '--glowingeffect-border-width':     `${borderWidth}px`,
+        '--repeating-conic-gradient-times': '5',
+        '--gradient':                       gradient,
+        position:                           'absolute',
+        inset:                              0,
+        borderRadius:                       'inherit',
+        pointerEvents:                      'none',
+      } as React.CSSProperties}
+    >
+      <div style={{
+        position:            'absolute',
+        inset:               `calc(-1 * var(--glowingeffect-border-width))`,
+        borderRadius:        'inherit',
+        border:              `var(--glowingeffect-border-width) solid transparent`,
+        background:          gradient,
+        backgroundAttachment:'fixed',
+        opacity:             'var(--active)' as any,
+        transition:          'opacity 300ms',
+        WebkitMaskImage:     'linear-gradient(#0000,#0000), conic-gradient(from calc((var(--start) - var(--spread)) * 1deg), #00000000 0deg, #fff, #00000000 calc(var(--spread) * 2deg))',
+        maskImage:           'linear-gradient(#0000,#0000), conic-gradient(from calc((var(--start) - var(--spread)) * 1deg), #00000000 0deg, #fff, #00000000 calc(var(--spread) * 2deg))',
+        WebkitMaskClip:      'padding-box, border-box',
+        maskClip:            'padding-box, border-box',
+        WebkitMaskComposite: 'intersect',
+        maskComposite:       'intersect',
+      } as React.CSSProperties} />
+    </div>
   );
 });
-GlowingEffect.displayName = 'GlowingEffect';
+GlowingEffectInline.displayName = 'GlowingEffectInline';
 
 // ─── SVG-иконки ───────────────────────────────────────────────────────────────
 
@@ -200,6 +194,7 @@ const IconScan: React.FC<{ color: string }> = ({ color }) => (
     <path d="M9 12H7" /><path d="M17 12h-2" />
   </svg>
 );
+
 const IconBook: React.FC<{ color: string }> = ({ color }) => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
     <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
@@ -207,6 +202,7 @@ const IconBook: React.FC<{ color: string }> = ({ color }) => (
     <line x1="8" y1="7" x2="16" y2="7" /><line x1="8" y1="11" x2="13" y2="11" />
   </svg>
 );
+
 const IconCode: React.FC<{ color: string }> = ({ color }) => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />
@@ -214,7 +210,37 @@ const IconCode: React.FC<{ color: string }> = ({ color }) => (
   </svg>
 );
 
-// ─── FeatureCard ──────────────────────────────────────────────────────────────
+// Иконки для карточек экосистемы
+const IconGrid: React.FC<{ color: string }> = ({ color }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+    <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
+  </svg>
+);
+
+const IconGradCap: React.FC<{ color: string }> = ({ color }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+    <path d="M6 12v5c3 3 9 3 12 0v-5" />
+  </svg>
+);
+
+const IconHub: React.FC<{ color: string }> = ({ color }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <polyline points="9 22 9 12 15 12 15 22" />
+  </svg>
+);
+
+const IconBriefcase: React.FC<{ color: string }> = ({ color }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="7" width="20" height="14" rx="2" />
+    <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+    <line x1="12" y1="12" x2="12" y2="12" /><line x1="8" y1="12" x2="16" y2="12" />
+  </svg>
+);
+
+// ─── FeatureCard (SecuritySection) ───────────────────────────────────────────
 
 interface FeatureCardProps {
   icon: React.ReactNode;
@@ -244,46 +270,29 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, text, isNegative
       gridColumn:   fullWidth ? '1 / -1' : undefined,
       overflow:     'hidden',
     }}>
-      <GlowingEffect
-        spread={40}
-        glow
-        disabled={false}
-        proximity={60}
-        inactiveZone={0.01}
-        borderWidth={1.5}
-        isNegative={isNegative}
+      <GlowingEffectInline
+        spread={40} glow disabled={false}
+        proximity={60} inactiveZone={0.01}
+        borderWidth={1.5} isNegative={isNegative}
       />
       <div style={{
-        width:          40,
-        height:         40,
-        borderRadius:   10,
-        background:     iconBg,
-        display:        'flex',
-        alignItems:     'center',
-        justifyContent: 'center',
-        flexShrink:     0,
-        position:       'relative',
-        zIndex:         1,
+        width: 40, height: 40, borderRadius: 10,
+        background: iconBg,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0, position: 'relative', zIndex: 1,
       }}>
         {icon}
       </div>
       <div style={{
-        fontSize:   'clamp(1.1rem, 1.8vw, 1.4rem)',
-        fontWeight: 700,
-        color:      titleC,
-        lineHeight: 1.25,
-        position:   'relative',
-        zIndex:     1,
+        fontSize: 'clamp(1.1rem, 1.8vw, 1.4rem)', fontWeight: 700,
+        color: titleC, lineHeight: 1.25, position: 'relative', zIndex: 1,
         fontFamily: 'Inter, system-ui, sans-serif',
       }}>
         {title}
       </div>
       <div style={{
-        fontSize:   'clamp(0.95rem, 1.4vw, 1.1rem)',
-        color:      textC,
-        lineHeight: 1.65,
-        position:   'relative',
-        zIndex:     1,
+        fontSize: 'clamp(0.95rem, 1.4vw, 1.1rem)', color: textC,
+        lineHeight: 1.65, position: 'relative', zIndex: 1,
         fontFamily: 'Inter, system-ui, sans-serif',
       }}>
         {text}
@@ -292,7 +301,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, text, isNegative
   );
 };
 
-// ─── SmoothDeclineChart — плавный спуск 200→0 с тултипом ────────────────────
+// ─── SmoothDeclineChart ───────────────────────────────────────────────────────
 
 interface SmoothDeclineChartProps {
   isNegative: boolean;
@@ -339,27 +348,17 @@ const SmoothDeclineChart: React.FC<SmoothDeclineChartProps> = ({ isNegative, inV
   const padTop    = 20;
   const padBottom = 16;
   const chartH    = h - padTop - padBottom;
-
-  // FIX: S-кривая убывает строго от 1.0 до 0.0
-  // Первая точка = 200, последняя = 0
   const n = 80;
+
   const pts = Array.from({ length: n }, (_, i) => {
     const t = i / (n - 1);
-    // Логистическая функция + принудительное обнуление в конце
     const sigmoid = 1 / (1 + Math.exp((t - 0.52) * 7));
-    // Умножаем на (1 - t^2) чтобы хвост гарантированно касался 0
-    const forced = sigmoid * Math.pow(1 - t, 0.6);
-    // Лёгкая волнистость только в начале (затухает к концу)
-    const noise = Math.sin(t * 12) * 0.012 * (1 - t) + Math.sin(t * 7.3) * 0.008 * (1 - t);
-    const yN = Math.max(0, Math.min(1, forced + noise));
-    return {
-      x: t * w,
-      y: padTop + (1 - yN) * chartH,
-      value: Math.round(yN * 200), // 200 → 0
-    };
+    const forced  = sigmoid * Math.pow(1 - t, 0.6);
+    const noise   = Math.sin(t * 12) * 0.012 * (1 - t) + Math.sin(t * 7.3) * 0.008 * (1 - t);
+    const yN      = Math.max(0, Math.min(1, forced + noise));
+    return { x: t * w, y: padTop + (1 - yN) * chartH, value: Math.round(yN * 200) };
   });
 
-  // Smooth bezier
   const buildPath = (points: { x: number; y: number }[]) => {
     if (points.length < 2) return '';
     let d = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
@@ -379,26 +378,22 @@ const SmoothDeclineChart: React.FC<SmoothDeclineChartProps> = ({ isNegative, inV
   const clipW    = Math.max(0, progress * w + 8);
   const clipId   = `sd-clip-${Math.round(w)}`;
   const gradId   = `sd-grad-${Math.round(w)}`;
-  // Градиент для затемнения левой части
   const fadeId   = `sd-fade-${Math.round(w)}`;
 
   const lineColor = isNegative ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.65)';
   const areaTop   = isNegative ? 'rgba(255,255,255,0.11)' : 'rgba(0,0,0,0.07)';
   const bgColor   = isNegative ? '#0a0a0a' : '#E8E7E3';
 
-  // Наведение мыши — найти ближайшую точку по X
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     if (!svgRef.current) return;
-    const rect = svgRef.current.getBoundingClientRect();
+    const rect   = svgRef.current.getBoundingClientRect();
     const mouseX = ((e.clientX - rect.left) / rect.width) * w;
-    const idx = Math.max(0, Math.min(n - 1, Math.round((mouseX / w) * (n - 1))));
-    const pt = pts[idx];
-    const px = (pt.x / w) * rect.width;
-    const py = ((pt.y) / h) * rect.height;
+    const idx    = Math.max(0, Math.min(n - 1, Math.round((mouseX / w) * (n - 1))));
+    const pt     = pts[idx];
+    const px     = (pt.x / w) * rect.width;
+    const py     = (pt.y / h) * rect.height;
     setTooltip({ x: px, y: py, value: pt.value });
   };
-
-  const handleMouseLeave = () => setTooltip(null);
 
   const tooltipBg     = isNegative ? 'rgba(30,30,30,0.95)'   : 'rgba(255,255,255,0.95)';
   const tooltipBorder = isNegative ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
@@ -408,89 +403,47 @@ const SmoothDeclineChart: React.FC<SmoothDeclineChartProps> = ({ isNegative, inV
 
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <svg
-        ref={svgRef}
-        width="100%"
-        height="100%"
-        viewBox={`0 0 ${w} ${h}`}
-        preserveAspectRatio="none"
+      <svg ref={svgRef} width="100%" height="100%"
+        viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none"
         style={{ display: 'block', overflow: 'visible', cursor: 'crosshair' }}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
+        onMouseMove={handleMouseMove} onMouseLeave={() => setTooltip(null)}
       >
         <defs>
-          <clipPath id={clipId}>
-            <rect x={0} y={0} width={clipW} height={h} />
-          </clipPath>
+          <clipPath id={clipId}><rect x={0} y={0} width={clipW} height={h} /></clipPath>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%"   stopColor={areaTop} />
             <stop offset="100%" stopColor="rgba(0,0,0,0)" />
           </linearGradient>
-          {/* Левое затемнение — эффект "часть проекта" */}
           <linearGradient id={fadeId} x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%"   stopColor={bgColor} stopOpacity="1" />
-            <stop offset="18%"  stopColor={bgColor} stopOpacity="0.7" />
-            <stop offset="35%"  stopColor={bgColor} stopOpacity="0" />
+            <stop offset="0%"  stopColor={bgColor} stopOpacity="1" />
+            <stop offset="18%" stopColor={bgColor} stopOpacity="0.7" />
+            <stop offset="35%" stopColor={bgColor} stopOpacity="0" />
           </linearGradient>
         </defs>
-
         <path d={areaPath} fill={`url(#${gradId})`} clipPath={`url(#${clipId})`} />
-        <path
-          d={linePath}
-          fill="none"
-          stroke={lineColor}
-          strokeWidth={1.8}
-          strokeLinecap="round"
-          clipPath={`url(#${clipId})`}
-        />
-
-        {/* Левое затемнение поверх графика */}
+        <path d={linePath} fill="none" stroke={lineColor} strokeWidth={1.8} strokeLinecap="round" clipPath={`url(#${clipId})`} />
         <rect x={0} y={0} width={w} height={h} fill={`url(#${fadeId})`} style={{ pointerEvents: 'none' }} />
-
-        {/* Точка при наведении */}
         {tooltip && (
           <circle
             cx={(tooltip.x / (svgRef.current?.getBoundingClientRect().width ?? 1)) * w}
             cy={(tooltip.y / (svgRef.current?.getBoundingClientRect().height ?? 1)) * h}
-            r={4}
-            fill={dotColor}
-            style={{ pointerEvents: 'none' }}
+            r={4} fill={dotColor} style={{ pointerEvents: 'none' }}
           />
         )}
       </svg>
-
-      {/* Тултип */}
       {tooltip && (
         <div style={{
-          position:     'absolute',
-          left:         tooltip.x,
-          top:          tooltip.y,
-          transform:    'translate(-50%, -110%)',
-          background:   tooltipBg,
-          border:       `1px solid ${tooltipBorder}`,
-          borderRadius: 10,
-          padding:      '8px 14px',
-          pointerEvents:'none',
-          whiteSpace:   'nowrap',
-          zIndex:       10,
-          backdropFilter: 'blur(8px)',
-          boxShadow:    '0 4px 20px rgba(0,0,0,0.18)',
+          position: 'absolute', left: tooltip.x, top: tooltip.y,
+          transform: 'translate(-50%, -110%)',
+          background: tooltipBg, border: `1px solid ${tooltipBorder}`,
+          borderRadius: 10, padding: '8px 14px', pointerEvents: 'none',
+          whiteSpace: 'nowrap', zIndex: 10, backdropFilter: 'blur(8px)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
         }}>
-          <div style={{
-            fontSize:   '1.1rem',
-            fontWeight: 700,
-            color:      tooltipText,
-            fontFamily: 'Inter, system-ui, sans-serif',
-            lineHeight: 1.2,
-          }}>
+          <div style={{ fontSize: '1.1rem', fontWeight: 700, color: tooltipText, lineHeight: 1.2 }}>
             {tooltip.value}
           </div>
-          <div style={{
-            fontSize:   '0.72rem',
-            color:      tooltipMuted,
-            fontFamily: 'Inter, system-ui, sans-serif',
-            marginTop:  2,
-          }}>
+          <div style={{ fontSize: '0.72rem', color: tooltipMuted, marginTop: 2, fontFamily: 'Inter, sans-serif' }}>
             уязвимостей и ошибок
           </div>
         </div>
@@ -544,84 +497,38 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
           padding: clamp(3rem, 6vw, 5rem) clamp(2rem, 6vw, 5rem) 0;
           box-sizing: border-box;
         }
-        .sec-chart-col {
-          min-width: 0;
-          height: clamp(200px, 28vw, 340px);
-        }
-        .sec-text-col {
-          min-width: 0;
-        }
+        .sec-chart-col { min-width: 0; height: clamp(200px, 28vw, 340px); }
+        .sec-text-col  { min-width: 0; }
         @media (max-width: 800px) {
-          .sec-top {
-            grid-template-columns: 1fr;
-          }
-          .sec-chart-col {
-            order: 2;
-            height: clamp(180px, 45vw, 280px);
-          }
-          .sec-text-col {
-            order: 1;
-          }
+          .sec-top { grid-template-columns: 1fr; }
+          .sec-chart-col { order: 2; height: clamp(180px, 45vw, 280px); }
+          .sec-text-col  { order: 1; }
         }
         .sec-cards-area {
           padding: clamp(2rem, 4vw, 3rem) clamp(2rem, 6vw, 5rem) clamp(3rem, 8vw, 6rem);
           box-sizing: border-box;
         }
-        .sec-cards {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 1rem;
-        }
-        @media (max-width: 560px) {
-          .sec-cards {
-            grid-template-columns: 1fr !important;
-          }
-        }
+        .sec-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        @media (max-width: 560px) { .sec-cards { grid-template-columns: 1fr !important; } }
       `}</style>
 
       <div className="sec-top">
-        {/* График */}
         <div className="sec-chart-col">
           <SmoothDeclineChart isNegative={isNegative} inView={inView} />
         </div>
-
-        {/* Текст */}
         <div className="sec-text-col">
-          <p style={{
-            fontSize:      '1rem',
-            fontWeight:    600,
-            color:         textMut,
-            letterSpacing: '0.14em',
-            textTransform: 'uppercase',
-            margin:        '0 0 2rem',
-            fontFamily:    'Inter, sans-serif',
-          }}>
+          <p style={{ fontSize: '1rem', fontWeight: 600, color: textMut, letterSpacing: '0.14em', textTransform: 'uppercase', margin: '0 0 2rem', fontFamily: 'Inter, sans-serif' }}>
             БЕЗОПАСНОСТЬ
           </p>
-          <h2 style={{
-            fontSize:   'clamp(1.75rem, 3.5vw, 2.6rem)',
-            fontWeight: 500,
-            lineHeight: 1.55,
-            margin:     '0 0 1.5rem',
-            color:      textMain,
-            fontFamily: 'Inter, sans-serif',
-          }}>
+          <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: '0 0 1.5rem', color: textMain, fontFamily: 'Inter, sans-serif' }}>
             Безопасность прежде всего
           </h2>
-          <p style={{
-            fontSize:   'clamp(1.75rem, 3.5vw, 2.6rem)',
-            fontWeight: 500,
-            lineHeight: 1.55,
-            margin:     0,
-            color:      textMut,
-            fontFamily: 'Inter, sans-serif',
-          }}>
+          <p style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: 0, color: textMut, fontFamily: 'Inter, sans-serif' }}>
             Безопасность и качество кода — главный приоритет, особенно на фоне интеграции ИИ в разработку
           </p>
         </div>
       </div>
 
-      {/* Карточки */}
       <div className="sec-cards-area">
         <div className="sec-cards">
           <div style={{ gridColumn: '1 / -1' }}>
@@ -651,81 +558,109 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
   );
 };
 
-// ─── EcosystemCard ────────────────────────────────────────────────────────────
+// ─── RotatingWord — чередующийся текст ───────────────────────────────────────
 
-interface EcosystemCardProps {
-  title: string;
-  description: string;
-  tag: string;
+interface RotatingWordProps {
+  words: string[];
+  interval?: number;
   isNegative: boolean;
-  accent?: string;
 }
 
-const EcosystemCard: React.FC<EcosystemCardProps> = ({ title, description, tag, isNegative, accent }) => {
-  const border = isNegative ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)';
-  const bg     = isNegative ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
-  const titleC = isNegative ? 'rgba(255,255,255,0.92)'  : 'rgba(0,0,0,0.88)';
-  const textC  = isNegative ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
-  const tagBg  = isNegative ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
-  const tagClr = isNegative ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
-  const accentLine = accent ?? (isNegative ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)');
+const RotatingWord: React.FC<RotatingWordProps> = ({ words, interval = 2400, isNegative }) => {
+  const [idx, setIdx]         = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setIdx(i => (i + 1) % words.length);
+        setVisible(true);
+      }, 300);
+    }, interval);
+    return () => clearInterval(timer);
+  }, [words, interval]);
+
+  const textMain   = isNegative ? '#ffffff' : '#000000';
+  const borderClr  = isNegative ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)';
+
+  return (
+    <span style={{
+      display:       'inline-block',
+      color:         textMain,
+      borderBottom:  `2px solid ${borderClr}`,
+      paddingBottom: '2px',
+      opacity:       visible ? 1 : 0,
+      transform:     visible ? 'translateY(0)' : 'translateY(-10px)',
+      transition:    'opacity 0.3s ease, transform 0.3s ease',
+      whiteSpace:    'nowrap',
+    }}>
+      {words[idx]}
+    </span>
+  );
+};
+
+// ─── EcoCard — карточка экосистемы в стиле скрина ────────────────────────────
+
+interface EcoCardProps {
+  icon:        React.ReactNode;
+  iconBg:      string;
+  title:       string;
+  description: string;
+  link?:       string;
+  linkLabel?:  string;
+  isNegative:  boolean;
+}
+
+const EcoCard: React.FC<EcoCardProps> = ({
+  icon, iconBg, title, description, link, linkLabel, isNegative,
+}) => {
+  const border  = isNegative ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
+  const bg      = isNegative ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
+  const titleC  = isNegative ? 'rgba(255,255,255,0.9)'  : 'rgba(0,0,0,0.88)';
+  const textC   = isNegative ? 'rgba(255,255,255,0.5)'  : 'rgba(0,0,0,0.5)';
+  const linkClr = isNegative ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.28)';
+  const linkHov = isNegative ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.65)';
 
   return (
     <div style={{
-      position:     'relative',
-      border:       `1px solid ${border}`,
-      background:   bg,
-      borderRadius: 16,
-      padding:      '1.75rem',
-      display:      'flex',
-      flexDirection:'column',
-      gap:          '0.6rem',
-      overflow:     'hidden',
-      minHeight:    '180px',
+      position:      'relative',
+      border:        `1px solid ${border}`,
+      background:    bg,
+      borderRadius:  14,
+      padding:       '1.5rem',
+      display:       'flex',
+      flexDirection: 'column',
+      gap:           '0.6rem',
+      overflow:      'hidden',
+      minHeight:     '180px',
     }}>
-      {/* Тонкая цветная полоска сверху */}
-      <div style={{
-        position:     'absolute',
-        top:          0,
-        left:         '1.75rem',
-        right:        '1.75rem',
-        height:       '1px',
-        background:   accentLine,
-        borderRadius: '0 0 2px 2px',
-      }} />
-
-      <GlowingEffect
-        spread={50}
-        glow
-        disabled={false}
-        proximity={80}
-        inactiveZone={0.01}
-        borderWidth={1}
-        isNegative={isNegative}
+      <GlowingEffectInline
+        spread={40} glow disabled={false}
+        proximity={64} inactiveZone={0.01}
+        borderWidth={1} isNegative={isNegative}
       />
 
-      {/* Tag */}
+      {/* Иконка — квадрат с border, как на скрине */}
       <div style={{
-        display:      'inline-flex',
-        alignSelf:    'flex-start',
-        padding:      '3px 10px',
-        borderRadius: 6,
-        background:   tagBg,
-        fontSize:     '0.68rem',
-        fontWeight:   600,
-        letterSpacing:'0.1em',
-        textTransform:'uppercase',
-        color:        tagClr,
-        fontFamily:   'Inter, system-ui, sans-serif',
-        position:     'relative',
-        zIndex:       1,
-        marginBottom: '0.25rem',
+        width:          42,
+        height:         42,
+        borderRadius:   10,
+        background:     iconBg,
+        border:         `1px solid ${border}`,
+        display:        'flex',
+        alignItems:     'center',
+        justifyContent: 'center',
+        flexShrink:     0,
+        position:       'relative',
+        zIndex:         1,
+        marginBottom:   '0.25rem',
       }}>
-        {tag}
+        {icon}
       </div>
 
       <div style={{
-        fontSize:   'clamp(1rem, 1.6vw, 1.25rem)',
+        fontSize:   'clamp(1rem, 1.5vw, 1.15rem)',
         fontWeight: 700,
         color:      titleC,
         lineHeight: 1.25,
@@ -737,17 +672,40 @@ const EcosystemCard: React.FC<EcosystemCardProps> = ({ title, description, tag, 
       </div>
 
       <div style={{
-        fontSize:   'clamp(0.85rem, 1.2vw, 0.95rem)',
+        fontSize:   'clamp(0.85rem, 1.2vw, 0.9rem)',
         color:      textC,
         lineHeight: 1.65,
         fontFamily: 'Inter, system-ui, sans-serif',
         position:   'relative',
         zIndex:     1,
-        marginTop:  '0.25rem',
         flex:       1,
       }}>
         {description}
       </div>
+
+      {link && (
+        <a
+          href={link}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display:        'inline-flex',
+            alignItems:     'center',
+            gap:            4,
+            fontSize:       '0.75rem',
+            color:          linkClr,
+            textDecoration: 'none',
+            marginTop:      '0.25rem',
+            position:       'relative',
+            zIndex:         1,
+            fontFamily:     'ui-monospace, monospace',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = linkHov; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = linkClr; }}
+        >
+          {linkLabel} ↗
+        </a>
+      )}
     </div>
   );
 };
@@ -759,63 +717,31 @@ interface EcosystemSectionProps {
   navOffset?: number;
 }
 
-const PROJECTS = [
-  {
-    title:       'Opensophy Hub',
-    description: 'Центр знаний: документация, туториалы и гайды по безопасности и разработке в одном месте.',
-    tag:         'Документация',
-    accent:      'rgba(114, 52, 255, 0.6)',
-  },
-  {
-    title:       'SecScan CLI',
-    description: 'Утилита командной строки для быстрого статического анализа кода на уязвимости прямо в терминале.',
-    tag:         'Инструмент',
-    accent:      'rgba(34, 197, 94, 0.5)',
-  },
-  {
-    title:       'DevSecOps Playbook',
-    description: 'Готовые шаблоны CI/CD пайплайнов с интеграцией SAST, DAST и SCA для популярных платформ.',
-    tag:         'Шаблоны',
-    accent:      'rgba(59, 130, 246, 0.5)',
-  },
-  {
-    title:       'VulnDB Lite',
-    description: 'Локальная база уязвимостей с поиском по CVE, CVSS и зависимостям без отправки данных в облако.',
-    tag:         'База данных',
-    accent:      'rgba(239, 68, 68, 0.45)',
-  },
-  {
-    title:       'Hardening Guide',
-    description: 'Пошаговые инструкции по харденингу Linux-серверов, Docker-контейнеров и облачных конфигураций.',
-    tag:         'Гайд',
-    accent:      'rgba(245, 158, 11, 0.5)',
-  },
-  {
-    title:       'Threat Model Kit',
-    description: 'Набор шаблонов и методологий для построения моделей угроз в ваших продуктах и инфраструктуре.',
-    tag:         'Методология',
-    accent:      'rgba(236, 72, 153, 0.45)',
-  },
+const ROTATING_WORDS = [
+  'разработчиков',
+  'студентов',
+  'инженеров безопасности',
+  'технических лидеров',
 ];
 
 const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffset = 0 }) => {
   const bg       = isNegative ? '#0a0a0a' : '#E8E7E3';
-  const textMain = isNegative ? '#ffffff' : '#000000';
-  const textMut  = isNegative ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)';
-  const textSub  = isNegative ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)';
   const divider  = isNegative ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+  const textMut  = isNegative ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)';
+  const textSub  = isNegative ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.28)';
+  const textMain = isNegative ? '#ffffff' : '#000000';
+  const iconClr  = isNegative ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.65)';
+  const iconBg   = isNegative ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
 
   return (
-    <section
-      style={{
-        background: bg,
-        marginLeft: navOffset > 0 ? `${navOffset}px` : 0,
-        width:      '100%',
-        boxSizing:  'border-box',
-        overflow:   'hidden',
-        borderTop:  `1px solid ${divider}`,
-      }}
-    >
+    <section style={{
+      background: bg,
+      marginLeft: navOffset > 0 ? `${navOffset}px` : 0,
+      width:      '100%',
+      boxSizing:  'border-box',
+      overflow:   'hidden',
+      borderTop:  `1px solid ${divider}`,
+    }}>
       <style>{`
         .eco-inner {
           padding: clamp(4rem, 8vw, 7rem) clamp(2rem, 6vw, 5rem);
@@ -825,21 +751,20 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
           text-align: center;
           margin-bottom: clamp(3rem, 5vw, 4.5rem);
         }
-        .eco-grid {
+        .eco-cards {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(4, 1fr);
           gap: 1rem;
         }
         @media (max-width: 900px) {
-          .eco-grid { grid-template-columns: repeat(2, 1fr); }
+          .eco-cards { grid-template-columns: repeat(2, 1fr); }
         }
-        @media (max-width: 560px) {
-          .eco-grid { grid-template-columns: 1fr; }
+        @media (max-width: 520px) {
+          .eco-cards { grid-template-columns: 1fr; }
         }
       `}</style>
 
       <div className="eco-inner">
-        {/* Заголовок */}
         <div className="eco-header">
           <p style={{
             fontSize:      '1rem',
@@ -850,21 +775,33 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             margin:        '0 0 1.5rem',
             fontFamily:    'Inter, sans-serif',
           }}>
-            ЭКОСИСТЕМА
+            Экосистема
           </p>
+
+          {/* Заголовок с чередующимся словом */}
           <h2 style={{
-            fontSize:   'clamp(2rem, 5vw, 3.5rem)',
-            fontWeight: 500,
-            lineHeight: 1.15,
-            margin:     '0 auto 1.25rem',
-            color:      textMain,
-            fontFamily: 'Inter, sans-serif',
-            maxWidth:   '640px',
+            fontSize:       'clamp(2rem, 5vw, 3.4rem)',
+            fontWeight:     500,
+            lineHeight:     1.2,
+            margin:         '0 auto 1.25rem',
+            color:          textMut,
+            fontFamily:     'Inter, sans-serif',
+            display:        'flex',
+            flexWrap:       'wrap',
+            justifyContent: 'center',
+            alignItems:     'baseline',
+            gap:            '0.4em',
           }}>
-            Наши проекты
+            <span style={{ color: textMut }}>Создаём для</span>
+            <RotatingWord
+              words={ROTATING_WORDS}
+              interval={2400}
+              isNegative={isNegative}
+            />
           </h2>
+
           <p style={{
-            fontSize:   'clamp(0.95rem, 1.5vw, 1.1rem)',
+            fontSize:   'clamp(0.9rem, 1.4vw, 1rem)',
             color:      textSub,
             lineHeight: 1.7,
             margin:     '0 auto',
@@ -875,18 +812,38 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
           </p>
         </div>
 
-        {/* Сетка карточек */}
-        <div className="eco-grid">
-          {PROJECTS.map((project) => (
-            <EcosystemCard
-              key={project.title}
-              title={project.title}
-              description={project.description}
-              tag={project.tag}
-              isNegative={isNegative}
-              accent={project.accent}
-            />
-          ))}
+        {/* Карточки 4 в ряд, как на скрине */}
+        <div className="eco-cards">
+          <EcoCard
+            isNegative={isNegative}
+            icon={<IconGrid color={iconClr} />}
+            iconBg={iconBg}
+            title="UI библиотека"
+            description="Готовые компоненты с живым превью и настройками. Анимации, интерактивные блоки, кастомные элементы."
+          />
+          <EcoCard
+            isNegative={isNegative}
+            icon={<IconGradCap color={iconClr} />}
+            iconBg={iconBg}
+            title="Образовательный контент"
+            description="Практические туториалы по DevSecOps, разработке и open-source. Только то, что можно применить сразу."
+          />
+          <EcoCard
+            isNegative={isNegative}
+            icon={<IconHub color={iconClr} />}
+            iconBg={iconBg}
+            title="Hub — платформа"
+            description="Open-source платформа для документации на Astro 6 + React. С кастомными блоками и chart-движком."
+            link="https://github.com/opensophy-projects/hub"
+            linkLabel="opensophy-projects/hub"
+          />
+          <EcoCard
+            isNegative={isNegative}
+            icon={<IconBriefcase color={iconClr} />}
+            iconBg={iconBg}
+            title="Заказные проекты"
+            description="Документация, технический контент, аудит безопасности и GEO-оптимизация под ваши задачи."
+          />
         </div>
       </div>
     </section>
@@ -926,10 +883,7 @@ const LandingContent: React.FC = () => {
     };
     readOffset();
     const observer = new MutationObserver(readOffset);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['style'],
-    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
     return () => observer.disconnect();
   }, []);
 
@@ -947,14 +901,12 @@ const LandingContent: React.FC = () => {
       <Navigation />
 
       {/* Hero */}
-      <section
-        style={{
-          position:  'relative',
-          minHeight: '100svh',
-          overflow:  'hidden',
-          marginLeft: navOffset > 0 ? `${navOffset}px` : 0,
-        }}
-      >
+      <section style={{
+        position:  'relative',
+        minHeight: '100svh',
+        overflow:  'hidden',
+        marginLeft: navOffset > 0 ? `${navOffset}px` : 0,
+      }}>
         <div style={{ position: 'absolute', inset: 0 }}>
           <SingularityShaders
             speed={0.8} intensity={1.1} size={1.05}
@@ -962,13 +914,11 @@ const LandingContent: React.FC = () => {
             className="h-full w-full"
           />
         </div>
-
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0, height: '35%',
           pointerEvents: 'none',
           background: `linear-gradient(to bottom, transparent, ${bg})`,
         }} />
-
         <div style={{
           position:  'absolute',
           left:      '50%',
@@ -995,14 +945,12 @@ const LandingContent: React.FC = () => {
       </section>
 
       {/* О проекте */}
-      <section
-        style={{
-          marginLeft: navOffset > 0 ? `${navOffset}px` : 0,
-          padding:    'clamp(4rem, 10vw, 8rem) clamp(2rem, 6vw, 5rem)',
-          width:      '100%',
-          boxSizing:  'border-box',
-        }}
-      >
+      <section style={{
+        marginLeft: navOffset > 0 ? `${navOffset}px` : 0,
+        padding:    'clamp(4rem, 10vw, 8rem) clamp(2rem, 6vw, 5rem)',
+        width:      '100%',
+        boxSizing:  'border-box',
+      }}>
         <p style={{
           fontSize:      '1rem',
           fontWeight:    600,
@@ -1014,7 +962,6 @@ const LandingContent: React.FC = () => {
         }}>
           О ПРОЕКТЕ
         </p>
-
         <p style={{
           fontSize:   'clamp(1.75rem, 3.5vw, 2.6rem)',
           fontWeight: 500,
