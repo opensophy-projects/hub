@@ -833,7 +833,7 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             icon={<IconHub color={iconClr} />}
             iconBg={iconBg}
             title="Hub — платформа"
-            description="Open-source платформа для документации на Astro 6 + React. С кастомными блоками и chart-движком."
+            description="Open-source платформа для документации и контента."
             link="https://github.com/opensophy-projects/hub"
             linkLabel="opensophy-projects/hub"
           />
