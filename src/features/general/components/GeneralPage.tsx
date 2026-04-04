@@ -4,6 +4,7 @@ import { SingularityShaders } from './SingularityShaders';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import Navigation from '@/features/navigation/components/Navigation';
 import { GlowingEffect } from '@/features/general/components/ui/GlowingEffect';
+import RotatingText from '@/features/ui-components/rotating-text/rotating-text';
 
 // ─── ShinyText ────────────────────────────────────────────────────────────────
 
@@ -50,52 +51,6 @@ const ShinyText: React.FC<ShinyTextProps> = ({
     >
       {text}
     </motion.span>
-  );
-};
-
-// ─── RotatingWord — чередующийся текст ───────────────────────────────────────
-
-interface RotatingWordProps {
-  words: string[];
-  interval?: number;
-  isNegative: boolean;
-}
-
-const RotatingWord: React.FC<RotatingWordProps> = ({ words, interval = 2400, isNegative }) => {
-  const [idx, setIdx]         = useState(0);
-  const [visible, setVisible] = useState(true);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setVisible(false);
-      setTimeout(() => {
-        setIdx(i => (i + 1) % words.length);
-        setVisible(true);
-      }, 300);
-    }, interval);
-    return () => clearInterval(timer);
-  }, [words, interval]);
-
-  const textMain   = isNegative ? '#ffffff' : '#000000';
-  const borderClr  = isNegative ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)';
-
-  return (
-    <span
-      style={{
-        display:       'inline-block',
-        color:         textMain,
-        borderBottom:  `2px solid ${borderClr}`,
-        paddingBottom: '2px',
-        opacity:       visible ? 1 : 0,
-        transform:     visible ? 'translateY(0)' : 'translateY(-10px)',
-        transition:    'opacity 0.3s ease, transform 0.3s ease',
-        whiteSpace:    'nowrap',
-        minWidth:      '280px',
-        textAlign:     'left' as const,
-      }}
-    >
-      {words[idx]}
-    </span>
   );
 };
 
@@ -241,21 +196,6 @@ const IconScan: React.FC<{ color: string }> = ({ color }) => (
   </svg>
 );
 
-const IconBook: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-    <line x1="8" y1="7" x2="16" y2="7" /><line x1="8" y1="11" x2="13" y2="11" />
-  </svg>
-);
-
-const IconCode: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />
-    <line x1="12" y1="2" x2="12" y2="22" />
-  </svg>
-);
-
 // Иконки для карточек экосистемы
 const IconGrid: React.FC<{ color: string }> = ({ color }) => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
@@ -286,20 +226,18 @@ const IconBriefcase: React.FC<{ color: string }> = ({ color }) => (
   </svg>
 );
 
-// ─── FeatureCard (SecuritySection) ───────────────────────────────────────────
+// ─── FeatureCard (SecuritySection) — без иконок ───────────────────────────────
 
 interface FeatureCardProps {
-  icon: React.ReactNode;
   title: string;
   text: string;
   isNegative: boolean;
   fullWidth?: boolean;
 }
 
-const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, text, isNegative, fullWidth }) => {
+const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, fullWidth }) => {
   const border = isNegative ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)';
   const bg     = isNegative ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
-  const iconBg = isNegative ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)';
   const titleC = isNegative ? 'rgba(255,255,255,0.9)'  : 'rgba(0,0,0,0.88)';
   const textC  = isNegative ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
 
@@ -321,14 +259,6 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, text, isNegative
         proximity={60} inactiveZone={0.01}
         borderWidth={1.5} isNegative={isNegative}
       />
-      <div style={{
-        width: 40, height: 40, borderRadius: 10,
-        background: iconBg,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0, position: 'relative', zIndex: 1,
-      }}>
-        {icon}
-      </div>
       <div style={{
         fontSize: 'clamp(1.1rem, 1.8vw, 1.4rem)', fontWeight: 700,
         color: titleC, lineHeight: 1.25, position: 'relative', zIndex: 1,
@@ -521,7 +451,6 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
   const bg       = isNegative ? '#0a0a0a' : '#E8E7E3';
   const textMain = isNegative ? '#ffffff' : '#000000';
   const textMut  = isNegative ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)';
-  const iconClr  = isNegative ? 'rgba(255,255,255,0.6)'  : 'rgba(0,0,0,0.55)';
 
   return (
     <section
@@ -580,7 +509,6 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
           <div style={{ gridColumn: '1 / -1' }}>
             <FeatureCard
               isNegative={isNegative}
-              icon={<IconScan color={iconClr} />}
               title="Интеграция SAST, DAST, SCA"
               text="Автоматический анализ кода на уязвимости на каждом этапе разработки. SAST проверяет исходный код, DAST тестирует работающее приложение, SCA отслеживает зависимости. Всё это работает автоматически в вашем CI/CD."
               fullWidth
@@ -588,13 +516,11 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
           </div>
           <FeatureCard
             isNegative={isNegative}
-            icon={<IconBook color={iconClr} />}
             title="Знания каждому!"
             text="Пишем понятные статьи и гайды по DevSecOps. Рассказываем как настроить безопасность с нуля и сделать её частью культуры команды."
           />
           <FeatureCard
             isNegative={isNegative}
-            icon={<IconCode color={iconClr} />}
             title="Open Source"
             text="Рассказываем про open source инструменты безопасности. Делимся опытом бесплатных решений, которые сделают ваш проект безопаснее."
           />
@@ -619,7 +545,6 @@ interface EcoCardProps {
 const EcoCard: React.FC<EcoCardProps> = ({
   icon, iconBg, title, description, link, linkLabel, isNegative,
 }) => {
-  // Стили повторяют General проект — двойная обёртка с outer border + inner border
   const outerBorder  = isNegative ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
   const innerBorder  = isNegative ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
   const innerBg      = isNegative ? '#0a0a0a'                : '#E8E7E3';
@@ -631,21 +556,18 @@ const EcoCard: React.FC<EcoCardProps> = ({
   const iconBorderC  = isNegative ? 'rgba(255,255,255,0.2)'  : 'rgba(0,0,0,0.2)';
 
   return (
-    // Outer wrapper — двойной border как в General проекте
     <div style={{
       position:     'relative',
       borderRadius: '1.25rem',
       border:       `0.75px solid ${outerBorder}`,
       padding:      '0.5rem',
     }}>
-      {/* GlowingEffect на outer wrapper */}
       <GlowingEffectInline
         spread={40} glow disabled={false}
         proximity={64} inactiveZone={0.01}
         borderWidth={3} isNegative={isNegative}
       />
 
-      {/* Inner card */}
       <div style={{
         position:      'relative',
         borderRadius:  '0.9rem',
@@ -659,7 +581,6 @@ const EcoCard: React.FC<EcoCardProps> = ({
         gap:           '0.6rem',
         minHeight:     '180px',
       }}>
-        {/* Иконка */}
         <div style={{
           width:          42,
           height:         42,
@@ -739,6 +660,7 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
   const bg       = isNegative ? '#0a0a0a' : '#E8E7E3';
   const textMut  = isNegative ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)';
   const textSub  = isNegative ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.28)';
+  const textMain = isNegative ? '#ffffff' : '#000000';
   const iconClr  = isNegative ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.65)';
   const iconBg   = isNegative ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
 
@@ -774,6 +696,14 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
         @media (max-width: 520px) {
           .eco-cards { grid-template-columns: 1fr; }
         }
+
+        /* RotatingText override — убираем overflow hidden чтобы буквы не обрезались */
+        .eco-rotating-text {
+          overflow: visible !important;
+        }
+        .eco-rotating-text span {
+          overflow: visible !important;
+        }
       `}</style>
 
       <div className="eco-inner">
@@ -790,7 +720,7 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             Экосистема
           </p>
 
-          {/* Заголовок: "Создаём для" (ShinyText) + RotatingWord на отдельной строке */}
+          {/* Заголовок: "Создаём для" (ShinyText) + RotatingText на отдельной строке */}
           <h2 style={{
             fontSize:       'clamp(2rem, 5vw, 3.4rem)',
             fontWeight:     500,
@@ -802,7 +732,7 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             alignItems:     'center',
             gap:            '0.2em',
           }}>
-            {/* Строка 1: "Создаём для" — ShinyText, никогда не двигается */}
+            {/* Строка 1: "Создаём для" — ShinyText */}
             <span style={{ color: textMut, display: 'block' }}>
               <ShinyText
                 text="Создаём для"
@@ -812,16 +742,28 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
                 spread={120}
               />
             </span>
-            {/* Строка 2: rotating word — отдельный элемент, фиксированная ширина */}
+            {/* Строка 2: RotatingText с анимацией по буквам */}
             <span style={{
-              display:     'block',
-              minHeight:   '1.3em',
-              position:    'relative',
+              display:    'block',
+              minHeight:  '1.4em',
+              position:   'relative',
+              color:      textMain,
             }}>
-              <RotatingWord
-                words={ROTATING_WORDS}
-                interval={2400}
-                isNegative={isNegative}
+              <RotatingText
+                texts={ROTATING_WORDS}
+                rotationInterval={2400}
+                splitBy="characters"
+                staggerDuration={0.03}
+                staggerFrom="first"
+                loop
+                auto
+                animatePresenceMode="wait"
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                initial={{ y: '100%', opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: '-120%', opacity: 0 }}
+                mainClassName="eco-rotating-text justify-center whitespace-nowrap"
+                elementLevelClassName=""
               />
             </span>
           </h2>
@@ -838,7 +780,7 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
           </p>
         </div>
 
-        {/* Карточки 4 в ряд с правильным GlowingEffect */}
+        {/* Карточки 4 в ряд */}
         <div className="eco-cards">
           <EcoCard
             isNegative={isNegative}
@@ -1008,7 +950,7 @@ const LandingContent: React.FC = () => {
       {/* Безопасность */}
       <SecuritySection isNegative={isNegative} navOffset={navOffset} />
 
-      {/* Экосистема — без разделителя */}
+      {/* Экосистема */}
       <EcosystemSection isNegative={isNegative} navOffset={navOffset} />
     </div>
   );
