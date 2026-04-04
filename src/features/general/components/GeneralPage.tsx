@@ -237,7 +237,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, full
   const border = isNegative ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)';
   const bg     = isNegative ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
   const titleC = isNegative ? 'rgba(255,255,255,0.9)'  : 'rgba(0,0,0,0.88)';
-  const textC  = isNegative ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
+  const textC  = isNegative ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.65)'; // FIX: было 0.55/0.55
 
   return (
     <div style={{
@@ -372,7 +372,7 @@ const SmoothDeclineChart: React.FC<SmoothDeclineChartProps> = ({ isNegative, inV
   const tooltipBg     = isNegative ? 'rgba(30,30,30,0.95)'   : 'rgba(255,255,255,0.95)';
   const tooltipBorder = isNegative ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
   const tooltipText   = isNegative ? '#ffffff' : '#000000';
-  const tooltipMuted  = isNegative ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)';
+  const tooltipMuted  = isNegative ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
   const dotColor      = isNegative ? '#ffffff' : '#000000';
 
   return (
@@ -448,7 +448,8 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
 
   const bg       = isNegative ? '#0a0a0a' : '#E8E7E3';
   const textMain = isNegative ? '#ffffff' : '#000000';
-  const textMut  = isNegative ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)';
+  // FIX: повышен контраст — было 0.38
+  const textMut  = isNegative ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
 
   return (
     <section
@@ -549,9 +550,10 @@ const EcoCard: React.FC<EcoCardProps> = ({
   const innerBg      = isNegative ? '#0a0a0a'                : '#E8E7E3';
   const innerShadow  = isNegative ? '0px 0px 27px 0px rgba(45,45,45,0.3)' : 'none';
   const titleC       = isNegative ? 'rgba(255,255,255,0.9)'  : 'rgba(0,0,0,0.88)';
-  const textC        = isNegative ? 'rgba(255,255,255,0.5)'  : 'rgba(0,0,0,0.5)';
-  const linkClr      = isNegative ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.28)';
-  const linkHov      = isNegative ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.65)';
+  // FIX: повышен контраст — было 0.5/0.5
+  const textC        = isNegative ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.6)';
+  const linkClr      = isNegative ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.38)';
+  const linkHov      = isNegative ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.75)';
   const iconBorderC  = isNegative ? 'rgba(255,255,255,0.2)'  : 'rgba(0,0,0,0.2)';
 
   return (
@@ -683,12 +685,14 @@ const ROTATING_WORDS = [
 
 const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffset = 0 }) => {
   const bg       = isNegative ? '#0a0a0a' : '#E8E7E3';
-  const textMut  = isNegative ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)';
+  // FIX: повышен контраст — было 0.38
+  const textMut  = isNegative ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
   const textMain = isNegative ? '#ffffff' : '#000000';
   const iconClr  = isNegative ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.65)';
   const iconBg   = isNegative ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
 
-  const shinyBase = isNegative ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.4)';
+  // FIX: повышен контраст — было 0.45/0.4
+  const shinyBase = isNegative ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.6)';
   const shinyGlow = isNegative ? '#ffffff'                : '#000000';
 
   return (
@@ -756,7 +760,6 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             Экосистема
           </p>
 
-          {/* Заголовок в стиле О ПРОЕКТЕ — крупный, shiny */}
           <div style={{
             fontSize:   'clamp(1.75rem, 3.5vw, 2.6rem)',
             fontWeight: 500,
@@ -800,7 +803,6 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             </div>
           </div>
 
-          {/* Большой описательный текст как в О ПРОЕКТЕ */}
           <p style={{
             fontSize:   'clamp(1.75rem, 3.5vw, 2.6rem)',
             fontWeight: 500,
@@ -900,7 +902,8 @@ const LandingContent: React.FC = () => {
 
   const bg        = isNegative ? '#0a0a0a' : '#E8E7E3';
   const textMain  = isNegative ? '#ffffff' : '#000000';
-  const shinyBase = isNegative ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.35)';
+  // FIX: повышен контраст — было 0.38/0.35
+  const shinyBase = isNegative ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.6)';
   const shinyGlow = isNegative ? '#ffffff'                : '#000000';
 
   return (
@@ -930,17 +933,26 @@ const LandingContent: React.FC = () => {
           pointerEvents: 'none',
           background: `linear-gradient(to bottom, transparent, ${bg})`,
         }} />
-        <div style={{
-          position:  'absolute',
-          left:      '50%',
-          top:       '50%',
-          transform: 'translate(-75%, -50%)',
-          zIndex:    10,
-          textAlign: 'center',
-          padding:   '0 1.5rem',
-          maxWidth:  '900px',
-          width:     '100%',
-        }}>
+        {/* FIX: центрирование заголовка — на десктопе слегка влево, на мобилке строго по центру */}
+        <style>{`
+          .hero-title-wrap {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-75%, -50%);
+            z-index: 10;
+            text-align: center;
+            padding: 0 1.5rem;
+            max-width: 900px;
+            width: 100%;
+          }
+          @media (max-width: 768px) {
+            .hero-title-wrap {
+              transform: translate(-50%, -50%);
+            }
+          }
+        `}</style>
+        <div className="hero-title-wrap">
           <h1 style={{
             fontSize:      'clamp(3.5rem, 14vw, 11rem)',
             fontWeight:    700,
@@ -965,7 +977,8 @@ const LandingContent: React.FC = () => {
         <p style={{
           fontSize:      '1rem',
           fontWeight:    600,
-          color:         isNegative ? 'rgba(255,255,255,0.32)' : 'rgba(0,0,0,0.32)',
+          // FIX: повышен контраст — было 0.32
+          color:         isNegative ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)',
           marginBottom:  '2rem',
           marginTop:     0,
           fontFamily:    'Inter, sans-serif',
