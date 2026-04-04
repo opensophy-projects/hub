@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-import { useMotionValue, useAnimationFrame, useTransform, motion } from 'framer-motion';
+import { useMotionValue, useAnimationFrame, useTransform, motion, AnimatePresence } from 'framer-motion';
 import { SingularityShaders } from './SingularityShaders';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import Navigation from '@/features/navigation/components/Navigation';
@@ -50,6 +50,52 @@ const ShinyText: React.FC<ShinyTextProps> = ({
     >
       {text}
     </motion.span>
+  );
+};
+
+// ─── RotatingWord — чередующийся текст ───────────────────────────────────────
+
+interface RotatingWordProps {
+  words: string[];
+  interval?: number;
+  isNegative: boolean;
+}
+
+const RotatingWord: React.FC<RotatingWordProps> = ({ words, interval = 2400, isNegative }) => {
+  const [idx, setIdx]         = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setIdx(i => (i + 1) % words.length);
+        setVisible(true);
+      }, 300);
+    }, interval);
+    return () => clearInterval(timer);
+  }, [words, interval]);
+
+  const textMain   = isNegative ? '#ffffff' : '#000000';
+  const borderClr  = isNegative ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)';
+
+  return (
+    <span
+      style={{
+        display:       'inline-block',
+        color:         textMain,
+        borderBottom:  `2px solid ${borderClr}`,
+        paddingBottom: '2px',
+        opacity:       visible ? 1 : 0,
+        transform:     visible ? 'translateY(0)' : 'translateY(-10px)',
+        transition:    'opacity 0.3s ease, transform 0.3s ease',
+        whiteSpace:    'nowrap',
+        minWidth:      '280px',
+        textAlign:     'left' as const,
+      }}
+    >
+      {words[idx]}
+    </span>
   );
 };
 
@@ -558,49 +604,7 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
   );
 };
 
-// ─── RotatingWord — чередующийся текст ───────────────────────────────────────
-
-interface RotatingWordProps {
-  words: string[];
-  interval?: number;
-  isNegative: boolean;
-}
-
-const RotatingWord: React.FC<RotatingWordProps> = ({ words, interval = 2400, isNegative }) => {
-  const [idx, setIdx]         = useState(0);
-  const [visible, setVisible] = useState(true);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setVisible(false);
-      setTimeout(() => {
-        setIdx(i => (i + 1) % words.length);
-        setVisible(true);
-      }, 300);
-    }, interval);
-    return () => clearInterval(timer);
-  }, [words, interval]);
-
-  const textMain   = isNegative ? '#ffffff' : '#000000';
-  const borderClr  = isNegative ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)';
-
-  return (
-    <span style={{
-      display:       'inline-block',
-      color:         textMain,
-      borderBottom:  `2px solid ${borderClr}`,
-      paddingBottom: '2px',
-      opacity:       visible ? 1 : 0,
-      transform:     visible ? 'translateY(0)' : 'translateY(-10px)',
-      transition:    'opacity 0.3s ease, transform 0.3s ease',
-      whiteSpace:    'nowrap',
-    }}>
-      {words[idx]}
-    </span>
-  );
-};
-
-// ─── EcoCard — карточка экосистемы в стиле скрина ────────────────────────────
+// ─── EcoCard — карточка экосистемы с правильным GlowingEffect ────────────────
 
 interface EcoCardProps {
   icon:        React.ReactNode;
@@ -615,97 +619,104 @@ interface EcoCardProps {
 const EcoCard: React.FC<EcoCardProps> = ({
   icon, iconBg, title, description, link, linkLabel, isNegative,
 }) => {
-  const border  = isNegative ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
-  const bg      = isNegative ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
-  const titleC  = isNegative ? 'rgba(255,255,255,0.9)'  : 'rgba(0,0,0,0.88)';
-  const textC   = isNegative ? 'rgba(255,255,255,0.5)'  : 'rgba(0,0,0,0.5)';
-  const linkClr = isNegative ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.28)';
-  const linkHov = isNegative ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.65)';
+  // Стили повторяют General проект — двойная обёртка с outer border + inner border
+  const outerBorder  = isNegative ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
+  const innerBorder  = isNegative ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
+  const innerBg      = isNegative ? '#0a0a0a'                : '#E8E7E3';
+  const innerShadow  = isNegative ? '0px 0px 27px 0px rgba(45,45,45,0.3)' : 'none';
+  const titleC       = isNegative ? 'rgba(255,255,255,0.9)'  : 'rgba(0,0,0,0.88)';
+  const textC        = isNegative ? 'rgba(255,255,255,0.5)'  : 'rgba(0,0,0,0.5)';
+  const linkClr      = isNegative ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.28)';
+  const linkHov      = isNegative ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.65)';
+  const iconBorderC  = isNegative ? 'rgba(255,255,255,0.2)'  : 'rgba(0,0,0,0.2)';
 
   return (
+    // Outer wrapper — двойной border как в General проекте
     <div style={{
-      position:      'relative',
-      border:        `1px solid ${border}`,
-      background:    bg,
-      borderRadius:  14,
-      padding:       '1.5rem',
-      display:       'flex',
-      flexDirection: 'column',
-      gap:           '0.6rem',
-      overflow:      'hidden',
-      minHeight:     '180px',
+      position:     'relative',
+      borderRadius: '1.25rem',
+      border:       `0.75px solid ${outerBorder}`,
+      padding:      '0.5rem',
     }}>
+      {/* GlowingEffect на outer wrapper */}
       <GlowingEffectInline
         spread={40} glow disabled={false}
         proximity={64} inactiveZone={0.01}
-        borderWidth={1} isNegative={isNegative}
+        borderWidth={3} isNegative={isNegative}
       />
 
-      {/* Иконка — квадрат с border, как на скрине */}
+      {/* Inner card */}
       <div style={{
-        width:          42,
-        height:         42,
-        borderRadius:   10,
-        background:     iconBg,
-        border:         `1px solid ${border}`,
-        display:        'flex',
-        alignItems:     'center',
-        justifyContent: 'center',
-        flexShrink:     0,
-        position:       'relative',
-        zIndex:         1,
-        marginBottom:   '0.25rem',
+        position:      'relative',
+        borderRadius:  '0.9rem',
+        border:        `0.75px solid ${innerBorder}`,
+        background:    innerBg,
+        boxShadow:     innerShadow,
+        overflow:      'hidden',
+        padding:       '1.5rem',
+        display:       'flex',
+        flexDirection: 'column',
+        gap:           '0.6rem',
+        minHeight:     '180px',
       }}>
-        {icon}
-      </div>
+        {/* Иконка */}
+        <div style={{
+          width:          42,
+          height:         42,
+          borderRadius:   10,
+          background:     iconBg,
+          border:         `0.75px solid ${iconBorderC}`,
+          display:        'flex',
+          alignItems:     'center',
+          justifyContent: 'center',
+          flexShrink:     0,
+          marginBottom:   '0.25rem',
+        }}>
+          {icon}
+        </div>
 
-      <div style={{
-        fontSize:   'clamp(1rem, 1.5vw, 1.15rem)',
-        fontWeight: 700,
-        color:      titleC,
-        lineHeight: 1.25,
-        fontFamily: 'Inter, system-ui, sans-serif',
-        position:   'relative',
-        zIndex:     1,
-      }}>
-        {title}
-      </div>
+        <div style={{
+          fontSize:   'clamp(1rem, 1.5vw, 1.15rem)',
+          fontWeight: 700,
+          color:      titleC,
+          lineHeight: 1.25,
+          fontFamily: 'Inter, system-ui, sans-serif',
+        }}>
+          {title}
+        </div>
 
-      <div style={{
-        fontSize:   'clamp(0.85rem, 1.2vw, 0.9rem)',
-        color:      textC,
-        lineHeight: 1.65,
-        fontFamily: 'Inter, system-ui, sans-serif',
-        position:   'relative',
-        zIndex:     1,
-        flex:       1,
-      }}>
-        {description}
-      </div>
+        <div style={{
+          fontSize:   'clamp(0.85rem, 1.2vw, 0.9rem)',
+          color:      textC,
+          lineHeight: 1.65,
+          fontFamily: 'Inter, system-ui, sans-serif',
+          flex:       1,
+        }}>
+          {description}
+        </div>
 
-      {link && (
-        <a
-          href={link}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display:        'inline-flex',
-            alignItems:     'center',
-            gap:            4,
-            fontSize:       '0.75rem',
-            color:          linkClr,
-            textDecoration: 'none',
-            marginTop:      '0.25rem',
-            position:       'relative',
-            zIndex:         1,
-            fontFamily:     'ui-monospace, monospace',
-          }}
-          onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = linkHov; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = linkClr; }}
-        >
-          {linkLabel} ↗
-        </a>
-      )}
+        {link && (
+          <a
+            href={link}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display:        'inline-flex',
+              alignItems:     'center',
+              gap:            4,
+              fontSize:       '0.75rem',
+              color:          linkClr,
+              textDecoration: 'none',
+              marginTop:      '0.25rem',
+              fontFamily:     'ui-monospace, monospace',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = linkHov; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = linkClr; }}
+          >
+            {linkLabel} ↗
+          </a>
+        )}
+      </div>
     </div>
   );
 };
@@ -718,20 +729,22 @@ interface EcosystemSectionProps {
 }
 
 const ROTATING_WORDS = [
-  'разработчиков',
   'студентов',
+  'разработчиков',
   'инженеров безопасности',
   'технических лидеров',
 ];
 
 const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffset = 0 }) => {
   const bg       = isNegative ? '#0a0a0a' : '#E8E7E3';
-  const divider  = isNegative ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const textMut  = isNegative ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)';
   const textSub  = isNegative ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.28)';
-  const textMain = isNegative ? '#ffffff' : '#000000';
   const iconClr  = isNegative ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.65)';
   const iconBg   = isNegative ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
+
+  // ShinyText colors
+  const shinyBase = isNegative ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.4)';
+  const shinyGlow = isNegative ? '#ffffff'                : '#000000';
 
   return (
     <section style={{
@@ -740,7 +753,6 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
       width:      '100%',
       boxSizing:  'border-box',
       overflow:   'hidden',
-      borderTop:  `1px solid ${divider}`,
     }}>
       <style>{`
         .eco-inner {
@@ -778,26 +790,40 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             Экосистема
           </p>
 
-          {/* Заголовок с чередующимся словом */}
+          {/* Заголовок: "Создаём для" (ShinyText) + RotatingWord на отдельной строке */}
           <h2 style={{
             fontSize:       'clamp(2rem, 5vw, 3.4rem)',
             fontWeight:     500,
-            lineHeight:     1.2,
+            lineHeight:     1.3,
             margin:         '0 auto 1.25rem',
-            color:          textMut,
             fontFamily:     'Inter, sans-serif',
             display:        'flex',
-            flexWrap:       'wrap',
-            justifyContent: 'center',
-            alignItems:     'baseline',
-            gap:            '0.4em',
+            flexDirection:  'column',
+            alignItems:     'center',
+            gap:            '0.2em',
           }}>
-            <span style={{ color: textMut }}>Создаём для</span>
-            <RotatingWord
-              words={ROTATING_WORDS}
-              interval={2400}
-              isNegative={isNegative}
-            />
+            {/* Строка 1: "Создаём для" — ShinyText, никогда не двигается */}
+            <span style={{ color: textMut, display: 'block' }}>
+              <ShinyText
+                text="Создаём для"
+                speed={5}
+                color={shinyBase}
+                shineColor={shinyGlow}
+                spread={120}
+              />
+            </span>
+            {/* Строка 2: rotating word — отдельный элемент, фиксированная ширина */}
+            <span style={{
+              display:     'block',
+              minHeight:   '1.3em',
+              position:    'relative',
+            }}>
+              <RotatingWord
+                words={ROTATING_WORDS}
+                interval={2400}
+                isNegative={isNegative}
+              />
+            </span>
           </h2>
 
           <p style={{
@@ -812,7 +838,7 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
           </p>
         </div>
 
-        {/* Карточки 4 в ряд, как на скрине */}
+        {/* Карточки 4 в ряд с правильным GlowingEffect */}
         <div className="eco-cards">
           <EcoCard
             isNegative={isNegative}
@@ -982,7 +1008,7 @@ const LandingContent: React.FC = () => {
       {/* Безопасность */}
       <SecuritySection isNegative={isNegative} navOffset={navOffset} />
 
-      {/* Экосистема */}
+      {/* Экосистема — без разделителя */}
       <EcosystemSection isNegative={isNegative} navOffset={navOffset} />
     </div>
   );
