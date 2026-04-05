@@ -237,7 +237,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, full
   const border = isNegative ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)';
   const bg     = isNegative ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
   const titleC = isNegative ? 'rgba(255,255,255,0.9)'  : 'rgba(0,0,0,0.88)';
-  const textC  = isNegative ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.65)'; // FIX: было 0.55/0.55
+  const textC  = isNegative ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.65)';
 
   return (
     <div style={{
@@ -448,7 +448,6 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
 
   const bg       = isNegative ? '#0a0a0a' : '#E8E7E3';
   const textMain = isNegative ? '#ffffff' : '#000000';
-  // FIX: повышен контраст — было 0.38
   const textMut  = isNegative ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
 
   return (
@@ -550,7 +549,6 @@ const EcoCard: React.FC<EcoCardProps> = ({
   const innerBg      = isNegative ? '#0a0a0a'                : '#E8E7E3';
   const innerShadow  = isNegative ? '0px 0px 27px 0px rgba(45,45,45,0.3)' : 'none';
   const titleC       = isNegative ? 'rgba(255,255,255,0.9)'  : 'rgba(0,0,0,0.88)';
-  // FIX: повышен контраст — было 0.5/0.5
   const textC        = isNegative ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.6)';
   const linkClr      = isNegative ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.38)';
   const linkHov      = isNegative ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.75)';
@@ -685,13 +683,11 @@ const ROTATING_WORDS = [
 
 const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffset = 0 }) => {
   const bg       = isNegative ? '#0a0a0a' : '#E8E7E3';
-  // FIX: повышен контраст — было 0.38
   const textMut  = isNegative ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
   const textMain = isNegative ? '#ffffff' : '#000000';
   const iconClr  = isNegative ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.65)';
   const iconBg   = isNegative ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
 
-  // FIX: повышен контраст — было 0.45/0.4
   const shinyBase = isNegative ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.6)';
   const shinyGlow = isNegative ? '#ffffff'                : '#000000';
 
@@ -902,7 +898,6 @@ const LandingContent: React.FC = () => {
 
   const bg        = isNegative ? '#0a0a0a' : '#E8E7E3';
   const textMain  = isNegative ? '#ffffff' : '#000000';
-  // FIX: повышен контраст — было 0.38/0.35
   const shinyBase = isNegative ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.6)';
   const shinyGlow = isNegative ? '#ffffff'                : '#000000';
 
@@ -933,7 +928,8 @@ const LandingContent: React.FC = () => {
           pointerEvents: 'none',
           background: `linear-gradient(to bottom, transparent, ${bg})`,
         }} />
-        {/* FIX: центрирование заголовка — на десктопе слегка влево, на мобилке строго по центру */}
+
+        {/* ─── ИСПРАВЛЕНО: Hero title — строго по центру, адаптивный размер ─── */}
         <style>{`
           .hero-title-wrap {
             position: absolute;
@@ -945,22 +941,41 @@ const LandingContent: React.FC = () => {
             padding: 0 1.5rem;
             max-width: 900px;
             width: 100%;
+            box-sizing: border-box;
+          }
+          .hero-title {
+            font-size: clamp(3.5rem, 14vw, 11rem);
+            letter-spacing: 0.08em;
           }
           @media (max-width: 768px) {
             .hero-title-wrap {
-              transform: translate(-50%, -50%);
+              left: 0;
+              right: 0;
+              transform: translateY(-50%);
+              width: 100%;
+              max-width: 100%;
+              padding: 0 1rem;
+            }
+            .hero-title {
+              font-size: clamp(2.5rem, 12vw, 5rem);
+              letter-spacing: 0.04em;
+            }
+          }
+          @media (max-width: 400px) {
+            .hero-title {
+              font-size: clamp(2rem, 10.5vw, 3rem);
+              letter-spacing: 0.02em;
             }
           }
         `}</style>
         <div className="hero-title-wrap">
-          <h1 style={{
-            fontSize:      'clamp(3.5rem, 14vw, 11rem)',
-            fontWeight:    700,
-            letterSpacing: '0.08em',
-            lineHeight:    1,
-            margin:        0,
-            fontFamily:    'customfont, sans-serif',
-            color:         textMain,
+          <h1 className="hero-title" style={{
+            fontWeight:  700,
+            lineHeight:  1,
+            margin:      0,
+            fontFamily:  'customfont, sans-serif',
+            color:       textMain,
+            whiteSpace:  'nowrap',
           }}>
             Opensophy
           </h1>
@@ -977,7 +992,6 @@ const LandingContent: React.FC = () => {
         <p style={{
           fontSize:      '1rem',
           fontWeight:    600,
-          // FIX: повышен контраст — было 0.32
           color:         isNegative ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)',
           marginBottom:  '2rem',
           marginTop:     0,
