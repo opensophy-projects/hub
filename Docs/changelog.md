@@ -9,9 +9,10 @@ robots: "index, follow"
 ---
 
 
+
 :::steps
 :::step[status=done] 05.03.2026
-hub.opensophy.com и ui.opensophy.com мигрировали в opensophy.com
+Миграция лендинга
 :::
 
 :::step[status=done] 06.03.2026
