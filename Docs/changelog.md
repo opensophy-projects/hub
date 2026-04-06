@@ -9,11 +9,6 @@ robots: "index, follow"
 ---
 
 
-## 06.03.2026
-
-hub.opensophy.com и ui.opensophy.com мигрировали в 
-
-
 :::steps
 :::step[status=done] 05.03.2026
 hub.opensophy.com и ui.opensophy.com мигрировали в opensophy.com
