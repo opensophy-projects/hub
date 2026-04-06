@@ -7,7 +7,7 @@ import { useManifest } from '@/features/docs/hooks/useDocuments';
 import {
   Search, X, Hash, Clock, ChevronRight,
   CalendarDays, SlidersHorizontal,
-  ArrowUpDown, Layers, Tag, ArrowDown, ArrowUp,
+  ArrowUpDown, Layers, Tag, ArrowDown, ArrowUp, FolderOpen,
 } from 'lucide-react';
 import LucideIcon from '@/shared/components/LucideIcon';
 
@@ -287,6 +287,16 @@ const ResultItem = memo(function ResultItem({
               {doc.typename}
             </span>
           )}
+          {doc.navTitle?.trim() && (
+            <span style={{
+              fontSize: '10px', padding: '1px 7px', borderRadius: '10px',
+              background: C.pillBg, color: C.fgSub,
+              flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: '3px',
+            }}>
+              <FolderOpen size={9} />
+              {doc.navTitle}
+            </span>
+          )}
         </div>
 
         <p style={{
@@ -349,9 +359,20 @@ function useSearchFilters(docs: DocMeta[]) {
     return Array.from(s).sort((a, b) => a.localeCompare(b));
   }, [docs]);
 
+  // Секции (navSlug → navTitle) — для фильтра по разделу
+  const allSections = useMemo(() => {
+    const m = new Map<string, string>();
+    docs.forEach(d => {
+      const slug  = d.navSlug ?? '';
+      const title = d.navTitle ?? slug;
+      if (slug) m.set(slug, title);
+    });
+    return Array.from(m.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [docs]);
+
   const hasUpdatedDocs = useMemo(() => docs.some(d => d.updated), [docs]);
 
-  return { allTypenames, allCategories, allTags, hasUpdatedDocs };
+  return { allTypenames, allCategories, allTags, allSections, hasUpdatedDocs };
 }
 
 // ─── useSearchResults ─────────────────────────────────────────────────────────
@@ -360,13 +381,14 @@ interface SearchOptions {
   debouncedQ: string;
   filterTypename: string;
   filterCategory: string;
+  filterSection: string;
   activeTags: Set<string>;
   dateFilter: DateFilter;
   sortOrder: SortOrder;
 }
 
 function useSearchResults(docs: DocMeta[], opts: SearchOptions) {
-  const { debouncedQ, filterTypename, filterCategory, activeTags, dateFilter, sortOrder } = opts;
+  const { debouncedQ, filterTypename, filterCategory, filterSection, activeTags, dateFilter, sortOrder } = opts;
   return useMemo<DocMeta[]>(() => {
     let list = [...docs];
 
@@ -374,6 +396,8 @@ function useSearchResults(docs: DocMeta[], opts: SearchOptions) {
       list = list.filter(d => d.typename === filterTypename);
     if (filterCategory !== 'all')
       list = list.filter(d => d.categoryPath?.some(cp => cp.slug === filterCategory));
+    if (filterSection !== 'all')
+      list = list.filter(d => (d.navSlug ?? '') === filterSection);
     if (activeTags.size > 0)
       list = list.filter(d => d.tags?.some(t => activeTags.has(t)));
 
@@ -400,7 +424,7 @@ function useSearchResults(docs: DocMeta[], opts: SearchOptions) {
     }
 
     return list;
-  }, [debouncedQ, docs, filterTypename, filterCategory, activeTags, dateFilter, sortOrder]);
+  }, [debouncedQ, docs, filterTypename, filterCategory, filterSection, activeTags, dateFilter, sortOrder]);
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -413,6 +437,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const [query, setQuery]                   = useState('');
   const [filterTypename, setFilterTypename] = useState<string>('all');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterSection,  setFilterSection]  = useState<string>('all');
   const [activeTags, setActiveTags]         = useState<Set<string>>(new Set());
   const [dateFilter, setDateFilter]         = useState<DateFilter>('all');
   const [sortOrder, setSortOrder]           = useState<SortOrder>('date-desc');
@@ -428,10 +453,10 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
 
   const typedDocs = docs as DocMeta[];
 
-  const { allTypenames, allCategories, allTags, hasUpdatedDocs } = useSearchFilters(typedDocs);
+  const { allTypenames, allCategories, allTags, allSections, hasUpdatedDocs } = useSearchFilters(typedDocs);
 
   const allResults = useSearchResults(typedDocs, {
-    debouncedQ, filterTypename, filterCategory,
+    debouncedQ, filterTypename, filterCategory, filterSection,
     activeTags, dateFilter, sortOrder,
   });
 
@@ -469,6 +494,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const activeFiltersCount = [
     filterTypename !== 'all',
     filterCategory !== 'all',
+    filterSection  !== 'all',
     activeTags.size > 0,
     dateFilter !== 'all',
   ].filter(Boolean).length;
@@ -505,6 +531,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const resetFilters = useCallback(() => {
     setFilterTypename('all');
     setFilterCategory('all');
+    setFilterSection('all');
     setActiveTags(new Set());
     setDateFilter('all');
   }, []);
@@ -685,6 +712,18 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
               />
             </FilterSection>
 
+            {/* ── Фильтр по разделу ── */}
+            {allSections.length > 0 && (
+              <FilterSection icon={<FolderOpen size={10} />} label="Раздел" C={C}>
+                <Pill label="Все" active={filterSection === 'all'} C={C}
+                  onClick={() => setFilterSection('all')} />
+                {allSections.map(([slug, title]) => (
+                  <Pill key={slug} label={title} active={filterSection === slug} C={C}
+                    onClick={() => setFilterSection(v => v === slug ? 'all' : slug)} />
+                ))}
+              </FilterSection>
+            )}
+
             {allTypenames.length > 0 && (
               <FilterSection icon={<Layers size={10} />} label="Тип" C={C}>
                 <Pill label="Все" active={filterTypename === 'all'} C={C}
@@ -760,6 +799,22 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
                 display: 'flex', gap: '6px', alignItems: 'center',
               }}>
                 <span>{allResults.length} {pluralResults(allResults.length)}</span>
+                {filterSection !== 'all' && (
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '3px',
+                    background: C.pillBg, border: `1px solid ${C.pillBorder}`,
+                    borderRadius: '10px', padding: '1px 7px', fontSize: '10px', color: C.fgMuted,
+                  }}>
+                    <FolderOpen size={9} />
+                    {allSections.find(([s]) => s === filterSection)?.[1] ?? filterSection}
+                    <button
+                      onClick={() => setFilterSection('all')}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 0 0 2px', color: C.fgSub, display: 'flex', lineHeight: 1 }}
+                    >
+                      <X size={9} />
+                    </button>
+                  </span>
+                )}
               </div>
 
               {allResults.length === 0 && (
