@@ -57,7 +57,6 @@ const DARK_TOKENS = {
   panelBg:     '#0F0F0F',
   border:      'rgba(255,255,255,0.08)',
   fg:          'rgba(255,255,255,0.85)',
-  // FIX: повышен контраст fgMuted и fgSub — было 0.38/0.22
   fgMuted:     'rgba(255,255,255,0.55)',
   fgSub:       'rgba(255,255,255,0.38)',
   hov:         'rgba(255,255,255,0.05)',
@@ -88,7 +87,6 @@ const LIGHT_TOKENS = {
   panelBg:     '#E0DFDb',
   border:      'rgba(0,0,0,0.08)',
   fg:          'rgba(0,0,0,0.85)',
-  // FIX: повышен контраст fgMuted и fgSub — было 0.38/0.22
   fgMuted:     'rgba(0,0,0,0.55)',
   fgSub:       'rgba(0,0,0,0.38)',
   hov:         'rgba(0,0,0,0.04)',
@@ -473,13 +471,11 @@ const SectionDropdown: React.FC<{
               background: getSectionItemBackground(isActive, isDark),
               color:      isActive ? t.accent : t.fg,
               fontWeight: isActive ? 600 : 400,
-              // FIX: высота auto чтобы длинный текст не обрезался
               minHeight,
               height: 'auto',
               gridColumn: isLastOdd(s) ? '1 / -1' : undefined,
             }}>
             <SectionItemIcon navSlug={s.navSlug} navIcon={s.navIcon} isActive={isActive} mobile={mobile} t={t} />
-            {/* FIX: убран whiteSpace:'nowrap', добавлен wordBreak и lineHeight */}
             <span style={{ wordBreak: 'break-word', lineHeight: 1.3, minWidth: 0 }}>{s.navTitle}</span>
           </button>
         );
@@ -639,7 +635,6 @@ const NavPanelContent: React.FC<{
               {activeSection.navSlug === ''
                 ? <Home size={iconSize} style={{ color: t.fgMuted, flexShrink: 0 }} />
                 : <LucideIcon name={activeSection.navIcon} size={iconSize} />}
-              {/* FIX: убран whiteSpace:'nowrap', добавлен wordBreak */}
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-word', lineHeight: 1.3 }}>{activeSection.navTitle}</span>
             </div>
             <ChevronDown size={mobile ? 14 : 12} style={{ color: t.fgMuted, flexShrink: 0, transform: sectionOpen ? 'rotate(180deg)' : 'none' }} />
@@ -657,7 +652,6 @@ const NavPanelContent: React.FC<{
               zIndex: 100, overflow: 'hidden',
               boxShadow: t.dropdownShadow,
             }}>
-              {/* FIX: grid убран, используем flex-column чтобы текст не обрезался */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '8px' }}>
                 <SectionDropdown sections={sections} activeNavSlug={activeNavSlug} mobile={!!mobile} isDark={isDark} onSelect={handleSectionSelect} />
               </div>
@@ -1064,6 +1058,18 @@ const MobileNav: React.FC<{
   return (
     <>
       {sheet && <MobilePanel type={sheet} onClose={() => setSheet(null)} isDark={isDark} currentDocSlug={currentDocSlug} toc={toc} activeId={activeId} />}
+
+      {/* Градиентное затемнение над навбаром */}
+      <div style={{
+        position: 'fixed',
+        bottom: '60px',
+        left: 0,
+        right: 0,
+        zIndex: 59,
+        height: '52px',
+        pointerEvents: 'none',
+        background: `linear-gradient(to bottom, transparent, ${t.mobBg})`,
+      }} />
 
       <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 60, height: '60px', background: t.mobBg, borderTop: `1px solid ${t.border}`, display: 'flex', alignItems: 'stretch' }}>
         <MobBtn label="Тема"       icon={isDark ? <Sun size={22} /> : <Moon size={22} />} isDark={isDark} onClick={toggleTheme}                                                      isActive={false} />
