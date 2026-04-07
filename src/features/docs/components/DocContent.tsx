@@ -169,6 +169,7 @@ const DocHero: React.FC<DocHeroProps> = ({ doc, isDark, readTime, liveFM }) => {
 const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const { isDark } = useTheme();
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
+  const [enhancedHtml, setEnhancedHtml] = useState(false);
 
   const [isDesktop, setIsDesktop] = useState(false);
   const [navLeft, setNavLeft]     = useState('0px');
@@ -184,6 +185,10 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
       document.removeEventListener('astro:after-swap', check);
       document.removeEventListener('astro:page-load', check);
     };
+  }, []);
+
+  useEffect(() => {
+    setEnhancedHtml(true);
   }, []);
 
   useEffect(() => {
@@ -243,7 +248,10 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
 
   const progressBarRef = useScrollProgress();
 
-  const contentNodes = useMemo(() => parseHtmlToReact(htmlContent), [htmlContent]);
+  const contentNodes = useMemo(
+    () => (enhancedHtml ? parseHtmlToReact(htmlContent) : null),
+    [enhancedHtml, htmlContent]
+  );
   const readTime     = useMemo(() => estimateReadTime(doc.content || ''), [doc.content]);
   const tableCtx     = useMemo(
     () => ({ onTableClick: (html: string) => setFullscreenTableHtml(html), isDark }),
@@ -277,7 +285,9 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
               data-article-content
               className={`prose max-w-none w-full overflow-x-auto ${isDark ? 'text-white' : 'text-black'}`}
             >
-              {contentNodes}
+              {enhancedHtml
+                ? contentNodes
+                : <div dangerouslySetInnerHTML={{ __html: htmlContent }} />}
             </div>
           </TableContext.Provider>
         </article>
