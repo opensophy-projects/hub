@@ -1,4 +1,4 @@
-import React, { useState, useMemo, Suspense, lazy, useEffect } from 'react';
+import React, { useState, useMemo, Suspense, lazy, useEffect, useRef } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
 import Navigation from '@/features/navigation/components/Navigation';
@@ -39,7 +39,6 @@ function useActiveHeading(toc: { id: string; text: string; level: number }[]): s
   const [activeId, setActiveId] = useState('');
 
   useEffect(() => {
-    // При смене TOC (новая страница) сбрасываем активный заголовок
     setActiveId('');
   }, [toc]);
 
@@ -206,38 +205,43 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   // ── Live preview via BroadcastChannel ────────────────────────────────────
   const [liveHtml, setLiveHtml] = useState<string | null>(null);
   const [liveFM,   setLiveFM]   = useState<LiveFM | null>(null);
-  // Версионный счётчик — инкрементируется при каждом live-обновлении контента.
-  // Передаётся в useTableOfContents как часть зависимости, чтобы
-  // вызвать пересканирование заголовков после ре-рендера.
   const [contentVersion, setContentVersion] = useState(0);
+  // Ref на канал для корректного закрытия при смене страницы
+  const bcRef = useRef<BroadcastChannel | null>(null);
 
   // Сбрасываем live state при смене страницы
   useEffect(() => {
     setLiveHtml(null);
     setLiveFM(null);
-    setContentVersion(v => v + 1); // сигнализируем о смене страницы
+    setContentVersion(v => v + 1);
   }, [doc.slug]);
 
+  // BroadcastChannel открывается/закрывается вместе с компонентом.
+  // Важно: закрываем канал при unmount чтобы не мешать SPA-навигации.
   useEffect(() => {
     if (typeof BroadcastChannel === 'undefined') return;
-    const ch = new BroadcastChannel('hub-dev-preview');
-    ch.onmessage = (e) => {
+
+    // Закрываем старый канал
+    bcRef.current?.close();
+    bcRef.current = new BroadcastChannel('hub-dev-preview');
+
+    bcRef.current.onmessage = (e) => {
       if (e.data?.type !== 'preview') return;
       if (e.data.html !== undefined) {
         setLiveHtml(e.data.html);
-        // Инкрементируем после установки нового HTML, чтобы useTableOfContents
-        // пересканировал заголовки когда React уже отрендерил новый контент
         setContentVersion(v => v + 1);
       }
       if (e.data.fm !== undefined) setLiveFM(e.data.fm);
     };
-    return () => ch.close();
+
+    return () => {
+      bcRef.current?.close();
+      bcRef.current = null;
+    };
   }, []);
 
   const htmlContent  = liveHtml ?? doc.content ?? '';
 
-  // Объект зависимости для TOC — содержит slug + версию контента.
-  // Когда меняется slug ИЛИ приходит live preview — TOC пересканируется.
   const tocDep = useMemo(
     () => ({ id: doc.id, slug: doc.slug, _v: contentVersion }),
     [doc.id, doc.slug, contentVersion]
