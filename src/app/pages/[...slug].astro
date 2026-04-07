@@ -66,5 +66,5 @@ if (!doc || !slug) return Astro.redirect('/404');
   robots={doc.robots}
   lang={doc.lang || 'ru'}
 >
-  <DocContent client:only="react" doc={doc} />
+  <DocContent client:load doc={doc} />
 </Layout>
