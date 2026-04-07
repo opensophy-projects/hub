@@ -55,6 +55,8 @@ export function useTableOfContents<T extends { id?: string; slug?: string; conte
   const pageKey = `${dependency?.id ?? ''}-${dependency?.slug ?? ''}`;
   const pageKeyRef = useRef('');
   const observerRef = useRef<MutationObserver | null>(null);
+  // Храним ref на BroadcastChannel чтобы корректно закрывать при unmount
+  const bcRef = useRef<BroadcastChannel | null>(null);
 
   const doScan = useCallback(() => {
     const found = scanHeadings();
@@ -97,11 +99,16 @@ export function useTableOfContents<T extends { id?: string; slug?: string; conte
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageKey]);
 
-  // Пересканируем заголовки когда dev panel обновляет контент
+  // Пересканируем заголовки когда dev panel обновляет контент.
+  // ВАЖНО: канал закрывается при unmount чтобы не блокировать навигацию.
   useEffect(() => {
     if (typeof BroadcastChannel === 'undefined') return;
-    const ch = new BroadcastChannel('hub-dev-preview');
-    ch.onmessage = (e) => {
+
+    // Закрываем предыдущий канал если есть
+    bcRef.current?.close();
+    bcRef.current = new BroadcastChannel('hub-dev-preview');
+
+    bcRef.current.onmessage = (e) => {
       if (e.data?.type !== 'preview') return;
       setTimeout(() => {
         if (!doScan()) {
@@ -109,7 +116,11 @@ export function useTableOfContents<T extends { id?: string; slug?: string; conte
         }
       }, 100);
     };
-    return () => ch.close();
+
+    return () => {
+      bcRef.current?.close();
+      bcRef.current = null;
+    };
   }, [doScan, startObserver]);
 
   return toc;
