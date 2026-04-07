@@ -52,18 +52,22 @@ if (import.meta.env.DEV) {
 }
 
 if (!doc || !slug) return Astro.redirect('/404');
+
+// Canonical URL должен быть абсолютным для корректной индексации
+const canonicalSlug = `/${slug}`;
 ---
 
 <Layout
   title={doc.title}
   description={doc.description}
   image={doc.image}
-  url={`/${slug}`}
+  url={canonicalSlug}
   type="article"
   author={doc.author}
   date={doc.date}
+  updated={doc.updated}
   keywords={doc.keywords}
-  robots={doc.robots}
+  robots={doc.robots || 'index, follow'}
   lang={doc.lang || 'ru'}
 >
   <DocContent client:load doc={doc} />
