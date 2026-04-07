@@ -44,18 +44,35 @@ function generateSitemap() {
 `;
 
   let urlCount = 1;
+  let skippedCount = 0;
 
   for (const doc of docs) {
-    if (!doc.slug || doc.slug === 'welcome') continue;
+    // Пропускаем документы без slug, welcome-страницу и документы с noindex
+    if (!doc.slug || doc.slug === 'welcome') {
+      skippedCount++;
+      continue;
+    }
+
+    // Проверяем robots — не добавляем noindex страницы в sitemap
+    if (doc.robots && doc.robots.includes('noindex')) {
+      skippedCount++;
+      continue;
+    }
 
     const url = `${BASE_URL}/${doc.slug}`;
     const lastmod = doc.updated || doc.date || today;
+
+    // Определяем приоритет на основе глубины вложенности slug
+    const depth = doc.slug.split('/').length;
+    let priority = '0.9';
+    if (depth === 2) priority = '0.8';
+    if (depth >= 3) priority = '0.7';
 
     sitemap += `  <url>
     <loc>${url}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
+    <priority>${priority}</priority>
   </url>
 `;
     urlCount++;
@@ -67,7 +84,9 @@ function generateSitemap() {
 
   const ms = (performance.now() - start).toFixed(0);
   process.stdout.write(
-    `  ${clr(c.dim, 'sitemap'.padEnd(10))}${clr(c.green, urlCount + ' urls')}   ${clr(c.dim, ms + 'ms')}\n`
+    `  ${clr(c.dim, 'sitemap'.padEnd(10))}${clr(c.green, urlCount + ' urls')}` +
+    (skippedCount > 0 ? ` ${clr(c.dim, '(' + skippedCount + ' skipped)')}` : '') +
+    `   ${clr(c.dim, ms + 'ms')}\n`
   );
 }
 
