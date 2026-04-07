@@ -49,10 +49,46 @@ const {
 } = Astro.props;
 
 const pageTitle    = title === SITE.name ? title : `${title} — ${SITE.name}`;
-const canonicalUrl = new URL(url, SITE.url).href;
+
+// Корректный canonical URL — всегда абсолютный
+const canonicalUrl = url.startsWith('http')
+  ? url
+  : new URL(url.startsWith('/') ? url : `/${url}`, SITE.url).href;
+
 const imageUrl     = image ? new URL(image, SITE.url).href : new URL(SITE.ogImage, SITE.url).href;
 const publishedISO = date    ? new Date(date).toISOString()    : undefined;
 const updatedISO   = updated ? new Date(updated).toISOString() : publishedISO;
+
+// JSON-LD structured data для улучшения индексации
+const jsonLd = type === 'article' ? JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  'headline': title,
+  'description': description,
+  'image': imageUrl,
+  'author': {
+    '@type': 'Organization',
+    'name': author || SITE.author,
+    'url': SITE.url,
+  },
+  'publisher': {
+    '@type': 'Organization',
+    'name': SITE.name,
+    'url': SITE.url,
+  },
+  'datePublished': publishedISO,
+  'dateModified': updatedISO,
+  'mainEntityOfPage': {
+    '@type': 'WebPage',
+    '@id': canonicalUrl,
+  },
+}) : JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  'name': SITE.name,
+  'url': SITE.url,
+  'description': SITE.description,
+});
 ---
 
 <!doctype html>
@@ -111,9 +147,15 @@ const updatedISO   = updated ? new Date(updated).toISOString() : publishedISO;
       <meta property="article:author" content={author} />
     )}
 
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json" set:html={jsonLd} />
+
     <!-- Favicon -->
     <link rel="icon"             href="/favicon.png" type="image/png" />
     <link rel="apple-touch-icon" href="/favicon.png" />
+
+    <!-- Sitemap reference -->
+    <link rel="sitemap" href="/sitemap.xml" />
 
     <!-- Astro SPA transitions -->
     <ClientRouter />
