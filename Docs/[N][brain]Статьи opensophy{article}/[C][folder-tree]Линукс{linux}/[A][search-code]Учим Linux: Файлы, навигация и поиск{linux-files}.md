@@ -3,7 +3,7 @@ title: "Учим Linux: Файлы, навигация и поиск"
 description: Первая часть серии о Linux для DevOps и DevSecOps - разбираем структуру файловой системы, навигацию, работу с файлами, просмотр содержимого и поиск внутри файлов.
 author: veilosophy
 date: 2026-02-25
-tags: Linux, файловая система, bash, DevOps, DevSecOps, командная строка
+tags: linux, инструменты
 keywords: Linux файловая система, команды Linux, навигация Linux, grep awk sed, bash команды
 robots: index, follow
 lang: ru
