@@ -3,7 +3,7 @@ title: "Чередующийся текст"
 description: Текст, который автоматически переключается между несколькими строками с анимацией. Поддерживает разбивку по буквам, словам или строкам, stagger, spring-переходы и программное управление через ref.
 author: davidhdev
 date: 2026-03-23
-tags: animation, text, rotating, framer-motion, stagger, react
+tags: разработка, ui, ui-компоненты
 keywords: rotating text, animated text, text switcher, framer motion, stagger
 robots: index, follow
 lang: ru
