@@ -3,7 +3,7 @@ title: "Выбор стека для веб-сайта: обзор типов р
 description: Практическое руководство по современным стратегиям рендеринга веб-сайтов — CSR, SSR, SSG, ISR, React Server Components — их влиянию на SEO, производительность и выбору оптимального стека.
 author: veilosophy
 date: 2026-02-12
-tags: Веб-разработка, Рендеринг, SSR, SSG, CSR, ISR, React Server Components, SEO, Производительность, Стек технологий
+tags: разработка
 keywords: SSR vs SSG vs CSR, типы рендеринга, SEO веб-сайта, производительность веб, веб-стек, Next.js, React, веб-архитектура
 robots: index, follow
 lang: ru
