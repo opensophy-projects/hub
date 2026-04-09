@@ -3,7 +3,7 @@ title: "Вариативная близость"
 description: Буквы меняют параметры вариативного шрифта в зависимости от близости курсора. Чем ближе мышь — тем жирнее, шире или курсивнее становится буква.
 author: davidhdev
 date: 2026-03-23
-tags: animation, text, variable-font, mouse, proximity, interactive
+tags: разработка, ui, ui-компоненты
 keywords: variable font, proximity, mouse interaction, fontVariationSettings, react
 robots: index, follow
 lang: ru
