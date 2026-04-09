@@ -4,7 +4,7 @@ description: Руководство объединяет две методоло
 author: veilosophy
 date: 2025-12-25
 updated: 2026-01-20
-tags: сети, протоколы, OSI, TCP/IP, модели, технологии
+tags: "сети, инструменты"
 keywords: сетевые модели, OSI, TCP/IP, протоколы, сетевые технологии, networking
 robots: index, follow
 lang: ru
