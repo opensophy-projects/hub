@@ -3,7 +3,7 @@ title: "Зацикленный изогнутый текст"
 description: Бесконечный marquee-текст по SVG-кривой. Поддерживает перетаскивание мышью для изменения скорости и направления.
 author: davidhdev
 date: 2026-03-22
-tags: animation, text, marquee, svg, loop, curved
+tags: разработка, ui, ui-компоненты
 keywords: curved marquee text, svg textpath animation, draggable marquee
 robots: index, follow
 lang: ru
