@@ -3,7 +3,7 @@ title: "Скорость скролла"
 description: Бесконечная бегущая строка, скорость которой зависит от скорости прокрутки. Чётные строки идут вправо, нечётные — влево. Основана на framer-motion useVelocity и useSpring.
 author: davidhdev
 date: 2026-03-23
-tags: animation, text, marquee, scroll, framer-motion, velocity, spring
+tags: разработка, ui, ui-компоненты
 keywords: scroll velocity, marquee, framer motion, scroll speed, react animation
 robots: index, follow
 lang: ru
