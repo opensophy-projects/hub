@@ -3,7 +3,7 @@ title: "Раскрытие при скролле"
 description: Текст с эффектом раскрытия при скролле. Слова появляются с opacity и blur, весь блок плавно выравнивается из наклонного положения — синхронизировано с позицией скролла через GSAP ScrollTrigger.
 author: davidhdev
 date: 2026-03-23
-tags: animation, text, gsap, scroll, blur, reveal, scrub
+tags: разработка, ui, ui-компоненты
 keywords: scroll reveal, gsap scrolltrigger, text animation, blur reveal, react
 robots: index, follow
 lang: ru
