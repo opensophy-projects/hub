@@ -3,7 +3,7 @@ title: "Темная вуаль"
 description: Генеративный WebGL-фон на основе CPPN. Бесконечно анимированная текстура с поддержкой сдвига оттенка, зернистости, сканлайнов и деформации пространства.
 author: veilosophy
 date: 2026-03-23
-tags: webgl, background, generative, cppn, shader, animation
+tags: разработка, ui, ui-компоненты
 keywords: webgl background, generative art, cppn shader, animated background, react
 robots: index, follow
 lang: ru
