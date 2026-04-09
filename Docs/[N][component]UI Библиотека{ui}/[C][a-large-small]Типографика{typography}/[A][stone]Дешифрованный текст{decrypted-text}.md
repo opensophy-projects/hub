@@ -3,7 +3,7 @@ title: "Дешифрованный текст"
 description: Эффект дешифровки текста. Символы случайно заменяются, затем последовательно или хаотично раскрываются в исходный текст.
 author: davidhdev
 date: 2026-03-22
-tags: animation, text, decrypt, cipher, hover
+tags: разработка, ui, ui-компоненты
 keywords: decrypted text effect, scramble text animation, cipher reveal
 robots: index, follow
 lang: ru
