@@ -3,7 +3,7 @@ title: "Разбиение текста"
 description: Анимированный текст на GSAP с разбивкой по символам, словам или строкам. Запускается при скролле через ScrollTrigger.
 author: davidhdev
 date: 2026-03-22
-tags: animation, text, gsap, scroll, split
+tags: разработка, ui, ui-компоненты
 keywords: split text animation, gsap scrolltrigger, text animation
 robots: index, follow
 lang: ru
