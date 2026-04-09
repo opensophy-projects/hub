@@ -3,7 +3,7 @@ title: "Сияющий текст"
 description: Текст с анимированным блеском. Световой блик скользит по тексту с настраиваемой скоростью, цветом и направлением.
 author: davidhdev
 date: 2026-03-22
-tags: animation, text, shiny, gradient, motion
+tags: разработка, ui, ui-компоненты
 keywords: shiny text, animated gradient text, framer motion text
 robots: index, follow
 lang: ru
