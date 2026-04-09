@@ -3,7 +3,7 @@ title: "Печатание текста"
 description: Эффект печатающей машинки на GSAP. Поддерживает массив строк, удаление, переменную скорость, цвета и кастомный курсор.
 author: davidhdev
 date: 2026-03-22
-tags: animation, text, typing, gsap, cursor
+tags: разработка, ui, ui-компоненты
 keywords: typewriter effect, typing animation, gsap cursor
 robots: index, follow
 lang: ru
