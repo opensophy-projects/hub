@@ -3,7 +3,7 @@ title: "Градиентный текст"
 description: Текст с анимированным градиентом. Поддерживает горизонтальное, вертикальное и диагональное движение, yoyo-режим и опциональную градиентную рамку.
 author: davidhdev
 date: 2026-03-22
-tags: animation, text, gradient, motion, color
+tags: разработка, ui, ui-компоненты
 keywords: gradient text animation, animated gradient, framer motion text
 robots: index, follow
 lang: ru
