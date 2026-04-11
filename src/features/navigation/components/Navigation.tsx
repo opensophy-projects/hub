@@ -208,6 +208,40 @@ const DocLink: React.FC<{
   );
 });
 
+// ─── HomeLink — всегда ведёт на / ────────────────────────────────────────────
+
+const HomeLink: React.FC<{
+  isDark: boolean; isActive: boolean; mobile?: boolean; onClick?: () => void;
+}> = memo(({ isDark, isActive, mobile, onClick }) => {
+  const t = tk(isDark);
+  return (
+    <a
+      href="/"
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: '0.5rem',
+        padding: mobile ? '10px 14px' : '8px 10px',
+        borderRadius: '8px', fontSize: mobile ? '1rem' : '0.875rem',
+        textDecoration: 'none',
+        border: `1px solid ${isActive ? t.elevatedBorder : 'transparent'}`,
+        color: isActive ? t.accent : t.fg, fontWeight: isActive ? 600 : 400,
+        background: isActive ? t.accentSoft : 'transparent',
+        boxShadow: isActive ? t.elevatedShadowSoft : 'none',
+        lineHeight: 1.4,
+      }}
+    >
+      <span style={{ flexShrink: 0, width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fgMuted }}>
+        <Home size={14} />
+      </span>
+      <span style={{ minWidth: 0 }}>
+        <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', lineHeight: 1.35 }}>
+          Главная
+        </span>
+      </span>
+    </a>
+  );
+});
+
 // ─── CategoryNode ─────────────────────────────────────────────────────────────
 
 function getCategoryNodeBackground(expanded: boolean, isDark: boolean): string {
@@ -287,6 +321,11 @@ function useActiveNavSlug(sections: NavSection[]): [string, React.Dispatch<React
   useEffect(() => {
     if (!sections.length) return;
     const pathname = globalThis.location.pathname.replace(/^\//, '');
+    // Главная — всегда секция ''
+    if (!pathname) {
+      startTransition(() => setActiveNavSlug(''));
+      return;
+    }
     const matched  = sections.filter(s => s.navSlug).find(s => pathname === s.navSlug || pathname.startsWith(s.navSlug + '/'));
     startTransition(() => setActiveNavSlug(matched?.navSlug ?? ''));
   }, [sections]);
@@ -454,9 +493,15 @@ const NavTreeContent: React.FC<{
   error: boolean; loading: boolean; navTree: NavNode;
   currentDocSlug: string | undefined; expandedPaths: Set<string>;
   onToggle: (p: string) => void; isDark: boolean; mobile: boolean | undefined;
+  activeNavSlug: string;
+  onDocClick?: () => void;
   onDocHoverChange?: (payload: { doc: Doc; rect: DOMRect } | null) => void;
-}> = ({ error, loading, navTree, currentDocSlug, expandedPaths, onToggle, isDark, mobile, onDocHoverChange }) => {
+}> = ({ error, loading, navTree, currentDocSlug, expandedPaths, onToggle, isDark, mobile, activeNavSlug, onDocClick, onDocHoverChange }) => {
   const t = tk(isDark);
+
+  // Определяем: главная страница активна если слаг пустой или это welcome
+  const isHomeActive = !currentDocSlug || currentDocSlug === '' || currentDocSlug === 'welcome';
+
   if (error) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', padding: '2rem', textAlign: 'center' }}>
       <AlertTriangle size={22} style={{ color: 'rgba(251,191,36,0.7)' }} />
@@ -467,15 +512,24 @@ const NavTreeContent: React.FC<{
   if (loading) return <div style={{ padding: '2rem', textAlign: 'center', fontSize: mobile ? '0.95rem' : '0.8rem', color: t.fgMuted }}>Загрузка...</div>;
   return (
     <nav style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-      {navTree.docs.length > 0 && (
-        <div style={{ marginBottom: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          {[...navTree.docs].sort((a, b) => a.title.localeCompare(b.title)).map(doc => (
-            <DocLink key={doc.id} doc={doc} isDark={isDark} isActive={currentDocSlug === doc.slug} mobile={mobile} onPreviewChange={onDocHoverChange} />
-          ))}
-        </div>
+      {/* Всегда показываем ссылку на главную в секции '' */}
+      {activeNavSlug === '' && (
+        <HomeLink
+          isDark={isDark}
+          isActive={isHomeActive}
+          mobile={mobile}
+          onClick={onDocClick}
+        />
       )}
+      {navTree.docs
+        .filter(doc => doc.slug !== '' && doc.slug !== 'welcome')
+        .sort((a, b) => a.title.localeCompare(b.title))
+        .map(doc => (
+          <DocLink key={doc.id} doc={doc} isDark={isDark} isActive={currentDocSlug === doc.slug} mobile={mobile} onPreviewChange={onDocHoverChange} onClick={onDocClick} />
+        ))
+      }
       {Object.entries(navTree.children).sort(([a], [b]) => a.localeCompare(b)).map(([key, node]) => (
-        <CategoryNode key={key} node={node} path={key} expandedPaths={expandedPaths} onToggle={onToggle} isDark={isDark} currentDocSlug={currentDocSlug} mobile={mobile} onDocHoverChange={onDocHoverChange} />
+        <CategoryNode key={key} node={node} path={key} expandedPaths={expandedPaths} onToggle={onToggle} isDark={isDark} currentDocSlug={currentDocSlug} onDocClick={onDocClick} mobile={mobile} onDocHoverChange={onDocHoverChange} />
       ))}
     </nav>
   );
@@ -616,6 +670,7 @@ const NavPanelContent: React.FC<{
           error={!!error} loading={loading} navTree={navTree}
           currentDocSlug={currentDocSlug} expandedPaths={expandedPaths}
           onToggle={togglePath} isDark={isDark} mobile={mobile}
+          activeNavSlug={activeNavSlug}
           onDocHoverChange={setHoverPreview}
         />
       </div>
@@ -864,7 +919,9 @@ const DesktopNav: React.FC<{
       {railVisible && (
         <aside style={{ position: 'fixed', left: 0, top: 0, height: '100vh', width: RAIL_W, background: t.railBg, borderRight: `1px solid ${t.border}`, display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 50, padding: '8px 0', gap: '2px' }}>
           <div style={{ width: RAIL_W, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <img src="/favicon.png" alt="hub" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+            <a href="/" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src="/favicon.png" alt="hub" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+            </a>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: 1, width: '100%', padding: '2px 0' }}>
             <RailBtn icon={<PanelLeft size={18} />}                         label="Панель"     isDark={isDark} onClick={() => setRailVisible(false)}                                              title="Скрыть" />
@@ -1012,7 +1069,9 @@ const MobileNav: React.FC<{
         <MobBtn label="Поиск"      icon={<Search size={22} />}                            isDark={isDark} onClick={() => { setSheet(null); setSearchOpen(true); }}                   isActive={false} />
         <MobBtn label="Разделы"    icon={<FolderOpen size={22} />}                        isDark={isDark} onClick={() => toggle('nav')}                                              isActive={sheet === 'nav'} />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <img src="/favicon.png" alt="hub" style={{ width: 38, height: 38, objectFit: 'contain' }} />
+          <a href="/" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src="/favicon.png" alt="hub" style={{ width: 38, height: 38, objectFit: 'contain' }} />
+          </a>
         </div>
         <MobBtn label="Оглавление" icon={<List size={22} />}                              isDark={isDark} onClick={() => toggle('toc')}                                              isActive={sheet === 'toc'} />
         <MobBtn label="Наверх"     icon={<ArrowUp size={22} />}                           isDark={isDark} onClick={() => { setSheet(null); globalThis.scrollTo({ top: 0, behavior: 'smooth' }); }} isActive={false} />
