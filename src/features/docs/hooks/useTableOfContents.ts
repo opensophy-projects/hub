@@ -7,26 +7,30 @@ interface TableOfContentsItem {
 }
 
 function slugifyHeading(text: string): string {
-  return text
+  const normalized = text
+    .normalize('NFKD')
     .toLowerCase()
-    .replaceAll(/[^\w\s-]/g, '')
+    .replaceAll(/[\u0300-\u036f]/g, '')
+    .replaceAll(/[^\p{L}\p{N}\s-]/gu, '')
     .replaceAll(/\s+/g, '-')
     .replaceAll(/-+/g, '-')
     .replaceAll(/^-|-$/g, '');
+  return normalized || 'section';
 }
 
 function scanHeadings(): TableOfContentsItem[] {
   const articleContent = document.querySelector('[data-article-content]');
   if (!articleContent) return [];
   const headings = articleContent.querySelectorAll(
-    'h2:not([data-banner-content] h2), h3:not([data-banner-content] h3), h4:not([data-banner-content] h4)'
+    'h2, h3, h4'
   );
   const items: TableOfContentsItem[] = [];
   const usedIds = new Map<string, number>();
   headings.forEach((heading) => {
+    if (heading.closest('[data-banner-content]')) return;
     const text = heading.textContent?.trim() || '';
     if (!text) return;
-    let id = slugifyHeading(text);
+    let id = heading.id?.trim() || slugifyHeading(text);
     if (usedIds.has(id)) {
       const count = (usedIds.get(id) ?? 0) + 1;
       usedIds.set(id, count);

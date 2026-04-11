@@ -5,6 +5,7 @@ import Navigation from '@/features/navigation/components/Navigation';
 import { parseHtmlToReact, TableContext } from '@/shared/lib/htmlParser';
 import { useTableOfContents } from '../hooks/useTableOfContents';
 import { useScrollProgress } from '../hooks/useScrollProgress';
+import { getHeaderOffset } from '../utils/scrollUtils';
 import { Clock, CalendarDays, ChevronRight, RefreshCw } from 'lucide-react';
 import DotWaveBackground from './DotWaveBackground';
 import AskAIButton from './AskAIButton';
@@ -44,23 +45,44 @@ function useActiveHeading(toc: { id: string; text: string; level: number }[]): s
 
   useEffect(() => {
     if (!toc.length) return;
-    const els = toc
-      .map(({ id }) => document.getElementById(id))
-      .filter((el): el is HTMLElement => el !== null);
-
+    const els = toc.map(({ id }) => document.getElementById(id)).filter((el): el is HTMLElement => el !== null);
     if (!els.length) return;
 
-    const obs = new IntersectionObserver(
-      entries => {
-        const visible = entries
-          .filter(e => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible.length) setActiveId(visible[0].target.id);
-      },
-      { rootMargin: '-10% 0px -70% 0px', threshold: 0 }
-    );
-    els.forEach(el => obs.observe(el));
-    return () => obs.disconnect();
+    let raf = 0;
+    const updateActiveHeading = () => {
+      raf = 0;
+      const threshold = getHeaderOffset() + 8;
+      let current = els[0]?.id ?? '';
+
+      for (const el of els) {
+        if (el.getBoundingClientRect().top - threshold <= 0) {
+          current = el.id;
+        } else {
+          break;
+        }
+      }
+
+      if ((window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 4) {
+        current = els[els.length - 1]?.id ?? current;
+      }
+
+      setActiveId(prev => prev === current ? prev : current);
+    };
+
+    const onScrollOrResize = () => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(updateActiveHeading);
+    };
+
+    updateActiveHeading();
+    window.addEventListener('scroll', onScrollOrResize, { passive: true });
+    window.addEventListener('resize', onScrollOrResize, { passive: true });
+
+    return () => {
+      if (raf) window.cancelAnimationFrame(raf);
+      window.removeEventListener('scroll', onScrollOrResize);
+      window.removeEventListener('resize', onScrollOrResize);
+    };
   }, [toc]);
 
   return activeId;

@@ -7,7 +7,10 @@ export const BREAKPOINT_MD  = 768;
 export const BREAKPOINT_NAV = 1000;
 
 function useBreakpoint(bp: number): boolean {
-  const [above, setAbove] = useState(false);
+  const [above, setAbove] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return window.innerWidth >= bp;
+  });
   useEffect(() => {
     const check = () => setAbove(window.innerWidth >= bp);
     check();

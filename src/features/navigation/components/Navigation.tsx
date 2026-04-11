@@ -464,7 +464,7 @@ const SectionDropdown: React.FC<{
         return (
           <button key={s.navSlug} onClick={() => onSelect(s.navSlug)}
             style={{
-              width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem',
+              width: '100%', display: 'flex', gap: '0.5rem',
               padding, fontSize,
               border: `1px solid ${getSectionItemBorder(isActive, isDark)}`,
               borderRadius: '10px', cursor: 'pointer', textAlign: 'left',
@@ -473,6 +473,7 @@ const SectionDropdown: React.FC<{
               fontWeight: isActive ? 600 : 400,
               minHeight,
               height: 'auto',
+              alignItems: 'flex-start',
               gridColumn: isLastOdd(s) ? '1 / -1' : undefined,
             }}>
             <SectionItemIcon navSlug={s.navSlug} navIcon={s.navIcon} isActive={isActive} mobile={mobile} t={t} />
@@ -635,7 +636,7 @@ const NavPanelContent: React.FC<{
               {activeSection.navSlug === ''
                 ? <Home size={iconSize} style={{ color: t.fgMuted, flexShrink: 0 }} />
                 : <LucideIcon name={activeSection.navIcon} size={iconSize} />}
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-word', lineHeight: 1.3 }}>{activeSection.navTitle}</span>
+              <span style={{ wordBreak: 'break-word', lineHeight: 1.3, whiteSpace: 'normal', minWidth: 0 }}>{activeSection.navTitle}</span>
             </div>
             <ChevronDown size={mobile ? 14 : 12} style={{ color: t.fgMuted, flexShrink: 0, transform: sectionOpen ? 'rotate(180deg)' : 'none' }} />
           </button>
@@ -1099,6 +1100,13 @@ const MobileNav: React.FC<{
 const Navigation: React.FC<NavigationProps> = ({ currentDocSlug, toc = [], activeHeadingId = '' }) => {
   const { isDark, toggleTheme } = useTheme();
   const isDesktop = useIsDesktopNav();
+
+  useEffect(() => {
+    const offset = isDesktop ? 96 : 74;
+    document.documentElement.style.setProperty('--toc-scroll-offset', `${offset}`);
+    return () => document.documentElement.style.removeProperty('--toc-scroll-offset');
+  }, [isDesktop]);
+
   if (isDesktop) return <DesktopNav isDark={isDark} toggleTheme={toggleTheme} currentDocSlug={currentDocSlug} toc={toc} activeId={activeHeadingId} />;
   return <MobileNav isDark={isDark} toggleTheme={toggleTheme} currentDocSlug={currentDocSlug} toc={toc} activeId={activeHeadingId} />;
 };
