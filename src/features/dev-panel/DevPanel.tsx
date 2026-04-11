@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { createPortal } from 'react-dom';
 import { useDevBridge } from './useDevBridge';
 import { ToastContainer } from './components/Toast';
-import { FileText, Users, Image, X, UserCog, WifiOff, Loader2, AlertCircle } from 'lucide-react';
+import { FileText, Users, Image, X, UserCog, WifiOff, Loader2, AlertCircle, Globe } from 'lucide-react';
 
 const DocsPanel     = lazy(() => import('./panels/DocsPanel'));
 const ContactsPanel = lazy(() => import('./panels/ContactsPanel'));
 const AssetsPanel   = lazy(() => import('./panels/AssetsPanel'));
+const SitePanel     = lazy(() => import('./panels/SitePanel'));
 
 // ─── Тема ────────────────────────────────────────────────────────────────────
 
@@ -87,6 +88,7 @@ const TABS = [
   { id: 'docs',     label: 'Страницы',  icon: <FileText size={13}/> },
   { id: 'contacts', label: 'Контакты',  icon: <Users size={13}/>    },
   { id: 'assets',   label: 'Ассеты',    icon: <Image size={13}/>    },
+  { id: 'site',     label: 'Сайт',      icon: <Globe size={13}/>    },
 ];
 
 // ─── Размеры панели ───────────────────────────────────────────────────────────
@@ -423,6 +425,7 @@ export default function DevPanel() {
             display: 'flex', background: t.surface,
             borderBottom: `1px solid ${t.border}`,
             flexShrink: 0, padding: '0 4px',
+            overflowX: 'auto',
           }}>
             {TABS.map(tb => {
               const active = tb.id === tab;
@@ -488,6 +491,7 @@ export default function DevPanel() {
               {tab === 'docs'     && <DocsPanel/>}
               {tab === 'contacts' && <ContactsPanel/>}
               {tab === 'assets'   && <AssetsPanel/>}
+              {tab === 'site'     && <SitePanel/>}
             </Suspense>
           </div>
 
