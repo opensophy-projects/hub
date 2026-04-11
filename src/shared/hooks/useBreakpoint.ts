@@ -13,6 +13,7 @@ function useBreakpoint(bp: number): boolean {
   });
   useEffect(() => {
     const check = () => setAbove(window.innerWidth >= bp);
+    // Run immediately to sync if window size changed between SSR and mount
     check();
     window.addEventListener('resize', check, { passive: true });
     document.addEventListener('astro:after-swap', check);
@@ -23,6 +24,7 @@ function useBreakpoint(bp: number): boolean {
       document.removeEventListener('astro:page-load', check);
     };
   }, [bp]);
+
   return above;
 }
 

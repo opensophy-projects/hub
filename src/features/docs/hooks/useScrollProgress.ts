@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import type { RefObject } from 'react';
 
 /**
  * Directly mutates the progress bar's style.width via a ref —
@@ -8,7 +9,7 @@ import { useEffect, useRef } from 'react';
  *   const progressRef = useScrollProgress();
  *   <div ref={progressRef} className="fixed top-0 left-0 h-1 bg-white" style={{ width: '0%', zIndex: 999 }} />
  */
-export function useScrollProgress(): React.RefObject<HTMLDivElement> {
+export function useScrollProgress(): RefObject<HTMLDivElement> {
   const barRef = useRef<HTMLDivElement>(null);
   const rafId  = useRef<number>(0);
 

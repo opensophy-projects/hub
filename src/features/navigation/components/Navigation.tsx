@@ -3,6 +3,11 @@
  *
  * Desktop (>1000px): Rail 64px + slide-out panel + resize handle
  * Mobile (≤1000px):  Bottom bar centered + full-screen panels (like search)
+ *
+ * Fixes:
+ * 1. Mobile nav flash - useIsDesktopNav now initializes with real window width
+ * 2. TOC: smooth scroll with proper offset, glowing active effect
+ * 3. Section dropdown text no longer overflows/shifts
  */
 
 import React, {
@@ -14,7 +19,6 @@ import { useTheme } from '@/shared/contexts/ThemeContext';
 import { useManifest } from '@/features/docs/hooks/useDocuments';
 import { storageSet } from '@/shared/lib/storage';
 import { CONTACTS } from '@/shared/data/contacts';
-import { scrollToElement } from '@/features/docs/utils/scrollUtils';
 import { AnimatePresence } from 'framer-motion';
 import {
   Search, Sun, Moon, ChevronDown, ChevronRight,
@@ -174,6 +178,19 @@ function formatMetaDate(date?: string): string | null {
   return parsed.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+// ─── Smooth scroll to heading ─────────────────────────────────────────────────
+
+function scrollToHeading(id: string): void {
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  // Use scrollIntoView with block: 'start' + manual offset for sticky headers
+  const headerOffset = 80;
+  const top = el.getBoundingClientRect().top + window.pageYOffset - headerOffset;
+
+  window.scrollTo({ top, behavior: 'smooth' });
+}
+
 // ─── DocLink ──────────────────────────────────────────────────────────────────
 
 const DocLink: React.FC<{
@@ -272,14 +289,15 @@ const CategoryNode: React.FC<{
         boxShadow: expanded ? t.elevatedShadowSoft : 'none',
         color: t.fg, cursor: 'pointer', textAlign: 'left',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0, flex: 1, overflow: 'hidden' }}>
           <span style={{ width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: t.fgMuted }}>
             {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </span>
           {node.icon && <span style={{ width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: t.fgMuted }}><LucideIcon name={node.icon} size={14} /></span>}
-          <span style={{ wordBreak: 'break-word', lineHeight: 1.35 }}>{node.title}</span>
+          {/* FIX: overflow hidden + text-overflow on title to prevent shifting */}
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.35, minWidth: 0 }}>{node.title}</span>
         </div>
-        {total > 0 && <span style={{ fontSize: '0.72rem', padding: '2px 7px', borderRadius: '5px', background: t.accentSoft, color: t.fgMuted, flexShrink: 0 }}>{total}</span>}
+        {total > 0 && <span style={{ fontSize: '0.72rem', padding: '2px 7px', borderRadius: '5px', background: t.accentSoft, color: t.fgMuted, flexShrink: 0, marginLeft: 4 }}>{total}</span>}
       </button>
       {expanded && (
         <div style={{
@@ -442,7 +460,7 @@ const SectionItemIcon: React.FC<{
     return <Home size={size} style={{ color: t.fgMuted }} />;
   }
   return (
-    <span style={{ color: isActive ? t.accent : t.fgMuted, display: 'flex', alignItems: 'center' }}>
+    <span style={{ color: isActive ? t.accent : t.fgMuted, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
       {navIcon ? <LucideIcon name={navIcon} size={size} /> : <FolderOpen size={size} />}
     </span>
   );
@@ -475,9 +493,11 @@ const SectionDropdown: React.FC<{
               height: 'auto',
               alignItems: 'flex-start',
               gridColumn: isLastOdd(s) ? '1 / -1' : undefined,
+              overflow: 'hidden',  /* FIX: prevent text shift */
             }}>
             <SectionItemIcon navSlug={s.navSlug} navIcon={s.navIcon} isActive={isActive} mobile={mobile} t={t} />
-            <span style={{ wordBreak: 'break-word', lineHeight: 1.3, minWidth: 0 }}>{s.navTitle}</span>
+            {/* FIX: constrain text so it never shifts layout */}
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.3, minWidth: 0, flex: 1 }}>{s.navTitle}</span>
           </button>
         );
       })}
@@ -631,6 +651,7 @@ const NavPanelContent: React.FC<{
               color: t.fg,
               cursor: 'pointer',
               boxShadow: t.sectionShadow,
+              overflow: 'hidden',  /* FIX: prevent content shift */
             }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden', minWidth: 0, flex: 1 }}>
               {activeSection.navSlug === ''
@@ -638,7 +659,7 @@ const NavPanelContent: React.FC<{
                 : <LucideIcon name={activeSection.navIcon} size={iconSize} />}
               <span style={{ wordBreak: 'break-word', lineHeight: 1.3, whiteSpace: 'normal', minWidth: 0 }}>{activeSection.navTitle}</span>
             </div>
-            <ChevronDown size={mobile ? 14 : 12} style={{ color: t.fgMuted, flexShrink: 0, transform: sectionOpen ? 'rotate(180deg)' : 'none' }} />
+            <ChevronDown size={mobile ? 14 : 12} style={{ color: t.fgMuted, flexShrink: 0, marginLeft: 4, transform: sectionOpen ? 'rotate(180deg)' : 'none' }} />
           </button>
 
           {sectionOpen && (
@@ -685,8 +706,13 @@ function tocBorderColor(isActive: boolean, glowOp: number, isDark: boolean, acce
   return 'transparent';
 }
 function tocShadow(isActive: boolean, glowOp: number, isDark: boolean, accent: string): string {
-  if (isActive)   return `inset 3px 0 10px -2px ${accent}88`;
-  if (glowOp > 0) return isDark ? `inset 3px 0 8px -3px rgba(255,255,255,${glowOp * 0.35})` : `inset 3px 0 8px -3px rgba(0,0,0,${glowOp * 0.35})`;
+  if (isActive)   return `inset 3px 0 12px -2px ${accent}99, 0 0 8px 0 ${accent}33`;
+  if (glowOp > 0) return isDark ? `inset 3px 0 8px -3px rgba(255,255,255,${glowOp * 0.45})` : `inset 3px 0 8px -3px rgba(0,0,0,${glowOp * 0.35})`;
+  return 'none';
+}
+function tocTextShadow(isActive: boolean, glowOp: number, isDark: boolean, accent: string): string {
+  if (isActive) return `0 0 16px ${accent}66, 0 0 4px ${accent}44`;
+  if (glowOp > 0.3) return isDark ? `0 0 10px rgba(255,255,255,${glowOp * 0.3})` : 'none';
   return 'none';
 }
 function tocColor(isActive: boolean, opacity: number, isDark: boolean, accent: string): string {
@@ -709,6 +735,7 @@ function getTocItemStyle(item: TocItem, dist: number, activeId: string, isDark: 
     isActive,
     borderClr: tocBorderColor(isActive, glowOp, isDark, t.accent),
     shadow:    tocShadow(isActive, glowOp, isDark, t.accent),
+    textShadow: tocTextShadow(isActive, glowOp, isDark, t.accent),
     fontSize, paddingLeft,
     color: tocColor(isActive, opacity, isDark, t.accent),
   };
@@ -718,7 +745,7 @@ function getTocItemStyle(item: TocItem, dist: number, activeId: string, isDark: 
 
 function getTocItemBackground(isActive: boolean, isDark: boolean): string {
   if (!isActive) return 'transparent';
-  return isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
+  return isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
 }
 
 function getTocItemFontWeight(isActive: boolean, level: number): number {
@@ -745,7 +772,10 @@ const TocPanelContent: React.FC<{
         const fw    = getTocItemFontWeight(style.isActive, item.level);
         return (
           <button key={item.id}
-            onClick={() => { scrollToElement(item.id); onItemClick?.(); }}
+            onClick={() => {
+              scrollToHeading(item.id);
+              onItemClick?.();
+            }}
             style={{
               width: '100%', textAlign: 'left',
               paddingTop:    mobile ? '0.55rem' : '0.42rem',
@@ -758,7 +788,11 @@ const TocPanelContent: React.FC<{
               boxShadow:  style.shadow,
               borderRadius: '0 8px 8px 0',
               color:    style.color, fontWeight: fw,
-              textShadow: style.isActive ? `0 0 12px ${t.accent}55` : 'none',
+              textShadow: style.textShadow,
+              /* Smooth glow transition - exception to global no-transition rule */
+              transitionProperty: 'color, border-color, box-shadow, text-shadow, background' ,
+              transitionDuration: '0.25s',
+              transitionTimingFunction: 'ease',
             }}
           >{item.text}</button>
         );

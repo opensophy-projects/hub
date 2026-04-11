@@ -17,8 +17,8 @@ export function scrollToElement(elementId: string): void {
   const offsetPosition = elementPosition + window.scrollY - headerOffset;
 
   window.scrollTo({
-    top: offsetPosition,
-    behavior: 'smooth'
+    top,
+    behavior: 'smooth',
   });
 }
 
