@@ -4,12 +4,11 @@ export function scrollToElement(elementId: string): void {
   const element = document.getElementById(elementId);
   if (!element) return;
 
-  const elementPosition = element.getBoundingClientRect().top;
-  const offsetPosition = elementPosition + window.pageYOffset - HEADER_OFFSET;
+  const top = element.getBoundingClientRect().top + window.pageYOffset - HEADER_OFFSET;
 
   window.scrollTo({
-    top: offsetPosition,
-    behavior: 'smooth'
+    top,
+    behavior: 'smooth',
   });
 }
 
