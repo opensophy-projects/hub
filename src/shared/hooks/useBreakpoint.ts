@@ -7,9 +7,17 @@ export const BREAKPOINT_MD  = 768;
 export const BREAKPOINT_NAV = 1000;
 
 function useBreakpoint(bp: number): boolean {
-  const [above, setAbove] = useState(false);
+  // Initialize with actual window width if available (avoids flash on first render)
+  const [above, setAbove] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= bp;
+    }
+    return false;
+  });
+
   useEffect(() => {
     const check = () => setAbove(window.innerWidth >= bp);
+    // Run immediately to sync if window size changed between SSR and mount
     check();
     window.addEventListener('resize', check, { passive: true });
     document.addEventListener('astro:after-swap', check);
@@ -20,6 +28,7 @@ function useBreakpoint(bp: number): boolean {
       document.removeEventListener('astro:page-load', check);
     };
   }, [bp]);
+
   return above;
 }
 
