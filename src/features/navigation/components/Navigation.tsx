@@ -3,6 +3,10 @@
  *
  * Desktop (>1000px): Rail 64px + slide-out panel + resize handle
  * Mobile (≤1000px):  Bottom bar centered + full-screen panels (like search)
+ *
+ * Fixes:
+ * 1. Section dropdown — корректное отображение при resize
+ * 2. Flash мобильной nav — рендерим null пока неизвестен breakpoint
  */
 
 import React, {
@@ -20,6 +24,7 @@ import {
   Search, Sun, Moon, ChevronDown, ChevronRight,
   Mail, X, Home, AlertTriangle,
   FolderOpen, List, PanelLeft, ArrowUp, ChevronLeft,
+  Crown,
 } from 'lucide-react';
 import { useIsDesktopNav } from '@/shared/hooks/useBreakpoint';
 
@@ -56,8 +61,8 @@ const DARK_TOKENS = {
   panelBg:     '#0F0F0F',
   border:      'rgba(255,255,255,0.08)',
   fg:          'rgba(255,255,255,0.85)',
-  fgMuted:     'rgba(255,255,255,0.38)',
-  fgSub:       'rgba(255,255,255,0.22)',
+  fgMuted:     'rgba(255,255,255,0.55)',
+  fgSub:       'rgba(255,255,255,0.38)',
   hov:         'rgba(255,255,255,0.05)',
   accent:      '#ffffff',
   accentSoft:  'rgba(255,255,255,0.08)',
@@ -86,8 +91,8 @@ const LIGHT_TOKENS = {
   panelBg:     '#E0DFDb',
   border:      'rgba(0,0,0,0.08)',
   fg:          'rgba(0,0,0,0.85)',
-  fgMuted:     'rgba(0,0,0,0.38)',
-  fgSub:       'rgba(0,0,0,0.22)',
+  fgMuted:     'rgba(0,0,0,0.55)',
+  fgSub:       'rgba(0,0,0,0.38)',
   hov:         'rgba(0,0,0,0.04)',
   accent:      '#000000',
   accentSoft:  'rgba(0,0,0,0.07)',
@@ -208,11 +213,11 @@ const DocLink: React.FC<{
   );
 });
 
-// ─── HomeLink — всегда ведёт на / ────────────────────────────────────────────
+// ─── HomePageLink ─────────────────────────────────────────────────────────────
 
-const HomeLink: React.FC<{
-  isDark: boolean; isActive: boolean; mobile?: boolean; onClick?: () => void;
-}> = memo(({ isDark, isActive, mobile, onClick }) => {
+const HomePageLink: React.FC<{
+  isDark: boolean; isActive: boolean; onClick?: () => void; mobile?: boolean;
+}> = ({ isDark, isActive, onClick, mobile }) => {
   const t = tk(isDark);
   return (
     <a
@@ -231,16 +236,16 @@ const HomeLink: React.FC<{
       }}
     >
       <span style={{ flexShrink: 0, width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fgMuted }}>
-        <Home size={14} />
+        <Crown size={14} />
       </span>
       <span style={{ minWidth: 0 }}>
-        <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', lineHeight: 1.35 }}>
+        <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.35 }}>
           Главная
         </span>
       </span>
     </a>
   );
-});
+};
 
 // ─── CategoryNode ─────────────────────────────────────────────────────────────
 
@@ -321,11 +326,6 @@ function useActiveNavSlug(sections: NavSection[]): [string, React.Dispatch<React
   useEffect(() => {
     if (!sections.length) return;
     const pathname = globalThis.location.pathname.replace(/^\//, '');
-    // Главная — всегда секция ''
-    if (!pathname) {
-      startTransition(() => setActiveNavSlug(''));
-      return;
-    }
     const matched  = sections.filter(s => s.navSlug).find(s => pathname === s.navSlug || pathname.startsWith(s.navSlug + '/'));
     startTransition(() => setActiveNavSlug(matched?.navSlug ?? ''));
   }, [sections]);
@@ -476,10 +476,11 @@ const SectionDropdown: React.FC<{
               color:      isActive ? t.accent : t.fg,
               fontWeight: isActive ? 600 : 400,
               minHeight,
+              height: 'auto',
               gridColumn: isLastOdd(s) ? '1 / -1' : undefined,
             }}>
             <SectionItemIcon navSlug={s.navSlug} navIcon={s.navIcon} isActive={isActive} mobile={mobile} t={t} />
-            <span>{s.navTitle}</span>
+            <span style={{ wordBreak: 'break-word', lineHeight: 1.3, minWidth: 0 }}>{s.navTitle}</span>
           </button>
         );
       })}
@@ -499,8 +500,7 @@ const NavTreeContent: React.FC<{
 }> = ({ error, loading, navTree, currentDocSlug, expandedPaths, onToggle, isDark, mobile, activeNavSlug, onDocClick, onDocHoverChange }) => {
   const t = tk(isDark);
 
-  // Определяем: главная страница активна если слаг пустой или это welcome
-  const isHomeActive = !currentDocSlug || currentDocSlug === '' || currentDocSlug === 'welcome';
+  const isHomePage = typeof window !== 'undefined' && window.location.pathname === '/';
 
   if (error) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', padding: '2rem', textAlign: 'center' }}>
@@ -510,24 +510,24 @@ const NavTreeContent: React.FC<{
     </div>
   );
   if (loading) return <div style={{ padding: '2rem', textAlign: 'center', fontSize: mobile ? '0.95rem' : '0.8rem', color: t.fgMuted }}>Загрузка...</div>;
+
   return (
     <nav style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-      {/* Всегда показываем ссылку на главную в секции '' */}
       {activeNavSlug === '' && (
-        <HomeLink
+        <HomePageLink
           isDark={isDark}
-          isActive={isHomeActive}
-          mobile={mobile}
+          isActive={isHomePage}
           onClick={onDocClick}
+          mobile={mobile}
         />
       )}
-      {navTree.docs
-        .filter(doc => doc.slug !== '' && doc.slug !== 'welcome')
-        .sort((a, b) => a.title.localeCompare(b.title))
-        .map(doc => (
-          <DocLink key={doc.id} doc={doc} isDark={isDark} isActive={currentDocSlug === doc.slug} mobile={mobile} onPreviewChange={onDocHoverChange} onClick={onDocClick} />
-        ))
-      }
+      {navTree.docs.length > 0 && (
+        <div style={{ marginBottom: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          {[...navTree.docs].sort((a, b) => a.title.localeCompare(b.title)).map(doc => (
+            <DocLink key={doc.id} doc={doc} isDark={isDark} isActive={currentDocSlug === doc.slug} onClick={onDocClick} mobile={mobile} onPreviewChange={onDocHoverChange} />
+          ))}
+        </div>
+      )}
       {Object.entries(navTree.children).sort(([a], [b]) => a.localeCompare(b)).map(([key, node]) => (
         <CategoryNode key={key} node={node} path={key} expandedPaths={expandedPaths} onToggle={onToggle} isDark={isDark} currentDocSlug={currentDocSlug} onDocClick={onDocClick} mobile={mobile} onDocHoverChange={onDocHoverChange} />
       ))}
@@ -620,9 +620,22 @@ const NavPanelContent: React.FC<{
         </div>
       </div>
 
-      {/* Выбор раздела */}
+      {/* ── Выбор раздела ─────────────────────────────────────────────────────
+          FIX: обёртываем в position:relative чтобы dropdown позиционировался
+          относительно этого контейнера, а не ближайшего positioned ancestor.
+          Убираем ручные left/right в пользу width:100% на самом dropdown.
+      ──────────────────────────────────────────────────────────────────────── */}
       {sections.length > 1 && activeSection && (
-        <div style={{ flexShrink: 0, padding: mobile ? '10px 14px' : '8px 10px', borderBottom: `1px solid ${t.border}`, position: 'relative' }} ref={sectionRef}>
+        <div
+          ref={sectionRef}
+          style={{
+            flexShrink: 0,
+            padding: mobile ? '10px 14px' : '8px 10px',
+            borderBottom: `1px solid ${t.border}`,
+            position: 'relative',   // anchor для dropdown
+            zIndex: 10,             // dropdown поверх дерева навигации
+          }}
+        >
           <button
             onClick={() => setSectionOpen(v => !v)}
             style={{
@@ -635,28 +648,31 @@ const NavPanelContent: React.FC<{
               cursor: 'pointer',
               boxShadow: t.sectionShadow,
             }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden', minWidth: 0, flex: 1 }}>
               {activeSection.navSlug === ''
                 ? <Home size={iconSize} style={{ color: t.fgMuted, flexShrink: 0 }} />
                 : <LucideIcon name={activeSection.navIcon} size={iconSize} />}
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeSection.navTitle}</span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-word', lineHeight: 1.3 }}>{activeSection.navTitle}</span>
             </div>
-            <ChevronDown size={mobile ? 14 : 12} style={{ color: t.fgMuted, flexShrink: 0, transform: sectionOpen ? 'rotate(180deg)' : 'none' }} />
+            <ChevronDown size={mobile ? 14 : 12} style={{ color: t.fgMuted, flexShrink: 0, transform: sectionOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
           </button>
 
+          {/* Dropdown: position:absolute относительно контейнера выше */}
           {sectionOpen && (
             <div style={{
               position: 'absolute',
-              left: mobile ? '14px' : '10px',
-              right: mobile ? '14px' : '10px',
-              top: 'calc(100% - 2px)',
+              top: '100%',
+              left: 0,
+              right: 0,
+              marginTop: '2px',
               borderRadius: '10px',
               border: `1px solid ${t.dropdownBorder}`,
               background: t.dropdownBg,
-              zIndex: 100, overflow: 'hidden',
+              zIndex: 100,
+              overflow: 'hidden',
               boxShadow: t.dropdownShadow,
             }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '8px', padding: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '8px' }}>
                 <SectionDropdown sections={sections} activeNavSlug={activeNavSlug} mobile={!!mobile} isDark={isDark} onSelect={handleSectionSelect} />
               </div>
             </div>
@@ -671,6 +687,7 @@ const NavPanelContent: React.FC<{
           currentDocSlug={currentDocSlug} expandedPaths={expandedPaths}
           onToggle={togglePath} isDark={isDark} mobile={mobile}
           activeNavSlug={activeNavSlug}
+          onDocClick={undefined}
           onDocHoverChange={setHoverPreview}
         />
       </div>
@@ -919,9 +936,7 @@ const DesktopNav: React.FC<{
       {railVisible && (
         <aside style={{ position: 'fixed', left: 0, top: 0, height: '100vh', width: RAIL_W, background: t.railBg, borderRight: `1px solid ${t.border}`, display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 50, padding: '8px 0', gap: '2px' }}>
           <div style={{ width: RAIL_W, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <a href="/" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img src="/favicon.png" alt="hub" style={{ width: 28, height: 28, objectFit: 'contain' }} />
-            </a>
+            <img src="/favicon.png" alt="hub" style={{ width: 28, height: 28, objectFit: 'contain' }} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: 1, width: '100%', padding: '2px 0' }}>
             <RailBtn icon={<PanelLeft size={18} />}                         label="Панель"     isDark={isDark} onClick={() => setRailVisible(false)}                                              title="Скрыть" />
@@ -1064,14 +1079,24 @@ const MobileNav: React.FC<{
     <>
       {sheet && <MobilePanel type={sheet} onClose={() => setSheet(null)} isDark={isDark} currentDocSlug={currentDocSlug} toc={toc} activeId={activeId} />}
 
+      {/* Градиентное затемнение над навбаром */}
+      <div style={{
+        position: 'fixed',
+        bottom: '60px',
+        left: 0,
+        right: 0,
+        zIndex: 59,
+        height: '52px',
+        pointerEvents: 'none',
+        background: `linear-gradient(to bottom, transparent, ${t.mobBg})`,
+      }} />
+
       <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 60, height: '60px', background: t.mobBg, borderTop: `1px solid ${t.border}`, display: 'flex', alignItems: 'stretch' }}>
         <MobBtn label="Тема"       icon={isDark ? <Sun size={22} /> : <Moon size={22} />} isDark={isDark} onClick={toggleTheme}                                                      isActive={false} />
         <MobBtn label="Поиск"      icon={<Search size={22} />}                            isDark={isDark} onClick={() => { setSheet(null); setSearchOpen(true); }}                   isActive={false} />
         <MobBtn label="Разделы"    icon={<FolderOpen size={22} />}                        isDark={isDark} onClick={() => toggle('nav')}                                              isActive={sheet === 'nav'} />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <a href="/" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src="/favicon.png" alt="hub" style={{ width: 38, height: 38, objectFit: 'contain' }} />
-          </a>
+          <img src="/favicon.png" alt="hub" style={{ width: 38, height: 38, objectFit: 'contain' }} />
         </div>
         <MobBtn label="Оглавление" icon={<List size={22} />}                              isDark={isDark} onClick={() => toggle('toc')}                                              isActive={sheet === 'toc'} />
         <MobBtn label="Наверх"     icon={<ArrowUp size={22} />}                           isDark={isDark} onClick={() => { setSheet(null); globalThis.scrollTo({ top: 0, behavior: 'smooth' }); }} isActive={false} />
@@ -1094,6 +1119,11 @@ const MobileNav: React.FC<{
 const Navigation: React.FC<NavigationProps> = ({ currentDocSlug, toc = [], activeHeadingId = '' }) => {
   const { isDark, toggleTheme } = useTheme();
   const isDesktop = useIsDesktopNav();
+
+  // FIX: пока breakpoint не определён (null) — не рендерим ничего.
+  // Это устраняет flash мобильной навигации при загрузке страницы на десктопе.
+  if (isDesktop === null) return null;
+
   if (isDesktop) return <DesktopNav isDark={isDark} toggleTheme={toggleTheme} currentDocSlug={currentDocSlug} toc={toc} activeId={activeHeadingId} />;
   return <MobileNav isDark={isDark} toggleTheme={toggleTheme} currentDocSlug={currentDocSlug} toc={toc} activeId={activeHeadingId} />;
 };
