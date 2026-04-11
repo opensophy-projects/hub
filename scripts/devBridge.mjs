@@ -11,6 +11,7 @@ const DOCS_DIR   = path.join(ROOT, 'Docs');
 const OUTPUT_DIR = path.join(ROOT, 'public/data/docs');
 const MANIFEST   = path.join(OUTPUT_DIR, 'manifest.json');
 const SITEMAP    = path.join(ROOT, 'public/sitemap.xml');
+const SITE_CONFIG_PATH = path.join(ROOT, 'public/data/site-config.json');
 const BASE_URL   = 'https://hub.opensophy.com';
 
 // Адреса локального хоста, которым разрешено подключение
@@ -227,21 +228,44 @@ async function handleRenderPreview({ markdown }) {
   }
 }
 
+// ─── Обработчики site-config ──────────────────────────────────────────────────
+
+async function handleReadSiteConfig() {
+  try {
+    if (!fs.existsSync(SITE_CONFIG_PATH)) {
+      return { config: { useLanding: false } };
+    }
+    const raw = await fs.promises.readFile(SITE_CONFIG_PATH, 'utf-8');
+    const config = JSON.parse(raw);
+    return { config };
+  } catch {
+    return { config: { useLanding: false } };
+  }
+}
+
+async function handleWriteSiteConfig({ config }) {
+  await fs.promises.mkdir(path.dirname(SITE_CONFIG_PATH), { recursive: true });
+  await fs.promises.writeFile(SITE_CONFIG_PATH, JSON.stringify(config, null, 2), 'utf-8');
+  return { ok: true };
+}
+
 // ─── Таблица маршрутизации команд ─────────────────────────────────────────────
 
 const HANDLERS = {
-  ping:          handlePing,
-  writeFile:     handleWriteFile,
-  mkdir:         handleMkdir,
-  readFile:      handleReadFile,
-  deleteFile:    handleDeleteFile,
-  listDocs:      handleListDocs,
-  readContacts:  handleReadContacts,
-  writeContacts: handleWriteContacts,
-  uploadAsset:   handleUploadAsset,
-  uploadFavicon: handleUploadFavicon,
-  runGenerate:   handleRunGenerate,
-  renderPreview: handleRenderPreview,
+  ping:            handlePing,
+  writeFile:       handleWriteFile,
+  mkdir:           handleMkdir,
+  readFile:        handleReadFile,
+  deleteFile:      handleDeleteFile,
+  listDocs:        handleListDocs,
+  readContacts:    handleReadContacts,
+  writeContacts:   handleWriteContacts,
+  uploadAsset:     handleUploadAsset,
+  uploadFavicon:   handleUploadFavicon,
+  runGenerate:     handleRunGenerate,
+  renderPreview:   handleRenderPreview,
+  readSiteConfig:  handleReadSiteConfig,
+  writeSiteConfig: handleWriteSiteConfig,
 };
 
 const MUTATING = new Set(['writeFile', 'mkdir', 'deleteFile', 'runGenerate']);
