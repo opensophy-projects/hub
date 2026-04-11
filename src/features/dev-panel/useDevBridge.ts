@@ -136,6 +136,12 @@ export function useDevBridge() {
   };
 }
 
+// ─── Site config типы ─────────────────────────────────────────────────────────
+
+export interface SiteConfig {
+  useLanding: boolean;
+}
+
 // ─── Typed bridge API ──────────────────────────────────────────────────────────
 
 export const bridge = {
@@ -172,4 +178,10 @@ export const bridge = {
 
   renderPreview: (markdown: string) =>
     send<{ html: string; error?: string }>('renderPreview', { markdown }),
+
+  readSiteConfig: () =>
+    send<{ config: SiteConfig }>('readSiteConfig'),
+
+  writeSiteConfig: (config: SiteConfig) =>
+    send<{ ok: boolean }>('writeSiteConfig', { config }),
 };
