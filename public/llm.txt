@@ -1,0 +1,252 @@
+# Opensophy — LLM Context
+
+## Что такое Opensophy
+
+Opensophy — open-source проект для IT-специалистов: студентов, разработчиков, DevSecOps-инженеров.
+Сайт: https://opensophy.com
+
+Всё распространяется под открытыми лицензиями — бесплатно.
+
+---
+
+## Платформа
+
+Opensophy.com — единый сайт на базе Astro + React, совмещающий лендинг, документацию,
+статьи и UI-библиотеку компонентов. Исходный код: https://github.com/opensophy-projects/hub
+
+### Стек
+
+- Astro 5 (SSG в продакшне, SSR в dev)
+- React 19 (client:only острова)
+- Tailwind CSS
+- framer-motion, GSAP, GSAP SplitText
+- Recharts (графики)
+- highlight.js (подсветка кода)
+- KaTeX (математические формулы)
+- DOMPurify (санитизация HTML)
+- OGL (WebGL-фон)
+
+---
+
+## Структура контента
+
+Все статьи и страницы хранятся в папке `Docs/` в виде Markdown-файлов с frontmatter.
+Папки используют систему именования `[N]`, `[C]`, `[A]` для навигации, категорий и страниц.
+
+При сборке скрипт `scripts/generateDocs.mjs` читает все `.md`-файлы,
+генерирует `public/data/docs/manifest.json` и `public/sitemap.xml`.
+
+### Структура папок Docs/
+
+```
+Docs/
+  [N][brain]Статьи opensophy{article}/   ← Секция навигации
+    [C][shield]Кибербезопасность{security}/
+      [A][siren]Кратко о CVSS{cvss-guide}.md
+    [C][folder-tree]Линукс{linux}/
+      [A][search-code]Учим Linux - Файлы{linux-files}.md
+  [N][component]UI Библиотека{ui}/
+    [C][a-large-small]Типографика{typography}/
+      [A][droplet]Блюрный текст{blur-text}.md
+  welcome.md   ← Главная страница (если useLanding=false)
+```
+
+### Frontmatter полей
+
+```yaml
+---
+title: Заголовок страницы
+description: Краткое описание
+author: Имя автора
+date: 2026-04-07
+updated: 2026-04-10
+tags: devsecops, сети
+lang: ru
+icon: shield
+robots: index, follow
+---
+```
+
+---
+
+## Разделы и контент
+
+### Статьи (article/)
+
+Практические руководства по темам:
+- Кибербезопасность: CVSS, DAST/SAST/SCA/IAST/RASP, карьера в ИБ
+- Linux для DevOps/DevSecOps: файловая система, пользователи и группы
+- Разработка: SSR/SSG/CSR/ISR, веб-рендеринг
+- Инструменты: Dokploy, UI-компоненты для вайбкодеров
+- Карьера: ATS-фильтры, вход в кибербезопасность
+- Сети: таблица сетевых моделей и протоколов
+
+### UI-библиотека (ui/)
+
+Готовые React-компоненты с живым превью и настройками.
+Категории: Типографика, Фон.
+
+Компоненты типографики: BlurText, CircularText, CountUp, CurvedLoop,
+DecryptedText, GradientText, RotatingText, ScrollFloat, ScrollReveal,
+ScrollVelocity, ShinyText, SplitText, TextType, VariableProximity.
+
+Фоновые компоненты: DarkVeil (WebGL CPPN-генератор).
+
+---
+
+## Markdown-расширения
+
+Hub поддерживает кастомные блоки в Markdown:
+
+### Алерты
+```
+:::note
+Полезная информация.
+:::
+
+:::tip | :::warning | :::caution | :::important
+```
+
+### Карточки
+```
+:::card[color=#3b82f6]
+[title]Заголовок
+[icon]shield
+[image]/assets/image.png
+Содержимое карточки.
+:::
+
+:::cards[cols=2]
+:::card ... :::
+:::card ... :::
+:::
+```
+
+### Колонки
+```
+:::columns[layout=equal]
+:::col
+Левая колонка.
+:::
+:::col
+Правая колонка.
+:::
+:::
+```
+Варианты layout: equal, wide-left, wide-right, image-left, image-right
+
+### Шаги
+```
+:::steps
+:::step[status=done] Первый шаг
+Описание.
+:::
+:::step[status=active] Второй шаг
+:::
+:::step[status=pending] Третий шаг
+:::
+:::
+```
+
+### Математика (KaTeX)
+```
+$E = mc^2$           ← инлайн
+
+:::math[display]
+x = \frac{-b \pm \sqrt{b^2-4ac}}{2a}
+:::
+```
+
+### Графики
+```
+:::chart
+[title]Продажи
+[type]bar
+[colors]#555, #888
+
+| Квартал | Q1   | Q2   |
+|---------|------|------|
+| Север   | 1200 | 900  |
+:::
+```
+Типы: area, area-stacked, bar, bar-stacked, bar-horizontal, pie, pie-donut, radar
+
+### Табы с кодом
+```
+:::tabs
+:::tab[JavaScript]
+```js
+const x = 1;
+```
+:::
+:::tab[TypeScript]
+```ts
+const x: number = 1;
+```
+:::
+:::
+```
+
+### Встроенные UI-компоненты
+```
+[uic:blur-text]
+[uic:gradient-text]
+```
+
+---
+
+## Навигация
+
+- Десктоп (>1000px): боковой рейл 64px + выдвижная панель (навигация / оглавление / контакты)
+- Мобильный (≤1000px): нижняя панель с теми же секциями
+
+Поиск: полнотекстовый, с фильтрами по дате, тегам, категории, разделу.
+
+---
+
+## Главная страница: два режима
+
+Режим управляется через `public/data/site-config.json`:
+```json
+{ "useLanding": false }
+```
+
+- `useLanding: false` — показывает `Docs/welcome.md` как главную страницу
+- `useLanding: true` — показывает лендинг из `src/features/general/GeneralPage.tsx`
+
+В dev-режиме переключается через Admin Panel (Ctrl+Shift+D → вкладка "Сайт").
+
+---
+
+## SEO
+
+- Title главной страницы: `Opensophy`
+- Title статей: `Заголовок статьи — Opensophy`
+- Description главной: `Opensophy — open-source проект для IT-специалистов. Инструменты, туториалы и материалы по безопасности, разработке и инфраструктуре — в открытом доступе.`
+- Canonical URL базируется на `https://opensophy.com`
+- Sitemap: `https://opensophy.com/sitemap.xml`
+
+---
+
+## Dev-панель (только в dev)
+
+Открывается сочетанием `Ctrl+Shift+D` или кнопкой ADMIN в левом нижнем углу.
+Возможности:
+- Создание, редактирование, удаление страниц и категорий
+- Drag-and-drop перемещение в дереве
+- Markdown-редактор с превью в реальном времени
+- Управление контактами
+- Загрузка ассетов и фавиконки
+- Переключение режима главной страницы
+
+Работает через WebSocket-мост на порту 7777 (`scripts/devBridge.mjs`).
+
+---
+
+## Контакты
+
+- Сайт: https://opensophy.com
+- Email: opensophy@gmail.com
+- GitHub: https://github.com/opensophy-projects
+- Habr: https://habr.com/ru/users/opensophy/
+- Reddit: https://www.reddit.com/user/opensophy/
