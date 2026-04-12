@@ -45,7 +45,7 @@
 
 ### 🔥 Markdown Blocks — богатый контент без MDX
 
-[Поддерживаемые блоки](https://hub.opensophy.com/docs/markdown-guide/)
+[Поддерживаемые блоки](https://opensophy.com/docs/markdown-guide/)
 
 ### 🔥 Live UI Component Playground
 
