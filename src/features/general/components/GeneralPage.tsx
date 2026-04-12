@@ -862,7 +862,7 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
 
 const LandingContent: React.FC = () => {
   const [isNegative, setIsNegative] = useState(() => {
-    if (typeof globalThis.window === 'undefined') return true;
+    if (globalThis.window === undefined) return true;
     return localStorage.getItem('theme') !== 'light';
   });
 
