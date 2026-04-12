@@ -21,12 +21,12 @@ interface Props {
 }
 
 const SITE = {
-  name:        'Hub — Opensophy',
-  description: 'Hub проекта Opensophy — центр знаний по ИИ и кибербезопасности.',
-  url:         'https://hub.opensophy.com',
+  name:        'Opensophy',
+  description: 'Opensophy — open-source проект для IT-специалистов. Инструменты, туториалы и материалы по безопасности, разработке и инфраструктуре — в открытом доступе.',
+  url:         'https://opensophy.com',
   lang:        'ru',
   author:      'Opensophy',
-  keywords:    'opensophy, hub, документация, AI, кибербезопасность',
+  keywords:    'opensophy, кибербезопасность, DevSecOps, linux, разработка, инструменты, туториалы',
   ogImage:     '/og-image.png',
   ogLocale:    'ru_RU',
   twitterCard: 'summary_large_image',
@@ -48,6 +48,7 @@ const {
   lang        = SITE.lang,
 } = Astro.props;
 
+// Для главной страницы — просто "Opensophy", для остальных — "Заголовок — Opensophy"
 const pageTitle    = title === SITE.name ? title : `${title} — ${SITE.name}`;
 const canonicalUrl = new URL(url, SITE.url).href;
 const imageUrl     = image ? new URL(image, SITE.url).href : new URL(SITE.ogImage, SITE.url).href;
