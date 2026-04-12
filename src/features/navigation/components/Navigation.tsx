@@ -500,7 +500,8 @@ const NavTreeContent: React.FC<{
 }> = ({ error, loading, navTree, currentDocSlug, expandedPaths, onToggle, isDark, mobile, activeNavSlug, onDocClick, onDocHoverChange }) => {
   const t = tk(isDark);
 
-  const isHomePage = globalThis.window !== undefined && globalThis.window.location.pathname === '/';
+  // optional chaining вместо явной проверки globalThis.window !== undefined
+  const isHomePage = globalThis.window?.location.pathname === '/';
 
   // Фильтруем welcome/пустой slug из дерева когда activeNavSlug === '',
   // чтобы не дублировать HomePageLink
