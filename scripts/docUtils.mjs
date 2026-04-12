@@ -171,7 +171,7 @@ function escapeAttr(str) {
 }
 
 function escapeRegExp(str) {
-  return String(str).replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return String(str).replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }
 
 function parseParams(paramStr) {
