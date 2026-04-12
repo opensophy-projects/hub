@@ -122,8 +122,10 @@ const WaveChart: React.FC<{ isNegative: boolean; inView: boolean }> = ({ isNegat
   const secPts  = toPoints(secData);
   const mainLine = smoothPath(mainPts);
   const secLine  = smoothPath(secPts);
-  const areaPath = (pts: { x: number; y: number }[], line: string) =>
-    `${line} L ${pts.at(-1)!.x} ${height} L ${pts[0].x} ${height} Z`;
+  const areaPath = (pts: { x: number; y: number }[], line: string) => {
+    const last = pts.at(-1) ?? pts[0];
+    return `${line} L ${last.x} ${height} L ${pts[0].x} ${height} Z`;
+  };
 
   const uid = `wave-${isNegative ? 'd' : 'l'}`;
 
