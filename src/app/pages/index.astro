@@ -33,11 +33,15 @@ if (!useLanding && fs.existsSync(welcomeMdPath)) {
   }
 }
 
-const title       = useLanding ? 'Opensophy' : (welcomeDoc?.title       || 'Hub — Opensophy');
-const description = useLanding
-  ? 'Opensophy — open-source проект для IT-специалистов.'
-  : (welcomeDoc?.description || 'Hub проекта Opensophy.');
-const keywords    = useLanding ? 'opensophy, hub, open-source, кибербезопасность' : (welcomeDoc?.keywords || '');
+// Лендинг: title = 'Opensophy' (совпадает с SITE.name в Layout → выведется просто "Opensophy")
+// welcome.md: берём title из frontmatter или тот же дефолт
+const LANDING_DESCRIPTION = 'Opensophy — open-source проект для IT-специалистов. Инструменты, туториалы и материалы по безопасности, разработке и инфраструктуре — в открытом доступе.';
+
+const title       = useLanding ? 'Opensophy' : (welcomeDoc?.title       || 'Opensophy');
+const description = useLanding ? LANDING_DESCRIPTION : (welcomeDoc?.description || LANDING_DESCRIPTION);
+const keywords    = useLanding
+  ? 'opensophy, кибербезопасность, DevSecOps, linux, разработка, инструменты, туториалы'
+  : (welcomeDoc?.keywords || '');
 const lang        = useLanding ? 'ru' : (welcomeDoc?.lang || 'ru');
 ---
 
