@@ -1,0 +1,67 @@
+{
+  "id": "scroll-velocity",
+  "name": "Скорость скролла",
+  "description": "Бесконечная бегущая строка, скорость которой зависит от скорости прокрутки страницы. Чётные строки идут вправо, нечётные — влево. Основана на framer-motion useVelocity и useSpring.",
+  "category": "text",
+  "main": "scroll-velocity.tsx",
+  "props": [
+    {
+      "name": "texts",
+      "type": "string",
+      "default": "Scroll Velocity •, Framer Motion •",
+      "description": "Строки через запятую — каждая становится отдельной бегущей строкой",
+      "control": "text"
+    },
+    {
+      "name": "velocity",
+      "type": "number",
+      "default": 100,
+      "description": "Базовая скорость (пикс/с)",
+      "control": "number",
+      "min": 10,
+      "max": 500,
+      "step": 10
+    },
+    {
+      "name": "damping",
+      "type": "number",
+      "default": 50,
+      "description": "Демпфирование spring (выше = быстрее затухает)",
+      "control": "number",
+      "min": 5,
+      "max": 200,
+      "step": 5
+    },
+    {
+      "name": "stiffness",
+      "type": "number",
+      "default": 400,
+      "description": "Жёсткость spring (выше = резче реакция)",
+      "control": "number",
+      "min": 50,
+      "max": 1000,
+      "step": 50
+    },
+    {
+      "name": "numCopies",
+      "type": "number",
+      "default": 6,
+      "description": "Количество копий для бесшовного повтора",
+      "control": "number",
+      "min": 2,
+      "max": 12,
+      "step": 1
+    },
+    {
+      "name": "className",
+      "type": "string",
+      "default": "",
+      "description": "CSS классы для каждого span с текстом",
+      "control": "text"
+    }
+  ],
+  "specificProps": ["texts", "velocity", "damping", "stiffness", "numCopies"],
+  "tags": ["animation", "text", "marquee", "scroll", "framer-motion", "velocity", "spring"],
+  "author": "davidhdev",
+  "version": "1.0.0"
+}
