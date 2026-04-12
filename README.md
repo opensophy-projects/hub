@@ -188,6 +188,6 @@
 
 <div align="center">
 
-[hub.opensophy.com](https://hub.opensophy.com) · [GitHub](https://github.com/opensophy-projects/hub)
+[opensophy.com](https://opensophy.com) · [GitHub](https://github.com/opensophy-projects/hub)
 
 </div>
