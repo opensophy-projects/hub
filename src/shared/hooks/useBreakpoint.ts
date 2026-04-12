@@ -9,19 +9,19 @@ function useBreakpoint(bp: number): boolean | null {
   const [above, setAbove] = useState<boolean | null>(() => {
     // Синхронная инициализация на клиенте — устраняет flash мобильной nav на десктопе.
     // На сервере (SSR) window недоступен → null, компонент не рендерится до гидратации.
-    if (typeof window === 'undefined') return null;
-    return window.innerWidth >= bp;
+    if (globalThis.window === undefined) return null;
+    return globalThis.window.innerWidth >= bp;
   });
 
   useEffect(() => {
-    const check = () => setAbove(window.innerWidth >= bp);
+    const check = () => setAbove(globalThis.window.innerWidth >= bp);
     // На случай если размер изменился между SSR и гидратацией
     check();
-    window.addEventListener('resize', check, { passive: true });
+    globalThis.window.addEventListener('resize', check, { passive: true });
     document.addEventListener('astro:after-swap', check);
     document.addEventListener('astro:page-load', check);
     return () => {
-      window.removeEventListener('resize', check);
+      globalThis.window.removeEventListener('resize', check);
       document.removeEventListener('astro:after-swap', check);
       document.removeEventListener('astro:page-load', check);
     };
