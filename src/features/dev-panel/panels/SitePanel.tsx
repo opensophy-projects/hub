@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useContext } from 'react';
+import React, { useState, useEffect, useCallback, useContext, useRef } from 'react';
 import { bridge } from '../useDevBridge';
 import { ThemeTokensContext } from '../DevPanel';
 import { toast } from '../components/Toast';
@@ -12,6 +12,9 @@ export default function SitePanel() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState('');
+
+  // Хранит предыдущее значение конфига для отката при ошибке сохранения
+  const prevConfig = useRef<SiteConfig>(config);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -30,6 +33,7 @@ export default function SitePanel() {
 
   const handleToggleLanding = async (value: boolean) => {
     const next = { ...config, useLanding: value };
+    prevConfig.current = config;
     setConfig(next);
     setSaving(true);
     setError('');
@@ -38,8 +42,7 @@ export default function SitePanel() {
       toast.success(value ? 'Лендинг включён' : 'Welcome.md включён');
     } catch (e: unknown) {
       setError((e as Error).message);
-      // Откатываем при ошибке
-      setConfig(config);
+      setConfig(prevConfig.current);
     } finally {
       setSaving(false);
     }
@@ -98,8 +101,8 @@ export default function SitePanel() {
         >
           <div style={{
             width: 16, height: 16, borderRadius: '50%', flexShrink: 0, marginTop: 1,
-            border: `2px solid ${!config.useLanding ? t.fg : t.border}`,
-            background: !config.useLanding ? t.fg : 'transparent',
+            border: `2px solid ${config.useLanding ? t.border : t.fg}`,
+            background: config.useLanding ? 'transparent' : t.fg,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             {!config.useLanding && (
@@ -108,7 +111,7 @@ export default function SitePanel() {
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-              <FileText size={13} style={{ color: !config.useLanding ? t.fg : t.fgMuted }} />
+              <FileText size={13} style={{ color: config.useLanding ? t.fgMuted : t.fg }} />
               <span style={{ fontSize: 12, fontWeight: 600 }}>Welcome.md</span>
             </div>
             <div style={{ fontSize: 10, color: t.fgSub, lineHeight: 1.5 }}>
