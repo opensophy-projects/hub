@@ -479,7 +479,7 @@ const SectionDropdown: React.FC<{
               height: 'auto',
               gridColumn: isLastOdd(s) ? '1 / -1' : undefined,
             }}>
-            <SectionItemIcon navSlug={s.navSlug} navIcon={s.navIcon} isActive={isActive} mobile={mobile} t={t} />
+            <SectionItemIcon navSlug={s.navSlug} navIcon={s.navIcon} isActive={isActive} mobile={!!mobile} t={t} />
             <span style={{ wordBreak: 'break-word', lineHeight: 1.3, minWidth: 0 }}>{s.navTitle}</span>
           </button>
         );
@@ -502,6 +502,13 @@ const NavTreeContent: React.FC<{
 
   const isHomePage = typeof window !== 'undefined' && window.location.pathname === '/';
 
+  // Фильтруем welcome/пустой slug из дерева когда activeNavSlug === '',
+  // чтобы не дублировать HomePageLink
+  const filteredDocs = useMemo(() => {
+    if (activeNavSlug !== '') return navTree.docs;
+    return navTree.docs.filter(doc => doc.slug !== '' && doc.slug !== 'welcome');
+  }, [navTree.docs, activeNavSlug]);
+
   if (error) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', padding: '2rem', textAlign: 'center' }}>
       <AlertTriangle size={22} style={{ color: 'rgba(251,191,36,0.7)' }} />
@@ -521,9 +528,9 @@ const NavTreeContent: React.FC<{
           mobile={mobile}
         />
       )}
-      {navTree.docs.length > 0 && (
+      {filteredDocs.length > 0 && (
         <div style={{ marginBottom: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          {[...navTree.docs].sort((a, b) => a.title.localeCompare(b.title)).map(doc => (
+          {[...filteredDocs].sort((a, b) => a.title.localeCompare(b.title)).map(doc => (
             <DocLink key={doc.id} doc={doc} isDark={isDark} isActive={currentDocSlug === doc.slug} onClick={onDocClick} mobile={mobile} onPreviewChange={onDocHoverChange} />
           ))}
         </div>
@@ -620,11 +627,6 @@ const NavPanelContent: React.FC<{
         </div>
       </div>
 
-      {/* ── Выбор раздела ─────────────────────────────────────────────────────
-          FIX: обёртываем в position:relative чтобы dropdown позиционировался
-          относительно этого контейнера, а не ближайшего positioned ancestor.
-          Убираем ручные left/right в пользу width:100% на самом dropdown.
-      ──────────────────────────────────────────────────────────────────────── */}
       {sections.length > 1 && activeSection && (
         <div
           ref={sectionRef}
@@ -632,8 +634,8 @@ const NavPanelContent: React.FC<{
             flexShrink: 0,
             padding: mobile ? '10px 14px' : '8px 10px',
             borderBottom: `1px solid ${t.border}`,
-            position: 'relative',   // anchor для dropdown
-            zIndex: 10,             // dropdown поверх дерева навигации
+            position: 'relative',
+            zIndex: 10,
           }}
         >
           <button
@@ -657,7 +659,6 @@ const NavPanelContent: React.FC<{
             <ChevronDown size={mobile ? 14 : 12} style={{ color: t.fgMuted, flexShrink: 0, transform: sectionOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
           </button>
 
-          {/* Dropdown: position:absolute относительно контейнера выше */}
           {sectionOpen && (
             <div style={{
               position: 'absolute',
@@ -1079,7 +1080,6 @@ const MobileNav: React.FC<{
     <>
       {sheet && <MobilePanel type={sheet} onClose={() => setSheet(null)} isDark={isDark} currentDocSlug={currentDocSlug} toc={toc} activeId={activeId} />}
 
-      {/* Градиентное затемнение над навбаром */}
       <div style={{
         position: 'fixed',
         bottom: '60px',
@@ -1120,8 +1120,6 @@ const Navigation: React.FC<NavigationProps> = ({ currentDocSlug, toc = [], activ
   const { isDark, toggleTheme } = useTheme();
   const isDesktop = useIsDesktopNav();
 
-  // FIX: пока breakpoint не определён (null) — не рендерим ничего.
-  // Это устраняет flash мобильной навигации при загрузке страницы на десктопе.
   if (isDesktop === null) return null;
 
   if (isDesktop) return <DesktopNav isDark={isDark} toggleTheme={toggleTheme} currentDocSlug={currentDocSlug} toc={toc} activeId={activeHeadingId} />;
