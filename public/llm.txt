@@ -249,4 +249,3 @@ const x: number = 1;
 - Email: opensophy@gmail.com
 - GitHub: https://github.com/opensophy-projects
 - Habr: https://habr.com/ru/users/opensophy/
-- Reddit: https://www.reddit.com/user/opensophy/
