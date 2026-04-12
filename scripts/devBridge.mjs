@@ -14,8 +14,11 @@ const SITEMAP    = path.join(ROOT, 'public/sitemap.xml');
 const SITE_CONFIG_PATH = path.join(ROOT, 'public/data/site-config.json');
 const BASE_URL   = 'https://opensophy.com';
 
+// IPv4-mapped IPv6-адрес для localhost (::ffff:127.0.0.1) — стандартное представление Node.js
+const LOCALHOST_IPV4_MAPPED = '::ffff:127.0.0.1';
+
 // Адреса локального хоста, которым разрешено подключение
-const LOCALHOST_IPS = new Set(['::1', '127.0.0.1', '::ffff:127.0.0.1']);
+const LOCALHOST_IPS = new Set(['::1', '127.0.0.1', LOCALHOST_IPV4_MAPPED]);
 
 // ─── Разрешённые пути ─────────────────────────────────────────────────────────
 
