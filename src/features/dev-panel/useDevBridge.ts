@@ -104,7 +104,8 @@ function send<T = unknown>(action: string, payload?: unknown): Promise<T> {
       reject(new Error('Not connected'));
       return;
     }
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    // crypto.randomUUID() используется для уникальной идентификации pending-запросов
+    const id = crypto.randomUUID();
     const timeout = setTimeout(() => {
       pending.delete(id);
       reject(new Error(`Timeout: ${action}`));
