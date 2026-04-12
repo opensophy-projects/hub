@@ -456,7 +456,7 @@ const SectionDropdown: React.FC<{
   sections: NavSection[]; activeNavSlug: string; mobile: boolean; isDark: boolean; onSelect: (slug: string) => void;
 }> = ({ sections, activeNavSlug, mobile, isDark, onSelect }) => {
   const t = tk(isDark);
-  const lastSection = sections[sections.length - 1];
+  const lastSection = sections.at(-1);
   const isLastOdd = (s: NavSection) => sections.length % 2 === 1 && lastSection?.navSlug === s.navSlug;
   const padding  = mobile ? '0.7rem 1rem' : '0.55rem 0.75rem';
   const fontSize = mobile ? '1rem' : '0.875rem';
@@ -500,7 +500,7 @@ const NavTreeContent: React.FC<{
 }> = ({ error, loading, navTree, currentDocSlug, expandedPaths, onToggle, isDark, mobile, activeNavSlug, onDocClick, onDocHoverChange }) => {
   const t = tk(isDark);
 
-  const isHomePage = typeof window !== 'undefined' && window.location.pathname === '/';
+  const isHomePage = globalThis.window !== undefined && globalThis.window.location.pathname === '/';
 
   // Фильтруем welcome/пустой slug из дерева когда activeNavSlug === '',
   // чтобы не дублировать HomePageLink
@@ -547,8 +547,8 @@ const NavTreeContent: React.FC<{
 const DocHoverPreview: React.FC<{ isDark: boolean; payload: { doc: Doc; rect: DOMRect } }> = ({ isDark, payload }) => {
   const t = tk(isDark);
   const { doc, rect } = payload;
-  const top  = Math.max(12, Math.min(window.innerHeight - 260, rect.top));
-  const left = Math.min(window.innerWidth - 360, rect.right + 12);
+  const top  = Math.max(12, Math.min(globalThis.window.innerHeight - 260, rect.top));
+  const left = Math.min(globalThis.window.innerWidth - 360, rect.right + 12);
   const created = formatMetaDate(doc.date);
   const updated = formatMetaDate(doc.updated);
   return createPortal(
