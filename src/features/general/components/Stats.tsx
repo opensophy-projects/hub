@@ -46,8 +46,8 @@ const AnimatedNumber: React.FC<{ target: string; inView: boolean; delay?: number
   target, inView, delay = 0, isNegative,
 }) => {
   const [display, setDisplay] = useState('0');
-  const numericTarget = parseInt(target.replace(/\D/g, ''), 10);
-  const suffix        = target.replace(/[\d\s]/g, '');
+  const numericTarget = Number.parseInt(target.replaceAll(/\D/g, ''), 10);
+  const suffix        = target.replaceAll(/[\d\s]/g, '');
 
   useEffect(() => {
     if (!inView) return;
@@ -77,9 +77,9 @@ const AnimatedNumber: React.FC<{ target: string; inView: boolean; delay?: number
 
 const WaveChart: React.FC<{ isNegative: boolean; inView: boolean }> = ({ isNegative, inView }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [dim, setDim]           = useState({ width: 800, height: 220 });
-  const [animProgress, setAnim] = useState(0);
-  const rafRef                  = useRef<number>(0);
+  const [dim, setDim]                           = useState({ width: 800, height: 220 });
+  const [animProgress, setAnimProgress]         = useState(0);
+  const rafRef                                  = useRef<number>(0);
 
   useEffect(() => {
     const update = () => {
@@ -100,7 +100,7 @@ const WaveChart: React.FC<{ isNegative: boolean; inView: boolean }> = ({ isNegat
     const anim = (ts: number) => {
       if (!start) start = ts;
       const p = Math.min((ts - start) / 2200, 1);
-      setAnim(p);
+      setAnimProgress(p);
       if (p < 1) rafRef.current = requestAnimationFrame(anim);
     };
     rafRef.current = requestAnimationFrame(anim);
@@ -123,7 +123,7 @@ const WaveChart: React.FC<{ isNegative: boolean; inView: boolean }> = ({ isNegat
   const mainLine = smoothPath(mainPts);
   const secLine  = smoothPath(secPts);
   const areaPath = (pts: { x: number; y: number }[], line: string) =>
-    `${line} L ${pts[pts.length - 1].x} ${height} L ${pts[0].x} ${height} Z`;
+    `${line} L ${pts.at(-1)!.x} ${height} L ${pts[0].x} ${height} Z`;
 
   const uid = `wave-${isNegative ? 'd' : 'l'}`;
 
