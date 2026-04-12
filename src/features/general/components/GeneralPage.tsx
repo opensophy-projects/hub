@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-import { useMotionValue, useAnimationFrame, useTransform, motion, AnimatePresence } from 'framer-motion';
+import { useMotionValue, useAnimationFrame, useTransform, motion } from 'framer-motion';
 import { SingularityShaders } from './SingularityShaders';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import Navigation from '@/features/navigation/components/Navigation';
-import { GlowingEffect } from '@/features/general/components/ui/GlowingEffect';
 import RotatingText from '@/features/ui-components/rotating-text/rotating-text';
 
 // ─── ShinyText ────────────────────────────────────────────────────────────────
@@ -817,7 +816,7 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
           </p>
         </div>
 
-        {/* Cards */}
+        {/* Карточки экосистемы */}
         <div className="eco-cards">
           <EcoCard
             isNegative={isNegative}
@@ -863,7 +862,7 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
 
 const LandingContent: React.FC = () => {
   const [isNegative, setIsNegative] = useState(() => {
-    if (typeof window === 'undefined') return true;
+    if (typeof globalThis.window === 'undefined') return true;
     return localStorage.getItem('theme') !== 'light';
   });
 
@@ -876,11 +875,11 @@ const LandingContent: React.FC = () => {
     const onCustom = (e: Event) => {
       setIsNegative((e as CustomEvent<{ isDark: boolean }>).detail.isDark);
     };
-    window.addEventListener('storage', onStorage);
-    window.addEventListener('hub:theme-change', onCustom);
+    globalThis.addEventListener('storage', onStorage);
+    globalThis.addEventListener('hub:theme-change', onCustom);
     return () => {
-      window.removeEventListener('storage', onStorage);
-      window.removeEventListener('hub:theme-change', onCustom);
+      globalThis.removeEventListener('storage', onStorage);
+      globalThis.removeEventListener('hub:theme-change', onCustom);
     };
   }, []);
 
@@ -888,7 +887,7 @@ const LandingContent: React.FC = () => {
     const readOffset = () => {
       const val = getComputedStyle(document.documentElement)
         .getPropertyValue('--nav-left').trim();
-      setNavOffset(val ? parseInt(val, 10) : 0);
+      setNavOffset(val ? Number.parseInt(val, 10) : 0);
     };
     readOffset();
     const observer = new MutationObserver(readOffset);
@@ -929,7 +928,6 @@ const LandingContent: React.FC = () => {
           background: `linear-gradient(to bottom, transparent, ${bg})`,
         }} />
 
-        {/* ─── ИСПРАВЛЕНО: Hero title — строго по центру, адаптивный размер ─── */}
         <style>{`
           .hero-title-wrap {
             position: absolute;
