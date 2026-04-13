@@ -6,6 +6,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { buildDocFromPath } from '../../../scripts/docUtils.mjs';
 
+export const prerender = true;
+
 const docsDir       = path.join(process.cwd(), 'Docs');
 const welcomeMdPath = path.join(docsDir, 'welcome.md');
 const siteConfigPath = path.join(process.cwd(), 'public/data/site-config.json');
@@ -33,15 +35,13 @@ if (!useLanding && fs.existsSync(welcomeMdPath)) {
   }
 }
 
-// Лендинг: title = 'Opensophy' (совпадает с SITE.name в Layout → выведется просто "Opensophy")
-// welcome.md: берём title из frontmatter или тот же дефолт
+const SITE_NAME = 'Opensophy';
 const LANDING_DESCRIPTION = 'Opensophy — open-source проект для IT-специалистов. Инструменты, туториалы и материалы по безопасности, разработке и инфраструктуре — в открытом доступе.';
+const LANDING_KEYWORDS = 'opensophy, кибербезопасность, DevSecOps, linux, разработка, инструменты, туториалы, open source, IT';
 
-const title       = useLanding ? 'Opensophy' : (welcomeDoc?.title       || 'Opensophy');
+const title       = useLanding ? SITE_NAME : (welcomeDoc?.title       || SITE_NAME);
 const description = useLanding ? LANDING_DESCRIPTION : (welcomeDoc?.description || LANDING_DESCRIPTION);
-const keywords    = useLanding
-  ? 'opensophy, кибербезопасность, DevSecOps, linux, разработка, инструменты, туториалы'
-  : (welcomeDoc?.keywords || '');
+const keywords    = useLanding ? LANDING_KEYWORDS : (welcomeDoc?.keywords || '');
 const lang        = useLanding ? 'ru' : (welcomeDoc?.lang || 'ru');
 ---
 
@@ -55,7 +55,28 @@ const lang        = useLanding ? 'ru' : (welcomeDoc?.lang || 'ru');
   lang={lang}
 >
   {useLanding ? (
-    <GeneralPageWrapper client:only="react" />
+    <>
+      {/*
+        SSR-контент для поисковых роботов.
+        Скрыт визуально, но виден для Googlebot до гидратации React.
+        После того как JS загрузится, React перерисует поверх.
+      */}
+      <div id="seo-landing-content" aria-hidden="true" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;">
+        <h1>Opensophy</h1>
+        <p>{LANDING_DESCRIPTION}</p>
+        <h2>Безопасность прежде всего</h2>
+        <p>Безопасность и качество кода — главный приоритет. Интеграция SAST, DAST, SCA — автоматический анализ кода на уязвимости на каждом этапе разработки.</p>
+        <h2>Экосистема для разработчиков</h2>
+        <p>Open-source платформа Hub для документации и контента. Образовательный контент по DevSecOps, разработке и инфраструктуре.</p>
+        <ul>
+          <li>Туториалы по кибербезопасности и DevSecOps</li>
+          <li>Инструменты для разработчиков с открытым исходным кодом</li>
+          <li>Материалы по Linux, Docker, CI/CD</li>
+          <li>Аудит безопасности и анализ кода</li>
+        </ul>
+      </div>
+      <GeneralPageWrapper client:only="react" />
+    </>
   ) : welcomeDoc ? (
     <DocContent client:only="react" doc={welcomeDoc} />
   ) : (
