@@ -12,7 +12,7 @@ const OUTPUT_DIR = path.join(ROOT, 'public/data/docs');
 const MANIFEST   = path.join(OUTPUT_DIR, 'manifest.json');
 const SITEMAP    = path.join(ROOT, 'public/sitemap.xml');
 const SITE_CONFIG_PATH = path.join(ROOT, 'public/data/site-config.json');
-const BASE_URL   = 'https://opensophy.com';
+const BASE_URL   = 'https://domain.com'; //ваш домен
 
 // IPv4-mapped IPv6-адрес для localhost (::ffff:127.0.0.1) — стандартное представление Node.js
 const LOCALHOST_IPV4_MAPPED = '::ffff:127.0.0.1';
