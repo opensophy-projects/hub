@@ -10,7 +10,7 @@ const sitemapPath  = path.join(__dirname, '../public/sitemap.xml');
 
 const BASE_URL = 'https://opensophy.com';
 
-// ─── Terminal helpers (same minimal style) ────────────────────────────────────
+// ─── Terminal helpers ─────────────────────────────────────────────────────────
 
 const isTTY = process.stdout.isTTY;
 const c = { reset: '\x1b[0m', dim: '\x1b[2m', red: '\x1b[31m', green: '\x1b[32m', white: '\x1b[37m' };
@@ -35,6 +35,7 @@ function generateSitemap() {
         xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
 
+  <!-- Главная страница -->
   <url>
     <loc>${BASE_URL}/</loc>
     <lastmod>${today}</lastmod>
@@ -46,12 +47,14 @@ function generateSitemap() {
   let urlCount = 1;
 
   for (const doc of docs) {
-    if (!doc.slug || doc.slug === 'welcome') continue;
+    // Пропускаем welcome — главная уже добавлена выше
+    if (!doc.slug || doc.slug === 'welcome' || doc.slug === '') continue;
 
     const url = `${BASE_URL}/${doc.slug}`;
     const lastmod = doc.updated || doc.date || today;
 
-    sitemap += `  <url>
+    sitemap += `
+  <url>
     <loc>${url}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>monthly</changefreq>
@@ -61,7 +64,8 @@ function generateSitemap() {
     urlCount++;
   }
 
-  sitemap += `</urlset>\n`;
+  sitemap += `
+</urlset>\n`;
 
   fs.writeFileSync(sitemapPath, sitemap);
 
