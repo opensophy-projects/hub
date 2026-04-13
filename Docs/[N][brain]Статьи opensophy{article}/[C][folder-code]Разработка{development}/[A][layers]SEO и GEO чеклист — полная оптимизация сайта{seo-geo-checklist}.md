@@ -3,7 +3,7 @@ title: "SEO & GEO: Экспертный чеклист оптимизации с
 description: Полный чеклист по SEO и GEO-оптимизации сайта — от технического аудита и E-E-A-T до структуры контента под RAG-архитектуру, llms.txt и мониторинга AI Share of Voice.
 author: veilosophy
 date: 2026-04-13
-tags: разработка
+tags: разработка, seo&geo
 keywords: SEO чеклист, GEO оптимизация, Generative Engine Optimization, E-E-A-T, RAG контент, llms.txt, Schema.org, AI Share of Voice, нейровыдача, Яндекс Нейро
 robots: index, follow
 lang: ru
