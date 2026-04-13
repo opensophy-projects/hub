@@ -1,6 +1,6 @@
 ---
 title: Добро пожаловать в Hub
-description: Hub проекта Opensophy - центр знаний
+description: Hub - центр знаний
 date: 2026-02-17
 tags: "welcome, hub, opensophy"
 icon: crown
