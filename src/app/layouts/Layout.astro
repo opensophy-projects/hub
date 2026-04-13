@@ -21,16 +21,16 @@ interface Props {
 }
 
 const SITE = {
-  name:        'Opensophy',
-  description: 'Opensophy — open-source проект для IT-специалистов. Инструменты, туториалы и материалы по безопасности, разработке и инфраструктуре — в открытом доступе.',
-  url:         'https://opensophy.com',
+  name:        'Domain',
+  description: 'ваше описание сайта',
+  url:         'https://domain.com',
   lang:        'ru',
-  author:      'Opensophy',
-  keywords:    'opensophy, кибербезопасность, DevSecOps, linux, разработка, инструменты, туториалы, open source',
+  author:      'Domain',
+  keywords:    'Domain, кибербезопасность, DevSecOps, linux, разработка, инструменты, туториалы, open source',
   ogImage:     '/og-image.png',
   ogLocale:    'ru_RU',
   twitterCard: 'summary_large_image',
-  twitterSite: '@opensophy',
+  twitterSite: '@Domain',
   themeColor:  '#0a0a0a',
 };
 
@@ -81,6 +81,7 @@ const websiteJsonLd = JSON.stringify({
     ]
   }
 });
+// ВАШИ ССЫЛКИ ВЫШЕ!
 
 // JSON-LD для статьи
 const articleJsonLd = type === 'article' ? JSON.stringify({
