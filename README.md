@@ -180,7 +180,7 @@
 
 ## 🚀 Deploy
 
-[![Open in Bolt](https://bolt.new/static/open-in-bolt.svg)](https://bolt.new/~/github-tejvnjhm-xmbdzn3v)
+[![Open in Bolt](https://bolt.new/static/open-in-bolt.svg)](https://bolt.new/~/github-ish4peny-h1ru7t7j)
 
 деплой на любой хостинг: Vercel, Netlify, Cloudflare Pages, GitHub Pages, VPS.
 
