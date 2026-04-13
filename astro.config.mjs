@@ -21,7 +21,7 @@ if (process.env.NODE_ENV !== 'production') {
 export default defineConfig({
   integrations: [react(), ...devIntegrations],
 
-  site: 'https://opensophy.com',
+  site: 'https://domain.com', // ваш домен
   output: 'static',
   srcDir: './src/app',
 
