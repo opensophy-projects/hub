@@ -26,7 +26,7 @@ const SITE = {
   url:         'https://opensophy.com',
   lang:        'ru',
   author:      'Opensophy',
-  keywords:    'opensophy, кибербезопасность, DevSecOps, linux, разработка, инструменты, туториалы',
+  keywords:    'opensophy, кибербезопасность, DevSecOps, linux, разработка, инструменты, туториалы, open source',
   ogImage:     '/og-image.png',
   ogLocale:    'ru_RU',
   twitterCard: 'summary_large_image',
@@ -48,12 +48,61 @@ const {
   lang        = SITE.lang,
 } = Astro.props;
 
-// Для главной страницы — просто "Opensophy", для остальных — "Заголовок — Opensophy"
 const pageTitle    = title === SITE.name ? title : `${title} — ${SITE.name}`;
 const canonicalUrl = new URL(url, SITE.url).href;
 const imageUrl     = image ? new URL(image, SITE.url).href : new URL(SITE.ogImage, SITE.url).href;
 const publishedISO = date    ? new Date(date).toISOString()    : undefined;
 const updatedISO   = updated ? new Date(updated).toISOString() : publishedISO;
+const isHomePage   = url === '/';
+
+// JSON-LD для сайта (главная страница)
+const websiteJsonLd = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": SITE.name,
+  "url": SITE.url,
+  "description": SITE.description,
+  "inLanguage": "ru",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": {
+      "@type": "EntryPoint",
+      "urlTemplate": `${SITE.url}/?q={search_term_string}`
+    },
+    "query-input": "required name=search_term_string"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": SITE.name,
+    "url": SITE.url,
+    "sameAs": [
+      "https://github.com/opensophy-projects",
+      "https://habr.com/ru/users/opensophy/"
+    ]
+  }
+});
+
+// JSON-LD для статьи
+const articleJsonLd = type === 'article' ? JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": title,
+  "description": description,
+  "url": canonicalUrl,
+  "image": imageUrl,
+  "author": {
+    "@type": "Person",
+    "name": author
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": SITE.name,
+    "url": SITE.url
+  },
+  "datePublished": publishedISO,
+  "dateModified": updatedISO || publishedISO,
+  "inLanguage": lang
+}) : null;
 ---
 
 <!doctype html>
@@ -83,9 +132,12 @@ const updatedISO   = updated ? new Date(updated).toISOString() : publishedISO;
     <meta name="color-scheme" content="dark light" />
     <link rel="canonical"     href={canonicalUrl} />
 
+    <!-- Sitemap discovery -->
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+
     <!-- Open Graph -->
     <meta property="og:site_name"    content={SITE.name} />
-    <meta property="og:title"        content={title} />
+    <meta property="og:title"        content={pageTitle} />
     <meta property="og:description"  content={description} />
     <meta property="og:type"         content={type === 'article' ? 'article' : 'website'} />
     <meta property="og:url"          content={canonicalUrl} />
@@ -97,7 +149,7 @@ const updatedISO   = updated ? new Date(updated).toISOString() : publishedISO;
     <!-- Twitter / X -->
     <meta name="twitter:card"        content={SITE.twitterCard} />
     <meta name="twitter:site"        content={SITE.twitterSite} />
-    <meta name="twitter:title"       content={title} />
+    <meta name="twitter:title"       content={pageTitle} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image"       content={imageUrl} />
 
@@ -118,6 +170,14 @@ const updatedISO   = updated ? new Date(updated).toISOString() : publishedISO;
 
     <!-- Astro SPA transitions -->
     <ClientRouter />
+
+    <!-- Structured Data JSON-LD -->
+    {isHomePage && (
+      <script type="application/ld+json" set:html={websiteJsonLd} />
+    )}
+    {articleJsonLd && (
+      <script type="application/ld+json" set:html={articleJsonLd} />
+    )}
 
     <style is:global>
       @font-face {
@@ -140,6 +200,17 @@ const updatedISO   = updated ? new Date(updated).toISOString() : publishedISO;
       html:not(.dark) { background-color: #E8E7E3; }
       html.dark        { background-color: #0a0a0a; }
       body { margin: 0; padding: 0; overflow-x: hidden; }
+
+      /* Скрытый SEO-контент — видим для ботов, невидим для пользователей */
+      #seo-landing-content {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
     </style>
   </head>
 
