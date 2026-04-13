@@ -1,5 +1,5 @@
 ---
-title: Добро пожаловать в Hub
+title: Добро пожаловать в Hub(шаблон версия проекта)
 description: Hub - центр знаний
 date: 2026-02-17
 tags: "welcome, hub, opensophy"
