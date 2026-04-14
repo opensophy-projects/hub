@@ -56,25 +56,77 @@ const lang        = useLanding ? 'ru' : (welcomeDoc?.lang || 'ru');
 >
   {useLanding ? (
     <>
-      {/*
-        SSR-контент для поисковых роботов.
-        Скрыт визуально, но виден для Googlebot до гидратации React.
-        После того как JS загрузится, React перерисует поверх.
-      */}
-      <div id="seo-landing-content" aria-hidden="true" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;">
-        <h1>Opensophy</h1>
-        <p>{LANDING_DESCRIPTION}</p>
-        <h2>Безопасность прежде всего</h2>
-        <p>Безопасность и качество кода — главный приоритет. Интеграция SAST, DAST, SCA — автоматический анализ кода на уязвимости на каждом этапе разработки.</p>
-        <h2>Экосистема для разработчиков</h2>
-        <p>Open-source платформа Hub для документации и контента. Образовательный контент по DevSecOps, разработке и инфраструктуре.</p>
-        <ul>
-          <li>Туториалы по кибербезопасности и DevSecOps</li>
-          <li>Инструменты для разработчиков с открытым исходным кодом</li>
-          <li>Материалы по Linux, Docker, CI/CD</li>
-          <li>Аудит безопасности и анализ кода</li>
-        </ul>
-      </div>
+      <!--
+        Статический SSG-контент для поисковых роботов.
+        Этот блок рендерится в HTML во время сборки (prerender=true),
+        поэтому Googlebot получает полноценный контент без JavaScript.
+        После гидратации React перекрывает его своим рендером,
+        но для SEO важен именно этот статический HTML.
+      -->
+      <article
+        id="seo-landing-content"
+        aria-hidden="true"
+        style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;pointer-events:none;"
+      >
+        <header>
+          <h1>Opensophy</h1>
+          <p>{LANDING_DESCRIPTION}</p>
+        </header>
+
+        <section>
+          <h2>Безопасность прежде всего</h2>
+          <p>
+            Безопасность и качество кода — главный приоритет, особенно на фоне интеграции ИИ в разработку.
+            Интеграция SAST, DAST, SCA — автоматический анализ кода на уязвимости на каждом этапе разработки.
+            SAST проверяет исходный код, DAST тестирует работающее приложение, SCA отслеживает зависимости.
+          </p>
+        </section>
+
+        <section>
+          <h2>Экосистема для разработчиков</h2>
+          <p>
+            Open-source платформа Hub для публикации технических знаний, статей и документации.
+            Современная SSG+SPA платформа с мощными Markdown-блоками, интерактивными таблицами и live UI-компонентами.
+          </p>
+          <ul>
+            <li>Туториалы по кибербезопасности и DevSecOps</li>
+            <li>Open-source инструменты для разработчиков</li>
+            <li>Материалы по Linux, Docker, CI/CD и инфраструктуре</li>
+            <li>Аудит безопасности и анализ кода</li>
+            <li>Образовательный контент по DevSecOps и разработке</li>
+            <li>UI библиотека с готовыми компонентами и живым превью</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Hub — платформа для документации</h2>
+          <p>
+            Opensophy Hub — первый open-source проект от Opensophy.
+            Гибридная SSG+SPA платформа для публикации технических знаний, статей и материалов.
+            Доступна на GitHub: opensophy-projects/hub.
+          </p>
+        </section>
+
+        <section>
+          <h2>Для кого создан Opensophy</h2>
+          <p>
+            Opensophy создаёт материалы для студентов, разработчиков, инженеров и лидеров в сфере IT.
+            Все инструменты и материалы распространяются под открытыми лицензиями — бесплатно, навсегда.
+          </p>
+        </section>
+
+        <section>
+          <h2>Контакты</h2>
+          <p>Связаться с командой Opensophy:</p>
+          <ul>
+            <li>Сайт: opensophy.com</li>
+            <li>GitHub: github.com/opensophy-projects</li>
+            <li>Habr: habr.com/ru/users/opensophy/</li>
+            <li>Email: opensophy@gmail.com</li>
+          </ul>
+        </section>
+      </article>
+
       <GeneralPageWrapper client:only="react" />
     </>
   ) : welcomeDoc ? (
