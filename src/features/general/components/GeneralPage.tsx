@@ -904,6 +904,61 @@ const LandingContent: React.FC = () => {
     <div style={{ minHeight: '100vh', background: bg, color: textMain }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        /* ── Hero title — адаптивный размер без обрезки ── */
+        .hero-title-wrap {
+          position: absolute;
+          /* Центрируем горизонтально относительно видимой области (за вычетом nav) */
+          left: 0;
+          right: 0;
+          top: 50%;
+          transform: translateY(-50%);
+          z-index: 10;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 clamp(1rem, 4vw, 3rem);
+          pointer-events: none;
+          /* Смещение вправо на ширину навигационной панели задаётся inline-стилем */
+        }
+
+        .hero-title {
+          font-family: 'customfont', sans-serif;
+          font-weight: 700;
+          line-height: 1;
+          letter-spacing: 0.06em;
+          white-space: nowrap;
+          /*
+            fluid-размер: минимум 2rem (320px экран),
+            максимум 10rem (≥1400px экран).
+            vw-коэффициент подобран так, чтобы текст никогда не вылазил за экран.
+          */
+          font-size: clamp(2rem, 10vw, 10rem);
+          color: var(--hero-text-color, currentColor);
+        }
+
+        /* На очень маленьких экранах (< 360px) ещё немного уменьшаем */
+        @media (max-width: 360px) {
+          .hero-title {
+            font-size: clamp(1.6rem, 11vw, 3rem);
+            letter-spacing: 0.03em;
+          }
+        }
+
+        /* Планшеты */
+        @media (min-width: 361px) and (max-width: 768px) {
+          .hero-title {
+            font-size: clamp(2.5rem, 10vw, 5.5rem);
+            letter-spacing: 0.05em;
+          }
+        }
+
+        /* Десктоп с навигационной панелью (учитываем смещение) */
+        @media (min-width: 1001px) {
+          .hero-title {
+            font-size: clamp(4rem, 8vw, 10rem);
+          }
+        }
       `}</style>
 
       <Navigation />
@@ -922,59 +977,27 @@ const LandingContent: React.FC = () => {
             className="h-full w-full"
           />
         </div>
+
+        {/* Нижний градиент — плавный переход к фону */}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0, height: '35%',
           pointerEvents: 'none',
           background: `linear-gradient(to bottom, transparent, ${bg})`,
         }} />
 
-        <style>{`
-          .hero-title-wrap {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-75%, -50%);
-            z-index: 10;
-            text-align: center;
-            padding: 0 1.5rem;
-            max-width: 900px;
-            width: 100%;
-            box-sizing: border-box;
-          }
-          .hero-title {
-            font-size: clamp(3.5rem, 14vw, 11rem);
-            letter-spacing: 0.08em;
-          }
-          @media (max-width: 768px) {
-            .hero-title-wrap {
-              left: 0;
-              right: 0;
-              transform: translateY(-50%);
-              width: 100%;
-              max-width: 100%;
-              padding: 0 1rem;
-            }
-            .hero-title {
-              font-size: clamp(2.5rem, 12vw, 5rem);
-              letter-spacing: 0.04em;
-            }
-          }
-          @media (max-width: 400px) {
-            .hero-title {
-              font-size: clamp(2rem, 10.5vw, 3rem);
-              letter-spacing: 0.02em;
-            }
-          }
-        `}</style>
-        <div className="hero-title-wrap">
-          <h1 className="hero-title" style={{
-            fontWeight:  700,
-            lineHeight:  1,
-            margin:      0,
-            fontFamily:  'customfont, sans-serif',
-            color:       textMain,
-            whiteSpace:  'nowrap',
-          }}>
+        {/* Hero title — центрирован, адаптивный */}
+        <div
+          className="hero-title-wrap"
+          style={{
+            /* Дополнительное смещение справа чтобы nav не перекрывал
+               (только на десктопе, где navOffset > 0) */
+            paddingLeft: navOffset > 0 ? `calc(${navOffset}px + clamp(1rem, 4vw, 3rem))` : undefined,
+          }}
+        >
+          <h1
+            className="hero-title"
+            style={{ color: textMain }}
+          >
             Opensophy
           </h1>
         </div>
