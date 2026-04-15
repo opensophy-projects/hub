@@ -20,11 +20,11 @@ robots: "index, follow"
 hub.opensophy.com и ui.opensophy.com мигрировали в opensophy.com
 :::
 
-:::step[status=active] Пополнение ui библиотеки
+:::step[status=done] Обновление Hub до V3.4
+Финальная доработка проекта и выпуск в релиз стабильной версии. Дальше обновление будет при появлении актива от пользователей в [репозитории](https://github.com/opensophy-projects/hub).
 :::
 
-:::step[status=active] Обновление Hub до V3.4
-Финальная доработка проекта и выпуск в релиз стабильной версии. Дальше обновление будет при появлении актива от пользователей в [репозитории](https://github.com/opensophy-projects/hub).
+:::step[status=active] Пополнение ui библиотеки
 :::
 :::
 
