@@ -266,9 +266,9 @@ const IsometricPillars: React.FC<IsometricPillarsProps> = ({ isNegative }) => {
     const resize = () => {
       width  = canvas.width  = canvas.offsetWidth;
       height = canvas.height = canvas.offsetHeight;
-      const twByWidth  = (width  * 0.82) / ((COLS + ROWS) / 2);
-      const twByHeight = (height * 0.62) / (2.0 + (COLS + ROWS) / 8);
-      TW    = Math.min(twByWidth, twByHeight, 120);
+      const twByWidth  = (width  * 0.95) / ((COLS + ROWS) / 2);
+      const twByHeight = (height * 0.72) / (2.0 + (COLS + ROWS) / 8);
+      TW    = Math.min(twByWidth, twByHeight, 160);
       TH    = TW / 2;
       MAX_H = TW * 2.0;
       MIN_H = TW * 0.14;
