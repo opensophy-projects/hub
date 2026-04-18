@@ -204,7 +204,6 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, full
       gap:           '0.75rem',
       gridColumn:    fullWidth ? '1 / -1' : undefined,
       overflow:      'hidden',
-      // Растягиваемся на всю высоту grid-ячейки
       height:        '100%',
       boxSizing:     'border-box',
     }}>
@@ -238,7 +237,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, full
   );
 };
 
-// ─── IsometricPillars — без mouse-анимации ────────────────────────────────────
+// ─── IsometricPillars — без mouse-анимации и без свечения ────────────────────
 
 interface IsometricPillarsProps {
   isNegative: boolean;
@@ -363,11 +362,7 @@ const IsometricPillars: React.FC<IsometricPillarsProps> = ({ isNegative }) => {
           drawPillar(col, row, getHeight(col, row, t));
         }
       }
-      const grd = ctx.createRadialGradient(cx, cy - MAX_H * 0.35, 0, cx, cy - MAX_H * 0.35, Math.min(width, height) * 0.5);
-      grd.addColorStop(0, isNegative ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)');
-      grd.addColorStop(1, 'rgba(255,255,255,0)');
-      ctx.fillStyle = grd;
-      ctx.fillRect(0, 0, width, height);
+      // Свечение удалено
     };
 
     draw();
@@ -392,7 +387,7 @@ interface StackItem {
 }
 
 interface StackCategory {
-  label: string; // подпись категории внутри карточки (маленький текст)
+  label: string;
   items: StackItem[];
 }
 
@@ -435,8 +430,7 @@ const STACK_RIGHT: StackCategory[] = [
   },
 ];
 
-// ─── StackItemCard — FeatureCard-стиль с внутренним списком инструментов ──────
-// Это FeatureCard из GeneralPage, расширенная списком items
+// ─── StackItemCard ────────────────────────────────────────────────────────────
 
 interface StackItemCardProps {
   category: StackCategory;
@@ -473,7 +467,6 @@ const StackItemCard: React.FC<StackItemCardProps> = ({ category, isNegative }) =
         borderWidth={1.5} isNegative={isNegative}
       />
 
-      {/* Метка категории — маленький uppercase (как в FeatureCard title) */}
       <div style={{
         fontSize:      '0.72rem',
         fontWeight:    700,
@@ -488,7 +481,6 @@ const StackItemCard: React.FC<StackItemCardProps> = ({ category, isNegative }) =
         {category.label}
       </div>
 
-      {/* Список инструментов */}
       <div style={{
         display:       'flex',
         flexDirection: 'column',
@@ -503,7 +495,6 @@ const StackItemCard: React.FC<StackItemCardProps> = ({ category, isNegative }) =
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                {/* Название — как FeatureCard title */}
                 <span style={{
                   fontSize:   'clamp(1rem, 1.5vw, 1.15rem)',
                   fontWeight: 700,
@@ -530,7 +521,6 @@ const StackItemCard: React.FC<StackItemCardProps> = ({ category, isNegative }) =
                   </span>
                 )}
               </div>
-              {/* Описание — как FeatureCard text */}
               <span style={{
                 fontSize:   'clamp(0.9rem, 1.3vw, 1rem)',
                 color:      descC,
@@ -580,6 +570,7 @@ export const TechStackSection: React.FC<TechStackSectionProps> = ({
 
         .ts-header {
           margin-bottom: clamp(2.5rem, 5vw, 4rem);
+          text-align: center;
         }
 
         /*
@@ -661,7 +652,6 @@ export const TechStackSection: React.FC<TechStackSectionProps> = ({
             Технологии
           </p>
 
-          {/* Заголовок — просто белый/чёрный, без shiny (как «Безопасность прежде всего») */}
           <h2 style={{
             fontSize:   'clamp(1.75rem, 3.5vw, 2.6rem)',
             fontWeight: 500,
@@ -673,7 +663,6 @@ export const TechStackSection: React.FC<TechStackSectionProps> = ({
             Технологический стек
           </h2>
 
-          {/* Подзаголовок — ShinyText (как второй абзац в EcosystemSection) */}
           <p style={{
             fontSize:   'clamp(1.75rem, 3.5vw, 2.6rem)',
             fontWeight: 500,
@@ -700,7 +689,7 @@ export const TechStackSection: React.FC<TechStackSectionProps> = ({
             </div>
           </div>
 
-          {/* Левые карточки (FeatureCard-стиль) */}
+          {/* Левые карточки */}
           <div className="ts-card-l0">
             <StackItemCard category={STACK_LEFT[0]} isNegative={isNegative} />
           </div>
