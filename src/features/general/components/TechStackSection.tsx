@@ -627,7 +627,7 @@ export const TechStackSection: React.FC<TechStackSectionProps> = ({
             grid-template-rows: auto;
           }
           .ts-canvas-cell { grid-column: 1; grid-row: 1; }
-          .ts-canvas-wrap { min-height: clamp(220px, 70vw, 320px); height: auto; }
+          .ts-canvas-wrap { min-height: clamp(340px, 90vw, 480px); height: auto; }
 
           .ts-card-l0 { grid-column: 1; grid-row: 2; }
           .ts-card-r0 { grid-column: 1; grid-row: 3; }
