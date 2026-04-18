@@ -400,7 +400,7 @@ const STACK_LEFT: StackCategory[] = [
   {
     label: 'Контейнеризация',
     items: [
-      { name: 'Docker',           description: 'Изоляция и упаковка приложений. Одинаковое поведение в dev, staging и prod.' },
+      { name: 'Docker',           description: 'Изоляция и упаковка приложений.' },
       { name: 'Dokploy',          description: 'Управление деплоем и контейнерами на сервере. Упрощает запуск и обновление.' },
       { name: 'K3s / Kubernetes', description: 'Оркестрация: масштабирование, отказоустойчивость, распределённые системы.', badge: 'soon' },
     ],
