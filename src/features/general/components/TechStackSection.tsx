@@ -177,6 +177,67 @@ const GlowingEffectInline = memo(({
 });
 GlowingEffectInline.displayName = 'GlowingEffectInline';
 
+// ─── FeatureCard (точная копия из GeneralPage / SecuritySection) ──────────────
+
+interface FeatureCardProps {
+  title: string;
+  text: string;
+  isNegative: boolean;
+  fullWidth?: boolean;
+}
+
+const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, fullWidth }) => {
+  const border = isNegative ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)';
+  const bg     = isNegative ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
+  const titleC = isNegative ? 'rgba(255,255,255,0.9)'  : 'rgba(0,0,0,0.88)';
+  const textC  = isNegative ? 'rgba(255,255,255,0.7)'  : 'rgba(0,0,0,0.65)';
+
+  return (
+    <div style={{
+      position:      'relative',
+      border:        `1px solid ${border}`,
+      background:    bg,
+      borderRadius:  16,
+      padding:       '1.5rem',
+      display:       'flex',
+      flexDirection: 'column',
+      gap:           '0.75rem',
+      gridColumn:    fullWidth ? '1 / -1' : undefined,
+      overflow:      'hidden',
+      // Растягиваемся на всю высоту grid-ячейки
+      height:        '100%',
+      boxSizing:     'border-box',
+    }}>
+      <GlowingEffectInline
+        spread={40} glow disabled={false}
+        proximity={60} inactiveZone={0.01}
+        borderWidth={1.5} isNegative={isNegative}
+      />
+      <div style={{
+        fontSize:   'clamp(1.1rem, 1.8vw, 1.4rem)',
+        fontWeight: 700,
+        color:      titleC,
+        lineHeight: 1.25,
+        position:   'relative',
+        zIndex:     1,
+        fontFamily: 'Inter, system-ui, sans-serif',
+      }}>
+        {title}
+      </div>
+      <div style={{
+        fontSize:   'clamp(0.95rem, 1.4vw, 1.1rem)',
+        color:      textC,
+        lineHeight: 1.65,
+        position:   'relative',
+        zIndex:     1,
+        fontFamily: 'Inter, system-ui, sans-serif',
+      }}>
+        {text}
+      </div>
+    </div>
+  );
+};
+
 // ─── IsometricPillars — без mouse-анимации ────────────────────────────────────
 
 interface IsometricPillarsProps {
@@ -206,17 +267,13 @@ const IsometricPillars: React.FC<IsometricPillarsProps> = ({ isNegative }) => {
     const resize = () => {
       width  = canvas.width  = canvas.offsetWidth;
       height = canvas.height = canvas.offsetHeight;
-
-      // Уменьшаем MAX_H чтобы пилляры не вылезали за верхнюю границу
       const twByWidth  = (width  * 0.82) / ((COLS + ROWS) / 2);
-      // Ключ: оставляем 30% сверху под высоту пилляров
       const twByHeight = (height * 0.62) / (2.0 + (COLS + ROWS) / 8);
       TW    = Math.min(twByWidth, twByHeight, 120);
       TH    = TW / 2;
       MAX_H = TW * 2.0;
       MIN_H = TW * 0.14;
       cx    = width  / 2;
-      // Центр смещён ниже середины, чтобы вершины пилляров оставались в кадре
       cy    = height * 0.65 + (COLS + ROWS - 2) * TH / 12;
     };
 
@@ -224,7 +281,7 @@ const IsometricPillars: React.FC<IsometricPillarsProps> = ({ isNegative }) => {
     ro.observe(canvas);
     resize();
 
-    const gCtrY = (COLS - 1 + ROWS - 1) / 2;
+    const gCtrY   = (COLS - 1 + ROWS - 1) / 2;
     const screenX = (col: number, row: number) => cx + (col - row) * TW / 2;
     const screenY = (col: number, row: number) => cy - gCtrY * TH / 2 + (col + row) * TH / 2;
     const isRing  = (col: number, row: number) =>
@@ -288,7 +345,6 @@ const IsometricPillars: React.FC<IsometricPillarsProps> = ({ isNegative }) => {
       }
     };
 
-    // Без rx/ry — нет mouse-реакции
     const getHeight = (col: number, row: number, t: number) => {
       const phase = (col + row) * 0.9;
       return MIN_H + (MAX_H - MIN_H) * (Math.sin(t * SPEED - phase) * 0.5 + 0.5);
@@ -299,7 +355,6 @@ const IsometricPillars: React.FC<IsometricPillarsProps> = ({ isNegative }) => {
       const t = Date.now() / 1000;
       ctx.fillStyle = BG;
       ctx.fillRect(0, 0, width, height);
-
       for (let sum = 0; sum <= COLS + ROWS - 2; sum++) {
         for (let col = 0; col <= sum; col++) {
           const row = sum - col;
@@ -308,11 +363,7 @@ const IsometricPillars: React.FC<IsometricPillarsProps> = ({ isNegative }) => {
           drawPillar(col, row, getHeight(col, row, t));
         }
       }
-
-      const grd = ctx.createRadialGradient(
-        cx, cy - MAX_H * 0.35, 0,
-        cx, cy - MAX_H * 0.35, Math.min(width, height) * 0.5,
-      );
+      const grd = ctx.createRadialGradient(cx, cy - MAX_H * 0.35, 0, cx, cy - MAX_H * 0.35, Math.min(width, height) * 0.5);
       grd.addColorStop(0, isNegative ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)');
       grd.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.fillStyle = grd;
@@ -328,10 +379,7 @@ const IsometricPillars: React.FC<IsometricPillarsProps> = ({ isNegative }) => {
   }, [isNegative]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      style={{ display: 'block', width: '100%', height: '100%' }}
-    />
+    <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
   );
 };
 
@@ -344,13 +392,13 @@ interface StackItem {
 }
 
 interface StackCategory {
-  title: string;
+  label: string; // подпись категории внутри карточки (маленький текст)
   items: StackItem[];
 }
 
 const STACK_LEFT: StackCategory[] = [
   {
-    title: 'Контейнеризация',
+    label: 'Контейнеризация',
     items: [
       { name: 'Docker',           description: 'Изоляция и упаковка приложений. Одинаковое поведение в dev, staging и prod.' },
       { name: 'Dokploy',          description: 'Управление деплоем и контейнерами на сервере. Упрощает запуск и обновление.' },
@@ -358,7 +406,7 @@ const STACK_LEFT: StackCategory[] = [
     ],
   },
   {
-    title: 'Автоматизация',
+    label: 'Автоматизация',
     items: [
       { name: 'Bash / shell', description: 'Автоматизация рутины: деплой, настройка окружения, обслуживание инфраструктуры.' },
       { name: 'n8n',          description: 'Автоматизированные процессы и интеграции, включая сценарии с AI и внешними сервисами.' },
@@ -368,7 +416,7 @@ const STACK_LEFT: StackCategory[] = [
 
 const STACK_RIGHT: StackCategory[] = [
   {
-    title: 'Мониторинг',
+    label: 'Мониторинг',
     items: [
       { name: 'Beszel',  description: 'Минималистичный мониторинг серверов с упором на простоту и контроль ресурсов.' },
       { name: 'OSSEC',   description: 'Лёгкий мониторинг безопасности и логов. Для небольших и средних инфраструктур.' },
@@ -377,7 +425,7 @@ const STACK_RIGHT: StackCategory[] = [
     ],
   },
   {
-    title: 'Безопасность и качество кода',
+    label: 'Безопасность и качество кода',
     items: [
       { name: 'SonarQube', description: 'Анализ качества кода, поиск багов и уязвимостей на этапе разработки.' },
       { name: 'Semgrep',   description: 'Гибкий SAST с возможностью создания собственных правил безопасности.' },
@@ -387,19 +435,21 @@ const STACK_RIGHT: StackCategory[] = [
   },
 ];
 
-// ─── StackCard ────────────────────────────────────────────────────────────────
+// ─── StackItemCard — FeatureCard-стиль с внутренним списком инструментов ──────
+// Это FeatureCard из GeneralPage, расширенная списком items
 
-interface StackCardProps {
+interface StackItemCardProps {
   category: StackCategory;
   isNegative: boolean;
 }
 
-const StackCard: React.FC<StackCardProps> = ({ category, isNegative }) => {
-  const border  = isNegative ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+const StackItemCard: React.FC<StackItemCardProps> = ({ category, isNegative }) => {
+  const border  = isNegative ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)';
   const bg      = isNegative ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
-  const nameC   = isNegative ? 'rgba(255,255,255,0.82)' : 'rgba(0,0,0,0.8)';
-  const descC   = isNegative ? 'rgba(255,255,255,0.5)'  : 'rgba(0,0,0,0.5)';
-  const divC    = isNegative ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  const labelC  = isNegative ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)';
+  const nameC   = isNegative ? 'rgba(255,255,255,0.9)'  : 'rgba(0,0,0,0.88)';
+  const descC   = isNegative ? 'rgba(255,255,255,0.7)'  : 'rgba(0,0,0,0.65)';
+  const divC    = isNegative ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const badgeBg = isNegative ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
   const badgeC  = isNegative ? 'rgba(255,255,255,0.4)'  : 'rgba(0,0,0,0.4)';
 
@@ -409,11 +459,11 @@ const StackCard: React.FC<StackCardProps> = ({ category, isNegative }) => {
       border:        `1px solid ${border}`,
       background:    bg,
       borderRadius:  16,
-      padding:       '1.25rem 1.35rem',
-      overflow:      'hidden',
-      // Карточки растягиваются на всю высоту своей grid-ячейки
+      padding:       '1.5rem',
       display:       'flex',
       flexDirection: 'column',
+      gap:           '0.75rem',
+      overflow:      'hidden',
       height:        '100%',
       boxSizing:     'border-box',
     }}>
@@ -423,23 +473,22 @@ const StackCard: React.FC<StackCardProps> = ({ category, isNegative }) => {
         borderWidth={1.5} isNegative={isNegative}
       />
 
-      {/* Category label */}
+      {/* Метка категории — маленький uppercase (как в FeatureCard title) */}
       <div style={{
         fontSize:      '0.72rem',
         fontWeight:    700,
         letterSpacing: '0.12em',
         textTransform: 'uppercase',
-        color:         isNegative ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)',
-        marginBottom:  '0.85rem',
+        color:         labelC,
         fontFamily:    'Inter, system-ui, sans-serif',
         position:      'relative',
         zIndex:        1,
         flexShrink:    0,
       }}>
-        {category.title}
+        {category.label}
       </div>
 
-      {/* Items */}
+      {/* Список инструментов */}
       <div style={{
         display:       'flex',
         flexDirection: 'column',
@@ -452,14 +501,15 @@ const StackCard: React.FC<StackCardProps> = ({ category, isNegative }) => {
             {i > 0 && (
               <div style={{ height: 1, background: divC, margin: '0.75rem 0', flexShrink: 0 }} />
             )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {/* Название — как FeatureCard title */}
                 <span style={{
-                  fontSize:   'clamp(0.88rem, 1.2vw, 0.95rem)',
-                  fontWeight: 600,
+                  fontSize:   'clamp(1rem, 1.5vw, 1.15rem)',
+                  fontWeight: 700,
                   color:      nameC,
                   fontFamily: 'Inter, system-ui, sans-serif',
-                  lineHeight: 1.3,
+                  lineHeight: 1.25,
                 }}>
                   {item.name}
                 </span>
@@ -480,10 +530,11 @@ const StackCard: React.FC<StackCardProps> = ({ category, isNegative }) => {
                   </span>
                 )}
               </div>
+              {/* Описание — как FeatureCard text */}
               <span style={{
-                fontSize:   'clamp(0.8rem, 1.1vw, 0.87rem)',
+                fontSize:   'clamp(0.9rem, 1.3vw, 1rem)',
                 color:      descC,
-                lineHeight: 1.55,
+                lineHeight: 1.65,
                 fontFamily: 'Inter, system-ui, sans-serif',
               }}>
                 {item.description}
@@ -532,26 +583,22 @@ export const TechStackSection: React.FC<TechStackSectionProps> = ({
         }
 
         /*
-          Десктоп: [left] [canvas] [right]
-          Обе карточки-колонки — одинаковая высота через явные grid rows
+          Десктоп: [left-col] [canvas] [right-col]
+          2 явных строки — карточки выравниваются по высоте
         */
         .ts-grid {
           display: grid;
           grid-template-columns: 1fr 1.15fr 1fr;
-          /* 2 строки под карточки, canvas занимает span 2 */
           grid-template-rows: 1fr 1fr;
           gap: clamp(0.75rem, 1.5vw, 1rem) clamp(1rem, 2vw, 1.5rem);
         }
 
-        /* Левая колонка — 2 карточки, каждая в своей row */
         .ts-card-l0 { grid-column: 1; grid-row: 1; }
         .ts-card-l1 { grid-column: 1; grid-row: 2; }
-
-        /* Правая колонка */
         .ts-card-r0 { grid-column: 3; grid-row: 1; }
         .ts-card-r1 { grid-column: 3; grid-row: 2; }
 
-        /* Canvas — центральная колонка, span обе строки */
+        /* Canvas — центр, span обе строки */
         .ts-canvas-cell {
           grid-column: 2;
           grid-row: 1 / 3;
@@ -566,22 +613,15 @@ export const TechStackSection: React.FC<TechStackSectionProps> = ({
         }
 
         /*
-          Мобилка ≤ 900px:
-          Сначала canvas, потом карточки (2 col)
+          Планшет ≤ 900px: canvas сверху, карточки 2 col снизу
         */
         @media (max-width: 900px) {
           .ts-grid {
             grid-template-columns: 1fr 1fr;
-            grid-template-rows: auto auto auto auto auto;
+            grid-template-rows: auto auto auto;
           }
-
-          .ts-canvas-cell {
-            grid-column: 1 / -1;
-            grid-row: 1;
-          }
-          .ts-canvas-wrap {
-            min-height: clamp(240px, 55vw, 380px);
-          }
+          .ts-canvas-cell { grid-column: 1 / -1; grid-row: 1; }
+          .ts-canvas-wrap { min-height: clamp(240px, 55vw, 380px); height: auto; }
 
           .ts-card-l0 { grid-column: 1; grid-row: 2; }
           .ts-card-r0 { grid-column: 2; grid-row: 2; }
@@ -595,9 +635,8 @@ export const TechStackSection: React.FC<TechStackSectionProps> = ({
             grid-template-columns: 1fr;
             grid-template-rows: auto;
           }
-
           .ts-canvas-cell { grid-column: 1; grid-row: 1; }
-          .ts-canvas-wrap { min-height: clamp(220px, 70vw, 320px); }
+          .ts-canvas-wrap { min-height: clamp(220px, 70vw, 320px); height: auto; }
 
           .ts-card-l0 { grid-column: 1; grid-row: 2; }
           .ts-card-r0 { grid-column: 1; grid-row: 3; }
@@ -607,7 +646,8 @@ export const TechStackSection: React.FC<TechStackSectionProps> = ({
       `}</style>
 
       <div className="ts-inner">
-        {/* Заголовок */}
+
+        {/* ── Заголовок ─────────────────────────────────────────────────────── */}
         <div className="ts-header">
           <p style={{
             fontSize:      '1rem',
@@ -621,6 +661,7 @@ export const TechStackSection: React.FC<TechStackSectionProps> = ({
             Технологии
           </p>
 
+          {/* Заголовок — просто белый/чёрный, без shiny (как «Безопасность прежде всего») */}
           <h2 style={{
             fontSize:   'clamp(1.75rem, 3.5vw, 2.6rem)',
             fontWeight: 500,
@@ -629,44 +670,51 @@ export const TechStackSection: React.FC<TechStackSectionProps> = ({
             color:      textMain,
             fontFamily: 'Inter, sans-serif',
           }}>
-            <ShinyText
-              text="Технологический стек"
-              speed={5}
-              color={shinyBase}
-              shineColor={shinyGlow}
-              spread={120}
-            />
+            Технологический стек
           </h2>
 
+          {/* Подзаголовок — ShinyText (как второй абзац в EcosystemSection) */}
           <p style={{
             fontSize:   'clamp(1.75rem, 3.5vw, 2.6rem)',
             fontWeight: 500,
             lineHeight: 1.55,
             margin:     0,
-            color:      textMut,
             fontFamily: 'Inter, sans-serif',
           }}>
-            Инструменты и подходы, которые мы используем в реальных проектах — для разработки, инфраструктуры и безопасности.
+            <ShinyText
+              text="Инструменты и подходы, которые мы используем в реальных проектах — для разработки, инфраструктуры и безопасности."
+              speed={4}
+              color={shinyBase}
+              shineColor={shinyGlow}
+            />
           </p>
         </div>
 
-        {/* Грид */}
+        {/* ── Грид ──────────────────────────────────────────────────────────── */}
         <div className="ts-grid">
 
-          {/* Canvas (центр на десктопе, топ на мобилке) */}
+          {/* Canvas */}
           <div className="ts-canvas-cell">
             <div className="ts-canvas-wrap">
               <IsometricPillars isNegative={isNegative} />
             </div>
           </div>
 
-          {/* Левые карточки */}
-          <div className="ts-card-l0"><StackCard category={STACK_LEFT[0]} isNegative={isNegative} /></div>
-          <div className="ts-card-l1"><StackCard category={STACK_LEFT[1]} isNegative={isNegative} /></div>
+          {/* Левые карточки (FeatureCard-стиль) */}
+          <div className="ts-card-l0">
+            <StackItemCard category={STACK_LEFT[0]} isNegative={isNegative} />
+          </div>
+          <div className="ts-card-l1">
+            <StackItemCard category={STACK_LEFT[1]} isNegative={isNegative} />
+          </div>
 
           {/* Правые карточки */}
-          <div className="ts-card-r0"><StackCard category={STACK_RIGHT[0]} isNegative={isNegative} /></div>
-          <div className="ts-card-r1"><StackCard category={STACK_RIGHT[1]} isNegative={isNegative} /></div>
+          <div className="ts-card-r0">
+            <StackItemCard category={STACK_RIGHT[0]} isNegative={isNegative} />
+          </div>
+          <div className="ts-card-r1">
+            <StackItemCard category={STACK_RIGHT[1]} isNegative={isNegative} />
+          </div>
 
         </div>
       </div>
