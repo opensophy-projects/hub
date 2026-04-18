@@ -1044,6 +1044,8 @@ const LandingContent: React.FC = () => {
 
       {/* Экосистема */}
       <EcosystemSection isNegative={isNegative} navOffset={navOffset} />
+      {/* Стек */}
+     <TechStackSection isNegative={isNegative} navOffset={navOffset} />
     </div>
   );
 };
