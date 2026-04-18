@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState, memo } from 'react';
+import React, { useEffect, useRef, memo } from 'react';
 import { useMotionValue, useAnimationFrame, useTransform, motion } from 'framer-motion';
 
-// ─── ShinyText (локальная копия из GeneralPage) ───────────────────────────────
+// ─── ShinyText ────────────────────────────────────────────────────────────────
 
 interface ShinyTextProps {
   text: string;
@@ -49,31 +49,29 @@ const ShinyText: React.FC<ShinyTextProps> = ({
   );
 };
 
-// ─── GlowingEffect (локальная копия из GeneralPage) ──────────────────────────
+// ─── GlowingEffectInline ──────────────────────────────────────────────────────
 
 const easeOutQuint = (x: number): number => 1 - Math.pow(1 - x, 5);
 
 interface GlowingEffectInlineProps {
-  blur?: number;
-  inactiveZone?: number;
-  proximity?: number;
   spread?: number;
   glow?: boolean;
   disabled?: boolean;
+  proximity?: number;
+  inactiveZone?: number;
   movementDuration?: number;
   borderWidth?: number;
   isNegative?: boolean;
 }
 
 const GlowingEffectInline = memo(({
-  blur = 0,
-  inactiveZone = 0.7,
-  proximity = 0,
   spread = 20,
   glow = false,
   movementDuration = 2,
   borderWidth = 1,
   disabled = true,
+  proximity = 0,
+  inactiveZone = 0.7,
   isNegative = false,
 }: GlowingEffectInlineProps) => {
   const containerRef      = useRef<HTMLDivElement>(null);
@@ -117,7 +115,7 @@ const GlowingEffectInline = memo(({
       element.style.setProperty('--active', isActive ? '1' : '0');
       if (!isActive) return;
       const currentAngle = Number.parseFloat(element.style.getPropertyValue('--start')) || 0;
-      const targetAngle    = (180 * Math.atan2(mouseY - center[1], mouseX - center[0])) / Math.PI + 90;
+      const targetAngle  = (180 * Math.atan2(mouseY - center[1], mouseX - center[0])) / Math.PI + 90;
       const angleDiff    = ((targetAngle - currentAngle + 180) % 360) - 180;
       animateAngleTransition(element, currentAngle, currentAngle + angleDiff, movementDuration * 1000);
     });
@@ -145,7 +143,7 @@ const GlowingEffectInline = memo(({
     <div
       ref={containerRef}
       style={{
-        '--blur':                           `${blur}px`,
+        '--blur':                           '0px',
         '--spread':                         spread,
         '--start':                          '0',
         '--active':                         '0',
@@ -179,7 +177,7 @@ const GlowingEffectInline = memo(({
 });
 GlowingEffectInline.displayName = 'GlowingEffectInline';
 
-// ─── IsometricPillars (canvas-компонент из component.txt) ────────────────────
+// ─── IsometricPillars — без mouse-анимации ────────────────────────────────────
 
 interface IsometricPillarsProps {
   isNegative: boolean;
@@ -188,10 +186,6 @@ interface IsometricPillarsProps {
 const IsometricPillars: React.FC<IsometricPillarsProps> = ({ isNegative }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef    = useRef<number>(0);
-  const txRef     = useRef(0);
-  const tyRef     = useRef(0);
-  const rxRef     = useRef(0);
-  const ryRef     = useRef(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -204,23 +198,26 @@ const IsometricPillars: React.FC<IsometricPillarsProps> = ({ isNegative }) => {
 
     let TW: number, TH: number, MAX_H: number, MIN_H: number;
     let width: number, height: number, cx: number, cy: number;
-    let ctx: CanvasRenderingContext2D;
 
     const c = canvas.getContext('2d');
     if (!c) return;
-    ctx = c;
+    const ctx = c;
 
     const resize = () => {
       width  = canvas.width  = canvas.offsetWidth;
       height = canvas.height = canvas.offsetHeight;
-      const twByWidth  = (width  * 0.78) / ((COLS + ROWS) / 2);
-      const twByHeight = (height * 0.82) / (2.6 + (COLS + ROWS) / 8);
-      TW    = Math.min(twByWidth, twByHeight, 110);
+
+      // Уменьшаем MAX_H чтобы пилляры не вылезали за верхнюю границу
+      const twByWidth  = (width  * 0.82) / ((COLS + ROWS) / 2);
+      // Ключ: оставляем 30% сверху под высоту пилляров
+      const twByHeight = (height * 0.62) / (2.0 + (COLS + ROWS) / 8);
+      TW    = Math.min(twByWidth, twByHeight, 120);
       TH    = TW / 2;
-      MAX_H = TW * 2.6;
+      MAX_H = TW * 2.0;
       MIN_H = TW * 0.14;
       cx    = width  / 2;
-      cy    = height / 2 + MAX_H * 0.25 + (COLS + ROWS - 2) * TH / 8;
+      // Центр смещён ниже середины, чтобы вершины пилляров оставались в кадре
+      cy    = height * 0.65 + (COLS + ROWS - 2) * TH / 12;
     };
 
     const ro = new ResizeObserver(resize);
@@ -234,14 +231,13 @@ const IsometricPillars: React.FC<IsometricPillarsProps> = ({ isNegative }) => {
       col === 0 || col === COLS - 1 || row === 0 || row === ROWS - 1;
 
     const drawPillar = (col: number, row: number, h: number) => {
-      const bx  = screenX(col, row);
-      const by  = screenY(col, row);
-      const ty  = by - h;
-      const hw  = TW / 2;
-      const hh  = TH / 2;
+      const bx = screenX(col, row);
+      const by = screenY(col, row);
+      const ty = by - h;
+      const hw = TW / 2;
+      const hh = TH / 2;
 
       if (isNegative) {
-        // dark: белые/серые грани (оригинал)
         const tg = ctx.createLinearGradient(bx - hw, ty, bx + hw, ty + hh);
         tg.addColorStop(0, 'rgba(255,255,255,0.97)');
         tg.addColorStop(1, 'rgba(208,208,214,0.93)');
@@ -266,7 +262,6 @@ const IsometricPillars: React.FC<IsometricPillarsProps> = ({ isNegative }) => {
         ctx.lineTo(bx, by + hh); ctx.lineTo(bx + hw, by);
         ctx.closePath(); ctx.fillStyle = rg; ctx.fill();
       } else {
-        // light: инвертированная палитра
         const tg = ctx.createLinearGradient(bx - hw, ty, bx + hw, ty + hh);
         tg.addColorStop(0, 'rgba(0,0,0,0.75)');
         tg.addColorStop(1, 'rgba(60,60,60,0.65)');
@@ -293,15 +288,14 @@ const IsometricPillars: React.FC<IsometricPillarsProps> = ({ isNegative }) => {
       }
     };
 
+    // Без rx/ry — нет mouse-реакции
     const getHeight = (col: number, row: number, t: number) => {
-      const phase = (col + row) * 0.9 + rxRef.current * 1.8 - ryRef.current * 0.6;
+      const phase = (col + row) * 0.9;
       return MIN_H + (MAX_H - MIN_H) * (Math.sin(t * SPEED - phase) * 0.5 + 0.5);
     };
 
     const draw = () => {
       rafRef.current = requestAnimationFrame(draw);
-      rxRef.current += (txRef.current - rxRef.current) * 0.05;
-      ryRef.current += (tyRef.current - ryRef.current) * 0.05;
       const t = Date.now() / 1000;
       ctx.fillStyle = BG;
       ctx.fillRect(0, 0, width, height);
@@ -315,7 +309,6 @@ const IsometricPillars: React.FC<IsometricPillarsProps> = ({ isNegative }) => {
         }
       }
 
-      // subtle center glow
       const grd = ctx.createRadialGradient(
         cx, cy - MAX_H * 0.35, 0,
         cx, cy - MAX_H * 0.35, Math.min(width, height) * 0.5,
@@ -326,21 +319,11 @@ const IsometricPillars: React.FC<IsometricPillarsProps> = ({ isNegative }) => {
       ctx.fillRect(0, 0, width, height);
     };
 
-    const onMouseMove = (e: MouseEvent) => {
-      txRef.current = (e.clientX / window.innerWidth  - 0.5) * 2;
-      tyRef.current = (e.clientY / window.innerHeight - 0.5) * 2;
-    };
-    const onMouseLeave = () => { txRef.current = 0; tyRef.current = 0; };
-    canvas.addEventListener('mousemove', onMouseMove);
-    canvas.addEventListener('mouseleave', onMouseLeave);
-
     draw();
 
     return () => {
       cancelAnimationFrame(rafRef.current);
       ro.disconnect();
-      canvas.removeEventListener('mousemove', onMouseMove);
-      canvas.removeEventListener('mouseleave', onMouseLeave);
     };
   }, [isNegative]);
 
@@ -352,7 +335,7 @@ const IsometricPillars: React.FC<IsometricPillarsProps> = ({ isNegative }) => {
   );
 };
 
-// ─── Типы данных стека ────────────────────────────────────────────────────────
+// ─── Данные стека ─────────────────────────────────────────────────────────────
 
 interface StackItem {
   name: string;
@@ -365,14 +348,12 @@ interface StackCategory {
   items: StackItem[];
 }
 
-// ─── Данные ───────────────────────────────────────────────────────────────────
-
 const STACK_LEFT: StackCategory[] = [
   {
     title: 'Контейнеризация',
     items: [
-      { name: 'Docker', description: 'Изоляция и упаковка приложений. Одинаковое поведение в dev, staging и prod.' },
-      { name: 'Dokploy', description: 'Управление деплоем и контейнерами на сервере. Упрощает запуск и обновление.' },
+      { name: 'Docker',           description: 'Изоляция и упаковка приложений. Одинаковое поведение в dev, staging и prod.' },
+      { name: 'Dokploy',          description: 'Управление деплоем и контейнерами на сервере. Упрощает запуск и обновление.' },
       { name: 'K3s / Kubernetes', description: 'Оркестрация: масштабирование, отказоустойчивость, распределённые системы.', badge: 'soon' },
     ],
   },
@@ -380,7 +361,7 @@ const STACK_LEFT: StackCategory[] = [
     title: 'Автоматизация',
     items: [
       { name: 'Bash / shell', description: 'Автоматизация рутины: деплой, настройка окружения, обслуживание инфраструктуры.' },
-      { name: 'n8n', description: 'Автоматизированные процессы и интеграции, включая сценарии с AI и внешними сервисами.' },
+      { name: 'n8n',          description: 'Автоматизированные процессы и интеграции, включая сценарии с AI и внешними сервисами.' },
     ],
   },
 ];
@@ -389,9 +370,9 @@ const STACK_RIGHT: StackCategory[] = [
   {
     title: 'Мониторинг',
     items: [
-      { name: 'Beszel', description: 'Минималистичный мониторинг серверов с упором на простоту и контроль ресурсов.' },
-      { name: 'OSSEC', description: 'Лёгкий мониторинг безопасности и логов. Для небольших и средних инфраструктур.' },
-      { name: 'Wazuh', description: 'SIEM-платформа для анализа событий и обнаружения угроз в масштабируемых системах.' },
+      { name: 'Beszel',  description: 'Минималистичный мониторинг серверов с упором на простоту и контроль ресурсов.' },
+      { name: 'OSSEC',   description: 'Лёгкий мониторинг безопасности и логов. Для небольших и средних инфраструктур.' },
+      { name: 'Wazuh',   description: 'SIEM-платформа для анализа событий и обнаружения угроз в масштабируемых системах.' },
       { name: 'Netdata', description: 'Мониторинг в реальном времени с детализацией метрик и визуализацией состояния.' },
     ],
   },
@@ -399,9 +380,9 @@ const STACK_RIGHT: StackCategory[] = [
     title: 'Безопасность и качество кода',
     items: [
       { name: 'SonarQube', description: 'Анализ качества кода, поиск багов и уязвимостей на этапе разработки.' },
-      { name: 'Semgrep', description: 'Гибкий SAST с возможностью создания собственных правил безопасности.' },
+      { name: 'Semgrep',   description: 'Гибкий SAST с возможностью создания собственных правил безопасности.' },
       { name: 'OWASP ZAP', description: 'Динамическое тестирование (DAST): уязвимости в работающем приложении.' },
-      { name: 'Trivy', description: 'Сканирование зависимостей, контейнеров и образов на известные уязвимости.' },
+      { name: 'Trivy',     description: 'Сканирование зависимостей, контейнеров и образов на известные уязвимости.' },
     ],
   },
 ];
@@ -416,7 +397,6 @@ interface StackCardProps {
 const StackCard: React.FC<StackCardProps> = ({ category, isNegative }) => {
   const border  = isNegative ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
   const bg      = isNegative ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
-  const titleC  = isNegative ? 'rgba(255,255,255,0.9)'  : 'rgba(0,0,0,0.88)';
   const nameC   = isNegative ? 'rgba(255,255,255,0.82)' : 'rgba(0,0,0,0.8)';
   const descC   = isNegative ? 'rgba(255,255,255,0.5)'  : 'rgba(0,0,0,0.5)';
   const divC    = isNegative ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
@@ -425,12 +405,17 @@ const StackCard: React.FC<StackCardProps> = ({ category, isNegative }) => {
 
   return (
     <div style={{
-      position:     'relative',
-      border:       `1px solid ${border}`,
-      background:   bg,
-      borderRadius: 16,
-      padding:      '1.25rem 1.35rem',
-      overflow:     'hidden',
+      position:      'relative',
+      border:        `1px solid ${border}`,
+      background:    bg,
+      borderRadius:  16,
+      padding:       '1.25rem 1.35rem',
+      overflow:      'hidden',
+      // Карточки растягиваются на всю высоту своей grid-ячейки
+      display:       'flex',
+      flexDirection: 'column',
+      height:        '100%',
+      boxSizing:     'border-box',
     }}>
       <GlowingEffectInline
         spread={40} glow disabled={false}
@@ -438,7 +423,7 @@ const StackCard: React.FC<StackCardProps> = ({ category, isNegative }) => {
         borderWidth={1.5} isNegative={isNegative}
       />
 
-      {/* Category title */}
+      {/* Category label */}
       <div style={{
         fontSize:      '0.72rem',
         fontWeight:    700,
@@ -449,19 +434,26 @@ const StackCard: React.FC<StackCardProps> = ({ category, isNegative }) => {
         fontFamily:    'Inter, system-ui, sans-serif',
         position:      'relative',
         zIndex:        1,
+        flexShrink:    0,
       }}>
         {category.title}
       </div>
 
       {/* Items */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 0, position: 'relative', zIndex: 1 }}>
+      <div style={{
+        display:       'flex',
+        flexDirection: 'column',
+        flex:          1,
+        position:      'relative',
+        zIndex:        1,
+      }}>
         {category.items.map((item, i) => (
-          <div key={item.name}>
+          <React.Fragment key={item.name}>
             {i > 0 && (
-              <div style={{ height: 1, background: divC, margin: '0.7rem 0' }} />
+              <div style={{ height: 1, background: divC, margin: '0.75rem 0', flexShrink: 0 }} />
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <span style={{
                   fontSize:   'clamp(0.88rem, 1.2vw, 0.95rem)',
                   fontWeight: 600,
@@ -473,15 +465,16 @@ const StackCard: React.FC<StackCardProps> = ({ category, isNegative }) => {
                 </span>
                 {item.badge && (
                   <span style={{
-                    fontSize:     '0.62rem',
-                    fontWeight:   600,
-                    letterSpacing:'0.08em',
-                    textTransform:'uppercase',
-                    color:         badgeC,
-                    background:    badgeBg,
-                    borderRadius:  6,
-                    padding:       '1px 7px',
-                    fontFamily:    'ui-monospace, monospace',
+                    fontSize:      '0.62rem',
+                    fontWeight:    600,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color:          badgeC,
+                    background:     badgeBg,
+                    borderRadius:   6,
+                    padding:        '1px 7px',
+                    fontFamily:     'ui-monospace, monospace',
+                    flexShrink:     0,
                   }}>
                     {item.badge}
                   </span>
@@ -496,7 +489,7 @@ const StackCard: React.FC<StackCardProps> = ({ category, isNegative }) => {
                 {item.description}
               </span>
             </div>
-          </div>
+          </React.Fragment>
         ))}
       </div>
     </div>
@@ -534,63 +527,82 @@ export const TechStackSection: React.FC<TechStackSectionProps> = ({
           box-sizing: border-box;
         }
 
-        /* Заголовок секции */
         .ts-header {
           margin-bottom: clamp(2.5rem, 5vw, 4rem);
         }
 
         /*
-          Основной грид:
-          [left-cards] [canvas] [right-cards]
-          1fr          1.1fr    1fr
+          Десктоп: [left] [canvas] [right]
+          Обе карточки-колонки — одинаковая высота через явные grid rows
         */
         .ts-grid {
           display: grid;
-          grid-template-columns: 1fr 1.1fr 1fr;
-          gap: clamp(1rem, 2vw, 1.5rem);
-          align-items: start;
+          grid-template-columns: 1fr 1.15fr 1fr;
+          /* 2 строки под карточки, canvas занимает span 2 */
+          grid-template-rows: 1fr 1fr;
+          gap: clamp(0.75rem, 1.5vw, 1rem) clamp(1rem, 2vw, 1.5rem);
         }
 
-        .ts-col-left  { display: flex; flex-direction: column; gap: clamp(0.75rem, 1.5vw, 1rem); }
-        .ts-col-right { display: flex; flex-direction: column; gap: clamp(0.75rem, 1.5vw, 1rem); }
+        /* Левая колонка — 2 карточки, каждая в своей row */
+        .ts-card-l0 { grid-column: 1; grid-row: 1; }
+        .ts-card-l1 { grid-column: 1; grid-row: 2; }
 
-        /* Canvas-обёртка — sticky по центру колонки */
+        /* Правая колонка */
+        .ts-card-r0 { grid-column: 3; grid-row: 1; }
+        .ts-card-r1 { grid-column: 3; grid-row: 2; }
+
+        /* Canvas — центральная колонка, span обе строки */
+        .ts-canvas-cell {
+          grid-column: 2;
+          grid-row: 1 / 3;
+        }
+
         .ts-canvas-wrap {
-          position: sticky;
-          top: clamp(4rem, 10vh, 8rem);
-          height: clamp(280px, 38vw, 480px);
+          width: 100%;
+          height: 100%;
+          min-height: clamp(360px, 45vw, 560px);
           border-radius: 20px;
           overflow: hidden;
         }
 
-        /* На планшете — 2 колонки: [left+right] / [canvas] */
-        @media (max-width: 1000px) {
+        /*
+          Мобилка ≤ 900px:
+          Сначала canvas, потом карточки (2 col)
+        */
+        @media (max-width: 900px) {
           .ts-grid {
             grid-template-columns: 1fr 1fr;
-            grid-template-rows: auto auto;
+            grid-template-rows: auto auto auto auto auto;
           }
-          .ts-col-left  { grid-column: 1; grid-row: 1; }
-          .ts-col-right { grid-column: 2; grid-row: 1; }
-          .ts-canvas-wrap {
+
+          .ts-canvas-cell {
             grid-column: 1 / -1;
-            grid-row: 2;
-            position: static;
-            height: clamp(220px, 45vw, 360px);
+            grid-row: 1;
           }
+          .ts-canvas-wrap {
+            min-height: clamp(240px, 55vw, 380px);
+          }
+
+          .ts-card-l0 { grid-column: 1; grid-row: 2; }
+          .ts-card-r0 { grid-column: 2; grid-row: 2; }
+          .ts-card-l1 { grid-column: 1; grid-row: 3; }
+          .ts-card-r1 { grid-column: 2; grid-row: 3; }
         }
 
-        /* На мобильном — одна колонка */
-        @media (max-width: 620px) {
+        /* Мобилка ≤ 560px — одна колонка */
+        @media (max-width: 560px) {
           .ts-grid {
             grid-template-columns: 1fr;
+            grid-template-rows: auto;
           }
-          .ts-col-left  { grid-column: 1; grid-row: 1; }
-          .ts-col-right { grid-column: 1; grid-row: 2; }
-          .ts-canvas-wrap {
-            grid-column: 1;
-            grid-row: 3;
-            height: clamp(200px, 70vw, 320px);
-          }
+
+          .ts-canvas-cell { grid-column: 1; grid-row: 1; }
+          .ts-canvas-wrap { min-height: clamp(220px, 70vw, 320px); }
+
+          .ts-card-l0 { grid-column: 1; grid-row: 2; }
+          .ts-card-r0 { grid-column: 1; grid-row: 3; }
+          .ts-card-l1 { grid-column: 1; grid-row: 4; }
+          .ts-card-r1 { grid-column: 1; grid-row: 5; }
         }
       `}</style>
 
@@ -638,26 +650,24 @@ export const TechStackSection: React.FC<TechStackSectionProps> = ({
           </p>
         </div>
 
-        {/* Грид: left | canvas | right */}
+        {/* Грид */}
         <div className="ts-grid">
-          {/* Левые карточки */}
-          <div className="ts-col-left">
-            {STACK_LEFT.map(cat => (
-              <StackCard key={cat.title} category={cat} isNegative={isNegative} />
-            ))}
+
+          {/* Canvas (центр на десктопе, топ на мобилке) */}
+          <div className="ts-canvas-cell">
+            <div className="ts-canvas-wrap">
+              <IsometricPillars isNegative={isNegative} />
+            </div>
           </div>
 
-          {/* Canvas с пиллярами */}
-          <div className="ts-canvas-wrap">
-            <IsometricPillars isNegative={isNegative} />
-          </div>
+          {/* Левые карточки */}
+          <div className="ts-card-l0"><StackCard category={STACK_LEFT[0]} isNegative={isNegative} /></div>
+          <div className="ts-card-l1"><StackCard category={STACK_LEFT[1]} isNegative={isNegative} /></div>
 
           {/* Правые карточки */}
-          <div className="ts-col-right">
-            {STACK_RIGHT.map(cat => (
-              <StackCard key={cat.title} category={cat} isNegative={isNegative} />
-            ))}
-          </div>
+          <div className="ts-card-r0"><StackCard category={STACK_RIGHT[0]} isNegative={isNegative} /></div>
+          <div className="ts-card-r1"><StackCard category={STACK_RIGHT[1]} isNegative={isNegative} /></div>
+
         </div>
       </div>
     </section>
