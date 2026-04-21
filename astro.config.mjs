@@ -22,6 +22,7 @@ export default defineConfig({
   integrations: [react(), ...devIntegrations],
 
   site: 'https://opensophy.com',
+  trailingSlash: 'always',
   output: 'static',
   srcDir: './src/app',
 
