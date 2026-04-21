@@ -1,14 +1,14 @@
 ---
-title: "mTLS: полное руководство — от теории к практике с управлением сертификатами"
+title: "mTLS: руководство — от теории к практике с управлением сертификатами"
 description: "Разбор mTLS — что это, как работает рукопожатие, от каких атак защищает и от каких нет, риски PKI и ошибки реализации. Плюс практика: управление сертификатами через mtls.sh от Opensophy под Traefik."
 author: veilosophy
 date: 2026-04-21
-tags: devsecops, сети, инструменты
-keywords: mTLS, mutual TLS, взаимная аутентификация, Zero Trust, NIST SP 800-207, управление сертификатами, Traefik, mtls.sh, opensophy, PKI, DevSecOps
+tags: "devsecops, сети, инструменты"
 icon: brick-wall-shield
 lang: ru
 robots: "index, follow"
 ---
+
 
 # Введение
 
