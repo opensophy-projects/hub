@@ -10,5 +10,4 @@ export const CONTACTS: ContactItem[] = [
   { href: 'mailto:opensophy@gmail.com', title: 'Email', subtitle: 'opensophy@gmail.com', external: false },
   { href: 'https://github.com/opensophy-projects', title: 'GitHub', subtitle: 'opensophy', external: true },
   { href: 'https://habr.com/ru/users/opensophy/', title: 'Habr', subtitle: 'opensophy', external: true },
-  { href: 'https://www.reddit.com/user/opensophy/', title: 'Reddit', subtitle: 'opensophy', external: true },
 ];
