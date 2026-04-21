@@ -2,7 +2,7 @@
 title: "А сейчас я покажу, откуда на вайбкод готовилось нападение"
 description: "Безопасность AI-кода: как проверять и улучшать код, сгенерированный ИИ. Интеграция SonarCloud, настройка Quality Gate и DevSecOps-пайплайн с автоматическим анализом и исправлением уязвимостей."
 author: veilosophy
-date: 2026-03-31
+date: 2026-05-01
 tags: "безопасность, вайбкод, уязвимости, devsecops, llm, sast, owasp"
 icon: shield-alert
 lang: ru
