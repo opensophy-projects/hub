@@ -50,7 +50,7 @@ function generateSitemap() {
     // Пропускаем welcome — главная уже добавлена выше
     if (!doc.slug || doc.slug === 'welcome' || doc.slug === '') continue;
 
-    const url = `${BASE_URL}/${doc.slug}`;
+    const url = `${BASE_URL}/${doc.slug}/`;
     const lastmod = doc.updated || doc.date || today;
 
     sitemap += `

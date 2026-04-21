@@ -58,7 +58,7 @@ if (!doc || !slug) return Astro.redirect('/404');
   title={doc.title}
   description={doc.description}
   image={doc.image}
-  url={`/${slug}`}
+  url={`/${slug}/`}
   type="article"
   author={doc.author}
   date={doc.date}
@@ -66,5 +66,10 @@ if (!doc || !slug) return Astro.redirect('/404');
   robots={doc.robots}
   lang={doc.lang || 'ru'}
 >
+  <noscript>
+    <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;">
+      <article set:html={doc.content ?? ''} />
+    </main>
+  </noscript>
   <DocContent client:only="react" doc={doc} />
 </Layout>
