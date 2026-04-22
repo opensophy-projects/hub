@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useMotionValue, useAnimationFrame, useTransform, motion } from 'framer-motion';
-import { ShinyText, GlowingEffectInline, FeatureCard } from './GeneralPage';
+import { ShinyText, GlowingEffectInline } from './GeneralPage';
 
 // ─── StackItemCard ────────────────────────────────────────────────────────────
 
