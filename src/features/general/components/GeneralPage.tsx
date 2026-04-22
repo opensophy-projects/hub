@@ -1,279 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-import { useMotionValue, useAnimationFrame, useTransform, motion } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
 import { SingularityShaders } from './SingularityShaders';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import Navigation from '@/features/navigation/components/Navigation';
 import RotatingText from '@/features/ui-components/rotating-text/rotating-text';
 import { TechStackSection } from './TechStackSection';
-
-// ─── ShinyText ────────────────────────────────────────────────────────────────
-
-interface ShinyTextProps {
-  text: string;
-  speed?: number;
-  color?: string;
-  shineColor?: string;
-  spread?: number;
-}
-
-const ShinyText: React.FC<ShinyTextProps> = ({
-  text,
-  speed = 4,
-  color = 'rgba(255,255,255,0.55)',
-  shineColor = 'rgba(255,255,255,0.95)',
-  spread = 110,
-}) => {
-  const progress   = useMotionValue(0);
-  const elapsedRef = useRef(0);
-  const lastRef    = useRef<number | null>(null);
-
-  useAnimationFrame(time => {
-    if (lastRef.current === null) { lastRef.current = time; return; }
-    elapsedRef.current += time - lastRef.current;
-    lastRef.current = time;
-    const p = (elapsedRef.current % (speed * 1000)) / (speed * 1000) * 100;
-    progress.set(p);
-  });
-
-  const backgroundPosition = useTransform(progress, p => `${150 - p * 2}% center`);
-
-  return (
-    <motion.span
-      style={{
-        backgroundImage: `linear-gradient(${spread}deg, ${color} 0%, ${color} 35%, ${shineColor} 50%, ${color} 65%, ${color} 100%)`,
-        backgroundSize: '200% auto',
-        WebkitBackgroundClip: 'text',
-        backgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
-        backgroundPosition,
-        display: 'inline',
-      }}
-    >
-      {text}
-    </motion.span>
-  );
-};
-
-// ─── GlowingEffect (встроенный, для карточек без tailwind) ───────────────────
-
-const easeOutQuint = (x: number): number => 1 - Math.pow(1 - x, 5);
-
-interface GlowingEffectInlineProps {
-  blur?: number;
-  inactiveZone?: number;
-  proximity?: number;
-  spread?: number;
-  glow?: boolean;
-  disabled?: boolean;
-  movementDuration?: number;
-  borderWidth?: number;
-  isNegative?: boolean;
-}
-
-const GlowingEffectInline = memo(({
-  blur = 0,
-  inactiveZone = 0.7,
-  proximity = 0,
-  spread = 20,
-  glow = false,
-  movementDuration = 2,
-  borderWidth = 1,
-  disabled = true,
-  isNegative = false,
-}: GlowingEffectInlineProps) => {
-  const containerRef      = useRef<HTMLDivElement>(null);
-  const lastPosition      = useRef({ x: 0, y: 0 });
-  const animationFrameRef = useRef<number>(0);
-
-  const animateAngleTransition = useCallback((
-    element: HTMLDivElement,
-    startValue: number,
-    endValue: number,
-    duration: number,
-  ) => {
-    const startTime = performance.now();
-    const animateValue = (currentTime: number) => {
-      const elapsed  = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const value    = startValue + (endValue - startValue) * easeOutQuint(progress);
-      element.style.setProperty('--start', String(value));
-      if (progress < 1) requestAnimationFrame(animateValue);
-    };
-    requestAnimationFrame(animateValue);
-  }, []);
-
-  const handleMove = useCallback((e?: MouseEvent | { x: number; y: number }) => {
-    if (!containerRef.current) return;
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    animationFrameRef.current = requestAnimationFrame(() => {
-      const element = containerRef.current;
-      if (!element) return;
-      const { left, top, width, height } = element.getBoundingClientRect();
-      const mouseX = e?.x ?? lastPosition.current.x;
-      const mouseY = e?.y ?? lastPosition.current.y;
-      if (e) lastPosition.current = { x: mouseX, y: mouseY };
-      const center             = [left + width * 0.5, top + height * 0.5];
-      const distanceFromCenter = Math.hypot(mouseX - center[0], mouseY - center[1]);
-      const inactiveRadius     = 0.5 * Math.min(width, height) * inactiveZone;
-      if (distanceFromCenter < inactiveRadius) { element.style.setProperty('--active', '0'); return; }
-      const isActive =
-        mouseX > left - proximity && mouseX < left + width  + proximity &&
-        mouseY > top  - proximity && mouseY < top  + height + proximity;
-      element.style.setProperty('--active', isActive ? '1' : '0');
-      if (!isActive) return;
-      const currentAngle = Number.parseFloat(element.style.getPropertyValue('--start')) || 0;
-      let targetAngle    = (180 * Math.atan2(mouseY - center[1], mouseX - center[0])) / Math.PI + 90;
-      const angleDiff    = ((targetAngle - currentAngle + 180) % 360) - 180;
-      animateAngleTransition(element, currentAngle, currentAngle + angleDiff, movementDuration * 1000);
-    });
-  }, [inactiveZone, proximity, movementDuration, animateAngleTransition]);
-
-  useEffect(() => {
-    if (disabled) return;
-    const handleScroll      = () => handleMove();
-    const handlePointerMove = (e: PointerEvent) => handleMove(e);
-    globalThis.addEventListener('scroll', handleScroll, { passive: true });
-    document.body.addEventListener('pointermove', handlePointerMove, { passive: true });
-    return () => {
-      globalThis.removeEventListener('scroll', handleScroll);
-      document.body.removeEventListener('pointermove', handlePointerMove);
-    };
-  }, [handleMove, disabled]);
-
-  const gradient = isNegative
-    ? `repeating-conic-gradient(from 236.84deg at 50% 50%, #ffffff, #ffffff calc(25% / var(--repeating-conic-gradient-times)))`
-    : `repeating-conic-gradient(from 236.84deg at 50% 50%, #000000, #000000 calc(25% / var(--repeating-conic-gradient-times)))`;
-
-  if (disabled) return null;
-
-  return (
-    <div
-      ref={containerRef}
-      style={{
-        '--blur':                           `${blur}px`,
-        '--spread':                         spread,
-        '--start':                          '0',
-        '--active':                         '0',
-        '--glowingeffect-border-width':     `${borderWidth}px`,
-        '--repeating-conic-gradient-times': '5',
-        '--gradient':                       gradient,
-        position:                           'absolute',
-        inset:                              0,
-        borderRadius:                       'inherit',
-        pointerEvents:                      'none',
-      } as React.CSSProperties}
-    >
-      <div style={{
-        position:            'absolute',
-        inset:               `calc(-1 * var(--glowingeffect-border-width))`,
-        borderRadius:        'inherit',
-        border:              `var(--glowingeffect-border-width) solid transparent`,
-        background:          gradient,
-        backgroundAttachment:'fixed',
-        opacity:             'var(--active)' as any,
-        transition:          'opacity 300ms',
-        WebkitMaskImage:     'linear-gradient(#0000,#0000), conic-gradient(from calc((var(--start) - var(--spread)) * 1deg), #00000000 0deg, #fff, #00000000 calc(var(--spread) * 2deg))',
-        maskImage:           'linear-gradient(#0000,#0000), conic-gradient(from calc((var(--start) - var(--spread)) * 1deg), #00000000 0deg, #fff, #00000000 calc(var(--spread) * 2deg))',
-        WebkitMaskClip:      'padding-box, border-box',
-        maskClip:            'padding-box, border-box',
-        WebkitMaskComposite: 'intersect',
-        maskComposite:       'intersect',
-      } as React.CSSProperties} />
-    </div>
-  );
-});
-GlowingEffectInline.displayName = 'GlowingEffectInline';
-
-// ─── SVG-иконки ───────────────────────────────────────────────────────────────
-
-const IconScan: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" />
-    <path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" />
-    <circle cx="12" cy="12" r="3" /><path d="M12 9v-2" /><path d="M12 17v-2" />
-    <path d="M9 12H7" /><path d="M17 12h-2" />
-  </svg>
-);
-
-const IconGrid: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
-    <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
-  </svg>
-);
-
-const IconGradCap: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-    <path d="M6 12v5c3 3 9 3 12 0v-5" />
-  </svg>
-);
-
-const IconHub: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-    <polyline points="9 22 9 12 15 12 15 22" />
-  </svg>
-);
-
-const IconBriefcase: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="7" width="20" height="14" rx="2" />
-    <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
-    <line x1="12" y1="12" x2="12" y2="12" /><line x1="8" y1="12" x2="16" y2="12" />
-  </svg>
-);
-
-// ─── FeatureCard (SecuritySection) ───────────────────────────────────────────
-
-interface FeatureCardProps {
-  title: string;
-  text: string;
-  isNegative: boolean;
-  fullWidth?: boolean;
-}
-
-const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, fullWidth }) => {
-  const border = isNegative ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)';
-  const bg     = isNegative ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
-  const titleC = isNegative ? 'rgba(255,255,255,0.9)'  : 'rgba(0,0,0,0.88)';
-  const textC  = isNegative ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.65)';
-
-  return (
-    <div style={{
-      position:     'relative',
-      border:       `1px solid ${border}`,
-      background:   bg,
-      borderRadius: 16,
-      padding:      '1.5rem',
-      display:      'flex',
-      flexDirection:'column',
-      gap:          '0.75rem',
-      gridColumn:   fullWidth ? '1 / -1' : undefined,
-      overflow:     'hidden',
-    }}>
-      <GlowingEffectInline
-        spread={40} glow disabled={false}
-        proximity={60} inactiveZone={0.01}
-        borderWidth={1.5} isNegative={isNegative}
-      />
-      <div style={{
-        fontSize: 'clamp(1.1rem, 1.8vw, 1.4rem)', fontWeight: 700,
-        color: titleC, lineHeight: 1.25, position: 'relative', zIndex: 1,
-        fontFamily: 'Inter, system-ui, sans-serif',
-      }}>
-        {title}
-      </div>
-      <div style={{
-        fontSize: 'clamp(0.95rem, 1.4vw, 1.1rem)', color: textC,
-        lineHeight: 1.65, position: 'relative', zIndex: 1,
-        fontFamily: 'Inter, system-ui, sans-serif',
-      }}>
-        {text}
-      </div>
-    </div>
-  );
-};
+import { ShinyText, GlowingEffectInline, FeatureCard } from './shared-components';
 
 // ─── SmoothDeclineChart ───────────────────────────────────────────────────────
 
@@ -527,6 +258,46 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
     </section>
   );
 };
+
+// ─── SVG-иконки ───────────────────────────────────────────────────────────────
+
+const IconScan: React.FC<{ color: string }> = ({ color }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" />
+    <path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+    <circle cx="12" cy="12" r="3" /><path d="M12 9v-2" /><path d="M12 17v-2" />
+    <path d="M9 12H7" /><path d="M17 12h-2" />
+  </svg>
+);
+
+const IconGrid: React.FC<{ color: string }> = ({ color }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+    <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
+  </svg>
+);
+
+const IconGradCap: React.FC<{ color: string }> = ({ color }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+    <path d="M6 12v5c3 3 9 3 12 0v-5" />
+  </svg>
+);
+
+const IconHub: React.FC<{ color: string }> = ({ color }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <polyline points="9 22 9 12 15 12 15 22" />
+  </svg>
+);
+
+const IconBriefcase: React.FC<{ color: string }> = ({ color }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="7" width="20" height="14" rx="2" />
+    <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+    <line x1="12" y1="12" x2="12" y2="12" /><line x1="8" y1="12" x2="16" y2="12" />
+  </svg>
+);
 
 // ─── EcoCard ──────────────────────────────────────────────────────────────────
 
@@ -906,10 +677,8 @@ const LandingContent: React.FC = () => {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-        /* ── Hero title — адаптивный размер без обрезки ── */
         .hero-title-wrap {
           position: absolute;
-          /* Центрируем горизонтально относительно видимой области (за вычетом nav) */
           left: 0;
           right: 0;
           top: 50%;
@@ -920,7 +689,6 @@ const LandingContent: React.FC = () => {
           justify-content: center;
           padding: 0 clamp(1rem, 4vw, 3rem);
           pointer-events: none;
-          /* Смещение вправо на ширину навигационной панели задаётся inline-стилем */
         }
 
         .hero-title {
@@ -929,16 +697,10 @@ const LandingContent: React.FC = () => {
           line-height: 1;
           letter-spacing: 0.06em;
           white-space: nowrap;
-          /*
-            fluid-размер: минимум 2rem (320px экран),
-            максимум 10rem (≥1400px экран).
-            vw-коэффициент подобран так, чтобы текст никогда не вылазил за экран.
-          */
           font-size: clamp(2rem, 10vw, 10rem);
           color: var(--hero-text-color, currentColor);
         }
 
-        /* На очень маленьких экранах (< 360px) ещё немного уменьшаем */
         @media (max-width: 360px) {
           .hero-title {
             font-size: clamp(1.6rem, 11vw, 3rem);
@@ -946,7 +708,6 @@ const LandingContent: React.FC = () => {
           }
         }
 
-        /* Планшеты */
         @media (min-width: 361px) and (max-width: 768px) {
           .hero-title {
             font-size: clamp(2.5rem, 10vw, 5.5rem);
@@ -954,7 +715,6 @@ const LandingContent: React.FC = () => {
           }
         }
 
-        /* Десктоп с навигационной панелью (учитываем смещение) */
         @media (min-width: 1001px) {
           .hero-title {
             font-size: clamp(4rem, 8vw, 10rem);
@@ -979,19 +739,15 @@ const LandingContent: React.FC = () => {
           />
         </div>
 
-        {/* Нижний градиент — плавный переход к фону */}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0, height: '35%',
           pointerEvents: 'none',
           background: `linear-gradient(to bottom, transparent, ${bg})`,
         }} />
 
-        {/* Hero title — центрирован, адаптивный */}
         <div
           className="hero-title-wrap"
           style={{
-            /* Дополнительное смещение справа чтобы nav не перекрывал
-               (только на десктопе, где navOffset > 0) */
             paddingLeft: navOffset > 0 ? `calc(${navOffset}px + clamp(1rem, 4vw, 3rem))` : undefined,
           }}
         >
@@ -1044,8 +800,9 @@ const LandingContent: React.FC = () => {
 
       {/* Экосистема */}
       <EcosystemSection isNegative={isNegative} navOffset={navOffset} />
+
       {/* Стек */}
-     <TechStackSection isNegative={isNegative} navOffset={navOffset} />
+      <TechStackSection isNegative={isNegative} navOffset={navOffset} />
     </div>
   );
 };
