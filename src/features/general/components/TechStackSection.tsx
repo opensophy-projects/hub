@@ -1,382 +1,5 @@
-import React, { useEffect, useRef, memo } from 'react';
-import { useMotionValue, useAnimationFrame, useTransform, motion } from 'framer-motion';
-
-// ─── ShinyText ────────────────────────────────────────────────────────────────
-
-interface ShinyTextProps {
-  text: string;
-  speed?: number;
-  color?: string;
-  shineColor?: string;
-  spread?: number;
-}
-
-const ShinyText: React.FC<ShinyTextProps> = ({
-  text,
-  speed = 4,
-  color = 'rgba(255,255,255,0.55)',
-  shineColor = 'rgba(255,255,255,0.95)',
-  spread = 110,
-}) => {
-  const progress   = useMotionValue(0);
-  const elapsedRef = useRef(0);
-  const lastRef    = useRef<number | null>(null);
-
-  useAnimationFrame(time => {
-    if (lastRef.current === null) { lastRef.current = time; return; }
-    elapsedRef.current += time - lastRef.current;
-    lastRef.current = time;
-    const p = (elapsedRef.current % (speed * 1000)) / (speed * 1000) * 100;
-    progress.set(p);
-  });
-
-  const backgroundPosition = useTransform(progress, p => `${150 - p * 2}% center`);
-
-  return (
-    <motion.span
-      style={{
-        backgroundImage: `linear-gradient(${spread}deg, ${color} 0%, ${color} 35%, ${shineColor} 50%, ${color} 65%, ${color} 100%)`,
-        backgroundSize: '200% auto',
-        WebkitBackgroundClip: 'text',
-        backgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
-        backgroundPosition,
-        display: 'inline',
-      }}
-    >
-      {text}
-    </motion.span>
-  );
-};
-
-// ─── GlowingEffectInline ──────────────────────────────────────────────────────
-
-const easeOutQuint = (x: number): number => 1 - Math.pow(1 - x, 5);
-
-interface GlowingEffectInlineProps {
-  spread?: number;
-  glow?: boolean;
-  disabled?: boolean;
-  proximity?: number;
-  inactiveZone?: number;
-  movementDuration?: number;
-  borderWidth?: number;
-  isNegative?: boolean;
-}
-
-const GlowingEffectInline = memo(({
-  spread = 20,
-  glow = false,
-  movementDuration = 2,
-  borderWidth = 1,
-  disabled = true,
-  proximity = 0,
-  inactiveZone = 0.7,
-  isNegative = false,
-}: GlowingEffectInlineProps) => {
-  const containerRef      = useRef<HTMLDivElement>(null);
-  const lastPosition      = useRef({ x: 0, y: 0 });
-  const animationFrameRef = useRef<number>(0);
-
-  const animateAngleTransition = React.useCallback((
-    element: HTMLDivElement,
-    startValue: number,
-    endValue: number,
-    duration: number,
-  ) => {
-    const startTime = performance.now();
-    const animateValue = (currentTime: number) => {
-      const elapsed  = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const value    = startValue + (endValue - startValue) * easeOutQuint(progress);
-      element.style.setProperty('--start', String(value));
-      if (progress < 1) requestAnimationFrame(animateValue);
-    };
-    requestAnimationFrame(animateValue);
-  }, []);
-
-  const handleMove = React.useCallback((e?: MouseEvent | { x: number; y: number }) => {
-    if (!containerRef.current) return;
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    animationFrameRef.current = requestAnimationFrame(() => {
-      const element = containerRef.current;
-      if (!element) return;
-      const { left, top, width, height } = element.getBoundingClientRect();
-      const mouseX = e?.x ?? lastPosition.current.x;
-      const mouseY = e?.y ?? lastPosition.current.y;
-      if (e) lastPosition.current = { x: mouseX, y: mouseY };
-      const center             = [left + width * 0.5, top + height * 0.5];
-      const distanceFromCenter = Math.hypot(mouseX - center[0], mouseY - center[1]);
-      const inactiveRadius     = 0.5 * Math.min(width, height) * inactiveZone;
-      if (distanceFromCenter < inactiveRadius) { element.style.setProperty('--active', '0'); return; }
-      const isActive =
-        mouseX > left - proximity && mouseX < left + width  + proximity &&
-        mouseY > top  - proximity && mouseY < top  + height + proximity;
-      element.style.setProperty('--active', isActive ? '1' : '0');
-      if (!isActive) return;
-      const currentAngle = Number.parseFloat(element.style.getPropertyValue('--start')) || 0;
-      const targetAngle  = (180 * Math.atan2(mouseY - center[1], mouseX - center[0])) / Math.PI + 90;
-      const angleDiff    = ((targetAngle - currentAngle + 180) % 360) - 180;
-      animateAngleTransition(element, currentAngle, currentAngle + angleDiff, movementDuration * 1000);
-    });
-  }, [inactiveZone, proximity, movementDuration, animateAngleTransition]);
-
-  useEffect(() => {
-    if (disabled) return;
-    const handleScroll      = () => handleMove();
-    const handlePointerMove = (e: PointerEvent) => handleMove(e);
-    globalThis.addEventListener('scroll', handleScroll, { passive: true });
-    document.body.addEventListener('pointermove', handlePointerMove, { passive: true });
-    return () => {
-      globalThis.removeEventListener('scroll', handleScroll);
-      document.body.removeEventListener('pointermove', handlePointerMove);
-    };
-  }, [handleMove, disabled]);
-
-  const gradient = isNegative
-    ? `repeating-conic-gradient(from 236.84deg at 50% 50%, #ffffff, #ffffff calc(25% / var(--repeating-conic-gradient-times)))`
-    : `repeating-conic-gradient(from 236.84deg at 50% 50%, #000000, #000000 calc(25% / var(--repeating-conic-gradient-times)))`;
-
-  if (disabled) return null;
-
-  return (
-    <div
-      ref={containerRef}
-      style={{
-        '--blur':                           '0px',
-        '--spread':                         spread,
-        '--start':                          '0',
-        '--active':                         '0',
-        '--glowingeffect-border-width':     `${borderWidth}px`,
-        '--repeating-conic-gradient-times': '5',
-        '--gradient':                       gradient,
-        position:                           'absolute',
-        inset:                              0,
-        borderRadius:                       'inherit',
-        pointerEvents:                      'none',
-      } as React.CSSProperties}
-    >
-      <div style={{
-        position:            'absolute',
-        inset:               `calc(-1 * var(--glowingeffect-border-width))`,
-        borderRadius:        'inherit',
-        border:              `var(--glowingeffect-border-width) solid transparent`,
-        background:          gradient,
-        backgroundAttachment:'fixed',
-        opacity:             'var(--active)' as unknown as number,
-        transition:          'opacity 300ms',
-        WebkitMaskImage:     'linear-gradient(#0000,#0000), conic-gradient(from calc((var(--start) - var(--spread)) * 1deg), #00000000 0deg, #fff, #00000000 calc(var(--spread) * 2deg))',
-        maskImage:           'linear-gradient(#0000,#0000), conic-gradient(from calc((var(--start) - var(--spread)) * 1deg), #00000000 0deg, #fff, #00000000 calc(var(--spread) * 2deg))',
-        WebkitMaskClip:      'padding-box, border-box',
-        maskClip:            'padding-box, border-box',
-        WebkitMaskComposite: 'intersect',
-        maskComposite:       'intersect',
-      } as React.CSSProperties} />
-    </div>
-  );
-});
-GlowingEffectInline.displayName = 'GlowingEffectInline';
-
-// ─── FeatureCard (точная копия из GeneralPage / SecuritySection) ──────────────
-
-interface FeatureCardProps {
-  title: string;
-  text: string;
-  isNegative: boolean;
-  fullWidth?: boolean;
-}
-
-const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, fullWidth }) => {
-  const border = isNegative ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)';
-  const bg     = isNegative ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
-  const titleC = isNegative ? 'rgba(255,255,255,0.9)'  : 'rgba(0,0,0,0.88)';
-  const textC  = isNegative ? 'rgba(255,255,255,0.7)'  : 'rgba(0,0,0,0.65)';
-
-  return (
-    <div style={{
-      position:      'relative',
-      border:        `1px solid ${border}`,
-      background:    bg,
-      borderRadius:  16,
-      padding:       '1.5rem',
-      display:       'flex',
-      flexDirection: 'column',
-      gap:           '0.75rem',
-      gridColumn:    fullWidth ? '1 / -1' : undefined,
-      overflow:      'hidden',
-      height:        '100%',
-      boxSizing:     'border-box',
-    }}>
-      <GlowingEffectInline
-        spread={40} glow disabled={false}
-        proximity={60} inactiveZone={0.01}
-        borderWidth={1.5} isNegative={isNegative}
-      />
-      <div style={{
-        fontSize:   'clamp(1.1rem, 1.8vw, 1.4rem)',
-        fontWeight: 700,
-        color:      titleC,
-        lineHeight: 1.25,
-        position:   'relative',
-        zIndex:     1,
-        fontFamily: 'Inter, system-ui, sans-serif',
-      }}>
-        {title}
-      </div>
-      <div style={{
-        fontSize:   'clamp(0.95rem, 1.4vw, 1.1rem)',
-        color:      textC,
-        lineHeight: 1.65,
-        position:   'relative',
-        zIndex:     1,
-        fontFamily: 'Inter, system-ui, sans-serif',
-      }}>
-        {text}
-      </div>
-    </div>
-  );
-};
-
-// ─── IsometricPillars — без mouse-анимации и без свечения ────────────────────
-
-interface IsometricPillarsProps {
-  isNegative: boolean;
-}
-
-const IsometricPillars: React.FC<IsometricPillarsProps> = ({ isNegative }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef    = useRef<number>(0);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const COLS  = 5;
-    const ROWS  = 5;
-    const SPEED = 0.55;
-    const BG    = isNegative ? '#0a0a0a' : '#E8E7E3';
-
-    let TW: number, TH: number, MAX_H: number, MIN_H: number;
-    let width: number, height: number, cx: number, cy: number;
-
-    const c = canvas.getContext('2d');
-    if (!c) return;
-    const ctx = c;
-
-    const resize = () => {
-      width  = canvas.width  = canvas.offsetWidth;
-      height = canvas.height = canvas.offsetHeight;
-      const twByWidth  = (width  * 0.95) / ((COLS + ROWS) / 2);
-      const twByHeight = (height * 0.72) / (2.0 + (COLS + ROWS) / 8);
-      TW    = Math.min(twByWidth, twByHeight, 160);
-      TH    = TW / 2;
-      MAX_H = TW * 2.0;
-      MIN_H = TW * 0.14;
-      cx    = width  / 2;
-      cy    = height * 0.65 + (COLS + ROWS - 2) * TH / 12;
-    };
-
-    const ro = new ResizeObserver(resize);
-    ro.observe(canvas);
-    resize();
-
-    const gCtrY   = (COLS - 1 + ROWS - 1) / 2;
-    const screenX = (col: number, row: number) => cx + (col - row) * TW / 2;
-    const screenY = (col: number, row: number) => cy - gCtrY * TH / 2 + (col + row) * TH / 2;
-    const isRing  = (col: number, row: number) =>
-      col === 0 || col === COLS - 1 || row === 0 || row === ROWS - 1;
-
-    const drawPillar = (col: number, row: number, h: number) => {
-      const bx = screenX(col, row);
-      const by = screenY(col, row);
-      const ty = by - h;
-      const hw = TW / 2;
-      const hh = TH / 2;
-
-      if (isNegative) {
-        const tg = ctx.createLinearGradient(bx - hw, ty, bx + hw, ty + hh);
-        tg.addColorStop(0, 'rgba(255,255,255,0.97)');
-        tg.addColorStop(1, 'rgba(208,208,214,0.93)');
-        ctx.beginPath();
-        ctx.moveTo(bx, ty - hh); ctx.lineTo(bx + hw, ty);
-        ctx.lineTo(bx, ty + hh); ctx.lineTo(bx - hw, ty);
-        ctx.closePath(); ctx.fillStyle = tg; ctx.fill();
-
-        const lg = ctx.createLinearGradient(0, ty, 0, by + hh);
-        lg.addColorStop(0, 'rgba(180,180,186,0.93)');
-        lg.addColorStop(1, 'rgba(72,72,76,0.88)');
-        ctx.beginPath();
-        ctx.moveTo(bx - hw, ty); ctx.lineTo(bx, ty + hh);
-        ctx.lineTo(bx, by + hh); ctx.lineTo(bx - hw, by);
-        ctx.closePath(); ctx.fillStyle = lg; ctx.fill();
-
-        const rg = ctx.createLinearGradient(0, ty, 0, by + hh);
-        rg.addColorStop(0, 'rgba(105,105,110,0.91)');
-        rg.addColorStop(1, 'rgba(38,38,42,0.87)');
-        ctx.beginPath();
-        ctx.moveTo(bx + hw, ty); ctx.lineTo(bx, ty + hh);
-        ctx.lineTo(bx, by + hh); ctx.lineTo(bx + hw, by);
-        ctx.closePath(); ctx.fillStyle = rg; ctx.fill();
-      } else {
-        const tg = ctx.createLinearGradient(bx - hw, ty, bx + hw, ty + hh);
-        tg.addColorStop(0, 'rgba(0,0,0,0.75)');
-        tg.addColorStop(1, 'rgba(60,60,60,0.65)');
-        ctx.beginPath();
-        ctx.moveTo(bx, ty - hh); ctx.lineTo(bx + hw, ty);
-        ctx.lineTo(bx, ty + hh); ctx.lineTo(bx - hw, ty);
-        ctx.closePath(); ctx.fillStyle = tg; ctx.fill();
-
-        const lg = ctx.createLinearGradient(0, ty, 0, by + hh);
-        lg.addColorStop(0, 'rgba(100,100,100,0.55)');
-        lg.addColorStop(1, 'rgba(200,200,200,0.35)');
-        ctx.beginPath();
-        ctx.moveTo(bx - hw, ty); ctx.lineTo(bx, ty + hh);
-        ctx.lineTo(bx, by + hh); ctx.lineTo(bx - hw, by);
-        ctx.closePath(); ctx.fillStyle = lg; ctx.fill();
-
-        const rg = ctx.createLinearGradient(0, ty, 0, by + hh);
-        rg.addColorStop(0, 'rgba(160,160,160,0.45)');
-        rg.addColorStop(1, 'rgba(210,210,210,0.25)');
-        ctx.beginPath();
-        ctx.moveTo(bx + hw, ty); ctx.lineTo(bx, ty + hh);
-        ctx.lineTo(bx, by + hh); ctx.lineTo(bx + hw, by);
-        ctx.closePath(); ctx.fillStyle = rg; ctx.fill();
-      }
-    };
-
-    const getHeight = (col: number, row: number, t: number) => {
-      const phase = (col + row) * 0.9;
-      return MIN_H + (MAX_H - MIN_H) * (Math.sin(t * SPEED - phase) * 0.5 + 0.5);
-    };
-
-    const draw = () => {
-      rafRef.current = requestAnimationFrame(draw);
-      const t = Date.now() / 1000;
-      ctx.fillStyle = BG;
-      ctx.fillRect(0, 0, width, height);
-      for (let sum = 0; sum <= COLS + ROWS - 2; sum++) {
-        for (let col = 0; col <= sum; col++) {
-          const row = sum - col;
-          if (col >= COLS || row < 0 || row >= ROWS) continue;
-          if (!isRing(col, row)) continue;
-          drawPillar(col, row, getHeight(col, row, t));
-        }
-      }
-      // Свечение удалено
-    };
-
-    draw();
-
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-      ro.disconnect();
-    };
-  }, [isNegative]);
-
-  return (
-    <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
-  );
-};
+import React, { useEffect, useRef } from 'react';
+import { ShinyText, GlowingEffectInline, FeatureCard } from './shared-components';
 
 // ─── Данные стека ─────────────────────────────────────────────────────────────
 
@@ -534,6 +157,150 @@ const StackItemCard: React.FC<StackItemCardProps> = ({ category, isNegative }) =
         ))}
       </div>
     </div>
+  );
+};
+
+// ─── IsometricPillars ─────────────────────────────────────────────────────────
+
+interface IsometricPillarsProps {
+  isNegative: boolean;
+}
+
+const COLS  = 5;
+const ROWS  = 5;
+const SPEED = 0.55;
+
+// Определяет, является ли клетка граничной (кольцевой) в изометрической сетке
+const isRing = (col: number, row: number): boolean =>
+  col === 0 || col === COLS - 1 || row === 0 || row === ROWS - 1;
+
+const IsometricPillars: React.FC<IsometricPillarsProps> = ({ isNegative }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef    = useRef<number>(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const BG = isNegative ? '#0a0a0a' : '#E8E7E3';
+
+    let TW: number, TH: number, MAX_H: number, MIN_H: number;
+    let width: number, height: number, cx: number, cy: number;
+
+    const c = canvas.getContext('2d');
+    if (!c) return;
+    const ctx = c;
+
+    const resize = () => {
+      width  = canvas.width  = canvas.offsetWidth;
+      height = canvas.height = canvas.offsetHeight;
+      // Размер тайла подбирается под ширину и высоту канваса
+      const twByWidth  = (width  * 0.95) / ((COLS + ROWS) / 2);
+      const twByHeight = (height * 0.72) / (2 + (COLS + ROWS) / 8);
+      TW    = Math.min(twByWidth, twByHeight, 160);
+      TH    = TW / 2;
+      MAX_H = TW * 2;
+      MIN_H = TW * 0.14;
+      cx    = width  / 2;
+      cy    = height * 0.65 + (COLS + ROWS - 2) * TH / 12;
+    };
+
+    const ro = new ResizeObserver(resize);
+    ro.observe(canvas);
+    resize();
+
+    const gCtrY   = (COLS - 1 + ROWS - 1) / 2;
+    const screenX = (col: number, row: number) => cx + (col - row) * TW / 2;
+    const screenY = (col: number, row: number) => cy - gCtrY * TH / 2 + (col + row) * TH / 2;
+
+    const drawPillar = (col: number, row: number, h: number) => {
+      const bx = screenX(col, row);
+      const by = screenY(col, row);
+      const ty = by - h;
+      const hw = TW / 2;
+      const hh = TH / 2;
+
+      if (isNegative) {
+        const tg = ctx.createLinearGradient(bx - hw, ty, bx + hw, ty + hh);
+        tg.addColorStop(0, 'rgba(255,255,255,0.97)');
+        tg.addColorStop(1, 'rgba(208,208,214,0.93)');
+        ctx.beginPath();
+        ctx.moveTo(bx, ty - hh); ctx.lineTo(bx + hw, ty);
+        ctx.lineTo(bx, ty + hh); ctx.lineTo(bx - hw, ty);
+        ctx.closePath(); ctx.fillStyle = tg; ctx.fill();
+
+        const lg = ctx.createLinearGradient(0, ty, 0, by + hh);
+        lg.addColorStop(0, 'rgba(180,180,186,0.93)');
+        lg.addColorStop(1, 'rgba(72,72,76,0.88)');
+        ctx.beginPath();
+        ctx.moveTo(bx - hw, ty); ctx.lineTo(bx, ty + hh);
+        ctx.lineTo(bx, by + hh); ctx.lineTo(bx - hw, by);
+        ctx.closePath(); ctx.fillStyle = lg; ctx.fill();
+
+        const rg = ctx.createLinearGradient(0, ty, 0, by + hh);
+        rg.addColorStop(0, 'rgba(105,105,110,0.91)');
+        rg.addColorStop(1, 'rgba(38,38,42,0.87)');
+        ctx.beginPath();
+        ctx.moveTo(bx + hw, ty); ctx.lineTo(bx, ty + hh);
+        ctx.lineTo(bx, by + hh); ctx.lineTo(bx + hw, by);
+        ctx.closePath(); ctx.fillStyle = rg; ctx.fill();
+      } else {
+        const tg = ctx.createLinearGradient(bx - hw, ty, bx + hw, ty + hh);
+        tg.addColorStop(0, 'rgba(0,0,0,0.75)');
+        tg.addColorStop(1, 'rgba(60,60,60,0.65)');
+        ctx.beginPath();
+        ctx.moveTo(bx, ty - hh); ctx.lineTo(bx + hw, ty);
+        ctx.lineTo(bx, ty + hh); ctx.lineTo(bx - hw, ty);
+        ctx.closePath(); ctx.fillStyle = tg; ctx.fill();
+
+        const lg = ctx.createLinearGradient(0, ty, 0, by + hh);
+        lg.addColorStop(0, 'rgba(100,100,100,0.55)');
+        lg.addColorStop(1, 'rgba(200,200,200,0.35)');
+        ctx.beginPath();
+        ctx.moveTo(bx - hw, ty); ctx.lineTo(bx, ty + hh);
+        ctx.lineTo(bx, by + hh); ctx.lineTo(bx - hw, by);
+        ctx.closePath(); ctx.fillStyle = lg; ctx.fill();
+
+        const rg = ctx.createLinearGradient(0, ty, 0, by + hh);
+        rg.addColorStop(0, 'rgba(160,160,160,0.45)');
+        rg.addColorStop(1, 'rgba(210,210,210,0.25)');
+        ctx.beginPath();
+        ctx.moveTo(bx + hw, ty); ctx.lineTo(bx, ty + hh);
+        ctx.lineTo(bx, by + hh); ctx.lineTo(bx + hw, by);
+        ctx.closePath(); ctx.fillStyle = rg; ctx.fill();
+      }
+    };
+
+    const getHeight = (col: number, row: number, t: number) => {
+      const phase = (col + row) * 0.9;
+      return MIN_H + (MAX_H - MIN_H) * (Math.sin(t * SPEED - phase) * 0.5 + 0.5);
+    };
+
+    const draw = () => {
+      rafRef.current = requestAnimationFrame(draw);
+      const t = Date.now() / 1000;
+      ctx.fillStyle = BG;
+      ctx.fillRect(0, 0, width, height);
+      for (let sum = 0; sum <= COLS + ROWS - 2; sum++) {
+        for (let col = 0; col <= sum; col++) {
+          const row = sum - col;
+          if (col >= COLS || row < 0 || row >= ROWS) continue;
+          if (!isRing(col, row)) continue;
+          drawPillar(col, row, getHeight(col, row, t));
+        }
+      }
+    };
+
+    draw();
+
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      ro.disconnect();
+    };
+  }, [isNegative]);
+
+  return (
+    <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
   );
 };
 
