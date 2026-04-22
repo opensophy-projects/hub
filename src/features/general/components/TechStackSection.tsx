@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { ShinyText, GlowingEffectInline } from './GeneralPage';
 
-// ─── StackItemCard ────────────────────────────────────────────────────────────
+// ─── Типы ─────────────────────────────────────────────────────────────────────
 
 interface StackItem {
   name: string;
@@ -19,6 +19,226 @@ interface StackItemCardProps {
   isNegative: boolean;
 }
 
+interface IsometricPillarsProps {
+  isNegative: boolean;
+}
+
+interface TechStackSectionProps {
+  isNegative: boolean;
+  navOffset?: number;
+}
+
+// ─── Константы столбцов/строк ─────────────────────────────────────────────────
+
+const GRID_COLS  = 5;
+const GRID_ROWS  = 5;
+const GRID_SPEED = 0.55;
+
+// ─── Утилиты холста ───────────────────────────────────────────────────────────
+
+function isRingCell(col: number, row: number): boolean {
+  return col === 0 || col === GRID_COLS - 1 || row === 0 || row === GRID_ROWS - 1;
+}
+
+// Координаты центра сетки для центрирования изометрической проекции
+const GRID_CTR_Y = (GRID_COLS - 1 + GRID_ROWS - 1) / 2;
+
+function screenX(col: number, row: number, cx: number, TW: number): number {
+  return cx + (col - row) * TW / 2;
+}
+
+function screenY(col: number, row: number, cy: number, TH: number): number {
+  return cy - GRID_CTR_Y * TH / 2 + (col + row) * TH / 2;
+}
+
+function getPillarHeight(col: number, row: number, t: number, MIN_H: number, MAX_H: number): number {
+  const phase = (col + row) * 0.9;
+  return MIN_H + (MAX_H - MIN_H) * (Math.sin(t * GRID_SPEED - phase) * 0.5 + 0.5);
+}
+
+// ─── Грани изометрической призмы ─────────────────────────────────────────────
+
+interface FaceColors {
+  top:   string;
+  left:  string;
+  right: string;
+}
+
+function getDarkFaceColors(): FaceColors {
+  return {
+    top:   'rgba(255,255,255,0.97)',
+    left:  'rgba(180,180,186,0.93)',
+    right: 'rgba(105,105,110,0.91)',
+  };
+}
+
+function getLightFaceColors(): FaceColors {
+  return {
+    top:   'rgba(0,0,0,0.75)',
+    left:  'rgba(100,100,100,0.55)',
+    right: 'rgba(160,160,160,0.45)',
+  };
+}
+
+function getDarkFaceGradients(
+  ctx: CanvasRenderingContext2D,
+  bx: number, by: number, ty: number,
+  hw: number, hh: number,
+): [CanvasGradient, CanvasGradient, CanvasGradient] {
+  const tg = ctx.createLinearGradient(bx - hw, ty, bx + hw, ty + hh);
+  tg.addColorStop(0, 'rgba(255,255,255,0.97)');
+  tg.addColorStop(1, 'rgba(208,208,214,0.93)');
+
+  const lg = ctx.createLinearGradient(0, ty, 0, by + hh);
+  lg.addColorStop(0, 'rgba(180,180,186,0.93)');
+  lg.addColorStop(1, 'rgba(72,72,76,0.88)');
+
+  const rg = ctx.createLinearGradient(0, ty, 0, by + hh);
+  rg.addColorStop(0, 'rgba(105,105,110,0.91)');
+  rg.addColorStop(1, 'rgba(38,38,42,0.87)');
+
+  return [tg, lg, rg];
+}
+
+function getLightFaceGradients(
+  ctx: CanvasRenderingContext2D,
+  bx: number, by: number, ty: number,
+  hw: number, hh: number,
+): [CanvasGradient, CanvasGradient, CanvasGradient] {
+  const tg = ctx.createLinearGradient(bx - hw, ty, bx + hw, ty + hh);
+  tg.addColorStop(0, 'rgba(0,0,0,0.75)');
+  tg.addColorStop(1, 'rgba(60,60,60,0.65)');
+
+  const lg = ctx.createLinearGradient(0, ty, 0, by + hh);
+  lg.addColorStop(0, 'rgba(100,100,100,0.55)');
+  lg.addColorStop(1, 'rgba(200,200,200,0.35)');
+
+  const rg = ctx.createLinearGradient(0, ty, 0, by + hh);
+  rg.addColorStop(0, 'rgba(160,160,160,0.45)');
+  rg.addColorStop(1, 'rgba(210,210,210,0.25)');
+
+  return [tg, lg, rg];
+}
+
+// Рисует одну изометрическую призму на холсте
+function drawPillar(
+  ctx: CanvasRenderingContext2D,
+  bx: number, by: number, h: number,
+  TW: number, TH: number,
+  isNegative: boolean,
+): void {
+  const hw = TW / 2;
+  const hh = TH / 2;
+  const ty = by - h;
+
+  const [tg, lg, rg] = isNegative
+    ? getDarkFaceGradients(ctx, bx, by, ty, hw, hh)
+    : getLightFaceGradients(ctx, bx, by, ty, hw, hh);
+
+  // Верхняя грань
+  ctx.beginPath();
+  ctx.moveTo(bx,      ty - hh);
+  ctx.lineTo(bx + hw, ty);
+  ctx.lineTo(bx,      ty + hh);
+  ctx.lineTo(bx - hw, ty);
+  ctx.closePath();
+  ctx.fillStyle = tg;
+  ctx.fill();
+
+  // Левая грань
+  ctx.beginPath();
+  ctx.moveTo(bx - hw, ty);
+  ctx.lineTo(bx,      ty + hh);
+  ctx.lineTo(bx,      by + hh);
+  ctx.lineTo(bx - hw, by);
+  ctx.closePath();
+  ctx.fillStyle = lg;
+  ctx.fill();
+
+  // Правая грань
+  ctx.beginPath();
+  ctx.moveTo(bx + hw, ty);
+  ctx.lineTo(bx,      ty + hh);
+  ctx.lineTo(bx,      by + hh);
+  ctx.lineTo(bx + hw, by);
+  ctx.closePath();
+  ctx.fillStyle = rg;
+  ctx.fill();
+}
+
+// ─── IsometricPillars ─────────────────────────────────────────────────────────
+
+const IsometricPillars: React.FC<IsometricPillarsProps> = ({ isNegative }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef    = useRef<number>(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const BG = isNegative ? '#0a0a0a' : '#E8E7E3';
+
+    let TW: number, TH: number, MAX_H: number, MIN_H: number;
+    let width: number, height: number, cx: number, cy: number;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const resize = () => {
+      width  = canvas.width  = canvas.offsetWidth;
+      height = canvas.height = canvas.offsetHeight;
+      const twByWidth  = (width  * 0.95) / ((GRID_COLS + GRID_ROWS) / 2);
+      const twByHeight = (height * 0.72) / (2 + (GRID_COLS + GRID_ROWS) / 8);
+      TW    = Math.min(twByWidth, twByHeight, 160);
+      TH    = TW / 2;
+      MAX_H = TW * 2;
+      MIN_H = TW * 0.14;
+      cx    = width  / 2;
+      cy    = height * 0.65 + (GRID_COLS + GRID_ROWS - 2) * TH / 12;
+    };
+
+    const ro = new ResizeObserver(resize);
+    ro.observe(canvas);
+    resize();
+
+    const draw = () => {
+      rafRef.current = requestAnimationFrame(draw);
+      const t = Date.now() / 1000;
+
+      ctx.fillStyle = BG;
+      ctx.fillRect(0, 0, width, height);
+
+      // Отрисовка по диагональным срезам для правильного z-order
+      for (let sum = 0; sum <= GRID_COLS + GRID_ROWS - 2; sum++) {
+        for (let col = 0; col <= sum; col++) {
+          const row = sum - col;
+          if (col >= GRID_COLS || row < 0 || row >= GRID_ROWS) continue;
+          if (!isRingCell(col, row)) continue;
+
+          const bx = screenX(col, row, cx, TW);
+          const by = screenY(col, row, cy, TH);
+          const h  = getPillarHeight(col, row, t, MIN_H, MAX_H);
+
+          drawPillar(ctx, bx, by, h, TW, TH, isNegative);
+        }
+      }
+    };
+
+    draw();
+
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      ro.disconnect();
+    };
+  }, [isNegative]);
+
+  return (
+    <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
+  );
+};
+
+// ─── StackItemCard ────────────────────────────────────────────────────────────
+
 const StackItemCard: React.FC<StackItemCardProps> = ({ category, isNegative }) => {
   const border  = isNegative ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)';
   const bg      = isNegative ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
@@ -28,6 +248,26 @@ const StackItemCard: React.FC<StackItemCardProps> = ({ category, isNegative }) =
   const divC    = isNegative ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const badgeBg = isNegative ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
   const badgeC  = isNegative ? 'rgba(255,255,255,0.4)'  : 'rgba(0,0,0,0.4)';
+
+  const dividerStyle: React.CSSProperties = {
+    height: 1,
+    background: divC,
+    margin: '0.75rem 0',
+    flexShrink: 0,
+  };
+
+  const badgeStyle: React.CSSProperties = {
+    fontSize:      '0.62rem',
+    fontWeight:    600,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+    color:          badgeC,
+    background:     badgeBg,
+    borderRadius:   6,
+    padding:        '1px 7px',
+    fontFamily:     'ui-monospace, monospace',
+    flexShrink:     0,
+  };
 
   return (
     <div style={{
@@ -72,9 +312,7 @@ const StackItemCard: React.FC<StackItemCardProps> = ({ category, isNegative }) =
       }}>
         {category.items.map((item, i) => (
           <React.Fragment key={item.name}>
-            {i > 0 && (
-              <div style={{ height: 1, background: divC, margin: '0.75rem 0', flexShrink: 0 }} />
-            )}
+            {i > 0 && <div style={dividerStyle} />}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <span style={{
@@ -87,20 +325,7 @@ const StackItemCard: React.FC<StackItemCardProps> = ({ category, isNegative }) =
                   {item.name}
                 </span>
                 {item.badge && (
-                  <span style={{
-                    fontSize:      '0.62rem',
-                    fontWeight:    600,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    color:          badgeC,
-                    background:     badgeBg,
-                    borderRadius:   6,
-                    padding:        '1px 7px',
-                    fontFamily:     'ui-monospace, monospace',
-                    flexShrink:     0,
-                  }}>
-                    {item.badge}
-                  </span>
+                  <span style={badgeStyle}>{item.badge}</span>
                 )}
               </div>
               <span style={{
@@ -116,146 +341,6 @@ const StackItemCard: React.FC<StackItemCardProps> = ({ category, isNegative }) =
         ))}
       </div>
     </div>
-  );
-};
-
-// ─── IsometricPillars ─────────────────────────────────────────────────────────
-
-interface IsometricPillarsProps {
-  isNegative: boolean;
-}
-
-const IsometricPillars: React.FC<IsometricPillarsProps> = ({ isNegative }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef    = useRef<number>(0);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const COLS  = 5;
-    const ROWS  = 5;
-    const SPEED = 0.55;
-    const BG    = isNegative ? '#0a0a0a' : '#E8E7E3';
-
-    let TW: number, TH: number, MAX_H: number, MIN_H: number;
-    let width: number, height: number, cx: number, cy: number;
-
-    const c = canvas.getContext('2d');
-    if (!c) return;
-    const ctx = c;
-
-    const resize = () => {
-      width  = canvas.width  = canvas.offsetWidth;
-      height = canvas.height = canvas.offsetHeight;
-      const twByWidth  = (width  * 0.95) / ((COLS + ROWS) / 2);
-      const twByHeight = (height * 0.72) / (2 + (COLS + ROWS) / 8);
-      TW    = Math.min(twByWidth, twByHeight, 160);
-      TH    = TW / 2;
-      MAX_H = TW * 2;
-      MIN_H = TW * 0.14;
-      cx    = width  / 2;
-      cy    = height * 0.65 + (COLS + ROWS - 2) * TH / 12;
-    };
-
-    const ro = new ResizeObserver(resize);
-    ro.observe(canvas);
-    resize();
-
-    const gCtrY   = (COLS - 1 + ROWS - 1) / 2;
-    const screenX = (col: number, row: number) => cx + (col - row) * TW / 2;
-    const screenY = (col: number, row: number) => cy - gCtrY * TH / 2 + (col + row) * TH / 2;
-    const isRing  = (col: number, row: number) =>
-      col === 0 || col === COLS - 1 || row === 0 || row === ROWS - 1;
-
-    const drawPillar = (col: number, row: number, h: number) => {
-      const bx = screenX(col, row);
-      const by = screenY(col, row);
-      const ty = by - h;
-      const hw = TW / 2;
-      const hh = TH / 2;
-
-      if (isNegative) {
-        const tg = ctx.createLinearGradient(bx - hw, ty, bx + hw, ty + hh);
-        tg.addColorStop(0, 'rgba(255,255,255,0.97)');
-        tg.addColorStop(1, 'rgba(208,208,214,0.93)');
-        ctx.beginPath();
-        ctx.moveTo(bx, ty - hh); ctx.lineTo(bx + hw, ty);
-        ctx.lineTo(bx, ty + hh); ctx.lineTo(bx - hw, ty);
-        ctx.closePath(); ctx.fillStyle = tg; ctx.fill();
-
-        const lg = ctx.createLinearGradient(0, ty, 0, by + hh);
-        lg.addColorStop(0, 'rgba(180,180,186,0.93)');
-        lg.addColorStop(1, 'rgba(72,72,76,0.88)');
-        ctx.beginPath();
-        ctx.moveTo(bx - hw, ty); ctx.lineTo(bx, ty + hh);
-        ctx.lineTo(bx, by + hh); ctx.lineTo(bx - hw, by);
-        ctx.closePath(); ctx.fillStyle = lg; ctx.fill();
-
-        const rg = ctx.createLinearGradient(0, ty, 0, by + hh);
-        rg.addColorStop(0, 'rgba(105,105,110,0.91)');
-        rg.addColorStop(1, 'rgba(38,38,42,0.87)');
-        ctx.beginPath();
-        ctx.moveTo(bx + hw, ty); ctx.lineTo(bx, ty + hh);
-        ctx.lineTo(bx, by + hh); ctx.lineTo(bx + hw, by);
-        ctx.closePath(); ctx.fillStyle = rg; ctx.fill();
-      } else {
-        const tg = ctx.createLinearGradient(bx - hw, ty, bx + hw, ty + hh);
-        tg.addColorStop(0, 'rgba(0,0,0,0.75)');
-        tg.addColorStop(1, 'rgba(60,60,60,0.65)');
-        ctx.beginPath();
-        ctx.moveTo(bx, ty - hh); ctx.lineTo(bx + hw, ty);
-        ctx.lineTo(bx, ty + hh); ctx.lineTo(bx - hw, ty);
-        ctx.closePath(); ctx.fillStyle = tg; ctx.fill();
-
-        const lg = ctx.createLinearGradient(0, ty, 0, by + hh);
-        lg.addColorStop(0, 'rgba(100,100,100,0.55)');
-        lg.addColorStop(1, 'rgba(200,200,200,0.35)');
-        ctx.beginPath();
-        ctx.moveTo(bx - hw, ty); ctx.lineTo(bx, ty + hh);
-        ctx.lineTo(bx, by + hh); ctx.lineTo(bx - hw, by);
-        ctx.closePath(); ctx.fillStyle = lg; ctx.fill();
-
-        const rg = ctx.createLinearGradient(0, ty, 0, by + hh);
-        rg.addColorStop(0, 'rgba(160,160,160,0.45)');
-        rg.addColorStop(1, 'rgba(210,210,210,0.25)');
-        ctx.beginPath();
-        ctx.moveTo(bx + hw, ty); ctx.lineTo(bx, ty + hh);
-        ctx.lineTo(bx, by + hh); ctx.lineTo(bx + hw, by);
-        ctx.closePath(); ctx.fillStyle = rg; ctx.fill();
-      }
-    };
-
-    const getHeight = (col: number, row: number, t: number) => {
-      const phase = (col + row) * 0.9;
-      return MIN_H + (MAX_H - MIN_H) * (Math.sin(t * SPEED - phase) * 0.5 + 0.5);
-    };
-
-    const draw = () => {
-      rafRef.current = requestAnimationFrame(draw);
-      const t = Date.now() / 1000;
-      ctx.fillStyle = BG;
-      ctx.fillRect(0, 0, width, height);
-      for (let sum = 0; sum <= COLS + ROWS - 2; sum++) {
-        for (let col = 0; col <= sum; col++) {
-          const row = sum - col;
-          if (col >= COLS || row < 0 || row >= ROWS) continue;
-          if (!isRing(col, row)) continue;
-          drawPillar(col, row, getHeight(col, row, t));
-        }
-      }
-    };
-
-    draw();
-
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-      ro.disconnect();
-    };
-  }, [isNegative]);
-
-  return (
-    <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
   );
 };
 
@@ -301,11 +386,6 @@ const STACK_RIGHT: StackCategory[] = [
 ];
 
 // ─── TechStackSection ─────────────────────────────────────────────────────────
-
-interface TechStackSectionProps {
-  isNegative: boolean;
-  navOffset?: number;
-}
 
 export const TechStackSection: React.FC<TechStackSectionProps> = ({
   isNegative,
