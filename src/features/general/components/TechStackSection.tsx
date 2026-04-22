@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, memo } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useMotionValue, useAnimationFrame, useTransform, motion } from 'framer-motion';
 import { ShinyText, GlowingEffectInline, FeatureCard } from './GeneralPage';
 
