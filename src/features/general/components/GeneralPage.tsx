@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import Navigation from '@/features/navigation/components/Navigation';
 import RotatingText from '@/features/ui-components/rotating-text/rotating-text';
 import { TechStackSection } from './TechStackSection';
+export { ShinyText, GlowingEffectInline, FeatureCard };
 
 // ─── ShinyText ────────────────────────────────────────────────────────────────
 
