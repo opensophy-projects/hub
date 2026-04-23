@@ -6,8 +6,9 @@ import react from '@astrojs/react';
 // В `astro build` этот блок не выполняется → WebSocket сервер не стартует.
 
 const devIntegrations = [];
+const enableDevBridge = process.env.NODE_ENV !== 'production' && process.env.HUB_DEV_BRIDGE === '1';
 
-if (process.env.NODE_ENV !== 'production') {
+if (enableDevBridge) {
   try {
     const { devBridgeIntegration } = await import('./scripts/devBridge.mjs');
     devIntegrations.push(devBridgeIntegration());
@@ -31,6 +32,15 @@ export default defineConfig({
   },
 
   vite: {
+    server: {
+      watch: {
+        ignored: [
+          '**/tsconfig.json',
+          '**/src/app/content.config.mjs',
+        ],
+      },
+    },
+
     ssr: {
       external: ['isomorphic-dompurify'],
     },

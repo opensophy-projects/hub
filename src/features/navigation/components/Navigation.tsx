@@ -24,7 +24,7 @@ import {
   Search, Sun, Moon, ChevronDown, ChevronRight,
   Mail, X, Home, AlertTriangle,
   FolderOpen, List, PanelLeft, ArrowUp, ChevronLeft,
-  Crown,
+  Crown, BookOpenText,
 } from 'lucide-react';
 import { useIsDesktopNav } from '@/shared/hooks/useBreakpoint';
 
@@ -34,6 +34,7 @@ const RAIL_W        = 64;
 const PANEL_DEFAULT = 280;
 const PANEL_MIN     = 220;
 const PANEL_MAX     = 500;
+const TOC_PANEL_W   = 300;
 
 export interface TocItem { id: string; text: string; level: number; }
 interface CategoryPathItem { slug: string; title: string; icon: string | null; }
@@ -47,11 +48,17 @@ interface Doc {
 interface NavNode { title: string; slug: string; icon: string | null; docs: Doc[]; children: Record<string, NavNode>; isCategory: boolean; }
 interface NavSection { navSlug: string; navTitle: string; navIcon: string; }
 export type PanelType = 'nav' | 'toc' | 'contacts' | null;
+type ReadingMode = 'standard' | 'extended';
 
 interface NavigationProps {
   currentDocSlug?: string;
   toc?: TocItem[];
   activeHeadingId?: string;
+}
+
+function toDocHref(slug?: string): string {
+  if (!slug) return '/';
+  return `/${slug}/`;
 }
 
 // ─── Theme tokens ─────────────────────────────────────────────────────────────
@@ -186,7 +193,7 @@ const DocLink: React.FC<{
 }> = memo(({ doc, isDark, isActive, onClick, mobile, onPreviewChange }) => {
   const t = tk(isDark);
   return (
-    <a href={`/${doc.slug}`} onClick={onClick}
+    <a href={toDocHref(doc.slug)} onClick={onClick}
       onMouseEnter={e => { if (!mobile) onPreviewChange?.({ doc, rect: e.currentTarget.getBoundingClientRect() }); }}
       onMouseLeave={() => { if (!mobile) onPreviewChange?.(null); }}
       style={{
@@ -906,30 +913,62 @@ const PanelResizeToggle: React.FC<{
 // ─── DesktopNav ───────────────────────────────────────────────────────────────
 
 const DesktopNav: React.FC<{
-  isDark: boolean; toggleTheme: () => void; currentDocSlug?: string; toc: TocItem[]; activeId: string;
-}> = ({ isDark, toggleTheme, currentDocSlug, toc, activeId }) => {
+  isDark: boolean; toggleTheme: () => void; currentDocSlug?: string; toc: TocItem[]; activeId: string; showDocActions: boolean;
+}> = ({ isDark, toggleTheme, currentDocSlug, toc, activeId, showDocActions }) => {
   const t = tk(isDark);
   const [railVisible, setRailVisible] = useState(true);
   const [searchOpen, setSearchOpen]   = useState(false);
+  const [readingModeMenuOpen, setReadingModeMenuOpen] = useState(false);
+  const [readingMode, setReadingMode] = useState<ReadingMode>(() => {
+    try {
+      const saved = sessionStorage.getItem('hub:readingMode');
+      return saved === 'extended' ? 'extended' : 'standard';
+    } catch {
+      return 'standard';
+    }
+  });
+  const [standardTocVisible, setStandardTocVisible] = useState<boolean>(() => {
+    try {
+      const saved = sessionStorage.getItem('hub:reading:tocVisible');
+      return saved !== 'false';
+    } catch {
+      return true;
+    }
+  });
   const { activePanel, setActivePanel, panelWidth, setPanelWidth, togglePanel } = useDesktopPanel();
   const { onResizeMouseDown } = usePanelResize(panelWidth, setPanelWidth);
+  const readingModeEnabled = showDocActions;
+  const isStandardMode = readingModeEnabled && readingMode === 'standard';
+  const panelOpen = isStandardMode ? true : !!activePanel;
+  const panelTitle = activePanel ? activePanel : 'nav';
 
   useEffect(() => {
-    try {
-      const panel = sessionStorage.getItem('hub:activePanel');
-      const hasPanel = panel === 'nav' || panel === 'toc' || panel === 'contacts';
-      const w = Number(sessionStorage.getItem('hub:panelWidth'));
-      const pw = (w >= PANEL_MIN && w <= PANEL_MAX) ? w : PANEL_DEFAULT;
-      document.documentElement.style.setProperty('--nav-left', `${RAIL_W + (hasPanel ? pw : 0)}px`);
-    } catch { /* noop */ }
-  }, []);
+    try { sessionStorage.setItem('hub:readingMode', readingMode); } catch { /* noop */ }
+  }, [readingMode]);
 
   useEffect(() => {
-    const panelOffset = activePanel ? panelWidth : 0;
+    try { sessionStorage.setItem('hub:reading:tocVisible', String(standardTocVisible)); } catch { /* noop */ }
+  }, [standardTocVisible]);
+
+  useEffect(() => {
+    const panelOffset = panelOpen ? panelWidth : 0;
     const left = railVisible ? RAIL_W + panelOffset : 0;
+    const sidebarHidden = isStandardMode && !railVisible;
+    const tocHidden = isStandardMode && !standardTocVisible;
     document.documentElement.style.setProperty('--nav-left', `${left}px`);
+    document.documentElement.style.setProperty('--doc-right', isStandardMode && standardTocVisible ? `${TOC_PANEL_W}px` : '0px');
+    document.documentElement.style.setProperty('--doc-border-left', sidebarHidden ? '1' : '0');
+    document.documentElement.style.setProperty('--doc-border-right', tocHidden ? '1' : '0');
     return () => { document.documentElement.style.removeProperty('--nav-left'); };
-  }, [railVisible, activePanel, panelWidth]);
+  }, [railVisible, panelOpen, panelWidth, isStandardMode, standardTocVisible]);
+
+  useEffect(() => {
+    return () => {
+      document.documentElement.style.removeProperty('--doc-right');
+      document.documentElement.style.removeProperty('--doc-border-left');
+      document.documentElement.style.removeProperty('--doc-border-right');
+    };
+  }, []);
 
   const panelTitles: Record<Exclude<PanelType, null>, string> = { nav: 'Навигация', toc: 'Оглавление', contacts: 'Контакты' };
 
@@ -945,8 +984,39 @@ const DesktopNav: React.FC<{
             <RailBtn icon={isDark ? <Sun size={18} /> : <Moon size={18} />} label="Тема"       isDark={isDark} onClick={toggleTheme}                                                              title={isDark ? 'Светлая' : 'Тёмная'} />
             <RailBtn icon={<Search size={18} />}                            label="Поиск"      isDark={isDark} onClick={() => setSearchOpen(true)}                                                title="Поиск" />
             <RailBtn icon={<FolderOpen size={18} />}                        label="Разделы"    isDark={isDark} isActive={activePanel === 'nav'}      onClick={() => togglePanel('nav')}      title="Разделы" />
-            <RailBtn icon={<List size={18} />}                              label="Оглавление" isDark={isDark} isActive={activePanel === 'toc'}      onClick={() => togglePanel('toc')}      title="Оглавление" />
-            <RailBtn icon={<ArrowUp size={18} />}                           label="Наверх"     isDark={isDark} onClick={() => globalThis.scrollTo({ top: 0, behavior: 'smooth' })}               title="Наверх" />
+            {readingModeEnabled && (
+              <div style={{ position: 'relative' }}>
+                <RailBtn
+                  icon={<BookOpenText size={18} />}
+                  label="Режим чтения"
+                  isDark={isDark}
+                  isActive={readingModeMenuOpen}
+                  onClick={() => setReadingModeMenuOpen(prev => !prev)}
+                  title="Режим чтения"
+                />
+                {readingModeMenuOpen && (
+                  <div style={{
+                    position: 'absolute', left: '100%', top: 0, marginLeft: '8px', width: '190px', padding: '8px',
+                    borderRadius: '10px', border: `1px solid ${t.border}`, background: t.panelBg, boxShadow: t.elevatedShadow, zIndex: 70,
+                  }}>
+                    <button onClick={() => { setReadingMode('standard'); setReadingModeMenuOpen(false); }}
+                      style={{ width: '100%', textAlign: 'left', border: 'none', borderRadius: '8px', padding: '8px 10px', cursor: 'pointer', background: readingMode === 'standard' ? t.accentSoft : 'transparent', color: t.fg, fontSize: '0.8rem' }}>
+                      Стандартный
+                    </button>
+                    <button onClick={() => { setReadingMode('extended'); setReadingModeMenuOpen(false); }}
+                      style={{ width: '100%', textAlign: 'left', border: 'none', borderRadius: '8px', padding: '8px 10px', cursor: 'pointer', background: readingMode === 'extended' ? t.accentSoft : 'transparent', color: t.fg, fontSize: '0.8rem', marginTop: '4px' }}>
+                      Расширенный
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            {showDocActions && !isStandardMode && (
+              <>
+                <RailBtn icon={<List size={18} />} label="Оглавление" isDark={isDark} isActive={activePanel === 'toc'} onClick={() => togglePanel('toc')} title="Оглавление" />
+                <RailBtn icon={<ArrowUp size={18} />} label="Наверх" isDark={isDark} onClick={() => globalThis.scrollTo({ top: 0, behavior: 'smooth' })} title="Наверх" />
+              </>
+            )}
             <RailBtn icon={<Mail size={18} />}                              label="Контакты"   isDark={isDark} isActive={activePanel === 'contacts'} onClick={() => togglePanel('contacts')} title="Контакты" />
           </div>
         </aside>
@@ -963,31 +1033,74 @@ const DesktopNav: React.FC<{
       {railVisible && (
         <aside style={{
           position: 'fixed', left: RAIL_W, top: 0, height: '100vh',
-          width: activePanel ? panelWidth : 0,
-          background: t.panelBg, borderRight: activePanel ? `1px solid ${t.border}` : 'none',
+          width: panelOpen ? panelWidth : 0,
+          background: t.panelBg, borderRight: panelOpen ? `1px solid ${t.border}` : 'none',
           display: 'flex', flexDirection: 'column', zIndex: 49, overflow: 'hidden',
-          pointerEvents: activePanel ? 'auto' : 'none', visibility: activePanel ? 'visible' : 'hidden',
+          pointerEvents: panelOpen ? 'auto' : 'none', visibility: panelOpen ? 'visible' : 'hidden',
         }}>
-          {activePanel && (
+          {panelOpen && (
             <>
-              <PanelHeader title={panelTitles[activePanel]} isDark={isDark} onClose={() => setActivePanel(null)} />
+              <PanelHeader title={isStandardMode ? 'Навигация' : panelTitles[panelTitle]} isDark={isDark} onClose={() => setActivePanel(null)} />
               <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                {activePanel === 'nav'      && <NavPanelContent isDark={isDark} currentDocSlug={currentDocSlug} />}
-                {activePanel === 'toc'      && <div style={{ flex: 1, overflowY: 'auto' }}><TocPanelContent toc={toc} activeId={activeId} isDark={isDark} /></div>}
-                {activePanel === 'contacts' && <div style={{ overflowY: 'auto' }}><ContactsPanelContent isDark={isDark} /></div>}
+                {(isStandardMode || panelTitle === 'nav') && <NavPanelContent isDark={isDark} currentDocSlug={currentDocSlug} />}
+                {!isStandardMode && panelTitle === 'toc' && <div style={{ flex: 1, overflowY: 'auto' }}><TocPanelContent toc={toc} activeId={activeId} isDark={isDark} /></div>}
+                {!isStandardMode && panelTitle === 'contacts' && <div style={{ overflowY: 'auto' }}><ContactsPanelContent isDark={isDark} /></div>}
               </div>
             </>
           )}
-          {activePanel && (
+          {panelOpen && (
             <button onMouseDown={onResizeMouseDown} aria-label="Изменить ширину панели"
               style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '8px', cursor: 'col-resize', zIndex: 10, background: 'transparent', border: 'none', padding: 0 }} />
           )}
         </aside>
       )}
 
-      {railVisible && (
-        <PanelResizeToggle isDark={isDark} panelOpen={!!activePanel} panelWidth={panelWidth} onResizeMouseDown={onResizeMouseDown}
+      {railVisible && !isStandardMode && (
+        <PanelResizeToggle isDark={isDark} panelOpen={panelOpen} panelWidth={panelWidth} onResizeMouseDown={onResizeMouseDown}
           onToggle={() => { if (activePanel) { setActivePanel(null); } else { togglePanel('nav'); } }} />
+      )}
+
+      {isStandardMode && standardTocVisible && (
+        <aside style={{
+          position: 'fixed', right: 0, top: 0, width: TOC_PANEL_W, height: '100vh',
+          borderLeft: `1px solid ${t.border}`, background: t.panelBg, zIndex: 48,
+          display: 'flex', flexDirection: 'column',
+        }}>
+          <div style={{ borderBottom: `1px solid ${t.border}`, padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: t.fgMuted }}>Оглавление</span>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button
+                onClick={() => globalThis.scrollTo({ top: 0, behavior: 'smooth' })}
+                style={{ border: `1px solid ${t.border}`, borderRadius: '7px', background: 'transparent', color: t.fgMuted, cursor: 'pointer', padding: '4px 6px', display: 'flex' }}
+                title="Наверх"
+              >
+                <ArrowUp size={12} />
+              </button>
+              <button
+                onClick={() => setStandardTocVisible(false)}
+                style={{ border: `1px solid ${t.border}`, borderRadius: '7px', background: 'transparent', color: t.fgMuted, cursor: 'pointer', padding: '4px 6px', display: 'flex' }}
+                title="Скрыть оглавление"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            <TocPanelContent toc={toc} activeId={activeId} isDark={isDark} />
+          </div>
+        </aside>
+      )}
+
+      {isStandardMode && !standardTocVisible && (
+        <button
+          onClick={() => setStandardTocVisible(true)}
+          style={{
+            position: 'fixed', right: 12, top: 12, zIndex: 56, border: `1px solid ${t.border}`, borderRadius: '8px',
+            background: t.panelBg, color: t.fgMuted, padding: '6px 8px', cursor: 'pointer', fontSize: '0.75rem',
+          }}
+        >
+          Показать TOC
+        </button>
       )}
 
       <AnimatePresence>
@@ -1070,8 +1183,8 @@ const MobBtn: React.FC<{
 type MobileSheet = 'nav' | 'toc' | 'contacts' | null;
 
 const MobileNav: React.FC<{
-  isDark: boolean; toggleTheme: () => void; currentDocSlug?: string; toc: TocItem[]; activeId: string;
-}> = ({ isDark, toggleTheme, currentDocSlug, toc, activeId }) => {
+  isDark: boolean; toggleTheme: () => void; currentDocSlug?: string; toc: TocItem[]; activeId: string; showDocActions: boolean;
+}> = ({ isDark, toggleTheme, currentDocSlug, toc, activeId, showDocActions }) => {
   const t = tk(isDark);
   const [sheet, setSheet]           = useState<MobileSheet>(null);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -1093,15 +1206,30 @@ const MobileNav: React.FC<{
       }} />
 
       <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 60, height: '60px', background: t.mobBg, borderTop: `1px solid ${t.border}`, display: 'flex', alignItems: 'stretch' }}>
-        <MobBtn label="Тема"       icon={isDark ? <Sun size={22} /> : <Moon size={22} />} isDark={isDark} onClick={toggleTheme}                                                      isActive={false} />
-        <MobBtn label="Поиск"      icon={<Search size={22} />}                            isDark={isDark} onClick={() => { setSheet(null); setSearchOpen(true); }}                   isActive={false} />
-        <MobBtn label="Разделы"    icon={<FolderOpen size={22} />}                        isDark={isDark} onClick={() => toggle('nav')}                                              isActive={sheet === 'nav'} />
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <img src="/favicon.png" alt="hub" style={{ width: 38, height: 38, objectFit: 'contain' }} />
-        </div>
-        <MobBtn label="Оглавление" icon={<List size={22} />}                              isDark={isDark} onClick={() => toggle('toc')}                                              isActive={sheet === 'toc'} />
-        <MobBtn label="Наверх"     icon={<ArrowUp size={22} />}                           isDark={isDark} onClick={() => { setSheet(null); globalThis.scrollTo({ top: 0, behavior: 'smooth' }); }} isActive={false} />
-        <MobBtn label="Контакты"   icon={<Mail size={22} />}                              isDark={isDark} onClick={() => toggle('contacts')}                                         isActive={sheet === 'contacts'} />
+        <MobBtn label="Тема" icon={isDark ? <Sun size={22} /> : <Moon size={22} />} isDark={isDark} onClick={toggleTheme} isActive={false} />
+        <MobBtn label="Поиск" icon={<Search size={22} />} isDark={isDark} onClick={() => { setSheet(null); setSearchOpen(true); }} isActive={false} />
+
+        {!showDocActions && (
+          <>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src="/favicon.png" alt="hub" style={{ width: 38, height: 38, objectFit: 'contain' }} />
+            </div>
+            <MobBtn label="Разделы" icon={<FolderOpen size={22} />} isDark={isDark} onClick={() => toggle('nav')} isActive={sheet === 'nav'} />
+          </>
+        )}
+
+        {showDocActions && (
+          <>
+            <MobBtn label="Разделы" icon={<FolderOpen size={22} />} isDark={isDark} onClick={() => toggle('nav')} isActive={sheet === 'nav'} />
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src="/favicon.png" alt="hub" style={{ width: 38, height: 38, objectFit: 'contain' }} />
+            </div>
+            <MobBtn label="Оглавление" icon={<List size={22} />} isDark={isDark} onClick={() => toggle('toc')} isActive={sheet === 'toc'} />
+            <MobBtn label="Наверх" icon={<ArrowUp size={22} />} isDark={isDark} onClick={() => { setSheet(null); globalThis.scrollTo({ top: 0, behavior: 'smooth' }); }} isActive={false} />
+          </>
+        )}
+
+        <MobBtn label="Контакты" icon={<Mail size={22} />} isDark={isDark} onClick={() => toggle('contacts')} isActive={sheet === 'contacts'} />
       </nav>
 
       <AnimatePresence>
@@ -1120,11 +1248,12 @@ const MobileNav: React.FC<{
 const Navigation: React.FC<NavigationProps> = ({ currentDocSlug, toc = [], activeHeadingId = '' }) => {
   const { isDark, toggleTheme } = useTheme();
   const isDesktop = useIsDesktopNav();
+  const showDocActions = toc.length > 0 || !!currentDocSlug;
 
   if (isDesktop === null) return null;
 
-  if (isDesktop) return <DesktopNav isDark={isDark} toggleTheme={toggleTheme} currentDocSlug={currentDocSlug} toc={toc} activeId={activeHeadingId} />;
-  return <MobileNav isDark={isDark} toggleTheme={toggleTheme} currentDocSlug={currentDocSlug} toc={toc} activeId={activeHeadingId} />;
+  if (isDesktop) return <DesktopNav isDark={isDark} toggleTheme={toggleTheme} currentDocSlug={currentDocSlug} toc={toc} activeId={activeHeadingId} showDocActions={showDocActions} />;
+  return <MobileNav isDark={isDark} toggleTheme={toggleTheme} currentDocSlug={currentDocSlug} toc={toc} activeId={activeHeadingId} showDocActions={showDocActions} />;
 };
 
 export default Navigation;
