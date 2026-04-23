@@ -172,6 +172,9 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
 
   const [isDesktop, setIsDesktop] = useState(false);
   const [navLeft, setNavLeft]     = useState('0px');
+  const [docRight, setDocRight] = useState('0px');
+  const [showLeftBorder, setShowLeftBorder] = useState(false);
+  const [showRightBorder, setShowRightBorder] = useState(false);
 
   useEffect(() => {
     const check = () => setIsDesktop(window.innerWidth > 1000);
@@ -187,10 +190,23 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   }, []);
 
   useEffect(() => {
-    if (!isDesktop) { setNavLeft('0px'); return; }
+    if (!isDesktop) {
+      setNavLeft('0px');
+      setDocRight('0px');
+      setShowLeftBorder(false);
+      setShowRightBorder(false);
+      return;
+    }
     const readVar = () => {
-      const val = getComputedStyle(document.documentElement).getPropertyValue('--nav-left').trim();
-      setNavLeft(val || '64px');
+      const css = getComputedStyle(document.documentElement);
+      const left = css.getPropertyValue('--nav-left').trim();
+      const right = css.getPropertyValue('--doc-right').trim();
+      const leftBorder = css.getPropertyValue('--doc-border-left').trim();
+      const rightBorder = css.getPropertyValue('--doc-border-right').trim();
+      setNavLeft(left || '64px');
+      setDocRight(right || '0px');
+      setShowLeftBorder(leftBorder === '1');
+      setShowRightBorder(rightBorder === '1');
     };
     readVar();
     const observer = new MutationObserver(readVar);
@@ -264,14 +280,18 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
         className={`min-h-screen ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}
         style={{
           marginLeft:   isDesktop ? navLeft : '0',
-          marginRight:  '0',
+          marginRight:  isDesktop ? docRight : '0',
           marginBottom: isDesktop ? '0' : '3.5rem',
           transition:   'none',
         }}
       >
         <DocHero doc={doc} isDark={isDark} readTime={readTime} liveFM={liveFM} />
 
-        <article style={{ padding: '2rem 2rem 3rem' }}>
+        <article style={{
+          padding: '2rem 2rem 3rem',
+          borderLeft: showLeftBorder ? `1px solid ${isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.2)'}` : 'none',
+          borderRight: showRightBorder ? `1px solid ${isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.2)'}` : 'none',
+        }}>
           <TableContext.Provider value={tableCtx}>
             <div
               data-article-content
