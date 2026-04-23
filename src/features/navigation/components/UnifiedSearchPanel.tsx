@@ -80,7 +80,7 @@ function fmtDate(d: string): string {
 }
 
 function getDocUrl(doc: DocMeta): string {
-  return doc.slug === 'welcome' ? '/' : `/${doc.slug}`;
+  return doc.slug === 'welcome' ? '/' : `/${doc.slug}/`;
 }
 
 function pluralResults(n: number): string {
