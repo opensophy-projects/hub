@@ -1,54 +1,57 @@
-import { motion, useReducedMotion } from 'framer-motion';
-import type React from 'react';
-
-export interface WaveTextProps {
-  amplitude?: number;
-  children: string;
-  className?: string;
-  duration?: number;
-  staggerDelay?: number;
+{
+  "id": "wave-text",
+  "name": "Волновой текст",
+  "description": "Буквы текста непрерывно анимируются волной — каждая буква покачивается вверх-вниз со сдвигом по времени относительно соседей. Поддерживает prefers-reduced-motion.",
+  "category": "text",
+  "main": "wave-text.tsx",
+  "props": [
+    {
+      "name": "children",
+      "type": "string",
+      "default": "Волновой текст",
+      "description": "Текст для анимации",
+      "control": "text"
+    },
+    {
+      "name": "amplitude",
+      "type": "number",
+      "default": 8,
+      "description": "Амплитуда волны в пикселях",
+      "control": "number",
+      "min": 1,
+      "max": 40,
+      "step": 1
+    },
+    {
+      "name": "duration",
+      "type": "number",
+      "default": 1.2,
+      "description": "Длительность одного цикла волны (с)",
+      "control": "number",
+      "min": 0.3,
+      "max": 5,
+      "step": 0.1
+    },
+    {
+      "name": "staggerDelay",
+      "type": "number",
+      "default": 0.05,
+      "description": "Задержка между буквами (с)",
+      "control": "number",
+      "min": 0,
+      "max": 0.3,
+      "step": 0.01
+    },
+    {
+      "name": "className",
+      "type": "string",
+      "default": "text-4xl font-bold",
+      "description": "CSS классы",
+      "control": "text"
+    }
+  ],
+  "specificProps": ["children", "amplitude", "duration", "staggerDelay"],
+  "tags": ["animation", "text", "wave", "framer-motion", "loop", "stagger"],
+  "author": "davidhdev",
+  "version": "1.0.0"
 }
-
-const WaveText: React.FC<WaveTextProps> = ({
-  children,
-  amplitude = 8,
-  duration = 1.2,
-  staggerDelay = 0.05,
-  className = '',
-}) => {
-  const shouldReduceMotion = useReducedMotion();
-
-  return (
-    <span className={className} style={{ display: 'inline-block' }}>
-      {children.split('').map((char, i) => (
-        <motion.span
-          key={`${i}-${char}`}
-          animate={
-            shouldReduceMotion
-              ? { y: 0 }
-              : { y: [0, -amplitude, 0, amplitude * 0.5, 0] }
-          }
-          style={{
-            display: 'inline-block',
-            willChange: shouldReduceMotion ? undefined : 'transform',
-          }}
-          transition={
-            shouldReduceMotion
-              ? { duration: 0 }
-              : {
-                  repeat: Number.POSITIVE_INFINITY,
-                  duration,
-                  delay: i * staggerDelay,
-                  ease: [0.37, 0, 0.63, 1],
-                  times: [0, 0.25, 0.5, 0.75, 1],
-                }
-          }
-        >
-          {char === ' ' ? '\u00A0' : char}
-        </motion.span>
-      ))}
-    </span>
-  );
-};
-
-export default WaveText;
