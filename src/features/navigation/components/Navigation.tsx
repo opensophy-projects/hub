@@ -263,6 +263,12 @@ function getCategoryNodeBackground(expanded: boolean, isDark: boolean): string {
   return isDark ? '#0F0F0F' : '#deddd9';
 }
 
+function navUnderLayerGlow(isDark: boolean): string {
+  return isDark
+    ? 'inset 0 1px 0 rgba(255,255,255,0.05), 0 0 0 1px rgba(255,255,255,0.03), 0 12px 30px rgba(0,0,0,0.45)'
+    : 'inset 0 1px 0 rgba(255,255,255,0.7), 0 0 0 1px rgba(255,255,255,0.52), 0 10px 24px rgba(0,0,0,0.14)';
+}
+
 const CategoryNode: React.FC<{
   node: NavNode; path: string; expandedPaths: Set<string>;
   onToggle: (p: string) => void; isDark: boolean; currentDocSlug?: string;
@@ -985,7 +991,13 @@ const DesktopNav: React.FC<{
   return (
     <>
       {railVisible && (
-        <aside style={{ position: 'fixed', left: 0, top: 0, height: '100vh', width: RAIL_W, background: t.railBg, borderRight: `1px solid ${t.border}`, display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 50, padding: '8px 0', gap: '2px' }}>
+        <aside style={{
+          position: 'fixed', left: 0, top: 0, height: '100vh', width: RAIL_W,
+          background: t.railBg, borderRight: `1px solid ${t.border}`,
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          zIndex: 50, padding: '8px 0', gap: '2px',
+          boxShadow: navUnderLayerGlow(isDark),
+        }}>
           <div style={{ width: RAIL_W, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <img src="/favicon.png" alt="hub" style={{ width: 28, height: 28, objectFit: 'contain' }} />
           </div>
@@ -1047,6 +1059,7 @@ const DesktopNav: React.FC<{
           background: t.panelBg, borderRight: panelOpen ? `1px solid ${t.border}` : 'none',
           display: 'flex', flexDirection: 'column', zIndex: 49, overflow: 'hidden',
           pointerEvents: panelOpen ? 'auto' : 'none', visibility: panelOpen ? 'visible' : 'hidden',
+          boxShadow: panelOpen ? navUnderLayerGlow(isDark) : 'none',
         }}>
           {panelOpen && (
             <>
@@ -1085,6 +1098,7 @@ const DesktopNav: React.FC<{
           position: 'fixed', right: 0, top: 0, width: TOC_PANEL_W, height: '100vh',
           borderLeft: `1px solid ${t.border}`, background: t.panelBg, zIndex: 48,
           display: 'flex', flexDirection: 'column',
+          boxShadow: navUnderLayerGlow(isDark),
         }}>
           <div style={{ borderBottom: `1px solid ${t.border}`, padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: t.fgMuted }}>Оглавление</span>
@@ -1162,7 +1176,11 @@ const MobilePanel: React.FC<{
   const PANEL_TITLES: Record<string, string> = { nav: 'Навигация', toc: 'Оглавление', contacts: 'Контакты' };
 
   return createPortal(
-    <div style={{ position: 'fixed', inset: 0, zIndex: 62, background: t.panelFullBg, display: 'flex', flexDirection: 'column', overflow: 'hidden', animation: 'mobPanelIn 0.22s cubic-bezier(0.4,0,0.2,1)', paddingBottom: '60px' }}>
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 62, background: t.panelFullBg, display: 'flex',
+      flexDirection: 'column', overflow: 'hidden', animation: 'mobPanelIn 0.22s cubic-bezier(0.4,0,0.2,1)',
+      paddingBottom: '60px', boxShadow: navUnderLayerGlow(isDark),
+    }}>
       <style>{`@keyframes mobPanelIn{from{transform:translateY(100%)}to{transform:translateY(0)}}`}</style>
       <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '52px 20px 16px', borderBottom: `1px solid ${t.border}`, background: t.panelFullBg }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -1226,7 +1244,11 @@ const MobileNav: React.FC<{
         background: `linear-gradient(to bottom, transparent, ${t.mobBg})`,
       }} />
 
-      <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 60, height: '60px', background: t.mobBg, borderTop: `1px solid ${t.border}`, display: 'flex', alignItems: 'stretch' }}>
+      <nav style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 60, height: '60px',
+        background: t.mobBg, borderTop: `1px solid ${t.border}`, display: 'flex', alignItems: 'stretch',
+        boxShadow: navUnderLayerGlow(isDark),
+      }}>
         <MobBtn label="Тема" icon={isDark ? <Sun size={22} /> : <Moon size={22} />} isDark={isDark} onClick={toggleTheme} isActive={false} />
         <MobBtn label="Поиск" icon={<Search size={22} />} isDark={isDark} onClick={() => { setSheet(null); setSearchOpen(true); }} isActive={false} />
 
