@@ -8,7 +8,7 @@ import type { SiteConfig } from '../useDevBridge';
 export default function SitePanel() {
   const t = useContext(ThemeTokensContext);
 
-  const [config, setConfig]   = useState<SiteConfig>({ useLanding: false });
+  const [config, setConfig]   = useState<SiteConfig>({ useLanding: false, showDotWaveBackground: true });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState('');
@@ -21,7 +21,10 @@ export default function SitePanel() {
     setError('');
     try {
       const { config: cfg } = await bridge.readSiteConfig();
-      setConfig(cfg);
+      setConfig({
+        useLanding: cfg.useLanding === true,
+        showDotWaveBackground: cfg.showDotWaveBackground !== false,
+      });
     } catch (e: unknown) {
       setError((e as Error).message);
     } finally {
@@ -40,6 +43,23 @@ export default function SitePanel() {
     try {
       await bridge.writeSiteConfig(next);
       toast.success(value ? 'Лендинг включён' : 'Welcome.md включён');
+    } catch (e: unknown) {
+      setError((e as Error).message);
+      setConfig(prevConfig.current);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleDotWave = async (value: boolean) => {
+    const next = { ...config, showDotWaveBackground: value };
+    prevConfig.current = config;
+    setConfig(next);
+    setSaving(true);
+    setError('');
+    try {
+      await bridge.writeSiteConfig(next);
+      toast.success(value ? 'DotWave фон включён' : 'DotWave фон отключён');
     } catch (e: unknown) {
       setError((e as Error).message);
       setConfig(prevConfig.current);
@@ -184,6 +204,35 @@ export default function SitePanel() {
       {/* Разделитель */}
       <div style={{ height: 1, background: t.border, margin: '8px 0 12px' }} />
 
+      {/* Настройки hero-фона документации */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: 10, padding: '10px 12px',
+        borderRadius: 7, border: `1px solid ${t.border}`, background: t.surface,
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={{ fontSize: 11, color: t.fgMuted, fontWeight: 600 }}>DotWave фон в шапке документа</span>
+          <span style={{ fontSize: 10, color: t.fgSub }}>Если выключить, фон будет как у навигации.</span>
+        </div>
+        <button
+          disabled={saving}
+          onClick={() => handleToggleDotWave(!(config.showDotWaveBackground ?? true))}
+          style={{
+            border: `1px solid ${t.border}`,
+            background: (config.showDotWaveBackground ?? true) ? t.accentSoft : 'transparent',
+            color: t.fgMuted,
+            borderRadius: 6,
+            padding: '5px 9px',
+            fontSize: 10,
+            fontFamily: t.mono,
+            cursor: saving ? 'not-allowed' : 'pointer',
+            opacity: saving ? 0.7 : 1,
+          }}
+        >
+          {(config.showDotWaveBackground ?? true) ? 'ВКЛ' : 'ВЫКЛ'}
+        </button>
+      </div>
+
       {/* Текущее состояние */}
       <div style={{
         fontSize: 10, color: t.fgSub,
@@ -191,7 +240,7 @@ export default function SitePanel() {
       }}>
         <span>
           Сейчас: <strong style={{ color: t.fgMuted }}>
-            {config.useLanding ? 'Лендинг' : 'Welcome.md'}
+            {config.useLanding ? 'Лендинг' : 'Welcome.md'} · DotWave: {(config.showDotWaveBackground ?? true) ? 'вкл' : 'выкл'}
           </strong>
         </span>
         <button

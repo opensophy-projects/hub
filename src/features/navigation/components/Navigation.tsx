@@ -679,7 +679,7 @@ const NavPanelContent: React.FC<{
               background: t.dropdownBg,
               zIndex: 100,
               overflow: 'hidden',
-              boxShadow: t.dropdownShadow,
+              boxShadow: 'none',
             }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '8px' }}>
                 <SectionDropdown sections={sections} activeNavSlug={activeNavSlug} mobile={!!mobile} isDark={isDark} onSelect={handleSectionSelect} />
@@ -902,7 +902,7 @@ const PanelResizeToggle: React.FC<{
           background: getPanelToggleBackground(hov, isDark),
           color: hov ? t.fg : t.fgMuted, cursor: 'pointer', padding: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: hov ? t.elevatedShadowSoft : 'none',
+          boxShadow: 'none',
         }}>
         {panelOpen ? <ChevronLeft size={11} strokeWidth={2.5} /> : <ChevronRight size={11} strokeWidth={2.5} />}
       </button>
@@ -985,7 +985,12 @@ const DesktopNav: React.FC<{
   return (
     <>
       {railVisible && (
-        <aside style={{ position: 'fixed', left: 0, top: 0, height: '100vh', width: RAIL_W, background: t.railBg, borderRight: `1px solid ${t.border}`, display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 50, padding: '8px 0', gap: '2px' }}>
+        <aside style={{
+          position: 'fixed', left: 0, top: 0, height: '100vh', width: RAIL_W,
+          background: t.railBg, borderRight: `1px solid ${t.border}`,
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          zIndex: 50, padding: '8px 0', gap: '2px',
+        }}>
           <div style={{ width: RAIL_W, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <img src="/favicon.png" alt="hub" style={{ width: 28, height: 28, objectFit: 'contain' }} />
           </div>
@@ -1007,7 +1012,7 @@ const DesktopNav: React.FC<{
                 {readingModeMenuOpen && (
                   <div style={{
                     position: 'absolute', left: '100%', top: 0, marginLeft: '8px', width: '190px', padding: '8px',
-                    borderRadius: '10px', border: `1px solid ${t.border}`, background: t.panelBg, boxShadow: t.elevatedShadow, zIndex: 70,
+                    borderRadius: '10px', border: `1px solid ${t.border}`, background: t.panelBg, boxShadow: 'none', zIndex: 70,
                   }}>
                     <button onClick={() => { setReadingMode('standard'); setReadingModeMenuOpen(false); }}
                       style={{ width: '100%', textAlign: 'left', border: 'none', borderRadius: '8px', padding: '8px 10px', cursor: 'pointer', background: readingMode === 'standard' ? t.accentSoft : 'transparent', color: t.fg, fontSize: '0.8rem' }}>
@@ -1074,6 +1079,25 @@ const DesktopNav: React.FC<{
           )}
         </aside>
       )}
+      {railVisible && panelOpen && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            left: RAIL_W + panelWidth - 1,
+            top: 0,
+            width: 20,
+            height: '100vh',
+            zIndex: 48,
+            pointerEvents: 'none',
+            background: isDark
+              ? 'linear-gradient(to right, rgba(15,15,15,0.56), rgba(15,15,15,0.12), transparent)'
+              : 'linear-gradient(to right, rgba(224,223,219,0.7), rgba(224,223,219,0.2), transparent)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+          }}
+        />
+      )}
 
       {railVisible && !isStandardMode && (
         <PanelResizeToggle isDark={isDark} panelOpen={panelOpen} panelWidth={panelWidth} onResizeMouseDown={onResizeMouseDown}
@@ -1110,6 +1134,25 @@ const DesktopNav: React.FC<{
             <TocPanelContent toc={toc} activeId={activeId} isDark={isDark} />
           </div>
         </aside>
+      )}
+      {isStandardMode && standardTocVisible && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            right: TOC_PANEL_W - 1,
+            top: 0,
+            width: 20,
+            height: '100vh',
+            zIndex: 47,
+            pointerEvents: 'none',
+            background: isDark
+              ? 'linear-gradient(to left, rgba(15,15,15,0.56), rgba(15,15,15,0.12), transparent)'
+              : 'linear-gradient(to left, rgba(224,223,219,0.7), rgba(224,223,219,0.2), transparent)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+          }}
+        />
       )}
 
       {isStandardMode && !standardTocVisible && (
@@ -1162,7 +1205,11 @@ const MobilePanel: React.FC<{
   const PANEL_TITLES: Record<string, string> = { nav: 'Навигация', toc: 'Оглавление', contacts: 'Контакты' };
 
   return createPortal(
-    <div style={{ position: 'fixed', inset: 0, zIndex: 62, background: t.panelFullBg, display: 'flex', flexDirection: 'column', overflow: 'hidden', animation: 'mobPanelIn 0.22s cubic-bezier(0.4,0,0.2,1)', paddingBottom: '60px' }}>
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 62, background: t.panelFullBg, display: 'flex',
+      flexDirection: 'column', overflow: 'hidden', animation: 'mobPanelIn 0.22s cubic-bezier(0.4,0,0.2,1)',
+      paddingBottom: '60px',
+    }}>
       <style>{`@keyframes mobPanelIn{from{transform:translateY(100%)}to{transform:translateY(0)}}`}</style>
       <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '52px 20px 16px', borderBottom: `1px solid ${t.border}`, background: t.panelFullBg }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -1226,7 +1273,10 @@ const MobileNav: React.FC<{
         background: `linear-gradient(to bottom, transparent, ${t.mobBg})`,
       }} />
 
-      <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 60, height: '60px', background: t.mobBg, borderTop: `1px solid ${t.border}`, display: 'flex', alignItems: 'stretch' }}>
+      <nav style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 60, height: '60px',
+        background: t.mobBg, borderTop: `1px solid ${t.border}`, display: 'flex', alignItems: 'stretch',
+      }}>
         <MobBtn label="Тема" icon={isDark ? <Sun size={22} /> : <Moon size={22} />} isDark={isDark} onClick={toggleTheme} isActive={false} />
         <MobBtn label="Поиск" icon={<Search size={22} />} isDark={isDark} onClick={() => { setSheet(null); setSearchOpen(true); }} isActive={false} />
 

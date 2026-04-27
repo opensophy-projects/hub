@@ -42,6 +42,9 @@ interface DocMeta {
 
 type DateFilter = 'all' | 'new' | 'updated';
 type SortOrder  = 'date-desc' | 'date-asc';
+interface SiteConfig {
+  useLanding?: boolean;
+}
 
 const PAGE_SIZE      = 10;
 const LOAD_MORE_N    = 10;
@@ -80,7 +83,8 @@ function fmtDate(d: string): string {
 }
 
 function getDocUrl(doc: DocMeta): string {
-  return doc.slug === 'welcome' ? '/' : `/${doc.slug}/`;
+  if (doc.slug === '' || doc.slug === 'welcome') return '/';
+  return `/${doc.slug}/`;
 }
 
 function pluralResults(n: number): string {
@@ -419,6 +423,50 @@ function useSearchResults(docs: DocMeta[], opts: SearchOptions) {
   }, [debouncedQ, docs, filterCategory, filterSection, activeTags, dateFilter, sortOrder]);
 }
 
+function useSearchDocs(manifestDocs: DocMeta[]): DocMeta[] {
+  const [useLanding, setUseLanding] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    fetch('/data/site-config.json')
+      .then(res => {
+        if (!res.ok) return { useLanding: false } as SiteConfig;
+        return res.json() as Promise<SiteConfig>;
+      })
+      .then(cfg => {
+        if (!active) return;
+        setUseLanding(cfg.useLanding === true);
+      })
+      .catch(() => {
+        if (!active) return;
+        setUseLanding(false);
+      });
+
+    return () => { active = false; };
+  }, []);
+
+  return useMemo(() => {
+    const withoutWelcome = manifestDocs.filter(d => !(d.slug === '' || d.slug === 'welcome' || d.id === 'welcome'));
+    if (!useLanding) return manifestDocs;
+
+    const landingDoc: DocMeta = {
+      id: 'landing-home',
+      slug: '',
+      title: 'Главная страница',
+      description: 'Лендинг Opensophy: быстрый доступ к разделам, материалам и инструментам проекта.',
+      type: '',
+      navSlug: '',
+      navTitle: 'Главная',
+      icon: 'crown',
+      tags: ['landing', 'главная', 'opensophy'],
+      lang: 'ru',
+    };
+
+    return [landingDoc, ...withoutWelcome];
+  }, [manifestDocs, useLanding]);
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
@@ -442,7 +490,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const listRef    = useRef<HTMLDivElement>(null);
   const debouncedQ = useDebounce(query, 200);
 
-  const typedDocs = docs as DocMeta[];
+  const typedDocs = useSearchDocs(docs as DocMeta[]);
 
   const { allCategories, allTags, allSections, hasUpdatedDocs } = useSearchFilters(typedDocs);
 
