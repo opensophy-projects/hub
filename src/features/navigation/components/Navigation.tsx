@@ -199,14 +199,34 @@ const DocLink: React.FC<{
       style={{
         display: 'flex', alignItems: 'center', gap: '0.5rem',
         padding: mobile ? '10px 14px' : '8px 10px',
-        borderRadius: '8px', fontSize: mobile ? '1rem' : '0.875rem',
+        borderRadius: '10px', fontSize: mobile ? '1rem' : '0.875rem',
         textDecoration: 'none',
-        border: `1px solid ${isActive ? t.elevatedBorder : 'transparent'}`,
+        border: `1px solid ${isActive ? t.elevatedBorder : t.border}`,
         color: isActive ? t.accent : t.fg, fontWeight: isActive ? 600 : 400,
-        background: isActive ? t.accentSoft : 'transparent',
-        boxShadow: isActive ? t.elevatedShadowSoft : 'none',
+        background: isActive
+          ? `linear-gradient(90deg, ${t.accentSoft} 0%, transparent 85%)`
+          : 'transparent',
+        boxShadow: isActive
+          ? t.elevatedShadowSoft
+          : (isDark ? 'inset 0 1px 0 rgba(255,255,255,0.02)' : 'inset 0 1px 0 rgba(0,0,0,0.03)'),
         lineHeight: 1.4,
+        position: 'relative',
       }}>
+      {isActive && (
+        <span
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: '20%',
+            height: '60%',
+            width: '3px',
+            borderRadius: '0 4px 4px 0',
+            background: t.accent,
+            opacity: 0.85,
+          }}
+        />
+      )}
       {doc.icon && <span style={{ flexShrink: 0, width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fgMuted }}><LucideIcon name={doc.icon} size={14} /></span>}
       <span style={{ minWidth: 0 }}>
         <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.35 }}>{doc.title}</span>
@@ -233,15 +253,35 @@ const HomePageLink: React.FC<{
       style={{
         display: 'flex', alignItems: 'center', gap: '0.5rem',
         padding: mobile ? '10px 14px' : '8px 10px',
-        borderRadius: '8px', fontSize: mobile ? '1rem' : '0.875rem',
+        borderRadius: '10px', fontSize: mobile ? '1rem' : '0.875rem',
         textDecoration: 'none',
-        border: `1px solid ${isActive ? t.elevatedBorder : 'transparent'}`,
+        border: `1px solid ${isActive ? t.elevatedBorder : t.border}`,
         color: isActive ? t.accent : t.fg, fontWeight: isActive ? 600 : 400,
-        background: isActive ? t.accentSoft : 'transparent',
-        boxShadow: isActive ? t.elevatedShadowSoft : 'none',
+        background: isActive
+          ? `linear-gradient(90deg, ${t.accentSoft} 0%, transparent 85%)`
+          : 'transparent',
+        boxShadow: isActive
+          ? t.elevatedShadowSoft
+          : (isDark ? 'inset 0 1px 0 rgba(255,255,255,0.02)' : 'inset 0 1px 0 rgba(0,0,0,0.03)'),
         lineHeight: 1.4,
+        position: 'relative',
       }}
     >
+      {isActive && (
+        <span
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: '20%',
+            height: '60%',
+            width: '3px',
+            borderRadius: '0 4px 4px 0',
+            background: t.accent,
+            opacity: 0.85,
+          }}
+        />
+      )}
       <span style={{ flexShrink: 0, width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fgMuted }}>
         <Crown size={14} />
       </span>
@@ -258,9 +298,9 @@ const HomePageLink: React.FC<{
 
 function getCategoryNodeBackground(expanded: boolean, isDark: boolean): string {
   if (expanded) {
-    return isDark ? '#181818' : 'rgba(0,0,0,0.08)';
+    return isDark ? '#181818' : 'rgba(0,0,0,0.065)';
   }
-  return isDark ? '#0F0F0F' : '#deddd9';
+  return 'transparent';
 }
 
 const CategoryNode: React.FC<{
