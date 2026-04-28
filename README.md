@@ -1,5 +1,7 @@
 # HUB V.3.4
 
+> a hybrid platform for documentation and next-generation content.
+
 ---
 
 <img width="1280" height="720" alt="preview" src="https://github.com/user-attachments/assets/2f181c9e-5081-425c-ad16-ef034fed8314" />
