@@ -32,3 +32,5 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=opensophy-projects_hub&metric=alert_status)](https://sonarcloud.io/project/overview?id=opensophy-projects_hub)
 
 # License
+
+[![License](https://img.shields.io/badge/License-b83228?style=for-the-badge)](LICENSE.md)
