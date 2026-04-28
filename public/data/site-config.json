@@ -1,3 +1,4 @@
 {
-  "useLanding": true
+  "useLanding": true,
+  "showDotWaveBackground": true
 }
