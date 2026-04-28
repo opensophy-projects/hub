@@ -132,7 +132,7 @@ export const LIGHT = buildTheme('light');
 export type ThemeTokens = typeof DARK;
 
 export function readThemeColorOverrides(): ThemeColorOverrides {
-  if (typeof window === 'undefined') return { dark: {}, light: {} };
+  if (typeof globalThis.window === 'undefined') return { dark: {}, light: {} };
   try {
     const raw = localStorage.getItem(THEME_COLOR_STORAGE_KEY);
     if (!raw) return { dark: {}, light: {} };
