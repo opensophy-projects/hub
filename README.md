@@ -2,7 +2,9 @@
 
 # Opensophy Hub
 
-**Modern static SSG+SPA platform for publishing technical knowledge.**
+### Реализовать Hub — значит превратить статическую документацию в живой продукт.
+
+**Static-first knowledge platform: Markdown as content, SPA as experience.**
 
 [Русский](./github/README.ru.md) · [English](./github/README.en.md)
 
@@ -12,15 +14,19 @@
 
 ---
 
-## What is this project?
+## What makes Hub unique?
 
-Opensophy Hub is an open-source static documentation and article platform built with **Astro + React + TypeScript**.
+Most alternatives force a tradeoff:
+- either static docs with simple markdown,
+- or dynamic SaaS docs with limited customization.
 
-It is designed for teams and creators who want:
-- markdown-first content workflow,
-- rich interactive content blocks,
-- UI component playground,
-- static deployment (GitHub Pages / Netlify / Vercel / CDN).
+**Opensophy Hub combines both sides:**
+- static deploy and repo-owned content,
+- rich interactive markdown blocks,
+- app-like UX in a static output,
+- live UI playground directly inside docs pages.
+
+In short: **Hub is a docs engine where markdown pages can behave like mini-apps without backend lock-in.**
 
 ## Demo
 
