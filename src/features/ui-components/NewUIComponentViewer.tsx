@@ -11,6 +11,7 @@ import { loadComponent, getDefaultProps } from './loader';
 import { ComponentWrapper } from './ComponentWrapper';
 import { useIsMobile } from '@/shared/hooks/useBreakpoint';
 import type { UniversalProps, ComponentConfig, PropDefinition } from './types';
+import { makeTokens } from '@/shared/tokens/theme';
 
 type PropValue = string | number | boolean | string[] | undefined;
 type ComponentPropsMap = Record<string, PropValue>;
@@ -24,11 +25,12 @@ interface LoadedComponentData {
 }
 
 function tk(isDark: boolean) {
+  const t = makeTokens(isDark);
   return isDark ? {
-    outerBg:      '#0a0a0a',
-    barBg:        '#111111',
+    outerBg:      t.bg,
+    barBg:        t.surface,
     panelBg:      '#0d0d0d',
-    outerBorder:  'rgba(255,255,255,0.08)',
+    outerBorder:  t.border,
     barBorder:    'rgba(255,255,255,0.08)',
     btnBg:        'rgba(255,255,255,0.08)',
     btnBdr:       'rgba(255,255,255,0.12)',
@@ -37,11 +39,11 @@ function tk(isDark: boolean) {
     btnActBg:     'rgba(255,255,255,0.15)',
     btnActBdr:    'rgba(255,255,255,0.22)',
     btnActClr:    '#ffffff',
-    inpBg:        '#1a1a1a',
-    inpBdr:       'rgba(255,255,255,0.12)',
-    inpFoc:       'rgba(255,255,255,0.26)',
-    inpClr:       'rgba(255,255,255,0.88)',
-    plhClr:       'rgba(255,255,255,0.28)',
+    inpBg:        t.inpBg,
+    inpBdr:       t.inpBdr,
+    inpFoc:       t.inpBdrFocus,
+    inpClr:       t.inpClr,
+    plhClr:       t.plhClr,
     fg:           '#e8e8e8',
     fgMuted:      'rgba(255,255,255,0.35)',
     fgSub:        'rgba(255,255,255,0.22)',
@@ -55,10 +57,10 @@ function tk(isDark: boolean) {
     tabClr:       'rgba(255,255,255,0.45)',
     dangerClr:    '#f87171',
   } : {
-    outerBg:      '#E8E7E3',
-    barBg:        '#d8d7d3',
+    outerBg:      t.bg,
+    barBg:        t.surface,
     panelBg:      '#dddcd8',
-    outerBorder:  'rgba(0,0,0,0.1)',
+    outerBorder:  t.border,
     barBorder:    'rgba(0,0,0,0.09)',
     btnBg:        'rgba(0,0,0,0.07)',
     btnBdr:       'rgba(0,0,0,0.12)',
@@ -67,11 +69,11 @@ function tk(isDark: boolean) {
     btnActBg:     'rgba(0,0,0,0.12)',
     btnActBdr:    'rgba(0,0,0,0.22)',
     btnActClr:    '#000000',
-    inpBg:        '#E8E7E3',
-    inpBdr:       'rgba(0,0,0,0.12)',
-    inpFoc:       'rgba(0,0,0,0.28)',
-    inpClr:       '#000000',
-    plhClr:       'rgba(0,0,0,0.35)',
+    inpBg:        t.inpBg,
+    inpBdr:       t.inpBdr,
+    inpFoc:       t.inpBdrFocus,
+    inpClr:       t.inpClr,
+    plhClr:       t.plhClr,
     fg:           '#1a1a1a',
     fgMuted:      'rgba(0,0,0,0.38)',
     fgSub:        'rgba(0,0,0,0.28)',

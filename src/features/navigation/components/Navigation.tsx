@@ -27,6 +27,7 @@ import {
   Crown, BookOpenText,
 } from 'lucide-react';
 import { useIsDesktopNav } from '@/shared/hooks/useBreakpoint';
+import { makeTokens } from '@/shared/tokens/theme';
 
 const LazyUnifiedSearchPanel = lazy(() => import('./UnifiedSearchPanel'));
 
@@ -63,68 +64,37 @@ function toDocHref(slug?: string): string {
 
 // ─── Theme tokens ─────────────────────────────────────────────────────────────
 
-const DARK_TOKENS = {
-  railBg:      '#0F0F0F',
-  panelBg:     '#0F0F0F',
-  border:      'rgba(255,255,255,0.08)',
-  fg:          'rgba(255,255,255,0.85)',
-  fgMuted:     'rgba(255,255,255,0.55)',
-  fgSub:       'rgba(255,255,255,0.38)',
-  hov:         'rgba(255,255,255,0.05)',
-  accent:      '#ffffff',
-  accentSoft:  'rgba(255,255,255,0.08)',
-  inputBg:         '#0F0F0F',
-  inputBorder:     'rgba(255,255,255,0.13)',
-  inputBorderFocus:'rgba(255,255,255,0.30)',
-  inputShadow:     'inset 0 1px 3px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05)',
-  inputShadowFocus:'0 0 0 2px rgba(255,255,255,0.09)',
-  inputClr:        'rgba(255,255,255,0.88)',
-  sectionBg:       '#0F0F0F',
-  sectionBorder:   'rgba(255,255,255,0.12)',
-  sectionShadow:   '0 1px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
-  dropdownBg:      '#0F0F0F',
-  dropdownBorder:  'rgba(255,255,255,0.10)',
-  dropdownShadow:  '0 8px 32px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.07)',
-  mobBg:       '#0F0F0F',
-  panelFullBg: '#0F0F0F',
-  surface:     '#0F0F0F',
-  elevatedBorder:     'rgba(255,255,255,0.18)',
-  elevatedShadow:     '0 8px 24px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.04)',
-  elevatedShadowSoft: '0 2px 10px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.03)',
-} as const;
-
-const LIGHT_TOKENS = {
-  railBg:      '#E0DFDb',
-  panelBg:     '#E0DFDb',
-  border:      'rgba(0,0,0,0.08)',
-  fg:          'rgba(0,0,0,0.85)',
-  fgMuted:     'rgba(0,0,0,0.55)',
-  fgSub:       'rgba(0,0,0,0.38)',
-  hov:         'rgba(0,0,0,0.04)',
-  accent:      '#000000',
-  accentSoft:  'rgba(0,0,0,0.07)',
-  inputBg:         '#E0DFDb',
-  inputBorder:     'rgba(0,0,0,0.15)',
-  inputBorderFocus:'rgba(0,0,0,0.30)',
-  inputShadow:     'inset 0 1px 2px rgba(0,0,0,0.1)',
-  inputShadowFocus:'0 0 0 2px rgba(0,0,0,0.07)',
-  inputClr:        '#000',
-  sectionBg:       '#E0DFDb',
-  sectionBorder:   'rgba(0,0,0,0.15)',
-  sectionShadow:   '0 1px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.55)',
-  dropdownBg:      '#dddcd8',
-  dropdownBorder:  'rgba(0,0,0,0.1)',
-  dropdownShadow:  '0 8px 24px rgba(0,0,0,0.14)',
-  mobBg:       '#dcdbd7',
-  panelFullBg: '#E0DFDb',
-  surface:     '#d5d4d0',
-  elevatedBorder:     'rgba(0,0,0,0.2)',
-  elevatedShadow:     '0 10px 24px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.72)',
-  elevatedShadowSoft: '0 3px 10px rgba(0,0,0,0.11), inset 0 1px 0 rgba(255,255,255,0.65)',
-} as const;
-
 function tk(isDark: boolean) {
-  return isDark ? DARK_TOKENS : LIGHT_TOKENS;
+  const t = makeTokens(isDark);
+  return {
+    railBg: t.bg,
+    panelBg: t.bg,
+    border: t.border,
+    fg: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)',
+    fgMuted: isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)',
+    fgSub: isDark ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)',
+    hov: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+    accent: t.accent,
+    accentSoft: t.accentSoft,
+    inputBg: t.bg,
+    inputBorder: isDark ? 'rgba(255,255,255,0.13)' : 'rgba(0,0,0,0.15)',
+    inputBorderFocus: isDark ? 'rgba(255,255,255,0.30)' : 'rgba(0,0,0,0.30)',
+    inputShadow: isDark ? 'inset 0 1px 3px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05)' : 'inset 0 1px 2px rgba(0,0,0,0.1)',
+    inputShadowFocus: isDark ? '0 0 0 2px rgba(255,255,255,0.09)' : '0 0 0 2px rgba(0,0,0,0.07)',
+    inputClr: t.inpClr,
+    sectionBg: t.bg,
+    sectionBorder: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.15)',
+    sectionShadow: isDark ? '0 1px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)' : '0 1px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.55)',
+    dropdownBg: isDark ? '#0F0F0F' : '#dddcd8',
+    dropdownBorder: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.1)',
+    dropdownShadow: isDark ? '0 8px 32px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.07)' : '0 8px 24px rgba(0,0,0,0.14)',
+    mobBg: isDark ? '#0F0F0F' : '#dcdbd7',
+    panelFullBg: isDark ? '#0F0F0F' : '#E0DFDb',
+    surface: isDark ? '#0F0F0F' : '#d5d4d0',
+    elevatedBorder: t.borderElevated,
+    elevatedShadow: t.shadowElevated,
+    elevatedShadowSoft: t.shadowSoft,
+  } as const;
 }
 
 // ─── LucideIcon (lazy) ───────────────────────────────────────────────────────
