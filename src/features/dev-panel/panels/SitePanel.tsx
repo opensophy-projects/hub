@@ -4,6 +4,15 @@ import { ThemeTokensContext } from '../DevPanel';
 import { toast } from '../components/Toast';
 import { Loader2, LayoutTemplate, FileText, RefreshCw, AlertCircle } from 'lucide-react';
 import type { SiteConfig } from '../useDevBridge';
+import {
+  applyThemeColorOverrides,
+  DEFAULT_THEME_COLORS,
+  makeTokens,
+  readThemeColorOverrides,
+  THEME_COLOR_META,
+  THEME_COLOR_STORAGE_KEY,
+  type ThemeColorKey,
+} from '@/shared/tokens/theme';
 
 export default function SitePanel() {
   const t = useContext(ThemeTokensContext);
@@ -12,6 +21,13 @@ export default function SitePanel() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState('');
+  const [isDarkTheme, setIsDarkTheme] = useState<boolean>(() =>
+    typeof document === 'undefined' ? true : document.documentElement.classList.contains('dark')
+  );
+  const [themeColors, setThemeColors] = useState(() => ({
+    dark: { ...DEFAULT_THEME_COLORS.dark },
+    light: { ...DEFAULT_THEME_COLORS.light },
+  }));
 
   // Хранит предыдущее значение конфига для отката при ошибке сохранения
   const prevConfig = useRef<SiteConfig>(config);
@@ -33,6 +49,44 @@ export default function SitePanel() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const onTheme = (e: Event) => {
+      const next = (e as CustomEvent<{ isDark: boolean }>).detail.isDark;
+      setIsDarkTheme(next);
+    };
+    globalThis.addEventListener('hub:theme-change', onTheme);
+    return () => globalThis.removeEventListener('hub:theme-change', onTheme);
+  }, []);
+
+  useEffect(() => {
+    const ov = readThemeColorOverrides();
+    setThemeColors({
+      dark: { ...DEFAULT_THEME_COLORS.dark, ...ov.dark },
+      light: { ...DEFAULT_THEME_COLORS.light, ...ov.light },
+    });
+  }, []);
+
+  const saveThemeColors = () => {
+    const payload = { dark: themeColors.dark, light: themeColors.light };
+    localStorage.setItem(THEME_COLOR_STORAGE_KEY, JSON.stringify(payload));
+    applyThemeColorOverrides(payload);
+    const next = makeTokens(isDarkTheme);
+    document.documentElement.style.backgroundColor = next.bgPage;
+    globalThis.dispatchEvent(new CustomEvent('hub:theme-change', { detail: { isDark: isDarkTheme } }));
+    toast.success('Цвета тем обновлены');
+  };
+
+  const resetThemeColors = () => {
+    const defaults = { dark: { ...DEFAULT_THEME_COLORS.dark }, light: { ...DEFAULT_THEME_COLORS.light } };
+    setThemeColors(defaults);
+    localStorage.setItem(THEME_COLOR_STORAGE_KEY, JSON.stringify(defaults));
+    applyThemeColorOverrides(defaults);
+    const next = makeTokens(isDarkTheme);
+    document.documentElement.style.backgroundColor = next.bgPage;
+    globalThis.dispatchEvent(new CustomEvent('hub:theme-change', { detail: { isDark: isDarkTheme } }));
+    toast.success('Цвета тем сброшены');
+  };
 
   const handleToggleLanding = async (value: boolean) => {
     const next = { ...config, useLanding: value };
@@ -264,6 +318,73 @@ export default function SitePanel() {
       }}>
         💡 После изменения режима в dev-режиме достаточно обновить страницу (<code style={{ fontFamily: t.mono }}>F5</code>).
         В продакшне потребуется пересборка.
+      </div>
+
+      <div style={{ height: 1, background: t.border, margin: '12px 0' }} />
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, fontWeight: 700, color: t.fgSub, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+        ЦВЕТА ТЕМ
+      </div>
+      <div style={{
+        marginBottom: 10, padding: '8px 10px', borderRadius: 7,
+        border: `1px solid ${t.border}`, background: t.surface,
+        fontSize: 10, color: t.fgMuted, lineHeight: 1.55,
+      }}>
+        Здесь можно менять ВСЕ токены цветов. У каждого поля указано, где этот цвет используется.
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 330, overflowY: 'auto', paddingRight: 2 }} className="adm-scroll">
+        {(Object.keys(THEME_COLOR_META) as ThemeColorKey[]).map((key) => (
+          <div key={key} style={{ border: `1px solid ${t.border}`, borderRadius: 8, padding: 8, background: t.surface }}>
+            <div style={{ fontSize: 11, color: t.fg, fontWeight: 600 }}>{THEME_COLOR_META[key].label}</div>
+            <div style={{ fontSize: 10, color: t.fgSub, margin: '2px 0 6px' }}>{THEME_COLOR_META[key].usage}</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, color: t.fgMuted }}>
+                Dark ({key})
+                <input
+                  type="text"
+                  value={themeColors.dark[key]}
+                  onChange={e => setThemeColors(prev => ({ dark: { ...prev.dark, [key]: e.target.value }, light: prev.light }))}
+                  style={{ width: '100%', height: 28, background: t.bg, border: `1px solid ${t.border}`, borderRadius: 6, color: t.fgMuted, padding: '0 8px', fontSize: 10, fontFamily: t.mono }}
+                />
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, color: t.fgMuted }}>
+                Light ({key})
+                <input
+                  type="text"
+                  value={themeColors.light[key]}
+                  onChange={e => setThemeColors(prev => ({ dark: prev.dark, light: { ...prev.light, [key]: e.target.value } }))}
+                  style={{ width: '100%', height: 28, background: t.bg, border: `1px solid ${t.border}`, borderRadius: 6, color: t.fgMuted, padding: '0 8px', fontSize: 10, fontFamily: t.mono }}
+                />
+              </label>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+        <button
+          onClick={saveThemeColors}
+          style={{
+            flex: 1, borderRadius: 8, padding: '8px 10px',
+            border: `1px solid ${t.borderStrong}`,
+            background: t.accentSoft,
+            color: t.fg,
+            fontSize: 11, fontFamily: t.mono, cursor: 'pointer',
+          }}
+        >
+          Применить
+        </button>
+        <button
+          onClick={resetThemeColors}
+          style={{
+            flex: 1, borderRadius: 8, padding: '8px 10px',
+            border: `1px solid ${t.border}`,
+            background: 'transparent',
+            color: t.fgMuted,
+            fontSize: 11, fontFamily: t.mono, cursor: 'pointer',
+          }}
+        >
+          Сбросить
+        </button>
       </div>
     </div>
   );
