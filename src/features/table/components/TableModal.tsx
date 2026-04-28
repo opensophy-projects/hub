@@ -7,6 +7,7 @@ import { TableView } from './TableView';
 import { parseTableHtml } from '../utils/tableParser';
 import { useTableControls } from '../hooks/useTableControls';
 import { parseTableForCopy, toMd, toTsv, type CopyFormat } from '../utils/copyUtils';
+import { makeTokens, themed } from '@/shared/tokens/theme';
 
 interface TableModalProps {
   isOpen: boolean;
@@ -16,56 +17,35 @@ interface TableModalProps {
 }
 
 function tk(isDark: boolean) {
-  return isDark ? {
-    modalBg:  '#0a0a0a',
-    barBg:    '#111111',
-    border:   'rgba(255,255,255,0.08)',
-    btnBg:    'rgba(255,255,255,0.08)',
-    btnBdr:   'rgba(255,255,255,0.12)',
-    btnHov:   'rgba(255,255,255,0.14)',
-    btnClr:   'rgba(255,255,255,0.72)',
-    btnActBg: 'rgba(255,255,255,0.15)',
-    btnActBdr:'rgba(255,255,255,0.22)',
-    btnActClr:'#ffffff',
-    inpBg:    '#1a1a1a',
-    inpBdr:   'rgba(255,255,255,0.12)',
-    inpFoc:   'rgba(255,255,255,0.26)',
-    inpClr:   'rgba(255,255,255,0.88)',
-    plhClr:   'rgba(255,255,255,0.28)',
-    dangerClr:'#f87171',
-    footerClr:'rgba(255,255,255,0.22)',
-    dropBg:   '#222222',
-    dropBdr:  'rgba(255,255,255,0.12)',
-    dropHov:  'rgba(255,255,255,0.08)',
-    dropClr:  'rgba(255,255,255,0.85)',
-    dropSub:  'rgba(255,255,255,0.38)',
-    copiedBg: 'rgba(34,197,94,0.16)',
-    copiedBdr:'rgba(34,197,94,0.4)',
-  } : {
-    modalBg:  '#E8E7E3',
-    barBg:    '#d8d7d3',
-    border:   'rgba(0,0,0,0.09)',
-    btnBg:    'rgba(0,0,0,0.07)',
-    btnBdr:   'rgba(0,0,0,0.12)',
-    btnHov:   'rgba(0,0,0,0.12)',
-    btnClr:   'rgba(0,0,0,0.68)',
-    btnActBg: 'rgba(0,0,0,0.12)',
-    btnActBdr:'rgba(0,0,0,0.22)',
-    btnActClr:'#000000',
-    inpBg:    '#E8E7E3',
-    inpBdr:   'rgba(0,0,0,0.12)',
-    inpFoc:   'rgba(0,0,0,0.28)',
-    inpClr:   '#000000',
-    plhClr:   'rgba(0,0,0,0.35)',
-    dangerClr:'#dc2626',
-    footerClr:'rgba(0,0,0,0.32)',
-    dropBg:   '#eceae6',
-    dropBdr:  'rgba(0,0,0,0.12)',
-    dropHov:  'rgba(0,0,0,0.07)',
-    dropClr:  'rgba(0,0,0,0.85)',
-    dropSub:  'rgba(0,0,0,0.4)',
-    copiedBg: 'rgba(34,197,94,0.14)',
-    copiedBdr:'rgba(34,197,94,0.5)',
+  const t = makeTokens(isDark);
+  const shared = {
+    modalBg:  t.modalBg,
+    barBg:    t.surface,
+    border:   t.border,
+    inpBg:    t.inpBg,
+    inpBdr:   t.inpBdr,
+    inpFoc:   t.inpBdrFocus,
+    inpClr:   t.inpClr,
+    plhClr:   t.plhClr,
+  };
+  return {
+    ...shared,
+    btnBg: themed(isDark, 'rgba(255,255,255,0.08)', 'rgba(0,0,0,0.07)'),
+    btnBdr: themed(isDark, 'rgba(255,255,255,0.12)', 'rgba(0,0,0,0.12)'),
+    btnHov: themed(isDark, 'rgba(255,255,255,0.14)', 'rgba(0,0,0,0.12)'),
+    btnClr: themed(isDark, 'rgba(255,255,255,0.72)', 'rgba(0,0,0,0.68)'),
+    btnActBg: themed(isDark, 'rgba(255,255,255,0.15)', 'rgba(0,0,0,0.12)'),
+    btnActBdr: themed(isDark, 'rgba(255,255,255,0.22)', 'rgba(0,0,0,0.22)'),
+    btnActClr: themed(isDark, '#ffffff', '#000000'),
+    dangerClr: themed(isDark, '#f87171', '#dc2626'),
+    footerClr: themed(isDark, 'rgba(255,255,255,0.22)', 'rgba(0,0,0,0.32)'),
+    dropBg: themed(isDark, '#222222', '#eceae6'),
+    dropBdr: themed(isDark, 'rgba(255,255,255,0.12)', 'rgba(0,0,0,0.12)'),
+    dropHov: themed(isDark, 'rgba(255,255,255,0.08)', 'rgba(0,0,0,0.07)'),
+    dropClr: themed(isDark, 'rgba(255,255,255,0.85)', 'rgba(0,0,0,0.85)'),
+    dropSub: themed(isDark, 'rgba(255,255,255,0.38)', 'rgba(0,0,0,0.4)'),
+    copiedBg: themed(isDark, 'rgba(34,197,94,0.16)', 'rgba(34,197,94,0.14)'),
+    copiedBdr: themed(isDark, 'rgba(34,197,94,0.4)', 'rgba(34,197,94,0.5)'),
   };
 }
 

@@ -4,6 +4,7 @@ import type { ParsedRow } from '../types/table';
 import { SortIcon } from './SortIcons';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { getTableStyles } from './tableStyles';
+import { makeTokens } from '@/shared/tokens/theme';
 
 export { getTableStyles } from './tableStyles';
 
@@ -23,42 +24,23 @@ interface TableViewProps {
   fullscreen?: boolean;
 }
 
-const DARK_TOK = {
-  thBg:       '#111111',
-  thColor:    'rgba(255,255,255,0.35)',
-  thBorder:   'rgba(255,255,255,0.07)',
-  thActColor: 'rgba(255,255,255,0.82)',
-  rowEven:    '#0a0a0a',
-  rowOdd:     '#111111',
-  rowHover:   '#1a1a1a',
-  cellBorder: 'rgba(255,255,255,0.05)',
-  cellColor:  'rgba(255,255,255,0.82)',
-  fadeTo:     '#0a0a0a',
-  thumb:      'rgba(255,255,255,0.14)',
-  thumbHov:   'rgba(255,255,255,0.26)',
-  track:      'rgba(255,255,255,0.04)',
+type Tok = {
+  thBg: string; thColor: string; thBorder: string; thActColor: string;
+  rowEven: string; rowOdd: string; rowHover: string; cellBorder: string; cellColor: string;
+  fadeTo: string; thumb: string; thumbHov: string; track: string;
 };
-
-const LIGHT_TOK = {
-  thBg:       '#d8d7d3',
-  thColor:    'rgba(0,0,0,0.38)',
-  thBorder:   'rgba(0,0,0,0.08)',
-  thActColor: 'rgba(0,0,0,0.85)',
-  rowEven:    '#E8E7E3',
-  rowOdd:     '#d8d7d3',
-  rowHover:   '#cccbc6',
-  cellBorder: 'rgba(0,0,0,0.06)',
-  cellColor:  'rgba(0,0,0,0.85)',
-  fadeTo:     '#E8E7E3',
-  thumb:      'rgba(0,0,0,0.16)',
-  thumbHov:   'rgba(0,0,0,0.28)',
-  track:      'rgba(0,0,0,0.04)',
-};
-
-type Tok = typeof DARK_TOK;
 
 function tok(isDark: boolean): Tok {
-  return isDark ? DARK_TOK : LIGHT_TOK;
+  const t = makeTokens(isDark);
+  return isDark ? {
+    thBg: t.surface, thColor: 'rgba(255,255,255,0.35)', thBorder: 'rgba(255,255,255,0.07)', thActColor: 'rgba(255,255,255,0.82)',
+    rowEven: t.bg, rowOdd: t.surface, rowHover: t.surfaceHov, cellBorder: 'rgba(255,255,255,0.05)', cellColor: 'rgba(255,255,255,0.82)',
+    fadeTo: t.bg, thumb: t.thumb, thumbHov: t.thumbHov, track: t.track,
+  } : {
+    thBg: t.surface, thColor: 'rgba(0,0,0,0.38)', thBorder: 'rgba(0,0,0,0.08)', thActColor: 'rgba(0,0,0,0.85)',
+    rowEven: t.bg, rowOdd: t.surface, rowHover: '#cccbc6', cellBorder: 'rgba(0,0,0,0.06)', cellColor: 'rgba(0,0,0,0.85)',
+    fadeTo: t.bg, thumb: t.thumb, thumbHov: t.thumbHov, track: t.track,
+  };
 }
 
 // Переводит выравнивание колонки в justify-content для flex-контейнера заголовка

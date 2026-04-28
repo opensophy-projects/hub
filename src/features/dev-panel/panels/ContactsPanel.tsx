@@ -149,7 +149,7 @@ export default function ContactsPanel() {
   );
 
   // Фон кнопки "Сохранить" в состоянии saved зависит от текущей темы
-  const savedBg = t.bg === '#111112' ? 'rgba(34,197,94,0.1)' : 'rgba(22,163,74,0.08)';
+  const savedBg = t.isDark ? 'rgba(34,197,94,0.1)' : 'rgba(22,163,74,0.08)';
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

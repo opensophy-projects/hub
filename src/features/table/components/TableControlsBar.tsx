@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Filter, X, Maximize2, Copy, Check, ChevronDown, Search, MoreHorizontal } from 'lucide-react';
 import { parseTableForCopy, toMd, toTsv, type CopyFormat } from '@/features/table/utils/copyUtils';
+import { makeTokens, themed } from '@/shared/tokens/theme';
 
 interface TableControlsBarProps {
   readonly isDark: boolean;
@@ -16,56 +17,35 @@ interface TableControlsBarProps {
 }
 
 function tk(isDark: boolean) {
-  return isDark ? {
-    barBg:     '#111111',
-    border:    'rgba(255,255,255,0.08)',
-    btnBg:     'rgba(255,255,255,0.08)',
-    btnBdr:    'rgba(255,255,255,0.12)',
-    btnHov:    'rgba(255,255,255,0.14)',
-    btnClr:    'rgba(255,255,255,0.72)',
-    btnActBg:  'rgba(255,255,255,0.15)',
-    btnActBdr: 'rgba(255,255,255,0.22)',
-    btnActClr: '#ffffff',
-    inpBg:     '#1a1a1a',
-    inpBdr:    'rgba(255,255,255,0.12)',
-    inpFoc:    'rgba(255,255,255,0.26)',
-    inpClr:    'rgba(255,255,255,0.88)',
-    plhClr:    'rgba(255,255,255,0.28)',
-    menuBg:    '#1a1a1a',
-    menuBdr:   'rgba(255,255,255,0.1)',
-    menuHov:   'rgba(255,255,255,0.07)',
-    menuClr:   'rgba(255,255,255,0.82)',
-    menuSub:   'rgba(255,255,255,0.35)',
-    dangerClr: '#f87171',
-    greenBg:   'rgba(34,197,94,0.12)',
-    greenSub:  'rgba(34,197,94,0.7)',
-    copiedBg:  'rgba(34,197,94,0.16)',
-    copiedBdr: 'rgba(34,197,94,0.4)',
-  } : {
-    barBg:     '#d8d7d3',
-    border:    'rgba(0,0,0,0.09)',
-    btnBg:     'rgba(0,0,0,0.07)',
-    btnBdr:    'rgba(0,0,0,0.12)',
-    btnHov:    'rgba(0,0,0,0.12)',
-    btnClr:    'rgba(0,0,0,0.68)',
-    btnActBg:  'rgba(0,0,0,0.12)',
-    btnActBdr: 'rgba(0,0,0,0.22)',
-    btnActClr: '#000000',
-    inpBg:     '#E8E7E3',
-    inpBdr:    'rgba(0,0,0,0.12)',
-    inpFoc:    'rgba(0,0,0,0.28)',
-    inpClr:    '#000000',
-    plhClr:    'rgba(0,0,0,0.35)',
-    menuBg:    '#eceae6',
-    menuBdr:   'rgba(0,0,0,0.1)',
-    menuHov:   'rgba(0,0,0,0.06)',
-    menuClr:   'rgba(0,0,0,0.82)',
-    menuSub:   'rgba(0,0,0,0.38)',
-    dangerClr: '#dc2626',
-    greenBg:   'rgba(34,197,94,0.1)',
-    greenSub:  'rgba(34,197,94,0.7)',
-    copiedBg:  'rgba(34,197,94,0.14)',
-    copiedBdr: 'rgba(34,197,94,0.5)',
+  const t = makeTokens(isDark);
+  const shared = {
+    barBg:     t.surface,
+    border:    t.border,
+    inpBg:     t.inpBg,
+    inpBdr:    t.inpBdr,
+    inpFoc:    t.inpBdrFocus,
+    inpClr:    t.inpClr,
+    plhClr:    t.plhClr,
+  };
+  return {
+    ...shared,
+    btnBg: themed(isDark, 'rgba(255,255,255,0.08)', 'rgba(0,0,0,0.07)'),
+    btnBdr: themed(isDark, 'rgba(255,255,255,0.12)', 'rgba(0,0,0,0.12)'),
+    btnHov: themed(isDark, 'rgba(255,255,255,0.14)', 'rgba(0,0,0,0.12)'),
+    btnClr: themed(isDark, 'rgba(255,255,255,0.72)', 'rgba(0,0,0,0.68)'),
+    btnActBg: themed(isDark, 'rgba(255,255,255,0.15)', 'rgba(0,0,0,0.12)'),
+    btnActBdr: themed(isDark, 'rgba(255,255,255,0.22)', 'rgba(0,0,0,0.22)'),
+    btnActClr: themed(isDark, '#ffffff', '#000000'),
+    menuBg: themed(isDark, '#1a1a1a', '#eceae6'),
+    menuBdr: themed(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)'),
+    menuHov: themed(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.06)'),
+    menuClr: themed(isDark, 'rgba(255,255,255,0.82)', 'rgba(0,0,0,0.82)'),
+    menuSub: themed(isDark, 'rgba(255,255,255,0.35)', 'rgba(0,0,0,0.38)'),
+    dangerClr: themed(isDark, '#f87171', '#dc2626'),
+    greenBg: themed(isDark, 'rgba(34,197,94,0.12)', 'rgba(34,197,94,0.1)'),
+    greenSub: 'rgba(34,197,94,0.7)',
+    copiedBg: themed(isDark, 'rgba(34,197,94,0.16)', 'rgba(34,197,94,0.14)'),
+    copiedBdr: themed(isDark, 'rgba(34,197,94,0.4)', 'rgba(34,197,94,0.5)'),
   };
 }
 
