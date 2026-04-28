@@ -19,7 +19,7 @@ import { AnimatePresence } from 'framer-motion';
 import {
   Search, Sun, Moon, ChevronDown, ChevronRight,
   Mail, X, Home, AlertTriangle,
-  FolderOpen, List, PanelLeft, ArrowUp, ChevronLeft,
+  FolderOpen, List, PanelLeft, ArrowUp,
   Crown, BookOpenText,
 } from 'lucide-react';
 import { useIsDesktopNav } from '@/shared/hooks/useBreakpoint';
