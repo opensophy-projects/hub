@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "generate": "node scripts/generate.mjs",
     "generate:docs": "node scripts/generateDocs.mjs",
-    "generate:sitemap": "node scripts/generateSitemap.mjs"
+    "generate:sitemap": "node scripts/generateSitemap.mjs",
+    "check": "npm run lint && npm run build"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
