@@ -1,0 +1,34 @@
+{
+  "id": "line-shadow-text",
+  "name": "Линейная тень текста",
+  "description": "Текст с анимированной диагональной штриховкой в качестве тени. Штриховка бесконечно движется по тексту через bg-clip-text и CSS-анимацию.",
+  "category": "text",
+  "main": "line-shadow-text-preview.tsx",
+  "props": [
+    {
+      "name": "text",
+      "type": "string",
+      "default": "LineShadow",
+      "description": "Текст для отображения",
+      "control": "text"
+    },
+    {
+      "name": "shadowColor",
+      "type": "string",
+      "default": "#a855f7",
+      "description": "Цвет штриховки тени",
+      "control": "text"
+    },
+    {
+      "name": "className",
+      "type": "string",
+      "default": "text-6xl font-bold",
+      "description": "CSS классы на корневом элементе",
+      "control": "text"
+    }
+  ],
+  "specificProps": ["text", "shadowColor"],
+  "tags": ["animation", "text", "shadow", "gradient", "css-animation", "decorative"],
+  "author": "davidhdev",
+  "version": "1.0.0"
+}
