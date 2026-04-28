@@ -15,7 +15,7 @@ import {
 } from '@/shared/tokens/theme';
 
 // Стили радио-индикатора выбранной опции
-function RadioDot({ active, t }: { active: boolean; t: ReturnType<typeof useContext<typeof ThemeTokensContext>> }) {
+function RadioDot({ active, t }: { readonly active: boolean; readonly t: ReturnType<typeof useContext<typeof ThemeTokensContext>> }) {
   return (
     <div style={{
       width: 16, height: 16, borderRadius: '50%', flexShrink: 0, marginTop: 1,
@@ -38,13 +38,13 @@ function ModeButton({
   description,
   t,
 }: {
-  active: boolean;
-  saving: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-  description: React.ReactNode;
-  t: ReturnType<typeof useContext<typeof ThemeTokensContext>>;
+  readonly active: boolean;
+  readonly saving: boolean;
+  readonly onClick: () => void;
+  readonly icon: React.ReactNode;
+  readonly label: string;
+  readonly description: React.ReactNode;
+  readonly t: ReturnType<typeof useContext<typeof ThemeTokensContext>>;
 }) {
   return (
     <button
