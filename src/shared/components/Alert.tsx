@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { Info, Lightbulb, AlertCircle, AlertTriangle, OctagonX } from 'lucide-react';
+import { makeTokens } from '@/shared/tokens/theme';
 
 interface AlertProps {
   type: 'note' | 'tip' | 'important' | 'warning' | 'caution';
@@ -16,6 +17,7 @@ interface AlertColors {
 }
 
 function getColors(type: AlertProps['type'], isDark: boolean): AlertColors {
+  const t = makeTokens(isDark);
   if (isDark) {
     const dark: Record<AlertProps['type'], AlertColors> = {
       note:      { bg: 'rgba(59,130,246,0.06)',  border: 'rgba(59,130,246,0.15)',  text: 'rgba(147,197,253,0.8)', title: 'rgba(147,197,253,0.95)', iconColor: 'rgba(96,165,250,0.85)'  },
@@ -31,7 +33,7 @@ function getColors(type: AlertProps['type'], isDark: boolean): AlertColors {
     note: {
       bg:        '#d4d9e0',
       border:    'rgba(85,128,160,0.2)',
-      text:      'rgba(0,0,0,0.62)',
+      text:      isDark ? t.fgMuted : 'rgba(0,0,0,0.62)',
       title:     'rgba(0,0,0,0.82)',
       iconColor: '#4a6f8a',
     },

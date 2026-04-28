@@ -8,6 +8,7 @@ import { useScrollProgress } from '../hooks/useScrollProgress';
 import { Clock, CalendarDays, ChevronRight, RefreshCw } from 'lucide-react';
 import DotWaveBackground from './DotWaveBackground';
 import AskAIButton from './AskAIButton';
+import { makeTokens } from '@/shared/tokens/theme';
 
 const LazyTableModal = lazy(() => import('@/features/table/components/TableModal'));
 
@@ -78,6 +79,7 @@ interface DocHeroProps {
 }
 
 const DocHero: React.FC<DocHeroProps> = ({ doc, isDark, readTime, liveFM, showDotWaveBackground }) => {
+  const t = makeTokens(isDark);
   const title       = liveFM?.title?.trim()       || doc.title;
   const description = liveFM?.description?.trim() || doc.description;
   const author      = liveFM?.author?.trim()       || doc.author;
@@ -85,13 +87,13 @@ const DocHero: React.FC<DocHeroProps> = ({ doc, isDark, readTime, liveFM, showDo
   const updated     = liveFM?.updated?.trim()      || doc.updated;
 
   const heroBg      = showDotWaveBackground
-    ? (isDark ? '#0a0a0a' : '#E8E7E3')
-    : (isDark ? '#0F0F0F' : '#E0DFDb');
-  const borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
-  const metaClr     = isDark ? '#ffffff' : '#000000';
-  const badgeBg     = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
-  const badgeBdr    = isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
-  const textPrimary = isDark ? '#ffffff' : '#000000';
+    ? t.bgPage
+    : t.surface;
+  const borderColor = t.border;
+  const metaClr     = t.fg;
+  const badgeBg     = t.accentSoft;
+  const badgeBdr    = t.accentBorder;
+  const textPrimary = t.fg;
   const locale      = 'ru-RU';
   const opts: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
   const fmtDate     = date    ? new Date(date).toLocaleDateString(locale, opts)    : null;
@@ -132,7 +134,7 @@ const DocHero: React.FC<DocHeroProps> = ({ doc, isDark, readTime, liveFM, showDo
             </span>
           )}
         </div>
-        <h1 style={{ fontSize: 'clamp(1.6rem,4vw,2.8rem)', fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.02em', color: isDark ? '#ffffff' : '#0a0a0a', margin: '0 0 1rem 0', fontFamily: 'system-ui,-apple-system,sans-serif', maxWidth: '820px' }}>
+        <h1 style={{ fontSize: 'clamp(1.6rem,4vw,2.8rem)', fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.02em', color: t.fg, margin: '0 0 1rem 0', fontFamily: 'system-ui,-apple-system,sans-serif', maxWidth: '820px' }}>
           {title}
         </h1>
         {description && (
@@ -171,6 +173,7 @@ const DocHero: React.FC<DocHeroProps> = ({ doc, isDark, readTime, liveFM, showDo
 
 const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const { isDark } = useTheme();
+  const t = makeTokens(isDark);
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
   const [showDotWaveBackground, setShowDotWaveBackground] = useState(true);
 
@@ -289,14 +292,15 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
       {/* Progress bar */}
       <div
         ref={progressBarRef}
-        style={{ position: 'fixed', top: 0, left: 0, height: '2px', width: '0%', background: isDark ? '#fff' : '#000', zIndex: 999, transition: 'none' }}
+        style={{ position: 'fixed', top: 0, left: 0, height: '2px', width: '0%', background: t.accent, zIndex: 999, transition: 'none' }}
       />
 
       <Navigation currentDocSlug={doc.slug} toc={toc} activeHeadingId={activeId} />
 
       <main
-        className={`min-h-screen ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}
+        className="min-h-screen"
         style={{
+          background: t.bgPage,
           marginLeft:   isDesktop ? navLeft : '0',
           marginRight:  isDesktop ? docRight : '0',
           marginBottom: isDesktop ? '0' : '3.5rem',
@@ -313,8 +317,8 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
 
         <article style={{
           padding: '2rem 2rem 3rem',
-          borderLeft: showLeftBorder ? `1px solid ${isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.2)'}` : 'none',
-          borderRight: showRightBorder ? `1px solid ${isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.2)'}` : 'none',
+          borderLeft: showLeftBorder ? `1px solid ${t.borderStrong}` : 'none',
+          borderRight: showRightBorder ? `1px solid ${t.borderStrong}` : 'none',
         }}>
           <TableContext.Provider value={tableCtx}>
             <div

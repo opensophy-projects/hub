@@ -7,6 +7,7 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { TableContext } from '../lib/htmlParser';
+import { makeTokens } from '@/shared/tokens/theme';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -37,9 +38,10 @@ const DEFAULT_COLORS = [
 // ─── Токены темы ──────────────────────────────────────────────────────────────
 
 function tk(isDark: boolean) {
+  const t = makeTokens(isDark);
   return {
-    outerBg:     isDark ? '#0a0a0a'                : '#E8E7E3',
-    outerBorder: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+    outerBg:     t.bg,
+    outerBorder: t.border,
     outerShadow: isDark
       ? '0 2px 12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)'
       : '0 1px 6px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.07)',
