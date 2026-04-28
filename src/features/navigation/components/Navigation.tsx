@@ -3,10 +3,6 @@
  *
  * Desktop (>1000px): Rail 64px + slide-out panel + resize handle
  * Mobile (≤1000px):  Bottom bar centered + full-screen panels (like search)
- *
- * Fixes:
- * 1. Section dropdown — корректное отображение при resize
- * 2. Flash мобильной nav — рендерим null пока неизвестен breakpoint
  */
 
 import React, {
@@ -62,37 +58,37 @@ function toDocHref(slug?: string): string {
   return `/${slug}/`;
 }
 
-// ─── Theme tokens ─────────────────────────────────────────────────────────────
+// ─── Токены темы ──────────────────────────────────────────────────────────────
 
 function tk(isDark: boolean) {
   const t = makeTokens(isDark);
   return {
-    railBg: t.bg,
-    panelBg: t.bg,
-    border: t.border,
-    fg: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)',
-    fgMuted: isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)',
-    fgSub: isDark ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)',
-    hov: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
-    accent: t.accent,
-    accentSoft: t.accentSoft,
-    inputBg: t.bg,
-    inputBorder: isDark ? 'rgba(255,255,255,0.13)' : 'rgba(0,0,0,0.15)',
-    inputBorderFocus: isDark ? 'rgba(255,255,255,0.30)' : 'rgba(0,0,0,0.30)',
-    inputShadow: isDark ? 'inset 0 1px 3px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05)' : 'inset 0 1px 2px rgba(0,0,0,0.1)',
-    inputShadowFocus: isDark ? '0 0 0 2px rgba(255,255,255,0.09)' : '0 0 0 2px rgba(0,0,0,0.07)',
-    inputClr: t.inpClr,
-    sectionBg: t.bg,
-    sectionBorder: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.15)',
-    sectionShadow: isDark ? '0 1px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)' : '0 1px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.55)',
-    dropdownBg: isDark ? '#0F0F0F' : '#dddcd8',
-    dropdownBorder: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.1)',
-    dropdownShadow: isDark ? '0 8px 32px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.07)' : '0 8px 24px rgba(0,0,0,0.14)',
-    mobBg: isDark ? '#0F0F0F' : '#dcdbd7',
-    panelFullBg: isDark ? '#0F0F0F' : '#E0DFDb',
-    surface: isDark ? '#0F0F0F' : '#d5d4d0',
-    elevatedBorder: t.borderElevated,
-    elevatedShadow: t.shadowElevated,
+    railBg:             t.bg,
+    panelBg:            t.bg,
+    border:             t.border,
+    fg:                 isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)',
+    fgMuted:            isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)',
+    fgSub:              isDark ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)',
+    hov:                isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+    accent:             t.accent,
+    accentSoft:         t.accentSoft,
+    inputBg:            t.bg,
+    inputBorder:        isDark ? 'rgba(255,255,255,0.13)' : 'rgba(0,0,0,0.15)',
+    inputBorderFocus:   isDark ? 'rgba(255,255,255,0.30)' : 'rgba(0,0,0,0.30)',
+    inputShadow:        isDark ? 'inset 0 1px 3px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05)' : 'inset 0 1px 2px rgba(0,0,0,0.1)',
+    inputShadowFocus:   isDark ? '0 0 0 2px rgba(255,255,255,0.09)' : '0 0 0 2px rgba(0,0,0,0.07)',
+    inputClr:           t.inpClr,
+    sectionBg:          t.bg,
+    sectionBorder:      isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.15)',
+    sectionShadow:      isDark ? '0 1px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)' : '0 1px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.55)',
+    dropdownBg:         isDark ? '#0F0F0F' : '#dddcd8',
+    dropdownBorder:     isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.1)',
+    dropdownShadow:     isDark ? '0 8px 32px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.07)' : '0 8px 24px rgba(0,0,0,0.14)',
+    mobBg:              isDark ? '#0F0F0F' : '#dcdbd7',
+    panelFullBg:        isDark ? '#0F0F0F' : '#E0DFDb',
+    surface:            isDark ? '#0F0F0F' : '#d5d4d0',
+    elevatedBorder:     t.borderElevated,
+    elevatedShadow:     t.shadowElevated,
     elevatedShadowSoft: t.shadowSoft,
   } as const;
 }
@@ -115,7 +111,7 @@ const LucideIcon: React.FC<{ name: string; size?: number }> = memo(({ name, size
   return <Icon size={size} />;
 });
 
-// ─── Tree building ────────────────────────────────────────────────────────────
+// ─── Построение дерева навигации ──────────────────────────────────────────────
 
 function buildTree(docs: Doc[], query: string, navSlug: string): NavNode {
   const root: NavNode = { title: '', slug: '', icon: null, docs: [], children: {}, isCategory: false };
@@ -284,7 +280,7 @@ const CategoryNode: React.FC<{
   );
 });
 
-// ─── Nav sections hooks ───────────────────────────────────────────────────────
+// ─── Хуки секций навигации ────────────────────────────────────────────────────
 
 function useNavSections(docs: Doc[]): NavSection[] {
   return useMemo<NavSection[]>(() => {
@@ -356,7 +352,7 @@ function useNavPanel(docs: Doc[], currentDocSlug: string | undefined) {
   return { query, setQuery, sectionOpen, setSectionOpen, sectionRef, sections, activeNavSlug, expandedPaths, navTree, activeSection, togglePath, handleSectionSelect };
 }
 
-// ─── Desktop panel hook ───────────────────────────────────────────────────────
+// ─── Хук панели рабочего стола ───────────────────────────────────────────────
 
 function useDesktopPanel() {
   const [activePanel, setActivePanel] = useState<PanelType>(() => {
@@ -477,11 +473,8 @@ const NavTreeContent: React.FC<{
 }> = ({ error, loading, navTree, currentDocSlug, expandedPaths, onToggle, isDark, mobile, activeNavSlug, onDocClick, onDocHoverChange }) => {
   const t = tk(isDark);
 
-  // optional chaining вместо явной проверки globalThis.window !== undefined
   const isHomePage = globalThis.window?.location.pathname === '/';
 
-  // Фильтруем welcome/пустой slug из дерева когда activeNavSlug === '',
-  // чтобы не дублировать HomePageLink
   const filteredDocs = useMemo(() => {
     if (activeNavSlug !== '') return navTree.docs;
     return navTree.docs.filter(doc => doc.slug !== '' && doc.slug !== 'welcome');
@@ -675,22 +668,25 @@ const NavPanelContent: React.FC<{
   );
 };
 
-// ─── ToC helpers ─────────────────────────────────────────────────────────────
+// ─── Вспомогательные функции для ToC ─────────────────────────────────────────
 
 function tocBorderColor(isActive: boolean, glowOp: number, isDark: boolean, accent: string): string {
   if (isActive)   return accent;
   if (glowOp > 0) return isDark ? `rgba(255,255,255,${glowOp})` : `rgba(0,0,0,${glowOp})`;
   return 'transparent';
 }
+
 function tocShadow(isActive: boolean, glowOp: number, isDark: boolean, accent: string): string {
   if (isActive)   return `inset 3px 0 10px -2px ${accent}88`;
   if (glowOp > 0) return isDark ? `inset 3px 0 8px -3px rgba(255,255,255,${glowOp * 0.35})` : `inset 3px 0 8px -3px rgba(0,0,0,${glowOp * 0.35})`;
   return 'none';
 }
+
 function tocColor(isActive: boolean, opacity: number, isDark: boolean, accent: string): string {
   if (isActive) return accent;
   return isDark ? `rgba(255,255,255,${opacity})` : `rgba(0,0,0,${opacity})`;
 }
+
 function getTocItemStyle(item: TocItem, dist: number, activeId: string, isDark: boolean, mobile: boolean) {
   const t        = tk(isDark);
   const isActive = item.id === activeId && activeId !== '';
@@ -880,7 +876,57 @@ const PanelResizeToggle: React.FC<{
   );
 };
 
+// ─── Вспомогательные функции для DesktopNav ───────────────────────────────────
+
+function buildCssVars(
+  railVisible: boolean,
+  isDocsPage: boolean,
+  panelOpen: boolean,
+  panelWidth: number,
+  isStandardMode: boolean,
+  standardTocVisible: boolean,
+): void {
+  const panelOffset = isDocsPage && panelOpen ? panelWidth : 0;
+  const left = railVisible ? RAIL_W + panelOffset : 0;
+  const sidebarHidden = isDocsPage && isStandardMode && !railVisible;
+  const tocHidden = isDocsPage && isStandardMode && !standardTocVisible;
+  document.documentElement.style.setProperty('--nav-left', `${left}px`);
+  document.documentElement.style.setProperty('--doc-right', isDocsPage && isStandardMode && standardTocVisible ? `${TOC_PANEL_W}px` : '0px');
+  document.documentElement.style.setProperty('--doc-border-left', sidebarHidden ? '1' : '0');
+  document.documentElement.style.setProperty('--doc-border-right', tocHidden ? '1' : '0');
+}
+
+function clearDocCssVars(): void {
+  document.documentElement.style.removeProperty('--doc-right');
+  document.documentElement.style.removeProperty('--doc-border-left');
+  document.documentElement.style.removeProperty('--doc-border-right');
+}
+
+function getReadingModeFromStorage(): ReadingMode {
+  try {
+    const saved = sessionStorage.getItem('hub:readingMode');
+    return saved === 'extended' ? 'extended' : 'standard';
+  } catch {
+    return 'standard';
+  }
+}
+
+function getTocVisibleFromStorage(): boolean {
+  try {
+    const saved = sessionStorage.getItem('hub:reading:tocVisible');
+    return saved !== 'false';
+  } catch {
+    return true;
+  }
+}
+
 // ─── DesktopNav ───────────────────────────────────────────────────────────────
+
+const PANEL_TITLES: Record<Exclude<PanelType, null>, string> = {
+  nav:      'Навигация',
+  toc:      'Оглавление',
+  contacts: 'Контакты',
+};
 
 const DesktopNav: React.FC<{
   isDark: boolean; toggleTheme: () => void; currentDocSlug?: string; toc: TocItem[]; activeId: string; showDocActions: boolean;
@@ -890,28 +936,16 @@ const DesktopNav: React.FC<{
   const [searchOpen, setSearchOpen]   = useState(false);
   const [readingModeMenuOpen, setReadingModeMenuOpen] = useState(false);
   const [standardSidebarOpen, setStandardSidebarOpen] = useState(true);
-  const [readingMode, setReadingMode] = useState<ReadingMode>(() => {
-    try {
-      const saved = sessionStorage.getItem('hub:readingMode');
-      return saved === 'extended' ? 'extended' : 'standard';
-    } catch {
-      return 'standard';
-    }
-  });
-  const [standardTocVisible, setStandardTocVisible] = useState<boolean>(() => {
-    try {
-      const saved = sessionStorage.getItem('hub:reading:tocVisible');
-      return saved !== 'false';
-    } catch {
-      return true;
-    }
-  });
+  const [readingMode, setReadingMode] = useState<ReadingMode>(getReadingModeFromStorage);
+  const [standardTocVisible, setStandardTocVisible] = useState<boolean>(getTocVisibleFromStorage);
   const { activePanel, setActivePanel, panelWidth, setPanelWidth, togglePanel } = useDesktopPanel();
   const { onResizeMouseDown } = usePanelResize(panelWidth, setPanelWidth);
   const readingModeEnabled = showDocActions;
   const isStandardMode = readingModeEnabled && readingMode === 'standard';
   const panelOpen = isStandardMode ? (railVisible && standardSidebarOpen) : !!activePanel;
-  const panelTitle = activePanel ? activePanel : 'nav';
+
+  // Текущий тип активной панели — всегда строка, не null
+  const panelTitle: Exclude<PanelType, null> = activePanel ?? 'nav';
 
   const handleTogglePanel = useCallback((panel: Exclude<PanelType, null>) => {
     if (isStandardMode) {
@@ -932,26 +966,13 @@ const DesktopNav: React.FC<{
 
   useEffect(() => {
     const isDocsPage = Boolean(currentDocSlug);
-    const panelOffset = isDocsPage && panelOpen ? panelWidth : 0;
-    const left = railVisible ? RAIL_W + panelOffset : 0;
-    const sidebarHidden = isDocsPage && isStandardMode && !railVisible;
-    const tocHidden = isDocsPage && isStandardMode && !standardTocVisible;
-    document.documentElement.style.setProperty('--nav-left', `${left}px`);
-    document.documentElement.style.setProperty('--doc-right', isDocsPage && isStandardMode && standardTocVisible ? `${TOC_PANEL_W}px` : '0px');
-    document.documentElement.style.setProperty('--doc-border-left', sidebarHidden ? '1' : '0');
-    document.documentElement.style.setProperty('--doc-border-right', tocHidden ? '1' : '0');
+    buildCssVars(railVisible, isDocsPage, panelOpen, panelWidth, isStandardMode, standardTocVisible);
     return () => { document.documentElement.style.removeProperty('--nav-left'); };
   }, [railVisible, panelOpen, panelWidth, isStandardMode, standardTocVisible, currentDocSlug]);
 
   useEffect(() => {
-    return () => {
-      document.documentElement.style.removeProperty('--doc-right');
-      document.documentElement.style.removeProperty('--doc-border-left');
-      document.documentElement.style.removeProperty('--doc-border-right');
-    };
+    return clearDocCssVars;
   }, []);
-
-  const panelTitles: Record<Exclude<PanelType, null>, string> = { nav: 'Навигация', toc: 'Оглавление', contacts: 'Контакты' };
 
   return (
     <>
@@ -1033,7 +1054,7 @@ const DesktopNav: React.FC<{
           {panelOpen && (
             <>
               <PanelHeader
-                title={isStandardMode ? panelTitles[panelTitle] : panelTitles[panelTitle]}
+                title={PANEL_TITLES[panelTitle]}
                 isDark={isDark}
                 onClose={() => {
                   if (isStandardMode) {
@@ -1119,7 +1140,7 @@ const DesktopNav: React.FC<{
   );
 };
 
-// ─── Mobile panel ─────────────────────────────────────────────────────────────
+// ─── Мобильная панель ─────────────────────────────────────────────────────────
 
 function tocSectionLabel(count: number): string {
   if (count === 1) {
@@ -1143,7 +1164,7 @@ const MobilePanel: React.FC<{
     return () => { document.body.style.overflow = ''; document.removeEventListener('keydown', onKey); };
   }, [onClose]);
 
-  const PANEL_TITLES: Record<string, string> = { nav: 'Навигация', toc: 'Оглавление', contacts: 'Контакты' };
+  const MOBILE_PANEL_TITLES: Record<string, string> = { nav: 'Навигация', toc: 'Оглавление', contacts: 'Контакты' };
 
   return createPortal(
     <div style={{
@@ -1154,7 +1175,7 @@ const MobilePanel: React.FC<{
       <style>{`@keyframes mobPanelIn{from{transform:translateY(100%)}to{transform:translateY(0)}}`}</style>
       <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '52px 20px 16px', borderBottom: `1px solid ${t.border}`, background: t.panelFullBg }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          <span style={{ fontSize: '1.25rem', fontWeight: 700, color: t.fg, letterSpacing: '-0.01em' }}>{PANEL_TITLES[type]}</span>
+          <span style={{ fontSize: '1.25rem', fontWeight: 700, color: t.fg, letterSpacing: '-0.01em' }}>{MOBILE_PANEL_TITLES[type]}</span>
           {type === 'toc' && toc.length > 0 && <span style={{ fontSize: '0.8rem', color: t.fgMuted }}>{toc.length} {tocSectionLabel(toc.length)}</span>}
         </div>
         <button onClick={onClose}
@@ -1274,7 +1295,7 @@ const MobileNav: React.FC<{
   );
 };
 
-// ─── Navigation (main export) ─────────────────────────────────────────────────
+// ─── Navigation (основной экспорт) ───────────────────────────────────────────
 
 const Navigation: React.FC<NavigationProps> = ({ currentDocSlug, toc = [], activeHeadingId = '' }) => {
   const { isDark, toggleTheme } = useTheme();
