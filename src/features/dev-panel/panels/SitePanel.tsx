@@ -14,6 +14,65 @@ import {
   type ThemeColorKey,
 } from '@/shared/tokens/theme';
 
+// Стили радио-индикатора выбранной опции
+function RadioDot({ active, t }: { active: boolean; t: ReturnType<typeof useContext<typeof ThemeTokensContext>> }) {
+  return (
+    <div style={{
+      width: 16, height: 16, borderRadius: '50%', flexShrink: 0, marginTop: 1,
+      border: `2px solid ${active ? t.fg : t.border}`,
+      background: active ? t.fg : 'transparent',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      {active && <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.bg }} />}
+    </div>
+  );
+}
+
+// Кнопка выбора режима главной страницы
+function ModeButton({
+  active,
+  saving,
+  onClick,
+  icon,
+  label,
+  description,
+  t,
+}: {
+  active: boolean;
+  saving: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+  description: React.ReactNode;
+  t: ReturnType<typeof useContext<typeof ThemeTokensContext>>;
+}) {
+  return (
+    <button
+      disabled={saving}
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'flex-start', gap: 12,
+        padding: '12px 14px', borderRadius: 9,
+        border: `1px solid ${active ? t.borderStrong : t.border}`,
+        background: active ? t.accentSoft : 'transparent',
+        color: active ? t.fg : t.fgMuted,
+        cursor: saving ? 'not-allowed' : 'pointer',
+        textAlign: 'left', fontFamily: t.mono,
+        opacity: saving ? 0.7 : 1,
+      }}
+    >
+      <RadioDot active={active} t={t} />
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+          {icon}
+          <span style={{ fontSize: 12, fontWeight: 600 }}>{label}</span>
+        </div>
+        <div style={{ fontSize: 10, color: t.fgSub, lineHeight: 1.5 }}>{description}</div>
+      </div>
+    </button>
+  );
+}
+
 export default function SitePanel() {
   const t = useContext(ThemeTokensContext);
 
@@ -67,13 +126,17 @@ export default function SitePanel() {
     });
   }, []);
 
+  const dispatchThemeUpdate = useCallback(() => {
+    const next = makeTokens(isDarkTheme);
+    document.documentElement.style.backgroundColor = next.bgPage;
+    globalThis.dispatchEvent(new CustomEvent('hub:theme-change', { detail: { isDark: isDarkTheme } }));
+  }, [isDarkTheme]);
+
   const saveThemeColors = () => {
     const payload = { dark: themeColors.dark, light: themeColors.light };
     localStorage.setItem(THEME_COLOR_STORAGE_KEY, JSON.stringify(payload));
     applyThemeColorOverrides(payload);
-    const next = makeTokens(isDarkTheme);
-    document.documentElement.style.backgroundColor = next.bgPage;
-    globalThis.dispatchEvent(new CustomEvent('hub:theme-change', { detail: { isDark: isDarkTheme } }));
+    dispatchThemeUpdate();
     toast.success('Цвета тем обновлены');
   };
 
@@ -82,21 +145,19 @@ export default function SitePanel() {
     setThemeColors(defaults);
     localStorage.setItem(THEME_COLOR_STORAGE_KEY, JSON.stringify(defaults));
     applyThemeColorOverrides(defaults);
-    const next = makeTokens(isDarkTheme);
-    document.documentElement.style.backgroundColor = next.bgPage;
-    globalThis.dispatchEvent(new CustomEvent('hub:theme-change', { detail: { isDark: isDarkTheme } }));
+    dispatchThemeUpdate();
     toast.success('Цвета тем сброшены');
   };
 
-  const handleToggleLanding = async (value: boolean) => {
-    const next = { ...config, useLanding: value };
+  // Универсальный хэндлер обновления конфига с откатом при ошибке
+  const applyConfigChange = async (next: SiteConfig, successMsg: string) => {
     prevConfig.current = config;
     setConfig(next);
     setSaving(true);
     setError('');
     try {
       await bridge.writeSiteConfig(next);
-      toast.success(value ? 'Лендинг включён' : 'Welcome.md включён');
+      toast.success(successMsg);
     } catch (e: unknown) {
       setError((e as Error).message);
       setConfig(prevConfig.current);
@@ -105,32 +166,27 @@ export default function SitePanel() {
     }
   };
 
-  const handleToggleDotWave = async (value: boolean) => {
-    const next = { ...config, showDotWaveBackground: value };
-    prevConfig.current = config;
-    setConfig(next);
-    setSaving(true);
-    setError('');
-    try {
-      await bridge.writeSiteConfig(next);
-      toast.success(value ? 'DotWave фон включён' : 'DotWave фон отключён');
-    } catch (e: unknown) {
-      setError((e as Error).message);
-      setConfig(prevConfig.current);
-    } finally {
-      setSaving(false);
-    }
-  };
+  const handleToggleLanding = (value: boolean) =>
+    applyConfigChange(
+      { ...config, useLanding: value },
+      value ? 'Лендинг включён' : 'Welcome.md включён',
+    );
 
-  if (loading) return (
-    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: t.fgSub, fontSize: 12 }}>
-      <Loader2 size={14} style={{ animation: 'devSpin 1s linear infinite' }}/> Загрузка...
-    </div>
-  );
+  const handleToggleDotWave = (value: boolean) =>
+    applyConfigChange(
+      { ...config, showDotWaveBackground: value },
+      value ? 'DotWave фон включён' : 'DotWave фон отключён',
+    );
 
-  const optionBg     = (active: boolean) => active ? t.accentSoft : 'transparent';
-  const optionBorder = (active: boolean) => active ? t.borderStrong : t.border;
-  const optionColor  = (active: boolean) => active ? t.fg : t.fgMuted;
+  if (loading) {
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: t.fgSub, fontSize: 12 }}>
+        <Loader2 size={14} style={{ animation: 'devSpin 1s linear infinite' }} /> Загрузка...
+      </div>
+    );
+  }
+
+  const dotWaveEnabled = config.showDotWaveBackground ?? true;
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '12px', background: t.bg }} className="adm-scroll">
@@ -155,80 +211,26 @@ export default function SitePanel() {
         Изменение вступит в силу при следующем обращении к странице.
       </div>
 
-      {/* Переключатель */}
+      {/* Переключатель режима главной страницы */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-
-        {/* Welcome.md */}
-        <button
-          disabled={saving}
+        <ModeButton
+          active={!config.useLanding}
+          saving={saving}
           onClick={() => handleToggleLanding(false)}
-          style={{
-            display: 'flex', alignItems: 'flex-start', gap: 12,
-            padding: '12px 14px', borderRadius: 9,
-            border: `1px solid ${optionBorder(!config.useLanding)}`,
-            background: optionBg(!config.useLanding),
-            color: optionColor(!config.useLanding),
-            cursor: saving ? 'not-allowed' : 'pointer',
-            textAlign: 'left', fontFamily: t.mono,
-            opacity: saving ? 0.7 : 1,
-          }}
-        >
-          <div style={{
-            width: 16, height: 16, borderRadius: '50%', flexShrink: 0, marginTop: 1,
-            border: `2px solid ${config.useLanding ? t.border : t.fg}`,
-            background: config.useLanding ? 'transparent' : t.fg,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            {!config.useLanding && (
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.bg }} />
-            )}
-          </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-              <FileText size={13} style={{ color: config.useLanding ? t.fgMuted : t.fg }} />
-              <span style={{ fontSize: 12, fontWeight: 600 }}>Welcome.md</span>
-            </div>
-            <div style={{ fontSize: 10, color: t.fgSub, lineHeight: 1.5 }}>
-              Стандартная документация. Файл <code style={{ fontFamily: t.mono }}>Docs/welcome.md</code> отображается как главная страница.
-            </div>
-          </div>
-        </button>
-
-        {/* Лендинг */}
-        <button
-          disabled={saving}
+          icon={<FileText size={13} style={{ color: config.useLanding ? t.fgMuted : t.fg }} />}
+          label="Welcome.md"
+          description={<>Стандартная документация. Файл <code style={{ fontFamily: t.mono }}>Docs/welcome.md</code> отображается как главная страница.</>}
+          t={t}
+        />
+        <ModeButton
+          active={config.useLanding}
+          saving={saving}
           onClick={() => handleToggleLanding(true)}
-          style={{
-            display: 'flex', alignItems: 'flex-start', gap: 12,
-            padding: '12px 14px', borderRadius: 9,
-            border: `1px solid ${optionBorder(config.useLanding)}`,
-            background: optionBg(config.useLanding),
-            color: optionColor(config.useLanding),
-            cursor: saving ? 'not-allowed' : 'pointer',
-            textAlign: 'left', fontFamily: t.mono,
-            opacity: saving ? 0.7 : 1,
-          }}
-        >
-          <div style={{
-            width: 16, height: 16, borderRadius: '50%', flexShrink: 0, marginTop: 1,
-            border: `2px solid ${config.useLanding ? t.fg : t.border}`,
-            background: config.useLanding ? t.fg : 'transparent',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            {config.useLanding && (
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.bg }} />
-            )}
-          </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-              <LayoutTemplate size={13} style={{ color: config.useLanding ? t.fg : t.fgMuted }} />
-              <span style={{ fontSize: 12, fontWeight: 600 }}>Лендинг</span>
-            </div>
-            <div style={{ fontSize: 10, color: t.fgSub, lineHeight: 1.5 }}>
-              Визуальная посадочная страница из <code style={{ fontFamily: t.mono }}>GeneralPage.tsx</code>. Welcome.md игнорируется.
-            </div>
-          </div>
-        </button>
+          icon={<LayoutTemplate size={13} style={{ color: config.useLanding ? t.fg : t.fgMuted }} />}
+          label="Лендинг"
+          description={<>Визуальная посадочная страница из <code style={{ fontFamily: t.mono }}>GeneralPage.tsx</code>. Welcome.md игнорируется.</>}
+          t={t}
+        />
       </div>
 
       {/* Статус сохранения */}
@@ -255,10 +257,9 @@ export default function SitePanel() {
         </div>
       )}
 
-      {/* Разделитель */}
       <div style={{ height: 1, background: t.border, margin: '8px 0 12px' }} />
 
-      {/* Настройки hero-фона документации */}
+      {/* Настройка DotWave фона */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         marginBottom: 10, padding: '10px 12px',
@@ -270,10 +271,10 @@ export default function SitePanel() {
         </div>
         <button
           disabled={saving}
-          onClick={() => handleToggleDotWave(!(config.showDotWaveBackground ?? true))}
+          onClick={() => handleToggleDotWave(!dotWaveEnabled)}
           style={{
             border: `1px solid ${t.border}`,
-            background: (config.showDotWaveBackground ?? true) ? t.accentSoft : 'transparent',
+            background: dotWaveEnabled ? t.accentSoft : 'transparent',
             color: t.fgMuted,
             borderRadius: 6,
             padding: '5px 9px',
@@ -283,7 +284,7 @@ export default function SitePanel() {
             opacity: saving ? 0.7 : 1,
           }}
         >
-          {(config.showDotWaveBackground ?? true) ? 'ВКЛ' : 'ВЫКЛ'}
+          {dotWaveEnabled ? 'ВКЛ' : 'ВЫКЛ'}
         </button>
       </div>
 
@@ -294,7 +295,7 @@ export default function SitePanel() {
       }}>
         <span>
           Сейчас: <strong style={{ color: t.fgMuted }}>
-            {config.useLanding ? 'Лендинг' : 'Welcome.md'} · DotWave: {(config.showDotWaveBackground ?? true) ? 'вкл' : 'выкл'}
+            {config.useLanding ? 'Лендинг' : 'Welcome.md'} · DotWave: {dotWaveEnabled ? 'вкл' : 'выкл'}
           </strong>
         </span>
         <button
@@ -322,6 +323,7 @@ export default function SitePanel() {
 
       <div style={{ height: 1, background: t.border, margin: '12px 0' }} />
 
+      {/* Цвета тем */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, fontWeight: 700, color: t.fgSub, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
         ЦВЕТА ТЕМ
       </div>
