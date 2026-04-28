@@ -1114,20 +1114,6 @@ const MobilePanel: React.FC<{
         {type === 'toc'      && <div style={{ flex: 1, overflowY: 'auto' }}><TocPanelContent toc={toc} activeId={activeId} isDark={isDark} onItemClick={onClose} mobile /></div>}
         {type === 'contacts' && <div style={{ overflowY: 'auto' }}><ContactsPanelContent isDark={isDark} mobile /></div>}
       </div>
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'absolute', left: 0, right: 0, bottom: '60px', height: '42px',
-          pointerEvents: 'none',
-          background: isDark
-            ? 'linear-gradient(to top, rgba(10,10,10,0.95), rgba(10,10,10,0.55), transparent)'
-            : 'linear-gradient(to top, rgba(232,231,227,0.95), rgba(232,231,227,0.6), transparent)',
-          boxShadow: isDark
-            ? '0 -12px 30px rgba(0,0,0,0.35) inset'
-            : '0 -10px 24px rgba(0,0,0,0.14) inset',
-          backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
-        }}
-      />
     </div>,
     document.body,
   );
@@ -1163,11 +1149,6 @@ const MobileNav: React.FC<{
   return (
     <>
       {sheet && <MobilePanel type={sheet} onClose={() => setSheet(null)} isDark={isDark} currentDocSlug={currentDocSlug} toc={toc} activeId={activeId} />}
-
-      <div style={{
-        position: 'fixed', bottom: '60px', left: 0, right: 0, zIndex: 59, height: '52px',
-        pointerEvents: 'none', background: `linear-gradient(to bottom, transparent, ${t.mobBg})`,
-      }} />
 
       <nav style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 60, height: '60px',
