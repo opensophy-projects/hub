@@ -141,6 +141,7 @@ export function useDevBridge() {
 
 export interface SiteConfig {
   useLanding: boolean;
+  showDotWaveBackground?: boolean;
 }
 
 // ─── Typed bridge API ──────────────────────────────────────────────────────────
