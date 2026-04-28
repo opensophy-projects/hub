@@ -9,6 +9,7 @@
 <div align="center">
 
 [![ENGLISH](https://img.shields.io/badge/ENGLISH-2ea44f?style=for-the-badge)](.github/workflows/info/readme_eng.md)
+[![Русский](https://img.shields.io/badge/Русский-2ea44f?style=for-the-badge)](.github/workflows/info/readme_ru.md)
 
 [opensophy.com](https://opensophy.com)
 
