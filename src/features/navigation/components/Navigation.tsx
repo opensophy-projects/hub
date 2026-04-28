@@ -679,7 +679,7 @@ const NavPanelContent: React.FC<{
               background: t.dropdownBg,
               zIndex: 100,
               overflow: 'hidden',
-              boxShadow: t.dropdownShadow,
+              boxShadow: 'none',
             }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '8px' }}>
                 <SectionDropdown sections={sections} activeNavSlug={activeNavSlug} mobile={!!mobile} isDark={isDark} onSelect={handleSectionSelect} />
@@ -690,7 +690,7 @@ const NavPanelContent: React.FC<{
       )}
 
       {/* Дерево навигации */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: mobile ? '8px 6px' : '6px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: mobile ? '8px 6px 86px' : '6px' }}>
         <NavTreeContent
           error={!!error} loading={loading} navTree={navTree}
           currentDocSlug={currentDocSlug} expandedPaths={expandedPaths}
@@ -902,7 +902,7 @@ const PanelResizeToggle: React.FC<{
           background: getPanelToggleBackground(hov, isDark),
           color: hov ? t.fg : t.fgMuted, cursor: 'pointer', padding: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: hov ? t.elevatedShadowSoft : 'none',
+          boxShadow: 'none',
         }}>
         {panelOpen ? <ChevronLeft size={11} strokeWidth={2.5} /> : <ChevronRight size={11} strokeWidth={2.5} />}
       </button>
@@ -961,16 +961,17 @@ const DesktopNav: React.FC<{
   }, [standardTocVisible]);
 
   useEffect(() => {
-    const panelOffset = panelOpen ? panelWidth : 0;
+    const isDocsPage = Boolean(currentDocSlug);
+    const panelOffset = isDocsPage && panelOpen ? panelWidth : 0;
     const left = railVisible ? RAIL_W + panelOffset : 0;
-    const sidebarHidden = isStandardMode && !railVisible;
-    const tocHidden = isStandardMode && !standardTocVisible;
+    const sidebarHidden = isDocsPage && isStandardMode && !railVisible;
+    const tocHidden = isDocsPage && isStandardMode && !standardTocVisible;
     document.documentElement.style.setProperty('--nav-left', `${left}px`);
-    document.documentElement.style.setProperty('--doc-right', isStandardMode && standardTocVisible ? `${TOC_PANEL_W}px` : '0px');
+    document.documentElement.style.setProperty('--doc-right', isDocsPage && isStandardMode && standardTocVisible ? `${TOC_PANEL_W}px` : '0px');
     document.documentElement.style.setProperty('--doc-border-left', sidebarHidden ? '1' : '0');
     document.documentElement.style.setProperty('--doc-border-right', tocHidden ? '1' : '0');
     return () => { document.documentElement.style.removeProperty('--nav-left'); };
-  }, [railVisible, panelOpen, panelWidth, isStandardMode, standardTocVisible]);
+  }, [railVisible, panelOpen, panelWidth, isStandardMode, standardTocVisible, currentDocSlug]);
 
   useEffect(() => {
     return () => {
@@ -985,7 +986,15 @@ const DesktopNav: React.FC<{
   return (
     <>
       {railVisible && (
-        <aside style={{ position: 'fixed', left: 0, top: 0, height: '100vh', width: RAIL_W, background: t.railBg, borderRight: `1px solid ${t.border}`, display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 50, padding: '8px 0', gap: '2px' }}>
+        <aside style={{
+          position: 'fixed', left: 0, top: 0, height: '100vh', width: RAIL_W,
+          background: isDark ? 'rgba(15,15,15,0.84)' : 'rgba(224,223,219,0.82)',
+          borderRight: `1px solid ${t.border}`,
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          zIndex: 50, padding: '8px 0', gap: '2px',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+        }}>
           <div style={{ width: RAIL_W, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <img src="/favicon.png" alt="hub" style={{ width: 28, height: 28, objectFit: 'contain' }} />
           </div>
@@ -1007,7 +1016,7 @@ const DesktopNav: React.FC<{
                 {readingModeMenuOpen && (
                   <div style={{
                     position: 'absolute', left: '100%', top: 0, marginLeft: '8px', width: '190px', padding: '8px',
-                    borderRadius: '10px', border: `1px solid ${t.border}`, background: t.panelBg, boxShadow: t.elevatedShadow, zIndex: 70,
+                    borderRadius: '10px', border: `1px solid ${t.border}`, background: t.panelBg, boxShadow: 'none', zIndex: 70,
                   }}>
                     <button onClick={() => { setReadingMode('standard'); setReadingModeMenuOpen(false); }}
                       style={{ width: '100%', textAlign: 'left', border: 'none', borderRadius: '8px', padding: '8px 10px', cursor: 'pointer', background: readingMode === 'standard' ? t.accentSoft : 'transparent', color: t.fg, fontSize: '0.8rem' }}>
@@ -1044,9 +1053,12 @@ const DesktopNav: React.FC<{
         <aside style={{
           position: 'fixed', left: RAIL_W, top: 0, height: '100vh',
           width: panelOpen ? panelWidth : 0,
-          background: t.panelBg, borderRight: panelOpen ? `1px solid ${t.border}` : 'none',
+          background: isDark ? 'rgba(15,15,15,0.78)' : 'rgba(224,223,219,0.78)',
+          borderRight: panelOpen ? `1px solid ${t.border}` : 'none',
           display: 'flex', flexDirection: 'column', zIndex: 49, overflow: 'hidden',
           pointerEvents: panelOpen ? 'auto' : 'none', visibility: panelOpen ? 'visible' : 'hidden',
+          backdropFilter: 'blur(14px)',
+          WebkitBackdropFilter: 'blur(14px)',
         }}>
           {panelOpen && (
             <>
@@ -1074,7 +1086,6 @@ const DesktopNav: React.FC<{
           )}
         </aside>
       )}
-
       {railVisible && !isStandardMode && (
         <PanelResizeToggle isDark={isDark} panelOpen={panelOpen} panelWidth={panelWidth} onResizeMouseDown={onResizeMouseDown}
           onToggle={() => { if (activePanel) { setActivePanel(null); } else { handleTogglePanel('nav'); } }} />
@@ -1083,8 +1094,12 @@ const DesktopNav: React.FC<{
       {isStandardMode && standardTocVisible && (
         <aside style={{
           position: 'fixed', right: 0, top: 0, width: TOC_PANEL_W, height: '100vh',
-          borderLeft: `1px solid ${t.border}`, background: t.panelBg, zIndex: 48,
+          borderLeft: `1px solid ${t.border}`,
+          background: isDark ? 'rgba(15,15,15,0.78)' : 'rgba(224,223,219,0.78)',
+          zIndex: 48,
           display: 'flex', flexDirection: 'column',
+          backdropFilter: 'blur(14px)',
+          WebkitBackdropFilter: 'blur(14px)',
         }}>
           <div style={{ borderBottom: `1px solid ${t.border}`, padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: t.fgMuted }}>Оглавление</span>
@@ -1111,7 +1126,6 @@ const DesktopNav: React.FC<{
           </div>
         </aside>
       )}
-
       {isStandardMode && !standardTocVisible && (
         <button
           onClick={() => setStandardTocVisible(true)}
@@ -1162,7 +1176,11 @@ const MobilePanel: React.FC<{
   const PANEL_TITLES: Record<string, string> = { nav: 'Навигация', toc: 'Оглавление', contacts: 'Контакты' };
 
   return createPortal(
-    <div style={{ position: 'fixed', inset: 0, zIndex: 62, background: t.panelFullBg, display: 'flex', flexDirection: 'column', overflow: 'hidden', animation: 'mobPanelIn 0.22s cubic-bezier(0.4,0,0.2,1)', paddingBottom: '60px' }}>
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 62, background: t.panelFullBg, display: 'flex',
+      flexDirection: 'column', overflow: 'hidden', animation: 'mobPanelIn 0.22s cubic-bezier(0.4,0,0.2,1)',
+      paddingBottom: '60px',
+    }}>
       <style>{`@keyframes mobPanelIn{from{transform:translateY(100%)}to{transform:translateY(0)}}`}</style>
       <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '52px 20px 16px', borderBottom: `1px solid ${t.border}`, background: t.panelFullBg }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -1179,6 +1197,25 @@ const MobilePanel: React.FC<{
         {type === 'toc'      && <div style={{ flex: 1, overflowY: 'auto' }}><TocPanelContent toc={toc} activeId={activeId} isDark={isDark} onItemClick={onClose} mobile /></div>}
         {type === 'contacts' && <div style={{ overflowY: 'auto' }}><ContactsPanelContent isDark={isDark} mobile /></div>}
       </div>
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: '60px',
+          height: '42px',
+          pointerEvents: 'none',
+          background: isDark
+            ? 'linear-gradient(to top, rgba(10,10,10,0.95), rgba(10,10,10,0.55), transparent)'
+            : 'linear-gradient(to top, rgba(232,231,227,0.95), rgba(232,231,227,0.6), transparent)',
+          boxShadow: isDark
+            ? '0 -12px 30px rgba(0,0,0,0.35) inset'
+            : '0 -10px 24px rgba(0,0,0,0.14) inset',
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)',
+        }}
+      />
     </div>,
     document.body,
   );
@@ -1226,7 +1263,10 @@ const MobileNav: React.FC<{
         background: `linear-gradient(to bottom, transparent, ${t.mobBg})`,
       }} />
 
-      <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 60, height: '60px', background: t.mobBg, borderTop: `1px solid ${t.border}`, display: 'flex', alignItems: 'stretch' }}>
+      <nav style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 60, height: '60px',
+        background: t.mobBg, borderTop: `1px solid ${t.border}`, display: 'flex', alignItems: 'stretch',
+      }}>
         <MobBtn label="Тема" icon={isDark ? <Sun size={22} /> : <Moon size={22} />} isDark={isDark} onClick={toggleTheme} isActive={false} />
         <MobBtn label="Поиск" icon={<Search size={22} />} isDark={isDark} onClick={() => { setSheet(null); setSearchOpen(true); }} isActive={false} />
 

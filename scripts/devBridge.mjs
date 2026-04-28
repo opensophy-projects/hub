@@ -236,13 +236,16 @@ async function handleRenderPreview({ markdown }) {
 async function handleReadSiteConfig() {
   try {
     if (!fs.existsSync(SITE_CONFIG_PATH)) {
-      return { config: { useLanding: false } };
+      return { config: { useLanding: false, showDotWaveBackground: true } };
     }
     const raw = await fs.promises.readFile(SITE_CONFIG_PATH, 'utf-8');
     const config = JSON.parse(raw);
+    if (typeof config.showDotWaveBackground !== 'boolean') {
+      config.showDotWaveBackground = true;
+    }
     return { config };
   } catch {
-    return { config: { useLanding: false } };
+    return { config: { useLanding: false, showDotWaveBackground: true } };
   }
 }
 
