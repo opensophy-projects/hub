@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Search, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { makeTokens } from '@/shared/tokens/theme';
 
 interface FiltersPanelProps {
   isDark: boolean;
@@ -54,7 +55,10 @@ const LIGHT_TOKENS = {
 
 // Возвращает токены для текущей темы
 function useThemeTokens(isDark: boolean) {
-  return isDark ? DARK_TOKENS : LIGHT_TOKENS;
+  const t = makeTokens(isDark);
+  return isDark
+    ? { ...DARK_TOKENS, bg: t.bg, panelBg: t.surface, border: t.border, inpBg: t.inpBg, inpBdr: t.inpBdr, inpClr: t.inpClr, plhClr: t.plhClr }
+    : { ...LIGHT_TOKENS, bg: t.bg, panelBg: t.surface, border: t.border, inpBg: t.inpBg, inpBdr: t.inpBdr, inpClr: t.inpClr, plhClr: t.plhClr };
 }
 
 // ─── Подкомпоненты ────────────────────────────────────────────────────────────

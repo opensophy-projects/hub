@@ -10,6 +10,7 @@ import {
   ArrowUpDown, Tag, ArrowDown, ArrowUp, FolderOpen,
 } from 'lucide-react';
 import LucideIcon from '@/shared/components/LucideIcon';
+import { makeTokens } from '@/shared/tokens/theme';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -119,13 +120,14 @@ const Highlight = memo(function Highlight({ text, query }: { text: string; query
 // ─── Цветовая схема ───────────────────────────────────────────────────────────
 
 function makeColors(isDark: boolean) {
+  const t = makeTokens(isDark);
   return isDark ? {
     overlay:          'rgba(0,0,0,0.65)',
-    bg:               '#0F0F0F',
+    bg:               t.bg,
     surface:          '#141414',
-    border:           'rgba(255,255,255,0.08)',
-    borderStrong:     'rgba(255,255,255,0.16)',
-    fg:               '#e8e8e8',
+    border:           t.border,
+    borderStrong:     t.borderStrong,
+    fg:               t.fg,
     fgMuted:          'rgba(255,255,255,0.42)',
     fgSub:            'rgba(255,255,255,0.22)',
     pillBg:           'rgba(255,255,255,0.06)',
@@ -150,10 +152,10 @@ function makeColors(isDark: boolean) {
     loadMoreHoverBg:  'rgba(255,255,255,0.1)',
   } : {
     overlay:          'rgba(0,0,0,0.28)',
-    bg:               '#E1E0DC',
+    bg:               t.bg,
     surface:          '#D8D7D3',
-    border:           'rgba(0,0,0,0.08)',
-    borderStrong:     'rgba(0,0,0,0.16)',
+    border:           t.border,
+    borderStrong:     t.borderStrong,
     fg:               '#111111',
     fgMuted:          'rgba(0,0,0,0.45)',
     fgSub:            'rgba(0,0,0,0.28)',

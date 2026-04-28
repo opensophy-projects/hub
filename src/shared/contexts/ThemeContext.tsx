@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useMemo, useEffect, useCallback } from 'react';
+import { applyThemeColorOverrides, makeTokens } from '@/shared/tokens/theme';
 
 interface ThemeContextType {
   isDark: boolean;
@@ -24,16 +25,21 @@ const getInitialTheme = (): boolean => {
 
 export const applyTheme = (isDark: boolean) => {
   if (globalThis.document === undefined) return;
+  const t = makeTokens(isDark);
   if (isDark) {
     document.documentElement.classList.add('dark');
     document.documentElement.style.colorScheme = 'dark';
-    document.documentElement.style.backgroundColor = '#0a0a0a';
+    document.documentElement.style.backgroundColor = t.bgPage;
   } else {
     document.documentElement.classList.remove('dark');
     document.documentElement.style.colorScheme = 'light';
-    document.documentElement.style.backgroundColor = '#E8E7E3';
+    document.documentElement.style.backgroundColor = t.bgPage;
   }
 };
+
+export function applyThemeColorVars() {
+  applyThemeColorOverrides();
+}
 
 // Сохраняет тему и уведомляет все острова и вкладки об изменении
 function broadcastTheme(isDark: boolean) {
@@ -49,6 +55,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useEffect(() => {
+    applyThemeColorVars();
     applyTheme(isDark);
   }, [isDark]);
 
