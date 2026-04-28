@@ -4,6 +4,7 @@ import { ThemeTokensContext } from '../DevPanel';
 import { toast } from '../components/Toast';
 import { Loader2, LayoutTemplate, FileText, RefreshCw, AlertCircle } from 'lucide-react';
 import type { SiteConfig } from '../useDevBridge';
+import { makeTokens } from '@/shared/tokens/theme';
 
 export default function SitePanel() {
   const t = useContext(ThemeTokensContext);
@@ -12,6 +13,9 @@ export default function SitePanel() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState('');
+  const [isDarkTheme, setIsDarkTheme] = useState<boolean>(() =>
+    typeof document === 'undefined' ? true : document.documentElement.classList.contains('dark')
+  );
 
   // Хранит предыдущее значение конфига для отката при ошибке сохранения
   const prevConfig = useRef<SiteConfig>(config);
@@ -33,6 +37,26 @@ export default function SitePanel() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const onTheme = (e: Event) => {
+      const next = (e as CustomEvent<{ isDark: boolean }>).detail.isDark;
+      setIsDarkTheme(next);
+    };
+    globalThis.addEventListener('hub:theme-change', onTheme);
+    return () => globalThis.removeEventListener('hub:theme-change', onTheme);
+  }, []);
+
+  const applyAdminTheme = (nextDark: boolean) => {
+    const next = makeTokens(nextDark);
+    document.documentElement.classList.toggle('dark', nextDark);
+    document.documentElement.style.colorScheme = nextDark ? 'dark' : 'light';
+    document.documentElement.style.backgroundColor = next.bgPage;
+    localStorage.setItem('theme', nextDark ? 'dark' : 'light');
+    globalThis.dispatchEvent(new CustomEvent('hub:theme-change', { detail: { isDark: nextDark } }));
+    setIsDarkTheme(nextDark);
+    toast.success(nextDark ? 'Тёмная тема включена' : 'Светлая тема включена');
+  };
 
   const handleToggleLanding = async (value: boolean) => {
     const next = { ...config, useLanding: value };
@@ -264,6 +288,49 @@ export default function SitePanel() {
       }}>
         💡 После изменения режима в dev-режиме достаточно обновить страницу (<code style={{ fontFamily: t.mono }}>F5</code>).
         В продакшне потребуется пересборка.
+      </div>
+
+      <div style={{ height: 1, background: t.border, margin: '12px 0' }} />
+
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 6,
+        fontSize: 9, fontWeight: 700, color: t.fgSub,
+        textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8,
+      }}>
+        ЦВЕТ ТЕМЫ
+      </div>
+      <div style={{
+        marginBottom: 10, padding: '8px 10px', borderRadius: 7,
+        border: `1px solid ${t.border}`, background: t.surface,
+        fontSize: 10, color: t.fgMuted, lineHeight: 1.55,
+      }}>
+        Полное переключение темы (dark/light) теперь доступно прямо в админ-панели.
+      </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button
+          onClick={() => applyAdminTheme(true)}
+          style={{
+            flex: 1, borderRadius: 8, padding: '8px 10px',
+            border: `1px solid ${isDarkTheme ? t.borderStrong : t.border}`,
+            background: isDarkTheme ? t.accentSoft : 'transparent',
+            color: isDarkTheme ? t.fg : t.fgMuted,
+            fontSize: 11, fontFamily: t.mono, cursor: 'pointer',
+          }}
+        >
+          Тёмная
+        </button>
+        <button
+          onClick={() => applyAdminTheme(false)}
+          style={{
+            flex: 1, borderRadius: 8, padding: '8px 10px',
+            border: `1px solid ${!isDarkTheme ? t.borderStrong : t.border}`,
+            background: !isDarkTheme ? t.accentSoft : 'transparent',
+            color: !isDarkTheme ? t.fg : t.fgMuted,
+            fontSize: 11, fontFamily: t.mono, cursor: 'pointer',
+          }}
+        >
+          Светлая
+        </button>
       </div>
     </div>
   );

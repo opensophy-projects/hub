@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import Navigation from '@/features/navigation/components/Navigation';
+import { makeTokens } from '@/shared/tokens/theme';
 
 // ThemeProvider обязателен — island изолирован от контекста Layout.astro
 const NotFoundContent: React.FC = () => {
   const { isDark } = useTheme();
+  const tokens = makeTokens(isDark);
   const [countdown, setCountdown] = useState(10);
   const [isDesktop, setIsDesktop] = useState(false);
 
@@ -35,8 +37,9 @@ const NotFoundContent: React.FC = () => {
     <>
       <Navigation />
       <div
-        className={`min-h-screen flex items-center justify-center px-4 ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#E8E7E3]'}`}
+        className="min-h-screen flex items-center justify-center px-4"
         style={{
+          background: tokens.bgPage,
           marginLeft:   isDesktop ? '64px' : 0,
           marginBottom: isDesktop ? 0 : '60px',
         }}
