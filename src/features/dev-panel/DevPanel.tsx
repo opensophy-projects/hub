@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useDevBridge } from './useDevBridge';
 import { ToastContainer } from './components/Toast';
 import { FileText, Users, Image, X, UserCog, WifiOff, Loader2, AlertCircle, Globe } from 'lucide-react';
+import { makeTokens } from '@/shared/tokens/theme';
 
 const DocsPanel     = lazy(() => import('./panels/DocsPanel'));
 const ContactsPanel = lazy(() => import('./panels/ContactsPanel'));
@@ -34,48 +35,12 @@ export function useIsDark(): boolean {
 }
 
 export function makeT(isDark: boolean) {
-  return isDark ? {
-    bg:           '#111112',
-    surface:      '#18181a',
-    surfaceHov:   '#1f1f22',
-    border:       'rgba(255,255,255,0.09)',
-    borderStrong: 'rgba(255,255,255,0.18)',
-    fg:           '#e8e8e8',
-    fgMuted:      'rgba(255,255,255,0.4)',
-    fgSub:        'rgba(255,255,255,0.2)',
-    accent:       '#e8e8e8',
-    accentSoft:   'rgba(255,255,255,0.06)',
-    accentBorder: 'rgba(255,255,255,0.2)',
-    success:      '#22c55e',
-    danger:       '#ef4444',
-    warning:      '#f59e0b',
-    mono:         'ui-monospace, "Cascadia Code", "Fira Code", monospace',
-    shadow:       '0 8px 40px rgba(0,0,0,0.7)',
-    inpBg:        '#1e1e20',
-    inpBorder:    'rgba(255,255,255,0.12)',
-    editorBg:     '#0d0d0e',
-    editorFg:     '#e2e8f0',
-  } : {
-    bg:           '#f0efeb',
-    surface:      '#e5e4e0',
-    surfaceHov:   '#dddcd8',
-    border:       'rgba(0,0,0,0.1)',
-    borderStrong: 'rgba(0,0,0,0.2)',
-    fg:           '#111111',
-    fgMuted:      'rgba(0,0,0,0.45)',
-    fgSub:        'rgba(0,0,0,0.25)',
-    accent:       '#111111',
-    accentSoft:   'rgba(0,0,0,0.06)',
-    accentBorder: 'rgba(0,0,0,0.25)',
-    success:      '#16a34a',
-    danger:       '#dc2626',
-    warning:      '#d97706',
-    mono:         'ui-monospace, "Cascadia Code", "Fira Code", monospace',
-    shadow:       '0 8px 32px rgba(0,0,0,0.18)',
-    inpBg:        '#e8e7e3',
-    inpBorder:    'rgba(0,0,0,0.12)',
-    editorBg:     '#eceae5',
-    editorFg:     '#1e293b',
+  const t = makeTokens(isDark);
+  return {
+    ...t,
+    mono: 'ui-monospace, "Cascadia Code", "Fira Code", monospace',
+    inpBorder: t.inpBdr,
+    editorFg: isDark ? '#e2e8f0' : '#1e293b',
   };
 }
 

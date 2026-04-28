@@ -11,6 +11,7 @@ import { loadComponent, getDefaultProps } from './loader';
 import { ComponentWrapper } from './ComponentWrapper';
 import { useIsMobile } from '@/shared/hooks/useBreakpoint';
 import type { UniversalProps, ComponentConfig, PropDefinition } from './types';
+import { makeTokens, themed } from '@/shared/tokens/theme';
 
 type PropValue = string | number | boolean | string[] | undefined;
 type ComponentPropsMap = Record<string, PropValue>;
@@ -24,66 +25,40 @@ interface LoadedComponentData {
 }
 
 function tk(isDark: boolean) {
-  return isDark ? {
-    outerBg:      '#0a0a0a',
-    barBg:        '#111111',
-    panelBg:      '#0d0d0d',
-    outerBorder:  'rgba(255,255,255,0.08)',
-    barBorder:    'rgba(255,255,255,0.08)',
-    btnBg:        'rgba(255,255,255,0.08)',
-    btnBdr:       'rgba(255,255,255,0.12)',
-    btnHov:       'rgba(255,255,255,0.14)',
-    btnClr:       'rgba(255,255,255,0.72)',
-    btnActBg:     'rgba(255,255,255,0.15)',
-    btnActBdr:    'rgba(255,255,255,0.22)',
-    btnActClr:    '#ffffff',
-    inpBg:        '#1a1a1a',
-    inpBdr:       'rgba(255,255,255,0.12)',
-    inpFoc:       'rgba(255,255,255,0.26)',
-    inpClr:       'rgba(255,255,255,0.88)',
-    plhClr:       'rgba(255,255,255,0.28)',
-    fg:           '#e8e8e8',
-    fgMuted:      'rgba(255,255,255,0.35)',
-    fgSub:        'rgba(255,255,255,0.22)',
-    footerClr:    'rgba(255,255,255,0.22)',
-    sectionBdr:   'rgba(255,255,255,0.07)',
-    outerShadow:  '0 2px 12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)',
-    modalShadow:  '0 24px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.05)',
-    tabActBg:     'rgba(255,255,255,0.1)',
-    tabActBdr:    'rgba(255,255,255,0.15)',
-    tabActClr:    '#ffffff',
-    tabClr:       'rgba(255,255,255,0.45)',
-    dangerClr:    '#f87171',
-  } : {
-    outerBg:      '#E8E7E3',
-    barBg:        '#d8d7d3',
-    panelBg:      '#dddcd8',
-    outerBorder:  'rgba(0,0,0,0.1)',
-    barBorder:    'rgba(0,0,0,0.09)',
-    btnBg:        'rgba(0,0,0,0.07)',
-    btnBdr:       'rgba(0,0,0,0.12)',
-    btnHov:       'rgba(0,0,0,0.12)',
-    btnClr:       'rgba(0,0,0,0.68)',
-    btnActBg:     'rgba(0,0,0,0.12)',
-    btnActBdr:    'rgba(0,0,0,0.22)',
-    btnActClr:    '#000000',
-    inpBg:        '#E8E7E3',
-    inpBdr:       'rgba(0,0,0,0.12)',
-    inpFoc:       'rgba(0,0,0,0.28)',
-    inpClr:       '#000000',
-    plhClr:       'rgba(0,0,0,0.35)',
-    fg:           '#1a1a1a',
-    fgMuted:      'rgba(0,0,0,0.38)',
-    fgSub:        'rgba(0,0,0,0.28)',
-    footerClr:    'rgba(0,0,0,0.32)',
-    sectionBdr:   'rgba(0,0,0,0.07)',
-    outerShadow:  '0 1px 6px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.07)',
-    modalShadow:  '0 24px 80px rgba(0,0,0,0.2)',
-    tabActBg:     'rgba(0,0,0,0.1)',
-    tabActBdr:    'rgba(0,0,0,0.18)',
-    tabActClr:    '#000000',
-    tabClr:       'rgba(0,0,0,0.45)',
-    dangerClr:    '#dc2626',
+  const t = makeTokens(isDark);
+  const shared = {
+    outerBg:      t.bg,
+    barBg:        t.surface,
+    outerBorder:  t.border,
+    inpBg:        t.inpBg,
+    inpBdr:       t.inpBdr,
+    inpFoc:       t.inpBdrFocus,
+    inpClr:       t.inpClr,
+    plhClr:       t.plhClr,
+  };
+  return {
+    ...shared,
+    panelBg: themed(isDark, '#0d0d0d', '#dddcd8'),
+    barBorder: themed(isDark, 'rgba(255,255,255,0.08)', 'rgba(0,0,0,0.09)'),
+    btnBg: themed(isDark, 'rgba(255,255,255,0.08)', 'rgba(0,0,0,0.07)'),
+    btnBdr: themed(isDark, 'rgba(255,255,255,0.12)', 'rgba(0,0,0,0.12)'),
+    btnHov: themed(isDark, 'rgba(255,255,255,0.14)', 'rgba(0,0,0,0.12)'),
+    btnClr: themed(isDark, 'rgba(255,255,255,0.72)', 'rgba(0,0,0,0.68)'),
+    btnActBg: themed(isDark, 'rgba(255,255,255,0.15)', 'rgba(0,0,0,0.12)'),
+    btnActBdr: themed(isDark, 'rgba(255,255,255,0.22)', 'rgba(0,0,0,0.22)'),
+    btnActClr: themed(isDark, '#ffffff', '#000000'),
+    fg: themed(isDark, '#e8e8e8', '#1a1a1a'),
+    fgMuted: themed(isDark, 'rgba(255,255,255,0.35)', 'rgba(0,0,0,0.38)'),
+    fgSub: themed(isDark, 'rgba(255,255,255,0.22)', 'rgba(0,0,0,0.28)'),
+    footerClr: themed(isDark, 'rgba(255,255,255,0.22)', 'rgba(0,0,0,0.32)'),
+    sectionBdr: themed(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.07)'),
+    outerShadow: themed(isDark, '0 2px 12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)', '0 1px 6px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.07)'),
+    modalShadow: themed(isDark, '0 24px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.05)', '0 24px 80px rgba(0,0,0,0.2)'),
+    tabActBg: themed(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)'),
+    tabActBdr: themed(isDark, 'rgba(255,255,255,0.15)', 'rgba(0,0,0,0.18)'),
+    tabActClr: themed(isDark, '#ffffff', '#000000'),
+    tabClr: themed(isDark, 'rgba(255,255,255,0.45)', 'rgba(0,0,0,0.45)'),
+    dangerClr: themed(isDark, '#f87171', '#dc2626'),
   };
 }
 

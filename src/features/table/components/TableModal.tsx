@@ -7,6 +7,7 @@ import { TableView } from './TableView';
 import { parseTableHtml } from '../utils/tableParser';
 import { useTableControls } from '../hooks/useTableControls';
 import { parseTableForCopy, toMd, toTsv, type CopyFormat } from '../utils/copyUtils';
+import { getTableUiTokens, type TableUiTokens } from './tableUiTheme';
 
 interface TableModalProps {
   isOpen: boolean;
@@ -15,59 +16,7 @@ interface TableModalProps {
   onClose: () => void;
 }
 
-function tk(isDark: boolean) {
-  return isDark ? {
-    modalBg:  '#0a0a0a',
-    barBg:    '#111111',
-    border:   'rgba(255,255,255,0.08)',
-    btnBg:    'rgba(255,255,255,0.08)',
-    btnBdr:   'rgba(255,255,255,0.12)',
-    btnHov:   'rgba(255,255,255,0.14)',
-    btnClr:   'rgba(255,255,255,0.72)',
-    btnActBg: 'rgba(255,255,255,0.15)',
-    btnActBdr:'rgba(255,255,255,0.22)',
-    btnActClr:'#ffffff',
-    inpBg:    '#1a1a1a',
-    inpBdr:   'rgba(255,255,255,0.12)',
-    inpFoc:   'rgba(255,255,255,0.26)',
-    inpClr:   'rgba(255,255,255,0.88)',
-    plhClr:   'rgba(255,255,255,0.28)',
-    dangerClr:'#f87171',
-    footerClr:'rgba(255,255,255,0.22)',
-    dropBg:   '#222222',
-    dropBdr:  'rgba(255,255,255,0.12)',
-    dropHov:  'rgba(255,255,255,0.08)',
-    dropClr:  'rgba(255,255,255,0.85)',
-    dropSub:  'rgba(255,255,255,0.38)',
-    copiedBg: 'rgba(34,197,94,0.16)',
-    copiedBdr:'rgba(34,197,94,0.4)',
-  } : {
-    modalBg:  '#E8E7E3',
-    barBg:    '#d8d7d3',
-    border:   'rgba(0,0,0,0.09)',
-    btnBg:    'rgba(0,0,0,0.07)',
-    btnBdr:   'rgba(0,0,0,0.12)',
-    btnHov:   'rgba(0,0,0,0.12)',
-    btnClr:   'rgba(0,0,0,0.68)',
-    btnActBg: 'rgba(0,0,0,0.12)',
-    btnActBdr:'rgba(0,0,0,0.22)',
-    btnActClr:'#000000',
-    inpBg:    '#E8E7E3',
-    inpBdr:   'rgba(0,0,0,0.12)',
-    inpFoc:   'rgba(0,0,0,0.28)',
-    inpClr:   '#000000',
-    plhClr:   'rgba(0,0,0,0.35)',
-    dangerClr:'#dc2626',
-    footerClr:'rgba(0,0,0,0.32)',
-    dropBg:   '#eceae6',
-    dropBdr:  'rgba(0,0,0,0.12)',
-    dropHov:  'rgba(0,0,0,0.07)',
-    dropClr:  'rgba(0,0,0,0.85)',
-    dropSub:  'rgba(0,0,0,0.4)',
-    copiedBg: 'rgba(34,197,94,0.14)',
-    copiedBdr:'rgba(34,197,94,0.5)',
-  };
-}
+const tk = getTableUiTokens;
 
 // ─── Дропдаун, рендерится в body ──────────────────────────────────────────────
 const BodyDropdown: React.FC<{
@@ -104,8 +53,8 @@ const BodyDropdown: React.FC<{
         left: pos.left,
         minWidth: 192,
         zIndex: 2147483647,
-        background: t.dropBg,
-        border: `1px solid ${t.dropBdr}`,
+        background: t.menuBg,
+        border: `1px solid ${t.menuBdr}`,
         borderRadius: 10,
         boxShadow: isDark
           ? '0 12px 40px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.05)'
@@ -124,7 +73,7 @@ const BodyDropdown: React.FC<{
 // ─── Кнопка-пилюля: иконка сверху, подпись снизу ─────────────────────────────
 const Pill: React.FC<{
   onClick: () => void; title: string; label: string;
-  icon: React.ReactNode; t: ReturnType<typeof tk>;
+  icon: React.ReactNode; t: TableUiTokens;
   active?: boolean; danger?: boolean;
 }> = ({ onClick, title, label, icon, t, active, danger }) => {
   const bg  = active ? t.btnActBg  : t.btnBg;
@@ -153,7 +102,7 @@ const Pill: React.FC<{
 };
 
 // ─── Кнопка копирования ───────────────────────────────────────────────────────
-const CopyBtn: React.FC<{ isDark: boolean; tableHtml: string; t: ReturnType<typeof tk> }> = ({ isDark, tableHtml, t }) => {
+const CopyBtn: React.FC<{ isDark: boolean; tableHtml: string; t: TableUiTokens }> = ({ isDark, tableHtml, t }) => {
   const [open, setOpen]     = useState(false);
   const [copied, setCopied] = useState<CopyFormat | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -202,13 +151,13 @@ const CopyBtn: React.FC<{ isDark: boolean; tableHtml: string; t: ReturnType<type
             <button key={fmt} onClick={() => doCopy(fmt)} style={{
               width: '100%', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 2,
               border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left',
-              color: t.dropClr, transition: 'background 0.1s',
+              color: t.menuClr, transition: 'background 0.1s',
             }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.dropHov; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.menuHov; }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
             >
               <span style={{ fontSize: 13, fontWeight: 500 }}>{fmt === 'md' ? 'Markdown' : 'Excel / TSV'}</span>
-              <span style={{ fontSize: 11, color: t.dropSub }}>{fmt === 'md' ? 'Для документов' : 'Tab-separated'}</span>
+              <span style={{ fontSize: 11, color: t.menuSub }}>{fmt === 'md' ? 'Для документов' : 'Tab-separated'}</span>
             </button>
           ))}
         </BodyDropdown>
