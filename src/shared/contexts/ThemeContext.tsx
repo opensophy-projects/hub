@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useMemo, useEffect, useCallback } from 'react';
+import { makeTokens } from '@/shared/tokens/theme';
 
 interface ThemeContextType {
   isDark: boolean;
@@ -13,6 +14,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const KEY_THEME  = 'theme';
 const KEY_SEARCH = 'hub:search';
+const KEY_THEME_COLORS = 'hub:theme-colors';
 
 // Имя кастомного события для синхронизации между островами на одной странице
 const THEME_CHANGE_EVENT = 'hub:theme-change';
@@ -24,16 +26,32 @@ const getInitialTheme = (): boolean => {
 
 export const applyTheme = (isDark: boolean) => {
   if (globalThis.document === undefined) return;
+  const t = makeTokens(isDark);
   if (isDark) {
     document.documentElement.classList.add('dark');
     document.documentElement.style.colorScheme = 'dark';
-    document.documentElement.style.backgroundColor = '#0a0a0a';
+    document.documentElement.style.backgroundColor = t.bgPage;
   } else {
     document.documentElement.classList.remove('dark');
     document.documentElement.style.colorScheme = 'light';
-    document.documentElement.style.backgroundColor = '#E8E7E3';
+    document.documentElement.style.backgroundColor = t.bgPage;
   }
 };
+
+export function applyThemeColorVars() {
+  if (globalThis.document === undefined) return;
+  try {
+    const raw = localStorage.getItem(KEY_THEME_COLORS);
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as { darkBg?: string; lightBg?: string };
+    if (parsed.darkBg) {
+      document.documentElement.style.setProperty('--hub-theme-dark-bg', parsed.darkBg);
+    }
+    if (parsed.lightBg) {
+      document.documentElement.style.setProperty('--hub-theme-light-bg', parsed.lightBg);
+    }
+  } catch {}
+}
 
 // Сохраняет тему и уведомляет все острова и вкладки об изменении
 function broadcastTheme(isDark: boolean) {
@@ -49,6 +67,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useEffect(() => {
+    applyThemeColorVars();
     applyTheme(isDark);
   }, [isDark]);
 

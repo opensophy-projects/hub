@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Filter, X, Maximize2, Copy, Check, ChevronDown, Search, MoreHorizontal } from 'lucide-react';
 import { parseTableForCopy, toMd, toTsv, type CopyFormat } from '@/features/table/utils/copyUtils';
+import { makeTokens } from '@/shared/tokens/theme';
 
 interface TableControlsBarProps {
   readonly isDark: boolean;
@@ -16,9 +17,10 @@ interface TableControlsBarProps {
 }
 
 function tk(isDark: boolean) {
+  const t = makeTokens(isDark);
   return isDark ? {
-    barBg:     '#111111',
-    border:    'rgba(255,255,255,0.08)',
+    barBg:     t.surface,
+    border:    t.border,
     btnBg:     'rgba(255,255,255,0.08)',
     btnBdr:    'rgba(255,255,255,0.12)',
     btnHov:    'rgba(255,255,255,0.14)',
@@ -26,11 +28,11 @@ function tk(isDark: boolean) {
     btnActBg:  'rgba(255,255,255,0.15)',
     btnActBdr: 'rgba(255,255,255,0.22)',
     btnActClr: '#ffffff',
-    inpBg:     '#1a1a1a',
-    inpBdr:    'rgba(255,255,255,0.12)',
-    inpFoc:    'rgba(255,255,255,0.26)',
-    inpClr:    'rgba(255,255,255,0.88)',
-    plhClr:    'rgba(255,255,255,0.28)',
+    inpBg:     t.inpBg,
+    inpBdr:    t.inpBdr,
+    inpFoc:    t.inpBdrFocus,
+    inpClr:    t.inpClr,
+    plhClr:    t.plhClr,
     menuBg:    '#1a1a1a',
     menuBdr:   'rgba(255,255,255,0.1)',
     menuHov:   'rgba(255,255,255,0.07)',
@@ -42,8 +44,8 @@ function tk(isDark: boolean) {
     copiedBg:  'rgba(34,197,94,0.16)',
     copiedBdr: 'rgba(34,197,94,0.4)',
   } : {
-    barBg:     '#d8d7d3',
-    border:    'rgba(0,0,0,0.09)',
+    barBg:     t.surface,
+    border:    t.border,
     btnBg:     'rgba(0,0,0,0.07)',
     btnBdr:    'rgba(0,0,0,0.12)',
     btnHov:    'rgba(0,0,0,0.12)',
@@ -51,11 +53,11 @@ function tk(isDark: boolean) {
     btnActBg:  'rgba(0,0,0,0.12)',
     btnActBdr: 'rgba(0,0,0,0.22)',
     btnActClr: '#000000',
-    inpBg:     '#E8E7E3',
-    inpBdr:    'rgba(0,0,0,0.12)',
-    inpFoc:    'rgba(0,0,0,0.28)',
-    inpClr:    '#000000',
-    plhClr:    'rgba(0,0,0,0.35)',
+    inpBg:     t.inpBg,
+    inpBdr:    t.inpBdr,
+    inpFoc:    t.inpBdrFocus,
+    inpClr:    t.inpClr,
+    plhClr:    t.plhClr,
     menuBg:    '#eceae6',
     menuBdr:   'rgba(0,0,0,0.1)',
     menuHov:   'rgba(0,0,0,0.06)',

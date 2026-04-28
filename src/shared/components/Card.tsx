@@ -2,6 +2,7 @@ import React, { useContext, useState } from 'react';
 import { TableContext } from '../lib/htmlParser';
 import LucideIcon from './LucideIcon';
 import Overlay from './Overlay';
+import { makeTokens } from '@/shared/tokens/theme';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -31,8 +32,9 @@ const cardHoverStyle = `
 `;
 
 function getIconWrapBg(hasAccent: boolean, accentColor: string, isDark: boolean): string {
+  const t = makeTokens(isDark);
   if (hasAccent) return `${accentColor}22`;
-  return isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)';
+  return isDark ? 'rgba(255,255,255,0.07)' : t.accentSoft;
 }
 
 function getIconColor(hasAccent: boolean, accentColor: string, isDark: boolean): string {
@@ -41,11 +43,12 @@ function getIconColor(hasAccent: boolean, accentColor: string, isDark: boolean):
 }
 
 function getCardStyles(isDark: boolean, hasAccent: boolean, accentColor: string) {
+  const t = makeTokens(isDark);
   const card: React.CSSProperties = {
     position: 'relative',
     borderRadius: '12px',
-    border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)',
-    background: isDark ? '#0f0f0f' : 'rgba(0,0,0,0.03)',
+    border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : t.border}`,
+    background: isDark ? '#0f0f0f' : t.accentSoft,
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
