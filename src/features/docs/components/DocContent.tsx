@@ -74,18 +74,21 @@ interface DocHeroProps {
   isDark: boolean;
   readTime: number;
   liveFM?: LiveFM | null;
+  showDotWaveBackground: boolean;
 }
 
-const DocHero: React.FC<DocHeroProps> = ({ doc, isDark, readTime, liveFM }) => {
+const DocHero: React.FC<DocHeroProps> = ({ doc, isDark, readTime, liveFM, showDotWaveBackground }) => {
   const title       = liveFM?.title?.trim()       || doc.title;
   const description = liveFM?.description?.trim() || doc.description;
   const author      = liveFM?.author?.trim()       || doc.author;
   const date        = liveFM?.date?.trim()         || doc.date;
   const updated     = liveFM?.updated?.trim()      || doc.updated;
 
-  const heroBg      = isDark ? '#0a0a0a' : '#E8E7E3';
+  const heroBg      = showDotWaveBackground
+    ? (isDark ? '#0a0a0a' : '#E8E7E3')
+    : (isDark ? '#0F0F0F' : '#E0DFDb');
   const borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
-  const metaClr     = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.75)';
+  const metaClr     = isDark ? '#ffffff' : '#000000';
   const badgeBg     = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
   const badgeBdr    = isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
   const textPrimary = isDark ? '#ffffff' : '#000000';
@@ -98,7 +101,7 @@ const DocHero: React.FC<DocHeroProps> = ({ doc, isDark, readTime, liveFM }) => {
   return (
     <div style={{ background: heroBg, borderBottom: `1px solid ${borderColor}`, padding: '3rem 2rem 2.5rem', position: 'relative' }}>
       <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', contain: 'strict' }}>
-        <DotWaveBackground isDark={isDark} />
+        {showDotWaveBackground && <DotWaveBackground isDark={isDark} />}
       </div>
       <div style={{ position: 'relative', zIndex: 1 }}>
         {doc.typename?.trim() && (
@@ -169,6 +172,7 @@ const DocHero: React.FC<DocHeroProps> = ({ doc, isDark, readTime, liveFM }) => {
 const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const { isDark } = useTheme();
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
+  const [showDotWaveBackground, setShowDotWaveBackground] = useState(true);
 
   const [isDesktop, setIsDesktop] = useState(false);
   const [navLeft, setNavLeft]     = useState('0px');
@@ -213,6 +217,21 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
     return () => observer.disconnect();
   }, [isDesktop]);
+
+  useEffect(() => {
+    let mounted = true;
+    fetch('/data/site-config.json')
+      .then(r => (r.ok ? r.json() : { showDotWaveBackground: true }))
+      .then(cfg => {
+        if (!mounted) return;
+        setShowDotWaveBackground(cfg.showDotWaveBackground !== false);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setShowDotWaveBackground(true);
+      });
+    return () => { mounted = false; };
+  }, []);
 
   // ── Live preview via BroadcastChannel ────────────────────────────────────
   const [liveHtml, setLiveHtml] = useState<string | null>(null);
@@ -265,6 +284,11 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
     () => ({ onTableClick: (html: string) => setFullscreenTableHtml(html), isDark }),
     [isDark]
   );
+  const cardBg = isDark ? 'rgba(10,10,11,0.84)' : 'rgba(236,235,231,0.88)';
+  const cardBorder = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.14)';
+  const cardShadow = isDark
+    ? '0 24px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)'
+    : '0 18px 60px rgba(0,0,0,0.13), inset 0 1px 0 rgba(255,255,255,0.85)';
 
   return (
     <div style={{ minHeight: '100vh' }}>
@@ -282,25 +306,45 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
           marginLeft:   isDesktop ? navLeft : '0',
           marginRight:  isDesktop ? docRight : '0',
           marginBottom: isDesktop ? '0' : '3.5rem',
+          padding: isDesktop ? '0 12px 18px' : '0 8px 18px',
           transition:   'none',
         }}
       >
-        <DocHero doc={doc} isDark={isDark} readTime={readTime} liveFM={liveFM} />
+        <DocHero
+          doc={doc}
+          isDark={isDark}
+          readTime={readTime}
+          liveFM={liveFM}
+          showDotWaveBackground={showDotWaveBackground}
+        />
 
-        <article style={{
-          padding: '2rem 2rem 3rem',
-          borderLeft: showLeftBorder ? `1px solid ${isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.2)'}` : 'none',
-          borderRight: showRightBorder ? `1px solid ${isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.2)'}` : 'none',
+        <div style={{
+          marginTop: isDesktop ? '-24px' : '-14px',
+          position: 'relative',
+          zIndex: 2,
+          borderRadius: isDesktop ? '18px' : '14px',
+          border: `1px solid ${cardBorder}`,
+          background: cardBg,
+          boxShadow: cardShadow,
+          backdropFilter: 'blur(14px)',
+          WebkitBackdropFilter: 'blur(14px)',
+          overflow: 'hidden',
         }}>
-          <TableContext.Provider value={tableCtx}>
-            <div
-              data-article-content
-              className={`prose max-w-none w-full overflow-x-auto ${isDark ? 'text-white' : 'text-black'}`}
-            >
-              {contentNodes}
-            </div>
-          </TableContext.Provider>
-        </article>
+          <article style={{
+            padding: '2rem 2rem 3rem',
+            borderLeft: showLeftBorder ? `1px solid ${isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.2)'}` : 'none',
+            borderRight: showRightBorder ? `1px solid ${isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.2)'}` : 'none',
+          }}>
+            <TableContext.Provider value={tableCtx}>
+              <div
+                data-article-content
+                className={`prose max-w-none w-full overflow-x-auto ${isDark ? 'text-white' : 'text-black'}`}
+              >
+                {contentNodes}
+              </div>
+            </TableContext.Provider>
+          </article>
+        </div>
       </main>
 
       <AnimatePresence>
