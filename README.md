@@ -8,7 +8,7 @@
 
 <div align="center">
 
-[![ENGLISH](https://img.shields.io/badge/ENGLISH-2ea44f?style=for-the-badge)](hub/.github/workflows/info/readme_eng)
+[![ENGLISH](https://img.shields.io/badge/ENGLISH-2ea44f?style=for-the-badge)](hub/.github/workflows/info/readme_eng.md)
 
 [opensophy.com](https://opensophy.com)
 
