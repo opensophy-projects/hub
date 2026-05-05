@@ -5,6 +5,8 @@ import { ClientRouter } from 'astro:transitions';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import ErrorBoundary from '@/shared/components/ErrorBoundary';
 import DevPanelLoader from '@/features/dev-panel/DevPanelLoader';
+import fs from 'node:fs';
+import path from 'node:path';
 
 interface Props {
   title?: string;
@@ -54,6 +56,25 @@ const imageUrl     = image ? new URL(image, SITE.url).href : new URL(SITE.ogImag
 const publishedISO = date    ? new Date(date).toISOString()    : undefined;
 const updatedISO   = updated ? new Date(updated).toISOString() : publishedISO;
 const isHomePage   = url === '/';
+
+let faviconPath = '/favicon.png';
+try {
+  const siteConfigPath = path.join(process.cwd(), 'public/data/site-config.json');
+  if (fs.existsSync(siteConfigPath)) {
+    const cfg = JSON.parse(fs.readFileSync(siteConfigPath, 'utf-8'));
+    if (typeof cfg.favicon === 'string' && cfg.favicon) faviconPath = cfg.favicon;
+  }
+} catch {
+  faviconPath = '/favicon.png';
+}
+
+const faviconType = faviconPath.endsWith('.svg')
+  ? 'image/svg+xml'
+  : faviconPath.endsWith('.ico')
+    ? 'image/x-icon'
+    : faviconPath.endsWith('.webp')
+      ? 'image/webp'
+      : 'image/png';
 
 // JSON-LD для сайта (главная страница)
 const websiteJsonLd = JSON.stringify({
@@ -165,8 +186,8 @@ const articleJsonLd = type === 'article' ? JSON.stringify({
     )}
 
     <!-- Favicon -->
-    <link rel="icon"             href="/favicon.png" type="image/png" />
-    <link rel="apple-touch-icon" href="/favicon.png" />
+    <link rel="icon"             href={faviconPath} type={faviconType} />
+    <link rel="apple-touch-icon" href={faviconPath} />
 
     <!-- Astro SPA transitions -->
     <ClientRouter />

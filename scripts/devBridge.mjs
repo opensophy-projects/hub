@@ -47,6 +47,37 @@ function canRead(absPath) {
   return ALLOWED_READ.some(p => rel === p || rel.startsWith(p));
 }
 
+function imageExtFromMime(mimeType) {
+  if (mimeType === 'image/svg+xml') return 'svg';
+  if (mimeType === 'image/x-icon' || mimeType === 'image/vnd.microsoft.icon') return 'ico';
+  if (mimeType === 'image/webp') return 'webp';
+  return 'png';
+}
+
+async function readSiteConfigFile() {
+  try {
+    if (!fs.existsSync(SITE_CONFIG_PATH)) return {};
+    return JSON.parse(await fs.promises.readFile(SITE_CONFIG_PATH, 'utf-8'));
+  } catch {
+    return {};
+  }
+}
+
+async function writeSiteConfigFile(config) {
+  await fs.promises.mkdir(path.dirname(SITE_CONFIG_PATH), { recursive: true });
+  await fs.promises.writeFile(SITE_CONFIG_PATH, JSON.stringify(config, null, 2), 'utf-8');
+}
+
+function normalizeSiteConfig(config) {
+  return {
+    useLanding: config.useLanding === true,
+    showDotWaveBackground: config.showDotWaveBackground !== false,
+    favicon: typeof config.favicon === 'string' && config.favicon ? config.favicon : '/favicon.png',
+    lightLogo: typeof config.lightLogo === 'string' ? config.lightLogo : '',
+    darkLogo: typeof config.darkLogo === 'string' ? config.darkLogo : '',
+  };
+}
+
 // ─── Загрузка утилит ──────────────────────────────────────────────────────────
 
 let _utils = null;
@@ -197,9 +228,31 @@ async function handleUploadAsset({ filename, base64 }) {
 }
 
 async function handleUploadFavicon({ base64, mimeType }) {
-  const ext = mimeType === 'image/svg+xml' ? 'svg' : 'png';
+  const ext = imageExtFromMime(mimeType);
+  const rel = `/favicon.${ext}`;
   await fs.promises.writeFile(path.join(ROOT, `public/favicon.${ext}`), Buffer.from(base64, 'base64'));
-  return { path: `/favicon.${ext}` };
+  const config = normalizeSiteConfig(await readSiteConfigFile());
+  await writeSiteConfigFile({ ...config, favicon: rel });
+  return { path: rel };
+}
+
+async function handleUploadLogo({ variant, base64, mimeType }) {
+  if (!['light', 'dark'].includes(variant)) throw new Error('Unknown logo variant');
+  const ext = imageExtFromMime(mimeType);
+  const basename = variant === 'light' ? 'light_logo' : 'dark_logo';
+  const rel = `/${basename}.${ext}`;
+
+  await Promise.all(['png', 'svg', 'ico', 'webp'].map(oldExt =>
+    fs.promises.rm(path.join(ROOT, `public/${basename}.${oldExt}`), { force: true })
+  ));
+  await fs.promises.writeFile(path.join(ROOT, `public/${basename}.${ext}`), Buffer.from(base64, 'base64'));
+
+  const config = normalizeSiteConfig(await readSiteConfigFile());
+  await writeSiteConfigFile({
+    ...config,
+    [variant === 'light' ? 'lightLogo' : 'darkLogo']: rel,
+  });
+  return { path: rel };
 }
 
 async function handleRunGenerate() {
@@ -234,24 +287,11 @@ async function handleRenderPreview({ markdown }) {
 // ─── Обработчики site-config ──────────────────────────────────────────────────
 
 async function handleReadSiteConfig() {
-  try {
-    if (!fs.existsSync(SITE_CONFIG_PATH)) {
-      return { config: { useLanding: false, showDotWaveBackground: true } };
-    }
-    const raw = await fs.promises.readFile(SITE_CONFIG_PATH, 'utf-8');
-    const config = JSON.parse(raw);
-    if (typeof config.showDotWaveBackground !== 'boolean') {
-      config.showDotWaveBackground = true;
-    }
-    return { config };
-  } catch {
-    return { config: { useLanding: false, showDotWaveBackground: true } };
-  }
+  return { config: normalizeSiteConfig(await readSiteConfigFile()) };
 }
 
 async function handleWriteSiteConfig({ config }) {
-  await fs.promises.mkdir(path.dirname(SITE_CONFIG_PATH), { recursive: true });
-  await fs.promises.writeFile(SITE_CONFIG_PATH, JSON.stringify(config, null, 2), 'utf-8');
+  await writeSiteConfigFile(normalizeSiteConfig(config));
   return { ok: true };
 }
 
@@ -268,6 +308,7 @@ const HANDLERS = {
   writeContacts:   handleWriteContacts,
   uploadAsset:     handleUploadAsset,
   uploadFavicon:   handleUploadFavicon,
+  uploadLogo:      handleUploadLogo,
   runGenerate:     handleRunGenerate,
   renderPreview:   handleRenderPreview,
   readSiteConfig:  handleReadSiteConfig,

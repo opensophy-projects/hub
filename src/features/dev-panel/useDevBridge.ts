@@ -17,11 +17,18 @@ interface PendingMsg {
   timeout: ReturnType<typeof setTimeout>;
 }
 
+interface BridgeResponse {
+  id?: string;
+  ok?: boolean;
+  result?: unknown;
+  error?: string;
+}
+
 // ─── Singleton connection manager ──────────────────────────────────────────────
 
 let ws: WebSocket | null = null;
-let pending       = new Map<string, PendingMsg>();
-let listeners     = new Set<(s: BridgeStatus) => void>();
+const pending     = new Map<string, PendingMsg>();
+const listeners   = new Set<(s: BridgeStatus) => void>();
 let status: BridgeStatus = 'disconnected';
 let reconnectDelay = 1000;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -67,8 +74,8 @@ function connect() {
   };
 
   ws.onmessage = ev => {
-    let msg: any;
-    try { msg = JSON.parse(ev.data); } catch { return; }
+    let msg: BridgeResponse;
+    try { msg = JSON.parse(ev.data) as BridgeResponse; } catch { return; }
     if (msg.id === '__ping__') return;
     const p = pending.get(msg.id);
     if (!p) return;
@@ -142,6 +149,9 @@ export function useDevBridge() {
 export interface SiteConfig {
   useLanding: boolean;
   showDotWaveBackground?: boolean;
+  favicon?: string;
+  lightLogo?: string;
+  darkLogo?: string;
 }
 
 // ─── Typed bridge API ──────────────────────────────────────────────────────────
@@ -174,6 +184,9 @@ export const bridge = {
 
   uploadFavicon: (base64: string, mimeType: string) =>
     send<{ path: string }>('uploadFavicon', { base64, mimeType }),
+
+  uploadLogo: (variant: 'light' | 'dark', base64: string, mimeType: string) =>
+    send<{ path: string }>('uploadLogo', { variant, base64, mimeType }),
 
   runGenerate: () =>
     send<{ ok: boolean; stdout: string; stderr: string }>('runGenerate'),
