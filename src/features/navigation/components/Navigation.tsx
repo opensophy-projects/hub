@@ -59,7 +59,7 @@ interface SiteLogoConfig {
 }
 
 function getThemeLogoPath(config: SiteLogoConfig, isDark: boolean): string {
-  return (isDark ? config.darkLogo || config.lightLogo : config.lightLogo || config.darkLogo) || '/favicon.png';
+  return isDark ? (config.darkLogo || config.lightLogo || '') : (config.lightLogo || config.darkLogo || '');
 }
 
 function toDocHref(slug?: string): string {
@@ -878,14 +878,20 @@ const PANEL_TITLES: Record<Exclude<PanelType, null>, string> = {
   contacts: 'Контакты',
 };
 
-const BrandLogo: React.FC<{ logoPath: string; size: number }> = ({ logoPath, size }) => (
-  <img
-    src={logoPath}
-    alt="hub"
-    onError={e => { if (e.currentTarget.src !== globalThis.location.origin + '/favicon.png') e.currentTarget.src = '/favicon.png'; }}
-    style={{ width: size, height: size, objectFit: 'contain' }}
-  />
-);
+const BrandLogo: React.FC<{ logoPath: string; size: number }> = ({ logoPath, size }) => {
+  if (!logoPath) return <span aria-hidden style={{ width: size, height: size, display: 'inline-block' }} />;
+
+  return (
+    <img
+      src={logoPath}
+      alt="hub"
+      onError={e => {
+        e.currentTarget.style.display = 'none';
+      }}
+      style={{ width: size, height: size, objectFit: 'contain' }}
+    />
+  );
+};
 
 const DesktopNav: React.FC<{
   isDark: boolean; toggleTheme: () => void; currentDocSlug?: string; toc: TocItem[]; activeId: string; showDocActions: boolean; logoPath: string;
@@ -1220,7 +1226,15 @@ const Navigation: React.FC<NavigationProps> = ({ currentDocSlug, toc = [], activ
   useEffect(() => {
     let alive = true;
     const applyLogoConfig = (cfg: SiteLogoConfig) => {
-      if (alive) setLogoConfig({ lightLogo: cfg.lightLogo || '', darkLogo: cfg.darkLogo || '' });
+      const next = { lightLogo: cfg.lightLogo || '', darkLogo: cfg.darkLogo || '' };
+
+      [next.lightLogo, next.darkLogo].forEach(src => {
+        if (!src) return;
+        const img = new Image();
+        img.src = src;
+      });
+
+      if (alive) setLogoConfig(next);
     };
     const onLogoChange = (e: Event) => applyLogoConfig((e as CustomEvent<SiteLogoConfig>).detail || {});
 
