@@ -53,6 +53,15 @@ interface NavigationProps {
   activeHeadingId?: string;
 }
 
+interface SiteLogoConfig {
+  lightLogo?: string;
+  darkLogo?: string;
+}
+
+function getThemeLogoPath(config: SiteLogoConfig, isDark: boolean): string {
+  return (isDark ? config.darkLogo || config.lightLogo : config.lightLogo || config.darkLogo) || '/favicon.png';
+}
+
 function toDocHref(slug?: string): string {
   if (!slug) return '/';
   return `/${slug}/`;
@@ -869,9 +878,18 @@ const PANEL_TITLES: Record<Exclude<PanelType, null>, string> = {
   contacts: 'Контакты',
 };
 
+const BrandLogo: React.FC<{ logoPath: string; size: number }> = ({ logoPath, size }) => (
+  <img
+    src={logoPath}
+    alt="hub"
+    onError={e => { if (e.currentTarget.src !== globalThis.location.origin + '/favicon.png') e.currentTarget.src = '/favicon.png'; }}
+    style={{ width: size, height: size, objectFit: 'contain' }}
+  />
+);
+
 const DesktopNav: React.FC<{
-  isDark: boolean; toggleTheme: () => void; currentDocSlug?: string; toc: TocItem[]; activeId: string; showDocActions: boolean;
-}> = ({ isDark, toggleTheme, currentDocSlug, toc, activeId, showDocActions }) => {
+  isDark: boolean; toggleTheme: () => void; currentDocSlug?: string; toc: TocItem[]; activeId: string; showDocActions: boolean; logoPath: string;
+}> = ({ isDark, toggleTheme, currentDocSlug, toc, activeId, showDocActions, logoPath }) => {
   const t = tk(isDark);
   const [railVisible, setRailVisible] = useState(true);
   const [searchOpen, setSearchOpen]   = useState(false);
@@ -927,7 +945,7 @@ const DesktopNav: React.FC<{
           backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
         }}>
           <div style={{ width: RAIL_W, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <img src="/favicon.png" alt="hub" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+            <BrandLogo logoPath={logoPath} size={28} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: 1, width: '100%', padding: '2px 0' }}>
             <RailBtn icon={<PanelLeft size={18} />}                         label="Панель"     isDark={isDark} onClick={() => setRailVisible(false)}                                              title="Скрыть" />
@@ -1139,8 +1157,8 @@ const MobBtn: React.FC<{
 type MobileSheet = 'nav' | 'toc' | 'contacts' | null;
 
 const MobileNav: React.FC<{
-  isDark: boolean; toggleTheme: () => void; currentDocSlug?: string; toc: TocItem[]; activeId: string; showDocActions: boolean;
-}> = ({ isDark, toggleTheme, currentDocSlug, toc, activeId, showDocActions }) => {
+  isDark: boolean; toggleTheme: () => void; currentDocSlug?: string; toc: TocItem[]; activeId: string; showDocActions: boolean; logoPath: string;
+}> = ({ isDark, toggleTheme, currentDocSlug, toc, activeId, showDocActions, logoPath }) => {
   const t = tk(isDark);
   const [sheet, setSheet]           = useState<MobileSheet>(null);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -1160,7 +1178,7 @@ const MobileNav: React.FC<{
         {!showDocActions && (
           <>
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img src="/favicon.png" alt="hub" style={{ width: 38, height: 38, objectFit: 'contain' }} />
+              <BrandLogo logoPath={logoPath} size={38} />
             </div>
             <MobBtn label="Разделы" icon={<FolderOpen size={22} />} isDark={isDark} onClick={() => toggle('nav')} isActive={sheet === 'nav'} />
           </>
@@ -1170,7 +1188,7 @@ const MobileNav: React.FC<{
           <>
             <MobBtn label="Разделы" icon={<FolderOpen size={22} />} isDark={isDark} onClick={() => toggle('nav')} isActive={sheet === 'nav'} />
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img src="/favicon.png" alt="hub" style={{ width: 38, height: 38, objectFit: 'contain' }} />
+              <BrandLogo logoPath={logoPath} size={38} />
             </div>
             <MobBtn label="Оглавление" icon={<List size={22} />}   isDark={isDark} onClick={() => toggle('toc')} isActive={sheet === 'toc'} />
             <MobBtn label="Наверх"     icon={<ArrowUp size={22} />} isDark={isDark} onClick={() => { setSheet(null); globalThis.scrollTo({ top: 0, behavior: 'smooth' }); }} isActive={false} />
@@ -1197,11 +1215,32 @@ const Navigation: React.FC<NavigationProps> = ({ currentDocSlug, toc = [], activ
   const { isDark, toggleTheme } = useTheme();
   const isDesktop = useIsDesktopNav();
   const showDocActions = toc.length > 0 || !!currentDocSlug;
+  const [logoConfig, setLogoConfig] = useState<SiteLogoConfig>({});
+
+  useEffect(() => {
+    let alive = true;
+    const applyLogoConfig = (cfg: SiteLogoConfig) => {
+      if (alive) setLogoConfig({ lightLogo: cfg.lightLogo || '', darkLogo: cfg.darkLogo || '' });
+    };
+    const onLogoChange = (e: Event) => applyLogoConfig((e as CustomEvent<SiteLogoConfig>).detail || {});
+
+    fetch('/data/site-config.json')
+      .then(r => (r.ok ? r.json() : {}))
+      .then((cfg: SiteLogoConfig) => applyLogoConfig(cfg))
+      .catch(() => { if (alive) setLogoConfig({}); });
+    globalThis.addEventListener('hub:logo-change', onLogoChange);
+    return () => {
+      alive = false;
+      globalThis.removeEventListener('hub:logo-change', onLogoChange);
+    };
+  }, []);
 
   if (isDesktop === null) return null;
 
-  if (isDesktop) return <DesktopNav isDark={isDark} toggleTheme={toggleTheme} currentDocSlug={currentDocSlug} toc={toc} activeId={activeHeadingId} showDocActions={showDocActions} />;
-  return <MobileNav isDark={isDark} toggleTheme={toggleTheme} currentDocSlug={currentDocSlug} toc={toc} activeId={activeHeadingId} showDocActions={showDocActions} />;
+  const logoPath = getThemeLogoPath(logoConfig, isDark);
+
+  if (isDesktop) return <DesktopNav isDark={isDark} toggleTheme={toggleTheme} currentDocSlug={currentDocSlug} toc={toc} activeId={activeHeadingId} showDocActions={showDocActions} logoPath={logoPath} />;
+  return <MobileNav isDark={isDark} toggleTheme={toggleTheme} currentDocSlug={currentDocSlug} toc={toc} activeId={activeHeadingId} showDocActions={showDocActions} logoPath={logoPath} />;
 };
 
 export default Navigation;

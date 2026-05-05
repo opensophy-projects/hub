@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useContext } from 'react';
+import React, { useState, useRef, useCallback, useContext, useEffect } from 'react';
 import { bridge } from '../useDevBridge';
 import { ThemeTokensContext } from '../DevPanel';
 import { toast } from '../components/Toast';
@@ -161,6 +161,20 @@ export default function AssetsPanel() {
   const [assetsLoading,  setAssetsLoading]  = useState(false);
   const [error,          setError]          = useState('');
   const [faviconSaved,   setFaviconSaved]   = useState(false);
+  const [lightLogoLoading, setLightLogoLoading] = useState(false);
+  const [darkLogoLoading,  setDarkLogoLoading]  = useState(false);
+  const [logoSaved,       setLogoSaved]       = useState<'light' | 'dark' | null>(null);
+  const [currentLogos,    setCurrentLogos]    = useState({ favicon: '/favicon.png', lightLogo: '', darkLogo: '' });
+
+  useEffect(() => {
+    bridge.readSiteConfig()
+      .then(({ config }) => setCurrentLogos({
+        favicon: config.favicon || '/favicon.png',
+        lightLogo: config.lightLogo || '',
+        darkLogo: config.darkLogo || '',
+      }))
+      .catch(() => { /* dev bridge may be disconnected */ });
+  }, []);
 
   const handleAssetsUpload = useCallback(async (files: File[]) => {
     setAssetsLoading(true);
@@ -188,7 +202,12 @@ export default function AssetsPanel() {
     setError('');
     try {
       const base64 = await fileToBase64(file);
-      await bridge.uploadFavicon(base64, file.type);
+      const result = await bridge.uploadFavicon(base64, file.type);
+      setCurrentLogos(prev => {
+        const next = { ...prev, favicon: result.path };
+        globalThis.dispatchEvent(new CustomEvent('hub:logo-change', { detail: next }));
+        return next;
+      });
       setFaviconSaved(true);
       setTimeout(() => setFaviconSaved(false), 3000);
       toast.success('Favicon обновлён');
@@ -196,6 +215,33 @@ export default function AssetsPanel() {
       setError((e as Error).message);
     } finally {
       setFaviconLoading(false);
+    }
+  }, []);
+
+  const handleLogoUpload = useCallback(async (variant: 'light' | 'dark', files: File[]) => {
+    const file = files[0];
+    if (!file) return;
+    const setLoading = variant === 'light' ? setLightLogoLoading : setDarkLogoLoading;
+    setLoading(true);
+    setError('');
+    try {
+      const base64 = await fileToBase64(file);
+      const result = await bridge.uploadLogo(variant, base64, file.type);
+      setCurrentLogos(prev => {
+        const next = {
+          ...prev,
+          [variant === 'light' ? 'lightLogo' : 'darkLogo']: result.path,
+        };
+        globalThis.dispatchEvent(new CustomEvent('hub:logo-change', { detail: next }));
+        return next;
+      });
+      setLogoSaved(variant);
+      setTimeout(() => setLogoSaved(null), 3000);
+      toast.success(variant === 'light' ? 'Светлый логотип обновлён' : 'Тёмный логотип обновлён');
+    } catch (e: unknown) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -215,9 +261,39 @@ export default function AssetsPanel() {
         accept="image/png,image/svg+xml,image/x-icon,image/webp"
         onFiles={handleFaviconUpload}
         loading={faviconLoading}
-        hint="PNG, SVG, ICO · Сохраняется как public/favicon.png"
+        hint={`PNG, SVG, ICO, WEBP · Только иконка вкладки. Сейчас: ${currentLogos.favicon}`}
         t={t}
       />
+
+      <div style={{ height: 10 }} />
+
+      <DropZone
+        label={logoSaved === 'light' ? '✓ Light logo обновлён!' : 'Загрузить light_logo'}
+        accept="image/png,image/svg+xml,image/webp"
+        onFiles={(files) => handleLogoUpload('light', files)}
+        loading={lightLogoLoading}
+        hint={`Логотип для светлой темы в навигации. Сейчас: ${currentLogos.lightLogo || 'не задан'}`}
+        t={t}
+      />
+
+      <div style={{ height: 10 }} />
+
+      <DropZone
+        label={logoSaved === 'dark' ? '✓ Dark logo обновлён!' : 'Загрузить dark_logo'}
+        accept="image/png,image/svg+xml,image/webp"
+        onFiles={(files) => handleLogoUpload('dark', files)}
+        loading={darkLogoLoading}
+        hint={`Логотип для тёмной темы в навигации. Сейчас: ${currentLogos.darkLogo || 'не задан'}`}
+        t={t}
+      />
+
+      <div style={{
+        marginTop: 10, padding: '8px 10px', borderRadius: 7,
+        border: `1px solid ${t.border}`, background: t.surface,
+        fontSize: 10, color: t.fgSub, lineHeight: 1.55,
+      }}>
+        Favicon используется только браузером для вкладок. В навигации отображается light_logo или dark_logo в зависимости от текущей темы; если вариант не задан, будет fallback на другой логотип или favicon.
+      </div>
 
       <div style={{ height: 1, background: t.border, margin: '16px 0' }}/>
 
