@@ -180,6 +180,8 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const [isDesktop, setIsDesktop] = useState(false);
   const [navLeft, setNavLeft]     = useState('0px');
   const [docRight, setDocRight] = useState('0px');
+  const [docChromeGap, setDocChromeGap] = useState('0px');
+  const [docChromeRadius, setDocChromeRadius] = useState('0px');
   const [showLeftBorder, setShowLeftBorder] = useState(false);
   const [showRightBorder, setShowRightBorder] = useState(false);
 
@@ -200,6 +202,8 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
     if (!isDesktop) {
       setNavLeft('0px');
       setDocRight('0px');
+      setDocChromeGap('0px');
+      setDocChromeRadius('0px');
       setShowLeftBorder(false);
       setShowRightBorder(false);
       return;
@@ -209,9 +213,13 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
       const left = css.getPropertyValue('--nav-left').trim();
       const right = css.getPropertyValue('--doc-right').trim();
       const leftBorder = css.getPropertyValue('--doc-border-left').trim();
+      const chromeGap = css.getPropertyValue('--doc-chrome-gap').trim();
+      const chromeRadius = css.getPropertyValue('--doc-chrome-radius').trim();
       const rightBorder = css.getPropertyValue('--doc-border-right').trim();
       setNavLeft(left || '64px');
       setDocRight(right || '0px');
+      setDocChromeGap(chromeGap || '0px');
+      setDocChromeRadius(chromeRadius || '0px');
       setShowLeftBorder(leftBorder === '1');
       setShowRightBorder(rightBorder === '1');
     };
@@ -303,7 +311,13 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
           background: t.bgPage,
           marginLeft:   isDesktop ? navLeft : '0',
           marginRight:  isDesktop ? docRight : '0',
-          marginBottom: isDesktop ? '0' : '3.5rem',
+          marginTop:    isDesktop ? docChromeGap : '0',
+          marginBottom: isDesktop ? docChromeGap : '3.5rem',
+          minHeight:    isDesktop ? `calc(100vh - (${docChromeGap} * 2))` : '100vh',
+          border:       isDesktop ? `1px solid ${t.border}` : 'none',
+          borderRadius: isDesktop ? docChromeRadius : 0,
+          overflow:     isDesktop ? 'hidden' : 'visible',
+          boxShadow:    isDesktop ? `0 0 0 1px ${t.border}, inset 0 1px 0 rgba(255,255,255,0.03)` : 'none',
           transition:   'none',
         }}
       >
