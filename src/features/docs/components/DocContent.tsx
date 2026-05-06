@@ -182,6 +182,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const [docRight, setDocRight] = useState('0px');
   const [docChromeGap, setDocChromeGap] = useState('0px');
   const [docChromeRadius, setDocChromeRadius] = useState('0px');
+  const [docChromeTopGap, setDocChromeTopGap] = useState('0px');
   const [showLeftBorder, setShowLeftBorder] = useState(false);
   const [showRightBorder, setShowRightBorder] = useState(false);
 
@@ -204,6 +205,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
       setDocRight('0px');
       setDocChromeGap('0px');
       setDocChromeRadius('0px');
+      setDocChromeTopGap('0px');
       setShowLeftBorder(false);
       setShowRightBorder(false);
       return;
@@ -215,11 +217,13 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
       const leftBorder = css.getPropertyValue('--doc-border-left').trim();
       const chromeGap = css.getPropertyValue('--doc-chrome-gap').trim();
       const chromeRadius = css.getPropertyValue('--doc-chrome-radius').trim();
+      const chromeTopGap = css.getPropertyValue('--doc-chrome-top-gap').trim();
       const rightBorder = css.getPropertyValue('--doc-border-right').trim();
       setNavLeft(left || '64px');
       setDocRight(right || '0px');
       setDocChromeGap(chromeGap || '0px');
       setDocChromeRadius(chromeRadius || '0px');
+      setDocChromeTopGap(chromeTopGap || chromeGap || '0px');
       setShowLeftBorder(leftBorder === '1');
       setShowRightBorder(rightBorder === '1');
     };
@@ -297,7 +301,8 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   );
   const navChromeBg = isDark ? 'rgba(15,15,15,0.84)' : 'rgba(224,223,219,0.82)';
   return (
-    <div style={{ minHeight: '100vh', background: isDesktop ? navChromeBg : t.bgPage }}>
+    <div style={{ minHeight: '100vh', background: isDesktop ? navChromeBg : t.bgPage, position: 'relative' }}>
+      {isDesktop && <div aria-hidden style={{ position: 'fixed', inset: 0, background: navChromeBg, zIndex: 0, pointerEvents: 'none' }} />}
       {/* Progress bar */}
       <div
         ref={progressBarRef}
@@ -312,9 +317,11 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
           background: t.bgPage,
           marginLeft:   isDesktop ? navLeft : '0',
           marginRight:  isDesktop ? docRight : '0',
-          marginTop:    isDesktop ? docChromeGap : '0',
+          position:     'relative',
+          zIndex:       1,
+          marginTop:    isDesktop ? docChromeTopGap : '0',
           marginBottom: isDesktop ? docChromeGap : '3.5rem',
-          minHeight:    isDesktop ? `calc(100vh - (${docChromeGap} * 2))` : '100vh',
+          minHeight:    isDesktop ? `calc(100vh - (${docChromeTopGap} + ${docChromeGap}))` : '100vh',
           border:       isDesktop ? `1px solid ${t.border}` : 'none',
           borderRadius: isDesktop ? docChromeRadius : 0,
           overflow:     isDesktop ? 'hidden' : 'visible',

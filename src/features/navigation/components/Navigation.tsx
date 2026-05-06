@@ -33,6 +33,7 @@ const PANEL_MIN     = 220;
 const PANEL_MAX     = 500;
 const TOC_PANEL_W   = 300;
 const DOC_CHROME_GAP = 10;
+const DOC_CHROME_TOP_GAP = 14;
 const DOC_CHROME_RADIUS = 18;
 
 export interface TocItem { id: string; text: string; level: number; }
@@ -598,7 +599,7 @@ const NavPanelContent: React.FC<{
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
 
       {/* Строка поиска */}
-      <div style={{ flexShrink: 0, padding: mobile ? '12px 14px' : '10px', borderBottom: `1px solid ${t.border}` }}>
+      <div style={{ flexShrink: 0, padding: mobile ? '12px 14px' : '10px', borderBottom: 'none' }}>
         <div style={{ position: 'relative' }}>
           <Search size={iconSize} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: t.fgSub, pointerEvents: 'none' }} />
           <input
@@ -627,7 +628,7 @@ const NavPanelContent: React.FC<{
       {sections.length > 1 && activeSection && (
         <div
           ref={sectionRef}
-          style={{ flexShrink: 0, padding: mobile ? '10px 14px' : '8px 10px', borderBottom: `1px solid ${t.border}`, position: 'relative', zIndex: 10 }}
+          style={{ flexShrink: 0, padding: mobile ? '10px 14px' : '8px 10px', borderBottom: 'none', position: 'relative', zIndex: 10 }}
         >
           <button
             onClick={() => setSectionOpen(v => !v)}
@@ -793,7 +794,7 @@ const ContactsPanelContent: React.FC<{ isDark: boolean; mobile?: boolean }> = ({
 const PanelHeader: React.FC<{ title: string; isDark: boolean; onClose: () => void }> = ({ title, isDark, onClose }) => {
   const t = tk(isDark);
   return (
-    <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 12px 9px', borderBottom: `1px solid ${t.border}` }}>
+    <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 12px 9px', borderBottom: 'none' }}>
       <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: t.fgMuted }}>{title}</span>
       <button onClick={onClose}
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: '6px', border: 'none', background: 'transparent', color: t.fgMuted, cursor: 'pointer' }}
@@ -839,6 +840,7 @@ function buildCssVars(
   standardTocVisible: boolean,
 ): void {
   const chromeGap     = isDocsPage ? DOC_CHROME_GAP : 0;
+  const chromeTopGap  = isDocsPage ? DOC_CHROME_TOP_GAP : 0;
   const panelOffset   = isDocsPage && panelOpen ? panelWidth : 0;
   const left          = railVisible ? chromeGap + RAIL_W + panelOffset + chromeGap : chromeGap;
   const docRight      = isDocsPage && isStandardMode && standardTocVisible ? chromeGap + TOC_PANEL_W + chromeGap : chromeGap;
@@ -849,6 +851,7 @@ function buildCssVars(
   document.documentElement.style.setProperty('--doc-border-left', sidebarHidden ? '1' : '0');
   document.documentElement.style.setProperty('--doc-border-right', tocHidden ? '1' : '0');
   document.documentElement.style.setProperty('--doc-chrome-gap', `${chromeGap}px`);
+  document.documentElement.style.setProperty('--doc-chrome-top-gap', `${chromeTopGap}px`);
   document.documentElement.style.setProperty('--doc-chrome-radius', `${isDocsPage ? DOC_CHROME_RADIUS : 0}px`);
 }
 
@@ -857,6 +860,7 @@ function clearDocCssVars(): void {
   document.documentElement.style.removeProperty('--doc-border-left');
   document.documentElement.style.removeProperty('--doc-border-right');
   document.documentElement.style.removeProperty('--doc-chrome-gap');
+  document.documentElement.style.removeProperty('--doc-chrome-top-gap');
   document.documentElement.style.removeProperty('--doc-chrome-radius');
 }
 
@@ -916,9 +920,10 @@ const DesktopNav: React.FC<{
   const readingModeEnabled = showDocActions;
   const isDocsPage         = Boolean(currentDocSlug);
   const chromeGap          = isDocsPage ? DOC_CHROME_GAP : 0;
+  const chromeTopGap       = isDocsPage ? DOC_CHROME_TOP_GAP : 0;
   const chromeRadius       = isDocsPage ? DOC_CHROME_RADIUS : 0;
   const sidebarBg          = isDark ? 'rgba(15,15,15,0.84)' : 'rgba(224,223,219,0.82)';
-  const panelBg            = isDark ? 'rgba(15,15,15,0.78)' : 'rgba(224,223,219,0.78)';
+  const panelBg            = sidebarBg;
   const isStandardMode     = readingModeEnabled && readingMode === 'standard';
   const panelOpen          = isStandardMode ? (railVisible && standardSidebarOpen) : !!activePanel;
   const sidebarShellWidth  = RAIL_W + (panelOpen ? panelWidth : 0);
@@ -958,8 +963,8 @@ const DesktopNav: React.FC<{
         <div
           aria-hidden
           style={{
-            position: 'fixed', left: chromeGap, top: chromeGap, height: `calc(100vh - ${chromeGap * 2}px)`, width: sidebarShellWidth,
-            background: sidebarBg, border: `1px solid ${t.border}`, borderRadius: chromeRadius, zIndex: 47,
+            position: 'fixed', left: chromeGap, top: chromeTopGap, height: `calc(100vh - ${chromeTopGap + chromeGap}px)`, width: sidebarShellWidth,
+            background: sidebarBg, border: 'none', borderRadius: chromeRadius, zIndex: 47,
             pointerEvents: 'none', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
           }}
         />
@@ -967,14 +972,14 @@ const DesktopNav: React.FC<{
 
       {railVisible && (
         <aside style={{
-          position: 'fixed', left: chromeGap, top: chromeGap, height: isDocsPage ? `calc(100vh - ${chromeGap * 2}px)` : '100vh', width: RAIL_W,
+          position: 'fixed', left: chromeGap, top: chromeTopGap, height: isDocsPage ? `calc(100vh - ${chromeTopGap + chromeGap}px)` : '100vh', width: RAIL_W,
           background: isDocsPage ? 'transparent' : sidebarBg,
           border: isDocsPage ? 'none' : `1px solid ${t.border}`,
-          borderRight: panelOpen ? `1px solid ${t.border}` : 'none',
+          borderRight: 'none',
           borderRadius: panelOpen ? `${chromeRadius}px 0 0 ${chromeRadius}px` : chromeRadius,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           zIndex: 50, padding: '8px 0', gap: '2px',
-          backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+          backdropFilter: isDocsPage ? 'none' : 'blur(12px)', WebkitBackdropFilter: isDocsPage ? 'none' : 'blur(12px)',
         }}>
           <div style={{ width: RAIL_W, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <BrandLogo logoPath={logoPath} size={28} />
@@ -1024,7 +1029,7 @@ const DesktopNav: React.FC<{
 
       {!railVisible && (
         <button onClick={() => setRailVisible(true)}
-          style={{ position: 'fixed', left: chromeGap + 8, top: chromeGap + 8, zIndex: 55, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: '8px', border: `1px solid ${t.border}`, background: t.railBg, color: t.fgMuted, cursor: 'pointer' }}
+          style={{ position: 'fixed', left: chromeGap + 8, top: chromeTopGap + 8, zIndex: 55, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: '8px', border: `1px solid ${t.border}`, background: t.railBg, color: t.fgMuted, cursor: 'pointer' }}
           title="Показать">
           <PanelLeft size={14} />
         </button>
@@ -1032,7 +1037,7 @@ const DesktopNav: React.FC<{
 
       {railVisible && (
         <aside style={{
-          position: 'fixed', left: chromeGap + RAIL_W, top: chromeGap, height: isDocsPage ? `calc(100vh - ${chromeGap * 2}px)` : '100vh',
+          position: 'fixed', left: chromeGap + RAIL_W, top: chromeTopGap, height: isDocsPage ? `calc(100vh - ${chromeTopGap + chromeGap}px)` : '100vh',
           width: panelOpen ? panelWidth : 0,
           background: isDocsPage ? 'transparent' : panelBg,
           border: isDocsPage ? 'none' : panelOpen ? `1px solid ${t.border}` : 'none',
@@ -1040,7 +1045,7 @@ const DesktopNav: React.FC<{
           borderRadius: panelOpen ? `0 ${chromeRadius}px ${chromeRadius}px 0` : 0,
           display: 'flex', flexDirection: 'column', zIndex: 49, overflow: 'hidden',
           pointerEvents: panelOpen ? 'auto' : 'none', visibility: panelOpen ? 'visible' : 'hidden',
-          backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+          backdropFilter: isDocsPage ? 'none' : 'blur(14px)', WebkitBackdropFilter: isDocsPage ? 'none' : 'blur(14px)',
         }}>
           {panelOpen && (
             <>
@@ -1068,16 +1073,16 @@ const DesktopNav: React.FC<{
 
       {isStandardMode && standardTocVisible && (
         <aside style={{
-          position: 'fixed', right: chromeGap, top: chromeGap, width: TOC_PANEL_W, height: isDocsPage ? `calc(100vh - ${chromeGap * 2}px)` : '100vh',
-          border: isDocsPage ? `1px solid ${t.border}` : 'none',
-          borderLeft: `1px solid ${t.border}`,
+          position: 'fixed', right: chromeGap, top: chromeTopGap, width: TOC_PANEL_W, height: isDocsPage ? `calc(100vh - ${chromeTopGap + chromeGap}px)` : '100vh',
+          border: 'none',
+          borderLeft: 'none',
           borderRadius: `${chromeRadius}px 0 0 ${chromeRadius}px`,
           overflow: 'hidden',
           background: panelBg,
           zIndex: 48, display: 'flex', flexDirection: 'column',
           backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
         }}>
-          <div style={{ borderBottom: `1px solid ${t.border}`, padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ borderBottom: 'none', padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: t.fgMuted }}>Оглавление</span>
             <div style={{ display: 'flex', gap: '6px' }}>
               <button
@@ -1106,7 +1111,7 @@ const DesktopNav: React.FC<{
         <button
           onClick={() => setStandardTocVisible(true)}
           style={{
-            position: 'fixed', right: chromeGap + 12, top: chromeGap + 12, zIndex: 56, border: `1px solid ${t.border}`, borderRadius: '8px',
+            position: 'fixed', right: chromeGap + 12, top: chromeTopGap + 12, zIndex: 56, border: `1px solid ${t.border}`, borderRadius: '8px',
             background: t.panelBg, color: t.fgMuted, padding: '6px 8px', cursor: 'pointer', fontSize: '0.75rem',
           }}
         >
