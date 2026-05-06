@@ -32,6 +32,8 @@ const PANEL_DEFAULT = 280;
 const PANEL_MIN     = 220;
 const PANEL_MAX     = 500;
 const TOC_PANEL_W   = 300;
+const DOC_CHROME_GAP = 10;
+const DOC_CHROME_RADIUS = 18;
 
 export interface TocItem { id: string; text: string; level: number; }
 interface CategoryPathItem { slug: string; title: string; icon: string | null; }
@@ -836,20 +838,26 @@ function buildCssVars(
   isStandardMode: boolean,
   standardTocVisible: boolean,
 ): void {
+  const chromeGap     = isDocsPage ? DOC_CHROME_GAP : 0;
   const panelOffset   = isDocsPage && panelOpen ? panelWidth : 0;
-  const left          = railVisible ? RAIL_W + panelOffset : 0;
+  const left          = railVisible ? chromeGap + RAIL_W + panelOffset + chromeGap : chromeGap;
+  const docRight      = isDocsPage && isStandardMode && standardTocVisible ? chromeGap + TOC_PANEL_W + chromeGap : chromeGap;
   const sidebarHidden = isDocsPage && isStandardMode && !railVisible;
   const tocHidden     = isDocsPage && isStandardMode && !standardTocVisible;
   document.documentElement.style.setProperty('--nav-left', `${left}px`);
-  document.documentElement.style.setProperty('--doc-right', isDocsPage && isStandardMode && standardTocVisible ? `${TOC_PANEL_W}px` : '0px');
+  document.documentElement.style.setProperty('--doc-right', `${docRight}px`);
   document.documentElement.style.setProperty('--doc-border-left', sidebarHidden ? '1' : '0');
   document.documentElement.style.setProperty('--doc-border-right', tocHidden ? '1' : '0');
+  document.documentElement.style.setProperty('--doc-chrome-gap', `${chromeGap}px`);
+  document.documentElement.style.setProperty('--doc-chrome-radius', `${isDocsPage ? DOC_CHROME_RADIUS : 0}px`);
 }
 
 function clearDocCssVars(): void {
   document.documentElement.style.removeProperty('--doc-right');
   document.documentElement.style.removeProperty('--doc-border-left');
   document.documentElement.style.removeProperty('--doc-border-right');
+  document.documentElement.style.removeProperty('--doc-chrome-gap');
+  document.documentElement.style.removeProperty('--doc-chrome-radius');
 }
 
 function getReadingModeFromStorage(): ReadingMode {
@@ -906,11 +914,14 @@ const DesktopNav: React.FC<{
   const { activePanel, setActivePanel, panelWidth, setPanelWidth, togglePanel } = useDesktopPanel();
   const { onResizeMouseDown } = usePanelResize(panelWidth, setPanelWidth);
   const readingModeEnabled = showDocActions;
+  const isDocsPage         = Boolean(currentDocSlug);
+  const chromeGap          = isDocsPage ? DOC_CHROME_GAP : 0;
+  const chromeRadius       = isDocsPage ? DOC_CHROME_RADIUS : 0;
   const isStandardMode     = readingModeEnabled && readingMode === 'standard';
   const panelOpen          = isStandardMode ? (railVisible && standardSidebarOpen) : !!activePanel;
 
   // Текущий тип активной панели — всегда строка, не null
-  const panelTitle: Exclude<PanelType, null> = activePanel ?? 'nav';
+  const panelTitle: Exclude<PanelType, null> = isStandardMode ? 'nav' : activePanel ?? 'nav';
 
   const handleTogglePanel = useCallback((panel: Exclude<PanelType, null>) => {
     if (isStandardMode) {
@@ -930,10 +941,9 @@ const DesktopNav: React.FC<{
   }, [standardTocVisible]);
 
   useEffect(() => {
-    const isDocsPage = Boolean(currentDocSlug);
     buildCssVars(railVisible, isDocsPage, panelOpen, panelWidth, isStandardMode, standardTocVisible);
     return () => { document.documentElement.style.removeProperty('--nav-left'); };
-  }, [railVisible, panelOpen, panelWidth, isStandardMode, standardTocVisible, currentDocSlug]);
+  }, [railVisible, panelOpen, panelWidth, isStandardMode, standardTocVisible, isDocsPage]);
 
   useEffect(() => {
     return clearDocCssVars;
@@ -943,9 +953,11 @@ const DesktopNav: React.FC<{
     <>
       {railVisible && (
         <aside style={{
-          position: 'fixed', left: 0, top: 0, height: '100vh', width: RAIL_W,
+          position: 'fixed', left: chromeGap, top: chromeGap, height: isDocsPage ? `calc(100vh - ${chromeGap * 2}px)` : '100vh', width: RAIL_W,
           background: isDark ? 'rgba(15,15,15,0.84)' : 'rgba(224,223,219,0.82)',
+          border: isDocsPage ? `1px solid ${t.border}` : 'none',
           borderRight: `1px solid ${t.border}`,
+          borderRadius: chromeRadius,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           zIndex: 50, padding: '8px 0', gap: '2px',
           backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
@@ -998,7 +1010,7 @@ const DesktopNav: React.FC<{
 
       {!railVisible && (
         <button onClick={() => setRailVisible(true)}
-          style={{ position: 'fixed', left: 8, top: 8, zIndex: 55, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: '8px', border: `1px solid ${t.border}`, background: t.railBg, color: t.fgMuted, cursor: 'pointer' }}
+          style={{ position: 'fixed', left: chromeGap + 8, top: chromeGap + 8, zIndex: 55, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: '8px', border: `1px solid ${t.border}`, background: t.railBg, color: t.fgMuted, cursor: 'pointer' }}
           title="Показать">
           <PanelLeft size={14} />
         </button>
@@ -1006,10 +1018,11 @@ const DesktopNav: React.FC<{
 
       {railVisible && (
         <aside style={{
-          position: 'fixed', left: RAIL_W, top: 0, height: '100vh',
+          position: 'fixed', left: chromeGap + RAIL_W, top: chromeGap, height: isDocsPage ? `calc(100vh - ${chromeGap * 2}px)` : '100vh',
           width: panelOpen ? panelWidth : 0,
           background: isDark ? 'rgba(15,15,15,0.78)' : 'rgba(224,223,219,0.78)',
           borderRight: panelOpen ? `1px solid ${t.border}` : 'none',
+          borderRadius: panelOpen ? `0 ${chromeRadius}px ${chromeRadius}px 0` : 0,
           display: 'flex', flexDirection: 'column', zIndex: 49, overflow: 'hidden',
           pointerEvents: panelOpen ? 'auto' : 'none', visibility: panelOpen ? 'visible' : 'hidden',
           backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
@@ -1040,8 +1053,11 @@ const DesktopNav: React.FC<{
 
       {isStandardMode && standardTocVisible && (
         <aside style={{
-          position: 'fixed', right: 0, top: 0, width: TOC_PANEL_W, height: '100vh',
+          position: 'fixed', right: chromeGap, top: chromeGap, width: TOC_PANEL_W, height: isDocsPage ? `calc(100vh - ${chromeGap * 2}px)` : '100vh',
+          border: isDocsPage ? `1px solid ${t.border}` : 'none',
           borderLeft: `1px solid ${t.border}`,
+          borderRadius: `${chromeRadius}px 0 0 ${chromeRadius}px`,
+          overflow: 'hidden',
           background: isDark ? 'rgba(15,15,15,0.78)' : 'rgba(224,223,219,0.78)',
           zIndex: 48, display: 'flex', flexDirection: 'column',
           backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
@@ -1075,7 +1091,7 @@ const DesktopNav: React.FC<{
         <button
           onClick={() => setStandardTocVisible(true)}
           style={{
-            position: 'fixed', right: 12, top: 12, zIndex: 56, border: `1px solid ${t.border}`, borderRadius: '8px',
+            position: 'fixed', right: chromeGap + 12, top: chromeGap + 12, zIndex: 56, border: `1px solid ${t.border}`, borderRadius: '8px',
             background: t.panelBg, color: t.fgMuted, padding: '6px 8px', cursor: 'pointer', fontSize: '0.75rem',
           }}
         >
