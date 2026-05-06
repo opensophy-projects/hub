@@ -295,8 +295,9 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
     () => ({ onTableClick: (html: string) => setFullscreenTableHtml(html), isDark }),
     [isDark]
   );
+  const navChromeBg = isDark ? 'rgba(15,15,15,0.84)' : 'rgba(224,223,219,0.82)';
   return (
-    <div style={{ minHeight: '100vh' }}>
+    <div style={{ minHeight: '100vh', background: isDesktop ? navChromeBg : t.bgPage }}>
       {/* Progress bar */}
       <div
         ref={progressBarRef}
