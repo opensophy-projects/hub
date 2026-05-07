@@ -5,16 +5,18 @@ interface ComponentWrapperProps extends UniversalProps {
   children: React.ReactNode;
   className?: string;
   isDark?: boolean;
+  layoutMode?: 'fill' | 'content';
 }
 
 // Предикат для фильтрации массива: убирает false-значения и сужает тип до string
 const isString = (x: string | false): x is string => x !== false;
 
 // Вычисляет CSS-трансформации на основе параметров позиции и поворота
-function buildTransformParts(offsetX: number, offsetY: number, rotateZ: number): string[] {
+function buildTransformParts(scale: number, offsetX: number, offsetY: number, rotateZ: number): string[] {
   return [
     (offsetX !== 0 || offsetY !== 0) && `translate(${offsetX}px, ${offsetY}px)`,
     rotateZ !== 0 && `rotateZ(${rotateZ}deg)`,
+    scale !== 1 && `scale(${scale})`,
   ].filter(isString);
 }
 
@@ -66,6 +68,7 @@ export const ComponentWrapper: React.FC<ComponentWrapperProps> = ({
   className = '',
   enableUniversalProps = true,
   isDark = true,
+  layoutMode = 'content',
   color,
   colorMode = 'original',
   gradientFrom,
@@ -103,6 +106,31 @@ export const ComponentWrapper: React.FC<ComponentWrapperProps> = ({
     isolation: 'isolate',
   }), [justifyContent, alignItems, width, height]);
 
+  const baseContentStyle = useMemo<CSSProperties>(() => (layoutMode === 'fill' ? {
+    width: '100%',
+    height: '100%',
+    minWidth: 0,
+    minHeight: 0,
+    position: 'relative',
+    overflow: 'hidden',
+    flex: '0 0 100%',
+    transformOrigin: 'center center',
+  } : {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 'fit-content',
+    height: 'fit-content',
+    maxWidth: '100%',
+    maxHeight: '100%',
+    minWidth: 0,
+    minHeight: 0,
+    position: 'relative',
+    overflow: 'visible',
+    flex: '0 1 auto',
+    transformOrigin: 'center center',
+  }), [layoutMode]);
+
   const contentStyle = useMemo<CSSProperties>(() => {
     if (!enableUniversalProps) return {};
 
@@ -114,11 +142,10 @@ export const ComponentWrapper: React.FC<ComponentWrapperProps> = ({
       return { ...colorStyle, ...animationStyle, ...FONT_SMOOTHING };
     }
 
-    const transformParts = buildTransformParts(offsetX, offsetY, rotateZ);
+    const transformParts = buildTransformParts(scale, offsetX, offsetY, rotateZ);
     const filterParts    = buildFilterParts(blur, brightness, contrast, saturate);
 
     return {
-      ...(scale === 1                ? {}  : { zoom: scale }),
       ...(transformParts.length > 0  ? { transform: transformParts.join(' ') } : {}),
       ...(filterParts.length > 0     ? { filter:    filterParts.join(' ')    } : {}),
       ...(hasOpacity                 ? { opacity                             } : {}),
@@ -137,7 +164,7 @@ export const ComponentWrapper: React.FC<ComponentWrapperProps> = ({
 
   return (
     <div style={containerStyle} className={className}>
-      <div style={{ width: '100%', height: '100%', minWidth: 0, minHeight: 0, position: 'relative', overflow: 'hidden', ...contentStyle }}>
+      <div style={{ ...baseContentStyle, ...contentStyle }}>
         {children}
       </div>
     </div>
