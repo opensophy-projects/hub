@@ -1,0 +1,116 @@
+{
+  "id": "light-pillar",
+  "name": "Light Pillar",
+  "description": "Генеративный WebGL-фон на основе трёхмерного ray marching шейдера. Анимированный столп света с градиентной окраской, волновой деформацией и интерактивным откликом на мышь. Использует Three.js для рендера.",
+  "category": "backgrounds",
+  "main": "light-pillar.tsx",
+  "props": [
+    {
+      "name": "topColor",
+      "type": "string",
+      "default": "#5227FF",
+      "description": "Цвет верхней части столпа",
+      "control": "text"
+    },
+    {
+      "name": "bottomColor",
+      "type": "string",
+      "default": "#FF9FFC",
+      "description": "Цвет нижней части столпа",
+      "control": "text"
+    },
+    {
+      "name": "intensity",
+      "type": "number",
+      "default": 1.0,
+      "description": "Яркость итогового изображения",
+      "control": "number",
+      "min": 0.1,
+      "max": 5,
+      "step": 0.05
+    },
+    {
+      "name": "rotationSpeed",
+      "type": "number",
+      "default": 0.3,
+      "description": "Скорость вращения столпа. 0 — стоп-кадр",
+      "control": "number",
+      "min": 0,
+      "max": 3,
+      "step": 0.05
+    },
+    {
+      "name": "interactive",
+      "type": "boolean",
+      "default": false,
+      "description": "Управление вращением мышью при наведении",
+      "control": "checkbox"
+    },
+    {
+      "name": "glowAmount",
+      "type": "number",
+      "default": 0.005,
+      "description": "Интенсивность свечения — контролирует насыщенность цвета",
+      "control": "number",
+      "min": 0.001,
+      "max": 0.05,
+      "step": 0.001
+    },
+    {
+      "name": "pillarWidth",
+      "type": "number",
+      "default": 3.0,
+      "description": "Ширина (радиус) столпа в условных единицах",
+      "control": "number",
+      "min": 0.5,
+      "max": 8,
+      "step": 0.1
+    },
+    {
+      "name": "pillarHeight",
+      "type": "number",
+      "default": 0.4,
+      "description": "Коэффициент вертикального сжатия столпа. Меньше — выше и тоньше",
+      "control": "number",
+      "min": 0.05,
+      "max": 2,
+      "step": 0.05
+    },
+    {
+      "name": "noiseIntensity",
+      "type": "number",
+      "default": 0.5,
+      "description": "Интенсивность зернистости (плёночный шум). 0 — чистый рендер",
+      "control": "number",
+      "min": 0,
+      "max": 3,
+      "step": 0.05
+    },
+    {
+      "name": "pillarRotation",
+      "type": "number",
+      "default": 0,
+      "description": "Статический поворот камеры в градусах",
+      "control": "number",
+      "min": -180,
+      "max": 180,
+      "step": 1
+    },
+    {
+      "name": "quality",
+      "type": "string",
+      "default": "high",
+      "description": "Качество рендера. На мобильных автоматически снижается",
+      "control": "select",
+      "options": ["low", "medium", "high"]
+    }
+  ],
+  "specificProps": [
+    "topColor", "bottomColor", "intensity", "rotationSpeed",
+    "interactive", "glowAmount", "pillarWidth", "pillarHeight",
+    "noiseIntensity", "pillarRotation", "quality"
+  ],
+  "tags": ["webgl", "background", "shader", "three.js", "ray-marching", "generative", "animation", "interactive"],
+  "author": "custom",
+  "version": "1.0.0"
+}
