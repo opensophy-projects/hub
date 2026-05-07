@@ -135,7 +135,8 @@ const articleJsonLd = type === 'article' ? JSON.stringify({
     <!-- Theme: runs before paint, prevents flash -->
     <script is:inline>
       (function () {
-        var t = localStorage.getItem('theme') || 'dark';
+        var t = 'dark';
+        try { t = localStorage.getItem('theme') || 'dark'; } catch (e) {}
         var d = t !== 'light';
         document.documentElement.classList.toggle('dark', d);
         document.documentElement.style.colorScheme = d ? 'dark' : 'light';
@@ -222,6 +223,41 @@ const articleJsonLd = type === 'article' ? JSON.stringify({
       html.dark        { background-color: #0a0a0a; }
       body { margin: 0; padding: 0; overflow-x: hidden; }
 
+      .ssg-hydration-fallback {
+        min-height: 100vh;
+        background: #E8E7E3;
+        color: #111111;
+      }
+      html.dark .ssg-hydration-fallback {
+        background: #0a0a0a;
+        color: #f5f5f5;
+      }
+      html.app-hydrated .ssg-hydration-fallback { display: none !important; }
+      .ssg-fallback-shell {
+        width: min(100%, 980px);
+        margin: 0 auto;
+        padding: clamp(1.5rem, 5vw, 4rem) 1rem;
+      }
+      .ssg-fallback-shell h1 {
+        margin: 0 0 1rem;
+        font-size: clamp(2rem, 8vw, 4.5rem);
+        line-height: 1;
+        letter-spacing: -0.06em;
+      }
+      .ssg-fallback-shell h2 {
+        margin: 2rem 0 0.75rem;
+        font-size: clamp(1.25rem, 4vw, 2rem);
+      }
+      .ssg-fallback-shell p,
+      .ssg-fallback-shell li {
+        color: rgba(17, 17, 17, 0.78);
+        line-height: 1.7;
+      }
+      html.dark .ssg-fallback-shell p,
+      html.dark .ssg-fallback-shell li { color: rgba(245, 245, 245, 0.78); }
+      .ssg-fallback-shell a { color: inherit; }
+      .ssg-fallback-muted { opacity: 0.72; }
+
       /* Скрытый SEO-контент — видим для ботов, невидим для пользователей */
       #seo-landing-content {
         position: absolute;
@@ -247,7 +283,8 @@ const articleJsonLd = type === 'article' ? JSON.stringify({
     <!-- Re-apply theme after SPA navigation -->
     <script is:inline>
       document.addEventListener('astro:after-swap', function () {
-        var t = localStorage.getItem('theme') || 'dark';
+        var t = 'dark';
+        try { t = localStorage.getItem('theme') || 'dark'; } catch (e) {}
         var d = t !== 'light';
         document.documentElement.classList.toggle('dark', d);
         document.documentElement.style.colorScheme = d ? 'dark' : 'light';

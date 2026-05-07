@@ -8,5 +8,13 @@
  *
  * Must be used with client:only="react" in Astro.
  */
+import { useEffect } from 'react';
 import GeneralPage from './GeneralPage';
-export default GeneralPage;
+
+export default function GeneralPageWrapper() {
+  useEffect(() => {
+    document.documentElement.classList.add('app-hydrated');
+  }, []);
+
+  return <GeneralPage />;
+}

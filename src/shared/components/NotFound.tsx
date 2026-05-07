@@ -5,6 +5,10 @@ import { makeTokens } from '@/shared/tokens/theme';
 
 // ThemeProvider обязателен — island изолирован от контекста Layout.astro
 const NotFoundContent: React.FC = () => {
+  useEffect(() => {
+    document.documentElement.classList.add('app-hydrated');
+  }, []);
+
   const { isDark } = useTheme();
   const tokens = makeTokens(isDark);
   const [countdown, setCountdown] = useState(10);

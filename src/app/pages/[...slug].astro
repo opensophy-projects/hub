@@ -66,10 +66,13 @@ if (!doc || !slug) return Astro.redirect('/404');
   robots={doc.robots}
   lang={doc.lang || 'ru'}
 >
-  <noscript>
-    <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;">
-      <article set:html={doc.content ?? ''} />
-    </main>
-  </noscript>
+  <section class="ssg-hydration-fallback" aria-label="Статическая версия документа">
+    <article class="ssg-fallback-shell">
+      <p class="ssg-fallback-muted">Загружаем интерактивную версию страницы…</p>
+      <h1>{doc.title}</h1>
+      {doc.description && <p>{doc.description}</p>}
+      <div set:html={doc.content ?? ''} />
+    </article>
+  </section>
   <DocContent client:only="react" doc={doc} />
 </Layout>

@@ -9,5 +9,12 @@ import NotFound from '@/shared/components/NotFound';
   url="/404"
   robots="noindex, nofollow"
 >
+  <section class="ssg-hydration-fallback" aria-label="Статическая версия страницы 404">
+    <div class="ssg-fallback-shell" style="text-align:center;">
+      <h1>404</h1>
+      <p>Страница не найдена. Интерактивная версия загрузится автоматически, когда браузер получит JavaScript.</p>
+      <p><a href="/">Вернуться на главную</a></p>
+    </div>
+  </section>
   <NotFound client:only="react" />
 </Layout>

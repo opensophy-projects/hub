@@ -127,10 +127,34 @@ const lang        = useLanding ? 'ru' : (welcomeDoc?.lang || 'ru');
         </section>
       </article>
 
+      <section class="ssg-hydration-fallback" aria-label="Статическая версия главной страницы">
+        <div class="ssg-fallback-shell">
+          <p class="ssg-fallback-muted">Загружаем интерактивную версию сайта…</p>
+          <h1>Opensophy</h1>
+          <p>{LANDING_DESCRIPTION}</p>
+          <h2>Безопасность прежде всего</h2>
+          <p>Интеграция SAST, DAST, SCA — автоматический анализ кода на уязвимости на каждом этапе разработки.</p>
+          <h2>Экосистема для разработчиков</h2>
+          <ul>
+            <li>Туториалы по кибербезопасности и DevSecOps</li>
+            <li>Open-source инструменты для разработчиков</li>
+            <li>Материалы по Linux, Docker, CI/CD и инфраструктуре</li>
+            <li>UI библиотека с готовыми компонентами и живым превью</li>
+          </ul>
+          <h2>Контакты</h2>
+          <p>GitHub: github.com/opensophy-projects · Habr: habr.com/ru/users/opensophy/ · Email: opensophy@gmail.com</p>
+        </div>
+      </section>
+
       <GeneralPageWrapper client:only="react" />
     </>
   ) : welcomeDoc ? (
-    <DocContent client:only="react" doc={welcomeDoc} />
+    <>
+      <section class="ssg-hydration-fallback" aria-label="Статическая версия документа">
+        <article class="ssg-fallback-shell" set:html={welcomeDoc.content ?? ''} />
+      </section>
+      <DocContent client:only="react" doc={welcomeDoc} />
+    </>
   ) : (
     <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;">
       <p>Загрузка...</p>

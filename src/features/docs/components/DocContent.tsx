@@ -172,6 +172,10 @@ const DocHero: React.FC<DocHeroProps> = ({ doc, isDark, readTime, liveFM, showDo
 // ─── DocContent ───────────────────────────────────────────────────────────────
 
 const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
+  useEffect(() => {
+    document.documentElement.classList.add('app-hydrated');
+  }, []);
+
   const { isDark } = useTheme();
   const t = makeTokens(isDark);
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
