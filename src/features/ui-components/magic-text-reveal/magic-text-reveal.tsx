@@ -289,11 +289,12 @@ const MagicTextReveal: React.FC<MagicTextRevealProps> = ({
   );
 
   const renderCanvas = useCallback(() => {
-    if (!wrapperRef.current || !canvasRef.current || !wrapperSize.width || !wrapperSize.height)
-      return;
+    if (!wrapperRef.current || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
-    const { width, height } = wrapperSize;
+    const width = wrapperRef.current.clientWidth || wrapperSize.width;
+    const height = wrapperRef.current.clientHeight || wrapperSize.height;
+    if (!width || !height) return;
 
     canvas.width = width * globalDpr;
     canvas.height = height * globalDpr;
@@ -356,37 +357,12 @@ const MagicTextReveal: React.FC<MagicTextRevealProps> = ({
     };
   }, [isHovered, showText, spread, speed, globalDpr, updateParticles, renderParticles]);
 
+  // Re-render canvas when wrapper size changes
   useEffect(() => {
-    const handleResize = () => {
-      if (!wrapperRef.current || !textDimensions.width || !textDimensions.height) return;
-
-      const isMobile = window.innerWidth < 768;
-      const basePadding = isMobile
-        ? Math.max(fontSize * 0.3, 20)
-        : Math.max(fontSize * 0.5, 40);
-
-      const minWidth = Math.max(textDimensions.width + basePadding * 2, isMobile ? 120 : 200);
-      const minHeight = Math.max(textDimensions.height + basePadding * 2, isMobile ? 60 : 100);
-
-      const parentRect = wrapperRef.current.parentElement?.getBoundingClientRect();
-      const viewportMargin = isMobile ? 0.95 : 0.9;
-      const maxWidth = parentRect ? parentRect.width * viewportMargin : window.innerWidth * viewportMargin;
-      const maxHeight = parentRect ? parentRect.height * viewportMargin : window.innerHeight * viewportMargin;
-
-      setWrapperSize({
-        width: Math.min(minWidth, maxWidth),
-        height: Math.min(minHeight, maxHeight),
-      });
-    };
-
-    if (textDimensions.width && textDimensions.height) handleResize();
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [textDimensions, fontSize]);
-
-  useEffect(() => {
-    renderCanvas();
+    if (!wrapperRef.current) return;
+    const ro = new ResizeObserver(() => renderCanvas());
+    ro.observe(wrapperRef.current);
+    return () => ro.disconnect();
   }, [renderCanvas]);
 
   const handleMouseEnter = useCallback(() => {
@@ -401,13 +377,12 @@ const MagicTextReveal: React.FC<MagicTextRevealProps> = ({
   return (
     <div
       ref={wrapperRef}
-      className={`relative flex items-center justify-center overflow-hidden ${className}`}
+      className={`relative flex items-center justify-center overflow-visible ${className}`}
       style={{
-        width: wrapperSize.width || 'auto',
-        height: wrapperSize.height || 'auto',
+        width: '100%',
+        height: '100%',
         minWidth: '150px',
         minHeight: '80px',
-        maxWidth: '100%',
         cursor: 'pointer',
         ...style,
       }}
