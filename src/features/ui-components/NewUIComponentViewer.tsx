@@ -546,11 +546,13 @@ interface ComponentRenderProps {
 }
 
 const ComponentRender: React.FC<ComponentRenderProps> = ({ Component, componentProps, universalProps, refreshKey, isDark }) => (
-  <ComponentWrapper {...universalProps} isDark={isDark} className="w-full h-full">
-    <Suspense fallback={null}>
-      <Component key={refreshKey} {...componentProps} />
-    </Suspense>
-  </ComponentWrapper>
+  <div style={{ width: '100%', height: '100%', minWidth: 0, minHeight: 0, position: 'relative', overflow: 'hidden', isolation: 'isolate', contain: 'layout paint style' }}>
+    <ComponentWrapper {...universalProps} isDark={isDark} className="w-full h-full">
+      <Suspense fallback={null}>
+        <Component key={refreshKey} {...componentProps} />
+      </Suspense>
+    </ComponentWrapper>
+  </div>
 );
 
 const MobileBottomSheet: React.FC<{ config: ComponentConfig; componentProps: ComponentPropsMap; universalProps: UniversalProps; onPropChange: (name: string, v: PropValue) => void; onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void; t: T }> = ({ config, componentProps, universalProps, onPropChange, onUniversalPropChange, t }) => {
@@ -599,7 +601,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & { config: ComponentConfig
         <Pill onClick={onClose} title="Свернуть (Esc)" label="Свернуть" icon={<Minimize2 size={14} />} t={t} />
       </div>
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '24px 16px' : 48, overflow: 'auto', paddingBottom: isMobile ? 68 : undefined, color: t.fg }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '24px 16px' : 48, overflow: 'hidden', paddingBottom: isMobile ? 68 : undefined, color: t.fg, minWidth: 0, minHeight: 0 }}>
           <ComponentRender Component={Component} componentProps={componentProps} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} />
         </div>
         {!isMobile && panelOpen && (
@@ -625,7 +627,7 @@ const PreviewPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; o
     </div>
 
     {/* Область предпросмотра фиксированной высоты без прыжков */}
-    <div style={{ minHeight: 380, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, color: t.fg, position: 'relative' }}>
+    <div style={{ height: 380, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, color: t.fg, position: 'relative', overflow: 'hidden', boxSizing: 'border-box' }}>
       {loading && (
         <div style={{
           position: 'absolute', inset: 0,
@@ -662,7 +664,7 @@ const SettingsPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; 
   const [activeTab, setActiveTab] = useState<TabType>('universal');
   return (
     <div style={{ borderRadius: 12, border: `1px solid ${t.outerBorder}`, background: t.outerBg, boxShadow: t.outerShadow, display: 'flex', flexDirection: 'column', maxHeight: 'calc(100dvh - 3rem)', overflow: 'hidden' }}>
-      <div style={{ minHeight: 220, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, borderBottom: `1px solid ${t.barBorder}`, color: t.fg }}>
+      <div style={{ height: 220, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, borderBottom: `1px solid ${t.barBorder}`, color: t.fg, overflow: 'hidden', boxSizing: 'border-box' }}>
         <ComponentRender Component={props.Component} componentProps={props.componentProps} universalProps={props.universalProps} refreshKey={props.refreshKey} isDark={isDark} />
       </div>
       <SettingsContent activeTab={activeTab} onTabSelect={setActiveTab} config={config} componentProps={props.componentProps} universalProps={props.universalProps} onPropChange={props.onPropChange} onUniversalChange={props.onUniversalPropChange} t={t} />
