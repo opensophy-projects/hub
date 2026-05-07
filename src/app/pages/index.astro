@@ -36,8 +36,8 @@ if (!useLanding && fs.existsSync(welcomeMdPath)) {
 }
 
 const SITE_NAME = 'Opensophy';
-const LANDING_DESCRIPTION = 'Opensophy — open-source проект для IT-специалистов. Инструменты, туториалы и материалы по безопасности, разработке и инфраструктуре — в открытом доступе.';
-const LANDING_KEYWORDS = 'opensophy, кибербезопасность, DevSecOps, linux, разработка, инструменты, туториалы, open source, IT';
+const LANDING_DESCRIPTION = 'Opensophy — независимая DevSecOps-практика и open-source инициатива. Услуги по безопасности разработки и инфраструктуры — для команд; инструменты, проекты и материалы — в открытом доступе.';
+const LANDING_KEYWORDS = 'opensophy, DevSecOps услуги, кибербезопасность, аудит безопасности, CI/CD, контейнеры, linux, разработка, open source, IT';
 
 const title       = useLanding ? SITE_NAME : (welcomeDoc?.title       || SITE_NAME);
 const description = useLanding ? LANDING_DESCRIPTION : (welcomeDoc?.description || LANDING_DESCRIPTION);
@@ -74,11 +74,11 @@ const lang        = useLanding ? 'ru' : (welcomeDoc?.lang || 'ru');
         </header>
 
         <section>
-          <h2>Безопасность прежде всего</h2>
+          <h2>DevSecOps-услуги и безопасность</h2>
           <p>
-            Безопасность и качество кода — главный приоритет, особенно на фоне интеграции ИИ в разработку.
-            Интеграция SAST, DAST, SCA — автоматический анализ кода на уязвимости на каждом этапе разработки.
-            SAST проверяет исходный код, DAST тестирует работающее приложение, SCA отслеживает зависимости.
+            Opensophy — это не безликая компания, а независимая практика вокруг DevSecOps и open-source.
+            Здесь можно заказать помощь с аудитом приложений, настройкой SAST, DAST и SCA в CI/CD,
+            hardening контейнеров и автоматизацией проверок безопасности.
           </p>
         </section>
 
@@ -110,8 +110,8 @@ const lang        = useLanding ? 'ru' : (welcomeDoc?.lang || 'ru');
         <section>
           <h2>Для кого создан Opensophy</h2>
           <p>
-            Opensophy создаёт материалы для студентов, разработчиков, инженеров и лидеров в сфере IT.
-            Все инструменты и материалы распространяются под открытыми лицензиями — бесплатно, навсегда.
+            Opensophy подходит командам, которым нужна практичная DevSecOps-экспертиза, и специалистам,
+            которым полезны open-source инструменты, проекты и открытые материалы по безопасности, разработке и инфраструктуре.
           </p>
         </section>
 

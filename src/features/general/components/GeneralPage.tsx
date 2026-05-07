@@ -809,7 +809,7 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             color:      textMut,
           }}>
             <ShinyText
-              text="Все инструменты и материалы распространяются под открытыми лицензиями — бесплатно, навсегда."
+              text="За Opensophy стоит независимая DevSecOps-практика: услуги для команд, open-source инструменты, проекты и материалы для сообщества."
               speed={4}
               color={shinyBase}
               shineColor={shinyGlow}
@@ -839,15 +839,15 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             isNegative={isNegative}
             icon={<IconGradCap color={iconClr} />}
             iconBg={iconBg}
-            title="Образовательный контент"
-            description="Практические туториалы по DevSecOps, разработке и open-source. Только то, что можно применить сразу."
+            title="Открытые материалы"
+            description="Практические туториалы по DevSecOps, разработке и open-source. Делимся тем, что можно применить сразу."
           />
           <EcoCard
             isNegative={isNegative}
             icon={<IconBriefcase color={iconClr} />}
             iconBg={iconBg}
-            title="Заказные проекты"
-            description="Документация, технический контент, аудит безопасности под ваши задачи."
+            title="DevSecOps-услуги"
+            description="Аудит безопасности, CI/CD hardening, контейнеры, автоматизация проверок и документация от независимого специалиста."
             extraLinks={[
               { href: 'mailto:opensophy@gmail.com', label: 'Связаться по email' },
               { href: 'https://habr.com/ru/users/opensophy/', label: 'Обсудить на Habr' },
@@ -1031,7 +1031,7 @@ const LandingContent: React.FC = () => {
           fontFamily: 'Inter, sans-serif',
         }}>
           <ShinyText
-            text="Opensophy — open-source проект для IT-специалистов. Инструменты, туториалы и материалы по безопасности, разработке и инфраструктуре — в открытом доступе."
+            text="Opensophy — независимая DevSecOps-практика и open-source инициатива. Услуги по безопасности разработки и инфраструктуры — для команд; инструменты, проекты и материалы — в открытом доступе."
             speed={4}
             color={shinyBase}
             shineColor={shinyGlow}
