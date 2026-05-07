@@ -1,7 +1,6 @@
 ---
-title: "Скорость скролла | UI Компонент"
-description: Бесконечная бегущая строка, скорость которой зависит от скорости прокрутки. Чётные строки идут вправо, нечётные — влево. Основана на framer-motion useVelocity и useSpring.
-author: davidhdev
+title: "Скорость скролла"
+description: UI Компонент. Бесконечная бегущая строка, скорость которой зависит от скорости прокрутки. Чётные строки идут вправо, нечётные — влево. Основана на framer-motion useVelocity и useSpring.
 date: 2026-03-23
 tags: разработка, ui, ui-компоненты
 keywords: scroll velocity, marquee, framer motion, scroll speed, react animation
