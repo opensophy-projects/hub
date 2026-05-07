@@ -89,14 +89,18 @@ export const ComponentWrapper: React.FC<ComponentWrapperProps> = ({
   const hasTransform = scale !== 1 || offsetX !== 0 || offsetY !== 0 || rotateZ !== 0;
   const hasFilter    = blur !== 0 || brightness !== 1 || contrast !== 1 || saturate !== 1;
   const hasOpacity   = opacity !== 1;
-  const hasColor     = (colorMode === 'solid' && !!color) || (colorMode === 'gradient' && !!gradientFrom && !!gradientTo);
-
   const containerStyle = useMemo<CSSProperties>(() => ({
+    position: 'relative',
     display: 'flex',
     justifyContent,
     alignItems,
     width:  width  || '100%',
     height: height || '100%',
+    minWidth: 0,
+    minHeight: 0,
+    overflow: 'hidden',
+    contain: 'layout paint style',
+    isolation: 'isolate',
   }), [justifyContent, alignItems, width, height]);
 
   const contentStyle = useMemo<CSSProperties>(() => {
@@ -124,7 +128,7 @@ export const ComponentWrapper: React.FC<ComponentWrapperProps> = ({
     };
   }, [
     enableUniversalProps, isDark,
-    hasTransform, hasFilter, hasOpacity, hasColor,
+    hasTransform, hasFilter, hasOpacity,
     scale, offsetX, offsetY, rotateZ,
     blur, brightness, contrast, saturate,
     opacity, animationSpeed,
@@ -133,7 +137,9 @@ export const ComponentWrapper: React.FC<ComponentWrapperProps> = ({
 
   return (
     <div style={containerStyle} className={className}>
-      <div style={contentStyle}>{children}</div>
+      <div style={{ width: '100%', height: '100%', minWidth: 0, minHeight: 0, position: 'relative', overflow: 'hidden', ...contentStyle }}>
+        {children}
+      </div>
     </div>
   );
 };

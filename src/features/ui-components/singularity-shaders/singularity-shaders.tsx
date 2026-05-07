@@ -1,4 +1,4 @@
-import { useEffect, useRef, forwardRef, useState } from 'react';
+import { useEffect, useImperativeHandle, useRef, forwardRef, useState } from 'react';
 
 export interface SingularityShadersProps extends React.HTMLAttributes<HTMLDivElement> {
   speed?: number;
@@ -27,6 +27,8 @@ export const SingularityShaders = forwardRef<HTMLDivElement, SingularityShadersP
   const [isAnimating, setIsAnimating] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  useImperativeHandle(ref, () => containerRef.current as HTMLDivElement, []);
+
   useEffect(() => {
     configRef.current = { speed, intensity, size, waveStrength, colorShift, isNegative };
   }, [speed, intensity, size, waveStrength, colorShift, isNegative]);
@@ -45,16 +47,25 @@ export const SingularityShaders = forwardRef<HTMLDivElement, SingularityShadersP
     if (!canvas) return;
 
     let resizeTimeout: ReturnType<typeof setTimeout>;
+    const resizeCanvas = () => {
+      const parent = canvas.parentElement;
+      const rect = parent?.getBoundingClientRect();
+      const width = Math.max(1, Math.floor(rect?.width ?? parent?.clientWidth ?? 1));
+      const height = Math.max(1, Math.floor(rect?.height ?? parent?.clientHeight ?? 1));
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.floor(width * pixelRatio);
+      canvas.height = Math.floor(height * pixelRatio);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+    };
     const handleResize = () => {
       clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(() => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-      }, 100);
+      resizeTimeout = setTimeout(resizeCanvas, 100);
     };
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    resizeCanvas();
+    const resizeObserver = new ResizeObserver(handleResize);
+    if (canvas.parentElement) resizeObserver.observe(canvas.parentElement);
     window.addEventListener('resize', handleResize);
 
     const gl = canvas.getContext('webgl', {
@@ -67,6 +78,7 @@ export const SingularityShaders = forwardRef<HTMLDivElement, SingularityShadersP
     });
 
     if (!gl) {
+      resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
       return;
     }
@@ -130,12 +142,14 @@ export const SingularityShaders = forwardRef<HTMLDivElement, SingularityShadersP
     const vShader = compileShader(vertexShader, gl.VERTEX_SHADER);
     const fShader = compileShader(fragmentShader, gl.FRAGMENT_SHADER);
     if (!vShader || !fShader) {
+      resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
       return;
     }
 
     const program = gl.createProgram();
     if (!program) {
+      resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
       return;
     }
@@ -145,6 +159,7 @@ export const SingularityShaders = forwardRef<HTMLDivElement, SingularityShadersP
     gl.linkProgram(program);
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
       gl.deleteProgram(program);
+      resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
       return;
     }
@@ -200,6 +215,7 @@ export const SingularityShaders = forwardRef<HTMLDivElement, SingularityShadersP
 
     return () => {
       clearTimeout(resizeTimeout);
+      resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
       if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
       gl.deleteProgram(program);
@@ -210,7 +226,7 @@ export const SingularityShaders = forwardRef<HTMLDivElement, SingularityShadersP
     <div
       ref={containerRef}
       className={`relative w-full h-full ${className ?? ''}`}
-      style={style}
+      style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', ...style }}
       {...props}
     >
       <canvas
@@ -224,3 +240,4 @@ export const SingularityShaders = forwardRef<HTMLDivElement, SingularityShadersP
 });
 
 SingularityShaders.displayName = 'SingularityShaders';
+export default SingularityShaders;

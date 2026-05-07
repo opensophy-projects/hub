@@ -8,6 +8,11 @@ const componentModules = import.meta.glob('../*/*.tsx');
 
 type AnyComponent = React.ComponentType<Record<string, unknown>>;
 
+function isReactComponent(value: unknown): value is AnyComponent {
+  if (typeof value === 'function') return true;
+  return typeof value === 'object' && value !== null && '$$typeof' in value;
+}
+
 // Извлекает id компонента из пути к config.json
 function idFromPath(path: string): string {
   return path.split('/').at(-2) ?? '';
@@ -57,8 +62,10 @@ export const registry = {
       if (!loader) continue;
       try {
         const mod = await loader() as Record<string, unknown>;
-        const component = mod['default'] ?? Object.values(mod).find(v => typeof v === 'function');
-        if (component) return component as AnyComponent;
+        const component = isReactComponent(mod['default'])
+          ? mod['default']
+          : Object.values(mod).find(isReactComponent);
+        if (component) return component;
       } catch (e) {
         console.warn('[registry] failed to load %s:', candidate, e);
       }
