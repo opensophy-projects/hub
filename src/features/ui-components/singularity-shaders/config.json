@@ -1,0 +1,70 @@
+{
+  "id": "singularity-shaders",
+  "name": "Singularity Shaders",
+  "description": "Генеративный WebGL-фон на основе фрактального GLSL-шейдера. Бесконечно анимированная текстура сингулярности с поддержкой скорости, интенсивности, масштаба, волнового искажения, сдвига цвета и инверсии.",
+  "category": "backgrounds",
+  "main": "singularity-shaders.tsx",
+  "props": [
+    {
+      "name": "speed",
+      "type": "number",
+      "default": 0.1,
+      "description": "Скорость анимации. 0 — стоп-кадр, 1 — быстро",
+      "control": "number",
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "name": "intensity",
+      "type": "number",
+      "default": 1.2,
+      "description": "Контрастность и яркость паттерна",
+      "control": "number",
+      "min": 0.1,
+      "max": 5,
+      "step": 0.05
+    },
+    {
+      "name": "size",
+      "type": "number",
+      "default": 1.1,
+      "description": "Масштаб паттерна. Меньше — крупнее детали",
+      "control": "number",
+      "min": 0.3,
+      "max": 3,
+      "step": 0.05
+    },
+    {
+      "name": "waveStrength",
+      "type": "number",
+      "default": 1,
+      "description": "Сила волнового искажения внутри паттерна",
+      "control": "number",
+      "min": 0,
+      "max": 3,
+      "step": 0.05
+    },
+    {
+      "name": "colorShift",
+      "type": "number",
+      "default": 1,
+      "description": "Сдвиг цветовой тональности паттерна",
+      "control": "number",
+      "min": -3,
+      "max": 3,
+      "step": 0.05
+    },
+    {
+      "name": "isNegative",
+      "type": "boolean",
+      "default": false,
+      "description": "Инвертировать паттерн (тёмный на светлом вместо светлого на тёмном)",
+      "control": "checkbox"
+    }
+  ],
+  "specificProps": ["speed", "intensity", "size", "waveStrength", "colorShift", "isNegative"],
+  "tags": ["webgl", "background", "shader", "glsl", "fractal", "animation", "generative"],
+  "author": "custom",
+  "version": "1.0.0"
+}
