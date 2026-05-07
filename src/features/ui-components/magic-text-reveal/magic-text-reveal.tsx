@@ -401,16 +401,13 @@ const MagicTextReveal: React.FC<MagicTextRevealProps> = ({
   return (
     <div
       ref={wrapperRef}
-      className={`relative flex items-center justify-center overflow-hidden rounded-lg transition-all duration-300 ${className}`}
+      className={`relative flex items-center justify-center overflow-hidden ${className}`}
       style={{
         width: wrapperSize.width || 'auto',
         height: wrapperSize.height || 'auto',
         minWidth: '150px',
         minHeight: '80px',
         maxWidth: '100%',
-        backgroundColor: 'rgba(15, 15, 15, 0.8)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        backdropFilter: 'blur(10px)',
         cursor: 'pointer',
         ...style,
       }}
