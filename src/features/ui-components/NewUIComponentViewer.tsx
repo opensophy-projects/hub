@@ -543,17 +543,22 @@ interface ComponentRenderProps {
   universalProps: UniversalProps;
   refreshKey: number;
   isDark: boolean;
+  componentCategory?: string;
 }
 
-const ComponentRender: React.FC<ComponentRenderProps> = ({ Component, componentProps, universalProps, refreshKey, isDark }) => (
-  <div style={{ width: '100%', height: '100%', minWidth: 0, minHeight: 0, position: 'relative', overflow: 'hidden', isolation: 'isolate', contain: 'layout paint style' }}>
-    <ComponentWrapper {...universalProps} isDark={isDark} className="w-full h-full">
-      <Suspense fallback={null}>
-        <Component key={refreshKey} {...componentProps} />
-      </Suspense>
-    </ComponentWrapper>
-  </div>
-);
+const ComponentRender: React.FC<ComponentRenderProps> = ({ Component, componentProps, universalProps, refreshKey, isDark, componentCategory }) => {
+  const layoutMode = componentCategory === 'backgrounds' ? 'fill' : 'content';
+
+  return (
+    <div style={{ width: '100%', height: '100%', minWidth: 0, minHeight: 0, position: 'relative', overflow: 'hidden', isolation: 'isolate', contain: 'layout paint style' }}>
+      <ComponentWrapper {...universalProps} isDark={isDark} layoutMode={layoutMode} className="w-full h-full">
+        <Suspense fallback={null}>
+          <Component key={refreshKey} {...componentProps} />
+        </Suspense>
+      </ComponentWrapper>
+    </div>
+  );
+};
 
 const MobileBottomSheet: React.FC<{ config: ComponentConfig; componentProps: ComponentPropsMap; universalProps: UniversalProps; onPropChange: (name: string, v: PropValue) => void; onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void; t: T }> = ({ config, componentProps, universalProps, onPropChange, onUniversalPropChange, t }) => {
   const [activeTab, setActiveTab] = useState<TabType | null>(null);
@@ -580,7 +585,7 @@ const MobileBottomSheet: React.FC<{ config: ComponentConfig; componentProps: Com
   );
 };
 
-const FullscreenModal: React.FC<ComponentRenderProps & { config: ComponentConfig; onClose: () => void; onRefresh: () => void; onPropChange: (name: string, v: PropValue) => void; onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void; onReset: () => void; t: T }> = ({ Component, componentProps, universalProps, refreshKey, isDark, config, onClose, onRefresh, onPropChange, onUniversalPropChange, onReset, t }) => {
+const FullscreenModal: React.FC<ComponentRenderProps & { config: ComponentConfig; onClose: () => void; onRefresh: () => void; onPropChange: (name: string, v: PropValue) => void; onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void; onReset: () => void; t: T }> = ({ Component, componentProps, universalProps, refreshKey, isDark, componentCategory, config, onClose, onRefresh, onPropChange, onUniversalPropChange, onReset, t }) => {
   const [activeTab, setActiveTab] = useState<TabType>('universal');
   const [panelOpen, setPanelOpen] = useState(true);
   const isMobile = useIsMobile();
@@ -602,7 +607,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & { config: ComponentConfig
       </div>
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '24px 16px' : 48, overflow: 'hidden', paddingBottom: isMobile ? 68 : undefined, color: t.fg, minWidth: 0, minHeight: 0 }}>
-          <ComponentRender Component={Component} componentProps={componentProps} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} />
+          <ComponentRender Component={Component} componentProps={componentProps} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} componentCategory={componentCategory} />
         </div>
         {!isMobile && panelOpen && (
           <div style={{ width: 280, flexShrink: 0, borderLeft: `1px solid ${t.barBorder}`, background: t.panelBg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -616,7 +621,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & { config: ComponentConfig
   );
 };
 
-const PreviewPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; onRefresh: () => void; onFullscreen: () => void; onOpenSettings: () => void; t: T; loading: boolean }> = ({ config, Component, componentProps, universalProps, refreshKey, isDark, onRefresh, onFullscreen, onOpenSettings, t, loading }) => (
+const PreviewPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; onRefresh: () => void; onFullscreen: () => void; onOpenSettings: () => void; t: T; loading: boolean }> = ({ config, Component, componentProps, universalProps, refreshKey, isDark, componentCategory, onRefresh, onFullscreen, onOpenSettings, t, loading }) => (
   <div style={{ borderRadius: 12, border: `1px solid ${t.outerBorder}`, background: t.outerBg, boxShadow: t.outerShadow, display: 'flex', flexDirection: 'column', width: '100%', minWidth: 0, overflow: 'hidden' }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', borderBottom: `1px solid ${t.barBorder}`, background: t.barBg, flexWrap: 'nowrap', minWidth: 0 }}>
       <div style={{ fontSize: 13, fontWeight: 600, color: t.fgMuted, padding: '3px 9px', borderRadius: 7, background: t.btnBg, border: `1px solid ${t.barBorder}`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200, flexShrink: 1 }}>{config.name}</div>
@@ -648,6 +653,7 @@ const PreviewPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; o
           universalProps={universalProps}
           refreshKey={refreshKey}
           isDark={isDark}
+          componentCategory={componentCategory}
         />
       )}
     </div>
@@ -665,7 +671,7 @@ const SettingsPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; 
   return (
     <div style={{ borderRadius: 12, border: `1px solid ${t.outerBorder}`, background: t.outerBg, boxShadow: t.outerShadow, display: 'flex', flexDirection: 'column', maxHeight: 'calc(100dvh - 3rem)', overflow: 'hidden' }}>
       <div style={{ height: 220, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, borderBottom: `1px solid ${t.barBorder}`, color: t.fg, overflow: 'hidden', boxSizing: 'border-box' }}>
-        <ComponentRender Component={props.Component} componentProps={props.componentProps} universalProps={props.universalProps} refreshKey={props.refreshKey} isDark={isDark} />
+        <ComponentRender Component={props.Component} componentProps={props.componentProps} universalProps={props.universalProps} refreshKey={props.refreshKey} isDark={isDark} componentCategory={props.componentCategory} />
       </div>
       <SettingsContent activeTab={activeTab} onTabSelect={setActiveTab} config={config} componentProps={props.componentProps} universalProps={props.universalProps} onPropChange={props.onPropChange} onUniversalChange={props.onUniversalPropChange} t={t} />
       <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', borderTop: `1px solid ${t.barBorder}`, background: t.barBg, flexWrap: 'wrap', rowGap: 6 }}>
@@ -745,6 +751,7 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
     universalProps,
     refreshKey,
     isDark,
+    componentCategory: effectiveData.config.category,
   };
 
   return (
