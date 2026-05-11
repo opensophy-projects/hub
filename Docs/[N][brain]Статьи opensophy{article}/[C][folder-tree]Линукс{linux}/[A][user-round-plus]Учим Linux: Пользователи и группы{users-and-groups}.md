@@ -1,8 +1,9 @@
 ---
-title: "Учим Linux: Пользователи и группы"
+title: "Linux: Пользователи и группы"
 description: "Вторая часть серии о Linux для DevOps и DevSecOps — разбираем, как устроены пользователи и группы, UID/GID, /etc/passwd и shadow, sudo, безопасность и реальные сценарии администрирования."
 author: veilosophy
 date: 2026-03-26
+updated: 2026-05-11
 tags: linux, devsecops
 icon: user-round-plus
 lang: ru
