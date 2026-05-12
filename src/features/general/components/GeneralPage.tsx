@@ -840,14 +840,15 @@ const SimpleIsometricPillars: React.FC<SimpleIsometricPillarsProps> = ({ isNegat
       ctx.clearRect(0, 0, width, height);
 
       const count = 9;
-      const tw = Math.min(width / 7.5, 92);
+      const tw = Math.min(width / 6.6, 108);
       const th = tw / 2;
-      const startX = width / 2 - ((count - 1) * tw * 0.42) / 2;
-      const baseY = height * 0.68;
+      const spacing = tw * 0.44;
+      const startX = width / 2 - ((count - 1) * spacing) / 2;
+      const baseY = height * 0.74;
 
       for (let i = 0; i < count; i++) {
-        const x = startX + i * tw * 0.42;
-        const y = baseY + Math.sin(i * 0.75) * th * 0.45;
+        const x = startX + i * spacing;
+        const y = baseY;
         const wave = Math.sin(t * 1.15 - i * 0.7) * 0.5 + 0.5;
         const pillarHeight = tw * (0.36 + wave * 1.35);
         drawDiamond(x, y, tw, th, pillarHeight);
@@ -1017,23 +1018,31 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
         }
         .eco-content {
           display: grid;
-          grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr);
+          grid-template-columns: minmax(0, 1fr) minmax(380px, 1fr);
           gap: clamp(1.5rem, 4vw, 4rem);
           align-items: stretch;
+          grid-template-areas: 'cards pillars';
         }
         .eco-cards {
+          grid-area: cards;
           display: grid;
           grid-template-columns: 1fr;
           gap: 1rem;
         }
         .eco-pillars {
-          min-height: clamp(360px, 42vw, 560px);
+          grid-area: pillars;
+          min-height: clamp(430px, 48vw, 660px);
           border-radius: 1.25rem;
           overflow: hidden;
         }
         @media (max-width: 900px) {
-          .eco-content { grid-template-columns: 1fr; }
-          .eco-pillars { min-height: clamp(260px, 55vw, 420px); }
+          .eco-content {
+            grid-template-columns: 1fr;
+            grid-template-areas:
+              'pillars'
+              'cards';
+          }
+          .eco-pillars { min-height: clamp(290px, 64vw, 460px); }
         }
         .eco-rotating-text {
           overflow: visible !important;
