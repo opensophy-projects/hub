@@ -3,7 +3,6 @@ import { useMotionValue, useAnimationFrame, useTransform, motion } from 'framer-
 import { SingularityShaders } from './SingularityShaders';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import Navigation from '@/features/navigation/components/Navigation';
-import RotatingText from '@/features/ui-components/rotating-text/rotating-text';
 import { TechStackSection } from './TechStackSection';
 
 // ─── ShinyText ────────────────────────────────────────────────────────────────
@@ -75,7 +74,6 @@ const GlowingEffectInline = memo(({
   inactiveZone = 0.7,
   proximity = 0,
   spread = 20,
-  glow = false,
   movementDuration = 2,
   borderWidth = 1,
   disabled = true,
@@ -122,7 +120,7 @@ const GlowingEffectInline = memo(({
       element.style.setProperty('--active', isActive ? '1' : '0');
       if (!isActive) return;
       const currentAngle = Number.parseFloat(element.style.getPropertyValue('--start')) || 0;
-      let targetAngle    = (180 * Math.atan2(mouseY - center[1], mouseX - center[0])) / Math.PI + 90;
+      const targetAngle  = (180 * Math.atan2(mouseY - center[1], mouseX - center[0])) / Math.PI + 90;
       const angleDiff    = ((targetAngle - currentAngle + 180) % 360) - 180;
       animateAngleTransition(element, currentAngle, currentAngle + angleDiff, movementDuration * 1000);
     });
@@ -170,7 +168,7 @@ const GlowingEffectInline = memo(({
         border:              `var(--glowingeffect-border-width) solid transparent`,
         background:          gradient,
         backgroundAttachment:'fixed',
-        opacity:             'var(--active)' as any,
+        opacity:             'var(--active)',
         transition:          'opacity 300ms',
         WebkitMaskImage:     'linear-gradient(#0000,#0000), conic-gradient(from calc((var(--start) - var(--spread)) * 1deg), #00000000 0deg, #fff, #00000000 calc(var(--spread) * 2deg))',
         maskImage:           'linear-gradient(#0000,#0000), conic-gradient(from calc((var(--start) - var(--spread)) * 1deg), #00000000 0deg, #fff, #00000000 calc(var(--spread) * 2deg))',
@@ -185,15 +183,6 @@ const GlowingEffectInline = memo(({
 GlowingEffectInline.displayName = 'GlowingEffectInline';
 
 // ─── SVG-иконки ───────────────────────────────────────────────────────────────
-
-const IconScan: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" />
-    <path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" />
-    <circle cx="12" cy="12" r="3" /><path d="M12 9v-2" /><path d="M12 17v-2" />
-    <path d="M9 12H7" /><path d="M17 12h-2" />
-  </svg>
-);
 
 const IconGrid: React.FC<{ color: string }> = ({ color }) => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
@@ -216,12 +205,123 @@ const IconHub: React.FC<{ color: string }> = ({ color }) => (
   </svg>
 );
 
-const IconBriefcase: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="7" width="20" height="14" rx="2" />
-    <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
-    <line x1="12" y1="12" x2="12" y2="12" /><line x1="8" y1="12" x2="16" y2="12" />
-  </svg>
+// ─── Card primitives ───────────────────────────────────────────────────────────
+
+type LandingCardProps = React.HTMLAttributes<HTMLDivElement> & {
+  children: React.ReactNode;
+  isNegative: boolean;
+};
+
+type LandingCardHeaderProps = React.HTMLAttributes<HTMLDivElement> & {
+  children: React.ReactNode;
+};
+
+type LandingCardTitleProps = React.HTMLAttributes<HTMLElement> & {
+  children: React.ReactNode;
+  as?: React.ElementType;
+};
+
+type LandingCardDescriptionProps = React.HTMLAttributes<HTMLParagraphElement> & {
+  children: React.ReactNode;
+};
+
+type LandingCardContentProps = React.HTMLAttributes<HTMLDivElement> & {
+  children: React.ReactNode;
+};
+
+const LandingCard = React.forwardRef<HTMLDivElement, LandingCardProps>(({
+  children,
+  isNegative,
+  style,
+  ...props
+}, ref) => {
+  const border = isNegative ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)';
+  const bg     = isNegative ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
+  const shadow = isNegative ? '0 18px 50px rgba(0,0,0,0.18)' : '0 18px 45px rgba(0,0,0,0.05)';
+
+  return (
+    <div
+      ref={ref}
+      style={{
+        position:     'relative',
+        border:       `1px solid ${border}`,
+        background:   bg,
+        borderRadius: 16,
+        boxShadow:    shadow,
+        overflow:     'hidden',
+        ...style,
+      }}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+});
+LandingCard.displayName = 'LandingCard';
+
+const LandingCardHeader: React.FC<LandingCardHeaderProps> = ({ children, style, ...props }) => (
+  <div
+    style={{
+      padding:  '1.5rem 1.5rem 0',
+      position: 'relative',
+      zIndex:   1,
+      ...style,
+    }}
+    {...props}
+  >
+    {children}
+  </div>
+);
+
+const LandingCardTitle: React.FC<LandingCardTitleProps> = ({
+  children,
+  as: Component = 'h3',
+  style,
+  ...props
+}) => React.createElement(
+  Component,
+  {
+    style: {
+      fontSize:   'clamp(1.1rem, 1.8vw, 1.4rem)',
+      fontWeight: 700,
+      lineHeight: 1.25,
+      margin:     0,
+      fontFamily: 'Inter, system-ui, sans-serif',
+      ...style,
+    },
+    ...props,
+  },
+  children,
+);
+
+const LandingCardDescription: React.FC<LandingCardDescriptionProps> = ({ children, style, ...props }) => (
+  <p
+    style={{
+      margin:     '0.75rem 0 0',
+      fontSize:   'clamp(0.95rem, 1.4vw, 1.1rem)',
+      lineHeight: 1.65,
+      textWrap:   'balance',
+      ...style,
+    }}
+    {...props}
+  >
+    {children}
+  </p>
+);
+
+const LandingCardContent: React.FC<LandingCardContentProps> = ({ children, style, ...props }) => (
+  <div
+    style={{
+      padding:    '1rem 1.5rem 1.5rem',
+      position:   'relative',
+      zIndex:     1,
+      fontFamily: 'Inter, system-ui, sans-serif',
+      ...style,
+    }}
+    {...props}
+  >
+    {children}
+  </div>
 );
 
 // ─── FeatureCard (SecuritySection) ───────────────────────────────────────────
@@ -234,44 +334,31 @@ interface FeatureCardProps {
 }
 
 const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, fullWidth }) => {
-  const border = isNegative ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)';
-  const bg     = isNegative ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
-  const titleC = isNegative ? 'rgba(255,255,255,0.9)'  : 'rgba(0,0,0,0.88)';
+  const titleC = isNegative ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.88)';
   const textC  = isNegative ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.65)';
 
   return (
-    <div style={{
-      position:     'relative',
-      border:       `1px solid ${border}`,
-      background:   bg,
-      borderRadius: 16,
-      padding:      '1.5rem',
-      display:      'flex',
-      flexDirection:'column',
-      gap:          '0.75rem',
-      gridColumn:   fullWidth ? '1 / -1' : undefined,
-      overflow:     'hidden',
-    }}>
+    <LandingCard
+      isNegative={isNegative}
+      style={{
+        display:       'flex',
+        flexDirection: 'column',
+        minHeight:     176,
+        gridColumn:    fullWidth ? '1 / -1' : undefined,
+      }}
+    >
       <GlowingEffectInline
         spread={40} glow disabled={false}
         proximity={60} inactiveZone={0.01}
         borderWidth={1.5} isNegative={isNegative}
       />
-      <div style={{
-        fontSize: 'clamp(1.1rem, 1.8vw, 1.4rem)', fontWeight: 700,
-        color: titleC, lineHeight: 1.25, position: 'relative', zIndex: 1,
-        fontFamily: 'Inter, system-ui, sans-serif',
-      }}>
-        {title}
-      </div>
-      <div style={{
-        fontSize: 'clamp(0.95rem, 1.4vw, 1.1rem)', color: textC,
-        lineHeight: 1.65, position: 'relative', zIndex: 1,
-        fontFamily: 'Inter, system-ui, sans-serif',
-      }}>
-        {text}
-      </div>
-    </div>
+      <LandingCardHeader>
+        <LandingCardTitle style={{ color: titleC }}>{title}</LandingCardTitle>
+      </LandingCardHeader>
+      <LandingCardContent style={{ flex: 1 }}>
+        <LandingCardDescription style={{ color: textC }}>{text}</LandingCardDescription>
+      </LandingCardContent>
+    </LandingCard>
   );
 };
 
@@ -319,9 +406,12 @@ const SmoothDeclineChart: React.FC<SmoothDeclineChartProps> = ({ isNegative, inV
   }, [inView]);
 
   const { w, h } = dim;
-  const padTop    = 20;
-  const padBottom = 16;
-  const chartH    = h - padTop - padBottom;
+  const padTop    = 26;
+  const padRight  = 18;
+  const padBottom = 46;
+  const padLeft   = 62;
+  const chartW    = Math.max(1, w - padLeft - padRight);
+  const chartH    = Math.max(1, h - padTop - padBottom);
   const n = 80;
 
   const pts = Array.from({ length: n }, (_, i) => {
@@ -330,7 +420,7 @@ const SmoothDeclineChart: React.FC<SmoothDeclineChartProps> = ({ isNegative, inV
     const forced  = sigmoid * Math.pow(1 - t, 0.6);
     const noise   = Math.sin(t * 12) * 0.012 * (1 - t) + Math.sin(t * 7.3) * 0.008 * (1 - t);
     const yN      = Math.max(0, Math.min(1, forced + noise));
-    return { x: t * w, y: padTop + (1 - yN) * chartH, value: Math.round(yN * 200) };
+    return { x: padLeft + t * chartW, y: padTop + (1 - yN) * chartH, value: Math.round(yN * 200) };
   });
 
   const buildPath = (points: { x: number; y: number }[]) => {
@@ -348,8 +438,8 @@ const SmoothDeclineChart: React.FC<SmoothDeclineChartProps> = ({ isNegative, inV
 
   const baseY    = padTop + chartH;
   const linePath = buildPath(pts);
-  const areaPath = `${linePath} L ${w.toFixed(1)} ${baseY} L 0 ${baseY} Z`;
-  const clipW    = Math.max(0, progress * w + 8);
+  const areaPath = `${linePath} L ${(padLeft + chartW).toFixed(1)} ${baseY} L ${padLeft} ${baseY} Z`;
+  const clipW    = Math.max(0, progress * chartW + 8);
   const clipId   = `sd-clip-${Math.round(w)}`;
   const gradId   = `sd-grad-${Math.round(w)}`;
   const fadeId   = `sd-fade-${Math.round(w)}`;
@@ -357,12 +447,16 @@ const SmoothDeclineChart: React.FC<SmoothDeclineChartProps> = ({ isNegative, inV
   const lineColor = isNegative ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.65)';
   const areaTop   = isNegative ? 'rgba(255,255,255,0.11)' : 'rgba(0,0,0,0.07)';
   const bgColor   = isNegative ? '#0a0a0a' : '#E8E7E3';
+  const axisColor = isNegative ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)';
+  const gridColor = isNegative ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  const labelColor = isNegative ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.48)';
 
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     if (!svgRef.current) return;
     const rect   = svgRef.current.getBoundingClientRect();
     const mouseX = ((e.clientX - rect.left) / rect.width) * w;
-    const idx    = Math.max(0, Math.min(n - 1, Math.round((mouseX / w) * (n - 1))));
+    const normalizedX = (mouseX - padLeft) / chartW;
+    const idx    = Math.max(0, Math.min(n - 1, Math.round(normalizedX * (n - 1))));
     const pt     = pts[idx];
     const px     = (pt.x / w) * rect.width;
     const py     = (pt.y / h) * rect.height;
@@ -383,7 +477,7 @@ const SmoothDeclineChart: React.FC<SmoothDeclineChartProps> = ({ isNegative, inV
         onMouseMove={handleMouseMove} onMouseLeave={() => setTooltip(null)}
       >
         <defs>
-          <clipPath id={clipId}><rect x={0} y={0} width={clipW} height={h} /></clipPath>
+          <clipPath id={clipId}><rect x={padLeft} y={0} width={clipW} height={h} /></clipPath>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%"   stopColor={areaTop} />
             <stop offset="100%" stopColor="rgba(0,0,0,0)" />
@@ -394,9 +488,22 @@ const SmoothDeclineChart: React.FC<SmoothDeclineChartProps> = ({ isNegative, inV
             <stop offset="35%" stopColor={bgColor} stopOpacity="0" />
           </linearGradient>
         </defs>
+        {[0, 0.25, 0.5, 0.75, 1].map(step => {
+          const y = padTop + step * chartH;
+          return <line key={`y-${step}`} x1={padLeft} y1={y} x2={padLeft + chartW} y2={y} stroke={gridColor} strokeWidth={1} />;
+        })}
+        {[0, 0.25, 0.5, 0.75, 1].map(step => {
+          const x = padLeft + step * chartW;
+          return <line key={`x-${step}`} x1={x} y1={padTop} x2={x} y2={baseY} stroke={gridColor} strokeWidth={1} />;
+        })}
+        <path d={`M ${padLeft} ${padTop} L ${padLeft} ${baseY} L ${padLeft + chartW} ${baseY}`} fill="none" stroke={axisColor} strokeWidth={1} />
         <path d={areaPath} fill={`url(#${gradId})`} clipPath={`url(#${clipId})`} />
         <path d={linePath} fill="none" stroke={lineColor} strokeWidth={1.8} strokeLinecap="round" clipPath={`url(#${clipId})`} />
         <rect x={0} y={0} width={w} height={h} fill={`url(#${fadeId})`} style={{ pointerEvents: 'none' }} />
+        <text x={padLeft} y={h - 10} fill={labelColor} fontSize="12" fontFamily="Inter, sans-serif">X — этапы внедрения защиты</text>
+        <text x={16} y={padTop + chartH / 2} fill={labelColor} fontSize="12" fontFamily="Inter, sans-serif" transform={`rotate(-90 16 ${padTop + chartH / 2})`}>Y — баги и плохой код</text>
+        <text x={padLeft + 4} y={padTop - 8} fill={labelColor} fontSize="11" fontFamily="Inter, sans-serif">больше проблем</text>
+        <text x={padLeft + chartW - 94} y={baseY - 8} fill={labelColor} fontSize="11" fontFamily="Inter, sans-serif">меньше проблем</text>
         {tooltip && (
           <circle
             cx={(tooltip.x / (svgRef.current?.getBoundingClientRect().width ?? 1)) * w}
@@ -446,9 +553,11 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
     return () => observer.disconnect();
   }, []);
 
-  const bg       = isNegative ? '#0a0a0a' : '#E8E7E3';
-  const textMain = isNegative ? '#ffffff' : '#000000';
-  const textMut  = isNegative ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
+  const bg        = isNegative ? '#0a0a0a' : '#E8E7E3';
+  const textMain  = isNegative ? '#ffffff' : '#000000';
+  const textMut   = isNegative ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
+  const shinyBase = isNegative ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.6)';
+  const shinyGlow = isNegative ? '#ffffff'                : '#000000';
 
   return (
     <section
@@ -491,36 +600,53 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
         </div>
         <div className="sec-text-col">
           <p style={{ fontSize: '1rem', fontWeight: 600, color: textMut, letterSpacing: '0.14em', textTransform: 'uppercase', margin: '0 0 2rem', fontFamily: 'Inter, sans-serif' }}>
-            БЕЗОПАСНОСТЬ
+            ЧЕМ ЗАНИМАЕТСЯ
           </p>
           <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: '0 0 1.5rem', color: textMain, fontFamily: 'Inter, sans-serif' }}>
-            Безопасность прежде всего
+            Помогаем внедрять безопасность, знания и автоматизацию в IT-процессы
           </h2>
           <p style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: 0, color: textMut, fontFamily: 'Inter, sans-serif' }}>
-            Безопасность и качество кода — главный приоритет, особенно на фоне интеграции ИИ в разработку
+            <ShinyText
+              text="От понятных материалов до практической интеграции защитных решений — подбираем подход под вашу команду и инфраструктуру."
+              speed={4}
+              color={shinyBase}
+              shineColor={shinyGlow}
+            />
           </p>
         </div>
       </div>
 
       <div className="sec-cards-area">
         <div className="sec-cards">
-          <div style={{ gridColumn: '1 / -1' }}>
-            <FeatureCard
-              isNegative={isNegative}
-              title="Интеграция SAST, DAST, SCA"
-              text="Интегрируем автоматический анализ кода на уязвимости на каждом этапе разработки. SAST проверяет исходный код, DAST тестирует работающее приложение, SCA отслеживает зависимости. Всё это работает автоматически в вашем CI/CD."
-              fullWidth
-            />
-          </div>
           <FeatureCard
             isNegative={isNegative}
             title="Знания каждому!"
-            text="Пишем понятные статьи и гайды по DevSecOps. Рассказываем как настроить безопасность с нуля и сделать её частью культуры команды."
+            text="Пишем понятные статьи и гайды по DevSecOps и не только. Рассказываем как настроить безопасность с нуля и сделать её частью культуры команды."
           />
           <FeatureCard
             isNegative={isNegative}
-            title="Open Source"
-            text="Рассказываем про open source инструменты. Делимся опытом бесплатных решений, которые сделают ваш проект безопаснее и многое другое."
+            title="Интеграция анализа безопасности"
+            text="Интегрируем автоматический анализ кода на уязвимости на каждом этапе разработки. Проверяем исходный код, тестируем работающее приложение и отслеживаем уязвимости в библиотеках — всё автоматически в CI/CD без участия команды."
+          />
+          <FeatureCard
+            isNegative={isNegative}
+            title="Настройка безопасного доступа"
+            text="Настраиваем и интегрируем защищённый доступ к сервисам и серверам. Подбираем решение под задачу — mTLS, VPN, Zero Trust или другой подход. Доступ получают только те, кому вы это разрешили."
+          />
+          <FeatureCard
+            isNegative={isNegative}
+            title="Проверка защищённости"
+            text="Этично проверяем сервис или сервер на наличие уязвимостей: открытые точки входа, слабые конфигурации и всё, что может стать проблемой раньше, чем вы об этом узнаете."
+          />
+          <FeatureCard
+            isNegative={isNegative}
+            title="Автоматизация"
+            text="Автоматизируем рутину — от простого bash-скрипта до сложных решений под индивидуальные требования."
+          />
+          <FeatureCard
+            isNegative={isNegative}
+            title="Подбор стека защиты"
+            text="Подбираем стек защиты с одной целью — максимальная эффективность при минимальных затратах ресурсов."
           />
         </div>
       </div>
@@ -674,17 +800,9 @@ interface EcosystemSectionProps {
   navOffset?: number;
 }
 
-const ROTATING_WORDS = [
-  'студентов',
-  'разработчиков',
-  'инженеров',
-  'лидеров',
-];
-
 const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffset = 0 }) => {
   const bg       = isNegative ? '#0a0a0a' : '#E8E7E3';
   const textMut  = isNegative ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
-  const textMain = isNegative ? '#ffffff' : '#000000';
   const iconClr  = isNegative ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.65)';
   const iconBg   = isNegative ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
 
@@ -709,7 +827,7 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
         }
         .eco-cards {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(3, 1fr);
           gap: 1rem;
         }
         @media (max-width: 900px) {
@@ -753,51 +871,8 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             margin:        '0 0 2rem',
             fontFamily:    'Inter, sans-serif',
           }}>
-            Экосистема
+            ЧТО РАЗРАБАТЫВАЕТ
           </p>
-
-          <div style={{
-            fontSize:   'clamp(1.75rem, 3.5vw, 2.6rem)',
-            fontWeight: 500,
-            lineHeight: 1.55,
-            margin:     '0 0 1.5rem',
-            fontFamily: 'Inter, sans-serif',
-          }}>
-            <div className="eco-heading-inline">
-              <span style={{ color: textMut }}>
-                <ShinyText
-                  text="Создаём для"
-                  speed={5}
-                  color={shinyBase}
-                  shineColor={shinyGlow}
-                  spread={120}
-                />
-              </span>
-              <span style={{
-                display:    'inline-flex',
-                minWidth:   '10ch',
-                position:   'relative',
-                color:      textMain,
-              }}>
-                <RotatingText
-                  texts={ROTATING_WORDS}
-                  rotationInterval={2400}
-                  splitBy="characters"
-                  staggerDuration={0.03}
-                  staggerFrom="first"
-                  loop
-                  auto
-                  animatePresenceMode="wait"
-                  transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                  initial={{ y: '100%', opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: '-120%', opacity: 0 }}
-                  mainClassName="eco-rotating-text justify-center whitespace-nowrap overflow-hidden"
-                  elementLevelClassName=""
-                />
-              </span>
-            </div>
-          </div>
 
           <p style={{
             fontSize:   'clamp(1.75rem, 3.5vw, 2.6rem)',
@@ -809,7 +884,7 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             color:      textMut,
           }}>
             <ShinyText
-              text="Все инструменты и материалы распространяются под открытыми лицензиями — бесплатно, навсегда."
+              text="Развиваем open-source инструменты Opensophy для публикации знаний, сборки интерфейсов и безопасного доступа к инфраструктуре."
               speed={4}
               color={shinyBase}
               shineColor={shinyGlow}
@@ -821,37 +896,26 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
         <div className="eco-cards">
           <EcoCard
             isNegative={isNegative}
-            icon={<IconGrid color={iconClr} />}
-            iconBg={iconBg}
-            title="UI библиотека"
-            description="Готовые компоненты с живым превью и настройками. Анимации, интерактивные блоки, кастомные элементы."
-          />
-          <EcoCard
-            isNegative={isNegative}
             icon={<IconHub color={iconClr} />}
             iconBg={iconBg}
-            title="Hub — платформа"
-            description="Open-source платформа для документации и контента."
+            title="Opensophy Hub (O.Hub)"
+            description="Гибридная open-source платформа для документации и публикации контента. Подходит для технических команд, авторов и всех, кто хочет красиво и структурировано делиться знаниями."
             link="https://github.com/opensophy-projects/hub"
             linkLabel="opensophy-projects/hub"
           />
           <EcoCard
             isNegative={isNegative}
-            icon={<IconGradCap color={iconClr} />}
+            icon={<IconGrid color={iconClr} />}
             iconBg={iconBg}
-            title="Образовательный контент"
-            description="Практические туториалы по DevSecOps, разработке и open-source. Только то, что можно применить сразу."
+            title="Opensophy UI (O.UI)"
+            description="Библиотека готовых React-компонентов с живым превью и настройками. Анимации, интерактивные блоки, кастомные элементы и фирменные компоненты Opensophy — для разработчиков и дизайнеров, которые ценят время."
           />
           <EcoCard
             isNegative={isNegative}
-            icon={<IconBriefcase color={iconClr} />}
+            icon={<IconGradCap color={iconClr} />}
             iconBg={iconBg}
-            title="Заказные проекты"
-            description="Документация, технический контент, аудит безопасности под ваши задачи."
-            extraLinks={[
-              { href: 'mailto:opensophy@gmail.com', label: 'Связаться по email' },
-              { href: 'https://habr.com/ru/users/opensophy/', label: 'Обсудить на Habr' },
-            ]}
+            title="Opensophy mTLS (O.mTLS)"
+            description="Инструмент для быстрого создания и управления mTLS-сертификатами. Для тех, кто хочет надёжно закрыть доступ к своим сервисам и серверам без лишней головной боли."
           />
         </div>
       </div>
@@ -1031,7 +1095,7 @@ const LandingContent: React.FC = () => {
           fontFamily: 'Inter, sans-serif',
         }}>
           <ShinyText
-            text="Opensophy — open-source проект для IT-специалистов. Инструменты, туториалы и материалы по безопасности, разработке и инфраструктуре — в открытом доступе."
+            text="Opensophy — инициатива открытой философии в IT. Качественные и доступные знания, услуги, инструменты и решения."
             speed={4}
             color={shinyBase}
             shineColor={shinyGlow}
