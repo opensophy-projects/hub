@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { useMotionValue, useAnimationFrame, useTransform, motion } from 'framer-motion';
 import { SingularityShaders } from './SingularityShaders';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
@@ -353,262 +351,6 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, full
   );
 };
 
-// ─── TrailsInFormsScene ────────────────────────────────────────────────────────
-
-type TrailsShape = 'Sphere';
-
-interface TrailsInFormsParams {
-  shape: TrailsShape;
-  backgroundColor: string;
-  lineColor: string;
-  dotColor: string;
-  useFog: boolean;
-  fogDensity: number;
-  speed: number;
-  dotLength: number;
-  dotDensity: number;
-  onlyExternal: boolean;
-}
-
-const TRAILS_PARAMS: TrailsInFormsParams = {
-  shape: 'Sphere',
-  backgroundColor: '#141414',
-  lineColor: '#5c5c5c',
-  dotColor: '#ffffff',
-  useFog: true,
-  fogDensity: 0.0122,
-  speed: 0.285,
-  dotLength: 0.09359,
-  dotDensity: 8.397,
-  onlyExternal: false,
-};
-
-const TRAILS_VERTEX_SHADER = `
-  attribute float lineDistance;
-  varying float vDistance;
-
-  void main() {
-    vDistance = lineDistance;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  }
-`;
-
-const TRAILS_FRAGMENT_SHADER = `
-  uniform vec3 colorLine;
-  uniform vec3 colorDot;
-  uniform float uTime;
-  uniform float uSpeed;
-  uniform float uDotLength;
-  uniform float uDotRepeat;
-  uniform vec3 uFogColor;
-  uniform float uFogDensity;
-  uniform bool uUseFog;
-
-  varying float vDistance;
-
-  void main() {
-    float alpha = 0.2;
-    float distanceState = vDistance - uTime * uSpeed * 10.0;
-    float flow = mod(distanceState, uDotRepeat * 10.0);
-    float lengthVal = (uDotRepeat * 10.0) * uDotLength;
-    float signal = smoothstep((uDotRepeat * 10.0) - lengthVal, (uDotRepeat * 10.0), flow);
-
-    if (flow < (uDotRepeat * 10.0) - lengthVal) {
-      signal = 0.0;
-    }
-
-    vec3 finalColor = mix(colorLine, colorDot, signal);
-    float finalAlpha = max(alpha, signal);
-    gl_FragColor = vec4(finalColor, finalAlpha);
-
-    if (uUseFog) {
-      float depth = gl_FragCoord.z / gl_FragCoord.w;
-      float fogFactor = exp2(-uFogDensity * uFogDensity * depth * depth * 1.442695);
-      fogFactor = clamp(fogFactor, 0.0, 1.0);
-      gl_FragColor.rgb = mix(uFogColor, gl_FragColor.rgb, fogFactor);
-    }
-  }
-`;
-
-const isTrailsPointInside = (v: THREE.Vector3, shapeType: TrailsShape) => {
-  const r = 12;
-
-  switch (shapeType) {
-    case 'Sphere':
-      return (v.x * v.x + v.y * v.y + v.z * v.z) < (r * r);
-    default:
-      return false;
-  }
-};
-
-const isTrailsSurface = (v: THREE.Vector3, shapeType: TrailsShape, step: number) => {
-  if (!isTrailsPointInside(v, shapeType)) return false;
-
-  const dirs = [
-    new THREE.Vector3(step, 0, 0), new THREE.Vector3(-step, 0, 0),
-    new THREE.Vector3(0, step, 0), new THREE.Vector3(0, -step, 0),
-    new THREE.Vector3(0, 0, step), new THREE.Vector3(0, 0, -step),
-  ];
-
-  return dirs.some(dir => !isTrailsPointInside(v.clone().add(dir), shapeType));
-};
-
-const createTrailsGeometry = (shapeType: TrailsShape, onlyExternal: boolean) => {
-  const positions: number[] = [];
-  const attributes: number[] = [];
-  const step = 2;
-  const maxSegments = 6000;
-  const dirs = [
-    new THREE.Vector3(step, 0, 0), new THREE.Vector3(-step, 0, 0),
-    new THREE.Vector3(0, step, 0), new THREE.Vector3(0, -step, 0),
-    new THREE.Vector3(0, 0, step), new THREE.Vector3(0, 0, -step),
-  ];
-
-  const findStartPoint = () => {
-    const point = new THREE.Vector3();
-
-    for (let k = 0; k < 200; k++) {
-      point.set(
-        (Math.random() - 0.5) * 26,
-        (Math.random() - 0.5) * 26,
-        (Math.random() - 0.5) * 26,
-      );
-      point.x = Math.round(point.x / step) * step;
-      point.y = Math.round(point.y / step) * step;
-      point.z = Math.round(point.z / step) * step;
-
-      if (onlyExternal ? isTrailsSurface(point, shapeType, step) : isTrailsPointInside(point, shapeType)) {
-        return point.clone();
-      }
-    }
-
-    return new THREE.Vector3(0, 0, 0);
-  };
-
-  let currentPos = findStartPoint();
-  let currentDist = 0;
-
-  for (let i = 0; i < maxSegments; i++) {
-    const direction = dirs[Math.floor(Math.random() * dirs.length)];
-    const nextPos = currentPos.clone().add(direction);
-    const isValid = onlyExternal
-      ? isTrailsSurface(nextPos, shapeType, step)
-      : isTrailsPointInside(nextPos, shapeType);
-
-    if (isValid) {
-      positions.push(currentPos.x, currentPos.y, currentPos.z, nextPos.x, nextPos.y, nextPos.z);
-      attributes.push(currentDist, currentDist + step);
-      currentDist += step;
-      currentPos.copy(nextPos);
-    } else {
-      currentDist += 50;
-      currentPos = findStartPoint();
-    }
-  }
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute('lineDistance', new THREE.Float32BufferAttribute(attributes, 1));
-  return geometry;
-};
-
-const TrailsInFormsScene: React.FC = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const scene = new THREE.Scene();
-    scene.background = null;
-    scene.fog = new THREE.FogExp2(TRAILS_PARAMS.backgroundColor, TRAILS_PARAMS.fogDensity);
-
-    const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
-    camera.position.set(0, -1, 24);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio || 1, 2));
-    renderer.toneMapping = THREE.ReinhardToneMapping;
-    renderer.setClearColor(0x000000, 0);
-    renderer.domElement.className = 'block h-full w-full';
-    container.appendChild(renderer.domElement);
-
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.enablePan = false;
-    controls.enableZoom = false;
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.5;
-
-    const material = new THREE.ShaderMaterial({
-      vertexShader: TRAILS_VERTEX_SHADER,
-      fragmentShader: TRAILS_FRAGMENT_SHADER,
-      uniforms: {
-        colorLine: { value: new THREE.Color(TRAILS_PARAMS.lineColor) },
-        colorDot: { value: new THREE.Color(TRAILS_PARAMS.dotColor) },
-        uTime: { value: 0 },
-        uSpeed: { value: TRAILS_PARAMS.speed },
-        uDotLength: { value: TRAILS_PARAMS.dotLength },
-        uDotRepeat: { value: TRAILS_PARAMS.dotDensity },
-        uFogColor: { value: new THREE.Color(TRAILS_PARAMS.backgroundColor) },
-        uFogDensity: { value: TRAILS_PARAMS.fogDensity },
-        uUseFog: { value: TRAILS_PARAMS.useFog },
-      },
-      transparent: true,
-      depthTest: false,
-      blending: THREE.AdditiveBlending,
-      side: THREE.DoubleSide,
-    });
-
-    const geometry = createTrailsGeometry(TRAILS_PARAMS.shape, TRAILS_PARAMS.onlyExternal);
-    const mesh = new THREE.LineSegments(geometry, material);
-    scene.add(mesh);
-
-    const resize = () => {
-      const { width, height } = container.getBoundingClientRect();
-      const nextWidth = Math.max(1, width);
-      const nextHeight = Math.max(1, height);
-
-      camera.aspect = nextWidth / nextHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(nextWidth, nextHeight, false);
-    };
-
-    const resizeObserver = new ResizeObserver(resize);
-    resizeObserver.observe(container);
-    resize();
-
-    const clock = new THREE.Clock();
-    let frameId = 0;
-    const animate = () => {
-      frameId = requestAnimationFrame(animate);
-      material.uniforms.uTime.value = clock.getElapsedTime();
-      controls.update();
-      renderer.render(scene, camera);
-    };
-    animate();
-
-    return () => {
-      cancelAnimationFrame(frameId);
-      resizeObserver.disconnect();
-      controls.dispose();
-      scene.remove(mesh);
-      geometry.dispose();
-      material.dispose();
-      renderer.dispose();
-      renderer.domElement.remove();
-    };
-  }, []);
-
-  return (
-    <div
-      ref={containerRef}
-      className="trails-scene relative h-full w-full overflow-visible"
-      aria-label="Анимированная сфера Trails in Forms"
-    />
-  );
-};
-
 // ─── SecuritySection ──────────────────────────────────────────────────────────
 
 interface SecuritySectionProps {
@@ -635,28 +377,13 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
     >
       <style>{`
         .sec-top {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          align-items: center;
-          gap: clamp(2rem, 4vw, 4rem);
+          display: block;
           padding: clamp(3rem, 6vw, 5rem) clamp(2rem, 6vw, 5rem) 0;
           box-sizing: border-box;
         }
-        .sec-chart-col {
-          min-width: 0;
-          height: clamp(260px, 34vw, 460px);
-          overflow: visible;
-        }
-        .trails-scene {
-          transform: scale(1.24);
-          transform-origin: center;
-        }
         .sec-text-col  { min-width: 0; }
         @media (max-width: 800px) {
-          .sec-top { grid-template-columns: 1fr; }
-          .sec-chart-col { order: 2; height: clamp(200px, 48vw, 300px); }
-          .trails-scene { transform: scale(1.08); }
-          .sec-text-col  { order: 1; }
+          .sec-top { display: block; }
         }
         .sec-cards-area {
           padding: clamp(2rem, 4vw, 3rem) clamp(2rem, 6vw, 5rem) clamp(3rem, 8vw, 6rem);
@@ -667,9 +394,6 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
       `}</style>
 
       <div className="sec-top">
-        <div className="sec-chart-col">
-          <TrailsInFormsScene />
-        </div>
         <div className="sec-text-col">
           <p style={{ fontSize: '1rem', fontWeight: 600, color: textMut, letterSpacing: '0.14em', textTransform: 'uppercase', margin: '0 0 2rem', fontFamily: 'Inter, sans-serif' }}>
             ЧЕМ ЗАНИМАЕТСЯ
@@ -746,124 +470,6 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
   );
 };
 
-
-// ─── SimpleIsometricPillars ───────────────────────────────────────────────────
-
-interface SimpleIsometricPillarsProps {
-  isNegative: boolean;
-}
-
-const SimpleIsometricPillars: React.FC<SimpleIsometricPillarsProps> = ({ isNegative }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef = useRef<number>(0);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let width = 0;
-    let height = 0;
-    let dpr = 1;
-
-    const resize = () => {
-      dpr = Math.min(globalThis.devicePixelRatio || 1, 2);
-      width = canvas.offsetWidth;
-      height = canvas.offsetHeight;
-      canvas.width = Math.max(1, Math.floor(width * dpr));
-      canvas.height = Math.max(1, Math.floor(height * dpr));
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    };
-
-    const drawDiamond = (x: number, y: number, tw: number, th: number, pillarHeight: number) => {
-      const hw = tw / 2;
-      const hh = th / 2;
-      const topY = y - pillarHeight;
-
-      const topGradient = ctx.createLinearGradient(x - hw, topY - hh, x + hw, topY + hh);
-      const leftGradient = ctx.createLinearGradient(x - hw, topY, x, y + hh);
-      const rightGradient = ctx.createLinearGradient(x + hw, topY, x, y + hh);
-
-      if (isNegative) {
-        topGradient.addColorStop(0, 'rgba(255,255,255,0.96)');
-        topGradient.addColorStop(1, 'rgba(190,190,198,0.9)');
-        leftGradient.addColorStop(0, 'rgba(150,150,158,0.72)');
-        leftGradient.addColorStop(1, 'rgba(54,54,60,0.62)');
-        rightGradient.addColorStop(0, 'rgba(105,105,112,0.7)');
-        rightGradient.addColorStop(1, 'rgba(30,30,35,0.58)');
-      } else {
-        topGradient.addColorStop(0, 'rgba(0,0,0,0.75)');
-        topGradient.addColorStop(1, 'rgba(50,50,50,0.62)');
-        leftGradient.addColorStop(0, 'rgba(80,80,80,0.48)');
-        leftGradient.addColorStop(1, 'rgba(190,190,190,0.28)');
-        rightGradient.addColorStop(0, 'rgba(130,130,130,0.42)');
-        rightGradient.addColorStop(1, 'rgba(210,210,210,0.22)');
-      }
-
-      ctx.beginPath();
-      ctx.moveTo(x - hw, topY);
-      ctx.lineTo(x, topY + hh);
-      ctx.lineTo(x, y + hh);
-      ctx.lineTo(x - hw, y);
-      ctx.closePath();
-      ctx.fillStyle = leftGradient;
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.moveTo(x + hw, topY);
-      ctx.lineTo(x, topY + hh);
-      ctx.lineTo(x, y + hh);
-      ctx.lineTo(x + hw, y);
-      ctx.closePath();
-      ctx.fillStyle = rightGradient;
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.moveTo(x, topY - hh);
-      ctx.lineTo(x + hw, topY);
-      ctx.lineTo(x, topY + hh);
-      ctx.lineTo(x - hw, topY);
-      ctx.closePath();
-      ctx.fillStyle = topGradient;
-      ctx.fill();
-    };
-
-    const observer = new ResizeObserver(resize);
-    observer.observe(canvas);
-    resize();
-
-    const draw = () => {
-      rafRef.current = requestAnimationFrame(draw);
-      const t = Date.now() / 1000;
-      ctx.clearRect(0, 0, width, height);
-
-      const count = 9;
-      const tw = Math.min(width / 7.5, 92);
-      const th = tw / 2;
-      const startX = width / 2 - ((count - 1) * tw * 0.42) / 2;
-      const baseY = height * 0.68;
-
-      for (let i = 0; i < count; i++) {
-        const x = startX + i * tw * 0.42;
-        const y = baseY + Math.sin(i * 0.75) * th * 0.45;
-        const wave = Math.sin(t * 1.15 - i * 0.7) * 0.5 + 0.5;
-        const pillarHeight = tw * (0.36 + wave * 1.35);
-        drawDiamond(x, y, tw, th, pillarHeight);
-      }
-    };
-
-    draw();
-
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-      observer.disconnect();
-    };
-  }, [isNegative]);
-
-  return <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />;
-};
 
 // ─── EcoCard ──────────────────────────────────────────────────────────────────
 
@@ -1016,24 +622,16 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
           margin-bottom: clamp(3rem, 5vw, 4.5rem);
         }
         .eco-content {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr);
-          gap: clamp(1.5rem, 4vw, 4rem);
-          align-items: stretch;
+          display: block;
         }
         .eco-cards {
           display: grid;
-          grid-template-columns: 1fr;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 1rem;
         }
-        .eco-pillars {
-          min-height: clamp(360px, 42vw, 560px);
-          border-radius: 1.25rem;
-          overflow: hidden;
-        }
         @media (max-width: 900px) {
-          .eco-content { grid-template-columns: 1fr; }
-          .eco-pillars { min-height: clamp(260px, 55vw, 420px); }
+          .eco-content { display: block; }
+          .eco-cards { grid-template-columns: 1fr; }
         }
         .eco-rotating-text {
           overflow: visible !important;
@@ -1111,10 +709,6 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
               title="Opensophy UI (O.UI)"
               description="Библиотека готовых React-компонентов с живым превью и настройками. Анимации, интерактивные блоки, кастомные элементы и фирменные компоненты Opensophy — для разработчиков и дизайнеров, которые ценят время."
             />
-          </div>
-
-          <div className="eco-pillars" aria-label="Анимированная изометрическая линия Opensophy">
-            <SimpleIsometricPillars isNegative={isNegative} />
           </div>
         </div>
       </div>
