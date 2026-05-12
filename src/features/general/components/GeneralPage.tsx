@@ -529,9 +529,10 @@ const createTrailsGeometry = (shapeType: TrailsShape, onlyExternal: boolean) => 
 
 interface TrailsInFormsSceneProps {
   params?: TrailsInFormsParams;
+  className?: string;
 }
 
-const TrailsInFormsScene: React.FC<TrailsInFormsSceneProps> = ({ params = TRAILS_PARAMS }) => {
+const TrailsInFormsScene: React.FC<TrailsInFormsSceneProps> = ({ params = TRAILS_PARAMS, className }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -622,7 +623,7 @@ const TrailsInFormsScene: React.FC<TrailsInFormsSceneProps> = ({ params = TRAILS
   return (
     <div
       ref={containerRef}
-      className="trails-scene relative h-full w-full overflow-visible"
+      className={`trails-scene relative h-full w-full overflow-visible ${className ?? ''}`}
       aria-label="Анимированная сфера Trails in Forms"
     />
   );
@@ -931,9 +932,13 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
         }
         .eco-pillars {
           grid-area: pillars;
-          min-height: clamp(430px, 48vw, 660px);
+          min-height: clamp(320px, 40vw, 500px);
           border-radius: 1.25rem;
           overflow: hidden;
+        }
+        .eco-pillars .trails-scene {
+          transform: scale(0.86);
+          transform-origin: center;
         }
         @media (max-width: 900px) {
           .eco-content {
@@ -942,7 +947,8 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
               'pillars'
               'cards';
           }
-          .eco-pillars { min-height: clamp(290px, 64vw, 460px); }
+          .eco-pillars { min-height: clamp(230px, 48vw, 340px); }
+          .eco-pillars .trails-scene { transform: scale(0.74); }
         }
         .eco-rotating-text {
           overflow: visible !important;
@@ -1023,7 +1029,7 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
           </div>
 
           <div className="eco-pillars" aria-label="System Core — анимированный куб с трассами">
-            <TrailsInFormsScene params={TRAILS_SYSTEM_CORE_PARAMS} />
+            <TrailsInFormsScene params={TRAILS_SYSTEM_CORE_PARAMS} className="eco-system-core-scene" />
           </div>
         </div>
       </div>
