@@ -842,16 +842,18 @@ const SimpleIsometricPillars: React.FC<SimpleIsometricPillarsProps> = ({ isNegat
       const count = 9;
       const tw = Math.min(width / 6.6, 108);
       const th = tw / 2;
-      const spacing = tw * 0.44;
-      const startX = width / 2 - ((count - 1) * spacing) / 2;
-      const baseY = height * 0.74;
+      const spacing = tw * 0.47;
+      const totalWidth = (count - 1) * spacing;
+      const startX = width / 2 - totalWidth / 2;
+      const baseY = height * 0.76;
+
+      // Все столбы строго на одной оси и одной высоты, чтобы линия выглядела ровной.
+      const pulse = Math.sin(t * 0.95) * 0.04;
+      const pillarHeight = tw * (1.02 + pulse);
 
       for (let i = 0; i < count; i++) {
         const x = startX + i * spacing;
-        const y = baseY;
-        const wave = Math.sin(t * 1.15 - i * 0.7) * 0.5 + 0.5;
-        const pillarHeight = tw * (0.36 + wave * 1.35);
-        drawDiamond(x, y, tw, th, pillarHeight);
+        drawDiamond(x, baseY, tw, th, pillarHeight);
       }
     };
 
