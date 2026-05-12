@@ -3,7 +3,6 @@ import { useMotionValue, useAnimationFrame, useTransform, motion } from 'framer-
 import { SingularityShaders } from './SingularityShaders';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import Navigation from '@/features/navigation/components/Navigation';
-import RotatingText from '@/features/ui-components/rotating-text/rotating-text';
 import { TechStackSection } from './TechStackSection';
 
 // ─── ShinyText ────────────────────────────────────────────────────────────────
@@ -213,14 +212,6 @@ const IconHub: React.FC<{ color: string }> = ({ color }) => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
     <polyline points="9 22 9 12 15 12 15 22" />
-  </svg>
-);
-
-const IconBriefcase: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="7" width="20" height="14" rx="2" />
-    <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
-    <line x1="12" y1="12" x2="12" y2="12" /><line x1="8" y1="12" x2="16" y2="12" />
   </svg>
 );
 
@@ -491,36 +482,48 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
         </div>
         <div className="sec-text-col">
           <p style={{ fontSize: '1rem', fontWeight: 600, color: textMut, letterSpacing: '0.14em', textTransform: 'uppercase', margin: '0 0 2rem', fontFamily: 'Inter, sans-serif' }}>
-            БЕЗОПАСНОСТЬ
+            ЧЕМ ЗАНИМАЕТСЯ
           </p>
           <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: '0 0 1.5rem', color: textMain, fontFamily: 'Inter, sans-serif' }}>
-            Безопасность прежде всего
+            Помогаем внедрять безопасность, знания и автоматизацию в IT-процессы
           </h2>
           <p style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: 0, color: textMut, fontFamily: 'Inter, sans-serif' }}>
-            Безопасность и качество кода — главный приоритет, особенно на фоне интеграции ИИ в разработку
+            От понятных материалов до практической интеграции защитных решений — подбираем подход под вашу команду и инфраструктуру.
           </p>
         </div>
       </div>
 
       <div className="sec-cards-area">
         <div className="sec-cards">
-          <div style={{ gridColumn: '1 / -1' }}>
-            <FeatureCard
-              isNegative={isNegative}
-              title="Интеграция SAST, DAST, SCA"
-              text="Интегрируем автоматический анализ кода на уязвимости на каждом этапе разработки. SAST проверяет исходный код, DAST тестирует работающее приложение, SCA отслеживает зависимости. Всё это работает автоматически в вашем CI/CD."
-              fullWidth
-            />
-          </div>
           <FeatureCard
             isNegative={isNegative}
             title="Знания каждому!"
-            text="Пишем понятные статьи и гайды по DevSecOps. Рассказываем как настроить безопасность с нуля и сделать её частью культуры команды."
+            text="Пишем понятные статьи и гайды по DevSecOps и не только. Рассказываем как настроить безопасность с нуля и сделать её частью культуры команды."
           />
           <FeatureCard
             isNegative={isNegative}
-            title="Open Source"
-            text="Рассказываем про open source инструменты. Делимся опытом бесплатных решений, которые сделают ваш проект безопаснее и многое другое."
+            title="Интеграция анализа безопасности"
+            text="Интегрируем автоматический анализ кода на уязвимости на каждом этапе разработки. Проверяем исходный код, тестируем работающее приложение и отслеживаем уязвимости в библиотеках — всё автоматически в CI/CD без участия команды."
+          />
+          <FeatureCard
+            isNegative={isNegative}
+            title="Настройка безопасного доступа"
+            text="Настраиваем и интегрируем защищённый доступ к сервисам и серверам. Подбираем решение под задачу — mTLS, VPN, Zero Trust или другой подход. Доступ получают только те, кому вы это разрешили."
+          />
+          <FeatureCard
+            isNegative={isNegative}
+            title="Проверка защищённости"
+            text="Этично проверяем сервис или сервер на наличие уязвимостей: открытые точки входа, слабые конфигурации и всё, что может стать проблемой раньше, чем вы об этом узнаете."
+          />
+          <FeatureCard
+            isNegative={isNegative}
+            title="Автоматизация"
+            text="Автоматизируем рутину — от простого bash-скрипта до сложных решений под индивидуальные требования."
+          />
+          <FeatureCard
+            isNegative={isNegative}
+            title="Подбор стека защиты"
+            text="Подбираем стек защиты с одной целью — максимальная эффективность при минимальных затратах ресурсов."
           />
         </div>
       </div>
@@ -674,17 +677,9 @@ interface EcosystemSectionProps {
   navOffset?: number;
 }
 
-const ROTATING_WORDS = [
-  'студентов',
-  'разработчиков',
-  'инженеров',
-  'лидеров',
-];
-
 const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffset = 0 }) => {
   const bg       = isNegative ? '#0a0a0a' : '#E8E7E3';
   const textMut  = isNegative ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
-  const textMain = isNegative ? '#ffffff' : '#000000';
   const iconClr  = isNegative ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.65)';
   const iconBg   = isNegative ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
 
@@ -709,7 +704,7 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
         }
         .eco-cards {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(3, 1fr);
           gap: 1rem;
         }
         @media (max-width: 900px) {
@@ -753,51 +748,8 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             margin:        '0 0 2rem',
             fontFamily:    'Inter, sans-serif',
           }}>
-            Экосистема
+            ЧТО РАЗРАБАТЫВАЕТ
           </p>
-
-          <div style={{
-            fontSize:   'clamp(1.75rem, 3.5vw, 2.6rem)',
-            fontWeight: 500,
-            lineHeight: 1.55,
-            margin:     '0 0 1.5rem',
-            fontFamily: 'Inter, sans-serif',
-          }}>
-            <div className="eco-heading-inline">
-              <span style={{ color: textMut }}>
-                <ShinyText
-                  text="Создаём для"
-                  speed={5}
-                  color={shinyBase}
-                  shineColor={shinyGlow}
-                  spread={120}
-                />
-              </span>
-              <span style={{
-                display:    'inline-flex',
-                minWidth:   '10ch',
-                position:   'relative',
-                color:      textMain,
-              }}>
-                <RotatingText
-                  texts={ROTATING_WORDS}
-                  rotationInterval={2400}
-                  splitBy="characters"
-                  staggerDuration={0.03}
-                  staggerFrom="first"
-                  loop
-                  auto
-                  animatePresenceMode="wait"
-                  transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                  initial={{ y: '100%', opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: '-120%', opacity: 0 }}
-                  mainClassName="eco-rotating-text justify-center whitespace-nowrap overflow-hidden"
-                  elementLevelClassName=""
-                />
-              </span>
-            </div>
-          </div>
 
           <p style={{
             fontSize:   'clamp(1.75rem, 3.5vw, 2.6rem)',
@@ -809,7 +761,7 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             color:      textMut,
           }}>
             <ShinyText
-              text="Все инструменты и материалы распространяются под открытыми лицензиями — бесплатно, навсегда."
+              text="Развиваем open-source инструменты Opensophy для публикации знаний, сборки интерфейсов и безопасного доступа к инфраструктуре."
               speed={4}
               color={shinyBase}
               shineColor={shinyGlow}
@@ -821,37 +773,26 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
         <div className="eco-cards">
           <EcoCard
             isNegative={isNegative}
-            icon={<IconGrid color={iconClr} />}
-            iconBg={iconBg}
-            title="UI библиотека"
-            description="Готовые компоненты с живым превью и настройками. Анимации, интерактивные блоки, кастомные элементы."
-          />
-          <EcoCard
-            isNegative={isNegative}
             icon={<IconHub color={iconClr} />}
             iconBg={iconBg}
-            title="Hub — платформа"
-            description="Open-source платформа для документации и контента."
+            title="Opensophy Hub (O.Hub)"
+            description="Гибридная open-source платформа для документации и публикации контента. Подходит для технических команд, авторов и всех, кто хочет красиво и структурировано делиться знаниями."
             link="https://github.com/opensophy-projects/hub"
             linkLabel="opensophy-projects/hub"
           />
           <EcoCard
             isNegative={isNegative}
-            icon={<IconGradCap color={iconClr} />}
+            icon={<IconGrid color={iconClr} />}
             iconBg={iconBg}
-            title="Образовательный контент"
-            description="Практические туториалы по DevSecOps, разработке и open-source. Только то, что можно применить сразу."
+            title="Opensophy UI (O.UI)"
+            description="Библиотека готовых React-компонентов с живым превью и настройками. Анимации, интерактивные блоки, кастомные элементы и фирменные компоненты Opensophy — для разработчиков и дизайнеров, которые ценят время."
           />
           <EcoCard
             isNegative={isNegative}
-            icon={<IconBriefcase color={iconClr} />}
+            icon={<IconGradCap color={iconClr} />}
             iconBg={iconBg}
-            title="Заказные проекты"
-            description="Документация, технический контент, аудит безопасности под ваши задачи."
-            extraLinks={[
-              { href: 'mailto:opensophy@gmail.com', label: 'Связаться по email' },
-              { href: 'https://habr.com/ru/users/opensophy/', label: 'Обсудить на Habr' },
-            ]}
+            title="Opensophy mTLS (O.mTLS)"
+            description="Инструмент для быстрого создания и управления mTLS-сертификатами. Для тех, кто хочет надёжно закрыть доступ к своим сервисам и серверам без лишней головной боли."
           />
         </div>
       </div>
@@ -1031,7 +972,7 @@ const LandingContent: React.FC = () => {
           fontFamily: 'Inter, sans-serif',
         }}>
           <ShinyText
-            text="Opensophy — open-source проект для IT-специалистов. Инструменты, туториалы и материалы по безопасности, разработке и инфраструктуре — в открытом доступе."
+            text="Opensophy — инициатива открытой философии в IT. Качественные и доступные знания, услуги, инструменты и решения."
             speed={4}
             color={shinyBase}
             shineColor={shinyGlow}
