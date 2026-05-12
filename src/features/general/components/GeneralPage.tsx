@@ -626,11 +626,12 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
         }
         .eco-cards {
           display: grid;
-          grid-template-columns: 1fr;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 1rem;
         }
         @media (max-width: 900px) {
           .eco-content { display: block; }
+          .eco-cards { grid-template-columns: 1fr; }
         }
         .eco-rotating-text {
           overflow: visible !important;
