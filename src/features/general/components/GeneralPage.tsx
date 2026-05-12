@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { useMotionValue, useAnimationFrame, useTransform, motion } from 'framer-motion';
 import { SingularityShaders } from './SingularityShaders';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import Navigation from '@/features/navigation/components/Navigation';
-import RotatingText from '@/features/ui-components/rotating-text/rotating-text';
 import { TechStackSection } from './TechStackSection';
 
 // ─── ShinyText ────────────────────────────────────────────────────────────────
@@ -75,7 +76,6 @@ const GlowingEffectInline = memo(({
   inactiveZone = 0.7,
   proximity = 0,
   spread = 20,
-  glow = false,
   movementDuration = 2,
   borderWidth = 1,
   disabled = true,
@@ -122,7 +122,7 @@ const GlowingEffectInline = memo(({
       element.style.setProperty('--active', isActive ? '1' : '0');
       if (!isActive) return;
       const currentAngle = Number.parseFloat(element.style.getPropertyValue('--start')) || 0;
-      let targetAngle    = (180 * Math.atan2(mouseY - center[1], mouseX - center[0])) / Math.PI + 90;
+      const targetAngle  = (180 * Math.atan2(mouseY - center[1], mouseX - center[0])) / Math.PI + 90;
       const angleDiff    = ((targetAngle - currentAngle + 180) % 360) - 180;
       animateAngleTransition(element, currentAngle, currentAngle + angleDiff, movementDuration * 1000);
     });
@@ -170,7 +170,7 @@ const GlowingEffectInline = memo(({
         border:              `var(--glowingeffect-border-width) solid transparent`,
         background:          gradient,
         backgroundAttachment:'fixed',
-        opacity:             'var(--active)' as any,
+        opacity:             'var(--active)',
         transition:          'opacity 300ms',
         WebkitMaskImage:     'linear-gradient(#0000,#0000), conic-gradient(from calc((var(--start) - var(--spread)) * 1deg), #00000000 0deg, #fff, #00000000 calc(var(--spread) * 2deg))',
         maskImage:           'linear-gradient(#0000,#0000), conic-gradient(from calc((var(--start) - var(--spread)) * 1deg), #00000000 0deg, #fff, #00000000 calc(var(--spread) * 2deg))',
@@ -186,26 +186,10 @@ GlowingEffectInline.displayName = 'GlowingEffectInline';
 
 // ─── SVG-иконки ───────────────────────────────────────────────────────────────
 
-const IconScan: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" />
-    <path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" />
-    <circle cx="12" cy="12" r="3" /><path d="M12 9v-2" /><path d="M12 17v-2" />
-    <path d="M9 12H7" /><path d="M17 12h-2" />
-  </svg>
-);
-
 const IconGrid: React.FC<{ color: string }> = ({ color }) => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
     <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
-  </svg>
-);
-
-const IconGradCap: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-    <path d="M6 12v5c3 3 9 3 12 0v-5" />
   </svg>
 );
 
@@ -216,12 +200,131 @@ const IconHub: React.FC<{ color: string }> = ({ color }) => (
   </svg>
 );
 
-const IconBriefcase: React.FC<{ color: string }> = ({ color }) => (
+const IconNetwork: React.FC<{ color: string }> = ({ color }) => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="7" width="20" height="14" rx="2" />
-    <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
-    <line x1="12" y1="12" x2="12" y2="12" /><line x1="8" y1="12" x2="16" y2="12" />
+    <rect x="16" y="16" width="5" height="5" rx="1" />
+    <rect x="3" y="16" width="5" height="5" rx="1" />
+    <rect x="9.5" y="3" width="5" height="5" rx="1" />
+    <path d="M12 8v3" />
+    <path d="M12 11H5.5v5" />
+    <path d="M12 11h6.5v5" />
   </svg>
+);
+
+// ─── Card primitives ───────────────────────────────────────────────────────────
+
+type LandingCardProps = React.HTMLAttributes<HTMLDivElement> & {
+  children: React.ReactNode;
+  isNegative: boolean;
+};
+
+type LandingCardHeaderProps = React.HTMLAttributes<HTMLDivElement> & {
+  children: React.ReactNode;
+};
+
+type LandingCardTitleProps = React.HTMLAttributes<HTMLElement> & {
+  children: React.ReactNode;
+  as?: React.ElementType;
+};
+
+type LandingCardDescriptionProps = React.HTMLAttributes<HTMLParagraphElement> & {
+  children: React.ReactNode;
+};
+
+type LandingCardContentProps = React.HTMLAttributes<HTMLDivElement> & {
+  children: React.ReactNode;
+};
+
+const LandingCard = React.forwardRef<HTMLDivElement, LandingCardProps>(({
+  children,
+  isNegative,
+  style,
+  ...props
+}, ref) => {
+  const border = isNegative ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)';
+  const bg     = isNegative ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
+  return (
+    <div
+      ref={ref}
+      style={{
+        position:     'relative',
+        border:       `1px solid ${border}`,
+        background:   bg,
+        borderRadius: 16,
+        overflow:     'hidden',
+        ...style,
+      }}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+});
+LandingCard.displayName = 'LandingCard';
+
+const LandingCardHeader: React.FC<LandingCardHeaderProps> = ({ children, style, ...props }) => (
+  <div
+    style={{
+      padding:  '1.5rem 1.5rem 0',
+      position: 'relative',
+      zIndex:   1,
+      ...style,
+    }}
+    {...props}
+  >
+    {children}
+  </div>
+);
+
+const LandingCardTitle: React.FC<LandingCardTitleProps> = ({
+  children,
+  as: Component = 'h3',
+  style,
+  ...props
+}) => React.createElement(
+  Component,
+  {
+    style: {
+      fontSize:   'clamp(1.1rem, 1.8vw, 1.4rem)',
+      fontWeight: 700,
+      lineHeight: 1.25,
+      margin:     0,
+      fontFamily: 'Inter, system-ui, sans-serif',
+      ...style,
+    },
+    ...props,
+  },
+  children,
+);
+
+const LandingCardDescription: React.FC<LandingCardDescriptionProps> = ({ children, style, ...props }) => (
+  <p
+    style={{
+      margin:     '0.75rem 0 0',
+      fontSize:   'clamp(0.95rem, 1.4vw, 1.1rem)',
+      lineHeight: 1.65,
+      textWrap:   'balance',
+      ...style,
+    }}
+    {...props}
+  >
+    {children}
+  </p>
+);
+
+const LandingCardContent: React.FC<LandingCardContentProps> = ({ children, style, ...props }) => (
+  <div
+    style={{
+      padding:    '1rem 1.5rem 1.5rem',
+      position:   'relative',
+      zIndex:     1,
+      fontFamily: 'Inter, system-ui, sans-serif',
+      ...style,
+    }}
+    {...props}
+  >
+    {children}
+  </div>
 );
 
 // ─── FeatureCard (SecuritySection) ───────────────────────────────────────────
@@ -234,195 +337,282 @@ interface FeatureCardProps {
 }
 
 const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, fullWidth }) => {
-  const border = isNegative ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)';
-  const bg     = isNegative ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)';
-  const titleC = isNegative ? 'rgba(255,255,255,0.9)'  : 'rgba(0,0,0,0.88)';
+  const titleC = isNegative ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.88)';
   const textC  = isNegative ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.65)';
 
   return (
-    <div style={{
-      position:     'relative',
-      border:       `1px solid ${border}`,
-      background:   bg,
-      borderRadius: 16,
-      padding:      '1.5rem',
-      display:      'flex',
-      flexDirection:'column',
-      gap:          '0.75rem',
-      gridColumn:   fullWidth ? '1 / -1' : undefined,
-      overflow:     'hidden',
-    }}>
-      <GlowingEffectInline
-        spread={40} glow disabled={false}
-        proximity={60} inactiveZone={0.01}
-        borderWidth={1.5} isNegative={isNegative}
-      />
-      <div style={{
-        fontSize: 'clamp(1.1rem, 1.8vw, 1.4rem)', fontWeight: 700,
-        color: titleC, lineHeight: 1.25, position: 'relative', zIndex: 1,
-        fontFamily: 'Inter, system-ui, sans-serif',
-      }}>
-        {title}
-      </div>
-      <div style={{
-        fontSize: 'clamp(0.95rem, 1.4vw, 1.1rem)', color: textC,
-        lineHeight: 1.65, position: 'relative', zIndex: 1,
-        fontFamily: 'Inter, system-ui, sans-serif',
-      }}>
-        {text}
-      </div>
-    </div>
+    <LandingCard
+      isNegative={isNegative}
+      style={{
+        display:       'flex',
+        flexDirection: 'column',
+        minHeight:     176,
+        gridColumn:    fullWidth ? '1 / -1' : undefined,
+      }}
+    >
+      <LandingCardHeader>
+        <LandingCardTitle style={{ color: titleC }}>{title}</LandingCardTitle>
+      </LandingCardHeader>
+      <LandingCardContent style={{ flex: 1 }}>
+        <LandingCardDescription style={{ color: textC }}>{text}</LandingCardDescription>
+      </LandingCardContent>
+    </LandingCard>
   );
 };
 
-// ─── SmoothDeclineChart ───────────────────────────────────────────────────────
+// ─── TrailsInFormsScene ────────────────────────────────────────────────────────
 
-interface SmoothDeclineChartProps {
-  isNegative: boolean;
-  inView: boolean;
+type TrailsShape = 'Sphere';
+
+interface TrailsInFormsParams {
+  shape: TrailsShape;
+  backgroundColor: string;
+  lineColor: string;
+  dotColor: string;
+  useFog: boolean;
+  fogDensity: number;
+  speed: number;
+  dotLength: number;
+  dotDensity: number;
+  onlyExternal: boolean;
 }
 
-const SmoothDeclineChart: React.FC<SmoothDeclineChartProps> = ({ isNegative, inView }) => {
+const TRAILS_PARAMS: TrailsInFormsParams = {
+  shape: 'Sphere',
+  backgroundColor: '#141414',
+  lineColor: '#5c5c5c',
+  dotColor: '#ffffff',
+  useFog: true,
+  fogDensity: 0.0122,
+  speed: 0.285,
+  dotLength: 0.09359,
+  dotDensity: 8.397,
+  onlyExternal: false,
+};
+
+const TRAILS_VERTEX_SHADER = `
+  attribute float lineDistance;
+  varying float vDistance;
+
+  void main() {
+    vDistance = lineDistance;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const TRAILS_FRAGMENT_SHADER = `
+  uniform vec3 colorLine;
+  uniform vec3 colorDot;
+  uniform float uTime;
+  uniform float uSpeed;
+  uniform float uDotLength;
+  uniform float uDotRepeat;
+  uniform vec3 uFogColor;
+  uniform float uFogDensity;
+  uniform bool uUseFog;
+
+  varying float vDistance;
+
+  void main() {
+    float alpha = 0.2;
+    float distanceState = vDistance - uTime * uSpeed * 10.0;
+    float flow = mod(distanceState, uDotRepeat * 10.0);
+    float lengthVal = (uDotRepeat * 10.0) * uDotLength;
+    float signal = smoothstep((uDotRepeat * 10.0) - lengthVal, (uDotRepeat * 10.0), flow);
+
+    if (flow < (uDotRepeat * 10.0) - lengthVal) {
+      signal = 0.0;
+    }
+
+    vec3 finalColor = mix(colorLine, colorDot, signal);
+    float finalAlpha = max(alpha, signal);
+    gl_FragColor = vec4(finalColor, finalAlpha);
+
+    if (uUseFog) {
+      float depth = gl_FragCoord.z / gl_FragCoord.w;
+      float fogFactor = exp2(-uFogDensity * uFogDensity * depth * depth * 1.442695);
+      fogFactor = clamp(fogFactor, 0.0, 1.0);
+      gl_FragColor.rgb = mix(uFogColor, gl_FragColor.rgb, fogFactor);
+    }
+  }
+`;
+
+const isTrailsPointInside = (v: THREE.Vector3, shapeType: TrailsShape) => {
+  const r = 12;
+
+  switch (shapeType) {
+    case 'Sphere':
+      return (v.x * v.x + v.y * v.y + v.z * v.z) < (r * r);
+    default:
+      return false;
+  }
+};
+
+const isTrailsSurface = (v: THREE.Vector3, shapeType: TrailsShape, step: number) => {
+  if (!isTrailsPointInside(v, shapeType)) return false;
+
+  const dirs = [
+    new THREE.Vector3(step, 0, 0), new THREE.Vector3(-step, 0, 0),
+    new THREE.Vector3(0, step, 0), new THREE.Vector3(0, -step, 0),
+    new THREE.Vector3(0, 0, step), new THREE.Vector3(0, 0, -step),
+  ];
+
+  return dirs.some(dir => !isTrailsPointInside(v.clone().add(dir), shapeType));
+};
+
+const createTrailsGeometry = (shapeType: TrailsShape, onlyExternal: boolean) => {
+  const positions: number[] = [];
+  const attributes: number[] = [];
+  const step = 2;
+  const maxSegments = 6000;
+  const dirs = [
+    new THREE.Vector3(step, 0, 0), new THREE.Vector3(-step, 0, 0),
+    new THREE.Vector3(0, step, 0), new THREE.Vector3(0, -step, 0),
+    new THREE.Vector3(0, 0, step), new THREE.Vector3(0, 0, -step),
+  ];
+
+  const findStartPoint = () => {
+    const point = new THREE.Vector3();
+
+    for (let k = 0; k < 200; k++) {
+      point.set(
+        (Math.random() - 0.5) * 26,
+        (Math.random() - 0.5) * 26,
+        (Math.random() - 0.5) * 26,
+      );
+      point.x = Math.round(point.x / step) * step;
+      point.y = Math.round(point.y / step) * step;
+      point.z = Math.round(point.z / step) * step;
+
+      if (onlyExternal ? isTrailsSurface(point, shapeType, step) : isTrailsPointInside(point, shapeType)) {
+        return point.clone();
+      }
+    }
+
+    return new THREE.Vector3(0, 0, 0);
+  };
+
+  let currentPos = findStartPoint();
+  let currentDist = 0;
+
+  for (let i = 0; i < maxSegments; i++) {
+    const direction = dirs[Math.floor(Math.random() * dirs.length)];
+    const nextPos = currentPos.clone().add(direction);
+    const isValid = onlyExternal
+      ? isTrailsSurface(nextPos, shapeType, step)
+      : isTrailsPointInside(nextPos, shapeType);
+
+    if (isValid) {
+      positions.push(currentPos.x, currentPos.y, currentPos.z, nextPos.x, nextPos.y, nextPos.z);
+      attributes.push(currentDist, currentDist + step);
+      currentDist += step;
+      currentPos.copy(nextPos);
+    } else {
+      currentDist += 50;
+      currentPos = findStartPoint();
+    }
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('lineDistance', new THREE.Float32BufferAttribute(attributes, 1));
+  return geometry;
+};
+
+const TrailsInFormsScene: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const svgRef       = useRef<SVGSVGElement>(null);
-  const [dim, setDim]     = useState({ w: 800, h: 260 });
-  const [progress, setProgress] = useState(0);
-  const [tooltip, setTooltip]   = useState<{ x: number; y: number; value: number } | null>(null);
-  const rafRef = useRef<number>(0);
 
   useEffect(() => {
-    const upd = () => {
-      if (containerRef.current) {
-        const r = containerRef.current.getBoundingClientRect();
-        if (r.width > 0) setDim({ w: r.width, h: r.height });
-      }
+    const container = containerRef.current;
+    if (!container) return;
+
+    const scene = new THREE.Scene();
+    scene.background = null;
+    scene.fog = new THREE.FogExp2(TRAILS_PARAMS.backgroundColor, TRAILS_PARAMS.fogDensity);
+
+    const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
+    camera.position.set(0, -1, 24);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio || 1, 2));
+    renderer.toneMapping = THREE.ReinhardToneMapping;
+    renderer.setClearColor(0x000000, 0);
+    renderer.domElement.className = 'block h-full w-full';
+    container.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.enablePan = false;
+    controls.enableZoom = false;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.5;
+
+    const material = new THREE.ShaderMaterial({
+      vertexShader: TRAILS_VERTEX_SHADER,
+      fragmentShader: TRAILS_FRAGMENT_SHADER,
+      uniforms: {
+        colorLine: { value: new THREE.Color(TRAILS_PARAMS.lineColor) },
+        colorDot: { value: new THREE.Color(TRAILS_PARAMS.dotColor) },
+        uTime: { value: 0 },
+        uSpeed: { value: TRAILS_PARAMS.speed },
+        uDotLength: { value: TRAILS_PARAMS.dotLength },
+        uDotRepeat: { value: TRAILS_PARAMS.dotDensity },
+        uFogColor: { value: new THREE.Color(TRAILS_PARAMS.backgroundColor) },
+        uFogDensity: { value: TRAILS_PARAMS.fogDensity },
+        uUseFog: { value: TRAILS_PARAMS.useFog },
+      },
+      transparent: true,
+      depthTest: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+    });
+
+    const geometry = createTrailsGeometry(TRAILS_PARAMS.shape, TRAILS_PARAMS.onlyExternal);
+    const mesh = new THREE.LineSegments(geometry, material);
+    scene.add(mesh);
+
+    const resize = () => {
+      const { width, height } = container.getBoundingClientRect();
+      const nextWidth = Math.max(1, width);
+      const nextHeight = Math.max(1, height);
+
+      camera.aspect = nextWidth / nextHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(nextWidth, nextHeight, false);
     };
-    upd();
-    const ro = new ResizeObserver(upd);
-    if (containerRef.current) ro.observe(containerRef.current);
-    return () => ro.disconnect();
+
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(container);
+    resize();
+
+    const clock = new THREE.Clock();
+    let frameId = 0;
+    const animate = () => {
+      frameId = requestAnimationFrame(animate);
+      material.uniforms.uTime.value = clock.getElapsedTime();
+      controls.update();
+      renderer.render(scene, camera);
+    };
+    animate();
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      resizeObserver.disconnect();
+      controls.dispose();
+      scene.remove(mesh);
+      geometry.dispose();
+      material.dispose();
+      renderer.dispose();
+      renderer.domElement.remove();
+    };
   }, []);
 
-  useEffect(() => {
-    if (!inView) return;
-    let start: number | null = null;
-    const dur = 2000;
-    const animate = (ts: number) => {
-      if (!start) start = ts;
-      const p     = Math.min((ts - start) / dur, 1);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setProgress(eased);
-      if (p < 1) rafRef.current = requestAnimationFrame(animate);
-    };
-    rafRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [inView]);
-
-  const { w, h } = dim;
-  const padTop    = 20;
-  const padBottom = 16;
-  const chartH    = h - padTop - padBottom;
-  const n = 80;
-
-  const pts = Array.from({ length: n }, (_, i) => {
-    const t = i / (n - 1);
-    const sigmoid = 1 / (1 + Math.exp((t - 0.52) * 7));
-    const forced  = sigmoid * Math.pow(1 - t, 0.6);
-    const noise   = Math.sin(t * 12) * 0.012 * (1 - t) + Math.sin(t * 7.3) * 0.008 * (1 - t);
-    const yN      = Math.max(0, Math.min(1, forced + noise));
-    return { x: t * w, y: padTop + (1 - yN) * chartH, value: Math.round(yN * 200) };
-  });
-
-  const buildPath = (points: { x: number; y: number }[]) => {
-    if (points.length < 2) return '';
-    let d = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
-    for (let i = 0; i < points.length - 1; i++) {
-      const cp1x = points[i].x + (points[i + 1].x - (i > 0 ? points[i - 1].x : points[i].x)) / 5;
-      const cp1y = points[i].y + (points[i + 1].y - (i > 0 ? points[i - 1].y : points[i].y)) / 5;
-      const cp2x = points[i + 1].x - (i + 2 < points.length ? points[i + 2].x - points[i].x : points[i + 1].x - points[i].x) / 5;
-      const cp2y = points[i + 1].y - (i + 2 < points.length ? points[i + 2].y - points[i].y : points[i + 1].y - points[i].y) / 5;
-      d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${points[i + 1].x.toFixed(1)} ${points[i + 1].y.toFixed(1)}`;
-    }
-    return d;
-  };
-
-  const baseY    = padTop + chartH;
-  const linePath = buildPath(pts);
-  const areaPath = `${linePath} L ${w.toFixed(1)} ${baseY} L 0 ${baseY} Z`;
-  const clipW    = Math.max(0, progress * w + 8);
-  const clipId   = `sd-clip-${Math.round(w)}`;
-  const gradId   = `sd-grad-${Math.round(w)}`;
-  const fadeId   = `sd-fade-${Math.round(w)}`;
-
-  const lineColor = isNegative ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.65)';
-  const areaTop   = isNegative ? 'rgba(255,255,255,0.11)' : 'rgba(0,0,0,0.07)';
-  const bgColor   = isNegative ? '#0a0a0a' : '#E8E7E3';
-
-  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (!svgRef.current) return;
-    const rect   = svgRef.current.getBoundingClientRect();
-    const mouseX = ((e.clientX - rect.left) / rect.width) * w;
-    const idx    = Math.max(0, Math.min(n - 1, Math.round((mouseX / w) * (n - 1))));
-    const pt     = pts[idx];
-    const px     = (pt.x / w) * rect.width;
-    const py     = (pt.y / h) * rect.height;
-    setTooltip({ x: px, y: py, value: pt.value });
-  };
-
-  const tooltipBg     = isNegative ? 'rgba(30,30,30,0.95)'   : 'rgba(255,255,255,0.95)';
-  const tooltipBorder = isNegative ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
-  const tooltipText   = isNegative ? '#ffffff' : '#000000';
-  const tooltipMuted  = isNegative ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
-  const dotColor      = isNegative ? '#ffffff' : '#000000';
-
   return (
-    <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <svg ref={svgRef} width="100%" height="100%"
-        viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none"
-        style={{ display: 'block', overflow: 'visible', cursor: 'crosshair' }}
-        onMouseMove={handleMouseMove} onMouseLeave={() => setTooltip(null)}
-      >
-        <defs>
-          <clipPath id={clipId}><rect x={0} y={0} width={clipW} height={h} /></clipPath>
-          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stopColor={areaTop} />
-            <stop offset="100%" stopColor="rgba(0,0,0,0)" />
-          </linearGradient>
-          <linearGradient id={fadeId} x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%"  stopColor={bgColor} stopOpacity="1" />
-            <stop offset="18%" stopColor={bgColor} stopOpacity="0.7" />
-            <stop offset="35%" stopColor={bgColor} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <path d={areaPath} fill={`url(#${gradId})`} clipPath={`url(#${clipId})`} />
-        <path d={linePath} fill="none" stroke={lineColor} strokeWidth={1.8} strokeLinecap="round" clipPath={`url(#${clipId})`} />
-        <rect x={0} y={0} width={w} height={h} fill={`url(#${fadeId})`} style={{ pointerEvents: 'none' }} />
-        {tooltip && (
-          <circle
-            cx={(tooltip.x / (svgRef.current?.getBoundingClientRect().width ?? 1)) * w}
-            cy={(tooltip.y / (svgRef.current?.getBoundingClientRect().height ?? 1)) * h}
-            r={4} fill={dotColor} style={{ pointerEvents: 'none' }}
-          />
-        )}
-      </svg>
-      {tooltip && (
-        <div style={{
-          position: 'absolute', left: tooltip.x, top: tooltip.y,
-          transform: 'translate(-50%, -110%)',
-          background: tooltipBg, border: `1px solid ${tooltipBorder}`,
-          borderRadius: 10, padding: '8px 14px', pointerEvents: 'none',
-          whiteSpace: 'nowrap', zIndex: 10, backdropFilter: 'blur(8px)',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
-        }}>
-          <div style={{ fontSize: '1.1rem', fontWeight: 700, color: tooltipText, lineHeight: 1.2 }}>
-            {tooltip.value}
-          </div>
-          <div style={{ fontSize: '0.72rem', color: tooltipMuted, marginTop: 2, fontFamily: 'Inter, sans-serif' }}>
-            уязвимостей и ошибок
-          </div>
-        </div>
-      )}
-    </div>
+    <div
+      ref={containerRef}
+      className="trails-scene relative h-full w-full overflow-visible"
+      aria-label="Анимированная сфера Trails in Forms"
+    />
   );
 };
 
@@ -434,25 +624,14 @@ interface SecuritySectionProps {
 }
 
 const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset = 0 }) => {
-  const [inView, setInView] = useState(false);
-  const sectionRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setInView(true); },
-      { threshold: 0.05 }
-    );
-    if (sectionRef.current) observer.observe(sectionRef.current);
-    return () => observer.disconnect();
-  }, []);
-
-  const bg       = isNegative ? '#0a0a0a' : '#E8E7E3';
-  const textMain = isNegative ? '#ffffff' : '#000000';
-  const textMut  = isNegative ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
+  const bg        = isNegative ? '#0a0a0a' : '#E8E7E3';
+  const textMain  = isNegative ? '#ffffff' : '#000000';
+  const textMut   = isNegative ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
+  const shinyBase = isNegative ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.6)';
+  const shinyGlow = isNegative ? '#ffffff'                : '#000000';
 
   return (
     <section
-      ref={sectionRef}
       style={{
         background: bg,
         marginLeft: navOffset > 0 ? `${navOffset}px` : 0,
@@ -470,11 +649,20 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
           padding: clamp(3rem, 6vw, 5rem) clamp(2rem, 6vw, 5rem) 0;
           box-sizing: border-box;
         }
-        .sec-chart-col { min-width: 0; height: clamp(200px, 28vw, 340px); }
+        .sec-chart-col {
+          min-width: 0;
+          height: clamp(260px, 34vw, 460px);
+          overflow: visible;
+        }
+        .trails-scene {
+          transform: scale(1.24);
+          transform-origin: center;
+        }
         .sec-text-col  { min-width: 0; }
         @media (max-width: 800px) {
           .sec-top { grid-template-columns: 1fr; }
-          .sec-chart-col { order: 2; height: clamp(180px, 45vw, 280px); }
+          .sec-chart-col { order: 2; height: clamp(200px, 48vw, 300px); }
+          .trails-scene { transform: scale(1.08); }
           .sec-text-col  { order: 1; }
         }
         .sec-cards-area {
@@ -487,40 +675,57 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
 
       <div className="sec-top">
         <div className="sec-chart-col">
-          <SmoothDeclineChart isNegative={isNegative} inView={inView} />
+          <TrailsInFormsScene />
         </div>
         <div className="sec-text-col">
           <p style={{ fontSize: '1rem', fontWeight: 600, color: textMut, letterSpacing: '0.14em', textTransform: 'uppercase', margin: '0 0 2rem', fontFamily: 'Inter, sans-serif' }}>
-            БЕЗОПАСНОСТЬ
+            ЧЕМ ЗАНИМАЕТСЯ
           </p>
           <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: '0 0 1.5rem', color: textMain, fontFamily: 'Inter, sans-serif' }}>
-            Безопасность прежде всего
+            Помогаем внедрять безопасность, знания и автоматизацию в IT-процессы
           </h2>
           <p style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: 0, color: textMut, fontFamily: 'Inter, sans-serif' }}>
-            Безопасность и качество кода — главный приоритет, особенно на фоне интеграции ИИ в разработку
+            <ShinyText
+              text="От понятных материалов до практической интеграции защитных решений — подбираем подход под вашу команду и инфраструктуру."
+              speed={4}
+              color={shinyBase}
+              shineColor={shinyGlow}
+            />
           </p>
         </div>
       </div>
 
       <div className="sec-cards-area">
         <div className="sec-cards">
-          <div style={{ gridColumn: '1 / -1' }}>
-            <FeatureCard
-              isNegative={isNegative}
-              title="Интеграция SAST, DAST, SCA"
-              text="Интегрируем автоматический анализ кода на уязвимости на каждом этапе разработки. SAST проверяет исходный код, DAST тестирует работающее приложение, SCA отслеживает зависимости. Всё это работает автоматически в вашем CI/CD."
-              fullWidth
-            />
-          </div>
           <FeatureCard
             isNegative={isNegative}
             title="Знания каждому!"
-            text="Пишем понятные статьи и гайды по DevSecOps. Рассказываем как настроить безопасность с нуля и сделать её частью культуры команды."
+            text="Пишем понятные статьи и гайды по DevSecOps и не только. Рассказываем как настроить безопасность с нуля и сделать её частью культуры команды."
           />
           <FeatureCard
             isNegative={isNegative}
-            title="Open Source"
-            text="Рассказываем про open source инструменты. Делимся опытом бесплатных решений, которые сделают ваш проект безопаснее и многое другое."
+            title="Интеграция анализа безопасности"
+            text="Интегрируем автоматический анализ кода на уязвимости на каждом этапе разработки. Проверяем исходный код, тестируем работающее приложение и отслеживаем уязвимости в библиотеках — всё автоматически в CI/CD без участия команды."
+          />
+          <FeatureCard
+            isNegative={isNegative}
+            title="Настройка безопасного доступа"
+            text="Настраиваем и интегрируем защищённый доступ к сервисам и серверам. Подбираем решение под задачу — mTLS, VPN, Zero Trust или другой подход. Доступ получают только те, кому вы это разрешили."
+          />
+          <FeatureCard
+            isNegative={isNegative}
+            title="Проверка защищённости"
+            text="Этично проверяем сервис или сервер на наличие уязвимостей: открытые точки входа, слабые конфигурации и всё, что может стать проблемой раньше, чем вы об этом узнаете."
+          />
+          <FeatureCard
+            isNegative={isNegative}
+            title="Автоматизация"
+            text="Автоматизируем рутину — от простого bash-скрипта до сложных решений под индивидуальные требования."
+          />
+          <FeatureCard
+            isNegative={isNegative}
+            title="Подбор стека защиты"
+            text="Подбираем стек защиты с одной целью — максимальная эффективность при минимальных затратах ресурсов."
           />
         </div>
       </div>
@@ -674,17 +879,9 @@ interface EcosystemSectionProps {
   navOffset?: number;
 }
 
-const ROTATING_WORDS = [
-  'студентов',
-  'разработчиков',
-  'инженеров',
-  'лидеров',
-];
-
 const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffset = 0 }) => {
   const bg       = isNegative ? '#0a0a0a' : '#E8E7E3';
   const textMut  = isNegative ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
-  const textMain = isNegative ? '#ffffff' : '#000000';
   const iconClr  = isNegative ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.65)';
   const iconBg   = isNegative ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
 
@@ -709,7 +906,7 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
         }
         .eco-cards {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(3, 1fr);
           gap: 1rem;
         }
         @media (max-width: 900px) {
@@ -753,51 +950,8 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             margin:        '0 0 2rem',
             fontFamily:    'Inter, sans-serif',
           }}>
-            Экосистема
+            ЧТО РАЗРАБАТЫВАЕТ
           </p>
-
-          <div style={{
-            fontSize:   'clamp(1.75rem, 3.5vw, 2.6rem)',
-            fontWeight: 500,
-            lineHeight: 1.55,
-            margin:     '0 0 1.5rem',
-            fontFamily: 'Inter, sans-serif',
-          }}>
-            <div className="eco-heading-inline">
-              <span style={{ color: textMut }}>
-                <ShinyText
-                  text="Создаём для"
-                  speed={5}
-                  color={shinyBase}
-                  shineColor={shinyGlow}
-                  spread={120}
-                />
-              </span>
-              <span style={{
-                display:    'inline-flex',
-                minWidth:   '10ch',
-                position:   'relative',
-                color:      textMain,
-              }}>
-                <RotatingText
-                  texts={ROTATING_WORDS}
-                  rotationInterval={2400}
-                  splitBy="characters"
-                  staggerDuration={0.03}
-                  staggerFrom="first"
-                  loop
-                  auto
-                  animatePresenceMode="wait"
-                  transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                  initial={{ y: '100%', opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: '-120%', opacity: 0 }}
-                  mainClassName="eco-rotating-text justify-center whitespace-nowrap overflow-hidden"
-                  elementLevelClassName=""
-                />
-              </span>
-            </div>
-          </div>
 
           <p style={{
             fontSize:   'clamp(1.75rem, 3.5vw, 2.6rem)',
@@ -809,7 +963,7 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             color:      textMut,
           }}>
             <ShinyText
-              text="Все инструменты и материалы распространяются под открытыми лицензиями — бесплатно, навсегда."
+              text="Развиваем open-source инструменты Opensophy для публикации знаний, сборки интерфейсов и безопасного доступа к инфраструктуре."
               speed={4}
               color={shinyBase}
               shineColor={shinyGlow}
@@ -821,37 +975,26 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
         <div className="eco-cards">
           <EcoCard
             isNegative={isNegative}
-            icon={<IconGrid color={iconClr} />}
-            iconBg={iconBg}
-            title="UI библиотека"
-            description="Готовые компоненты с живым превью и настройками. Анимации, интерактивные блоки, кастомные элементы."
-          />
-          <EcoCard
-            isNegative={isNegative}
             icon={<IconHub color={iconClr} />}
             iconBg={iconBg}
-            title="Hub — платформа"
-            description="Open-source платформа для документации и контента."
+            title="Opensophy Hub (O.Hub)"
+            description="Гибридная open-source платформа для документации и публикации контента. Подходит для технических команд, авторов и всех, кто хочет красиво и структурировано делиться знаниями."
             link="https://github.com/opensophy-projects/hub"
             linkLabel="opensophy-projects/hub"
           />
           <EcoCard
             isNegative={isNegative}
-            icon={<IconGradCap color={iconClr} />}
+            icon={<IconNetwork color={iconClr} />}
             iconBg={iconBg}
-            title="Образовательный контент"
-            description="Практические туториалы по DevSecOps, разработке и open-source. Только то, что можно применить сразу."
+            title="Opensophy mTLS (O.mTLS)"
+            description="Инструмент для быстрого создания и управления mTLS-сертификатами. Для тех, кто хочет надёжно закрыть доступ к своим сервисам и серверам без лишней головной боли."
           />
           <EcoCard
             isNegative={isNegative}
-            icon={<IconBriefcase color={iconClr} />}
+            icon={<IconGrid color={iconClr} />}
             iconBg={iconBg}
-            title="Заказные проекты"
-            description="Документация, технический контент, аудит безопасности под ваши задачи."
-            extraLinks={[
-              { href: 'mailto:opensophy@gmail.com', label: 'Связаться по email' },
-              { href: 'https://habr.com/ru/users/opensophy/', label: 'Обсудить на Habr' },
-            ]}
+            title="Opensophy UI (O.UI)"
+            description="Библиотека готовых React-компонентов с живым превью и настройками. Анимации, интерактивные блоки, кастомные элементы и фирменные компоненты Opensophy — для разработчиков и дизайнеров, которые ценят время."
           />
         </div>
       </div>
@@ -1031,7 +1174,7 @@ const LandingContent: React.FC = () => {
           fontFamily: 'Inter, sans-serif',
         }}>
           <ShinyText
-            text="Opensophy — open-source проект для IT-специалистов. Инструменты, туториалы и материалы по безопасности, разработке и инфраструктуре — в открытом доступе."
+            text="Opensophy — инициатива открытой философии в IT. Качественные и доступные знания, услуги, инструменты и решения."
             speed={4}
             color={shinyBase}
             shineColor={shinyGlow}
