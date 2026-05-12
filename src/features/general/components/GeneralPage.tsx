@@ -355,7 +355,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, full
 
 // ─── TrailsInFormsScene ────────────────────────────────────────────────────────
 
-type TrailsShape = 'Sphere';
+type TrailsShape = 'Sphere' | 'Cube';
 
 interface TrailsInFormsParams {
   shape: TrailsShape;
@@ -380,6 +380,19 @@ const TRAILS_PARAMS: TrailsInFormsParams = {
   speed: 0.285,
   dotLength: 0.09359,
   dotDensity: 8.397,
+  onlyExternal: false,
+};
+
+const TRAILS_SYSTEM_CORE_PARAMS: TrailsInFormsParams = {
+  shape: 'Cube',
+  backgroundColor: '#141414',
+  lineColor: '#5c5c5c',
+  dotColor: '#fafafa',
+  useFog: true,
+  fogDensity: 0.0447,
+  speed: 0.2717,
+  dotLength: 0.37975,
+  dotDensity: 2.259,
   onlyExternal: false,
 };
 
@@ -436,6 +449,8 @@ const isTrailsPointInside = (v: THREE.Vector3, shapeType: TrailsShape) => {
   switch (shapeType) {
     case 'Sphere':
       return (v.x * v.x + v.y * v.y + v.z * v.z) < (r * r);
+    case 'Cube':
+      return Math.abs(v.x) <= r && Math.abs(v.y) <= r && Math.abs(v.z) <= r;
     default:
       return false;
   }
@@ -512,7 +527,11 @@ const createTrailsGeometry = (shapeType: TrailsShape, onlyExternal: boolean) => 
   return geometry;
 };
 
-const TrailsInFormsScene: React.FC = () => {
+interface TrailsInFormsSceneProps {
+  params?: TrailsInFormsParams;
+}
+
+const TrailsInFormsScene: React.FC<TrailsInFormsSceneProps> = ({ params = TRAILS_PARAMS }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -521,7 +540,7 @@ const TrailsInFormsScene: React.FC = () => {
 
     const scene = new THREE.Scene();
     scene.background = null;
-    scene.fog = new THREE.FogExp2(TRAILS_PARAMS.backgroundColor, TRAILS_PARAMS.fogDensity);
+    scene.fog = new THREE.FogExp2(params.backgroundColor, params.fogDensity);
 
     const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
     camera.position.set(0, -1, 24);
@@ -544,15 +563,15 @@ const TrailsInFormsScene: React.FC = () => {
       vertexShader: TRAILS_VERTEX_SHADER,
       fragmentShader: TRAILS_FRAGMENT_SHADER,
       uniforms: {
-        colorLine: { value: new THREE.Color(TRAILS_PARAMS.lineColor) },
-        colorDot: { value: new THREE.Color(TRAILS_PARAMS.dotColor) },
+        colorLine: { value: new THREE.Color(params.lineColor) },
+        colorDot: { value: new THREE.Color(params.dotColor) },
         uTime: { value: 0 },
-        uSpeed: { value: TRAILS_PARAMS.speed },
-        uDotLength: { value: TRAILS_PARAMS.dotLength },
-        uDotRepeat: { value: TRAILS_PARAMS.dotDensity },
-        uFogColor: { value: new THREE.Color(TRAILS_PARAMS.backgroundColor) },
-        uFogDensity: { value: TRAILS_PARAMS.fogDensity },
-        uUseFog: { value: TRAILS_PARAMS.useFog },
+        uSpeed: { value: params.speed },
+        uDotLength: { value: params.dotLength },
+        uDotRepeat: { value: params.dotDensity },
+        uFogColor: { value: new THREE.Color(params.backgroundColor) },
+        uFogDensity: { value: params.fogDensity },
+        uUseFog: { value: params.useFog },
       },
       transparent: true,
       depthTest: false,
@@ -560,7 +579,7 @@ const TrailsInFormsScene: React.FC = () => {
       side: THREE.DoubleSide,
     });
 
-    const geometry = createTrailsGeometry(TRAILS_PARAMS.shape, TRAILS_PARAMS.onlyExternal);
+    const geometry = createTrailsGeometry(params.shape, params.onlyExternal);
     const mesh = new THREE.LineSegments(geometry, material);
     scene.add(mesh);
 
@@ -598,7 +617,7 @@ const TrailsInFormsScene: React.FC = () => {
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, []);
+  }, [params]);
 
   return (
     <div
@@ -746,127 +765,6 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
   );
 };
 
-
-// ─── SimpleIsometricPillars ───────────────────────────────────────────────────
-
-interface SimpleIsometricPillarsProps {
-  isNegative: boolean;
-}
-
-const SimpleIsometricPillars: React.FC<SimpleIsometricPillarsProps> = ({ isNegative }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef = useRef<number>(0);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let width = 0;
-    let height = 0;
-    let dpr = 1;
-
-    const resize = () => {
-      dpr = Math.min(globalThis.devicePixelRatio || 1, 2);
-      width = canvas.offsetWidth;
-      height = canvas.offsetHeight;
-      canvas.width = Math.max(1, Math.floor(width * dpr));
-      canvas.height = Math.max(1, Math.floor(height * dpr));
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    };
-
-    const drawDiamond = (x: number, y: number, tw: number, th: number, pillarHeight: number) => {
-      const hw = tw / 2;
-      const hh = th / 2;
-      const topY = y - pillarHeight;
-
-      const topGradient = ctx.createLinearGradient(x - hw, topY - hh, x + hw, topY + hh);
-      const leftGradient = ctx.createLinearGradient(x - hw, topY, x, y + hh);
-      const rightGradient = ctx.createLinearGradient(x + hw, topY, x, y + hh);
-
-      if (isNegative) {
-        topGradient.addColorStop(0, 'rgba(255,255,255,0.96)');
-        topGradient.addColorStop(1, 'rgba(190,190,198,0.9)');
-        leftGradient.addColorStop(0, 'rgba(150,150,158,0.72)');
-        leftGradient.addColorStop(1, 'rgba(54,54,60,0.62)');
-        rightGradient.addColorStop(0, 'rgba(105,105,112,0.7)');
-        rightGradient.addColorStop(1, 'rgba(30,30,35,0.58)');
-      } else {
-        topGradient.addColorStop(0, 'rgba(0,0,0,0.75)');
-        topGradient.addColorStop(1, 'rgba(50,50,50,0.62)');
-        leftGradient.addColorStop(0, 'rgba(80,80,80,0.48)');
-        leftGradient.addColorStop(1, 'rgba(190,190,190,0.28)');
-        rightGradient.addColorStop(0, 'rgba(130,130,130,0.42)');
-        rightGradient.addColorStop(1, 'rgba(210,210,210,0.22)');
-      }
-
-      ctx.beginPath();
-      ctx.moveTo(x - hw, topY);
-      ctx.lineTo(x, topY + hh);
-      ctx.lineTo(x, y + hh);
-      ctx.lineTo(x - hw, y);
-      ctx.closePath();
-      ctx.fillStyle = leftGradient;
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.moveTo(x + hw, topY);
-      ctx.lineTo(x, topY + hh);
-      ctx.lineTo(x, y + hh);
-      ctx.lineTo(x + hw, y);
-      ctx.closePath();
-      ctx.fillStyle = rightGradient;
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.moveTo(x, topY - hh);
-      ctx.lineTo(x + hw, topY);
-      ctx.lineTo(x, topY + hh);
-      ctx.lineTo(x - hw, topY);
-      ctx.closePath();
-      ctx.fillStyle = topGradient;
-      ctx.fill();
-    };
-
-    const observer = new ResizeObserver(resize);
-    observer.observe(canvas);
-    resize();
-
-    const draw = () => {
-      rafRef.current = requestAnimationFrame(draw);
-      const t = Date.now() / 1000;
-      ctx.clearRect(0, 0, width, height);
-
-      const count = 9;
-      const tw = Math.min(width / 6.6, 108);
-      const th = tw / 2;
-      const spacing = tw * 0.47;
-      const totalWidth = (count - 1) * spacing;
-      const startX = width / 2 - totalWidth / 2;
-      const baseY = height * 0.76;
-
-      // Все столбы строго на одной оси и одной высоты, чтобы линия выглядела ровной.
-      const pulse = Math.sin(t * 0.95) * 0.04;
-      const pillarHeight = tw * (1.02 + pulse);
-
-      for (let i = 0; i < count; i++) {
-        const x = startX + i * spacing;
-        drawDiamond(x, baseY, tw, th, pillarHeight);
-      }
-    };
-
-    draw();
-
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-      observer.disconnect();
-    };
-  }, [isNegative]);
-
-  return <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />;
-};
 
 // ─── EcoCard ──────────────────────────────────────────────────────────────────
 
@@ -1124,8 +1022,8 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             />
           </div>
 
-          <div className="eco-pillars" aria-label="Анимированная изометрическая линия Opensophy">
-            <SimpleIsometricPillars isNegative={isNegative} />
+          <div className="eco-pillars" aria-label="System Core — анимированный куб с трассами">
+            <TrailsInFormsScene params={TRAILS_SYSTEM_CORE_PARAMS} />
           </div>
         </div>
       </div>
