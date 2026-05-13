@@ -305,13 +305,77 @@ interface FeatureCardProps {
   isNegative: boolean;
   fullWidth?: boolean;
   badge?: string;
+  visual?: 'securityAnalysis';
 }
 
-const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, fullWidth, badge }) => {
+const SecurityAnalysisVisual: React.FC<{ isNegative: boolean }> = ({ isNegative }) => {
+  const lineColor = isNegative ? 'rgba(255,255,255,0.44)' : 'rgba(0,0,0,0.34)';
+  const fillColor = isNegative ? 'rgba(45,110,255,0.15)' : 'rgba(28,90,220,0.11)';
+  const gridColor = isNegative ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+  const dotColor  = isNegative ? '#f7fbff' : '#101114';
+
+  return (
+    <div className="security-analysis-visual" aria-hidden="true">
+      <div className="security-analysis-vignette" />
+      <div className="security-analysis-grid" style={{ '--grid-color': gridColor } as React.CSSProperties} />
+
+      <div className="security-analysis-stat security-analysis-stat-left">
+        <span>SAST</span>
+        <strong>42</strong>
+      </div>
+      <div className="security-analysis-stat security-analysis-stat-right">
+        <span>SCA</span>
+        <strong>18</strong>
+      </div>
+
+      <svg className="security-analysis-chart" viewBox="0 0 560 220" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="securityAnalysisLine" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stopColor={lineColor} stopOpacity="0" />
+            <stop offset="28%" stopColor={lineColor} stopOpacity="0.85" />
+            <stop offset="62%" stopColor={lineColor} stopOpacity="1" />
+            <stop offset="100%" stopColor={lineColor} stopOpacity="0.28" />
+          </linearGradient>
+          <linearGradient id="securityAnalysisFill" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor={fillColor} stopOpacity="0.75" />
+            <stop offset="100%" stopColor={fillColor} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path
+          className="security-analysis-area"
+          d="M0 158 C52 168 72 158 104 110 C136 62 172 70 204 112 C236 156 276 158 312 124 C348 90 386 92 424 78 C470 60 500 26 560 18 L560 220 L0 220 Z"
+          fill="url(#securityAnalysisFill)"
+        />
+        <path
+          className="security-analysis-wave"
+          d="M0 158 C52 168 72 158 104 110 C136 62 172 70 204 112 C236 156 276 158 312 124 C348 90 386 92 424 78 C470 60 500 26 560 18"
+          fill="none"
+          stroke="url(#securityAnalysisLine)"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+        <line className="security-analysis-marker-line" x1="286" x2="286" y1="38" y2="208" />
+        <circle className="security-analysis-ring" cx="286" cy="133" r="16" />
+        <circle cx="286" cy="133" r="8" fill={dotColor} stroke="rgba(255,255,255,0.85)" strokeWidth="3" />
+      </svg>
+
+      <div className="security-analysis-tooltip">
+        <span className="security-analysis-tooltip-dot" />
+        обнаружено <strong>76</strong> проблем
+      </div>
+      <svg className="security-analysis-cursor" viewBox="0 0 28 32">
+        <path d="M5 4L23 18.5L14.2 20.2L10 28L5 4Z" fill="rgba(12,17,28,0.9)" stroke="#2f6bff" strokeWidth="2" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+};
+
+const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, fullWidth, badge, visual }) => {
   const titleC = isNegative ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.88)';
   const textC  = isNegative ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.65)';
   const badgeC = isNegative ? 'rgba(255,255,255,0.42)' : 'rgba(0,0,0,0.42)';
   const badgeBg = isNegative ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+  const hasVisual = visual === 'securityAnalysis';
 
   return (
     <LandingCard
@@ -319,11 +383,12 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, full
       style={{
         display:       'flex',
         flexDirection: 'column',
-        minHeight:     176,
+        minHeight:     hasVisual ? 332 : 176,
         gridColumn:    fullWidth ? '1 / -1' : undefined,
       }}
     >
-      <LandingCardHeader>
+      {hasVisual && <SecurityAnalysisVisual isNegative={isNegative} />}
+      <LandingCardHeader style={{ paddingTop: hasVisual ? '10rem' : undefined }}>
         {badge && (
           <div style={{
             display:       'inline-flex',
@@ -391,6 +456,146 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
         }
         .sec-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
         @media (max-width: 560px) { .sec-cards { grid-template-columns: 1fr !important; } }
+        .security-analysis-visual {
+          position: absolute;
+          inset: 0 0 auto;
+          height: 13rem;
+          overflow: hidden;
+          pointer-events: none;
+          z-index: 0;
+          background:
+            radial-gradient(circle at 50% 58%, rgba(47, 107, 255, 0.24), transparent 21%),
+            radial-gradient(circle at 50% 52%, rgba(255, 255, 255, 0.11), transparent 34%);
+        }
+        .security-analysis-vignette {
+          position: absolute;
+          inset: -18% -10% -8%;
+          background:
+            radial-gradient(circle at 50% 53%, transparent 0 28%, rgba(0, 0, 0, 0.38) 54%, rgba(0, 0, 0, 0.68) 100%),
+            linear-gradient(180deg, rgba(0,0,0,0.18), transparent 45%, rgba(0,0,0,0.7));
+          z-index: 4;
+        }
+        .security-analysis-grid {
+          position: absolute;
+          inset: 0;
+          background-image:
+            linear-gradient(var(--grid-color) 1px, transparent 1px),
+            linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+          background-size: 38px 38px;
+          mask-image: radial-gradient(circle at 50% 50%, black 0 42%, transparent 72%);
+          opacity: 0.75;
+        }
+        .security-analysis-chart {
+          position: absolute;
+          left: 50%;
+          top: 1.3rem;
+          width: min(92%, 34rem);
+          height: 10.8rem;
+          transform: translateX(-50%);
+          filter: drop-shadow(0 18px 26px rgba(0, 0, 0, 0.32));
+          z-index: 2;
+        }
+        .security-analysis-wave {
+          stroke-dasharray: 720;
+          animation: security-wave 4.8s ease-in-out infinite;
+        }
+        .security-analysis-area {
+          transform-origin: center bottom;
+          animation: security-area 4.8s ease-in-out infinite;
+        }
+        .security-analysis-marker-line {
+          stroke: rgba(255, 255, 255, 0.18);
+          stroke-width: 1.5;
+          stroke-dasharray: 8 10;
+          animation: security-marker 2.8s ease-in-out infinite;
+        }
+        .security-analysis-ring {
+          fill: none;
+          stroke: rgba(47, 107, 255, 0.5);
+          stroke-width: 2;
+          transform-origin: 286px 133px;
+          animation: security-ring 2s ease-out infinite;
+        }
+        .security-analysis-stat, .security-analysis-tooltip {
+          position: absolute;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.42rem;
+          color: rgba(255, 255, 255, 0.66);
+          background: rgba(16, 17, 20, 0.58);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          box-shadow: 0 10px 34px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+          backdrop-filter: blur(12px);
+          border-radius: 999px;
+          font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+          z-index: 3;
+        }
+        .security-analysis-stat {
+          padding: 0.32rem 0.6rem;
+          font-size: 0.68rem;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          animation: security-stat-float 5.2s ease-in-out infinite;
+        }
+        .security-analysis-stat strong { color: rgba(255,255,255,0.9); font-size: 0.76rem; }
+        .security-analysis-stat-left { left: 14%; top: 2.35rem; }
+        .security-analysis-stat-right { right: 16%; top: 4.2rem; animation-delay: -1.4s; }
+        .security-analysis-tooltip {
+          left: 50%;
+          top: 2.85rem;
+          transform: translateX(-50%);
+          padding: 0.44rem 0.78rem;
+          font-size: 0.78rem;
+          white-space: nowrap;
+          animation: security-tooltip 3.4s ease-in-out infinite;
+        }
+        .security-analysis-tooltip strong { color: #ffffff; }
+        .security-analysis-tooltip-dot {
+          width: 0.48rem;
+          height: 0.48rem;
+          border-radius: 50%;
+          background: #2f6bff;
+          box-shadow: 0 0 18px rgba(47,107,255,0.85);
+        }
+        .security-analysis-cursor {
+          position: absolute;
+          left: calc(50% + 0.55rem);
+          top: 8.35rem;
+          width: 1.7rem;
+          height: 1.95rem;
+          filter: drop-shadow(0 8px 14px rgba(47,107,255,0.36));
+          z-index: 5;
+          animation: security-cursor 3.4s ease-in-out infinite;
+        }
+        @keyframes security-wave {
+          0% { stroke-dashoffset: 720; opacity: 0.35; }
+          34%, 72% { stroke-dashoffset: 0; opacity: 1; }
+          100% { stroke-dashoffset: -720; opacity: 0.42; }
+        }
+        @keyframes security-area {
+          0%, 100% { opacity: 0.2; transform: scaleY(0.82); }
+          45%, 75% { opacity: 1; transform: scaleY(1); }
+        }
+        @keyframes security-marker {
+          0%, 100% { opacity: 0.25; }
+          50% { opacity: 0.85; }
+        }
+        @keyframes security-ring {
+          0% { opacity: 0.9; transform: scale(0.55); }
+          100% { opacity: 0; transform: scale(1.65); }
+        }
+        @keyframes security-stat-float {
+          0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.58; }
+          50% { transform: translate3d(0, -0.45rem, 0); opacity: 0.9; }
+        }
+        @keyframes security-tooltip {
+          0%, 100% { transform: translateX(-50%) translateY(0); opacity: 0.78; }
+          50% { transform: translateX(-50%) translateY(-0.35rem); opacity: 1; }
+        }
+        @keyframes security-cursor {
+          0%, 100% { transform: translate3d(-0.35rem, -0.2rem, 0) rotate(-10deg); }
+          50% { transform: translate3d(0.25rem, 0.25rem, 0) rotate(-3deg); }
+        }
       `}</style>
 
       <div className="sec-top">
@@ -424,6 +629,7 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
             isNegative={isNegative}
             title="Интеграция анализа безопасности"
             badge="услуга"
+            visual="securityAnalysis"
             text="Интегрируем автоматический анализ кода на уязвимости на каждом этапе разработки. Проверяем исходный код, тестируем работающее приложение и отслеживаем уязвимости в библиотеках — всё автоматически в CI/CD без участия команды."
           />
           <FeatureCard
