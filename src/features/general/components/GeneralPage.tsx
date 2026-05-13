@@ -305,25 +305,78 @@ interface FeatureCardProps {
   isNegative: boolean;
   fullWidth?: boolean;
   badge?: string;
+  visual?: 'securityAnalysis';
 }
 
-const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, fullWidth, badge }) => {
+const SecurityAnalysisVisual: React.FC = () => (
+  <div className="security-analysis-visual" aria-hidden="true">
+    <div className="security-analysis-grid" />
+    <svg className="security-analysis-chart" viewBox="0 0 560 220" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <linearGradient id="securityAnalysisLine" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%" stopColor="rgba(255,255,255,0)" />
+          <stop offset="16%" stopColor="rgba(255,255,255,0.16)" />
+          <stop offset="38%" stopColor="rgba(255,255,255,0.48)" />
+          <stop offset="62%" stopColor="rgba(255,255,255,0.62)" />
+          <stop offset="84%" stopColor="rgba(255,255,255,0.2)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+        </linearGradient>
+        <linearGradient id="securityAnalysisFill" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="rgba(47,107,255,0.2)" />
+          <stop offset="60%" stopColor="rgba(47,107,255,0.08)" />
+          <stop offset="100%" stopColor="rgba(47,107,255,0)" />
+        </linearGradient>
+      </defs>
+      <path
+        className="security-analysis-area"
+        d="M-18 118 C38 132 72 132 112 84 C148 40 182 38 216 74 C252 112 286 120 326 94 C366 66 400 70 446 50 C498 26 532 18 578 10 L578 220 L-18 220 Z"
+        fill="url(#securityAnalysisFill)"
+      />
+      <path
+        className="security-analysis-wave"
+        d="M-18 118 C38 132 72 132 112 84 C148 40 182 38 216 74 C252 112 286 120 326 94 C366 66 400 70 446 50 C498 26 532 18 578 10"
+        fill="none"
+        stroke="url(#securityAnalysisLine)"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <line className="security-analysis-marker-line" x1="304" x2="304" y1="22" y2="174" />
+      <circle className="security-analysis-ring" cx="304" cy="106" r="16" />
+      <circle className="security-analysis-point" cx="304" cy="106" r="8" />
+    </svg>
+
+    <div className="security-analysis-tooltip">
+      <span className="security-analysis-tooltip-dot" />
+      обнаружено <strong>76</strong> проблем
+    </div>
+    <svg className="security-analysis-cursor" viewBox="0 0 28 32">
+      <path d="M5 4L23 18.5L14.2 20.2L10 28L5 4Z" fill="rgba(8,12,22,0.92)" stroke="#2f6bff" strokeWidth="2" strokeLinejoin="round" />
+    </svg>
+    <div className="security-analysis-vignette" />
+  </div>
+);
+
+const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, fullWidth, badge, visual }) => {
   const titleC = isNegative ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.88)';
   const textC  = isNegative ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.65)';
   const badgeC = isNegative ? 'rgba(255,255,255,0.42)' : 'rgba(0,0,0,0.42)';
   const badgeBg = isNegative ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+  const hasVisual = visual === 'securityAnalysis';
 
   return (
     <LandingCard
       isNegative={isNegative}
+      className={hasVisual ? 'feature-card feature-card--security-analysis' : 'feature-card'}
       style={{
         display:       'flex',
         flexDirection: 'column',
-        minHeight:     176,
+        minHeight:     hasVisual ? 356 : 176,
         gridColumn:    fullWidth ? '1 / -1' : undefined,
-      }}
+        ...(hasVisual ? { '--security-card-surface': isNegative ? '#0f0f0f' : '#e3e2de' } : {}),
+      } as React.CSSProperties}
     >
-      <LandingCardHeader>
+      {hasVisual && <SecurityAnalysisVisual />}
+      <LandingCardHeader className={hasVisual ? 'security-analysis-copy' : undefined}>
         {badge && (
           <div style={{
             display:       'inline-flex',
@@ -391,6 +444,184 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
         }
         .sec-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
         @media (max-width: 560px) { .sec-cards { grid-template-columns: 1fr !important; } }
+        .feature-card--security-analysis {
+          isolation: isolate;
+          background: rgba(255, 255, 255, 0.02) !important;
+        }
+        .feature-card--security-analysis::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at 52% 23%, rgba(47, 107, 255, 0.08), transparent 26%);
+          pointer-events: none;
+          z-index: 0;
+        }
+        .security-analysis-copy {
+          padding-top: clamp(11.8rem, 18vw, 13.25rem) !important;
+        }
+        .security-analysis-visual {
+          position: absolute;
+          inset: 0 0 auto;
+          height: clamp(13.4rem, 20vw, 15.5rem);
+          overflow: hidden;
+          pointer-events: none;
+          z-index: 0;
+          background:
+            radial-gradient(circle at 51% 41%, rgba(47, 107, 255, 0.16), transparent 20%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.012), rgba(255, 255, 255, 0.006) 58%, rgba(255, 255, 255, 0.02) 100%);
+        }
+        .security-analysis-visual::before,
+        .security-analysis-visual::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          width: 34%;
+          z-index: 6;
+          pointer-events: none;
+        }
+        .security-analysis-visual::before {
+          left: 0;
+          background: linear-gradient(90deg, var(--security-card-surface, #0f0f0f), color-mix(in srgb, var(--security-card-surface, #0f0f0f) 0%, transparent));
+        }
+        .security-analysis-visual::after {
+          right: 0;
+          background: linear-gradient(270deg, var(--security-card-surface, #0f0f0f), color-mix(in srgb, var(--security-card-surface, #0f0f0f) 0%, transparent));
+        }
+        .security-analysis-vignette {
+          position: absolute;
+          inset: -20% -10% -14%;
+          background:
+            radial-gradient(circle at 50% 38%, transparent 0 27%, color-mix(in srgb, var(--security-card-surface, #0f0f0f) 24%, transparent) 50%, var(--security-card-surface, #0f0f0f) 100%),
+            linear-gradient(180deg, color-mix(in srgb, var(--security-card-surface, #0f0f0f) 10%, transparent), transparent 34%, color-mix(in srgb, var(--security-card-surface, #0f0f0f) 66%, transparent) 78%, var(--security-card-surface, #0f0f0f) 100%);
+          z-index: 7;
+        }
+        .security-analysis-grid {
+          position: absolute;
+          inset: -2rem -5rem -1rem;
+          background-image:
+            linear-gradient(rgba(255,255,255,0.07) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.07) 1px, transparent 1px);
+          background-size: 38px 38px;
+          mask-image: radial-gradient(ellipse at 50% 38%, black 0 44%, transparent 74%);
+          opacity: 0.62;
+        }
+        .security-analysis-chart {
+          position: absolute;
+          left: 50%;
+          top: clamp(0.85rem, 1.4vw, 1.1rem);
+          width: max(42rem, 126%);
+          max-width: none;
+          aspect-ratio: 560 / 220;
+          height: auto;
+          overflow: visible;
+          transform: translateX(-50%);
+          filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.36));
+          z-index: 2;
+        }
+        .security-analysis-wave {
+          stroke-dasharray: 760;
+          animation: security-wave 5.2s ease-in-out infinite;
+        }
+        .security-analysis-area {
+          transform-origin: center bottom;
+          animation: security-area 5.2s ease-in-out infinite;
+        }
+        .security-analysis-marker-line {
+          stroke: rgba(255, 255, 255, 0.16);
+          stroke-width: 1.5;
+          stroke-dasharray: 8 10;
+          animation: security-marker 3s ease-in-out infinite;
+        }
+        .security-analysis-ring {
+          fill: none;
+          stroke: rgba(47, 107, 255, 0.48);
+          stroke-width: 2;
+          transform-box: fill-box;
+          transform-origin: center;
+          animation: security-ring 2.2s ease-out infinite;
+        }
+        .security-analysis-point {
+          fill: rgba(242, 247, 255, 0.82);
+          stroke: rgba(255,255,255,0.9);
+          stroke-width: 3;
+          vector-effect: non-scaling-stroke;
+        }
+        .security-analysis-tooltip {
+          position: absolute;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.42rem;
+          color: rgba(255, 255, 255, 0.55);
+          background: rgba(12, 13, 16, 0.58);
+          border: 1px solid rgba(255, 255, 255, 0.075);
+          box-shadow: 0 10px 34px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.055);
+          backdrop-filter: blur(12px);
+          border-radius: 999px;
+          font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+          z-index: 4;
+        }
+        .security-analysis-tooltip {
+          left: 50%;
+          top: 2.55rem;
+          transform: translateX(-50%);
+          padding: 0.44rem 0.78rem;
+          font-size: 0.78rem;
+          white-space: nowrap;
+          animation: security-tooltip 3.4s ease-in-out infinite;
+        }
+        .security-analysis-tooltip strong { color: rgba(255,255,255,0.9); }
+        .security-analysis-tooltip-dot {
+          width: 0.48rem;
+          height: 0.48rem;
+          flex: 0 0 0.48rem;
+          border-radius: 50%;
+          background: #2f6bff;
+          box-shadow: 0 0 18px rgba(47,107,255,0.85);
+        }
+        .security-analysis-cursor {
+          position: absolute;
+          left: calc(50% + 0.35rem);
+          top: clamp(6.95rem, 10vw, 8rem);
+          width: 1.7rem;
+          height: 1.95rem;
+          filter: drop-shadow(0 8px 14px rgba(47,107,255,0.36));
+          z-index: 5;
+          animation: security-cursor 3.4s ease-in-out infinite;
+        }
+        @keyframes security-wave {
+          0% { stroke-dashoffset: 760; opacity: 0.28; }
+          34%, 72% { stroke-dashoffset: 0; opacity: 0.9; }
+          100% { stroke-dashoffset: -760; opacity: 0.34; }
+        }
+        @keyframes security-area {
+          0%, 100% { opacity: 0.15; transform: scaleY(0.84); }
+          45%, 75% { opacity: 0.88; transform: scaleY(1); }
+        }
+        @keyframes security-marker {
+          0%, 100% { opacity: 0.18; }
+          50% { opacity: 0.72; }
+        }
+        @keyframes security-ring {
+          0% { opacity: 0.9; transform: scale(0.55); }
+          100% { opacity: 0; transform: scale(1.65); }
+        }
+        @keyframes security-tooltip {
+          0%, 100% { transform: translateX(-50%) translateY(0); opacity: 0.78; }
+          50% { transform: translateX(-50%) translateY(-0.35rem); opacity: 1; }
+        }
+        @keyframes security-cursor {
+          0%, 100% { transform: translate3d(-0.35rem, -0.2rem, 0) rotate(-10deg); }
+          50% { transform: translate3d(0.25rem, 0.25rem, 0) rotate(-3deg); }
+        }
+        @media (max-width: 700px) {
+          .feature-card--security-analysis { min-height: 374px !important; }
+          .security-analysis-copy { padding-top: 12.2rem !important; }
+          .security-analysis-visual { height: 14.2rem; }
+          .security-analysis-chart { width: 47rem; top: 1.25rem; }
+          .security-analysis-tooltip { top: 2.8rem; font-size: 0.7rem; padding: 0.4rem 0.62rem; }
+          .security-analysis-cursor { top: 7.85rem; left: calc(50% + 0.25rem); }
+        }
       `}</style>
 
       <div className="sec-top">
@@ -424,6 +655,7 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
             isNegative={isNegative}
             title="Интеграция анализа безопасности"
             badge="услуга"
+            visual="securityAnalysis"
             text="Интегрируем автоматический анализ кода на уязвимости на каждом этапе разработки. Проверяем исходный код, тестируем работающее приложение и отслеживаем уязвимости в библиотеках — всё автоматически в CI/CD без участия команды."
           />
           <FeatureCard
