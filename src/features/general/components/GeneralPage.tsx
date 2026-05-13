@@ -305,25 +305,116 @@ interface FeatureCardProps {
   isNegative: boolean;
   fullWidth?: boolean;
   badge?: string;
+  visual?: 'securityAnalysis' | 'knowledgeLayers';
 }
 
-const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, fullWidth, badge }) => {
+const SecurityAnalysisVisual: React.FC = () => (
+  <div className="security-analysis-visual" aria-hidden="true">
+    <div className="security-analysis-grid" />
+    <svg className="security-analysis-chart" viewBox="0 0 560 220" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="securityAnalysisLine" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%" stopColor="var(--visual-line-transparent)" />
+          <stop offset="16%" stopColor="var(--visual-line-soft)" />
+          <stop offset="38%" stopColor="var(--visual-line-mid)" />
+          <stop offset="62%" stopColor="var(--visual-line-strong)" />
+          <stop offset="84%" stopColor="var(--visual-line-soft)" />
+          <stop offset="100%" stopColor="var(--visual-line-transparent)" />
+        </linearGradient>
+        <linearGradient id="securityAnalysisFill" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="var(--visual-fill-top)" />
+          <stop offset="60%" stopColor="var(--visual-fill-mid)" />
+          <stop offset="100%" stopColor="var(--visual-fill-bottom)" />
+        </linearGradient>
+      </defs>
+      <path
+        className="security-analysis-area"
+        d="M-18 122 C42 88 74 52 122 76 C164 98 190 144 236 148 C274 152 288 148 304 138 C332 120 368 96 416 78 C474 56 526 30 578 10 L578 220 L-18 220 Z"
+        fill="url(#securityAnalysisFill)"
+      />
+      <path
+        className="security-analysis-wave"
+        d="M-18 122 C42 88 74 52 122 76 C164 98 190 144 236 148 C274 152 288 148 304 138 C332 120 368 96 416 78 C474 56 526 30 578 10"
+        fill="none"
+        stroke="url(#securityAnalysisLine)"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </svg>
+
+    <div className="security-analysis-marker-line" />
+    <div className="security-analysis-tooltip">
+      <span className="security-analysis-tooltip-dot" />
+      обнаружено <strong>76</strong> проблем
+    </div>
+    <div className="security-analysis-vignette" />
+  </div>
+);
+
+const KnowledgeLayersVisual: React.FC = () => (
+  <div className="knowledge-layers-visual" aria-hidden="true">
+    <div className="knowledge-shelf knowledge-shelf-1">
+      <div className="knowledge-book knowledge-book-tall" />
+      <div className="knowledge-doc knowledge-doc-wide" />
+      <div className="knowledge-book" />
+      <div className="knowledge-doc" />
+      <div className="knowledge-book knowledge-book-slim" />
+    </div>
+    <div className="knowledge-shelf knowledge-shelf-2">
+      <div className="knowledge-doc" />
+      <div className="knowledge-book knowledge-book-slim" />
+      <div className="knowledge-doc knowledge-doc-wide" />
+      <div className="knowledge-book knowledge-book-tall" />
+    </div>
+    <div className="knowledge-shelf knowledge-shelf-3">
+      <div className="knowledge-book" />
+      <div className="knowledge-doc knowledge-doc-wide" />
+      <div className="knowledge-doc" />
+      <div className="knowledge-book knowledge-book-slim" />
+      <div className="knowledge-doc" />
+    </div>
+    <div className="knowledge-layers-vignette" />
+  </div>
+);
+
+const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, fullWidth, badge, visual }) => {
   const titleC = isNegative ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.88)';
   const textC  = isNegative ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.65)';
   const badgeC = isNegative ? 'rgba(255,255,255,0.42)' : 'rgba(0,0,0,0.42)';
   const badgeBg = isNegative ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+  const hasVisual = Boolean(visual);
+  const visualClass = visual ? `feature-card--${visual}` : '';
 
   return (
     <LandingCard
       isNegative={isNegative}
+      className={hasVisual ? `feature-card feature-card--visual ${visualClass}` : 'feature-card'}
       style={{
         display:       'flex',
         flexDirection: 'column',
-        minHeight:     176,
+        minHeight:     hasVisual ? 356 : 176,
         gridColumn:    fullWidth ? '1 / -1' : undefined,
-      }}
+        ...(hasVisual ? {
+          '--visual-card-surface': isNegative ? '#0f0f0f' : '#e3e2de',
+          '--visual-line-transparent': isNegative ? 'rgba(255,255,255,0)' : 'rgba(0,0,0,0)',
+          '--visual-line-soft': isNegative ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.08)',
+          '--visual-line-mid': isNegative ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.18)',
+          '--visual-line-strong': isNegative ? 'rgba(255,255,255,0.68)' : 'rgba(0,0,0,0.42)',
+          '--visual-fill-top': isNegative ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+          '--visual-fill-mid': isNegative ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+          '--visual-fill-bottom': isNegative ? 'rgba(255,255,255,0)' : 'rgba(0,0,0,0)',
+          '--visual-grid-line': isNegative ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.04)',
+          '--visual-tooltip-bg': isNegative ? 'rgba(15,15,15,0.72)' : 'rgba(224,223,219,0.78)',
+          '--visual-tooltip-text': isNegative ? 'rgba(255,255,255,0.58)' : 'rgba(0,0,0,0.62)',
+          '--visual-tooltip-border': isNegative ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+          '--visual-layer-line': isNegative ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.13)',
+          '--visual-layer-strong': isNegative ? 'rgba(255,255,255,0.52)' : 'rgba(0,0,0,0.26)',
+        } : {}),
+      } as React.CSSProperties}
     >
-      <LandingCardHeader>
+      {visual === 'securityAnalysis' && <SecurityAnalysisVisual />}
+      {visual === 'knowledgeLayers' && <KnowledgeLayersVisual />}
+      <LandingCardHeader className={hasVisual ? 'feature-card-copy--visual' : undefined}>
         {badge && (
           <div style={{
             display:       'inline-flex',
@@ -391,6 +482,231 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
         }
         .sec-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
         @media (max-width: 560px) { .sec-cards { grid-template-columns: 1fr !important; } }
+        .feature-card--visual {
+          isolation: isolate;
+          background: var(--visual-card-surface, rgba(255,255,255,0.02)) !important;
+        }
+        .feature-card--visual::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at 52% 22%, var(--visual-fill-top), transparent 28%);
+          pointer-events: none;
+          z-index: 0;
+        }
+        .feature-card-copy--visual {
+          padding-top: clamp(11.8rem, 18vw, 13.25rem) !important;
+        }
+        .security-analysis-visual,
+        .knowledge-layers-visual {
+          position: absolute;
+          inset: 0 0 auto;
+          height: clamp(13.4rem, 20vw, 15.5rem);
+          overflow: hidden;
+          pointer-events: none;
+          z-index: 0;
+          background:
+            radial-gradient(circle at 51% 39%, var(--visual-fill-top), transparent 20%),
+            linear-gradient(180deg, color-mix(in srgb, var(--visual-card-surface, #0f0f0f) 4%, transparent), transparent 58%, var(--visual-card-surface, #0f0f0f) 100%);
+        }
+        .security-analysis-visual::before,
+        .security-analysis-visual::after,
+        .knowledge-layers-visual::before,
+        .knowledge-layers-visual::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          width: 34%;
+          z-index: 6;
+          pointer-events: none;
+        }
+        .security-analysis-visual::before,
+        .knowledge-layers-visual::before {
+          left: 0;
+          background: linear-gradient(90deg, var(--visual-card-surface, #0f0f0f), color-mix(in srgb, var(--visual-card-surface, #0f0f0f) 0%, transparent));
+        }
+        .security-analysis-visual::after,
+        .knowledge-layers-visual::after {
+          right: 0;
+          background: linear-gradient(270deg, var(--visual-card-surface, #0f0f0f), color-mix(in srgb, var(--visual-card-surface, #0f0f0f) 0%, transparent));
+        }
+        .security-analysis-vignette,
+        .knowledge-layers-vignette {
+          position: absolute;
+          inset: -20% -10% -14%;
+          background:
+            radial-gradient(circle at 50% 38%, transparent 0 27%, color-mix(in srgb, var(--visual-card-surface, #0f0f0f) 24%, transparent) 50%, var(--visual-card-surface, #0f0f0f) 100%),
+            linear-gradient(180deg, color-mix(in srgb, var(--visual-card-surface, #0f0f0f) 10%, transparent), transparent 34%, color-mix(in srgb, var(--visual-card-surface, #0f0f0f) 66%, transparent) 78%, var(--visual-card-surface, #0f0f0f) 100%);
+          z-index: 7;
+        }
+        .security-analysis-grid {
+          position: absolute;
+          inset: -2rem -5rem -1rem;
+          background-image:
+            linear-gradient(var(--visual-grid-line) 1px, transparent 1px),
+            linear-gradient(90deg, var(--visual-grid-line) 1px, transparent 1px);
+          background-size: 38px 38px;
+          mask-image: radial-gradient(ellipse at 50% 38%, black 0 44%, transparent 74%);
+          opacity: 0.62;
+        }
+        .security-analysis-chart {
+          position: absolute;
+          left: 50%;
+          top: clamp(1.45rem, 2.2vw, 1.9rem);
+          width: max(42rem, 128%);
+          max-width: none;
+          height: clamp(8.8rem, 13vw, 10.6rem);
+          overflow: visible;
+          transform: translateX(-50%);
+          filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.18));
+          z-index: 2;
+        }
+        .security-analysis-wave {
+          opacity: 0.9;
+        }
+        .security-analysis-area {
+          opacity: 0.78;
+          transform-origin: center bottom;
+        }
+        .security-analysis-marker-line {
+          position: absolute;
+          left: 52%;
+          top: 3.55rem;
+          width: 1px;
+          height: 4.55rem;
+          background: repeating-linear-gradient(180deg, var(--visual-line-strong) 0 0.55rem, transparent 0.55rem 1.1rem);
+          opacity: 0.74;
+          z-index: 8;
+        }
+        .security-analysis-tooltip {
+          position: absolute;
+          left: 52%;
+          top: 2.35rem;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.42rem;
+          transform: translateX(-50%);
+          padding: 0.44rem 0.78rem;
+          color: var(--visual-tooltip-text);
+          background: var(--visual-tooltip-bg);
+          border: 1px solid var(--visual-tooltip-border);
+          box-shadow: 0 10px 34px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+          backdrop-filter: blur(12px);
+          border-radius: 999px;
+          font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+          font-size: 0.78rem;
+          white-space: nowrap;
+          z-index: 9;
+        }
+        .security-analysis-tooltip strong { color: var(--visual-line-strong); }
+        .security-analysis-tooltip-dot {
+          width: 0.48rem;
+          height: 0.48rem;
+          flex: 0 0 0.48rem;
+          border-radius: 50%;
+          background: #f59e0b;
+          box-shadow: 0 0 18px rgba(245,158,11,0.6);
+        }
+        .knowledge-shelf {
+          position: absolute;
+          left: 50%;
+          display: flex;
+          align-items: center;
+          gap: 0.7rem;
+          width: max-content;
+          z-index: 2;
+        }
+        .knowledge-shelf-1 { top: 3rem; animation: knowledge-shelf-left 8.8s ease-in-out infinite; }
+        .knowledge-shelf-2 { top: 5.9rem; animation: knowledge-shelf-right 9.6s ease-in-out infinite; }
+        .knowledge-shelf-3 { top: 8.85rem; animation: knowledge-shelf-left 10.4s ease-in-out infinite; }
+        .knowledge-book,
+        .knowledge-doc {
+          position: relative;
+          flex: 0 0 auto;
+          border: 1px solid var(--visual-layer-line);
+          background: color-mix(in srgb, var(--visual-layer-strong) 12%, transparent);
+          box-shadow: 0 1rem 2.5rem color-mix(in srgb, var(--visual-layer-strong) 16%, transparent);
+          opacity: 0.82;
+        }
+        .knowledge-book {
+          width: 2.2rem;
+          height: 3.3rem;
+          border-radius: 0.28rem 0.52rem 0.52rem 0.28rem;
+        }
+        .knowledge-book::before {
+          content: '';
+          position: absolute;
+          left: 0.38rem;
+          top: 0.45rem;
+          bottom: 0.45rem;
+          width: 1px;
+          background: var(--visual-layer-line);
+        }
+        .knowledge-book::after {
+          content: '';
+          position: absolute;
+          left: 0.72rem;
+          right: 0.48rem;
+          top: 0.72rem;
+          height: 1px;
+          background: var(--visual-layer-line);
+          box-shadow: 0 0.55rem 0 var(--visual-layer-line), 0 1.1rem 0 var(--visual-layer-line);
+          opacity: 0.72;
+        }
+        .knowledge-book-tall { height: 3.9rem; }
+        .knowledge-book-slim { width: 1.55rem; }
+        .knowledge-doc {
+          width: 2.75rem;
+          height: 3.35rem;
+          border-radius: 0.35rem;
+        }
+        .knowledge-doc::before {
+          content: '';
+          position: absolute;
+          right: -1px;
+          top: -1px;
+          width: 0.82rem;
+          height: 0.82rem;
+          background: var(--visual-card-surface, #0f0f0f);
+          border-left: 1px solid var(--visual-layer-line);
+          border-bottom: 1px solid var(--visual-layer-line);
+          border-radius: 0 0.35rem 0 0.2rem;
+          opacity: 0.95;
+        }
+        .knowledge-doc::after {
+          content: '';
+          position: absolute;
+          left: 0.55rem;
+          right: 0.55rem;
+          top: 1rem;
+          height: 1px;
+          background: var(--visual-layer-line);
+          box-shadow: 0 0.55rem 0 var(--visual-layer-line), 0 1.1rem 0 var(--visual-layer-line);
+          opacity: 0.7;
+        }
+        .knowledge-doc-wide { width: 3.35rem; }
+        @keyframes knowledge-shelf-left {
+          0%, 100% { transform: translateX(calc(-50% - 1.35rem)); }
+          50% { transform: translateX(calc(-50% + 1.35rem)); }
+        }
+        @keyframes knowledge-shelf-right {
+          0%, 100% { transform: translateX(calc(-50% + 1.35rem)); }
+          50% { transform: translateX(calc(-50% - 1.35rem)); }
+        }
+        @media (max-width: 700px) {
+          .feature-card--visual { min-height: 374px !important; }
+          .feature-card-copy--visual { padding-top: 12.2rem !important; }
+          .security-analysis-visual,
+          .knowledge-layers-visual { height: 14.2rem; }
+          .security-analysis-chart { width: 47rem; top: 1.6rem; height: 9.9rem; }
+          .security-analysis-marker-line { left: 52%; top: 3.75rem; height: 4.5rem; }
+          .security-analysis-tooltip { left: 52%; top: 2.65rem; font-size: 0.7rem; padding: 0.4rem 0.62rem; }
+          .knowledge-shelf { gap: 0.52rem; }
+          .knowledge-book { width: 1.85rem; height: 3rem; }
+          .knowledge-doc { width: 2.35rem; height: 3rem; }
+          .knowledge-doc-wide { width: 2.9rem; }
+        }
       `}</style>
 
       <div className="sec-top">
@@ -418,12 +734,14 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
             isNegative={isNegative}
             title="Знания каждому!"
             badge="открытые знания"
+            visual="knowledgeLayers"
             text="Пишем понятные статьи и гайды по DevSecOps и не только. Рассказываем как настроить безопасность с нуля и сделать её частью культуры команды."
           />
           <FeatureCard
             isNegative={isNegative}
             title="Интеграция анализа безопасности"
             badge="услуга"
+            visual="securityAnalysis"
             text="Интегрируем автоматический анализ кода на уязвимости на каждом этапе разработки. Проверяем исходный код, тестируем работающее приложение и отслеживаем уязвимости в библиотеках — всё автоматически в CI/CD без участия команды."
           />
           <FeatureCard
