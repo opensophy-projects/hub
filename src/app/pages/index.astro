@@ -36,8 +36,8 @@ if (!useLanding && fs.existsSync(welcomeMdPath)) {
 }
 
 const SITE_NAME = 'Opensophy';
-const LANDING_DESCRIPTION = 'Opensophy — open-source проект для IT-специалистов. Инструменты, туториалы и материалы по безопасности, разработке и инфраструктуре — в открытом доступе.';
-const LANDING_KEYWORDS = 'opensophy, кибербезопасность, DevSecOps, linux, разработка, инструменты, туториалы, open source, IT';
+const LANDING_DESCRIPTION = 'Opensophy — open-source проект для IT-специалистов и инициатива открытой философии в IT. Качественные и доступные знания, услуги, инструменты и решения по безопасности, разработке и инфраструктуре — в открытом доступе.';
+const LANDING_KEYWORDS = 'opensophy, кибербезопасность, DevSecOps, linux, разработка, инструменты, туториалы, open source, IT, mTLS, SAST, DAST, SCA, zero trust, CI/CD';
 
 const title       = useLanding ? SITE_NAME : (welcomeDoc?.title       || SITE_NAME);
 const description = useLanding ? LANDING_DESCRIPTION : (welcomeDoc?.description || LANDING_DESCRIPTION);
@@ -56,17 +56,10 @@ const lang        = useLanding ? 'ru' : (welcomeDoc?.lang || 'ru');
 >
   {useLanding ? (
     <>
-      <!--
-        Статический SSG-контент для поисковых роботов.
-        Этот блок рендерится в HTML во время сборки (prerender=true),
-        поэтому Googlebot получает полноценный контент без JavaScript.
-        После гидратации React перекрывает его своим рендером,
-        но для SEO важен именно этот статический HTML.
-      -->
       <article
         id="seo-landing-content"
         aria-hidden="true"
-        style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;pointer-events:none;"
+        style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:normal;border:0;pointer-events:none;"
       >
         <header>
           <h1>Opensophy</h1>
@@ -74,50 +67,56 @@ const lang        = useLanding ? 'ru' : (welcomeDoc?.lang || 'ru');
         </header>
 
         <section>
-          <h2>Безопасность прежде всего</h2>
+          <h2>О проекте</h2>
           <p>
-            Безопасность и качество кода — главный приоритет, особенно на фоне интеграции ИИ в разработку.
-            Интеграция SAST, DAST, SCA — автоматический анализ кода на уязвимости на каждом этапе разработки.
-            SAST проверяет исходный код, DAST тестирует работающее приложение, SCA отслеживает зависимости.
+            Opensophy — инициатива открытой философии в IT. Качественные и доступные знания, услуги,
+            инструменты и решения.
           </p>
         </section>
 
         <section>
-          <h2>Экосистема для разработчиков</h2>
+          <h2>Чем занимается Opensophy</h2>
           <p>
-            Open-source платформа Hub для публикации технических знаний, статей и документации.
-            Современная SSG+SPA платформа с мощными Markdown-блоками, интерактивными таблицами и live UI-компонентами.
+            Помогаем внедрять безопасность, знания и автоматизацию в IT-процессы: от понятных материалов
+            до практической интеграции защитных решений под команду и инфраструктуру.
           </p>
           <ul>
-            <li>Туториалы по кибербезопасности и DevSecOps</li>
-            <li>Open-source инструменты для разработчиков</li>
-            <li>Материалы по Linux, Docker, CI/CD и инфраструктуре</li>
-            <li>Аудит безопасности и анализ кода</li>
-            <li>Образовательный контент по DevSecOps и разработке</li>
-            <li>UI библиотека с готовыми компонентами и живым превью</li>
+            <li>Открытые знания: статьи и гайды по DevSecOps, безопасности, разработке и инфраструктуре.</li>
+            <li>Интеграция анализа безопасности: SAST, DAST и SCA в CI/CD без лишней рутины.</li>
+            <li>Настройка безопасного доступа: mTLS, VPN, Zero Trust и другие подходы.</li>
+            <li>Проверка защищённости: этичное тестирование сервисов и серверов на уязвимости.</li>
+            <li>Автоматизация: от bash-скриптов до комплексных решений под индивидуальные требования.</li>
+            <li>Подбор стека защиты: WAF, SCA, mTLS, DAST и другие инструменты.</li>
           </ul>
         </section>
 
         <section>
-          <h2>Hub — платформа для документации</h2>
+          <h2>Услуги Opensophy</h2>
           <p>
-            Opensophy Hub — первый open-source проект от Opensophy.
-            Гибридная SSG+SPA платформа для публикации технических знаний, статей и материалов.
-            Доступна на GitHub: opensophy-projects/hub.
+            Доступны услуги по интеграции анализа безопасности, настройке безопасного доступа, проверке
+            защищённости, автоматизации и подбору стека защиты.
+          </p>
+          <p>
+            Чтобы заказать услугу или обсудить сотрудничество, напишите на opensophy@gmail.com.
+            Направление «Знания каждому!» — открытая образовательная инициатива.
           </p>
         </section>
 
         <section>
-          <h2>Для кого создан Opensophy</h2>
+          <h2>Что разрабатывает Opensophy</h2>
           <p>
-            Opensophy создаёт материалы для студентов, разработчиков, инженеров и лидеров в сфере IT.
-            Все инструменты и материалы распространяются под открытыми лицензиями — бесплатно, навсегда.
+            Развиваем open-source инструменты для публикации знаний, сборки интерфейсов и безопасного
+            доступа к инфраструктуре.
           </p>
+          <ul>
+            <li>Opensophy Hub (O.Hub): гибридная платформа для документации и публикации контента.</li>
+            <li>Opensophy mTLS (O.mTLS): инструмент для быстрого создания и управления mTLS-сертификатами.</li>
+            <li>Opensophy UI (O.UI): библиотека React-компонентов с живым превью и настройками.</li>
+          </ul>
         </section>
 
         <section>
           <h2>Контакты</h2>
-          <p>Связаться с командой Opensophy:</p>
           <ul>
             <li>Сайт: opensophy.com</li>
             <li>GitHub: github.com/opensophy-projects</li>
