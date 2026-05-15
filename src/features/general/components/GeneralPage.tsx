@@ -1099,7 +1099,7 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
           </h2>
           <p style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: 0, color: textMut, fontFamily: 'Inter, sans-serif' }}>
             <ShinyText
-              text="От понятных материалов до практической интеграции защитных решений — подбираем подход под вашу команду и инфраструктуру."
+              text="От образовательных материалов до внедрения DevSecOps и Zero Trust в реальную инфраструктуру."
               speed={4}
               color={shinyBase}
               shineColor={shinyGlow}
