@@ -1095,7 +1095,7 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
             ЧЕМ ЗАНИМАЕТСЯ
           </p>
           <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: '0 0 1.5rem', color: textMain, fontFamily: 'Inter, sans-serif' }}>
-            Помогаем внедрять безопасность, знания и автоматизацию в IT-процессы
+            Делаем три вещи: учим безопасности, настраиваем защиту, автоматизируем рутину.
           </h2>
           <p style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: 0, color: textMut, fontFamily: 'Inter, sans-serif' }}>
             <ShinyText
