@@ -1383,7 +1383,7 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             color:      textMut,
           }}>
             <ShinyText
-              text="Развиваем open-source инструменты Opensophy для публикации знаний, сборки интерфейсов и безопасного доступа к инфраструктуре."
+              text="Создаём open-source инструменты для безопасной инфраструктуры и современных IT-команд."
               speed={4}
               color={shinyBase}
               shineColor={shinyGlow}
