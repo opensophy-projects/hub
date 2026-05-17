@@ -4,8 +4,8 @@ import React, {
 import { createPortal } from 'react-dom';
 import { useTheme } from '@/shared/contexts/ThemeContext';
 import {
-  X, Maximize2, Minimize2, Play, RefreshCcw,
-  Settings, PanelRight, PanelRightClose, ChevronDown,
+  X, Minimize2, Play, RefreshCcw,
+  Settings, PanelRight, PanelRightClose, ChevronDown, MonitorSmartphone,
 } from 'lucide-react';
 import { loadComponent, getDefaultProps } from './loader';
 import { ComponentWrapper } from './ComponentWrapper';
@@ -64,9 +64,9 @@ function tk(isDark: boolean) {
 
 type T = ReturnType<typeof tk>;
 
-function Pill({ onClick, title, label, icon, t, active, danger }: Readonly<{
+function Pill({ onClick, title, label, icon, t, active, danger, compact }: Readonly<{
   onClick: () => void; title: string; label: string;
-  icon: React.ReactNode; t: T; active?: boolean; danger?: boolean;
+  icon: React.ReactNode; t: T; active?: boolean; danger?: boolean; compact?: boolean;
 }>) {
   const bg  = active ? t.btnActBg  : t.btnBg;
   const bdr = active ? t.btnActBdr : t.btnBdr;
@@ -82,7 +82,7 @@ function Pill({ onClick, title, label, icon, t, active, danger }: Readonly<{
     <button onClick={onClick} title={title} style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       justifyContent: 'center', gap: 3,
-      padding: '5px 12px', minWidth: 52, height: 44,
+      padding: compact ? '4px 8px' : '5px 12px', minWidth: compact ? 42 : 52, height: compact ? 38 : 44,
       borderRadius: 8, border: `1px solid ${bdr}`,
       background: bg, color, cursor: 'pointer', flexShrink: 0,
     }}
@@ -90,7 +90,7 @@ function Pill({ onClick, title, label, icon, t, active, danger }: Readonly<{
       onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = bg; }}
     >
       {icon}
-      <span style={{ fontSize: 10, fontWeight: active ? 600 : 400, whiteSpace: 'nowrap', lineHeight: 1 }}>{label}</span>
+      <span style={{ fontSize: compact ? 9 : 10, fontWeight: active ? 600 : 400, whiteSpace: 'nowrap', lineHeight: 1 }}>{label}</span>
     </button>
   );
 }
@@ -566,7 +566,7 @@ const MobileBottomSheet: React.FC<{ config: ComponentConfig; componentProps: Com
   return (
     <>
       {isOpen && <button onClick={() => setActiveTab(null)} aria-label="Закрыть панель" style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'transparent', border: 'none', cursor: 'default' }} />}
-      <div style={{ position: 'absolute', bottom: 52, left: 0, right: 0, height: isOpen ? '65dvh' : 0, overflow: 'hidden', zIndex: 20, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'absolute', bottom: 56, left: 0, right: 0, height: isOpen ? 'min(72dvh, 640px)' : 0, overflow: 'hidden', zIndex: 20, display: 'flex', flexDirection: 'column' }}>
         <div style={{ flex: 1, background: t.panelBg, borderTop: `1px solid ${t.barBorder}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 4px', flexShrink: 0 }}><div style={{ width: 36, height: 4, borderRadius: 2, background: t.fgSub }} /></div>
           <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
@@ -575,7 +575,7 @@ const MobileBottomSheet: React.FC<{ config: ComponentConfig; componentProps: Com
           </div>
         </div>
       </div>
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 52, background: t.barBg, borderTop: `1px solid ${t.barBorder}`, display: 'flex', alignItems: 'stretch', zIndex: 30 }}>
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 56, background: t.barBg, borderTop: `1px solid ${t.barBorder}`, display: 'flex', alignItems: 'stretch', zIndex: 30, paddingBottom: 'max(0px, env(safe-area-inset-bottom))' }}>
         {([{ id: 'universal' as TabType, label: 'Общие', Icon: isOpen ? ChevronDown : Settings }, { id: 'specific' as TabType, label: 'Специфические', Icon: isOpen ? ChevronDown : PanelRight }]).map(({ id, label, Icon }) => {
           const isActive = activeTab === id;
           return <button key={id} onClick={() => setActiveTab(isActive ? null : id)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, border: 'none', background: isActive ? t.tabActBg : 'transparent', color: isActive ? t.tabActClr : t.tabClr, cursor: 'pointer', fontSize: 10, fontWeight: isActive ? 600 : 400, borderTop: isActive ? `2px solid ${t.btnActBdr}` : '2px solid transparent' }}><Icon size={15} />{label}</button>;
@@ -621,18 +621,18 @@ const FullscreenModal: React.FC<ComponentRenderProps & { config: ComponentConfig
   );
 };
 
-const PreviewPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; onRefresh: () => void; onFullscreen: () => void; onOpenSettings: () => void; t: T; loading: boolean }> = ({ config, Component, componentProps, universalProps, refreshKey, isDark, componentCategory, onRefresh, onFullscreen, onOpenSettings, t, loading }) => (
+const PreviewPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; onRefresh: () => void; onFullscreen: () => void; onOpenSettings: () => void; t: T; loading: boolean; isMobile: boolean }> = ({ config, Component, componentProps, universalProps, refreshKey, isDark, componentCategory, onRefresh, onFullscreen, onOpenSettings, t, loading, isMobile }) => (
   <div style={{ borderRadius: 12, border: `1px solid ${t.outerBorder}`, background: t.outerBg, boxShadow: t.outerShadow, display: 'flex', flexDirection: 'column', width: '100%', minWidth: 0, overflow: 'hidden' }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', borderBottom: `1px solid ${t.barBorder}`, background: t.barBg, flexWrap: 'nowrap', minWidth: 0 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 4 : 6, padding: isMobile ? '8px' : '8px 10px', borderBottom: `1px solid ${t.barBorder}`, background: t.barBg, flexWrap: 'nowrap', minWidth: 0 }}>
       <div style={{ fontSize: 13, fontWeight: 600, color: t.fgMuted, padding: '3px 9px', borderRadius: 7, background: t.btnBg, border: `1px solid ${t.barBorder}`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200, flexShrink: 1 }}>{config.name}</div>
       <div style={{ flex: 1 }} />
-      <Pill onClick={onRefresh}      title="Перезапустить" label="Заново"     icon={<Play      size={14} />} t={t} />
-      <Pill onClick={onFullscreen}   title="Развернуть"    label="Развернуть" icon={<Maximize2 size={14} />} t={t} />
-      <Pill onClick={onOpenSettings} title="Настройки"     label="Настройки"  icon={<Settings  size={14} />} t={t} />
+      <Pill onClick={onRefresh}      title="Перезапустить" label="Заново"     icon={<Play      size={14} />} t={t} compact={isMobile} />
+      <Pill onClick={onFullscreen}   title="Развернуть"    label="Экран"      icon={<MonitorSmartphone size={14} />} t={t} compact={isMobile} />
+      <Pill onClick={onOpenSettings} title="Настройки"     label="Параметры"   icon={<Settings  size={14} />} t={t} compact={isMobile} />
     </div>
 
     {/* Область предпросмотра фиксированной высоты без прыжков */}
-    <div style={{ height: 380, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, color: t.fg, position: 'relative', overflow: 'hidden', boxSizing: 'border-box' }}>
+    <div style={{ height: isMobile ? 'min(62dvh, 520px)' : 420, minHeight: isMobile ? 300 : 380, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '16px 12px' : 32, color: t.fg, position: 'relative', overflow: 'hidden', boxSizing: 'border-box' }}>
       {loading && (
         <div style={{
           position: 'absolute', inset: 0,
@@ -695,6 +695,7 @@ function scheduleHideLoading(setLoading: (v: boolean) => void) {
 
 const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) => {
   const { isDark } = useTheme();
+  const isMobile = useIsMobile();
   const t = tk(isDark);
 
   const [settingsOpen,   setSettingsOpen]   = useState(false);
@@ -776,6 +777,7 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
           onOpenSettings={() => setSettingsOpen(true)}
           t={t}
           loading={loading}
+          isMobile={isMobile}
         />
       )}
       {isFullscreen && componentData && (
