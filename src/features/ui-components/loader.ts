@@ -1,7 +1,7 @@
 import { registry } from './registry';
-import type { ComponentConfig, LoadedComponent } from '../types';
+import type { ComponentConfig, LoadedComponent } from './types';
 
-const sourceModules = import.meta.glob('../*/*.tsx', { query: '?raw', import: 'default' });
+const sourceModules = import.meta.glob('./*/*.tsx', { query: '?raw', import: 'default' });
 
 type PropValue = string | number | boolean | string[] | undefined;
 
@@ -15,13 +15,13 @@ function pickMainSourcePath(componentId: string, config: ComponentConfig): strin
   const mainFile = (config as ComponentConfig & { main?: string }).main;
 
   const preferred = [
-    mainFile && `../${componentId}/${mainFile}`,
-    `../${componentId}/${componentId}.tsx`,
-    `../${componentId}/index.tsx`,
-    `../${componentId}/index.ts`,
+    mainFile && `./${componentId}/${mainFile}`,
+    `./${componentId}/${componentId}.tsx`,
+    `./${componentId}/index.tsx`,
+    `./${componentId}/index.ts`,
   ].filter((p): p is string => !!p && !p.endsWith('undefined'));
 
-  const allTsx = Object.keys(sourceModules).filter(k => k.startsWith(`../${componentId}/`));
+  const allTsx = Object.keys(sourceModules).filter(k => k.startsWith(`./${componentId}/`));
   const candidates = [...new Set([...preferred, ...allTsx])];
 
   for (const candidate of candidates) {
