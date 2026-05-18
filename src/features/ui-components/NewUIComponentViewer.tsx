@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { useTheme } from '@/shared/contexts/ThemeContext';
 import {
   X, Minimize2, Play, RefreshCcw,
-  Settings, PanelRight, PanelRightClose, ChevronDown, MonitorSmartphone,
+  Settings, PanelRight, PanelRightClose, ChevronDown, MonitorSmartphone, Code2,
 } from 'lucide-react';
 import { loadComponent, getDefaultProps } from './loader';
 import { ComponentWrapper } from './ComponentWrapper';
@@ -648,7 +648,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & { config: ComponentConfig
   );
 };
 
-const PreviewPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; onRefresh: () => void; onFullscreen: () => void; onOpenSettings: () => void; t: T; loading: boolean; isMobile: boolean }> = ({ config, Component, componentProps, universalProps, refreshKey, isDark, componentCategory, onRefresh, onFullscreen, onOpenSettings, t, loading, isMobile }) => (
+const PreviewPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; onRefresh: () => void; onFullscreen: () => void; onOpenSettings: () => void; onToggleSource: () => void; showSource: boolean; t: T; loading: boolean; isMobile: boolean }> = ({ config, Component, componentProps, universalProps, refreshKey, isDark, componentCategory, fileContents, onRefresh, onFullscreen, onOpenSettings, onToggleSource, showSource, t, loading, isMobile }) => (
   <div style={{ borderRadius: 12, border: `1px solid ${t.outerBorder}`, background: t.outerBg, boxShadow: t.outerShadow, display: 'flex', flexDirection: 'column', width: '100%', minWidth: 0, overflow: 'hidden' }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 4 : 6, padding: isMobile ? '8px' : '8px 10px', borderBottom: `1px solid ${t.barBorder}`, background: t.barBg, flexWrap: 'nowrap', minWidth: 0 }}>
       {!isMobile && <div style={{ fontSize: 13, fontWeight: 600, color: t.fgMuted, padding: '3px 9px', borderRadius: 7, background: t.btnBg, border: `1px solid ${t.barBorder}`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200, flexShrink: 1 }}>{config.name}</div>}
@@ -656,6 +656,7 @@ const PreviewPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; o
       <Pill onClick={onRefresh}      title="Перезапустить" label=""     icon={<Play      size={14} />} t={t} compact={isMobile} />
       <Pill onClick={onFullscreen}   title="Развернуть"    label=""      icon={<MonitorSmartphone size={14} />} t={t} compact={isMobile} />
       <Pill onClick={onOpenSettings} title="Настройки"     label=""   icon={<Settings  size={14} />} t={t} compact={isMobile} />
+      <Pill onClick={onToggleSource} title="Показать исходный код" label="" icon={<Code2 size={14} />} t={t} compact={isMobile} active={showSource} />
     </div>
 
     {/* Область предпросмотра фиксированной высоты без прыжков */}
@@ -673,7 +674,7 @@ const PreviewPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; o
           Загрузка компонента…
         </div>
       )}
-      {!loading && (
+      {!loading && !showSource && (
         <ComponentRender
           Component={Component}
           componentProps={componentProps}
@@ -683,6 +684,7 @@ const PreviewPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; o
           componentCategory={componentCategory}
         />
       )}
+      {!loading && showSource && <SourceCodePanel fileContents={fileContents} t={t} maxHeight="100%" bordered={false} />}
     </div>
 
     <div style={{ padding: '6px 12px', borderTop: `1px solid ${t.barBorder}`, fontSize: 11, color: t.footerClr, display: 'flex', alignItems: 'center', justifyContent: 'space-between', userSelect: 'none', background: t.outerBg, flexShrink: 0 }}>
@@ -713,7 +715,7 @@ const SettingsPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; 
 
 
 
-const SourceCodePanel: React.FC<{ fileContents: Record<string, string>; t: T }> = ({ fileContents, t }) => {
+const SourceCodePanel: React.FC<{ fileContents: Record<string, string>; t: T; maxHeight?: number | string; bordered?: boolean }> = ({ fileContents, t, maxHeight = 320, bordered = true }) => {
   const files = Object.entries(fileContents);
   const [activeFile, setActiveFile] = useState(files[0]?.[0] ?? '');
 
@@ -728,7 +730,7 @@ const SourceCodePanel: React.FC<{ fileContents: Record<string, string>; t: T }> 
   }
 
   return (
-    <div style={{ borderTop: `1px solid ${t.barBorder}`, background: t.outerBg }}>
+    <div style={{ borderTop: bordered ? `1px solid ${t.barBorder}` : 'none', background: t.outerBg, width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', gap: 6, padding: '8px 10px', borderBottom: `1px solid ${t.barBorder}`, flexWrap: 'wrap' }}>
         {files.map(([name]) => {
           const isActive = name === activeFile;
@@ -739,7 +741,7 @@ const SourceCodePanel: React.FC<{ fileContents: Record<string, string>; t: T }> 
           );
         })}
       </div>
-      <pre style={{ margin: 0, padding: 12, maxHeight: 320, overflow: 'auto', fontSize: 12, lineHeight: 1.45, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', color: t.fg, background: t.panelBg }}>
+      <pre style={{ margin: 0, padding: 12, maxHeight, overflow: 'auto', fontSize: 12, lineHeight: 1.45, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', color: t.fg, background: t.panelBg, flex: 1 }}>
         <code>{activeCode}</code>
       </pre>
     </div>
@@ -766,6 +768,7 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
   const [universalProps, setUniversalProps] = useState<UniversalProps>(DEFAULT_UNIVERSAL_PROPS);
   const [componentData,  setComponentData]  = useState<LoadedComponentData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showSource, setShowSource] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -837,12 +840,13 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
           onRefresh={handleRefresh}
           onFullscreen={() => setIsFullscreen(true)}
           onOpenSettings={() => setSettingsOpen(true)}
+          onToggleSource={() => setShowSource(v => !v)}
+          showSource={showSource}
           t={t}
           loading={loading}
           isMobile={isMobile}
         />
       )}
-      <SourceCodePanel fileContents={effectiveData.fileContents} t={t} />
       {isFullscreen && componentData && (
         <FullscreenModal
           {...shared}
