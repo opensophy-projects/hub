@@ -175,6 +175,7 @@ export default function Iridescence({
   return <div ref={ctnDom} className="w-full h-full" {...rest} />;
 }
 
+
 ```
 
 ## Пропсы
