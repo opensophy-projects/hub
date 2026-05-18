@@ -1,7 +1,7 @@
 import { registry } from './registry';
 import type { ComponentConfig, LoadedComponent } from '../types';
 
-const sourceModules = import.meta.glob('../*/*.tsx', { query: '?raw', import: 'default' });
+const sourceModules = import.meta.glob('./**/*.{ts,tsx}', { query: '?raw', import: 'default' });
 
 type PropValue = string | number | boolean | string[] | undefined;
 
@@ -15,14 +15,14 @@ function pickMainSourcePath(componentId: string, config: ComponentConfig): strin
   const mainFile = (config as ComponentConfig & { main?: string }).main;
 
   const preferred = [
-    mainFile && `../${componentId}/${mainFile}`,
-    `../${componentId}/${componentId}.tsx`,
-    `../${componentId}/index.tsx`,
-    `../${componentId}/index.ts`,
+    mainFile && `./${componentId}/${mainFile}`,
+    `./${componentId}/${componentId}.tsx`,
+    `./${componentId}/index.tsx`,
+    `./${componentId}/index.ts`,
   ].filter((p): p is string => !!p && !p.endsWith('undefined'));
 
-  const allTsx = Object.keys(sourceModules).filter(k => k.startsWith(`../${componentId}/`));
-  const candidates = [...new Set([...preferred, ...allTsx])];
+  const allSourceFiles = Object.keys(sourceModules).filter(k => k.startsWith(`./${componentId}/`));
+  const candidates = [...new Set([...preferred, ...allSourceFiles])];
 
   for (const candidate of candidates) {
     if (sourceModules[candidate]) return candidate;
@@ -33,14 +33,22 @@ function pickMainSourcePath(componentId: string, config: ComponentConfig): strin
 
 async function loadFileContents(componentId: string, config: ComponentConfig): Promise<Record<string, string>> {
   const sourcePath = pickMainSourcePath(componentId, config);
-  if (!sourcePath) return {};
+  const allSourcePaths = Object.keys(sourceModules).filter(k => k.startsWith(`./${componentId}/`));
+  if (!sourcePath && allSourcePaths.length === 0) return {};
+
+  const orderedPaths = sourcePath
+    ? [sourcePath, ...allSourcePaths.filter(path => path !== sourcePath)]
+    : allSourcePaths;
 
   try {
-    const source = await sourceModules[sourcePath]() as string;
-    const fileName = sourcePath.split('/').at(-1) ?? `${componentId}.tsx`;
-    return { [fileName]: source };
+    const entries = await Promise.all(orderedPaths.map(async (path) => {
+      const source = await sourceModules[path]() as string;
+      const relativeName = path.replace(`./${componentId}/`, '');
+      return [relativeName, source] as const;
+    }));
+    return Object.fromEntries(entries);
   } catch (error) {
-    console.warn('[loader] Не удалось загрузить исходник компонента:', sourcePath, error);
+    console.warn('[loader] Не удалось загрузить исходник компонента:', componentId, error);
     return {};
   }
 }
