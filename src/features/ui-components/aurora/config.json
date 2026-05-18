@@ -1,0 +1,54 @@
+{
+  "id": "aurora",
+  "name": "Aurora",
+  "description": "Анимированный фоновый UI-компонент.",
+  "category": "backgrounds",
+  "main": "aurora.tsx",
+  "props": [
+    {
+      "name": "speed",
+      "type": "number",
+      "default": 1,
+      "description": "speed",
+      "control": "number"
+    },
+    {
+      "name": "amplitude",
+      "type": "number",
+      "default": 1,
+      "description": "amplitude",
+      "control": "number"
+    },
+    {
+      "name": "blend",
+      "type": "number",
+      "default": 0.5,
+      "description": "blend",
+      "control": "number"
+    },
+    {
+      "name": "colorStops",
+      "type": "array",
+      "default": [
+        "#5227FF",
+        "#7cff67",
+        "#5227FF"
+      ],
+      "description": "colorStops",
+      "control": "text"
+    }
+  ],
+  "specificProps": [
+    "speed",
+    "amplitude",
+    "blend",
+    "colorStops"
+  ],
+  "tags": [
+    "background",
+    "animation",
+    "react"
+  ],
+  "author": "veilosophy",
+  "version": "1.0.0"
+}

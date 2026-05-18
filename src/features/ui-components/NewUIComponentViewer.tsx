@@ -626,7 +626,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & { config: ComponentConfig
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', flexShrink: 0, borderBottom: `1px solid ${t.barBorder}`, background: t.barBg }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: t.fgMuted, padding: '3px 9px', borderRadius: 7, background: t.btnBg, border: `1px solid ${t.barBorder}`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160, flexShrink: 1 }}>{config.name}</div>
         <div style={{ flex: 1 }} />
-        <Pill onClick={onRefresh} title="Перезапустить" label="Заново"   icon={<Play       size={14} />} t={t} />
+        <Pill onClick={onRefresh} title="Перезапустить" label=""   icon={<Play       size={14} />} t={t} />
         <Pill onClick={onReset}   title="Сбросить"      label="Сбросить" icon={<RefreshCcw size={14} />} t={t} />
         {!isMobile && (<><Divider t={t} /><Pill onClick={() => setPanelOpen(v => !v)} title={panelOpen ? 'Скрыть панель' : 'Показать панель'} label={panelOpen ? 'Скрыть' : 'Панель'} icon={panelOpen ? <PanelRightClose size={14} /> : <PanelRight size={14} />} t={t} active={panelOpen} /></>)}
         <Pill onClick={onClose} title="Свернуть (Esc)" label="Свернуть" icon={<Minimize2 size={14} />} t={t} />
@@ -652,9 +652,9 @@ const PreviewPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; o
     <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 4 : 6, padding: isMobile ? '8px' : '8px 10px', borderBottom: `1px solid ${t.barBorder}`, background: t.barBg, flexWrap: 'nowrap', minWidth: 0 }}>
       {!isMobile && <div style={{ fontSize: 13, fontWeight: 600, color: t.fgMuted, padding: '3px 9px', borderRadius: 7, background: t.btnBg, border: `1px solid ${t.barBorder}`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200, flexShrink: 1 }}>{config.name}</div>}
       <div style={{ flex: 1 }} />
-      <Pill onClick={onRefresh}      title="Перезапустить" label={isMobile ? '' : 'Заново'}     icon={<Play      size={14} />} t={t} compact={isMobile} />
-      <Pill onClick={onFullscreen}   title="Развернуть"    label={isMobile ? '' : 'Экран'}      icon={<MonitorSmartphone size={14} />} t={t} compact={isMobile} />
-      <Pill onClick={onOpenSettings} title="Настройки"     label={isMobile ? '' : 'Параметры'}   icon={<Settings  size={14} />} t={t} compact={isMobile} />
+      <Pill onClick={onRefresh}      title="Перезапустить" label=""     icon={<Play      size={14} />} t={t} compact={isMobile} />
+      <Pill onClick={onFullscreen}   title="Развернуть"    label=""      icon={<MonitorSmartphone size={14} />} t={t} compact={isMobile} />
+      <Pill onClick={onOpenSettings} title="Настройки"     label=""   icon={<Settings  size={14} />} t={t} compact={isMobile} />
     </div>
 
     {/* Область предпросмотра фиксированной высоты без прыжков */}
@@ -701,7 +701,7 @@ const SettingsPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; 
       </div>
       <SettingsContent activeTab={activeTab} onTabSelect={setActiveTab} config={config} componentProps={props.componentProps} universalProps={props.universalProps} onPropChange={props.onPropChange} onUniversalChange={props.onUniversalPropChange} t={t} />
       <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', borderTop: `1px solid ${t.barBorder}`, background: t.barBg, flexWrap: 'wrap', rowGap: 6 }}>
-        <Pill onClick={onRefresh} title="Перезапустить" label="Заново"   icon={<Play       size={14} />} t={t} />
+        <Pill onClick={onRefresh} title="Перезапустить" label=""   icon={<Play       size={14} />} t={t} />
         <Pill onClick={onReset}   title="Сбросить всё"  label="Сбросить" icon={<RefreshCcw size={14} />} t={t} />
         <div style={{ flex: 1 }} />
         <Pill onClick={onClose}   title="Закрыть"       label="Закрыть"  icon={<X          size={14} />} t={t} />

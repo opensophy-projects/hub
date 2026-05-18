@@ -1,0 +1,122 @@
+{
+  "id": "color-bends",
+  "name": "Color Bends",
+  "description": "Анимированный фоновый UI-компонент.",
+  "category": "backgrounds",
+  "main": "color-bends.tsx",
+  "props": [
+    {
+      "name": "rotation",
+      "type": "number",
+      "default": 0,
+      "description": "rotation",
+      "control": "number"
+    },
+    {
+      "name": "speed",
+      "type": "number",
+      "default": 1,
+      "description": "speed",
+      "control": "number"
+    },
+    {
+      "name": "transparent",
+      "type": "boolean",
+      "default": true,
+      "description": "transparent",
+      "control": "boolean"
+    },
+    {
+      "name": "autoRotate",
+      "type": "number",
+      "default": 0,
+      "description": "autoRotate",
+      "control": "number"
+    },
+    {
+      "name": "scale",
+      "type": "number",
+      "default": 1,
+      "description": "scale",
+      "control": "number"
+    },
+    {
+      "name": "frequency",
+      "type": "number",
+      "default": 1,
+      "description": "frequency",
+      "control": "number"
+    },
+    {
+      "name": "warpStrength",
+      "type": "number",
+      "default": 1,
+      "description": "warpStrength",
+      "control": "number"
+    },
+    {
+      "name": "mouseInfluence",
+      "type": "number",
+      "default": 0,
+      "description": "mouseInfluence",
+      "control": "number"
+    },
+    {
+      "name": "parallax",
+      "type": "number",
+      "default": 0,
+      "description": "parallax",
+      "control": "number"
+    },
+    {
+      "name": "noise",
+      "type": "number",
+      "default": 0,
+      "description": "noise",
+      "control": "number"
+    },
+    {
+      "name": "iterations",
+      "type": "number",
+      "default": 4,
+      "description": "iterations",
+      "control": "number"
+    },
+    {
+      "name": "intensity",
+      "type": "number",
+      "default": 1,
+      "description": "intensity",
+      "control": "number"
+    },
+    {
+      "name": "bandWidth",
+      "type": "number",
+      "default": 1,
+      "description": "bandWidth",
+      "control": "number"
+    }
+  ],
+  "specificProps": [
+    "rotation",
+    "speed",
+    "transparent",
+    "autoRotate",
+    "scale",
+    "frequency",
+    "warpStrength",
+    "mouseInfluence",
+    "parallax",
+    "noise",
+    "iterations",
+    "intensity",
+    "bandWidth"
+  ],
+  "tags": [
+    "background",
+    "animation",
+    "react"
+  ],
+  "author": "veilosophy",
+  "version": "1.0.0"
+}

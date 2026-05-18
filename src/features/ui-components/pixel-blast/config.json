@@ -1,0 +1,178 @@
+{
+  "id": "pixel-blast",
+  "name": "Pixel Blast",
+  "description": "Анимированный фоновый UI-компонент.",
+  "category": "backgrounds",
+  "main": "pixel-blast.tsx",
+  "props": [
+    {
+      "name": "variant",
+      "type": "string",
+      "default": "square",
+      "description": "variant",
+      "control": "text"
+    },
+    {
+      "name": "pixelSize",
+      "type": "number",
+      "default": 8,
+      "description": "pixelSize",
+      "control": "number"
+    },
+    {
+      "name": "color",
+      "type": "string",
+      "default": "#ffffff",
+      "description": "color",
+      "control": "text"
+    },
+    {
+      "name": "antialias",
+      "type": "boolean",
+      "default": false,
+      "description": "antialias",
+      "control": "boolean"
+    },
+    {
+      "name": "patternScale",
+      "type": "number",
+      "default": 1,
+      "description": "patternScale",
+      "control": "number"
+    },
+    {
+      "name": "patternDensity",
+      "type": "number",
+      "default": 1,
+      "description": "patternDensity",
+      "control": "number"
+    },
+    {
+      "name": "liquid",
+      "type": "boolean",
+      "default": false,
+      "description": "liquid",
+      "control": "boolean"
+    },
+    {
+      "name": "liquidStrength",
+      "type": "number",
+      "default": 0.5,
+      "description": "liquidStrength",
+      "control": "number"
+    },
+    {
+      "name": "liquidRadius",
+      "type": "number",
+      "default": 0.5,
+      "description": "liquidRadius",
+      "control": "number"
+    },
+    {
+      "name": "pixelSizeJitter",
+      "type": "number",
+      "default": 0,
+      "description": "pixelSizeJitter",
+      "control": "number"
+    },
+    {
+      "name": "enableRipples",
+      "type": "boolean",
+      "default": true,
+      "description": "enableRipples",
+      "control": "boolean"
+    },
+    {
+      "name": "rippleIntensityScale",
+      "type": "number",
+      "default": 1,
+      "description": "rippleIntensityScale",
+      "control": "number"
+    },
+    {
+      "name": "rippleThickness",
+      "type": "number",
+      "default": 1,
+      "description": "rippleThickness",
+      "control": "number"
+    },
+    {
+      "name": "rippleSpeed",
+      "type": "number",
+      "default": 1,
+      "description": "rippleSpeed",
+      "control": "number"
+    },
+    {
+      "name": "liquidWobbleSpeed",
+      "type": "number",
+      "default": 1,
+      "description": "liquidWobbleSpeed",
+      "control": "number"
+    },
+    {
+      "name": "autoPauseOffscreen",
+      "type": "boolean",
+      "default": true,
+      "description": "autoPauseOffscreen",
+      "control": "boolean"
+    },
+    {
+      "name": "speed",
+      "type": "number",
+      "default": 1,
+      "description": "speed",
+      "control": "number"
+    },
+    {
+      "name": "transparent",
+      "type": "boolean",
+      "default": true,
+      "description": "transparent",
+      "control": "boolean"
+    },
+    {
+      "name": "edgeFade",
+      "type": "number",
+      "default": 0,
+      "description": "edgeFade",
+      "control": "number"
+    },
+    {
+      "name": "noiseAmount",
+      "type": "number",
+      "default": 0,
+      "description": "noiseAmount",
+      "control": "number"
+    }
+  ],
+  "specificProps": [
+    "variant",
+    "pixelSize",
+    "color",
+    "antialias",
+    "patternScale",
+    "patternDensity",
+    "liquid",
+    "liquidStrength",
+    "liquidRadius",
+    "pixelSizeJitter",
+    "enableRipples",
+    "rippleIntensityScale",
+    "rippleThickness",
+    "rippleSpeed",
+    "liquidWobbleSpeed",
+    "autoPauseOffscreen",
+    "speed",
+    "transparent",
+    "edgeFade",
+    "noiseAmount"
+  ],
+  "tags": [
+    "background",
+    "animation",
+    "react"
+  ],
+  "author": "veilosophy",
+  "version": "1.0.0"
+}

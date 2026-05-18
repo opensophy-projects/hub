@@ -1,0 +1,82 @@
+{
+  "id": "prismatic-burst",
+  "name": "Prismatic Burst",
+  "description": "Анимированный фоновый UI-компонент.",
+  "category": "backgrounds",
+  "main": "prismatic-burst.tsx",
+  "props": [
+    {
+      "name": "intensity",
+      "type": "number",
+      "default": 1,
+      "description": "intensity",
+      "control": "number"
+    },
+    {
+      "name": "speed",
+      "type": "number",
+      "default": 1,
+      "description": "speed",
+      "control": "number"
+    },
+    {
+      "name": "animationType",
+      "type": "string",
+      "default": "rotate",
+      "description": "animationType",
+      "control": "text"
+    },
+    {
+      "name": "distort",
+      "type": "number",
+      "default": 0,
+      "description": "distort",
+      "control": "number"
+    },
+    {
+      "name": "paused",
+      "type": "boolean",
+      "default": false,
+      "description": "paused",
+      "control": "boolean"
+    },
+    {
+      "name": "hoverDampness",
+      "type": "number",
+      "default": 0.1,
+      "description": "hoverDampness",
+      "control": "number"
+    },
+    {
+      "name": "rayCount",
+      "type": "number",
+      "default": 24,
+      "description": "rayCount",
+      "control": "number"
+    },
+    {
+      "name": "mixBlendMode",
+      "type": "string",
+      "default": "screen",
+      "description": "mixBlendMode",
+      "control": "text"
+    }
+  ],
+  "specificProps": [
+    "intensity",
+    "speed",
+    "animationType",
+    "distort",
+    "paused",
+    "hoverDampness",
+    "rayCount",
+    "mixBlendMode"
+  ],
+  "tags": [
+    "background",
+    "animation",
+    "react"
+  ],
+  "author": "veilosophy",
+  "version": "1.0.0"
+}

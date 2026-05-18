@@ -1,0 +1,98 @@
+{
+  "id": "eye-sauron",
+  "name": "Eye Sauron",
+  "description": "Анимированный фоновый UI-компонент.",
+  "category": "backgrounds",
+  "main": "eye-sauron.tsx",
+  "props": [
+    {
+      "name": "eyeColor",
+      "type": "string",
+      "default": "#ff4500",
+      "description": "eyeColor",
+      "control": "text"
+    },
+    {
+      "name": "intensity",
+      "type": "number",
+      "default": 1,
+      "description": "intensity",
+      "control": "number"
+    },
+    {
+      "name": "pupilSize",
+      "type": "number",
+      "default": 0.35,
+      "description": "pupilSize",
+      "control": "number"
+    },
+    {
+      "name": "irisWidth",
+      "type": "number",
+      "default": 0.25,
+      "description": "irisWidth",
+      "control": "number"
+    },
+    {
+      "name": "glowIntensity",
+      "type": "number",
+      "default": 1,
+      "description": "glowIntensity",
+      "control": "number"
+    },
+    {
+      "name": "scale",
+      "type": "number",
+      "default": 1,
+      "description": "scale",
+      "control": "number"
+    },
+    {
+      "name": "noiseScale",
+      "type": "number",
+      "default": 1,
+      "description": "noiseScale",
+      "control": "number"
+    },
+    {
+      "name": "pupilFollow",
+      "type": "number",
+      "default": 1,
+      "description": "pupilFollow",
+      "control": "number"
+    },
+    {
+      "name": "flameSpeed",
+      "type": "number",
+      "default": 1,
+      "description": "flameSpeed",
+      "control": "number"
+    },
+    {
+      "name": "backgroundColor",
+      "type": "string",
+      "default": "#000000",
+      "description": "backgroundColor",
+      "control": "text"
+    }
+  ],
+  "specificProps": [
+    "eyeColor",
+    "intensity",
+    "pupilSize",
+    "irisWidth",
+    "glowIntensity",
+    "scale",
+    "noiseScale",
+    "pupilFollow",
+    "flameSpeed",
+    "backgroundColor"
+  ],
+  "tags": [
+    "background",
+    "animation",
+    "react"
+  ],
+  "author": "veilosophy",
+  "version": "1.0.0"
+}

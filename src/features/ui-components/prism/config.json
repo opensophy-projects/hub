@@ -1,0 +1,122 @@
+{
+  "id": "prism",
+  "name": "Prism",
+  "description": "Анимированный фоновый UI-компонент.",
+  "category": "backgrounds",
+  "main": "prism.tsx",
+  "props": [
+    {
+      "name": "height",
+      "type": "number",
+      "default": 3.5,
+      "description": "height",
+      "control": "number"
+    },
+    {
+      "name": "baseWidth",
+      "type": "number",
+      "default": 5.5,
+      "description": "baseWidth",
+      "control": "number"
+    },
+    {
+      "name": "animationType",
+      "type": "string",
+      "default": "rotate",
+      "description": "animationType",
+      "control": "text"
+    },
+    {
+      "name": "glow",
+      "type": "number",
+      "default": 1,
+      "description": "glow",
+      "control": "number"
+    },
+    {
+      "name": "noise",
+      "type": "number",
+      "default": 0.5,
+      "description": "noise",
+      "control": "number"
+    },
+    {
+      "name": "scale",
+      "type": "number",
+      "default": 3.6,
+      "description": "scale",
+      "control": "number"
+    },
+    {
+      "name": "hueShift",
+      "type": "number",
+      "default": 0,
+      "description": "hueShift",
+      "control": "number"
+    },
+    {
+      "name": "colorFrequency",
+      "type": "number",
+      "default": 1,
+      "description": "colorFrequency",
+      "control": "number"
+    },
+    {
+      "name": "hoverStrength",
+      "type": "number",
+      "default": 2,
+      "description": "hoverStrength",
+      "control": "number"
+    },
+    {
+      "name": "inertia",
+      "type": "number",
+      "default": 0.05,
+      "description": "inertia",
+      "control": "number"
+    },
+    {
+      "name": "bloom",
+      "type": "number",
+      "default": 1,
+      "description": "bloom",
+      "control": "number"
+    },
+    {
+      "name": "suspendWhenOffscreen",
+      "type": "boolean",
+      "default": false,
+      "description": "suspendWhenOffscreen",
+      "control": "boolean"
+    },
+    {
+      "name": "timeScale",
+      "type": "number",
+      "default": 0.5,
+      "description": "timeScale",
+      "control": "number"
+    }
+  ],
+  "specificProps": [
+    "height",
+    "baseWidth",
+    "animationType",
+    "glow",
+    "noise",
+    "scale",
+    "hueShift",
+    "colorFrequency",
+    "hoverStrength",
+    "inertia",
+    "bloom",
+    "suspendWhenOffscreen",
+    "timeScale"
+  ],
+  "tags": [
+    "background",
+    "animation",
+    "react"
+  ],
+  "author": "veilosophy",
+  "version": "1.0.0"
+}

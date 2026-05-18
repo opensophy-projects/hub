@@ -1,0 +1,58 @@
+{
+  "id": "silk",
+  "name": "Silk",
+  "description": "Анимированный фоновый UI-компонент.",
+  "category": "backgrounds",
+  "main": "silk.tsx",
+  "props": [
+    {
+      "name": "speed",
+      "type": "number",
+      "default": 5,
+      "description": "speed",
+      "control": "number"
+    },
+    {
+      "name": "scale",
+      "type": "number",
+      "default": 1,
+      "description": "scale",
+      "control": "number"
+    },
+    {
+      "name": "color",
+      "type": "string",
+      "default": "#7B7481",
+      "description": "color",
+      "control": "text"
+    },
+    {
+      "name": "noiseIntensity",
+      "type": "number",
+      "default": 1.5,
+      "description": "noiseIntensity",
+      "control": "number"
+    },
+    {
+      "name": "rotation",
+      "type": "number",
+      "default": 0,
+      "description": "rotation",
+      "control": "number"
+    }
+  ],
+  "specificProps": [
+    "speed",
+    "scale",
+    "color",
+    "noiseIntensity",
+    "rotation"
+  ],
+  "tags": [
+    "background",
+    "animation",
+    "react"
+  ],
+  "author": "veilosophy",
+  "version": "1.0.0"
+}
