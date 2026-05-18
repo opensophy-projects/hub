@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { useTheme } from '@/shared/contexts/ThemeContext';
 import {
   X, Minimize2, Play, RefreshCcw,
-  Settings, PanelRight, PanelRightClose, ChevronDown, MonitorSmartphone,
+  Settings, PanelRight, PanelRightClose, ChevronDown,
 } from 'lucide-react';
 import { loadComponent, getDefaultProps } from './loader';
 import { ComponentWrapper } from './ComponentWrapper';
@@ -17,6 +17,7 @@ type PropValue = string | number | boolean | string[] | undefined;
 type ComponentPropsMap = Record<string, PropValue>;
 type AnyComponent = React.ComponentType<Record<string, PropValue>>;
 type TabType = 'universal' | 'specific' | 'source';
+type SettingsAction = 'run' | 'reset' | 'source' | 'hide' | 'collapse';
 
 interface LoadedComponentData {
   config: ComponentConfig;
@@ -648,14 +649,11 @@ const FullscreenModal: React.FC<ComponentRenderProps & { config: ComponentConfig
   );
 };
 
-const PreviewPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; onRefresh: () => void; onFullscreen: () => void; onOpenSettings: () => void; t: T; loading: boolean; isMobile: boolean }> = ({ config, Component, componentProps, universalProps, refreshKey, isDark, componentCategory, onRefresh, onFullscreen, onOpenSettings, t, loading, isMobile }) => (
+const PreviewPanel: React.FC<ComponentRenderProps & { onOpenSettings: () => void; t: T; loading: boolean; isMobile: boolean }> = ({ Component, componentProps, universalProps, refreshKey, isDark, componentCategory, onOpenSettings, t, loading, isMobile }) => (
   <div style={{ borderRadius: 12, border: `1px solid ${t.outerBorder}`, background: t.outerBg, boxShadow: t.outerShadow, display: 'flex', flexDirection: 'column', width: '100%', minWidth: 0, overflow: 'hidden' }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 4 : 6, padding: isMobile ? '8px' : '8px 10px', borderBottom: `1px solid ${t.barBorder}`, background: t.barBg, flexWrap: 'nowrap', minWidth: 0 }}>
-      {!isMobile && <div style={{ fontSize: 13, fontWeight: 600, color: t.fgMuted, padding: '3px 9px', borderRadius: 7, background: t.btnBg, border: `1px solid ${t.barBorder}`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200, flexShrink: 1 }}>{config.name}</div>}
       <div style={{ flex: 1 }} />
-      <Pill onClick={onRefresh}      title="Перезапустить" label=""     icon={<Play      size={14} />} t={t} compact={isMobile} />
-      <Pill onClick={onFullscreen}   title="Развернуть"    label=""      icon={<MonitorSmartphone size={14} />} t={t} compact={isMobile} />
-      <Pill onClick={onOpenSettings} title="Настройки"     label=""   icon={<Settings  size={14} />} t={t} compact={isMobile} />
+      <Pill onClick={onOpenSettings} title="Открыть меню настроек" label="" icon={<Settings size={14} />} t={t} compact={isMobile} />
     </div>
 
     {/* Область предпросмотра фиксированной высоты без прыжков */}
@@ -687,30 +685,46 @@ const PreviewPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; o
 
     <div style={{ padding: '6px 12px', borderTop: `1px solid ${t.barBorder}`, fontSize: 11, color: t.footerClr, display: 'flex', alignItems: 'center', justifyContent: 'space-between', userSelect: 'none', background: t.outerBg, flexShrink: 0 }}>
       <span>Компонент</span>
-      <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 10, opacity: 0.7 }}>{config.id}</span>
     </div>
   </div>
 );
 
-const SettingsPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; onClose: () => void; onPropChange: (name: string, v: PropValue) => void; onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void; onRefresh: () => void; onReset: () => void; t: T }> = (props) => {
+const SettingsPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; onClose: () => void; onPropChange: (name: string, v: PropValue) => void; onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void; onRefresh: () => void; onReset: () => void; onToggleSource: () => void; sourceVisible: boolean; t: T }> = (props) => {
   const { isDark, config, onClose, onRefresh, onReset, t } = props;
   const [activeTab, setActiveTab] = useState<TabType>('universal');
+
+  const menuItems: Array<{ id: SettingsAction; label: string; icon: React.ReactNode }> = [
+    { id: 'run', label: 'Запуск анимации', icon: <Play size={14} /> },
+    { id: 'reset', label: 'Сбросить настройки', icon: <RefreshCcw size={14} /> },
+    { id: 'source', label: props.sourceVisible ? 'Скрыть код' : 'Посмотреть код', icon: <PanelRight size={14} /> },
+    { id: 'hide', label: 'Скрыть меню настроек', icon: <PanelRightClose size={14} /> },
+    { id: 'collapse', label: 'Свернуть меню', icon: <X size={14} /> },
+  ];
+
+  const handleMenuAction = (action: SettingsAction) => {
+    if (action === 'run') onRefresh();
+    if (action === 'reset') onReset();
+    if (action === 'source') props.onToggleSource();
+    if (action === 'hide' || action === 'collapse') onClose();
+  };
+
   return (
     <div style={{ borderRadius: 12, border: `1px solid ${t.outerBorder}`, background: t.outerBg, boxShadow: t.outerShadow, display: 'flex', flexDirection: 'column', maxHeight: 'calc(100dvh - 3rem)', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderBottom: `1px solid ${t.barBorder}`, background: t.barBg, overflowX: 'auto' }}>
+        {menuItems.map((item) => (
+          <button key={item.id} onClick={() => handleMenuAction(item.id)} style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 999, border: `1px solid ${t.btnBdr}`, background: t.btnBg, color: t.btnClr, padding: '7px 11px', fontSize: 11, whiteSpace: 'nowrap', cursor: 'pointer' }}>
+            {item.icon}
+            {item.label}
+          </button>
+        ))}
+      </div>
       <div style={{ height: 220, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, borderBottom: `1px solid ${t.barBorder}`, color: t.fg, overflow: 'hidden', boxSizing: 'border-box' }}>
         <ComponentRender Component={props.Component} componentProps={props.componentProps} universalProps={props.universalProps} refreshKey={props.refreshKey} isDark={isDark} componentCategory={props.componentCategory} />
       </div>
       <SettingsContent activeTab={activeTab} onTabSelect={setActiveTab} config={config} componentProps={props.componentProps} universalProps={props.universalProps} onPropChange={props.onPropChange} onUniversalChange={props.onUniversalPropChange} t={t} />
-      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', borderTop: `1px solid ${t.barBorder}`, background: t.barBg, flexWrap: 'wrap', rowGap: 6 }}>
-        <Pill onClick={onRefresh} title="Перезапустить" label=""   icon={<Play       size={14} />} t={t} />
-        <Pill onClick={onReset}   title="Сбросить всё"  label="Сбросить" icon={<RefreshCcw size={14} />} t={t} />
-        <div style={{ flex: 1 }} />
-        <Pill onClick={onClose}   title="Закрыть"       label="Закрыть"  icon={<X          size={14} />} t={t} />
-      </div>
     </div>
   );
 };
-
 
 
 const SourceCodePanel: React.FC<{ fileContents: Record<string, string>; t: T }> = ({ fileContents, t }) => {
@@ -718,7 +732,13 @@ const SourceCodePanel: React.FC<{ fileContents: Record<string, string>; t: T }> 
   const [activeFile, setActiveFile] = useState(files[0]?.[0] ?? '');
 
   useEffect(() => {
-    if (!activeFile && files[0]?.[0]) setActiveFile(files[0][0]);
+    if (!files.length) {
+      setActiveFile('');
+      return;
+    }
+    if (!activeFile || !files.some(([name]) => name === activeFile)) {
+      setActiveFile(files[0][0]);
+    }
   }, [activeFile, files]);
 
   const activeCode = files.find(([name]) => name === activeFile)?.[1] ?? '';
@@ -739,7 +759,7 @@ const SourceCodePanel: React.FC<{ fileContents: Record<string, string>; t: T }> 
           );
         })}
       </div>
-      <pre style={{ margin: 0, padding: 12, maxHeight: 320, overflow: 'auto', fontSize: 12, lineHeight: 1.45, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', color: t.fg, background: t.panelBg }}>
+      <pre style={{ margin: 0, padding: 12, maxHeight: 320, overflow: 'auto', fontSize: 12, lineHeight: 1.45, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', color: t.fg, background: t.panelBg, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', tabSize: 2 }}>
         <code>{activeCode}</code>
       </pre>
     </div>
@@ -760,6 +780,7 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
   const t = tk(isDark);
 
   const [settingsOpen,   setSettingsOpen]   = useState(false);
+  const [sourceVisible,  setSourceVisible]  = useState(true);
   const [isFullscreen,   setIsFullscreen]   = useState(false);
   const [refreshKey,     setRefreshKey]     = useState(0);
   const [componentProps, setComponentProps] = useState<ComponentPropsMap>({});
@@ -828,21 +849,20 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
           onUniversalPropChange={handleUniversalChange}
           onRefresh={handleRefresh}
           onReset={handleReset}
+          onToggleSource={() => setSourceVisible(v => !v)}
+          sourceVisible={sourceVisible}
           t={t}
         />
       ) : (
         <PreviewPanel
           {...shared}
-          config={effectiveData.config}
-          onRefresh={handleRefresh}
-          onFullscreen={() => setIsFullscreen(true)}
-          onOpenSettings={() => setSettingsOpen(true)}
+          onOpenSettings={() => setIsFullscreen(true)}
           t={t}
           loading={loading}
           isMobile={isMobile}
         />
       )}
-      <SourceCodePanel fileContents={effectiveData.fileContents} t={t} />
+      {sourceVisible && <SourceCodePanel fileContents={effectiveData.fileContents} t={t} />}
       {isFullscreen && componentData && (
         <FullscreenModal
           {...shared}
