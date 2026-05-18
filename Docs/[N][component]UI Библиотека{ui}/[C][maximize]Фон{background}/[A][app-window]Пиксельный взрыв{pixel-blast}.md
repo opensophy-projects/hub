@@ -1,3 +1,41 @@
+---
+title: "Пиксельный взрыв"
+description: UI Компонент. Анимированный фоновый эффект пиксельный взрыв.
+date: 2026-05-18
+tags: разработка, ui, ui-компоненты
+keywords: react background, animated background, pixel-blast, shader
+robots: index, follow
+lang: ru
+---
+
+[uic:pixel-blast]
+
+Декоративный фон **Пиксельный взрыв** для hero-блоков, секций и лендингов. Оформлен в едином формате как страница «Темная вуаль»: с зависимостями, использованием, рекомендациями и полным исходным кодом.
+
+---
+
+## Стек и зависимости
+
+- `react`
+- Дополнительные зависимости берутся из исходного файла компонента (см. код ниже).
+
+## Использование
+
+```tsx
+import PixelBlast from '@/features/ui-components/pixel-blast/pixel-blast';
+
+<div style={{ width: '100%', height: '420px' }}>
+  <PixelBlast />
+</div>
+```
+
+:::note
+Компонент занимает весь размер родительского контейнера. Задайте контейнеру явные размеры (`height`, `min-height` и т.д.).
+:::
+
+## Оригинальный код
+
+```tsx
 import { EffectComposer, EffectPass, RenderPass } from 'postprocessing';
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
@@ -698,3 +736,9 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
 };
 
 export default PixelBlast;
+
+```
+
+## Пропсы
+
+Список и дефолтные значения пропсов задаются прямо в исходнике компонента (см. секцию «Оригинальный код") и/или в `config.json` этого компонента в UI viewer.

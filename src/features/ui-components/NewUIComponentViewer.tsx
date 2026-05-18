@@ -16,7 +16,7 @@ import { makeTokens, themed } from '@/shared/tokens/theme';
 type PropValue = string | number | boolean | string[] | undefined;
 type ComponentPropsMap = Record<string, PropValue>;
 type AnyComponent = React.ComponentType<Record<string, PropValue>>;
-type TabType = 'universal' | 'specific';
+type TabType = 'universal' | 'specific' | 'source';
 
 interface LoadedComponentData {
   config: ComponentConfig;
@@ -544,6 +544,7 @@ interface ComponentRenderProps {
   refreshKey: number;
   isDark: boolean;
   componentCategory?: string;
+  fileContents: Record<string, string>;
 }
 
 const ComponentRender: React.FC<ComponentRenderProps> = ({ Component, componentProps, universalProps, refreshKey, isDark, componentCategory }) => {
@@ -710,6 +711,40 @@ const SettingsPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; 
   );
 };
 
+
+
+const SourceCodePanel: React.FC<{ fileContents: Record<string, string>; t: T }> = ({ fileContents, t }) => {
+  const files = Object.entries(fileContents);
+  const [activeFile, setActiveFile] = useState(files[0]?.[0] ?? '');
+
+  useEffect(() => {
+    if (!activeFile && files[0]?.[0]) setActiveFile(files[0][0]);
+  }, [activeFile, files]);
+
+  const activeCode = files.find(([name]) => name === activeFile)?.[1] ?? '';
+
+  if (files.length === 0) {
+    return <div style={{ padding: 12, fontSize: 12, color: t.fgMuted }}>Исходный код компонента недоступен.</div>;
+  }
+
+  return (
+    <div style={{ borderTop: `1px solid ${t.barBorder}`, background: t.outerBg }}>
+      <div style={{ display: 'flex', gap: 6, padding: '8px 10px', borderBottom: `1px solid ${t.barBorder}`, flexWrap: 'wrap' }}>
+        {files.map(([name]) => {
+          const isActive = name === activeFile;
+          return (
+            <button key={name} onClick={() => setActiveFile(name)} style={{ border: `1px solid ${isActive ? t.tabActBdr : t.btnBdr}`, background: isActive ? t.tabActBg : t.btnBg, color: isActive ? t.tabActClr : t.btnClr, borderRadius: 6, padding: '4px 8px', fontSize: 11, fontFamily: 'ui-monospace, monospace', cursor: 'pointer' }}>
+              {name}
+            </button>
+          );
+        })}
+      </div>
+      <pre style={{ margin: 0, padding: 12, maxHeight: 320, overflow: 'auto', fontSize: 12, lineHeight: 1.45, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', color: t.fg, background: t.panelBg }}>
+        <code>{activeCode}</code>
+      </pre>
+    </div>
+  );
+};
 // ─── Вспомогательная функция для скрытия оверлея после двух rAF ──────────────
 function scheduleHideLoading(setLoading: (v: boolean) => void) {
   requestAnimationFrame(() => {
@@ -779,6 +814,7 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
     refreshKey,
     isDark,
     componentCategory: effectiveData.config.category,
+    fileContents: effectiveData.fileContents,
   };
 
   return (
@@ -806,6 +842,7 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
           isMobile={isMobile}
         />
       )}
+      <SourceCodePanel fileContents={effectiveData.fileContents} t={t} />
       {isFullscreen && componentData && (
         <FullscreenModal
           {...shared}

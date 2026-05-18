@@ -1,3 +1,41 @@
+---
+title: "Шелк"
+description: UI Компонент. Анимированный фоновый эффект шелк.
+date: 2026-05-18
+tags: разработка, ui, ui-компоненты
+keywords: react background, animated background, silk, shader
+robots: index, follow
+lang: ru
+---
+
+[uic:silk]
+
+Декоративный фон **Шелк** для hero-блоков, секций и лендингов. Оформлен в едином формате как страница «Темная вуаль»: с зависимостями, использованием, рекомендациями и полным исходным кодом.
+
+---
+
+## Стек и зависимости
+
+- `react`
+- Дополнительные зависимости берутся из исходного файла компонента (см. код ниже).
+
+## Использование
+
+```tsx
+import Silk from '@/features/ui-components/silk/silk';
+
+<div style={{ width: '100%', height: '420px' }}>
+  <Silk />
+</div>
+```
+
+:::note
+Компонент занимает весь размер родительского контейнера. Задайте контейнеру явные размеры (`height`, `min-height` и т.д.).
+:::
+
+## Оригинальный код
+
+```tsx
 /* eslint-disable react/no-unknown-property */
 import React, { forwardRef, useMemo, useRef, useLayoutEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
@@ -150,3 +188,9 @@ const Silk: React.FC<SilkProps> = ({ speed = 5, scale = 1, color = '#7B7481', no
 };
 
 export default Silk;
+
+```
+
+## Пропсы
+
+Список и дефолтные значения пропсов задаются прямо в исходнике компонента (см. секцию «Оригинальный код") и/или в `config.json` этого компонента в UI viewer.

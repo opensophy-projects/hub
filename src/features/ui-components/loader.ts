@@ -1,12 +1,49 @@
 import { registry } from './registry';
 import type { ComponentConfig, LoadedComponent } from '../types';
 
+const sourceModules = import.meta.glob('../*/*.tsx', { query: '?raw', import: 'default' });
+
 type PropValue = string | number | boolean | string[] | undefined;
 
 // ─── Кэш ──────────────────────────────────────────────────────────────────────
 const componentCache = new Map<string, LoadedComponent>();
 const loadingPromises = new Map<string, Promise<LoadedComponent | null>>();
 
+
+
+function pickMainSourcePath(componentId: string, config: ComponentConfig): string | null {
+  const mainFile = (config as ComponentConfig & { main?: string }).main;
+
+  const preferred = [
+    mainFile && `../${componentId}/${mainFile}`,
+    `../${componentId}/${componentId}.tsx`,
+    `../${componentId}/index.tsx`,
+    `../${componentId}/index.ts`,
+  ].filter((p): p is string => !!p && !p.endsWith('undefined'));
+
+  const allTsx = Object.keys(sourceModules).filter(k => k.startsWith(`../${componentId}/`));
+  const candidates = [...new Set([...preferred, ...allTsx])];
+
+  for (const candidate of candidates) {
+    if (sourceModules[candidate]) return candidate;
+  }
+
+  return null;
+}
+
+async function loadFileContents(componentId: string, config: ComponentConfig): Promise<Record<string, string>> {
+  const sourcePath = pickMainSourcePath(componentId, config);
+  if (!sourcePath) return {};
+
+  try {
+    const source = await sourceModules[sourcePath]() as string;
+    const fileName = sourcePath.split('/').at(-1) ?? `${componentId}.tsx`;
+    return { [fileName]: source };
+  } catch (error) {
+    console.warn('[loader] Не удалось загрузить исходник компонента:', sourcePath, error);
+    return {};
+  }
+}
 // ─── Внутренний загрузчик ─────────────────────────────────────────────────────
 async function loadComponentInternal(componentId: string): Promise<LoadedComponent | null> {
   try {
@@ -22,7 +59,8 @@ async function loadComponentInternal(componentId: string): Promise<LoadedCompone
       return null;
     }
 
-    return { config, Component, fileContents: {} };
+    const fileContents = await loadFileContents(componentId, config);
+    return { config, Component, fileContents };
   } catch (error) {
     console.error('[loader] Ошибка при загрузке компонента:', componentId, error);
     return null;
