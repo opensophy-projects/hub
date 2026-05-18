@@ -1,0 +1,12 @@
+{
+  "id": "eye-sauron",
+  "name": "Eye Sauron",
+  "description": "Анимированный фоновый UI-компонент.",
+  "category": "backgrounds",
+  "main": "eye-sauron.tsx",
+  "props": [],
+  "specificProps": [],
+  "tags": ["background", "animation", "react"],
+  "author": "veilosophy",
+  "version": "1.0.0"
+}

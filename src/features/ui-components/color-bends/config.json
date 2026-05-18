@@ -1,0 +1,12 @@
+{
+  "id": "color-bends",
+  "name": "Color Bends",
+  "description": "Анимированный фоновый UI-компонент.",
+  "category": "backgrounds",
+  "main": "color-bends.tsx",
+  "props": [],
+  "specificProps": [],
+  "tags": ["background", "animation", "react"],
+  "author": "veilosophy",
+  "version": "1.0.0"
+}

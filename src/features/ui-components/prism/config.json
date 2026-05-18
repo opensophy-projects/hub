@@ -1,0 +1,12 @@
+{
+  "id": "prism",
+  "name": "Prism",
+  "description": "Анимированный фоновый UI-компонент.",
+  "category": "backgrounds",
+  "main": "prism.tsx",
+  "props": [],
+  "specificProps": [],
+  "tags": ["background", "animation", "react"],
+  "author": "veilosophy",
+  "version": "1.0.0"
+}

@@ -1,0 +1,12 @@
+{
+  "id": "prismatic-burst",
+  "name": "Prismatic Burst",
+  "description": "Анимированный фоновый UI-компонент.",
+  "category": "backgrounds",
+  "main": "prismatic-burst.tsx",
+  "props": [],
+  "specificProps": [],
+  "tags": ["background", "animation", "react"],
+  "author": "veilosophy",
+  "version": "1.0.0"
+}

@@ -1,0 +1,12 @@
+{
+  "id": "pixel-blast",
+  "name": "Pixel Blast",
+  "description": "Анимированный фоновый UI-компонент.",
+  "category": "backgrounds",
+  "main": "pixel-blast.tsx",
+  "props": [],
+  "specificProps": [],
+  "tags": ["background", "animation", "react"],
+  "author": "veilosophy",
+  "version": "1.0.0"
+}
