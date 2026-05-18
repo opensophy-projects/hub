@@ -1,7 +1,7 @@
 import { registry } from './registry';
-import type { ComponentConfig, LoadedComponent } from './types';
+import type { ComponentConfig, LoadedComponent } from '../types';
 
-const sourceModules = import.meta.glob('./*/*.tsx', { eager: true, query: '?raw', import: 'default' });
+const sourceModules = import.meta.glob('../*/*.tsx', { query: '?raw', import: 'default' });
 
 type PropValue = string | number | boolean | string[] | undefined;
 
@@ -15,13 +15,13 @@ function pickMainSourcePath(componentId: string, config: ComponentConfig): strin
   const mainFile = (config as ComponentConfig & { main?: string }).main;
 
   const preferred = [
-    mainFile && `./${componentId}/${mainFile}`,
-    `./${componentId}/${componentId}.tsx`,
-    `./${componentId}/index.tsx`,
-    `./${componentId}/index.ts`,
+    mainFile && `../${componentId}/${mainFile}`,
+    `../${componentId}/${componentId}.tsx`,
+    `../${componentId}/index.tsx`,
+    `../${componentId}/index.ts`,
   ].filter((p): p is string => !!p && !p.endsWith('undefined'));
 
-  const allTsx = Object.keys(sourceModules).filter(k => k.startsWith(`./${componentId}/`));
+  const allTsx = Object.keys(sourceModules).filter(k => k.startsWith(`../${componentId}/`));
   const candidates = [...new Set([...preferred, ...allTsx])];
 
   for (const candidate of candidates) {
@@ -31,36 +31,18 @@ function pickMainSourcePath(componentId: string, config: ComponentConfig): strin
   return null;
 }
 
-function resolveConfigFilePath(componentId: string, configPath: string): string | null {
-  if (configPath.startsWith('./') || configPath.startsWith('../')) return configPath;
-  if (configPath.startsWith(`${componentId}/`)) return `./${configPath}`;
-  return `./${componentId}/${configPath}`;
-}
+async function loadFileContents(componentId: string, config: ComponentConfig): Promise<Record<string, string>> {
+  const sourcePath = pickMainSourcePath(componentId, config);
+  if (!sourcePath) return {};
 
-function loadFileContents(componentId: string, config: ComponentConfig): Record<string, string> {
-  const entries: Record<string, string> = {};
-  const requested = new Set<string>();
-
-  const mainPath = pickMainSourcePath(componentId, config);
-  if (mainPath) requested.add(mainPath);
-
-  config.files?.forEach((file) => {
-    if (file.path) requested.add(resolveConfigFilePath(componentId, file.path) ?? '');
-  });
-
-  Object.keys(sourceModules)
-    .filter((k) => k.startsWith(`./${componentId}/`))
-    .forEach((k) => requested.add(k));
-
-  for (const sourcePath of requested) {
-    if (!sourcePath) continue;
-    const source = sourceModules[sourcePath];
-    if (typeof source !== 'string') continue;
+  try {
+    const source = await sourceModules[sourcePath]() as string;
     const fileName = sourcePath.split('/').at(-1) ?? `${componentId}.tsx`;
-    entries[fileName] = source;
+    return { [fileName]: source };
+  } catch (error) {
+    console.warn('[loader] Не удалось загрузить исходник компонента:', sourcePath, error);
+    return {};
   }
-
-  return entries;
 }
 // ─── Внутренний загрузчик ─────────────────────────────────────────────────────
 async function loadComponentInternal(componentId: string): Promise<LoadedComponent | null> {
@@ -77,7 +59,7 @@ async function loadComponentInternal(componentId: string): Promise<LoadedCompone
       return null;
     }
 
-    const fileContents = loadFileContents(componentId, config);
+    const fileContents = await loadFileContents(componentId, config);
     return { config, Component, fileContents };
   } catch (error) {
     console.error('[loader] Ошибка при загрузке компонента:', componentId, error);
