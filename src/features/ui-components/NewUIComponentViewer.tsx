@@ -968,10 +968,35 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
     <div style={{ position: 'relative', width: '100%' }}>
       {/* Кнопка настроек — поверх, в правом верхнем углу */}
       <div style={{
-        position: 'absolute', top: 8, right: 8, zIndex: 5,
+        position: 'absolute', top: 10, right: 10, zIndex: 5,
         display: 'flex', gap: 6,
       }}>
-        <IconBtn icon={<Settings size={15} />} onClick={onOpenFullscreen} t={t} title="Настройки" />
+        <button
+          onClick={onOpenFullscreen}
+          title="Настройки"
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 36, height: 36, borderRadius: 10,
+            border: `1.5px solid ${t.btnActBdr}`,
+            background: t.barBg,
+            color: t.fg,
+            cursor: 'pointer',
+            flexShrink: 0,
+            boxShadow: t.outerShadow,
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLButtonElement).style.background = t.btnHov;
+            (e.currentTarget as HTMLButtonElement).style.color = t.btnActClr;
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLButtonElement).style.background = t.barBg;
+            (e.currentTarget as HTMLButtonElement).style.color = t.fg;
+          }}
+        >
+          <Settings size={17} />
+        </button>
       </div>
 
       {/*
