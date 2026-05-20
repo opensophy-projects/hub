@@ -529,6 +529,7 @@ interface ComponentRenderProps {
 
 const ComponentRender: React.FC<ComponentRenderProps> = ({ Component, componentProps, universalProps, refreshKey, isDark, componentCategory }) => {
   const layoutMode = componentCategory === 'backgrounds' ? 'fill' : 'content';
+  const isFill = layoutMode === 'fill';
   return (
     <div style={{
       width: '100%',
@@ -536,9 +537,11 @@ const ComponentRender: React.FC<ComponentRenderProps> = ({ Component, componentP
       minWidth: 0,
       minHeight: 0,
       position: 'relative',
-      overflow: layoutMode === 'fill' ? 'hidden' : 'visible',
-      isolation: 'isolate',
-      contain: 'layout paint style',
+      // FIX: для content-компонентов не ограничиваем overflow и убираем contain/isolation
+      // чтобы SVG с overflow-visible (CurvedLoop и подобные) не обрезались.
+      // Для backgrounds оставляем изоляцию — фон не должен вылезать.
+      overflow: isFill ? 'hidden' : 'visible',
+      ...(isFill ? { isolation: 'isolate', contain: 'layout paint style' } : {}),
     }}>
       <ComponentWrapper {...universalProps} isDark={isDark} layoutMode={layoutMode} className="w-full h-full">
         <Suspense fallback={null}>
@@ -875,7 +878,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
           /* ─── Мобильный layout ─────────────────────────────────────── */
           <>
             {/* Preview — занимает всё (кроме нижнего бара 60px) */}
-            <div style={{ position: 'absolute', inset: 0, bottom: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fg, overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', inset: 0, bottom: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fg, overflow: isBackground ? 'hidden' : 'visible' }}>
               <ComponentRender Component={Component} componentProps={componentProps} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} componentCategory={componentCategory} fileContents={fileContents} />
             </div>
 
@@ -1005,19 +1008,24 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
         height: 100% и width: 100% — без явной высоты у родителя они
         схлопываются в 0. Для обычных компонентов оставляем minHeight
         чтобы не ломать компоненты с естественной высотой.
+
+        FIX 2: для content-компонентов убираем overflow: hidden — это
+        обрезало SVG с overflow-visible (CurvedLoop и подобные).
+        Добавляем padding чтобы выходящий за края изогнутый текст
+        не срезался родительским контейнером статьи.
       */}
       <div style={{
         width: '100%',
         ...(isBackground
           ? { height: 400 }
-          : { minHeight: 320 }
+          : { minHeight: 320, paddingTop: 32, paddingBottom: 32 }
         ),
         display: 'flex',
         alignItems: isBackground ? 'stretch' : 'center',
         justifyContent: isBackground ? 'stretch' : 'center',
         color: t.fg,
         position: 'relative',
-        overflow: 'hidden',
+        overflow: isBackground ? 'hidden' : 'visible',
       }}>
         {loading && (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', zIndex: 2, fontSize: 12, color: t.fgSub, fontFamily: 'ui-monospace, monospace' }}>
