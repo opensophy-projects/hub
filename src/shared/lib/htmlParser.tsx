@@ -401,6 +401,7 @@ const processKatexInline = (element: Element, key: string, elements: React.React
 
 const DIV_CLASS_HANDLERS: Array<[string, (el: Element, key: string, els: React.ReactNode[]) => void]> = [
   ['katex-block',     processKatexBlock],
+  ['katex-inline',    processKatexInline],
   ['custom-alert',    processAlertElement],
   ['custom-chart',    processChartElement],
   ['custom-cardgrid', processCardGridElement],
