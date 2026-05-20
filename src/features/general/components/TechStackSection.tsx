@@ -58,28 +58,6 @@ function getPillarHeight(col: number, row: number, t: number, MIN_H: number, MAX
 
 // ─── Грани изометрической призмы ─────────────────────────────────────────────
 
-interface FaceColors {
-  top:   string;
-  left:  string;
-  right: string;
-}
-
-function getDarkFaceColors(): FaceColors {
-  return {
-    top:   'rgba(255,255,255,0.97)',
-    left:  'rgba(180,180,186,0.93)',
-    right: 'rgba(105,105,110,0.91)',
-  };
-}
-
-function getLightFaceColors(): FaceColors {
-  return {
-    top:   'rgba(0,0,0,0.75)',
-    left:  'rgba(100,100,100,0.55)',
-    right: 'rgba(160,160,160,0.45)',
-  };
-}
-
 function getDarkFaceGradients(
   ctx: CanvasRenderingContext2D,
   bx: number, by: number, ty: number,

@@ -5,7 +5,6 @@ interface GlowingEffectProps {
   inactiveZone?: number;
   proximity?: number;
   spread?: number;
-  variant?: "default" | "white";
   glow?: boolean;
   className?: string;
   disabled?: boolean;
@@ -25,7 +24,6 @@ export const GlowingEffect = memo(({
   inactiveZone = 0.7,
   proximity = 0,
   spread = 20,
-  variant = "default",
   glow = false,
   className,
   movementDuration = 2,

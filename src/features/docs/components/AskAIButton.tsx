@@ -74,7 +74,6 @@ function getTheme(isDark: boolean): Theme {
 const AskAIButton: React.FC<AskAIButtonProps> = ({
   isDark,
   pageTitle,
-  pageSlug,
   markdownContent,
 }) => {
   const [open,      setOpen]      = useState(false);
