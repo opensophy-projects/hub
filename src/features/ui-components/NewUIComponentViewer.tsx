@@ -192,7 +192,7 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
     if (!rgb) { return; }
     const [h, s, v] = rgbToHsv(...rgb);
     setHue(h); setSat(s); setVal(v); setHexInput(value.replace('#', ''));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, []);
 
   const currentRgb = useMemo(() => hsvToRgb(hue, sat, val), [hue, sat, val]);
@@ -428,7 +428,7 @@ const AiSelect: React.FC<{ label: string; value: string; options: string[]; onCh
     globalThis.addEventListener('scroll', upd, true);
     globalThis.addEventListener('resize', upd);
     return () => { globalThis.removeEventListener('scroll', upd, true); globalThis.removeEventListener('resize', upd); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [open, options.length]);
 
   return (
