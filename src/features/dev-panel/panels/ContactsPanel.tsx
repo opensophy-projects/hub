@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { bridge } from '../useDevBridge';
-import { ThemeTokensContext } from '../DevPanel';
+import { ThemeTokensContext } from '../theme';
 import { toast } from '../components/toastBus';
 import { Plus, Trash2, Loader2, AlertCircle } from 'lucide-react';
 
