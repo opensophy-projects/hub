@@ -103,6 +103,7 @@ const IconBtn: React.FC<{
     </button>
   );
 };
+void IconBtn;
 
 const DEFAULT_UNIVERSAL_PROPS: UniversalProps = {
   enableUniversalProps: true,
@@ -615,6 +616,7 @@ const MobileBottomSheet: React.FC<{
   onReset: () => void;
   t: T;
 }> = ({ config, componentProps, universalProps, fileContents, onPropChange, onUniversalPropChange, onRefresh, onReset, t }) => {
+  void fileContents;
   const [activeTab,   setActiveTab]   = useState<MobileSheetTab>(null);
   const [sheetVh,     setSheetVh]     = useState(52);
   const [isDragging,  setIsDragging]  = useState(false);
@@ -720,6 +722,7 @@ const MobileBottomSheet: React.FC<{
     </>
   );
 };
+void MobileBottomSheet;
 
 // ─── FullscreenModal ──────────────────────────────────────────────────────────
 
@@ -1062,6 +1065,7 @@ function scheduleHideLoading(setLoading: (v: boolean) => void) {
 const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) => {
   const { isDark } = useTheme();
   const isMobile   = useIsMobile();
+  void isMobile;
   const t          = tk(isDark);
 
   const [isFullscreen,   setIsFullscreen]   = useState(false);

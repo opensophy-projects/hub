@@ -45,7 +45,9 @@ export function applyThemeColorVars() {
 function broadcastTheme(isDark: boolean) {
   try {
     localStorage.setItem(KEY_THEME, isDark ? 'dark' : 'light');
-  } catch {}
+  } catch {
+    // noop
+  }
   globalThis.window.dispatchEvent(new CustomEvent(THEME_CHANGE_EVENT, { detail: { isDark } }));
 }
 
@@ -87,7 +89,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   }, []);
 
-  const toggleTheme = useCallback((_event?: React.MouseEvent) => {
+  const toggleTheme = useCallback(() => {
     const next = !isDark;
     setIsDark(next);
     applyTheme(next);
@@ -100,7 +102,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const setSearchOpen = useCallback((open: boolean) => {
     setIsSearchOpen(open);
-    try { localStorage.setItem(KEY_SEARCH, String(open)); } catch {}
+    try { localStorage.setItem(KEY_SEARCH, String(open)); } catch {
+      // noop
+    }
     globalThis.window.dispatchEvent(
       new StorageEvent('storage', { key: KEY_SEARCH, newValue: String(open), storageArea: localStorage })
     );
