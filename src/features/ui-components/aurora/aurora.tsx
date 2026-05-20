@@ -137,7 +137,17 @@ export default function Aurora(props: AuroraProps) {
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     gl.canvas.style.backgroundColor = 'transparent';
 
-    let program: Program | undefined;
+    const program: Program = new Program(gl, {
+      vertex: VERT,
+      fragment: FRAG,
+      uniforms: {
+        uTime: { value: 0 },
+        uAmplitude: { value: amplitude },
+        uColorStops: { value: colorStopsArray },
+        uResolution: { value: [ctn.offsetWidth, ctn.offsetHeight] },
+        uBlend: { value: blend }
+      }
+    });
 
     function resize() {
       if (!ctn) return;
@@ -158,18 +168,6 @@ export default function Aurora(props: AuroraProps) {
     const colorStopsArray = colorStops.map(hex => {
       const c = new Color(hex);
       return [c.r, c.g, c.b];
-    });
-
-    program = new Program(gl, {
-      vertex: VERT,
-      fragment: FRAG,
-      uniforms: {
-        uTime: { value: 0 },
-        uAmplitude: { value: amplitude },
-        uColorStops: { value: colorStopsArray },
-        uResolution: { value: [ctn.offsetWidth, ctn.offsetHeight] },
-        uBlend: { value: blend }
-      }
     });
 
     const mesh = new Mesh(gl, { geometry, program });
@@ -203,7 +201,7 @@ export default function Aurora(props: AuroraProps) {
       }
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
-  }, [amplitude]);
+  }, [amplitude, blend, colorStops]);
 
   return <div ref={ctnDom} className="w-full h-full" />;
 }

@@ -216,19 +216,13 @@ export default function EvilEye({
     container.addEventListener('mousemove', onMouseMove);
     container.addEventListener('mouseleave', onMouseLeave);
 
-    let program: Program;
-
-    function resize() {
+    function resize(program: Program) {
       renderer.setSize(container.offsetWidth, container.offsetHeight);
-      if (program) {
-        program.uniforms.uResolution.value = [gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height];
-      }
+      program.uniforms.uResolution.value = [gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height];
     }
-    window.addEventListener('resize', resize);
-    resize();
 
     const geometry = new Triangle(gl);
-    program = new Program(gl, {
+    const program = new Program(gl, {
       vertex: vertexShader,
       fragment: fragmentShader,
       uniforms: {
@@ -248,6 +242,9 @@ export default function EvilEye({
         uBgColor: { value: hexToVec3(backgroundColor) }
       }
     });
+    const onResize = () => resize(program);
+    window.addEventListener('resize', onResize);
+    resize(program);
 
     const mesh = new Mesh(gl, { geometry, program });
     container.appendChild(gl.canvas);
@@ -266,7 +263,7 @@ export default function EvilEye({
 
     return () => {
       cancelAnimationFrame(animationFrameId);
-      window.removeEventListener('resize', resize);
+      window.removeEventListener('resize', onResize);
       container.removeEventListener('mousemove', onMouseMove);
       container.removeEventListener('mouseleave', onMouseLeave);
       container.removeChild(gl.canvas);
