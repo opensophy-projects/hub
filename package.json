@@ -30,7 +30,7 @@
     "recharts": "^3.8.0",
     "tailwind-merge": "^3.4.0",
     "three": "^0.184.0",
-    "ws": "^8.19.0"
+    "ws": "^8.20.1"
   },
   "devDependencies": {
     "@astrojs/react": "^5.0.0",
