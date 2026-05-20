@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
+import { ThemeProvider } from '../contexts/ThemeContext';
+import { useTheme } from '../contexts/useTheme';
 import Navigation from '@/features/navigation/components/Navigation';
 import { makeTokens } from '@/shared/tokens/theme';
 

@@ -1,12 +1,8 @@
 import React from 'react';
-import type { TTokens } from '../DevPanel';
+import type { TTokens } from '../theme';
 
 // Статичные токены для Toast (всегда тёмная тема, вне ThemeContext)
-export const T = {
-  fg:    'rgba(255,255,255,0.9)',
-  fgSub: 'rgba(255,255,255,0.22)',
-  mono:  'ui-monospace, "Cascadia Code", "Fira Code", monospace',
-};
+import { T } from './uiTheme';
 
 type BadgeVariant = 'N' | 'C' | 'A' | 'default';
 

@@ -31,7 +31,10 @@ const Accordion: React.FC<AccordionProps> = ({ type = 'single', value, defaultVa
   }, [value, defaultValue]);
 
   const [internalValue, setInternalValue] = React.useState<string[]>(initial);
-  const current = value !== undefined ? (Array.isArray(value) ? value : value ? [value] : []) : internalValue;
+  const current = React.useMemo(
+    () => (value !== undefined ? (Array.isArray(value) ? value : value ? [value] : []) : internalValue),
+    [internalValue, value]
+  );
 
   const toggle = React.useCallback((itemValue: string) => {
     let next: string[] = [];

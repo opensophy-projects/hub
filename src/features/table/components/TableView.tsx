@@ -6,8 +6,6 @@ import { useDragScroll } from '../hooks/useDragScroll';
 import { getTableStyles } from './tableStyles';
 import { makeTokens } from '@/shared/tokens/theme';
 
-export { getTableStyles } from './tableStyles';
-
 export type ColumnAlignment = 'left' | 'center' | 'right' | null;
 type SortDirection = 'asc' | 'desc' | 'none';
 

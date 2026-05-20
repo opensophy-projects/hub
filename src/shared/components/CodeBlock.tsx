@@ -53,6 +53,8 @@ const LANG_ALIASES: Record<string, string> = {
 const loadedLanguages  = new Set<string>();
 const pendingLanguages = new Map<string, Promise<void>>();
 
+type HljsLanguageModule = { default: Parameters<typeof hljs.registerLanguage>[1] };
+
 async function loadLanguage(lang: string): Promise<void> {
   const normalized = LANG_ALIASES[lang] ?? lang;
   if (loadedLanguages.has(normalized)) return;
@@ -83,10 +85,10 @@ async function loadLanguage(lang: string): Promise<void> {
       const loader = loaders[normalized];
       if (!loader) { loadedLanguages.add(normalized); return; }
       const module = await loader();
-      hljs.registerLanguage(normalized, (module as any).default);
+      hljs.registerLanguage(normalized, (module as HljsLanguageModule).default);
       for (const [alias, target] of Object.entries(LANG_ALIASES)) {
         if (target === normalized && !loadedLanguages.has(alias)) {
-          hljs.registerLanguage(alias, (module as any).default);
+          hljs.registerLanguage(alias, (module as HljsLanguageModule).default);
           loadedLanguages.add(alias);
         }
       }
@@ -197,7 +199,7 @@ interface BodyProps {
 }
 
 const CodeBody = React.forwardRef<HTMLDivElement, BodyProps>(
-  ({ lines, matchedLines, searchQuery, fg, codeBg, lineNum, highlightedHtml, thumb, track, thumbHov, maxHeight }, _ref) => {
+  ({ lines, matchedLines, searchQuery, fg, codeBg, lineNum, highlightedHtml, thumb, track, thumbHov, maxHeight }) => {
     const { scrollRef, dragStyle, dragHandlers } = useDragScroll();
     return (
       <>
@@ -383,7 +385,6 @@ interface SingleCodeBlockProps {
   readonly setSearchQuery: (v: string) => void;
   readonly isCopied: boolean;
   readonly handleCopy: () => void;
-  readonly isFullscreen: boolean;
   readonly setIsFullscreen: (v: boolean) => void;
   readonly isExpanded: boolean;
   readonly setIsExpanded: (v: boolean) => void;
@@ -402,7 +403,7 @@ function pluralLines(n: number): string {
   return 'строк';
 }
 
-function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuery, isCopied, handleCopy, isFullscreen, setIsFullscreen, isExpanded, setIsExpanded, isMobile, t }: SingleCodeBlockProps) {
+function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuery, isCopied, handleCopy, setIsFullscreen, isExpanded, setIsExpanded, isMobile, t }: SingleCodeBlockProps) {
   const lines = useMemo(() => {
     const raw = code.split('\n');
     if (raw.at(-1) === '') raw.pop();
@@ -643,7 +644,6 @@ export function CodeBlock({ code, language = '', tabs }: CodeBlockProps) {
     setSearchQuery,
     isCopied,
     handleCopy,
-    isFullscreen,
     setIsFullscreen,
     isExpanded,
     setIsExpanded,

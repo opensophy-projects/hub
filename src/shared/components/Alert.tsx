@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from '../contexts/useTheme';
 import { Info, Lightbulb, AlertCircle, AlertTriangle, OctagonX } from 'lucide-react';
 import { makeTokens } from '@/shared/tokens/theme';
 

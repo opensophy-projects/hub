@@ -1,44 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { CheckCircle, XCircle, Info, AlertTriangle, X } from 'lucide-react';
-import { T } from './ui';
-
-type ToastType = 'success' | 'error' | 'info' | 'warning';
-
-interface ToastItem {
-  id: string;
-  type: ToastType;
-  message: string;
-}
-
-// Глобальное хранилище уведомлений (синглтон)
-type Listener = (toasts: ToastItem[]) => void;
-let toasts: ToastItem[] = [];
-const listeners = new Set<Listener>();
-
-function notify() {
-  listeners.forEach(fn => fn([...toasts]));
-}
-
-function addToast(type: ToastType, message: string) {
-  const id = crypto.randomUUID();
-  toasts = [...toasts, { id, type, message }];
-  notify();
-  setTimeout(() => removeToast(id), 3500);
-}
-
-function removeToast(id: string) {
-  toasts = toasts.filter(t => t.id !== id);
-  notify();
-}
-
-// Публичное API для вызова уведомлений
-export const toast = {
-  success: (msg: string) => addToast('success', msg),
-  error:   (msg: string) => addToast('error',   msg),
-  info:    (msg: string) => addToast('info',     msg),
-  warning: (msg: string) => addToast('warning',  msg),
-};
+import { T } from './uiTheme';
+import { removeToast, subscribeToasts, type ToastItem, type ToastType } from './toastBus';
 
 const TOAST_CONFIG: Record<ToastType, {
   icon: React.FC<{ size: number }>;
@@ -100,9 +64,7 @@ export function ToastContainer() {
   const [items, setItems] = useState<ToastItem[]>([]);
 
   useEffect(() => {
-    const fn: Listener = updated => setItems(updated);
-    listeners.add(fn);
-    return () => { listeners.delete(fn); };
+    return subscribeToasts(setItems);
   }, []);
 
   if (typeof document === 'undefined' || !items.length) return null;

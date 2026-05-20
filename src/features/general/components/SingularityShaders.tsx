@@ -27,6 +27,7 @@ export const SingularityShaders = forwardRef<HTMLDivElement, SingularityShadersP
   const configRef = useRef({ speed, intensity, size, waveStrength, colorShift, isNegative });
   const [isAnimating, setIsAnimating] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
+  React.useImperativeHandle(ref, () => containerRef.current as HTMLDivElement, []);
 
   useEffect(() => {
     configRef.current = { speed, intensity, size, waveStrength, colorShift, isNegative };
