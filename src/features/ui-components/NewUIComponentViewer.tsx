@@ -533,13 +533,13 @@ const ComponentRender: React.FC<ComponentRenderProps> = ({ Component, componentP
   return (
     <div style={{
       width: '100%',
-      height: '100%',
+      // fill (backgrounds): height: 100% чтобы растянуться на родителя
+      // content: height: auto — компонент сам определяет высоту,
+      // не схлопываемся в 0 и не ограничиваем SVG с overflow-visible
+      height: isFill ? '100%' : 'auto',
       minWidth: 0,
       minHeight: 0,
       position: 'relative',
-      // FIX: для content-компонентов не ограничиваем overflow и убираем contain/isolation
-      // чтобы SVG с overflow-visible (CurvedLoop и подобные) не обрезались.
-      // Для backgrounds оставляем изоляцию — фон не должен вылезать.
       overflow: isFill ? 'hidden' : 'visible',
       ...(isFill ? { isolation: 'isolate', contain: 'layout paint style' } : {}),
     }}>
@@ -968,7 +968,10 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
   const isBackground = componentCategory === 'backgrounds';
 
   return (
-    <div style={{ position: 'relative', width: '100%' }}>
+    // position: relative нужен для кнопки настроек (absolute)
+    // overflow: visible — критично для SVG компонентов вроде CurvedLoop
+    // у которых текст выходит за пределы viewBox через overflow-visible
+    <div style={{ position: 'relative', width: '100%', overflow: 'visible' }}>
       {/* Кнопка настроек — поверх, в правом верхнем углу */}
       <div style={{
         position: 'absolute', top: 10, right: 10, zIndex: 5,
@@ -1018,7 +1021,9 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
         width: '100%',
         ...(isBackground
           ? { height: 400 }
-          : { minHeight: 320, paddingTop: 32, paddingBottom: 32 }
+          // minHeight с запасом — CurvedLoop с curveAmount=400 уходит далеко вниз
+          // за пределы SVG viewBox, нужно место чтобы текст был виден
+          : { minHeight: 500, paddingTop: 60, paddingBottom: 120 }
         ),
         display: 'flex',
         alignItems: isBackground ? 'stretch' : 'center',
@@ -1104,7 +1109,9 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
   };
 
   return (
-    <div className="not-prose" style={{ margin: '1.25rem 0' }}>
+    // overflow: visible на корневом уровне — иначе статья обрезает SVG
+    // с overflow-visible который выходит за пределы своего viewBox (CurvedLoop и подобные)
+    <div className="not-prose" style={{ margin: '1.25rem 0', overflow: 'visible', position: 'relative' }}>
       <PreviewPanel
         {...shared}
         onOpenFullscreen={() => setIsFullscreen(true)}
