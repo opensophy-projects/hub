@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { motion, type Transition } from 'framer-motion';
+import { motion, type Transition, type Easing } from 'framer-motion';
 import type { BlurTextProps } from './types';
 
 const buildKeyframes = (
@@ -86,7 +86,7 @@ const BlurText: React.FC<BlurTextProps> = ({
           duration: totalDuration,
           times,
           delay: (index * delay) / 1000,
-          ease: easing as any,
+          ease: easing as Easing,
         };
 
         const stableKey = `blur-text-${componentId.current}-${index}`;
