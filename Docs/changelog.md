@@ -32,6 +32,11 @@ hub.opensophy.com и ui.opensophy.com мигрировали в opensophy.com
 Внутрениий апдейт и обновление систем opensophy.
 :::
 
+:::step[status=done] 20.05.2026
+**Пополнение ui библиотеки**
++18 новых компонентов в раздел фоны, обновление ui системы
+:::
+
 :::step[status=active] Пополнение ui библиотеки
 :::
 

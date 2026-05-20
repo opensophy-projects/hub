@@ -10,7 +10,7 @@ import React, {
   lazy, Suspense, memo, startTransition,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { useTheme } from '@/shared/contexts/ThemeContext';
+import { useTheme } from '@/shared/contexts/useTheme';
 import { useManifest } from '@/features/docs/hooks/useDocuments';
 import { storageSet } from '@/shared/lib/storage';
 import { CONTACTS } from '@/shared/data/contacts';

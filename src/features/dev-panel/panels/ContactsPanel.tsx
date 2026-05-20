@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { bridge } from '../useDevBridge';
 import { ThemeTokensContext } from '../DevPanel';
-import { toast } from '../components/Toast';
+import { toast } from '../components/toastBus';
 import { Plus, Trash2, Loader2, AlertCircle } from 'lucide-react';
 
 interface Contact { href: string; title: string; subtitle: string; external: boolean; }
@@ -49,7 +49,7 @@ function ContactRow({ contact, index, onChange, onDelete, t }: {
   readonly index: number;
   readonly onChange: (c: Contact) => void;
   readonly onDelete: () => void;
-  readonly t: ReturnType<typeof import('../DevPanel').makeT>;
+  readonly t: ReturnType<typeof import('../theme').makeT>;
 }) {
   const set = (key: keyof Contact, val: string) => onChange({ ...contact, [key]: val });
 

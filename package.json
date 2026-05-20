@@ -7,14 +7,13 @@
     "dev": "npm run generate && astro dev",
     "build": "npm run generate && astro build",
     "preview": "astro preview",
-    "lint": "eslint .",
+    "lint": "node scripts/eslint-runner.cjs .",
     "generate": "node scripts/generate.mjs",
     "generate:docs": "node scripts/generateDocs.mjs",
     "generate:sitemap": "node scripts/generateSitemap.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
-    "@radix-ui/react-accordion": "^1.2.12",
     "astro": "^6.1.10",
     "clsx": "^2.1.1",
     "framer-motion": "^12.24.7",
@@ -25,6 +24,7 @@
     "lucide-react": "^0.563.0",
     "marked": "^16.4.2",
     "ogl": "^1.0.11",
+    "postprocessing": "^6.37.8",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "recharts": "^3.8.0",

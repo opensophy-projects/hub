@@ -3,10 +3,10 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { bridge } from '../useDevBridge';
-import { toast } from '../components/Toast';
+import { toast } from '../components/toastBus';
 import { Badge, ConfirmDialog } from '../components/ui';
-import { ThemeTokensContext } from '../DevPanel';
-import type { TTokens } from '../DevPanel';
+import { ThemeTokensContext } from '../theme';
+import type { TTokens } from '../theme';
 import {
   FolderOpen, Plus, Trash2,
   ChevronRight, ChevronDown, FolderPlus, FilePlus,
@@ -130,9 +130,9 @@ async function renameDir(oldPath: string, newPath: string): Promise<void> {
     .filter(e => e.type === 'dir' && e.path !== oldPath)
     .sort((a, b) => b.path.length - a.path.length);
   for (const d of dirs) {
-    try { await bridge.deleteFile(d.path); } catch {}
+    try { await bridge.deleteFile(d.path); } catch { /* noop */ }
   }
-  try { await bridge.deleteFile(oldPath); } catch {}
+  try { await bridge.deleteFile(oldPath); } catch { /* noop */ }
 }
 
 interface BV { label: string; code: string; }
@@ -607,7 +607,9 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
       try {
         const result = await bridge.renderPreview(md);
         bcRef.current?.postMessage({ type: 'preview', html: result.html ?? '', fm: fmRef.current });
-      } catch {}
+      } catch {
+        // noop
+      }
     }, 300);
   }, []);
 
@@ -758,7 +760,9 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
                       try {
                         const result = await bridge.renderPreview(bodyRef.current);
                         bcRef.current?.postMessage({ type: 'preview', html: result.html ?? '', fm: newFm });
-                      } catch {}
+                      } catch {
+                        // noop
+                      }
                     }, 200);
                   }}
                   style={inpS}

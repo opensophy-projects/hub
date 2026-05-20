@@ -349,7 +349,7 @@ const LightPillar: React.FC<LightPillarProps> = ({
       geometryRef.current = null;
       rafRef.current = null;
     };
-  }, [webGLSupported, quality]);
+  }, [webGLSupported, quality, topColor, bottomColor, intensity, glowAmount, noiseIntensity, pillarWidth, pillarHeight, pillarRotation, interactive]);
 
   useEffect(() => { rotationSpeedRef.current = rotationSpeed; }, [rotationSpeed]);
 

@@ -2,10 +2,11 @@ import React, {
   useState, useCallback, Suspense, useEffect, useMemo, useRef,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { useTheme } from '@/shared/contexts/ThemeContext';
+import { useTheme } from '@/shared/contexts/useTheme';
 import {
-  X, Maximize2, Minimize2, Play, RefreshCcw,
-  Settings, PanelRight, PanelRightClose, ChevronDown,
+  Minimize2, Play, RefreshCcw, Copy, Check,
+  Settings, PanelRight, PanelRightClose,
+  X, Code2,
 } from 'lucide-react';
 import { loadComponent, getDefaultProps } from './loader';
 import { ComponentWrapper } from './ComponentWrapper';
@@ -16,7 +17,7 @@ import { makeTokens, themed } from '@/shared/tokens/theme';
 type PropValue = string | number | boolean | string[] | undefined;
 type ComponentPropsMap = Record<string, PropValue>;
 type AnyComponent = React.ComponentType<Record<string, PropValue>>;
-type TabType = 'universal' | 'specific';
+type TabType = 'universal' | 'specific' | 'source';
 
 interface LoadedComponentData {
   config: ComponentConfig;
@@ -26,78 +27,83 @@ interface LoadedComponentData {
 
 function tk(isDark: boolean) {
   const t = makeTokens(isDark);
-  const shared = {
-    outerBg:      t.bg,
-    barBg:        t.surface,
-    outerBorder:  t.border,
-    inpBg:        t.inpBg,
-    inpBdr:       t.inpBdr,
-    inpFoc:       t.inpBdrFocus,
-    inpClr:       t.inpClr,
-    plhClr:       t.plhClr,
-  };
   return {
-    ...shared,
-    panelBg: themed(isDark, '#0d0d0d', '#dddcd8'),
-    barBorder: themed(isDark, 'rgba(255,255,255,0.08)', 'rgba(0,0,0,0.09)'),
-    btnBg: themed(isDark, 'rgba(255,255,255,0.08)', 'rgba(0,0,0,0.07)'),
-    btnBdr: themed(isDark, 'rgba(255,255,255,0.12)', 'rgba(0,0,0,0.12)'),
-    btnHov: themed(isDark, 'rgba(255,255,255,0.14)', 'rgba(0,0,0,0.12)'),
-    btnClr: themed(isDark, 'rgba(255,255,255,0.72)', 'rgba(0,0,0,0.68)'),
-    btnActBg: themed(isDark, 'rgba(255,255,255,0.15)', 'rgba(0,0,0,0.12)'),
-    btnActBdr: themed(isDark, 'rgba(255,255,255,0.22)', 'rgba(0,0,0,0.22)'),
-    btnActClr: themed(isDark, '#ffffff', '#000000'),
-    fg: themed(isDark, '#e8e8e8', '#1a1a1a'),
-    fgMuted: themed(isDark, 'rgba(255,255,255,0.35)', 'rgba(0,0,0,0.38)'),
-    fgSub: themed(isDark, 'rgba(255,255,255,0.22)', 'rgba(0,0,0,0.28)'),
-    footerClr: themed(isDark, 'rgba(255,255,255,0.22)', 'rgba(0,0,0,0.32)'),
-    sectionBdr: themed(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.07)'),
-    outerShadow: themed(isDark, '0 2px 12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)', '0 1px 6px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.07)'),
-    modalShadow: themed(isDark, '0 24px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.05)', '0 24px 80px rgba(0,0,0,0.2)'),
-    tabActBg: themed(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)'),
-    tabActBdr: themed(isDark, 'rgba(255,255,255,0.15)', 'rgba(0,0,0,0.18)'),
-    tabActClr: themed(isDark, '#ffffff', '#000000'),
-    tabClr: themed(isDark, 'rgba(255,255,255,0.45)', 'rgba(0,0,0,0.45)'),
-    dangerClr: themed(isDark, '#f87171', '#dc2626'),
+    outerBg:        t.bg,
+    barBg:          t.surface,
+    outerBorder:    t.border,
+    inpBg:          t.inpBg,
+    inpBdr:         t.inpBdr,
+    inpFoc:         t.inpBdrFocus,
+    inpClr:         t.inpClr,
+    plhClr:         t.plhClr,
+    panelBg:        themed(isDark, '#0d0d0d', '#dddcd8'),
+    barBorder:      themed(isDark, 'rgba(255,255,255,0.08)', 'rgba(0,0,0,0.09)'),
+    btnBg:          themed(isDark, 'rgba(255,255,255,0.08)', 'rgba(0,0,0,0.07)'),
+    btnBdr:         themed(isDark, 'rgba(255,255,255,0.12)', 'rgba(0,0,0,0.12)'),
+    btnHov:         themed(isDark, 'rgba(255,255,255,0.14)', 'rgba(0,0,0,0.12)'),
+    btnClr:         themed(isDark, 'rgba(255,255,255,0.72)', 'rgba(0,0,0,0.68)'),
+    btnActBg:       themed(isDark, 'rgba(255,255,255,0.15)', 'rgba(0,0,0,0.12)'),
+    btnActBdr:      themed(isDark, 'rgba(255,255,255,0.22)', 'rgba(0,0,0,0.22)'),
+    btnActClr:      themed(isDark, '#ffffff', '#000000'),
+    fg:             themed(isDark, '#e8e8e8', '#1a1a1a'),
+    fgMuted:        themed(isDark, 'rgba(255,255,255,0.35)', 'rgba(0,0,0,0.38)'),
+    fgSub:          themed(isDark, 'rgba(255,255,255,0.22)', 'rgba(0,0,0,0.28)'),
+    sectionBdr:     themed(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.07)'),
+    outerShadow:    themed(isDark, '0 2px 12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)', '0 1px 6px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.07)'),
+    modalShadow:    themed(isDark, '0 24px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.05)', '0 24px 80px rgba(0,0,0,0.2)'),
+    tabActBg:       themed(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)'),
+    tabActBdr:      themed(isDark, 'rgba(255,255,255,0.15)', 'rgba(0,0,0,0.18)'),
+    tabActClr:      themed(isDark, '#ffffff', '#000000'),
+    tabClr:         themed(isDark, 'rgba(255,255,255,0.45)', 'rgba(0,0,0,0.45)'),
+    dangerClr:      themed(isDark, '#f87171', '#dc2626'),
+    mobBg:          isDark ? '#0F0F0F' : '#dcdbd7',
+    accent:         t.accent,
+    accentSoft:     t.accentSoft,
   };
 }
 
 type T = ReturnType<typeof tk>;
 
-function Pill({ onClick, title, label, icon, t, active, danger }: Readonly<{
-  onClick: () => void; title: string; label: string;
-  icon: React.ReactNode; t: T; active?: boolean; danger?: boolean;
-}>) {
+// ─── MobBtn ───────────────────────────────────────────────────────────────────
+
+const MobBtn: React.FC<{
+  label: string; icon: React.ReactNode; t: T; onClick: () => void; isActive: boolean;
+}> = ({ label, icon, t, onClick, isActive }) => (
+  <button onClick={onClick} style={{
+    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+    justifyContent: 'center', gap: 4, padding: 0, border: 'none',
+    background: 'transparent', cursor: 'pointer',
+    color: isActive ? t.accent : t.fgMuted,
+    outline: 'none', minWidth: 0,
+  }}>
+    <span style={{ width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
+    <span style={{ fontSize: 10, fontWeight: 400, lineHeight: 1, marginTop: 1 }}>{label}</span>
+  </button>
+);
+
+// ─── IconBtn ──────────────────────────────────────────────────────────────────
+
+const IconBtn: React.FC<{
+  icon: React.ReactNode; onClick: () => void; t: T; active?: boolean; title?: string;
+}> = ({ icon, onClick, t, active, title }) => {
   const bg  = active ? t.btnActBg  : t.btnBg;
   const bdr = active ? t.btnActBdr : t.btnBdr;
-  let color: string;
-  if (danger) {
-    color = t.dangerClr;
-  } else if (active) {
-    color = t.btnActClr;
-  } else {
-    color = t.btnClr;
-  }
+  const clr = active ? t.btnActClr : t.btnClr;
   return (
     <button onClick={onClick} title={title} style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', gap: 3,
-      padding: '5px 12px', minWidth: 52, height: 44,
-      borderRadius: 8, border: `1px solid ${bdr}`,
-      background: bg, color, cursor: 'pointer', flexShrink: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      width: 34, height: 34, borderRadius: 8,
+      border: `1px solid ${bdr}`, background: bg, color: clr,
+      cursor: 'pointer', flexShrink: 0,
     }}
       onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
       onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = bg; }}
     >
       {icon}
-      <span style={{ fontSize: 10, fontWeight: active ? 600 : 400, whiteSpace: 'nowrap', lineHeight: 1 }}>{label}</span>
     </button>
   );
-}
-
-function Divider({ t }: Readonly<{ t: T }>) {
-  return <div style={{ width: 1, height: 22, background: t.barBorder, margin: '0 2px', flexShrink: 0 }} />;
-}
+};
+void IconBtn;
 
 const DEFAULT_UNIVERSAL_PROPS: UniversalProps = {
   enableUniversalProps: true,
@@ -126,7 +132,7 @@ const FIELD_GROUPS: Array<{
   ]},
 ];
 
-// ─── Утилиты для работы с цветом ──────────────────────────────────────────────
+// ─── Утилиты для работы с цветом ─────────────────────────────────────────────
 
 function hsvToRgb(h: number, s: number, v: number): [number, number, number] {
   const f = (n: number) => {
@@ -141,13 +147,9 @@ function rgbToHsv(r: number, g: number, b: number): [number, number, number] {
   const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
   let h = 0;
   if (d !== 0) {
-    if (max === r) {
-      h = ((g - b) / d + 6) % 6;
-    } else if (max === g) {
-      h = (b - r) / d + 2;
-    } else {
-      h = (r - g) / d + 4;
-    }
+    if (max === r)      { h = ((g - b) / d + 6) % 6; }
+    else if (max === g) { h = (b - r) / d + 2; }
+    else                { h = (r - g) / d + 4; }
     h *= 60;
   }
   return [h, max === 0 ? 0 : d / max, max];
@@ -170,23 +172,19 @@ function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   if (max === min) { return [0, 0, Math.round(l * 100)]; }
   const d = max - min, s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
   let h = 0;
-  if (max === r) {
-    h = ((g - b) / d + 6) % 6;
-  } else if (max === g) {
-    h = (b - r) / d + 2;
-  } else {
-    h = (r - g) / d + 4;
-  }
+  if (max === r)      { h = ((g - b) / d + 6) % 6; }
+  else if (max === g) { h = (b - r) / d + 2; }
+  else                { h = (r - g) / d + 4; }
   return [Math.round(h * 60), Math.round(s * 100), Math.round(l * 100)];
 }
 
 const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined) => void; t: T }> = ({ value, onChange, t }) => {
-  const [hue, setHue] = useState(217);
-  const [sat, setSat] = useState(0.73);
-  const [val, setVal] = useState(0.96);
+  const [hue, setHue]         = useState(217);
+  const [sat, setSat]         = useState(0.73);
+  const [val, setVal]         = useState(0.96);
   const [hexInput, setHexInput] = useState('4287f5');
-  const [copied, setCopied] = useState(false);
-  const svRef = useRef<HTMLDivElement>(null);
+  const [copied, setCopied]   = useState(false);
+  const svRef  = useRef<HTMLDivElement>(null);
   const hueRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -221,10 +219,7 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
   const handleSvMouseDown = useCallback((e: React.MouseEvent) => {
     handleSvDrag(e);
     const onMove = (ev: MouseEvent) => handleSvDrag(ev);
-    const onUp = () => {
-      globalThis.removeEventListener('mousemove', onMove);
-      globalThis.removeEventListener('mouseup', onUp);
-    };
+    const onUp   = () => { globalThis.removeEventListener('mousemove', onMove); globalThis.removeEventListener('mouseup', onUp); };
     globalThis.addEventListener('mousemove', onMove);
     globalThis.addEventListener('mouseup', onUp);
   }, [handleSvDrag]);
@@ -240,10 +235,7 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
   const handleHueMouseDown = useCallback((e: React.MouseEvent) => {
     handleHueDrag(e);
     const onMove = (ev: MouseEvent) => handleHueDrag(ev);
-    const onUp = () => {
-      globalThis.removeEventListener('mousemove', onMove);
-      globalThis.removeEventListener('mouseup', onUp);
-    };
+    const onUp   = () => { globalThis.removeEventListener('mousemove', onMove); globalThis.removeEventListener('mouseup', onUp); };
     globalThis.addEventListener('mousemove', onMove);
     globalThis.addEventListener('mouseup', onUp);
   }, [handleHueDrag]);
@@ -269,10 +261,7 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
             const clean = raw.replace('#', '');
             if (clean.length === 6) {
               const rgb = hexToRgb('#' + clean);
-              if (rgb) {
-                const [h, s, v] = rgbToHsv(...rgb);
-                setHue(h); setSat(s); setVal(v); onChange('#' + clean);
-              }
+              if (rgb) { const [h, s, v] = rgbToHsv(...rgb); setHue(h); setSat(s); setVal(v); onChange('#' + clean); }
             }
             if (clean === '') { onChange(undefined); }
           }} placeholder="4287f5" style={{ width: '100%', padding: '3px 6px', borderRadius: 5, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: t.inpClr, fontSize: 11, fontFamily: 'ui-monospace,monospace', outline: 'none', boxSizing: 'border-box' }} />
@@ -305,14 +294,14 @@ const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined)
 };
 
 function getDecimalPlaces(step: number): number {
-  if (step >= 1) { return 0; }
+  if (step >= 1)   { return 0; }
   if (step >= 0.1) { return 1; }
   return 2;
 }
 
 const NumberInput: React.FC<{ value: number; onChange: (v: number) => void; min: number; max: number; step: number; t: T }> = ({ value, onChange, min, max, step, t }) => {
   const [editing, setEditing] = useState(false);
-  const [raw, setRaw] = useState('');
+  const [raw, setRaw]         = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const commit = () => {
     const n = Number.parseFloat(raw);
@@ -326,10 +315,7 @@ const NumberInput: React.FC<{ value: number; onChange: (v: number) => void; min:
       <input type="range" min={min} max={max} step={step} value={value} onChange={e => onChange(Number(e.target.value))} style={{ flex: 1, accentColor: t.fg, cursor: 'pointer', height: 3, minWidth: 0 }} />
       {editing ? (
         <input ref={inputRef} type="number" value={raw} min={min} max={max} step={step} onChange={e => setRaw(e.target.value)} onBlur={commit}
-          onKeyDown={e => {
-            if (e.key === 'Enter') { commit(); }
-            if (e.key === 'Escape') { setEditing(false); }
-          }}
+          onKeyDown={e => { if (e.key === 'Enter') { commit(); } if (e.key === 'Escape') { setEditing(false); } }}
           style={{ width: 46, padding: '2px 4px', borderRadius: 5, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: t.inpClr, fontSize: 11, textAlign: 'center', outline: 'none', fontFamily: 'ui-monospace,monospace', flexShrink: 0 }} />
       ) : (
         <button onClick={() => { setRaw(String(value)); setEditing(true); setTimeout(() => inputRef.current?.select(), 0); }}
@@ -342,7 +328,7 @@ const NumberInput: React.FC<{ value: number; onChange: (v: number) => void; min:
 };
 
 const FieldRow: React.FC<{ label: string; fieldKey: keyof UniversalProps; min: number; max: number; step: number; defaultVal: number; universalProps: UniversalProps; onChange: (key: keyof UniversalProps, v: PropValue) => void; t: T }> = ({ label, fieldKey, min, max, step, defaultVal, universalProps, onChange, t }) => {
-  const val = (universalProps[fieldKey] as number) ?? defaultVal;
+  const val       = (universalProps[fieldKey] as number) ?? defaultVal;
   const isChanged = Math.abs(val - defaultVal) > 0.001;
   return (
     <div style={{ padding: '6px 12px' }}>
@@ -370,8 +356,8 @@ const AccordionSection: React.FC<{ label: string; defaultOpen?: boolean; t: T; c
 
 const ColorSection: React.FC<{ universalProps: UniversalProps; onChange: (key: keyof UniversalProps, v: PropValue) => void; t: T }> = ({ universalProps, onChange, t }) => {
   const [open, setOpen] = useState(true);
-  const colorMode = universalProps.colorMode ?? 'original';
-  const currentColor = universalProps.color;
+  const colorMode       = universalProps.colorMode ?? 'original';
+  const currentColor    = universalProps.color;
   return (
     <div style={{ borderBottom: `1px solid ${t.sectionBdr}` }}>
       <button onClick={() => setOpen(v => !v)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', background: `${t.barBg}88`, border: 'none', cursor: 'pointer' }}>
@@ -409,21 +395,19 @@ const UniversalSidebar: React.FC<{ universalProps: UniversalProps; onChange: (ke
 );
 
 const AiSelect: React.FC<{ label: string; value: string; options: string[]; onChange: (v: string) => void; t: T }> = ({ label, value, options, onChange, t }) => {
-  const [open, setOpen] = useState(false);
-  const [hov, setHov] = useState<string | null>(null);
-  const [rect, setRect] = useState<DOMRect | null>(null);
-  const [w, setW] = useState(0);
+  const [open, setOpen]   = useState(false);
+  const [hov,  setHov]    = useState<string | null>(null);
+  const [rect, setRect]   = useState<DOMRect | null>(null);
+  const [w,    setW]      = useState(0);
   const [dropUp, setDropUp] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const ref    = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
-  const pRef = useRef<HTMLDivElement>(null);
+  const pRef   = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) { return; }
     const h = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node) && !pRef.current?.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (!ref.current?.contains(e.target as Node) && !pRef.current?.contains(e.target as Node)) { setOpen(false); }
     };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
@@ -444,10 +428,7 @@ const AiSelect: React.FC<{ label: string; value: string; options: string[]; onCh
     upd();
     globalThis.addEventListener('scroll', upd, true);
     globalThis.addEventListener('resize', upd);
-    return () => {
-      globalThis.removeEventListener('scroll', upd, true);
-      globalThis.removeEventListener('resize', upd);
-    };
+    return () => { globalThis.removeEventListener('scroll', upd, true); globalThis.removeEventListener('resize', upd); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, options.length]);
 
@@ -468,9 +449,9 @@ const AiSelect: React.FC<{ label: string; value: string; options: string[]; onCh
           <div ref={pRef} style={{ position: 'fixed', left: rect.left, width: w, zIndex: 99999, background: t.barBg, border: `1px solid ${t.inpBdr}`, borderRadius: 8, boxShadow: t.modalShadow, overflow: 'auto', maxHeight: 240, ...(dropUp ? { bottom: globalThis.innerHeight - rect.top + 4 } : { top: rect.bottom + 4 }) }}>
             {options.map(opt => {
               let optBg: string;
-              if (hov === opt) { optBg = t.btnHov; }
+              if (hov === opt)        { optBg = t.btnHov; }
               else if (opt === value) { optBg = t.btnBg; }
-              else { optBg = 'transparent'; }
+              else                    { optBg = 'transparent'; }
               return <button key={opt} onClick={() => { onChange(opt); setOpen(false); }} onMouseEnter={() => setHov(opt)} onMouseLeave={() => setHov(null)}
                 style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '6px 11px', fontSize: 12, textAlign: 'left', cursor: 'pointer', border: 'none', color: t.fg, background: optBg }}>
                 {opt === value && <span style={{ marginRight: 6, opacity: 0.5 }}>✓</span>}
@@ -535,7 +516,7 @@ const SettingsContent: React.FC<{ activeTab: TabType; onTabSelect: (t: TabType) 
   </div>
 );
 
-// ─── Рендер компонента без Suspense fallback во избежание flash ───────────────
+// ─── ComponentRender ──────────────────────────────────────────────────────────
 
 interface ComponentRenderProps {
   Component: AnyComponent;
@@ -544,13 +525,25 @@ interface ComponentRenderProps {
   refreshKey: number;
   isDark: boolean;
   componentCategory?: string;
+  fileContents: Record<string, string>;
 }
 
 const ComponentRender: React.FC<ComponentRenderProps> = ({ Component, componentProps, universalProps, refreshKey, isDark, componentCategory }) => {
   const layoutMode = componentCategory === 'backgrounds' ? 'fill' : 'content';
-
+  const isFill = layoutMode === 'fill';
   return (
-    <div style={{ width: '100%', height: '100%', minWidth: 0, minHeight: 0, position: 'relative', overflow: 'hidden', isolation: 'isolate', contain: 'layout paint style' }}>
+    <div style={{
+      width: '100%',
+      // fill (backgrounds): height: 100% чтобы растянуться на родителя
+      // content: height: auto — компонент сам определяет высоту,
+      // не схлопываемся в 0 и не ограничиваем SVG с overflow-visible
+      height: isFill ? '100%' : 'auto',
+      minWidth: 0,
+      minHeight: 0,
+      position: 'relative',
+      overflow: isFill ? 'hidden' : 'visible',
+      ...(isFill ? { isolation: 'isolate', contain: 'layout paint style' } : {}),
+    }}>
       <ComponentWrapper {...universalProps} isDark={isDark} layoutMode={layoutMode} className="w-full h-full">
         <Suspense fallback={null}>
           <Component key={refreshKey} {...componentProps} />
@@ -560,184 +553,548 @@ const ComponentRender: React.FC<ComponentRenderProps> = ({ Component, componentP
   );
 };
 
-const MobileBottomSheet: React.FC<{ config: ComponentConfig; componentProps: ComponentPropsMap; universalProps: UniversalProps; onPropChange: (name: string, v: PropValue) => void; onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void; t: T }> = ({ config, componentProps, universalProps, onPropChange, onUniversalPropChange, t }) => {
-  const [activeTab, setActiveTab] = useState<TabType | null>(null);
+// ─── SourceCodePanel ──────────────────────────────────────────────────────────
+
+const SourceCodePanel: React.FC<{ fileContents: Record<string, string>; t: T }> = ({ fileContents, t }) => {
+  const files = Object.entries(fileContents);
+  const [activeFile, setActiveFile] = useState(files[0]?.[0] ?? '');
+  const [copied,     setCopied]     = useState(false);
+
+  useEffect(() => {
+    if (!files.length) { setActiveFile(''); return; }
+    if (!activeFile || !files.some(([name]) => name === activeFile)) { setActiveFile(files[0][0]); }
+  }, [activeFile, files]);
+
+  const activeCode = files.find(([name]) => name === activeFile)?.[1] ?? '';
+
+  const copyActiveCode = async () => {
+    if (!activeCode) { return; }
+    await navigator.clipboard.writeText(activeCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
+  };
+
+  if (files.length === 0) {
+    return <div style={{ padding: 12, fontSize: 12, color: t.fgMuted }}>Исходный код компонента недоступен.</div>;
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: t.outerBg }}>
+      <div style={{ display: 'flex', gap: 6, padding: '8px 10px', borderBottom: `1px solid ${t.barBorder}`, flexWrap: 'wrap', alignItems: 'center', flexShrink: 0 }}>
+        <button onClick={copyActiveCode} style={{ display: 'flex', alignItems: 'center', gap: 6, border: `1px solid ${t.btnBdr}`, background: copied ? t.tabActBg : t.btnBg, color: copied ? t.tabActClr : t.btnClr, borderRadius: 999, padding: '6px 10px', fontSize: 11, cursor: 'pointer' }}>
+          {copied ? <Check size={13} /> : <Copy size={13} />}
+          {copied ? 'Скопировано' : 'Копировать'}
+        </button>
+        {files.length > 1 && files.map(([name]) => {
+          const isActive = name === activeFile;
+          return (
+            <button key={name} onClick={() => setActiveFile(name)} style={{ border: `1px solid ${isActive ? t.tabActBdr : t.btnBdr}`, background: isActive ? t.tabActBg : t.btnBg, color: isActive ? t.tabActClr : t.btnClr, borderRadius: 6, padding: '4px 8px', fontSize: 11, fontFamily: 'ui-monospace, monospace', cursor: 'pointer' }}>
+              {name}
+            </button>
+          );
+        })}
+      </div>
+      <pre style={{ margin: 0, padding: '12px 16px', flex: 1, overflow: 'auto', fontSize: 12, lineHeight: 1.5, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', color: t.fg, background: t.panelBg, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', tabSize: 2 }}>
+        <code>{activeCode}</code>
+      </pre>
+    </div>
+  );
+};
+
+// ─── MobileBottomSheet ────────────────────────────────────────────────────────
+
+type MobileSheetTab = 'universal' | 'specific' | null;
+
+const MobileBottomSheet: React.FC<{
+  config: ComponentConfig;
+  componentProps: ComponentPropsMap;
+  universalProps: UniversalProps;
+  fileContents: Record<string, string>;
+  onPropChange: (name: string, v: PropValue) => void;
+  onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
+  onRefresh: () => void;
+  onReset: () => void;
+  t: T;
+}> = ({ config, componentProps, universalProps, fileContents, onPropChange, onUniversalPropChange, onRefresh, onReset, t }) => {
+  void fileContents;
+  const [activeTab,   setActiveTab]   = useState<MobileSheetTab>(null);
+  const [sheetVh,     setSheetVh]     = useState(52);
+  const [isDragging,  setIsDragging]  = useState(false);
+  const dragStartY    = useRef<number | null>(null);
+  const dragStartVh   = useRef(52);
   const isOpen = activeTab !== null;
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      if (dragStartY.current === null) { return; }
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+      const delta   = dragStartY.current - clientY;
+      const deltaVh = (delta / globalThis.innerHeight) * 100;
+      setSheetVh(Math.max(10, Math.min(92, dragStartVh.current + deltaVh)));
+    };
+    const onUp = () => {
+      if (dragStartY.current === null) { return; }
+      dragStartY.current = null;
+      setIsDragging(false);
+    };
+    globalThis.addEventListener('mousemove', onMove);
+    globalThis.addEventListener('mouseup',   onUp);
+    globalThis.addEventListener('touchmove', onMove, { passive: true });
+    globalThis.addEventListener('touchend',  onUp);
+    return () => {
+      globalThis.removeEventListener('mousemove', onMove);
+      globalThis.removeEventListener('mouseup',   onUp);
+      globalThis.removeEventListener('touchmove', onMove);
+      globalThis.removeEventListener('touchend',  onUp);
+    };
+  }, []);
+
+  const startDrag = useCallback((clientY: number) => {
+    dragStartY.current  = clientY;
+    dragStartVh.current = sheetVh;
+    setIsDragging(true);
+  }, [sheetVh]);
+
+  const tabLabel: Record<Exclude<MobileSheetTab, null>, string> = {
+    universal: 'Общие',
+    specific:  'Специфические',
+  };
+
   return (
     <>
-      {isOpen && <button onClick={() => setActiveTab(null)} aria-label="Закрыть панель" style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'transparent', border: 'none', cursor: 'default' }} />}
-      <div style={{ position: 'absolute', bottom: 52, left: 0, right: 0, height: isOpen ? '65dvh' : 0, overflow: 'hidden', zIndex: 20, display: 'flex', flexDirection: 'column' }}>
+      {isOpen && (
+        <div onClick={() => setActiveTab(null)}
+          style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'rgba(0,0,0,0.25)', cursor: 'default' }} />
+      )}
+
+      <div style={{
+        position: 'absolute', bottom: 60, left: 0, right: 0,
+        height: isOpen ? `min(${sheetVh}dvh, 720px)` : 0,
+        overflow: 'hidden', zIndex: 20, display: 'flex', flexDirection: 'column',
+        transition: isDragging ? 'none' : 'height 0.22s cubic-bezier(0.4,0,0.2,1)',
+      }}>
         <div style={{ flex: 1, background: t.panelBg, borderTop: `1px solid ${t.barBorder}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 4px', flexShrink: 0 }}><div style={{ width: 36, height: 4, borderRadius: 2, background: t.fgSub }} /></div>
-          <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-            {activeTab === 'universal' && <UniversalSidebar universalProps={universalProps} onChange={onUniversalPropChange} t={t} />}
-            {activeTab === 'specific'  && <SpecificSidebar config={config} componentProps={componentProps} onChange={onPropChange} t={t} />}
+          <div
+            onMouseDown={e => startDrag(e.clientY)}
+            onTouchStart={e => startDrag(e.touches[0].clientY)}
+            style={{ flexShrink: 0, cursor: 'ns-resize', touchAction: 'none', userSelect: 'none' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 10, paddingBottom: 4 }}>
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: t.fgSub }} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 18px 10px', borderBottom: `1px solid ${t.barBorder}` }}>
+              <span style={{ fontSize: '1.1rem', fontWeight: 700, color: t.fg, letterSpacing: '-0.01em' }}>
+                {activeTab ? tabLabel[activeTab] : 'Код'}
+              </span>
+              <button onClick={() => setActiveTab(null)}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 10, border: `1px solid ${t.barBorder}`, background: t.btnBg, color: t.fg, cursor: 'pointer', flexShrink: 0 }}>
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+
+          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            {activeTab === 'universal' && (
+              <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <UniversalSidebar universalProps={universalProps} onChange={onUniversalPropChange} t={t} />
+              </div>
+            )}
+            {activeTab === 'specific' && (
+              <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <SpecificSidebar config={config} componentProps={componentProps} onChange={onPropChange} t={t} />
+              </div>
+            )}
           </div>
         </div>
       </div>
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 52, background: t.barBg, borderTop: `1px solid ${t.barBorder}`, display: 'flex', alignItems: 'stretch', zIndex: 30 }}>
-        {([{ id: 'universal' as TabType, label: 'Общие', Icon: isOpen ? ChevronDown : Settings }, { id: 'specific' as TabType, label: 'Специфические', Icon: isOpen ? ChevronDown : PanelRight }]).map(({ id, label, Icon }) => {
-          const isActive = activeTab === id;
-          return <button key={id} onClick={() => setActiveTab(isActive ? null : id)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, border: 'none', background: isActive ? t.tabActBg : 'transparent', color: isActive ? t.tabActClr : t.tabClr, cursor: 'pointer', fontSize: 10, fontWeight: isActive ? 600 : 400, borderTop: isActive ? `2px solid ${t.btnActBdr}` : '2px solid transparent' }}><Icon size={15} />{label}</button>;
-        })}
+
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0, height: 60,
+        background: t.mobBg, borderTop: `1px solid ${t.barBorder}`,
+        display: 'flex', alignItems: 'stretch', zIndex: 30,
+        paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
+      }}>
+        <MobBtn label="Обновить" icon={<Play size={20} />} t={t} onClick={() => { setActiveTab(null); onRefresh(); }} isActive={false} />
+        <MobBtn label="Сбросить" icon={<RefreshCcw size={20} />} t={t} onClick={() => { setActiveTab(null); onReset(); }} isActive={false} />
+        <MobBtn label="Общие" icon={<Settings size={20} />} t={t} onClick={() => setActiveTab(p => p === 'universal' ? null : 'universal')} isActive={activeTab === 'universal'} />
+        <MobBtn label="Специфич." icon={<PanelRight size={20} />} t={t} onClick={() => setActiveTab(p => p === 'specific' ? null : 'specific')} isActive={activeTab === 'specific'} />
       </div>
     </>
   );
 };
+void MobileBottomSheet;
 
-const FullscreenModal: React.FC<ComponentRenderProps & { config: ComponentConfig; onClose: () => void; onRefresh: () => void; onPropChange: (name: string, v: PropValue) => void; onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void; onReset: () => void; t: T }> = ({ Component, componentProps, universalProps, refreshKey, isDark, componentCategory, config, onClose, onRefresh, onPropChange, onUniversalPropChange, onReset, t }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('universal');
-  const [panelOpen, setPanelOpen] = useState(true);
+// ─── FullscreenModal ──────────────────────────────────────────────────────────
+
+type MobileFullscreenSheet = 'universal' | 'specific' | 'code' | null;
+
+const FullscreenModal: React.FC<ComponentRenderProps & {
+  config: ComponentConfig;
+  fileContents: Record<string, string>;
+  onClose: () => void;
+  onRefresh: () => void;
+  onPropChange: (name: string, v: PropValue) => void;
+  onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
+  onReset: () => void;
+  t: T;
+}> = ({ Component, componentProps, universalProps, refreshKey, isDark, componentCategory, config, fileContents, onClose, onRefresh, onPropChange, onUniversalPropChange, onReset, t }) => {
+  const [activeTab,     setActiveTab]     = useState<TabType>('universal');
+  const [panelOpen,     setPanelOpen]     = useState(true);
+  const [sourceVisible, setSourceVisible] = useState(false);
   const isMobile = useIsMobile();
+
+  const [mobSheet,     setMobSheet]     = useState<MobileFullscreenSheet>(null);
+  const [mobSheetVh,   setMobSheetVh]   = useState(55);
+  const [isDragging,   setIsDragging]   = useState(false);
+  const dragStartY   = useRef<number | null>(null);
+  const dragStartVh  = useRef(55);
+  const mobSheetOpen = mobSheet !== null;
+
+  const isBackground = componentCategory === 'backgrounds';
+
+  useEffect(() => {
+    if (!isMobile) { return; }
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      if (dragStartY.current === null) { return; }
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+      const delta   = dragStartY.current - clientY;
+      const deltaVh = (delta / globalThis.innerHeight) * 100;
+      setMobSheetVh(Math.max(10, Math.min(92, dragStartVh.current + deltaVh)));
+    };
+    const onUp = () => {
+      if (dragStartY.current === null) { return; }
+      dragStartY.current = null;
+      setIsDragging(false);
+    };
+    globalThis.addEventListener('mousemove', onMove);
+    globalThis.addEventListener('mouseup',   onUp);
+    globalThis.addEventListener('touchmove', onMove, { passive: true });
+    globalThis.addEventListener('touchend',  onUp);
+    return () => {
+      globalThis.removeEventListener('mousemove', onMove);
+      globalThis.removeEventListener('mouseup',   onUp);
+      globalThis.removeEventListener('touchmove', onMove);
+      globalThis.removeEventListener('touchend',  onUp);
+    };
+  }, [isMobile]);
+
+  const startDrag = useCallback((clientY: number) => {
+    dragStartY.current  = clientY;
+    dragStartVh.current = mobSheetVh;
+    setIsDragging(true);
+  }, [mobSheetVh]);
+
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { onClose(); } };
     document.addEventListener('keydown', onKey);
     return () => { document.body.style.overflow = ''; document.removeEventListener('keydown', onKey); };
   }, [onClose]);
+
+  const mobSheetLabel: Record<Exclude<MobileFullscreenSheet, null>, string> = {
+    universal: 'Общие',
+    specific:  'Специфические',
+    code:      'Исходный код',
+  };
+
+  // Стиль области превью для десктопа:
+  // — backgrounds: без padding, компонент растягивается на всё пространство
+  // — остальные: небольшой padding для визуального комфорта
+  const desktopPreviewStyle: React.CSSProperties = isBackground
+    ? {
+        flex: 1,
+        display: 'flex',
+        overflow: 'hidden',
+        color: t.fg,
+        minWidth: 0,
+        minHeight: 0,
+        position: 'relative',
+      }
+    : {
+        flex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 48,
+        overflow: 'hidden',
+        color: t.fg,
+        minWidth: 0,
+        minHeight: 0,
+      };
+
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: t.outerBg, display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', flexShrink: 0, borderBottom: `1px solid ${t.barBorder}`, background: t.barBg }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: t.fgMuted, padding: '3px 9px', borderRadius: 7, background: t.btnBg, border: `1px solid ${t.barBorder}`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160, flexShrink: 1 }}>{config.name}</div>
-        <div style={{ flex: 1 }} />
-        <Pill onClick={onRefresh} title="Перезапустить" label="Заново"   icon={<Play       size={14} />} t={t} />
-        <Pill onClick={onReset}   title="Сбросить"      label="Сбросить" icon={<RefreshCcw size={14} />} t={t} />
-        {!isMobile && (<><Divider t={t} /><Pill onClick={() => setPanelOpen(v => !v)} title={panelOpen ? 'Скрыть панель' : 'Показать панель'} label={panelOpen ? 'Скрыть' : 'Панель'} icon={panelOpen ? <PanelRightClose size={14} /> : <PanelRight size={14} />} t={t} active={panelOpen} /></>)}
-        <Pill onClick={onClose} title="Свернуть (Esc)" label="Свернуть" icon={<Minimize2 size={14} />} t={t} />
-      </div>
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '24px 16px' : 48, overflow: 'hidden', paddingBottom: isMobile ? 68 : undefined, color: t.fg, minWidth: 0, minHeight: 0 }}>
-          <ComponentRender Component={Component} componentProps={componentProps} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} componentCategory={componentCategory} />
+
+      {/* Десктоп: верхняя панель */}
+      {!isMobile && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', flexShrink: 0, borderBottom: `1px solid ${t.barBorder}`, background: t.barBg, overflowX: 'auto' }}>
+          <button onClick={onRefresh} style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 999, border: `1px solid ${t.btnBdr}`, background: t.btnBg, color: t.btnClr, padding: '8px 12px', fontSize: 12, whiteSpace: 'nowrap', cursor: 'pointer' }}><Play size={14} />Запуск</button>
+          <button onClick={onReset}   style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 999, border: `1px solid ${t.btnBdr}`, background: t.btnBg, color: t.btnClr, padding: '8px 12px', fontSize: 12, whiteSpace: 'nowrap', cursor: 'pointer' }}><RefreshCcw size={14} />Сброс</button>
+          <button onClick={() => setSourceVisible(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 999, border: `1px solid ${t.btnBdr}`, background: sourceVisible ? t.tabActBg : t.btnBg, color: sourceVisible ? t.tabActClr : t.btnClr, padding: '8px 12px', fontSize: 12, whiteSpace: 'nowrap', cursor: 'pointer' }}>
+            <PanelRight size={14} />{sourceVisible ? 'Скрыть код' : 'Код'}
+          </button>
+          <button onClick={() => setPanelOpen(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 999, border: `1px solid ${t.btnBdr}`, background: t.btnBg, color: t.btnClr, padding: '8px 12px', fontSize: 12, whiteSpace: 'nowrap', cursor: 'pointer' }}>
+            {panelOpen ? <PanelRightClose size={14} /> : <PanelRight size={14} />}{panelOpen ? 'Скрыть настройки' : 'Настройки'}
+          </button>
+          <button onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 999, border: `1px solid ${t.btnBdr}`, background: t.btnBg, color: t.btnClr, padding: '8px 12px', fontSize: 12, whiteSpace: 'nowrap', cursor: 'pointer', marginLeft: 'auto' }}>
+            <Minimize2 size={14} />Свернуть
+          </button>
         </div>
-        {!isMobile && panelOpen && (
-          <div style={{ width: 280, flexShrink: 0, borderLeft: `1px solid ${t.barBorder}`, background: t.panelBg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <SettingsContent activeTab={activeTab} onTabSelect={setActiveTab} config={config} componentProps={componentProps} universalProps={universalProps} onPropChange={onPropChange} onUniversalChange={onUniversalPropChange} t={t} />
+      )}
+
+      {/* Основная область */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
+
+        {/* Десктоп: source panel */}
+        {!isMobile && sourceVisible ? (
+          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <SourceCodePanel fileContents={fileContents} t={t} />
           </div>
+
+        /* Десктоп: preview */
+        ) : !isMobile ? (
+          <>
+            {/*
+              FIX: для backgrounds убираем padding и center-выравнивание —
+              компонент должен занимать всё доступное пространство без ограничений.
+              Для остальных компонентов оставляем padding: 48 и центрирование.
+            */}
+            <div style={desktopPreviewStyle}>
+              <ComponentRender
+                Component={Component}
+                componentProps={componentProps}
+                universalProps={universalProps}
+                refreshKey={refreshKey}
+                isDark={isDark}
+                componentCategory={componentCategory}
+                fileContents={fileContents}
+              />
+            </div>
+            {panelOpen && (
+              <div style={{ width: 280, flexShrink: 0, borderLeft: `1px solid ${t.barBorder}`, background: t.panelBg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <SettingsContent activeTab={activeTab} onTabSelect={setActiveTab} config={config} componentProps={componentProps} universalProps={universalProps} onPropChange={onPropChange} onUniversalChange={onUniversalPropChange} t={t} />
+              </div>
+            )}
+          </>
+
+        ) : (
+          /* ─── Мобильный layout ─────────────────────────────────────── */
+          <>
+            {/* Preview — занимает всё (кроме нижнего бара 60px) */}
+            <div style={{ position: 'absolute', inset: 0, bottom: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fg, overflow: isBackground ? 'hidden' : 'visible' }}>
+              <ComponentRender Component={Component} componentProps={componentProps} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} componentCategory={componentCategory} fileContents={fileContents} />
+            </div>
+
+            {/* Затемнение */}
+            {mobSheetOpen && (
+              <div onClick={() => setMobSheet(null)} style={{ position: 'absolute', inset: 0, bottom: 60, zIndex: 10, background: 'rgba(0,0,0,0.25)', cursor: 'default' }} />
+            )}
+
+            {/* Mobile bottom sheet */}
+            <div style={{
+              position: 'absolute', bottom: 60, left: 0, right: 0,
+              height: mobSheetOpen ? `min(${mobSheetVh}dvh, 720px)` : 0,
+              overflow: 'hidden', zIndex: 20, display: 'flex', flexDirection: 'column',
+              transition: isDragging ? 'none' : 'height 0.22s cubic-bezier(0.4,0,0.2,1)',
+            }}>
+              <div style={{ flex: 1, background: t.panelBg, borderTop: `1px solid ${t.barBorder}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                {/* Handle */}
+                <div
+                  onMouseDown={e => startDrag(e.clientY)}
+                  onTouchStart={e => startDrag(e.touches[0].clientY)}
+                  style={{ flexShrink: 0, cursor: 'ns-resize', touchAction: 'none', userSelect: 'none' }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 10, paddingBottom: 4 }}>
+                    <div style={{ width: 36, height: 4, borderRadius: 2, background: t.fgSub }} />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 18px 10px', borderBottom: `1px solid ${t.barBorder}` }}>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 700, color: t.fg, letterSpacing: '-0.01em' }}>
+                      {mobSheet ? mobSheetLabel[mobSheet] : ''}
+                    </span>
+                    <button onClick={() => setMobSheet(null)}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 10, border: `1px solid ${t.barBorder}`, background: t.btnBg, color: t.fg, cursor: 'pointer', flexShrink: 0 }}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                  {mobSheet === 'universal' && (
+                    <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                      <UniversalSidebar universalProps={universalProps} onChange={onUniversalPropChange} t={t} />
+                    </div>
+                  )}
+                  {mobSheet === 'specific' && (
+                    <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                      <SpecificSidebar config={config} componentProps={componentProps} onChange={onPropChange} t={t} />
+                    </div>
+                  )}
+                  {mobSheet === 'code' && (
+                    <SourceCodePanel fileContents={fileContents} t={t} />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Мобильный нижний бар */}
+            <div style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0, height: 60,
+              background: t.mobBg, borderTop: `1px solid ${t.barBorder}`,
+              display: 'flex', alignItems: 'stretch', zIndex: 30,
+              paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
+            }}>
+              <MobBtn label="Обновить"   icon={<Play size={20} />}       t={t} onClick={() => { setMobSheet(null); onRefresh(); }}                                   isActive={false} />
+              <MobBtn label="Сбросить"   icon={<RefreshCcw size={20} />} t={t} onClick={() => { setMobSheet(null); onReset(); }}                                     isActive={false} />
+              <MobBtn label="Общие"      icon={<Settings size={20} />}   t={t} onClick={() => setMobSheet(p => p === 'universal' ? null : 'universal')}               isActive={mobSheet === 'universal'} />
+              <MobBtn label="Специфич."  icon={<PanelRight size={20} />} t={t} onClick={() => setMobSheet(p => p === 'specific'  ? null : 'specific')}                isActive={mobSheet === 'specific'} />
+              <MobBtn label="Код"        icon={<Code2 size={20} />}      t={t} onClick={() => setMobSheet(p => p === 'code'      ? null : 'code')}                    isActive={mobSheet === 'code'} />
+              <MobBtn label="Свернуть"   icon={<Minimize2 size={20} />}  t={t} onClick={onClose}                                                                     isActive={false} />
+            </div>
+          </>
         )}
-        {isMobile && <MobileBottomSheet config={config} componentProps={componentProps} universalProps={universalProps} onPropChange={onPropChange} onUniversalPropChange={onUniversalPropChange} t={t} />}
       </div>
     </div>,
     document.body,
   );
 };
 
-const PreviewPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; onRefresh: () => void; onFullscreen: () => void; onOpenSettings: () => void; t: T; loading: boolean }> = ({ config, Component, componentProps, universalProps, refreshKey, isDark, componentCategory, onRefresh, onFullscreen, onOpenSettings, t, loading }) => (
-  <div style={{ borderRadius: 12, border: `1px solid ${t.outerBorder}`, background: t.outerBg, boxShadow: t.outerShadow, display: 'flex', flexDirection: 'column', width: '100%', minWidth: 0, overflow: 'hidden' }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', borderBottom: `1px solid ${t.barBorder}`, background: t.barBg, flexWrap: 'nowrap', minWidth: 0 }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color: t.fgMuted, padding: '3px 9px', borderRadius: 7, background: t.btnBg, border: `1px solid ${t.barBorder}`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200, flexShrink: 1 }}>{config.name}</div>
-      <div style={{ flex: 1 }} />
-      <Pill onClick={onRefresh}      title="Перезапустить" label="Заново"     icon={<Play      size={14} />} t={t} />
-      <Pill onClick={onFullscreen}   title="Развернуть"    label="Развернуть" icon={<Maximize2 size={14} />} t={t} />
-      <Pill onClick={onOpenSettings} title="Настройки"     label="Настройки"  icon={<Settings  size={14} />} t={t} />
-    </div>
+// ─── PreviewPanel ─────────────────────────────────────────────────────────────
+// FIX: для backgrounds — явная высота (не minHeight) чтобы height:100% в
+//      дочернем ComponentRender работало корректно. Кнопка Settings остаётся
+//      поверх через absolute-позиционирование.
 
-    {/* Область предпросмотра фиксированной высоты без прыжков */}
-    <div style={{ height: 380, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, color: t.fg, position: 'relative', overflow: 'hidden', boxSizing: 'border-box' }}>
-      {loading && (
-        <div style={{
-          position: 'absolute', inset: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: t.outerBg,
-          zIndex: 2,
-          fontSize: 12,
-          color: t.fgSub,
-          fontFamily: 'ui-monospace, monospace',
-        }}>
-          Загрузка компонента…
-        </div>
-      )}
-      {!loading && (
-        <ComponentRender
-          Component={Component}
-          componentProps={componentProps}
-          universalProps={universalProps}
-          refreshKey={refreshKey}
-          isDark={isDark}
-          componentCategory={componentCategory}
-        />
-      )}
-    </div>
+const PreviewPanel: React.FC<ComponentRenderProps & {
+  onOpenFullscreen: () => void;
+  t: T;
+  loading: boolean;
+}> = ({ Component, componentProps, universalProps, refreshKey, isDark, componentCategory, onOpenFullscreen, t, loading, fileContents }) => {
+  const isBackground = componentCategory === 'backgrounds';
 
-    <div style={{ padding: '6px 12px', borderTop: `1px solid ${t.barBorder}`, fontSize: 11, color: t.footerClr, display: 'flex', alignItems: 'center', justifyContent: 'space-between', userSelect: 'none', background: t.outerBg, flexShrink: 0 }}>
-      <span>Компонент</span>
-      <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 10, opacity: 0.7 }}>{config.id}</span>
-    </div>
-  </div>
-);
-
-const SettingsPanel: React.FC<ComponentRenderProps & { config: ComponentConfig; onClose: () => void; onPropChange: (name: string, v: PropValue) => void; onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void; onRefresh: () => void; onReset: () => void; t: T }> = (props) => {
-  const { isDark, config, onClose, onRefresh, onReset, t } = props;
-  const [activeTab, setActiveTab] = useState<TabType>('universal');
   return (
-    <div style={{ borderRadius: 12, border: `1px solid ${t.outerBorder}`, background: t.outerBg, boxShadow: t.outerShadow, display: 'flex', flexDirection: 'column', maxHeight: 'calc(100dvh - 3rem)', overflow: 'hidden' }}>
-      <div style={{ height: 220, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, borderBottom: `1px solid ${t.barBorder}`, color: t.fg, overflow: 'hidden', boxSizing: 'border-box' }}>
-        <ComponentRender Component={props.Component} componentProps={props.componentProps} universalProps={props.universalProps} refreshKey={props.refreshKey} isDark={isDark} componentCategory={props.componentCategory} />
+    // position: relative нужен для кнопки настроек (absolute)
+    // overflow: visible — критично для SVG компонентов вроде CurvedLoop
+    // у которых текст выходит за пределы viewBox через overflow-visible
+    <div style={{ position: 'relative', width: '100%', overflow: 'visible' }}>
+      {/* Кнопка настроек — поверх, в правом верхнем углу */}
+      <div style={{
+        position: 'absolute', top: 10, right: 10, zIndex: 5,
+        display: 'flex', gap: 6,
+      }}>
+        <button
+          onClick={onOpenFullscreen}
+          title="Настройки"
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 36, height: 36, borderRadius: 10,
+            border: `1.5px solid ${t.btnActBdr}`,
+            background: t.barBg,
+            color: t.fg,
+            cursor: 'pointer',
+            flexShrink: 0,
+            boxShadow: t.outerShadow,
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLButtonElement).style.background = t.btnHov;
+            (e.currentTarget as HTMLButtonElement).style.color = t.btnActClr;
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLButtonElement).style.background = t.barBg;
+            (e.currentTarget as HTMLButtonElement).style.color = t.fg;
+          }}
+        >
+          <Settings size={17} />
+        </button>
       </div>
-      <SettingsContent activeTab={activeTab} onTabSelect={setActiveTab} config={config} componentProps={props.componentProps} universalProps={props.universalProps} onPropChange={props.onPropChange} onUniversalChange={props.onUniversalPropChange} t={t} />
-      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', borderTop: `1px solid ${t.barBorder}`, background: t.barBg, flexWrap: 'wrap', rowGap: 6 }}>
-        <Pill onClick={onRefresh} title="Перезапустить" label="Заново"   icon={<Play       size={14} />} t={t} />
-        <Pill onClick={onReset}   title="Сбросить всё"  label="Сбросить" icon={<RefreshCcw size={14} />} t={t} />
-        <div style={{ flex: 1 }} />
-        <Pill onClick={onClose}   title="Закрыть"       label="Закрыть"  icon={<X          size={14} />} t={t} />
+
+      {/*
+        FIX: backgrounds требуют явной height, а не только minHeight,
+        потому что ComponentRender → ComponentWrapper внутри используют
+        height: 100% и width: 100% — без явной высоты у родителя они
+        схлопываются в 0. Для обычных компонентов оставляем minHeight
+        чтобы не ломать компоненты с естественной высотой.
+
+        FIX 2: для content-компонентов убираем overflow: hidden — это
+        обрезало SVG с overflow-visible (CurvedLoop и подобные).
+        Добавляем padding чтобы выходящий за края изогнутый текст
+        не срезался родительским контейнером статьи.
+      */}
+      <div style={{
+        width: '100%',
+        ...(isBackground
+          ? { height: 400 }
+          // minHeight с запасом — CurvedLoop с curveAmount=400 уходит далеко вниз
+          // за пределы SVG viewBox, нужно место чтобы текст был виден
+          : { minHeight: 500, paddingTop: 60, paddingBottom: 120 }
+        ),
+        display: 'flex',
+        alignItems: isBackground ? 'stretch' : 'center',
+        justifyContent: isBackground ? 'stretch' : 'center',
+        color: t.fg,
+        position: 'relative',
+        overflow: isBackground ? 'hidden' : 'visible',
+      }}>
+        {loading && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', zIndex: 2, fontSize: 12, color: t.fgSub, fontFamily: 'ui-monospace, monospace' }}>
+            Загрузка…
+          </div>
+        )}
+        {!loading && (
+          <ComponentRender
+            Component={Component}
+            componentProps={componentProps}
+            universalProps={universalProps}
+            refreshKey={refreshKey}
+            isDark={isDark}
+            componentCategory={componentCategory}
+            fileContents={fileContents}
+          />
+        )}
       </div>
     </div>
   );
 };
 
-// ─── Вспомогательная функция для скрытия оверлея после двух rAF ──────────────
 function scheduleHideLoading(setLoading: (v: boolean) => void) {
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => setLoading(false));
-  });
+  requestAnimationFrame(() => { requestAnimationFrame(() => setLoading(false)); });
 }
 
 // ─── UIComponentViewer ────────────────────────────────────────────────────────
 
 const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) => {
   const { isDark } = useTheme();
-  const t = tk(isDark);
+  const isMobile   = useIsMobile();
+  void isMobile;
+  const t          = tk(isDark);
 
-  const [settingsOpen,   setSettingsOpen]   = useState(false);
   const [isFullscreen,   setIsFullscreen]   = useState(false);
   const [refreshKey,     setRefreshKey]     = useState(0);
   const [componentProps, setComponentProps] = useState<ComponentPropsMap>({});
   const [universalProps, setUniversalProps] = useState<UniversalProps>(DEFAULT_UNIVERSAL_PROPS);
   const [componentData,  setComponentData]  = useState<LoadedComponentData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading,        setLoading]        = useState(true);
 
   useEffect(() => {
     setLoading(true);
     loadComponent(componentId).then(data => {
-      if (data) {
-        setComponentData(data);
-        setComponentProps(getDefaultProps(data.config));
-      }
+      if (data) { setComponentData(data); setComponentProps(getDefaultProps(data.config)); }
       scheduleHideLoading(setLoading);
     });
   }, [componentId]);
 
-  const handleRefresh = useCallback(() => setRefreshKey(k => k + 1), []);
-
-  const handlePropChange = useCallback((name: string, value: PropValue) => {
-    setComponentProps(prev => ({ ...prev, [name]: value }));
-    setRefreshKey(k => k + 1);
-  }, []);
-
-  const handleUniversalChange = useCallback((key: keyof UniversalProps, value: PropValue) =>
-    setUniversalProps(prev => ({ ...prev, [key]: value })), []);
-
-  const handleReset = useCallback(() => {
+  const handleRefresh         = useCallback(() => setRefreshKey(k => k + 1), []);
+  const handlePropChange      = useCallback((name: string, value: PropValue) => { setComponentProps(prev => ({ ...prev, [name]: value })); setRefreshKey(k => k + 1); }, []);
+  const handleUniversalChange = useCallback((key: keyof UniversalProps, value: PropValue) => setUniversalProps(prev => ({ ...prev, [key]: value })), []);
+  const handleReset           = useCallback(() => {
     if (!componentData) { return; }
     setComponentProps(getDefaultProps(componentData.config));
     setUniversalProps(DEFAULT_UNIVERSAL_PROPS);
     setRefreshKey(k => k + 1);
   }, [componentData]);
 
-  const placeholderConfig: ComponentConfig = useMemo(() => ({
-    id: componentId, name: '…', description: '', props: [], specificProps: [],
-  }), [componentId]);
-
-  const PlaceholderComponent = useMemo(() => () => null, []);
+  const placeholderConfig: ComponentConfig = useMemo(() => ({ id: componentId, name: '…', description: '', props: [], specificProps: [] }), [componentId]);
+  const PlaceholderComponent               = useMemo(() => () => null, []);
 
   const effectiveData = componentData ?? {
     config: placeholderConfig,
@@ -746,38 +1103,25 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
   };
 
   const shared = {
-    Component: effectiveData.Component,
+    Component:         effectiveData.Component,
     componentProps,
     universalProps,
     refreshKey,
     isDark,
     componentCategory: effectiveData.config.category,
+    fileContents:      effectiveData.fileContents,
   };
 
   return (
-    <div className="not-prose" style={{ margin: '1.25rem 0' }}>
-      {settingsOpen ? (
-        <SettingsPanel
-          {...shared}
-          config={effectiveData.config}
-          onClose={() => setSettingsOpen(false)}
-          onPropChange={handlePropChange}
-          onUniversalPropChange={handleUniversalChange}
-          onRefresh={handleRefresh}
-          onReset={handleReset}
-          t={t}
-        />
-      ) : (
-        <PreviewPanel
-          {...shared}
-          config={effectiveData.config}
-          onRefresh={handleRefresh}
-          onFullscreen={() => setIsFullscreen(true)}
-          onOpenSettings={() => setSettingsOpen(true)}
-          t={t}
-          loading={loading}
-        />
-      )}
+    // overflow: visible на корневом уровне — иначе статья обрезает SVG
+    // с overflow-visible который выходит за пределы своего viewBox (CurvedLoop и подобные)
+    <div className="not-prose" style={{ margin: '1.25rem 0', overflow: 'visible', position: 'relative' }}>
+      <PreviewPanel
+        {...shared}
+        onOpenFullscreen={() => setIsFullscreen(true)}
+        t={t}
+        loading={loading}
+      />
       {isFullscreen && componentData && (
         <FullscreenModal
           {...shared}
