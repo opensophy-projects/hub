@@ -243,7 +243,7 @@ export default function PlasmaWave(props: PlasmaWaveProps) {
       }
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
-  }, []);
+  }, [bend1, bend2, colors, dir2, focalLength, rotationDeg, speed1, speed2, xOffset, yOffset]);
 
   return <div ref={containerRef} className="w-full h-full" />;
 }
