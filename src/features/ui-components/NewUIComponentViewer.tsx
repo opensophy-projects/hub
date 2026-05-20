@@ -81,7 +81,7 @@ const MobBtn: React.FC<{
   </button>
 );
 
-// ─── IconBtn — маленькая кнопка для верхней панели ────────────────────────────
+// ─── IconBtn ──────────────────────────────────────────────────────────────────
 
 const IconBtn: React.FC<{
   icon: React.ReactNode; onClick: () => void; t: T; active?: boolean; title?: string;
@@ -515,7 +515,7 @@ const SettingsContent: React.FC<{ activeTab: TabType; onTabSelect: (t: TabType) 
   </div>
 );
 
-// ─── Рендер компонента ────────────────────────────────────────────────────────
+// ─── ComponentRender ──────────────────────────────────────────────────────────
 
 interface ComponentRenderProps {
   Component: AnyComponent;
@@ -530,7 +530,16 @@ interface ComponentRenderProps {
 const ComponentRender: React.FC<ComponentRenderProps> = ({ Component, componentProps, universalProps, refreshKey, isDark, componentCategory }) => {
   const layoutMode = componentCategory === 'backgrounds' ? 'fill' : 'content';
   return (
-    <div style={{ width: '100%', height: '100%', minWidth: 0, minHeight: 0, position: 'relative', overflow: layoutMode === 'fill' ? 'hidden' : 'visible', isolation: 'isolate', contain: 'layout paint style' }}>
+    <div style={{
+      width: '100%',
+      height: '100%',
+      minWidth: 0,
+      minHeight: 0,
+      position: 'relative',
+      overflow: layoutMode === 'fill' ? 'hidden' : 'visible',
+      isolation: 'isolate',
+      contain: 'layout paint style',
+    }}>
       <ComponentWrapper {...universalProps} isDark={isDark} layoutMode={layoutMode} className="w-full h-full">
         <Suspense fallback={null}>
           <Component key={refreshKey} {...componentProps} />
@@ -540,8 +549,7 @@ const ComponentRender: React.FC<ComponentRenderProps> = ({ Component, componentP
   );
 };
 
-// ─── SourceCodePanel — код занимает всё доступное пространство ───────────────
-// [5] убрано название файла в заголовке; pre растягивается на весь контейнер
+// ─── SourceCodePanel ──────────────────────────────────────────────────────────
 
 const SourceCodePanel: React.FC<{ fileContents: Record<string, string>; t: T }> = ({ fileContents, t }) => {
   const files = Object.entries(fileContents);
@@ -568,7 +576,6 @@ const SourceCodePanel: React.FC<{ fileContents: Record<string, string>; t: T }> 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: t.outerBg }}>
-      {/* Только кнопки — без названия файла [5] */}
       <div style={{ display: 'flex', gap: 6, padding: '8px 10px', borderBottom: `1px solid ${t.barBorder}`, flexWrap: 'wrap', alignItems: 'center', flexShrink: 0 }}>
         <button onClick={copyActiveCode} style={{ display: 'flex', alignItems: 'center', gap: 6, border: `1px solid ${t.btnBdr}`, background: copied ? t.tabActBg : t.btnBg, color: copied ? t.tabActClr : t.btnClr, borderRadius: 999, padding: '6px 10px', fontSize: 11, cursor: 'pointer' }}>
           {copied ? <Check size={13} /> : <Copy size={13} />}
@@ -583,7 +590,6 @@ const SourceCodePanel: React.FC<{ fileContents: Record<string, string>; t: T }> 
           );
         })}
       </div>
-      {/* pre на весь оставшийся контейнер [5] */}
       <pre style={{ margin: 0, padding: '12px 16px', flex: 1, overflow: 'auto', fontSize: 12, lineHeight: 1.5, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', color: t.fg, background: t.panelBg, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', tabSize: 2 }}>
         <code>{activeCode}</code>
       </pre>
@@ -592,9 +598,6 @@ const SourceCodePanel: React.FC<{ fileContents: Record<string, string>; t: T }> 
 };
 
 // ─── MobileBottomSheet ────────────────────────────────────────────────────────
-// [3] drag handle полностью переработан: глобальные mousemove/touchmove,
-//     нет e.preventDefault() на touchmove в JSX, smooth transition только когда не тащим
-// [4] добавлена кнопка «Код»
 
 type MobileSheetTab = 'universal' | 'specific' | null;
 
@@ -616,7 +619,6 @@ const MobileBottomSheet: React.FC<{
   const dragStartVh   = useRef(52);
   const isOpen = activeTab !== null;
 
-  // Глобальные обработчики drag — не теряем трек при быстром движении [3]
   useEffect(() => {
     const onMove = (e: MouseEvent | TouchEvent) => {
       if (dragStartY.current === null) { return; }
@@ -653,8 +655,6 @@ const MobileBottomSheet: React.FC<{
     specific:  'Специфические',
   };
 
-  const hasCode = Object.keys(fileContents).length > 0;
-
   return (
     <>
       {isOpen && (
@@ -662,7 +662,6 @@ const MobileBottomSheet: React.FC<{
           style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'rgba(0,0,0,0.25)', cursor: 'default' }} />
       )}
 
-      {/* Bottom sheet */}
       <div style={{
         position: 'absolute', bottom: 60, left: 0, right: 0,
         height: isOpen ? `min(${sheetVh}dvh, 720px)` : 0,
@@ -670,7 +669,6 @@ const MobileBottomSheet: React.FC<{
         transition: isDragging ? 'none' : 'height 0.22s cubic-bezier(0.4,0,0.2,1)',
       }}>
         <div style={{ flex: 1, background: t.panelBg, borderTop: `1px solid ${t.barBorder}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* Drag handle + заголовок */}
           <div
             onMouseDown={e => startDrag(e.clientY)}
             onTouchStart={e => startDrag(e.touches[0].clientY)}
@@ -701,12 +699,10 @@ const MobileBottomSheet: React.FC<{
                 <SpecificSidebar config={config} componentProps={componentProps} onChange={onPropChange} t={t} />
               </div>
             )}
-            {/* Режим 'code' — activeTab === null означает что открыт код (спец состояние) */}
           </div>
         </div>
       </div>
 
-      {/* Нижний бар — как MobileNav [4] + кнопка Код */}
       <div style={{
         position: 'absolute', bottom: 0, left: 0, right: 0, height: 60,
         background: t.mobBg, borderTop: `1px solid ${t.barBorder}`,
@@ -723,8 +719,6 @@ const MobileBottomSheet: React.FC<{
 };
 
 // ─── FullscreenModal ──────────────────────────────────────────────────────────
-// [3] на мобилке убраны верхние кнопки — всё управление через нижний бар
-// [4] кнопка Код перенесена в нижний бар мобилки через отдельный SheetTab
 
 type MobileFullscreenSheet = 'universal' | 'specific' | 'code' | null;
 
@@ -743,7 +737,6 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
   const [sourceVisible, setSourceVisible] = useState(false);
   const isMobile = useIsMobile();
 
-  // Мобильный sheet — отдельный стейт
   const [mobSheet,     setMobSheet]     = useState<MobileFullscreenSheet>(null);
   const [mobSheetVh,   setMobSheetVh]   = useState(55);
   const [isDragging,   setIsDragging]   = useState(false);
@@ -751,7 +744,8 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
   const dragStartVh  = useRef(55);
   const mobSheetOpen = mobSheet !== null;
 
-  // Глобальные drag-обработчики [3]
+  const isBackground = componentCategory === 'backgrounds';
+
   useEffect(() => {
     if (!isMobile) { return; }
     const onMove = (e: MouseEvent | TouchEvent) => {
@@ -797,10 +791,35 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
     code:      'Исходный код',
   };
 
+  // Стиль области превью для десктопа:
+  // — backgrounds: без padding, компонент растягивается на всё пространство
+  // — остальные: небольшой padding для визуального комфорта
+  const desktopPreviewStyle: React.CSSProperties = isBackground
+    ? {
+        flex: 1,
+        display: 'flex',
+        overflow: 'hidden',
+        color: t.fg,
+        minWidth: 0,
+        minHeight: 0,
+        position: 'relative',
+      }
+    : {
+        flex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 48,
+        overflow: 'hidden',
+        color: t.fg,
+        minWidth: 0,
+        minHeight: 0,
+      };
+
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: t.outerBg, display: 'flex', flexDirection: 'column' }}>
 
-      {/* Десктоп: верхняя панель [3] — на мобилке скрыта */}
+      {/* Десктоп: верхняя панель */}
       {!isMobile && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', flexShrink: 0, borderBottom: `1px solid ${t.barBorder}`, background: t.barBg, overflowX: 'auto' }}>
           <button onClick={onRefresh} style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 999, border: `1px solid ${t.btnBdr}`, background: t.btnBg, color: t.btnClr, padding: '8px 12px', fontSize: 12, whiteSpace: 'nowrap', cursor: 'pointer' }}><Play size={14} />Запуск</button>
@@ -819,15 +838,31 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
 
       {/* Основная область */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
-        {/* Десктоп: source panel или preview */}
+
+        {/* Десктоп: source panel */}
         {!isMobile && sourceVisible ? (
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             <SourceCodePanel fileContents={fileContents} t={t} />
           </div>
+
+        /* Десктоп: preview */
         ) : !isMobile ? (
           <>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48, overflow: 'hidden', color: t.fg, minWidth: 0, minHeight: 0 }}>
-              <ComponentRender Component={Component} componentProps={componentProps} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} componentCategory={componentCategory} fileContents={fileContents} />
+            {/*
+              FIX: для backgrounds убираем padding и center-выравнивание —
+              компонент должен занимать всё доступное пространство без ограничений.
+              Для остальных компонентов оставляем padding: 48 и центрирование.
+            */}
+            <div style={desktopPreviewStyle}>
+              <ComponentRender
+                Component={Component}
+                componentProps={componentProps}
+                universalProps={universalProps}
+                refreshKey={refreshKey}
+                isDark={isDark}
+                componentCategory={componentCategory}
+                fileContents={fileContents}
+              />
             </div>
             {panelOpen && (
               <div style={{ width: 280, flexShrink: 0, borderLeft: `1px solid ${t.barBorder}`, background: t.panelBg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -835,6 +870,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
               </div>
             )}
           </>
+
         ) : (
           /* ─── Мобильный layout ─────────────────────────────────────── */
           <>
@@ -894,7 +930,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
               </div>
             </div>
 
-            {/* Мобильный нижний бар [3] [4] — без верхних кнопок */}
+            {/* Мобильный нижний бар */}
             <div style={{
               position: 'absolute', bottom: 0, left: 0, right: 0, height: 60,
               background: t.mobBg, borderTop: `1px solid ${t.barBorder}`,
@@ -916,47 +952,68 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
   );
 };
 
-// ─── PreviewPanel — обычный режим ────────────────────────────────────────────
-// [1] Только кнопка настроек, без лишних отступов и декоративных зон
-// [2] Нет ограничивающего контейнера — компонент занимает всё пространство
+// ─── PreviewPanel ─────────────────────────────────────────────────────────────
+// FIX: для backgrounds — явная высота (не minHeight) чтобы height:100% в
+//      дочернем ComponentRender работало корректно. Кнопка Settings остаётся
+//      поверх через absolute-позиционирование.
 
 const PreviewPanel: React.FC<ComponentRenderProps & {
   onOpenFullscreen: () => void;
   t: T;
   loading: boolean;
-}> = ({ Component, componentProps, universalProps, refreshKey, isDark, componentCategory, onOpenFullscreen, t, loading }) => (
-  <div style={{ position: 'relative', width: '100%' }}>
-    {/* Кнопка настроек — абсолютно поверх, в правом верхнем углу [1] */}
-    <div style={{
-      position: 'absolute', top: 8, right: 8, zIndex: 5,
-      display: 'flex', gap: 6,
-    }}>
-      <IconBtn icon={<Settings size={15} />} onClick={onOpenFullscreen} t={t} title="Настройки" />
-    </div>
+}> = ({ Component, componentProps, universalProps, refreshKey, isDark, componentCategory, onOpenFullscreen, t, loading, fileContents }) => {
+  const isBackground = componentCategory === 'backgrounds';
 
-    {/* Область компонента — без fixed height, без padding-рамок [2] */}
-    <div style={{
-      width: '100%',
-      minHeight: 320,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      color: t.fg, position: 'relative', overflow: 'hidden',
-    }}>
-      {loading && (
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', zIndex: 2, fontSize: 12, color: t.fgSub, fontFamily: 'ui-monospace, monospace' }}>
-          Загрузка…
-        </div>
-      )}
-      {!loading && (
-        <ComponentRender
-          Component={Component} componentProps={componentProps}
-          universalProps={universalProps} refreshKey={refreshKey}
-          isDark={isDark} componentCategory={componentCategory}
-          fileContents={{}}
-        />
-      )}
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      {/* Кнопка настроек — поверх, в правом верхнем углу */}
+      <div style={{
+        position: 'absolute', top: 8, right: 8, zIndex: 5,
+        display: 'flex', gap: 6,
+      }}>
+        <IconBtn icon={<Settings size={15} />} onClick={onOpenFullscreen} t={t} title="Настройки" />
+      </div>
+
+      {/*
+        FIX: backgrounds требуют явной height, а не только minHeight,
+        потому что ComponentRender → ComponentWrapper внутри используют
+        height: 100% и width: 100% — без явной высоты у родителя они
+        схлопываются в 0. Для обычных компонентов оставляем minHeight
+        чтобы не ломать компоненты с естественной высотой.
+      */}
+      <div style={{
+        width: '100%',
+        ...(isBackground
+          ? { height: 400 }
+          : { minHeight: 320 }
+        ),
+        display: 'flex',
+        alignItems: isBackground ? 'stretch' : 'center',
+        justifyContent: isBackground ? 'stretch' : 'center',
+        color: t.fg,
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {loading && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', zIndex: 2, fontSize: 12, color: t.fgSub, fontFamily: 'ui-monospace, monospace' }}>
+            Загрузка…
+          </div>
+        )}
+        {!loading && (
+          <ComponentRender
+            Component={Component}
+            componentProps={componentProps}
+            universalProps={universalProps}
+            refreshKey={refreshKey}
+            isDark={isDark}
+            componentCategory={componentCategory}
+            fileContents={fileContents}
+          />
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 function scheduleHideLoading(setLoading: (v: boolean) => void) {
   requestAnimationFrame(() => { requestAnimationFrame(() => setLoading(false)); });
