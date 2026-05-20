@@ -7,7 +7,7 @@
     "dev": "npm run generate && astro dev",
     "build": "npm run generate && astro build",
     "preview": "astro preview",
-    "lint": "eslint .",
+    "lint": "node scripts/eslint-runner.cjs .",
     "generate": "node scripts/generate.mjs",
     "generate:docs": "node scripts/generateDocs.mjs",
     "generate:sitemap": "node scripts/generateSitemap.mjs"
