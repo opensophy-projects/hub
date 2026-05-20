@@ -2,7 +2,7 @@ import React, {
   useState, useCallback, Suspense, useEffect, useMemo, useRef,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { useTheme } from '@/shared/contexts/ThemeContext';
+import { useTheme } from '@/shared/contexts/useTheme';
 import {
   Minimize2, Play, RefreshCcw, Copy, Check,
   Settings, PanelRight, PanelRightClose,

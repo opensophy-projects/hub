@@ -1,7 +1,7 @@
 import React, {
   useState, useMemo, useEffect, useCallback, useRef, memo,
 } from 'react';
-import { useTheme } from '@/shared/contexts/ThemeContext';
+import { useTheme } from '@/shared/contexts/useTheme';
 import { useDebounce } from '@/shared/hooks/useDebounce';
 import { useManifest } from '@/features/docs/hooks/useDocuments';
 import {

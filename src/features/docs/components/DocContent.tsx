@@ -1,6 +1,6 @@
 import React, { useState, useMemo, Suspense, lazy, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { ThemeProvider, useTheme } from '@/shared/contexts/ThemeContext';
+import { ThemeProvider, useTheme } from '@/shared/contexts/useTheme';
 import Navigation from '@/features/navigation/components/Navigation';
 import { parseHtmlToReact, TableContext } from '@/shared/lib/htmlParser';
 import { useTableOfContents } from '../hooks/useTableOfContents';

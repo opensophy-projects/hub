@@ -3,10 +3,10 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { bridge } from '../useDevBridge';
-import { toast } from '../components/Toast';
+import { toast } from '../components/toastBus';
 import { Badge, ConfirmDialog } from '../components/ui';
-import { ThemeTokensContext } from '../DevPanel';
-import type { TTokens } from '../DevPanel';
+import { ThemeTokensContext } from '../theme';
+import type { TTokens } from '../theme';
 import {
   FolderOpen, Plus, Trash2,
   ChevronRight, ChevronDown, FolderPlus, FilePlus,

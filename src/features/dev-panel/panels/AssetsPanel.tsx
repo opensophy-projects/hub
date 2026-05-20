@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useContext, useEffect } from 'react';
 import { bridge } from '../useDevBridge';
 import { ThemeTokensContext } from '../DevPanel';
-import { toast } from '../components/Toast';
+import { toast } from '../components/toastBus';
 import { Upload, Image, Star, Loader2, Check } from 'lucide-react';
 
 interface UploadedAsset {
@@ -33,7 +33,7 @@ function DropZone({ label, accept, onFiles, loading, hint, t }: Readonly<{
   onFiles: (files: File[]) => void;
   loading: boolean;
   hint?: string;
-  t: ReturnType<typeof import('../DevPanel').makeT>;
+  t: ReturnType<typeof import('../theme').makeT>;
 }>) {
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -105,7 +105,7 @@ function DropZone({ label, accept, onFiles, loading, hint, t }: Readonly<{
 // Элемент списка загруженного ассета с кнопкой копирования пути
 function AssetItem({ asset, t }: Readonly<{
   asset: UploadedAsset;
-  t: ReturnType<typeof import('../DevPanel').makeT>;
+  t: ReturnType<typeof import('../theme').makeT>;
 }>) {
   const [copied, setCopied] = useState(false);
 

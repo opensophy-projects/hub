@@ -1,21 +1,9 @@
-import React, { createContext, useContext, useState, useMemo, useEffect, useCallback } from 'react';
-import { applyThemeColorOverrides, makeTokens } from '@/shared/tokens/theme';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { applyTheme, applyThemeColorVars, persistTheme } from './themeUtils';
+import { ThemeContext, type ThemeContextType } from './themeContextStore';
 
-interface ThemeContextType {
-  isDark: boolean;
-  toggleTheme: (event?: React.MouseEvent) => void;
-  isSidebarOpen: boolean;
-  setSidebarOpen: (open: boolean) => void;
-  isSearchOpen: boolean;
-  setSearchOpen: (open: boolean) => void;
-}
-
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
-
-const KEY_THEME  = 'theme';
+const KEY_THEME = 'theme';
 const KEY_SEARCH = 'hub:search';
-
-// Имя кастомного события для синхронизации между островами на одной странице
 const THEME_CHANGE_EVENT = 'hub:theme-change';
 
 const getInitialTheme = (): boolean => {
@@ -23,31 +11,8 @@ const getInitialTheme = (): boolean => {
   return localStorage.getItem(KEY_THEME) !== 'light';
 };
 
-export const applyTheme = (isDark: boolean) => {
-  if (globalThis.document === undefined) return;
-  const t = makeTokens(isDark);
-  if (isDark) {
-    document.documentElement.classList.add('dark');
-    document.documentElement.style.colorScheme = 'dark';
-    document.documentElement.style.backgroundColor = t.bgPage;
-  } else {
-    document.documentElement.classList.remove('dark');
-    document.documentElement.style.colorScheme = 'light';
-    document.documentElement.style.backgroundColor = t.bgPage;
-  }
-};
-
-export function applyThemeColorVars() {
-  applyThemeColorOverrides();
-}
-
-// Сохраняет тему и уведомляет все острова и вкладки об изменении
 function broadcastTheme(isDark: boolean) {
-  try {
-    localStorage.setItem(KEY_THEME, isDark ? 'dark' : 'light');
-  } catch {
-    // noop
-  }
+  persistTheme(isDark);
   globalThis.window.dispatchEvent(new CustomEvent(THEME_CHANGE_EVENT, { detail: { isDark } }));
 }
 
@@ -62,14 +27,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [isDark]);
 
   useEffect(() => {
-    // Синхронизация темы между островами на одной странице
     const onCustom = (e: Event) => {
       const { isDark: next } = (e as CustomEvent<{ isDark: boolean }>).detail;
       setIsDark(next);
       applyTheme(next);
     };
 
-    // Синхронизация темы и поиска между вкладками
     const onStorage = (e: StorageEvent) => {
       if (e.key === KEY_THEME && e.newValue !== null) {
         const next = e.newValue !== 'light';
@@ -116,10 +79,4 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
-};
-
-export const useTheme = (): ThemeContextType => {
-  const context = useContext(ThemeContext);
-  if (!context) throw new Error('useTheme must be used within ThemeProvider');
-  return context;
 };
