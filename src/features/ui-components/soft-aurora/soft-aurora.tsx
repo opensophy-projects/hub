@@ -186,7 +186,7 @@ export default function SoftAurora({
     gl.clearColor(0, 0, 0, 0);
 
     let program: Program;
-    const currentMouse = [0.5, 0.5];
+    let currentMouse = [0.5, 0.5];
     let targetMouse = [0.5, 0.5];
 
     function handleMouseMove(e: MouseEvent) {

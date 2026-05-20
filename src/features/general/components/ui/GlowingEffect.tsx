@@ -67,7 +67,7 @@ export const GlowingEffect = memo(({
       element.style.setProperty("--active", isActive ? "1" : "0");
       if (!isActive) return;
       const currentAngle = Number.parseFloat(element.style.getPropertyValue("--start")) || 0;
-      const targetAngle = (180 * Math.atan2(mouseY - center[1], mouseX - center[0])) / Math.PI + 90;
+      let targetAngle = (180 * Math.atan2(mouseY - center[1], mouseX - center[0])) / Math.PI + 90;
       const angleDiff = ((targetAngle - currentAngle + 180) % 360) - 180;
       animateAngleTransition(element, currentAngle, currentAngle + angleDiff, movementDuration * 1000);
     });

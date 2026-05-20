@@ -94,7 +94,7 @@ export function useTableOfContents<T extends { id?: string; slug?: string; conte
       observerRef.current?.disconnect();
       observerRef.current = null;
     };
-   
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageKey]);
 
   // Пересканируем заголовки когда dev panel обновляет контент

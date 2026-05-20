@@ -193,7 +193,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
   useEffect(() => {
     resetFilters();
     setShowFilters(false);
-   
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tableHtml]);
 
   // Блокировка скролла body при открытом модале

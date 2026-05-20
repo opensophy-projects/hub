@@ -183,7 +183,7 @@ export const Plasma: React.FC<PlasmaProps> = ({
 
     const loop = (t: number) => {
       if (contextLost || !isVisible) return;
-      const timeValue = (t - t0) * 0.001;
+      let timeValue = (t - t0) * 0.001;
       if (direction === 'pingpong') {
         const pingpongDuration = 10;
         const segmentTime = timeValue % pingpongDuration;
