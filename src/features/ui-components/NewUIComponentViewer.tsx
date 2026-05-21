@@ -103,7 +103,6 @@ const IconBtn: React.FC<{
     </button>
   );
 };
-void IconBtn;
 
 const DEFAULT_UNIVERSAL_PROPS: UniversalProps = {
   enableUniversalProps: true,
@@ -534,9 +533,6 @@ const ComponentRender: React.FC<ComponentRenderProps> = ({ Component, componentP
   return (
     <div style={{
       width: '100%',
-      // fill (backgrounds): height: 100% чтобы растянуться на родителя
-      // content: height: auto — компонент сам определяет высоту,
-      // не схлопываемся в 0 и не ограничиваем SVG с overflow-visible
       height: isFill ? '100%' : 'auto',
       minWidth: 0,
       minHeight: 0,
@@ -601,28 +597,13 @@ const SourceCodePanel: React.FC<{ fileContents: Record<string, string>; t: T }> 
   );
 };
 
-// ─── MobileBottomSheet ────────────────────────────────────────────────────────
+// ─── Хук для перетаскивания шторки ───────────────────────────────────────────
 
-type MobileSheetTab = 'universal' | 'specific' | null;
-
-const MobileBottomSheet: React.FC<{
-  config: ComponentConfig;
-  componentProps: ComponentPropsMap;
-  universalProps: UniversalProps;
-  fileContents: Record<string, string>;
-  onPropChange: (name: string, v: PropValue) => void;
-  onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
-  onRefresh: () => void;
-  onReset: () => void;
-  t: T;
-}> = ({ config, componentProps, universalProps, fileContents, onPropChange, onUniversalPropChange, onRefresh, onReset, t }) => {
-  void fileContents;
-  const [activeTab,   setActiveTab]   = useState<MobileSheetTab>(null);
-  const [sheetVh,     setSheetVh]     = useState(52);
-  const [isDragging,  setIsDragging]  = useState(false);
-  const dragStartY    = useRef<number | null>(null);
-  const dragStartVh   = useRef(52);
-  const isOpen = activeTab !== null;
+function useSheetDrag(initialVh: number) {
+  const [sheetVh,    setSheetVh]    = useState(initialVh);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartY   = useRef<number | null>(null);
+  const dragStartVh  = useRef(initialVh);
 
   useEffect(() => {
     const onMove = (e: MouseEvent | TouchEvent) => {
@@ -655,6 +636,28 @@ const MobileBottomSheet: React.FC<{
     setIsDragging(true);
   }, [sheetVh]);
 
+  return { sheetVh, isDragging, startDrag };
+}
+
+// ─── MobileBottomSheet ────────────────────────────────────────────────────────
+
+type MobileSheetTab = 'universal' | 'specific' | null;
+
+const MobileBottomSheet: React.FC<{
+  config: ComponentConfig;
+  componentProps: ComponentPropsMap;
+  universalProps: UniversalProps;
+  fileContents: Record<string, string>;
+  onPropChange: (name: string, v: PropValue) => void;
+  onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
+  onRefresh: () => void;
+  onReset: () => void;
+  t: T;
+}> = ({ config, componentProps, universalProps, onPropChange, onUniversalPropChange, onRefresh, onReset, t }) => {
+  const [activeTab, setActiveTab] = useState<MobileSheetTab>(null);
+  const { sheetVh, isDragging, startDrag } = useSheetDrag(52);
+  const isOpen = activeTab !== null;
+
   const tabLabel: Record<Exclude<MobileSheetTab, null>, string> = {
     universal: 'Общие',
     specific:  'Специфические',
@@ -663,8 +666,11 @@ const MobileBottomSheet: React.FC<{
   return (
     <>
       {isOpen && (
-        <div onClick={() => setActiveTab(null)}
-          style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'rgba(0,0,0,0.25)', cursor: 'default' }} />
+        <button
+          onClick={() => setActiveTab(null)}
+          aria-label="Закрыть панель"
+          style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'rgba(0,0,0,0.25)', cursor: 'default', border: 'none', padding: 0 }}
+        />
       )}
 
       <div style={{
@@ -675,8 +681,11 @@ const MobileBottomSheet: React.FC<{
       }}>
         <div style={{ flex: 1, background: t.panelBg, borderTop: `1px solid ${t.barBorder}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div
+            role="separator"
+            aria-label="Изменить высоту панели"
             onMouseDown={e => startDrag(e.clientY)}
             onTouchStart={e => startDrag(e.touches[0].clientY)}
+            onKeyDown={() => {}}
             style={{ flexShrink: 0, cursor: 'ns-resize', touchAction: 'none', userSelect: 'none' }}
           >
             <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 10, paddingBottom: 4 }}>
@@ -722,11 +731,183 @@ const MobileBottomSheet: React.FC<{
     </>
   );
 };
-void MobileBottomSheet;
 
 // ─── FullscreenModal ──────────────────────────────────────────────────────────
 
 type MobileFullscreenSheet = 'universal' | 'specific' | 'code' | null;
+
+// ─── Десктопная часть FullscreenModal ─────────────────────────────────────────
+
+const FullscreenDesktop: React.FC<{
+  Component: AnyComponent;
+  componentProps: ComponentPropsMap;
+  universalProps: UniversalProps;
+  refreshKey: number;
+  isDark: boolean;
+  componentCategory?: string;
+  fileContents: Record<string, string>;
+  config: ComponentConfig;
+  activeTab: TabType;
+  panelOpen: boolean;
+  sourceVisible: boolean;
+  onTabSelect: (tab: TabType) => void;
+  onPropChange: (name: string, v: PropValue) => void;
+  onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
+  desktopPreviewStyle: React.CSSProperties;
+  t: T;
+}> = ({
+  Component, componentProps, universalProps, refreshKey, isDark, componentCategory,
+  fileContents, config, activeTab, panelOpen, sourceVisible,
+  onTabSelect, onPropChange, onUniversalPropChange, desktopPreviewStyle, t,
+}) => {
+  if (sourceVisible) {
+    return (
+      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <SourceCodePanel fileContents={fileContents} t={t} />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div style={desktopPreviewStyle}>
+        <ComponentRender
+          Component={Component}
+          componentProps={componentProps}
+          universalProps={universalProps}
+          refreshKey={refreshKey}
+          isDark={isDark}
+          componentCategory={componentCategory}
+          fileContents={fileContents}
+        />
+      </div>
+      {panelOpen && (
+        <div style={{ width: 280, flexShrink: 0, borderLeft: `1px solid ${t.barBorder}`, background: t.panelBg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <SettingsContent
+            activeTab={activeTab}
+            onTabSelect={onTabSelect}
+            config={config}
+            componentProps={componentProps}
+            universalProps={universalProps}
+            onPropChange={onPropChange}
+            onUniversalChange={onUniversalPropChange}
+            t={t}
+          />
+        </div>
+      )}
+    </>
+  );
+};
+
+// ─── Мобильная часть FullscreenModal ──────────────────────────────────────────
+
+const FullscreenMobile: React.FC<{
+  Component: AnyComponent;
+  componentProps: ComponentPropsMap;
+  universalProps: UniversalProps;
+  refreshKey: number;
+  isDark: boolean;
+  componentCategory?: string;
+  fileContents: Record<string, string>;
+  config: ComponentConfig;
+  onClose: () => void;
+  onRefresh: () => void;
+  onReset: () => void;
+  onPropChange: (name: string, v: PropValue) => void;
+  onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
+  t: T;
+}> = ({
+  Component, componentProps, universalProps, refreshKey, isDark, componentCategory,
+  fileContents, config, onClose, onRefresh, onReset, onPropChange, onUniversalPropChange, t,
+}) => {
+  const [mobSheet, setMobSheet] = useState<MobileFullscreenSheet>(null);
+  const { sheetVh, isDragging, startDrag } = useSheetDrag(55);
+  const isBackground  = componentCategory === 'backgrounds';
+  const mobSheetOpen  = mobSheet !== null;
+
+  const mobSheetLabel: Record<Exclude<MobileFullscreenSheet, null>, string> = {
+    universal: 'Общие',
+    specific:  'Специфические',
+    code:      'Исходный код',
+  };
+
+  return (
+    <>
+      <div style={{ position: 'absolute', inset: 0, bottom: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fg, overflow: isBackground ? 'hidden' : 'visible' }}>
+        <ComponentRender Component={Component} componentProps={componentProps} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} componentCategory={componentCategory} fileContents={fileContents} />
+      </div>
+
+      {mobSheetOpen && (
+        <button
+          onClick={() => setMobSheet(null)}
+          aria-label="Закрыть панель"
+          style={{ position: 'absolute', inset: 0, bottom: 60, zIndex: 10, background: 'rgba(0,0,0,0.25)', cursor: 'default', border: 'none', padding: 0 }}
+        />
+      )}
+
+      <div style={{
+        position: 'absolute', bottom: 60, left: 0, right: 0,
+        height: mobSheetOpen ? `min(${sheetVh}dvh, 720px)` : 0,
+        overflow: 'hidden', zIndex: 20, display: 'flex', flexDirection: 'column',
+        transition: isDragging ? 'none' : 'height 0.22s cubic-bezier(0.4,0,0.2,1)',
+      }}>
+        <div style={{ flex: 1, background: t.panelBg, borderTop: `1px solid ${t.barBorder}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div
+            role="separator"
+            aria-label="Изменить высоту панели"
+            onMouseDown={e => startDrag(e.clientY)}
+            onTouchStart={e => startDrag(e.touches[0].clientY)}
+            onKeyDown={() => {}}
+            style={{ flexShrink: 0, cursor: 'ns-resize', touchAction: 'none', userSelect: 'none' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 10, paddingBottom: 4 }}>
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: t.fgSub }} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 18px 10px', borderBottom: `1px solid ${t.barBorder}` }}>
+              <span style={{ fontSize: '1.1rem', fontWeight: 700, color: t.fg, letterSpacing: '-0.01em' }}>
+                {mobSheet ? mobSheetLabel[mobSheet] : ''}
+              </span>
+              <button onClick={() => setMobSheet(null)}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 10, border: `1px solid ${t.barBorder}`, background: t.btnBg, color: t.fg, cursor: 'pointer', flexShrink: 0 }}>
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+
+          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            {mobSheet === 'universal' && (
+              <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <UniversalSidebar universalProps={universalProps} onChange={onUniversalPropChange} t={t} />
+              </div>
+            )}
+            {mobSheet === 'specific' && (
+              <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <SpecificSidebar config={config} componentProps={componentProps} onChange={onPropChange} t={t} />
+              </div>
+            )}
+            {mobSheet === 'code' && (
+              <SourceCodePanel fileContents={fileContents} t={t} />
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0, height: 60,
+        background: t.mobBg, borderTop: `1px solid ${t.barBorder}`,
+        display: 'flex', alignItems: 'stretch', zIndex: 30,
+        paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
+      }}>
+        <MobBtn label="Обновить"  icon={<Play size={20} />}       t={t} onClick={() => { setMobSheet(null); onRefresh(); }}                               isActive={false} />
+        <MobBtn label="Сбросить"  icon={<RefreshCcw size={20} />} t={t} onClick={() => { setMobSheet(null); onReset(); }}                                 isActive={false} />
+        <MobBtn label="Общие"     icon={<Settings size={20} />}   t={t} onClick={() => setMobSheet(p => p === 'universal' ? null : 'universal')}           isActive={mobSheet === 'universal'} />
+        <MobBtn label="Специфич." icon={<PanelRight size={20} />} t={t} onClick={() => setMobSheet(p => p === 'specific'  ? null : 'specific')}            isActive={mobSheet === 'specific'} />
+        <MobBtn label="Код"       icon={<Code2 size={20} />}      t={t} onClick={() => setMobSheet(p => p === 'code'      ? null : 'code')}                isActive={mobSheet === 'code'} />
+        <MobBtn label="Свернуть"  icon={<Minimize2 size={20} />}  t={t} onClick={onClose}                                                                 isActive={false} />
+      </div>
+    </>
+  );
+};
 
 const FullscreenModal: React.FC<ComponentRenderProps & {
   config: ComponentConfig;
@@ -743,46 +924,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
   const [sourceVisible, setSourceVisible] = useState(false);
   const isMobile = useIsMobile();
 
-  const [mobSheet,     setMobSheet]     = useState<MobileFullscreenSheet>(null);
-  const [mobSheetVh,   setMobSheetVh]   = useState(55);
-  const [isDragging,   setIsDragging]   = useState(false);
-  const dragStartY   = useRef<number | null>(null);
-  const dragStartVh  = useRef(55);
-  const mobSheetOpen = mobSheet !== null;
-
   const isBackground = componentCategory === 'backgrounds';
-
-  useEffect(() => {
-    if (!isMobile) { return; }
-    const onMove = (e: MouseEvent | TouchEvent) => {
-      if (dragStartY.current === null) { return; }
-      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-      const delta   = dragStartY.current - clientY;
-      const deltaVh = (delta / globalThis.innerHeight) * 100;
-      setMobSheetVh(Math.max(10, Math.min(92, dragStartVh.current + deltaVh)));
-    };
-    const onUp = () => {
-      if (dragStartY.current === null) { return; }
-      dragStartY.current = null;
-      setIsDragging(false);
-    };
-    globalThis.addEventListener('mousemove', onMove);
-    globalThis.addEventListener('mouseup',   onUp);
-    globalThis.addEventListener('touchmove', onMove, { passive: true });
-    globalThis.addEventListener('touchend',  onUp);
-    return () => {
-      globalThis.removeEventListener('mousemove', onMove);
-      globalThis.removeEventListener('mouseup',   onUp);
-      globalThis.removeEventListener('touchmove', onMove);
-      globalThis.removeEventListener('touchend',  onUp);
-    };
-  }, [isMobile]);
-
-  const startDrag = useCallback((clientY: number) => {
-    dragStartY.current  = clientY;
-    dragStartVh.current = mobSheetVh;
-    setIsDragging(true);
-  }, [mobSheetVh]);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -791,41 +933,13 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
     return () => { document.body.style.overflow = ''; document.removeEventListener('keydown', onKey); };
   }, [onClose]);
 
-  const mobSheetLabel: Record<Exclude<MobileFullscreenSheet, null>, string> = {
-    universal: 'Общие',
-    specific:  'Специфические',
-    code:      'Исходный код',
-  };
-
-  // Стиль области превью для десктопа:
-  // — backgrounds: без padding, компонент растягивается на всё пространство
-  // — остальные: небольшой padding для визуального комфорта
   const desktopPreviewStyle: React.CSSProperties = isBackground
-    ? {
-        flex: 1,
-        display: 'flex',
-        overflow: 'hidden',
-        color: t.fg,
-        minWidth: 0,
-        minHeight: 0,
-        position: 'relative',
-      }
-    : {
-        flex: 1,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 48,
-        overflow: 'hidden',
-        color: t.fg,
-        minWidth: 0,
-        minHeight: 0,
-      };
+    ? { flex: 1, display: 'flex', overflow: 'hidden', color: t.fg, minWidth: 0, minHeight: 0, position: 'relative' }
+    : { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48, overflow: 'hidden', color: t.fg, minWidth: 0, minHeight: 0 };
 
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: t.outerBg, display: 'flex', flexDirection: 'column' }}>
 
-      {/* Десктоп: верхняя панель */}
       {!isMobile && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', flexShrink: 0, borderBottom: `1px solid ${t.barBorder}`, background: t.barBg, overflowX: 'auto' }}>
           <button onClick={onRefresh} style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 999, border: `1px solid ${t.btnBdr}`, background: t.btnBg, color: t.btnClr, padding: '8px 12px', fontSize: 12, whiteSpace: 'nowrap', cursor: 'pointer' }}><Play size={14} />Запуск</button>
@@ -842,115 +956,43 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
         </div>
       )}
 
-      {/* Основная область */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
-
-        {/* Десктоп: source panel */}
-        {!isMobile && sourceVisible ? (
-          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <SourceCodePanel fileContents={fileContents} t={t} />
-          </div>
-
-        /* Десктоп: preview */
-        ) : !isMobile ? (
-          <>
-            {/*
-              FIX: для backgrounds убираем padding и center-выравнивание —
-              компонент должен занимать всё доступное пространство без ограничений.
-              Для остальных компонентов оставляем padding: 48 и центрирование.
-            */}
-            <div style={desktopPreviewStyle}>
-              <ComponentRender
-                Component={Component}
-                componentProps={componentProps}
-                universalProps={universalProps}
-                refreshKey={refreshKey}
-                isDark={isDark}
-                componentCategory={componentCategory}
-                fileContents={fileContents}
-              />
-            </div>
-            {panelOpen && (
-              <div style={{ width: 280, flexShrink: 0, borderLeft: `1px solid ${t.barBorder}`, background: t.panelBg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                <SettingsContent activeTab={activeTab} onTabSelect={setActiveTab} config={config} componentProps={componentProps} universalProps={universalProps} onPropChange={onPropChange} onUniversalChange={onUniversalPropChange} t={t} />
-              </div>
-            )}
-          </>
-
+        {isMobile ? (
+          <FullscreenMobile
+            Component={Component}
+            componentProps={componentProps}
+            universalProps={universalProps}
+            refreshKey={refreshKey}
+            isDark={isDark}
+            componentCategory={componentCategory}
+            fileContents={fileContents}
+            config={config}
+            onClose={onClose}
+            onRefresh={onRefresh}
+            onReset={onReset}
+            onPropChange={onPropChange}
+            onUniversalPropChange={onUniversalPropChange}
+            t={t}
+          />
         ) : (
-          /* ─── Мобильный layout ─────────────────────────────────────── */
-          <>
-            {/* Preview — занимает всё (кроме нижнего бара 60px) */}
-            <div style={{ position: 'absolute', inset: 0, bottom: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fg, overflow: isBackground ? 'hidden' : 'visible' }}>
-              <ComponentRender Component={Component} componentProps={componentProps} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} componentCategory={componentCategory} fileContents={fileContents} />
-            </div>
-
-            {/* Затемнение */}
-            {mobSheetOpen && (
-              <div onClick={() => setMobSheet(null)} style={{ position: 'absolute', inset: 0, bottom: 60, zIndex: 10, background: 'rgba(0,0,0,0.25)', cursor: 'default' }} />
-            )}
-
-            {/* Mobile bottom sheet */}
-            <div style={{
-              position: 'absolute', bottom: 60, left: 0, right: 0,
-              height: mobSheetOpen ? `min(${mobSheetVh}dvh, 720px)` : 0,
-              overflow: 'hidden', zIndex: 20, display: 'flex', flexDirection: 'column',
-              transition: isDragging ? 'none' : 'height 0.22s cubic-bezier(0.4,0,0.2,1)',
-            }}>
-              <div style={{ flex: 1, background: t.panelBg, borderTop: `1px solid ${t.barBorder}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                {/* Handle */}
-                <div
-                  onMouseDown={e => startDrag(e.clientY)}
-                  onTouchStart={e => startDrag(e.touches[0].clientY)}
-                  style={{ flexShrink: 0, cursor: 'ns-resize', touchAction: 'none', userSelect: 'none' }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 10, paddingBottom: 4 }}>
-                    <div style={{ width: 36, height: 4, borderRadius: 2, background: t.fgSub }} />
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 18px 10px', borderBottom: `1px solid ${t.barBorder}` }}>
-                    <span style={{ fontSize: '1.1rem', fontWeight: 700, color: t.fg, letterSpacing: '-0.01em' }}>
-                      {mobSheet ? mobSheetLabel[mobSheet] : ''}
-                    </span>
-                    <button onClick={() => setMobSheet(null)}
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 10, border: `1px solid ${t.barBorder}`, background: t.btnBg, color: t.fg, cursor: 'pointer', flexShrink: 0 }}>
-                      <X size={14} />
-                    </button>
-                  </div>
-                </div>
-
-                <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                  {mobSheet === 'universal' && (
-                    <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                      <UniversalSidebar universalProps={universalProps} onChange={onUniversalPropChange} t={t} />
-                    </div>
-                  )}
-                  {mobSheet === 'specific' && (
-                    <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                      <SpecificSidebar config={config} componentProps={componentProps} onChange={onPropChange} t={t} />
-                    </div>
-                  )}
-                  {mobSheet === 'code' && (
-                    <SourceCodePanel fileContents={fileContents} t={t} />
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Мобильный нижний бар */}
-            <div style={{
-              position: 'absolute', bottom: 0, left: 0, right: 0, height: 60,
-              background: t.mobBg, borderTop: `1px solid ${t.barBorder}`,
-              display: 'flex', alignItems: 'stretch', zIndex: 30,
-              paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
-            }}>
-              <MobBtn label="Обновить"   icon={<Play size={20} />}       t={t} onClick={() => { setMobSheet(null); onRefresh(); }}                                   isActive={false} />
-              <MobBtn label="Сбросить"   icon={<RefreshCcw size={20} />} t={t} onClick={() => { setMobSheet(null); onReset(); }}                                     isActive={false} />
-              <MobBtn label="Общие"      icon={<Settings size={20} />}   t={t} onClick={() => setMobSheet(p => p === 'universal' ? null : 'universal')}               isActive={mobSheet === 'universal'} />
-              <MobBtn label="Специфич."  icon={<PanelRight size={20} />} t={t} onClick={() => setMobSheet(p => p === 'specific'  ? null : 'specific')}                isActive={mobSheet === 'specific'} />
-              <MobBtn label="Код"        icon={<Code2 size={20} />}      t={t} onClick={() => setMobSheet(p => p === 'code'      ? null : 'code')}                    isActive={mobSheet === 'code'} />
-              <MobBtn label="Свернуть"   icon={<Minimize2 size={20} />}  t={t} onClick={onClose}                                                                     isActive={false} />
-            </div>
-          </>
+          <FullscreenDesktop
+            Component={Component}
+            componentProps={componentProps}
+            universalProps={universalProps}
+            refreshKey={refreshKey}
+            isDark={isDark}
+            componentCategory={componentCategory}
+            fileContents={fileContents}
+            config={config}
+            activeTab={activeTab}
+            panelOpen={panelOpen}
+            sourceVisible={sourceVisible}
+            onTabSelect={setActiveTab}
+            onPropChange={onPropChange}
+            onUniversalPropChange={onUniversalPropChange}
+            desktopPreviewStyle={desktopPreviewStyle}
+            t={t}
+          />
         )}
       </div>
     </div>,
@@ -959,9 +1001,6 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
 };
 
 // ─── PreviewPanel ─────────────────────────────────────────────────────────────
-// FIX: для backgrounds — явная высота (не minHeight) чтобы height:100% в
-//      дочернем ComponentRender работало корректно. Кнопка Settings остаётся
-//      поверх через absolute-позиционирование.
 
 const PreviewPanel: React.FC<ComponentRenderProps & {
   onOpenFullscreen: () => void;
@@ -971,11 +1010,7 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
   const isBackground = componentCategory === 'backgrounds';
 
   return (
-    // position: relative нужен для кнопки настроек (absolute)
-    // overflow: visible — критично для SVG компонентов вроде CurvedLoop
-    // у которых текст выходит за пределы viewBox через overflow-visible
     <div style={{ position: 'relative', width: '100%', overflow: 'visible' }}>
-      {/* Кнопка настроек — поверх, в правом верхнем углу */}
       <div style={{
         position: 'absolute', top: 10, right: 10, zIndex: 5,
         display: 'flex', gap: 6,
@@ -1008,24 +1043,10 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
         </button>
       </div>
 
-      {/*
-        FIX: backgrounds требуют явной height, а не только minHeight,
-        потому что ComponentRender → ComponentWrapper внутри используют
-        height: 100% и width: 100% — без явной высоты у родителя они
-        схлопываются в 0. Для обычных компонентов оставляем minHeight
-        чтобы не ломать компоненты с естественной высотой.
-
-        FIX 2: для content-компонентов убираем overflow: hidden — это
-        обрезало SVG с overflow-visible (CurvedLoop и подобные).
-        Добавляем padding чтобы выходящий за края изогнутый текст
-        не срезался родительским контейнером статьи.
-      */}
       <div style={{
         width: '100%',
         ...(isBackground
           ? { height: 400 }
-          // minHeight с запасом — CurvedLoop с curveAmount=400 уходит далеко вниз
-          // за пределы SVG viewBox, нужно место чтобы текст был виден
           : { minHeight: 500, paddingTop: 60, paddingBottom: 120 }
         ),
         display: 'flex',
@@ -1064,8 +1085,6 @@ function scheduleHideLoading(setLoading: (v: boolean) => void) {
 
 const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) => {
   const { isDark } = useTheme();
-  const isMobile   = useIsMobile();
-  void isMobile;
   const t          = tk(isDark);
 
   const [isFullscreen,   setIsFullscreen]   = useState(false);
@@ -1113,8 +1132,6 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
   };
 
   return (
-    // overflow: visible на корневом уровне — иначе статья обрезает SVG
-    // с overflow-visible который выходит за пределы своего viewBox (CurvedLoop и подобные)
     <div className="not-prose" style={{ margin: '1.25rem 0', overflow: 'visible', position: 'relative' }}>
       <PreviewPanel
         {...shared}
