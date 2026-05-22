@@ -81,29 +81,6 @@ const MobBtn: React.FC<{
   </button>
 );
 
-// ─── IconBtn ──────────────────────────────────────────────────────────────────
-
-const IconBtn: React.FC<{
-  icon: React.ReactNode; onClick: () => void; t: T; active?: boolean; title?: string;
-}> = ({ icon, onClick, t, active, title }) => {
-  const bg  = active ? t.btnActBg  : t.btnBg;
-  const bdr = active ? t.btnActBdr : t.btnBdr;
-  const clr = active ? t.btnActClr : t.btnClr;
-  return (
-    <button onClick={onClick} title={title} style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      width: 34, height: 34, borderRadius: 8,
-      border: `1px solid ${bdr}`, background: bg, color: clr,
-      cursor: 'pointer', flexShrink: 0,
-    }}
-      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = bg; }}
-    >
-      {icon}
-    </button>
-  );
-};
-
 const DEFAULT_UNIVERSAL_PROPS: UniversalProps = {
   enableUniversalProps: true,
   scale: 1, color: undefined, colorMode: 'original',
@@ -412,6 +389,7 @@ const AiSelect: React.FC<{ label: string; value: string; options: string[]; onCh
     return () => document.removeEventListener('mousedown', h);
   }, [open]);
 
+  // Вычисляет, нужно ли открывать дропдаун вверх
   const computeDropUp = (r: DOMRect) => {
     const h = Math.min(options.length * 34 + 48, 240);
     return globalThis.innerHeight - r.bottom < h && r.top > h;
@@ -639,6 +617,36 @@ function useSheetDrag(initialVh: number) {
   return { sheetVh, isDragging, startDrag };
 }
 
+// ─── Кнопка-ручка для изменения высоты шторки ────────────────────────────────
+
+const SheetDragHandle: React.FC<{
+  onMouseDown: (e: React.MouseEvent) => void;
+  onTouchStart: (e: React.TouchEvent) => void;
+  title: string;
+  children: React.ReactNode;
+  t: T;
+}> = ({ onMouseDown, onTouchStart, title, children, t }) => (
+  <button
+    aria-label={title}
+    onMouseDown={onMouseDown}
+    onTouchStart={onTouchStart}
+    style={{
+      flexShrink: 0,
+      cursor: 'ns-resize',
+      touchAction: 'none',
+      userSelect: 'none',
+      width: '100%',
+      background: 'none',
+      border: 'none',
+      padding: 0,
+      color: t.fg,
+      display: 'block',
+    }}
+  >
+    {children}
+  </button>
+);
+
 // ─── MobileBottomSheet ────────────────────────────────────────────────────────
 
 type MobileSheetTab = 'universal' | 'specific' | null;
@@ -647,7 +655,6 @@ const MobileBottomSheet: React.FC<{
   config: ComponentConfig;
   componentProps: ComponentPropsMap;
   universalProps: UniversalProps;
-  fileContents: Record<string, string>;
   onPropChange: (name: string, v: PropValue) => void;
   onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
   onRefresh: () => void;
@@ -680,13 +687,11 @@ const MobileBottomSheet: React.FC<{
         transition: isDragging ? 'none' : 'height 0.22s cubic-bezier(0.4,0,0.2,1)',
       }}>
         <div style={{ flex: 1, background: t.panelBg, borderTop: `1px solid ${t.barBorder}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div
-            role="separator"
-            aria-label="Изменить высоту панели"
+          <SheetDragHandle
+            t={t}
+            title="Изменить высоту панели"
             onMouseDown={e => startDrag(e.clientY)}
             onTouchStart={e => startDrag(e.touches[0].clientY)}
-            onKeyDown={() => {}}
-            style={{ flexShrink: 0, cursor: 'ns-resize', touchAction: 'none', userSelect: 'none' }}
           >
             <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 10, paddingBottom: 4 }}>
               <div style={{ width: 36, height: 4, borderRadius: 2, background: t.fgSub }} />
@@ -700,7 +705,7 @@ const MobileBottomSheet: React.FC<{
                 <X size={14} />
               </button>
             </div>
-          </div>
+          </SheetDragHandle>
 
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             {activeTab === 'universal' && (
@@ -852,13 +857,11 @@ const FullscreenMobile: React.FC<{
         transition: isDragging ? 'none' : 'height 0.22s cubic-bezier(0.4,0,0.2,1)',
       }}>
         <div style={{ flex: 1, background: t.panelBg, borderTop: `1px solid ${t.barBorder}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div
-            role="separator"
-            aria-label="Изменить высоту панели"
+          <SheetDragHandle
+            t={t}
+            title="Изменить высоту панели"
             onMouseDown={e => startDrag(e.clientY)}
             onTouchStart={e => startDrag(e.touches[0].clientY)}
-            onKeyDown={() => {}}
-            style={{ flexShrink: 0, cursor: 'ns-resize', touchAction: 'none', userSelect: 'none' }}
           >
             <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 10, paddingBottom: 4 }}>
               <div style={{ width: 36, height: 4, borderRadius: 2, background: t.fgSub }} />
@@ -872,7 +875,7 @@ const FullscreenMobile: React.FC<{
                 <X size={14} />
               </button>
             </div>
-          </div>
+          </SheetDragHandle>
 
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             {mobSheet === 'universal' && (
