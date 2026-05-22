@@ -383,7 +383,8 @@ const AiSelect: React.FC<{ label: string; value: string; options: string[]; onCh
   useEffect(() => {
     if (!open) { return; }
     const h = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node) && !pRef.current?.contains(e.target as Node)) { setOpen(false); }
+      const target = e.target instanceof Node ? e.target : null;
+      if (!ref.current?.contains(target) && !pRef.current?.contains(target)) { setOpen(false); }
     };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
@@ -646,96 +647,6 @@ const SheetDragHandle: React.FC<{
     {children}
   </button>
 );
-
-// ─── MobileBottomSheet ────────────────────────────────────────────────────────
-
-type MobileSheetTab = 'universal' | 'specific' | null;
-
-const MobileBottomSheet: React.FC<{
-  config: ComponentConfig;
-  componentProps: ComponentPropsMap;
-  universalProps: UniversalProps;
-  onPropChange: (name: string, v: PropValue) => void;
-  onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
-  onRefresh: () => void;
-  onReset: () => void;
-  t: T;
-}> = ({ config, componentProps, universalProps, onPropChange, onUniversalPropChange, onRefresh, onReset, t }) => {
-  const [activeTab, setActiveTab] = useState<MobileSheetTab>(null);
-  const { sheetVh, isDragging, startDrag } = useSheetDrag(52);
-  const isOpen = activeTab !== null;
-
-  const tabLabel: Record<Exclude<MobileSheetTab, null>, string> = {
-    universal: 'Общие',
-    specific:  'Специфические',
-  };
-
-  return (
-    <>
-      {isOpen && (
-        <button
-          onClick={() => setActiveTab(null)}
-          aria-label="Закрыть панель"
-          style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'rgba(0,0,0,0.25)', cursor: 'default', border: 'none', padding: 0 }}
-        />
-      )}
-
-      <div style={{
-        position: 'absolute', bottom: 60, left: 0, right: 0,
-        height: isOpen ? `min(${sheetVh}dvh, 720px)` : 0,
-        overflow: 'hidden', zIndex: 20, display: 'flex', flexDirection: 'column',
-        transition: isDragging ? 'none' : 'height 0.22s cubic-bezier(0.4,0,0.2,1)',
-      }}>
-        <div style={{ flex: 1, background: t.panelBg, borderTop: `1px solid ${t.barBorder}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <SheetDragHandle
-            t={t}
-            title="Изменить высоту панели"
-            onMouseDown={e => startDrag(e.clientY)}
-            onTouchStart={e => startDrag(e.touches[0].clientY)}
-          >
-            <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 10, paddingBottom: 4 }}>
-              <div style={{ width: 36, height: 4, borderRadius: 2, background: t.fgSub }} />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 18px 10px', borderBottom: `1px solid ${t.barBorder}` }}>
-              <span style={{ fontSize: '1.1rem', fontWeight: 700, color: t.fg, letterSpacing: '-0.01em' }}>
-                {activeTab ? tabLabel[activeTab] : 'Код'}
-              </span>
-              <button onClick={() => setActiveTab(null)}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 10, border: `1px solid ${t.barBorder}`, background: t.btnBg, color: t.fg, cursor: 'pointer', flexShrink: 0 }}>
-                <X size={14} />
-              </button>
-            </div>
-          </SheetDragHandle>
-
-          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            {activeTab === 'universal' && (
-              <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                <UniversalSidebar universalProps={universalProps} onChange={onUniversalPropChange} t={t} />
-              </div>
-            )}
-            {activeTab === 'specific' && (
-              <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                <SpecificSidebar config={config} componentProps={componentProps} onChange={onPropChange} t={t} />
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0, height: 60,
-        background: t.mobBg, borderTop: `1px solid ${t.barBorder}`,
-        display: 'flex', alignItems: 'stretch', zIndex: 30,
-        paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
-      }}>
-        <MobBtn label="Обновить" icon={<Play size={20} />} t={t} onClick={() => { setActiveTab(null); onRefresh(); }} isActive={false} />
-        <MobBtn label="Сбросить" icon={<RefreshCcw size={20} />} t={t} onClick={() => { setActiveTab(null); onReset(); }} isActive={false} />
-        <MobBtn label="Общие" icon={<Settings size={20} />} t={t} onClick={() => setActiveTab(p => p === 'universal' ? null : 'universal')} isActive={activeTab === 'universal'} />
-        <MobBtn label="Специфич." icon={<PanelRight size={20} />} t={t} onClick={() => setActiveTab(p => p === 'specific' ? null : 'specific')} isActive={activeTab === 'specific'} />
-      </div>
-    </>
-  );
-};
 
 // ─── FullscreenModal ──────────────────────────────────────────────────────────
 
