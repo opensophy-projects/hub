@@ -399,7 +399,7 @@ const SecureAccessVisual: React.FC = () => (
       <path className="access-line access-line-laptop" d="M310 118 C382 76 430 68 510 68" />
       <path className="access-line access-line-phone" d="M310 118 C382 162 430 172 510 172" />
       <path className="access-pulse access-pulse-1" d="M120 118 C210 118 258 118 310 118 C382 76 430 68 510 68" />
-      <path className="access-pulse access-pulse-2" d="M510 172 C430 172 382 162 310 118 C258 118 210 118 120 118" />
+      <path className="access-pulse access-pulse-2" d="M120 118 C210 118 258 118 310 118 C382 162 430 172 510 172" />
       <path className="access-pulse access-pulse-3" d="M510 68 C430 68 382 76 310 118 C258 118 210 118 120 118" />
     </svg>
     <div className="access-device access-device-desktop access-device-left"><span /></div>
@@ -1113,42 +1113,36 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
           <FeatureCard
             isNegative={isNegative}
             title="Знания каждому!"
-            badge="открытые знания"
             visual="knowledgeLayers"
             text="Пишем понятные статьи и гайды по DevSecOps и не только. Рассказываем как настроить безопасность с нуля и сделать её частью культуры команды."
           />
           <FeatureCard
             isNegative={isNegative}
             title="Интеграция анализа безопасности"
-            badge="услуга"
             visual="securityAnalysis"
             text="Интегрируем автоматический анализ кода на уязвимости на каждом этапе разработки. Проверяем исходный код, тестируем работающее приложение и отслеживаем уязвимости в библиотеках — всё автоматически в CI/CD без участия команды."
           />
           <FeatureCard
             isNegative={isNegative}
             title="Настройка безопасного доступа"
-            badge="услуга"
             visual="secureAccess"
             text="Настраиваем и интегрируем защищённый доступ к сервисам и серверам. Подбираем решение под задачу — mTLS, VPN, Zero Trust или другой подход. Доступ получают только те, кому вы это разрешили."
           />
           <FeatureCard
             isNegative={isNegative}
             title="Проверка защищённости"
-            badge="услуга"
             visual="securityCheck"
             text="Этично проверяем сервис или сервер на наличие уязвимостей: открытые точки входа, слабые конфигурации и всё, что может стать проблемой раньше, чем вы об этом узнаете."
           />
           <FeatureCard
             isNegative={isNegative}
             title="Автоматизация"
-            badge="услуга"
             visual="automationList"
             text="Автоматизируем рутину — от простого bash-скрипта до сложных решений под индивидуальные требования."
           />
           <FeatureCard
             isNegative={isNegative}
             title="Подбор стека защиты"
-            badge="услуга"
             visual="protectionStack"
             text="Подбираем стек защиты с одной целью — максимальная эффективность при минимальных затратах ресурсов."
           />
@@ -1165,7 +1159,7 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
           <a href="mailto:opensophy@gmail.com" style={{ color: textMain, textDecoration: 'none' }}>
             opensophy@gmail.com
           </a>
-          . Все карточки с пометкой «услуга» доступны для заказа; «Знания каждому!» — открытая образовательная инициатива.
+          .
         </p>
       </div>
     </section>
@@ -1178,6 +1172,8 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
 interface EcoCardProps {
   title:       string;
   description: string;
+  badge?:      string;
+  visual?:     'hub' | 'mtls' | 'ui';
   link?:       string;
   linkLabel?:  string;
   isNegative:  boolean;
@@ -1185,7 +1181,7 @@ interface EcoCardProps {
 }
 
 const EcoCard: React.FC<EcoCardProps> = ({
-  title, description, link, linkLabel, isNegative, extraLinks,
+  title, description, badge, visual, link, linkLabel, isNegative, extraLinks,
 }) => {
   const outerBorder  = isNegative ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
   const innerBorder  = isNegative ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
@@ -1195,6 +1191,8 @@ const EcoCard: React.FC<EcoCardProps> = ({
   const textC        = isNegative ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.6)';
   const linkClr      = isNegative ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.38)';
   const linkHov      = isNegative ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.75)';
+  const badgeC       = isNegative ? 'rgba(255,255,255,0.42)' : 'rgba(0,0,0,0.42)';
+  const badgeBg      = isNegative ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
 
   return (
     <div style={{
@@ -1222,6 +1220,52 @@ const EcoCard: React.FC<EcoCardProps> = ({
         gap:           '0.6rem',
         minHeight:     '180px',
       }}>
+        {visual === 'hub' && (
+          <div className="eco-visual eco-visual-hub" aria-hidden="true">
+            <span className="hub-core" />
+            <span className="hub-node hub-node-top" />
+            <span className="hub-node hub-node-right" />
+            <span className="hub-node hub-node-bottom" />
+            <span className="hub-node hub-node-left" />
+            <span className="hub-link hub-link-top" />
+            <span className="hub-link hub-link-right" />
+            <span className="hub-link hub-link-bottom" />
+            <span className="hub-link hub-link-left" />
+          </div>
+        )}
+        {visual === 'mtls' && (
+          <div className="eco-visual eco-visual-mtls" aria-hidden="true">
+            <svg viewBox="0 0 92 104">
+              <path d="M46 8L78 20V45C78 67 66 84 46 96C26 84 14 67 14 45V20L46 8Z" />
+              <path d="M32 32H60V72H32Z" />
+              <path d="M38 46H54" />
+              <path d="M38 56H54" />
+            </svg>
+          </div>
+        )}
+        {visual === 'ui' && (
+          <div className="eco-visual eco-visual-ui" aria-hidden="true">
+            <span>UI</span>
+          </div>
+        )}
+        {badge && (
+          <div style={{
+            display:       'inline-flex',
+            alignSelf:     'flex-start',
+            fontSize:      '0.66rem',
+            fontWeight:    700,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            color:         badgeC,
+            background:    badgeBg,
+            borderRadius:  999,
+            padding:       '0.18rem 0.55rem',
+            marginBottom:  '0.2rem',
+            fontFamily:    'ui-monospace, monospace',
+          }}>
+            {badge}
+          </div>
+        )}
         <div style={{
           fontSize:   'clamp(1rem, 1.5vw, 1.15rem)',
           fontWeight: 700,
@@ -1331,6 +1375,40 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
           grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 1rem;
         }
+        .eco-visual {
+          position: relative;
+          height: 5.5rem;
+          border: 1px solid ${isNegative ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'};
+          border-radius: 0.85rem;
+          background: ${isNegative ? 'rgba(255,255,255,0.015)' : 'rgba(0,0,0,0.015)'};
+          margin-bottom: 0.75rem;
+        }
+        .eco-visual-hub .hub-core,
+        .eco-visual-hub .hub-node {
+          position: absolute;
+          border-radius: 999px;
+          background: ${isNegative ? 'rgba(255,255,255,0.72)' : 'rgba(0,0,0,0.72)'};
+        }
+        .eco-visual-hub .hub-core { width: 0.95rem; height: 0.95rem; left: calc(50% - 0.475rem); top: calc(50% - 0.475rem); }
+        .eco-visual-hub .hub-node { width: 0.54rem; height: 0.54rem; }
+        .eco-visual-hub .hub-node-top { left: calc(50% - 0.27rem); top: 0.8rem; }
+        .eco-visual-hub .hub-node-right { right: 1.3rem; top: calc(50% - 0.27rem); }
+        .eco-visual-hub .hub-node-bottom { left: calc(50% - 0.27rem); bottom: 0.8rem; }
+        .eco-visual-hub .hub-node-left { left: 1.3rem; top: calc(50% - 0.27rem); }
+        .eco-visual-hub .hub-link { position: absolute; background: ${isNegative ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}; transform-origin: center; }
+        .eco-visual-hub .hub-link-top { width: 2px; height: 1.35rem; left: calc(50% - 1px); top: 1.35rem; }
+        .eco-visual-hub .hub-link-right { width: 1.35rem; height: 2px; right: 2rem; top: calc(50% - 1px); }
+        .eco-visual-hub .hub-link-bottom { width: 2px; height: 1.35rem; left: calc(50% - 1px); bottom: 1.35rem; }
+        .eco-visual-hub .hub-link-left { width: 1.35rem; height: 2px; left: 2rem; top: calc(50% - 1px); }
+        .eco-visual-mtls { display: flex; align-items: center; justify-content: center; animation: eco-mtls-float 3.4s ease-in-out infinite; }
+        .eco-visual-mtls svg { width: 4.2rem; height: 4.7rem; filter: drop-shadow(0 0.5rem 1.1rem rgba(0,0,0,0.16)); }
+        .eco-visual-mtls svg path:first-child { fill: none; stroke: ${isNegative ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.82)'}; stroke-width: 3; }
+        .eco-visual-mtls svg path:nth-child(2) { fill: ${isNegative ? 'rgba(87,217,123,0.22)' : 'rgba(22,140,58,0.2)'}; stroke: ${isNegative ? '#57d97b' : '#168c3a'}; stroke-width: 2; }
+        .eco-visual-mtls svg path:nth-child(3),
+        .eco-visual-mtls svg path:nth-child(4) { stroke: ${isNegative ? '#57d97b' : '#168c3a'}; stroke-width: 2; stroke-linecap: round; }
+        .eco-visual-ui { display: flex; align-items: center; justify-content: center; }
+        .eco-visual-ui span { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: clamp(1.65rem, 3vw, 2.3rem); letter-spacing: 0.22em; color: ${isNegative ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.78)'}; }
+        @keyframes eco-mtls-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-0.45rem); } }
         @media (max-width: 900px) {
           .eco-content { display: block; }
           .eco-cards { grid-template-columns: 1fr; }
@@ -1397,6 +1475,8 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             <EcoCard
               isNegative={isNegative}
               title="Opensophy Hub (O.Hub)"
+              badge="ВЕБ-ПРОЕКТ"
+              visual="hub"
               description="Гибридная open-source платформа для документации и публикации контента. Подходит для технических команд, авторов и всех, кто хочет красиво и структурировано делиться знаниями."
               link="https://github.com/opensophy-projects/hub"
               linkLabel="opensophy-projects/hub"
@@ -1404,11 +1484,15 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             <EcoCard
               isNegative={isNegative}
               title="Opensophy mTLS (O.mTLS)"
+              badge="СКРИПТ"
+              visual="mtls"
               description="Инструмент для быстрого создания и управления mTLS-сертификатами. Для тех, кто хочет надёжно закрыть доступ к своим сервисам и серверам без лишней головной боли."
             />
             <EcoCard
               isNegative={isNegative}
               title="Opensophy UI (O.UI)"
+              badge="ВЕБ-ПРОЕКТ"
+              visual="ui"
               description="Библиотека готовых React-компонентов с живым превью и настройками. Анимации, интерактивные блоки, кастомные элементы и фирменные компоненты Opensophy — для разработчиков и дизайнеров, которые ценят время."
             />
           </div>
