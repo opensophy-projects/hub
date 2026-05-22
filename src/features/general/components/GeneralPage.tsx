@@ -305,7 +305,7 @@ interface FeatureCardProps {
   isNegative: boolean;
   fullWidth?: boolean;
   badge?: string;
-  visual?: 'securityAnalysis' | 'knowledgeLayers' | 'securityCheck' | 'secureAccess' | 'automationList' | 'protectionStack' | 'hubDatabase' | 'mtlsFolder';
+  visual?: 'securityAnalysis' | 'knowledgeLayers' | 'securityCheck' | 'secureAccess' | 'automationList' | 'protectionStack';
 }
 
 const SecurityAnalysisVisual: React.FC = () => (
@@ -454,40 +454,6 @@ const ProtectionStackVisual: React.FC = () => (
   </div>
 );
 
-const HubDatabaseVisual: React.FC = () => (
-  <div className="hub-database-visual" aria-hidden="true">
-    <svg viewBox="0 0 620 220" preserveAspectRatio="none" className="hub-database-network">
-      <defs>
-        <radialGradient id="hubDbGlow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="var(--visual-line-strong)" stopOpacity="0.7" />
-          <stop offset="100%" stopColor="var(--visual-line-transparent)" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      <circle className="hub-db-glow" cx="310" cy="112" r="56" fill="url(#hubDbGlow)" />
-      <ellipse cx="310" cy="84" rx="64" ry="18" className="hub-db-main-top" />
-      <rect x="246" y="84" width="128" height="56" className="hub-db-main-body" />
-      <ellipse cx="310" cy="140" rx="64" ry="18" className="hub-db-main-bottom" />
-      <path className="hub-db-main-line" d="M260 103H360" />
-      <path className="hub-db-main-line" d="M260 121H360" />
-    </svg>
-  </div>
-);
-
-const MtlsFolderVisual: React.FC = () => (
-  <div className="mtls-folder-visual" aria-hidden="true">
-    <div className="mtls-folder-root">
-      <div className="mtls-folder-shell">
-        <span className="mtls-folder-tab" />
-        <div className="mtls-paper mtls-paper-1"><span className="mtls-cert-mark">✓</span></div>
-        <div className="mtls-paper mtls-paper-2"><span className="mtls-cert-mark">✓</span></div>
-        <div className="mtls-paper mtls-paper-3"><span className="mtls-cert-mark">✓</span></div>
-        <div className="mtls-folder-front mtls-folder-front-left" />
-        <div className="mtls-folder-front mtls-folder-front-right" />
-      </div>
-    </div>
-  </div>
-);
-
 const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, fullWidth, badge, visual }) => {
   const titleC = isNegative ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.88)';
   const textC  = isNegative ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.65)';
@@ -531,8 +497,6 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, full
       {visual === 'secureAccess' && <SecureAccessVisual />}
       {visual === 'automationList' && <AutomationListVisual />}
       {visual === 'protectionStack' && <ProtectionStackVisual />}
-      {visual === 'hubDatabase' && <HubDatabaseVisual />}
-      {visual === 'mtlsFolder' && <MtlsFolderVisual />}
       <LandingCardHeader className={hasVisual ? 'feature-card-copy--visual' : undefined}>
         {badge && (
           <div style={{
@@ -1231,35 +1195,6 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
           grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 1rem;
         }
-        .eco-cards .feature-card-copy--visual {
-          padding-top: clamp(9.6rem, 14vw, 10.6rem) !important;
-        }
-        .hub-database-visual {
-          position: relative;
-          height: 11.8rem;
-          margin: 0.1rem 0 0;
-        }
-        .hub-database-network { width: 100%; height: 100%; }
-        .hub-db-main-top, .hub-db-main-bottom {
-          fill: rgba(255,255,255,0.08);
-          stroke: var(--visual-line-strong);
-          stroke-width: 2;
-        }
-        .hub-db-main-body {
-          fill: rgba(255,255,255,0.04);
-          stroke: var(--visual-line-strong);
-          stroke-width: 2;
-        }
-        .hub-db-main-line {
-          stroke: var(--visual-line-mid);
-          stroke-width: 2;
-          opacity: 0.65;
-        }
-        .hub-db-glow { animation: hubDbPulse 2.1s ease-in-out infinite; transform-origin: center; }
-        @keyframes hubDbPulse {
-          0%, 100% { transform: scale(0.92); opacity: 0.45; }
-          50% { transform: scale(1.08); opacity: 0.9; }
-        }
         .eco-rotating-text {
           overflow: visible !important;
         }
@@ -1283,68 +1218,7 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
           }
           .eco-cards { grid-template-columns: 1fr; }
         }
-        .mtls-folder-visual {
-          position: relative;
-          height: 11.8rem;
-          margin: 0.1rem 0 0;
-          display: grid;
-          place-items: center;
-        }
-        .mtls-folder-root {
-          transform: scale(1.08);
-          transform-origin: center;
-        }
-        .mtls-folder-shell {
-          position: relative;
-          width: 100px;
-          height: 80px;
-          border-radius: 0 10px 10px 10px;
-          background: color-mix(in srgb, var(--visual-card-surface, #0f0f0f) 70%, #5227FF 30%);
-        }
-        .mtls-folder-tab {
-          position: absolute;
-          bottom: 98%;
-          left: 0;
-          width: 30px;
-          height: 10px;
-          border-radius: 5px 5px 0 0;
-          background: color-mix(in srgb, var(--visual-card-surface, #0f0f0f) 70%, #5227FF 30%);
-        }
-        .mtls-paper {
-          position: absolute;
-          z-index: 20;
-          bottom: 10%;
-          left: 50%;
-          border-radius: 10px;
-          background: #fff;
-          transition: transform 0.3s ease-in-out;
-          transform: translateX(-50%) translateY(0);
-          display: grid;
-          place-items: center;
-        }
-        .mtls-paper-1 { width: 70%; height: 80%; transform: translateX(-130%) translateY(-18%) rotate(-12deg); background: rgba(65,214,140,0.2); border: 2px solid #41d68c; }
-        .mtls-paper-2 { width: 80%; height: 80%; transform: translateX(25%) translateY(-18%) rotate(12deg); background: rgba(65,214,140,0.16); border: 2px solid #41d68c; }
-        .mtls-paper-3 { width: 90%; height: 68%; transform: translateX(-50%) translateY(12%); background: rgba(65,214,140,0.12); border: 2px solid #41d68c; }
-        .mtls-cert-mark {
-          color: #41d68c;
-          font-size: 1.2rem;
-          font-weight: 700;
-          font-family: Inter, sans-serif;
-        }
-        .mtls-folder-front {
-          position: absolute;
-          z-index: 30;
-          width: 100%;
-          height: 100%;
-          background: #5227FF;
-          border-radius: 5px 10px 10px 10px;
-          transform-origin: bottom;
-        }
-        .mtls-folder-front-left { transform: skew(15deg) scaleY(0.62); opacity: 0.85; }
-        .mtls-folder-front-right { transform: skew(-15deg) scaleY(0.62); opacity: 0.85; }
-        @media (max-width: 1200px) {
-          .eco-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        }
+        @media (max-width: 1200px) { .eco-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
       `}</style>
 
       <div className="eco-inner">
@@ -1382,20 +1256,20 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
         <div className="eco-cards">
           <FeatureCard
             isNegative={isNegative}
-            visual="hubDatabase"
             title="Opensophy Hub (O.Hub)"
+            badge="веб-проект"
             text="Гибридная open-source платформа для документации и публикации контента. Подходит для технических команд, авторов и всех, кто хочет красиво и структурировано делиться знаниями."
           />
           <FeatureCard
             isNegative={isNegative}
-            visual="mtlsFolder"
             title="Opensophy mTLS (O.mTLS)"
+            badge="скрипт"
             text="Инструмент для быстрого создания и управления mTLS-сертификатами. Для тех, кто хочет надёжно закрыть доступ к своим сервисам и серверам без лишней головной боли."
           />
           <FeatureCard
             isNegative={isNegative}
-            visual="knowledgeLayers"
             title="Opensophy UI (O.UI)"
+            badge="веб-проект"
             text="Библиотека готовых React-компонентов с живым превью и настройками. Анимации, интерактивные блоки, кастомные элементы и фирменные компоненты Opensophy — для разработчиков и дизайнеров."
           />
         </div>
