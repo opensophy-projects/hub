@@ -304,7 +304,6 @@ interface FeatureCardProps {
   text: string;
   isNegative: boolean;
   fullWidth?: boolean;
-  badge?: string;
   visual?: 'securityAnalysis' | 'knowledgeLayers' | 'securityCheck' | 'secureAccess' | 'automationList' | 'protectionStack';
 }
 
@@ -455,11 +454,9 @@ const ProtectionStackVisual: React.FC = () => (
   </div>
 );
 
-const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, fullWidth, badge, visual }) => {
+const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, fullWidth, visual }) => {
   const titleC = isNegative ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.88)';
   const textC  = isNegative ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.65)';
-  const badgeC = isNegative ? 'rgba(255,255,255,0.42)' : 'rgba(0,0,0,0.42)';
-  const badgeBg = isNegative ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
   const hasVisual = Boolean(visual);
   const visualClass = visual ? `feature-card--${visual}` : '';
 
@@ -500,24 +497,6 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, full
       {visual === 'automationList' && <AutomationListVisual />}
       {visual === 'protectionStack' && <ProtectionStackVisual />}
       <LandingCardHeader className={hasVisual ? 'feature-card-copy--visual' : undefined}>
-        {badge && (
-          <div style={{
-            display:       'inline-flex',
-            alignSelf:     'flex-start',
-            fontSize:      '0.66rem',
-            fontWeight:    700,
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            color:         badgeC,
-            background:    badgeBg,
-            borderRadius:  999,
-            padding:       '0.18rem 0.55rem',
-            marginBottom:  '0.75rem',
-            fontFamily:    'ui-monospace, monospace',
-          }}>
-            {badge}
-          </div>
-        )}
         <LandingCardTitle style={{ color: titleC }}>{title}</LandingCardTitle>
       </LandingCardHeader>
       <LandingCardContent style={{ flex: 1 }}>
@@ -1113,42 +1092,36 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
           <FeatureCard
             isNegative={isNegative}
             title="Знания каждому!"
-            badge="открытые знания"
             visual="knowledgeLayers"
             text="Пишем понятные статьи и гайды по DevSecOps и не только. Рассказываем как настроить безопасность с нуля и сделать её частью культуры команды."
           />
           <FeatureCard
             isNegative={isNegative}
             title="Интеграция анализа безопасности"
-            badge="услуга"
             visual="securityAnalysis"
             text="Интегрируем автоматический анализ кода на уязвимости на каждом этапе разработки. Проверяем исходный код, тестируем работающее приложение и отслеживаем уязвимости в библиотеках — всё автоматически в CI/CD без участия команды."
           />
           <FeatureCard
             isNegative={isNegative}
             title="Настройка безопасного доступа"
-            badge="услуга"
             visual="secureAccess"
             text="Настраиваем и интегрируем защищённый доступ к сервисам и серверам. Подбираем решение под задачу — mTLS, VPN, Zero Trust или другой подход. Доступ получают только те, кому вы это разрешили."
           />
           <FeatureCard
             isNegative={isNegative}
             title="Проверка защищённости"
-            badge="услуга"
             visual="securityCheck"
             text="Этично проверяем сервис или сервер на наличие уязвимостей: открытые точки входа, слабые конфигурации и всё, что может стать проблемой раньше, чем вы об этом узнаете."
           />
           <FeatureCard
             isNegative={isNegative}
             title="Автоматизация"
-            badge="услуга"
             visual="automationList"
             text="Автоматизируем рутину — от простого bash-скрипта до сложных решений под индивидуальные требования."
           />
           <FeatureCard
             isNegative={isNegative}
             title="Подбор стека защиты"
-            badge="услуга"
             visual="protectionStack"
             text="Подбираем стек защиты с одной целью — максимальная эффективность при минимальных затратах ресурсов."
           />
@@ -1172,127 +1145,6 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
   );
 };
 
-
-// ─── EcoCard ──────────────────────────────────────────────────────────────────
-
-interface EcoCardProps {
-  title:       string;
-  description: string;
-  link?:       string;
-  linkLabel?:  string;
-  isNegative:  boolean;
-  extraLinks?: Array<{ href: string; label: string }>;
-}
-
-const EcoCard: React.FC<EcoCardProps> = ({
-  title, description, link, linkLabel, isNegative, extraLinks,
-}) => {
-  const outerBorder  = isNegative ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
-  const innerBorder  = isNegative ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
-  const innerBg      = isNegative ? '#0a0a0a'                : '#E8E7E3';
-  const innerShadow  = isNegative ? '0px 0px 27px 0px rgba(45,45,45,0.3)' : 'none';
-  const titleC       = isNegative ? 'rgba(255,255,255,0.9)'  : 'rgba(0,0,0,0.88)';
-  const textC        = isNegative ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.6)';
-  const linkClr      = isNegative ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.38)';
-  const linkHov      = isNegative ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.75)';
-
-  return (
-    <div style={{
-      position:     'relative',
-      borderRadius: '1.25rem',
-      border:       `0.75px solid ${outerBorder}`,
-      padding:      '0.5rem',
-    }}>
-      <GlowingEffectInline
-        spread={40} glow disabled={false}
-        proximity={64} inactiveZone={0.01}
-        borderWidth={3} isNegative={isNegative}
-      />
-
-      <div style={{
-        position:      'relative',
-        borderRadius:  '0.9rem',
-        border:        `0.75px solid ${innerBorder}`,
-        background:    innerBg,
-        boxShadow:     innerShadow,
-        overflow:      'hidden',
-        padding:       '1.5rem',
-        display:       'flex',
-        flexDirection: 'column',
-        gap:           '0.6rem',
-        minHeight:     '180px',
-      }}>
-        <div style={{
-          fontSize:   'clamp(1rem, 1.5vw, 1.15rem)',
-          fontWeight: 700,
-          color:      titleC,
-          lineHeight: 1.25,
-          fontFamily: 'Inter, system-ui, sans-serif',
-        }}>
-          {title}
-        </div>
-
-        <div style={{
-          fontSize:   'clamp(0.9rem, 1.3vw, 1rem)',
-          color:      textC,
-          lineHeight: 1.65,
-          fontFamily: 'Inter, system-ui, sans-serif',
-          flex:       1,
-        }}>
-          {description}
-        </div>
-
-        {link && (
-          <a
-            href={link}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display:        'inline-flex',
-              alignItems:     'center',
-              gap:            4,
-              fontSize:       '0.75rem',
-              color:          linkClr,
-              textDecoration: 'none',
-              marginTop:      '0.25rem',
-              fontFamily:     'ui-monospace, monospace',
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = linkHov; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = linkClr; }}
-          >
-            {linkLabel} ↗
-          </a>
-        )}
-
-        {extraLinks && extraLinks.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.25rem' }}>
-            {extraLinks.map(el => (
-              <a
-                key={el.href}
-                href={el.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display:        'inline-flex',
-                  alignItems:     'center',
-                  gap:            4,
-                  fontSize:       '0.75rem',
-                  color:          linkClr,
-                  textDecoration: 'none',
-                  fontFamily:     'ui-monospace, monospace',
-                }}
-                onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = linkHov; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = linkClr; }}
-              >
-                {el.label} ↗
-              </a>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
 
 // ─── EcosystemSection ─────────────────────────────────────────────────────────
 
@@ -1322,18 +1174,6 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
         }
         .eco-header {
           margin-bottom: clamp(3rem, 5vw, 4.5rem);
-        }
-        .eco-content {
-          display: block;
-        }
-        .eco-cards {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 1rem;
-        }
-        @media (max-width: 900px) {
-          .eco-content { display: block; }
-          .eco-cards { grid-template-columns: 1fr; }
         }
         .eco-rotating-text {
           overflow: visible !important;
@@ -1391,28 +1231,6 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
           </p>
         </div>
 
-        <div className="eco-content">
-          {/* Карточки экосистемы */}
-          <div className="eco-cards">
-            <EcoCard
-              isNegative={isNegative}
-              title="Opensophy Hub (O.Hub)"
-              description="Гибридная open-source платформа для документации и публикации контента. Подходит для технических команд, авторов и всех, кто хочет красиво и структурировано делиться знаниями."
-              link="https://github.com/opensophy-projects/hub"
-              linkLabel="opensophy-projects/hub"
-            />
-            <EcoCard
-              isNegative={isNegative}
-              title="Opensophy mTLS (O.mTLS)"
-              description="Инструмент для быстрого создания и управления mTLS-сертификатами. Для тех, кто хочет надёжно закрыть доступ к своим сервисам и серверам без лишней головной боли."
-            />
-            <EcoCard
-              isNegative={isNegative}
-              title="Opensophy UI (O.UI)"
-              description="Библиотека готовых React-компонентов с живым превью и настройками. Анимации, интерактивные блоки, кастомные элементы и фирменные компоненты Opensophy — для разработчиков и дизайнеров, которые ценят время."
-            />
-          </div>
-        </div>
       </div>
     </section>
   );
