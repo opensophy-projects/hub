@@ -305,7 +305,7 @@ interface FeatureCardProps {
   isNegative: boolean;
   fullWidth?: boolean;
   badge?: string;
-  visual?: 'securityAnalysis' | 'knowledgeLayers' | 'securityCheck' | 'secureAccess' | 'automationList' | 'protectionStack' | 'hubDatabase';
+  visual?: 'securityAnalysis' | 'knowledgeLayers' | 'securityCheck' | 'secureAccess' | 'automationList' | 'protectionStack' | 'hubDatabase' | 'mtlsFolder';
 }
 
 const SecurityAnalysisVisual: React.FC = () => (
@@ -388,7 +388,6 @@ const SecurityCheckVisual: React.FC = () => (
         <strong>XSS и RCE</strong>
       </div>
     </div>
-    <div className="security-check-vignette" />
   </div>
 );
 
@@ -401,6 +400,7 @@ const SecureAccessVisual: React.FC = () => (
       <path className="access-pulse access-pulse-1" d="M120 118 C210 118 258 118 310 118 C382 76 430 68 510 68" />
       <path className="access-pulse access-pulse-2" d="M120 118 C210 118 258 118 310 118 C382 162 430 172 510 172" />
       <path className="access-pulse access-pulse-3" d="M510 68 C430 68 382 76 310 118 C258 118 210 118 120 118" />
+      <path className="access-pulse access-pulse-4" d="M510 172 C430 172 382 162 310 118 C258 118 210 118 120 118" />
     </svg>
     <div className="access-device access-device-desktop access-device-left"><span /></div>
     <div className="access-device access-device-laptop"><span /></div>
@@ -409,7 +409,6 @@ const SecureAccessVisual: React.FC = () => (
       <span className="secure-access-tooltip-dot" />
       подключено через <strong>mTLS</strong>
     </div>
-    <div className="secure-access-vignette" />
   </div>
 );
 
@@ -484,6 +483,19 @@ const HubDatabaseVisual: React.FC = () => (
   </div>
 );
 
+const MtlsFolderVisual: React.FC = () => (
+  <div className="mtls-folder-visual" aria-hidden="true">
+    <svg viewBox="0 0 620 220" preserveAspectRatio="none" className="mtls-folder-scene">
+      <rect x="170" y="94" width="280" height="90" rx="16" className="mtls-folder-body" />
+      <rect x="194" y="76" width="110" height="26" rx="10" className="mtls-folder-tab" />
+      <rect x="208" y="58" width="46" height="92" rx="8" className="mtls-cert mtls-cert-left" />
+      <rect x="366" y="58" width="46" height="92" rx="8" className="mtls-cert mtls-cert-right" />
+      <path className="mtls-cert-mark" d="M220 86L228 94L244 78" />
+      <path className="mtls-cert-mark" d="M378 86L386 94L402 78" />
+    </svg>
+  </div>
+);
+
 const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, fullWidth, badge, visual }) => {
   const titleC = isNegative ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.88)';
   const textC  = isNegative ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.65)';
@@ -528,6 +540,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, full
       {visual === 'automationList' && <AutomationListVisual />}
       {visual === 'protectionStack' && <ProtectionStackVisual />}
       {visual === 'hubDatabase' && <HubDatabaseVisual />}
+      {visual === 'mtlsFolder' && <MtlsFolderVisual />}
       <LandingCardHeader className={hasVisual ? 'feature-card-copy--visual' : undefined}>
         {badge && (
           <div style={{
@@ -597,14 +610,7 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
           isolation: isolate;
           background: var(--visual-card-surface, rgba(255,255,255,0.02)) !important;
         }
-        .feature-card--visual::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(circle at 52% 22%, var(--visual-fill-top), transparent 28%);
-          pointer-events: none;
-          z-index: 0;
-        }
+        .feature-card--visual::before { display: none; }
         .feature-card-copy--visual {
           padding-top: clamp(11.8rem, 18vw, 13.25rem) !important;
         }
@@ -621,7 +627,6 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
           pointer-events: none;
           z-index: 0;
           background:
-            radial-gradient(circle at 51% 39%, var(--visual-fill-top), transparent 20%),
             linear-gradient(180deg, color-mix(in srgb, var(--visual-card-surface, #0f0f0f) 4%, transparent), transparent 58%, var(--visual-card-surface, #0f0f0f) 100%);
         }
         .security-analysis-visual::before,
@@ -870,6 +875,7 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
         }
         .access-pulse-2 { animation-delay: 1.8s; }
         .access-pulse-3 { animation-delay: 3.6s; }
+        .access-pulse-4 { animation-delay: 5.4s; }
         .access-device {
           position: absolute;
           display: grid;
@@ -1230,7 +1236,7 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
         }
         .eco-cards {
           display: grid;
-          grid-template-columns: 1fr;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 1rem;
         }
         .hub-database-visual {
@@ -1241,7 +1247,8 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
         .hub-database-network { width: 100%; height: 100%; }
         .hub-db-link {
           stroke: var(--visual-line-soft);
-          stroke-width: 2;
+          stroke-width: 2.2;
+          opacity: 0.9;
         }
         .hub-db-node {
           fill: var(--visual-card-surface);
@@ -1265,16 +1272,15 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
           stroke-width: 2.5;
           stroke-linecap: round;
           stroke-dasharray: 14 16;
-          opacity: 0;
+          opacity: 0.82;
           animation: hubDbFlow 2.2s linear infinite;
         }
         .hub-db-pulse-2 { animation-delay: 0.35s; }
         .hub-db-pulse-3 { animation-delay: 0.7s; }
         .hub-db-pulse-4 { animation-delay: 1.05s; }
         @keyframes hubDbFlow {
-          0% { stroke-dashoffset: 72; opacity: 0; }
-          20% { opacity: 1; }
-          100% { stroke-dashoffset: 0; opacity: 0; }
+          0% { stroke-dashoffset: 72; opacity: 0.6; }
+          100% { stroke-dashoffset: 0; opacity: 0.95; }
         }
         @keyframes hubDbPulse {
           0%, 100% { transform: scale(0.92); opacity: 0.45; }
@@ -1301,6 +1307,37 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             white-space: normal;
             gap: 0.1em;
           }
+          .eco-cards { grid-template-columns: 1fr; }
+        }
+        .mtls-folder-visual {
+          position: relative;
+          height: 14.2rem;
+          margin: 0.2rem 0 0.4rem;
+        }
+        .mtls-folder-scene { width: 100%; height: 100%; }
+        .mtls-folder-body {
+          fill: rgba(255,255,255,0.06);
+          stroke: var(--visual-line-strong);
+          stroke-width: 2;
+        }
+        .mtls-folder-tab {
+          fill: rgba(255,255,255,0.08);
+          stroke: var(--visual-line-mid);
+          stroke-width: 2;
+        }
+        .mtls-cert {
+          fill: rgba(65, 214, 140, 0.14);
+          stroke: #41d68c;
+          stroke-width: 2.2;
+        }
+        .mtls-cert-left { transform-origin: 231px 104px; transform: rotate(-8deg); }
+        .mtls-cert-right { transform-origin: 389px 104px; transform: rotate(8deg); }
+        .mtls-cert-mark {
+          fill: none;
+          stroke: #41d68c;
+          stroke-width: 4;
+          stroke-linecap: round;
+          stroke-linejoin: round;
         }
       `}</style>
 
@@ -1342,6 +1379,18 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             visual="hubDatabase"
             title="Opensophy Hub (O.Hub)"
             text="Гибридная open-source платформа для документации и публикации контента. Подходит для технических команд, авторов и всех, кто хочет красиво и структурировано делиться знаниями."
+          />
+          <FeatureCard
+            isNegative={isNegative}
+            visual="mtlsFolder"
+            title="Opensophy mTLS (O.mTLS)"
+            text="Инструмент для быстрого создания и управления mTLS-сертификатами. Для тех, кто хочет надёжно закрыть доступ к своим сервисам и серверам без лишней головной боли."
+          />
+          <FeatureCard
+            isNegative={isNegative}
+            visual="knowledgeLayers"
+            title="Opensophy UI (O.UI)"
+            text="Библиотека готовых React-компонентов с живым превью и настройками. Анимации, интерактивные блоки, кастомные элементы и фирменные компоненты Opensophy — для разработчиков и дизайнеров."
           />
         </div>
 
