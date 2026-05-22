@@ -401,6 +401,7 @@ const SecureAccessVisual: React.FC = () => (
       <path className="access-pulse access-pulse-1" d="M120 118 C210 118 258 118 310 118 C382 76 430 68 510 68" />
       <path className="access-pulse access-pulse-2" d="M510 172 C430 172 382 162 310 118 C258 118 210 118 120 118" />
       <path className="access-pulse access-pulse-3" d="M510 68 C430 68 382 76 310 118 C258 118 210 118 120 118" />
+      <path className="access-pulse access-pulse-4" d="M510 68 C528 84 528 116 510 172" />
     </svg>
     <div className="access-device access-device-desktop access-device-left"><span /></div>
     <div className="access-device access-device-laptop"><span /></div>
@@ -844,6 +845,7 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
         }
         .access-pulse-2 { animation-delay: 1.8s; }
         .access-pulse-3 { animation-delay: 3.6s; }
+        .access-pulse-4 { animation-delay: 4.8s; }
         .access-device {
           position: absolute;
           display: grid;
@@ -1098,12 +1100,7 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
             Учим безопасности, настраиваем защиту, автоматизируем рутину.
           </h2>
           <p style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: 0, color: textMut, fontFamily: 'Inter, sans-serif' }}>
-            <ShinyText
-              text="От образовательных материалов до внедрения DevSecOps и Zero Trust в реальную инфраструктуру."
-              speed={4}
-              color={shinyBase}
-              shineColor={shinyGlow}
-            />
+            От образовательных материалов до внедрения DevSecOps и Zero Trust в реальную инфраструктуру.
           </p>
         </div>
       </div>
@@ -1113,42 +1110,42 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
           <FeatureCard
             isNegative={isNegative}
             title="Знания каждому!"
-            badge="открытые знания"
+            badge="ИНИЦИАТИВА"
             visual="knowledgeLayers"
             text="Пишем понятные статьи и гайды по DevSecOps и не только. Рассказываем как настроить безопасность с нуля и сделать её частью культуры команды."
           />
           <FeatureCard
             isNegative={isNegative}
             title="Интеграция анализа безопасности"
-            badge="услуга"
+            badge="СЕРВИС"
             visual="securityAnalysis"
             text="Интегрируем автоматический анализ кода на уязвимости на каждом этапе разработки. Проверяем исходный код, тестируем работающее приложение и отслеживаем уязвимости в библиотеках — всё автоматически в CI/CD без участия команды."
           />
           <FeatureCard
             isNegative={isNegative}
             title="Настройка безопасного доступа"
-            badge="услуга"
+            badge="СЕРВИС"
             visual="secureAccess"
             text="Настраиваем и интегрируем защищённый доступ к сервисам и серверам. Подбираем решение под задачу — mTLS, VPN, Zero Trust или другой подход. Доступ получают только те, кому вы это разрешили."
           />
           <FeatureCard
             isNegative={isNegative}
             title="Проверка защищённости"
-            badge="услуга"
+            badge="СЕРВИС"
             visual="securityCheck"
             text="Этично проверяем сервис или сервер на наличие уязвимостей: открытые точки входа, слабые конфигурации и всё, что может стать проблемой раньше, чем вы об этом узнаете."
           />
           <FeatureCard
             isNegative={isNegative}
             title="Автоматизация"
-            badge="услуга"
+            badge="СЕРВИС"
             visual="automationList"
             text="Автоматизируем рутину — от простого bash-скрипта до сложных решений под индивидуальные требования."
           />
           <FeatureCard
             isNegative={isNegative}
             title="Подбор стека защиты"
-            badge="услуга"
+            badge="СЕРВИС"
             visual="protectionStack"
             text="Подбираем стек защиты с одной целью — максимальная эффективность при минимальных затратах ресурсов."
           />
@@ -1182,10 +1179,12 @@ interface EcoCardProps {
   linkLabel?:  string;
   isNegative:  boolean;
   extraLinks?: Array<{ href: string; label: string }>;
+  badge?:      string;
+  visual?:     'hub' | 'mtls' | 'ui';
 }
 
 const EcoCard: React.FC<EcoCardProps> = ({
-  title, description, link, linkLabel, isNegative, extraLinks,
+  title, description, link, linkLabel, isNegative, extraLinks, badge, visual,
 }) => {
   const outerBorder  = isNegative ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
   const innerBorder  = isNegative ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
@@ -1222,6 +1221,23 @@ const EcoCard: React.FC<EcoCardProps> = ({
         gap:           '0.6rem',
         minHeight:     '180px',
       }}>
+        {visual && (
+          <div className={`eco-visual eco-visual-${visual}`} aria-hidden="true">
+            {visual === 'hub' && (
+              <>
+                <span className="eco-hub-node eco-hub-center" />
+                <span className="eco-hub-node eco-hub-top" />
+                <span className="eco-hub-node eco-hub-right" />
+                <span className="eco-hub-node eco-hub-bottom" />
+                <span className="eco-hub-node eco-hub-left" />
+              </>
+            )}
+            {visual === 'mtls' && <div className="eco-shield">🛡️<span>📄</span></div>}
+            {visual === 'ui' && <div className="eco-ui-ascii">UI</div>}
+          </div>
+        )}
+        {badge && <div className="eco-badge">{badge}</div>}
+
         <div style={{
           fontSize:   'clamp(1rem, 1.5vw, 1.15rem)',
           fontWeight: 700,
@@ -1331,6 +1347,33 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
           grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 1rem;
         }
+        .eco-badge {
+          display: inline-flex;
+          align-self: flex-start;
+          font-size: 0.66rem;
+          font-weight: 700;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          border-radius: 999px;
+          padding: 0.18rem 0.55rem;
+          border: 1px solid rgba(127,127,127,0.28);
+          color: rgba(127,127,127,0.9);
+          font-family: ui-monospace, monospace;
+        }
+        .eco-visual { height: 4rem; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: center; position: relative; }
+        .eco-hub-node { position: absolute; border-radius: 999px; background: rgba(85, 178, 255, 0.9); }
+        .eco-hub-center { width: 1rem; height: 1rem; }
+        .eco-hub-top, .eco-hub-right, .eco-hub-bottom, .eco-hub-left { width: 0.68rem; height: 0.68rem; }
+        .eco-hub-top { transform: translateY(-1.4rem); }
+        .eco-hub-right { transform: translateX(1.4rem); }
+        .eco-hub-bottom { transform: translateY(1.4rem); }
+        .eco-hub-left { transform: translateX(-1.4rem); }
+        .eco-visual-hub::before, .eco-visual-hub::after { content: ''; position: absolute; width: 3rem; height: 1px; background: rgba(85, 178, 255, 0.48); }
+        .eco-visual-hub::after { transform: rotate(90deg); }
+        .eco-shield { font-size: 2rem; position: relative; animation: eco-float 2.8s ease-in-out infinite; }
+        .eco-shield span { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -40%); font-size: 0.9rem; color: #27a95f; }
+        .eco-ui-ascii { font-size: 1.9rem; letter-spacing: 0.14em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+        @keyframes eco-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
         @media (max-width: 900px) {
           .eco-content { display: block; }
           .eco-cards { grid-template-columns: 1fr; }
@@ -1382,12 +1425,7 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
             fontFamily: 'Inter, sans-serif',
             color:      textMut,
           }}>
-            <ShinyText
-              text="Создаём open-source инструменты для безопасной инфраструктуры и современных IT-команд."
-              speed={4}
-              color={shinyBase}
-              shineColor={shinyGlow}
-            />
+            Создаём open-source инструменты для безопасной инфраструктуры и современных IT-команд.
           </p>
         </div>
 
@@ -1400,16 +1438,22 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
               description="Гибридная open-source платформа для документации и публикации контента. Подходит для технических команд, авторов и всех, кто хочет красиво и структурировано делиться знаниями."
               link="https://github.com/opensophy-projects/hub"
               linkLabel="opensophy-projects/hub"
+              badge="ВЕБ-ПРОЕКТ"
+              visual="hub"
             />
             <EcoCard
               isNegative={isNegative}
               title="Opensophy mTLS (O.mTLS)"
               description="Инструмент для быстрого создания и управления mTLS-сертификатами. Для тех, кто хочет надёжно закрыть доступ к своим сервисам и серверам без лишней головной боли."
+              badge="СКРИПТ"
+              visual="mtls"
             />
             <EcoCard
               isNegative={isNegative}
               title="Opensophy UI (O.UI)"
               description="Библиотека готовых React-компонентов с живым превью и настройками. Анимации, интерактивные блоки, кастомные элементы и фирменные компоненты Opensophy — для разработчиков и дизайнеров, которые ценят время."
+              badge="ВЕБ-ПРОЕКТ"
+              visual="ui"
             />
           </div>
         </div>
