@@ -304,7 +304,8 @@ interface FeatureCardProps {
   text: string;
   isNegative: boolean;
   fullWidth?: boolean;
-  visual?: 'securityAnalysis' | 'knowledgeLayers' | 'securityCheck' | 'secureAccess' | 'automationList' | 'protectionStack';
+  badge?: string;
+  visual?: 'securityAnalysis' | 'knowledgeLayers' | 'securityCheck' | 'secureAccess' | 'automationList' | 'protectionStack' | 'hubDatabase';
 }
 
 const SecurityAnalysisVisual: React.FC = () => (
@@ -398,7 +399,7 @@ const SecureAccessVisual: React.FC = () => (
       <path className="access-line access-line-laptop" d="M310 118 C382 76 430 68 510 68" />
       <path className="access-line access-line-phone" d="M310 118 C382 162 430 172 510 172" />
       <path className="access-pulse access-pulse-1" d="M120 118 C210 118 258 118 310 118 C382 76 430 68 510 68" />
-      <path className="access-pulse access-pulse-2" d="M510 172 C430 172 382 162 310 118 C258 118 210 118 120 118" />
+      <path className="access-pulse access-pulse-2" d="M120 118 C210 118 258 118 310 118 C382 162 430 172 510 172" />
       <path className="access-pulse access-pulse-3" d="M510 68 C430 68 382 76 310 118 C258 118 210 118 120 118" />
     </svg>
     <div className="access-device access-device-desktop access-device-left"><span /></div>
@@ -454,9 +455,39 @@ const ProtectionStackVisual: React.FC = () => (
   </div>
 );
 
-const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, fullWidth, visual }) => {
+const HubDatabaseVisual: React.FC = () => (
+  <div className="hub-database-visual" aria-hidden="true">
+    <svg viewBox="0 0 620 220" preserveAspectRatio="none" className="hub-database-network">
+      <defs>
+        <radialGradient id="hubDbGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="var(--visual-line-strong)" stopOpacity="0.7" />
+          <stop offset="100%" stopColor="var(--visual-line-transparent)" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <line className="hub-db-link" x1="310" y1="110" x2="182" y2="56" />
+      <line className="hub-db-link" x1="310" y1="110" x2="438" y2="56" />
+      <line className="hub-db-link" x1="310" y1="110" x2="182" y2="170" />
+      <line className="hub-db-link" x1="310" y1="110" x2="438" y2="170" />
+      <circle className="hub-db-node" cx="182" cy="56" r="14" />
+      <circle className="hub-db-node" cx="438" cy="56" r="14" />
+      <circle className="hub-db-node" cx="182" cy="170" r="14" />
+      <circle className="hub-db-node" cx="438" cy="170" r="14" />
+      <ellipse cx="310" cy="94" rx="42" ry="14" className="hub-db-main-top" />
+      <rect x="268" y="94" width="84" height="36" className="hub-db-main-body" />
+      <ellipse cx="310" cy="130" rx="42" ry="14" className="hub-db-main-bottom" />
+      <circle className="hub-db-glow" cx="310" cy="112" r="40" fill="url(#hubDbGlow)" />
+      <path className="hub-db-pulse hub-db-pulse-1" d="M310 110 C270 92 230 74 182 56" />
+      <path className="hub-db-pulse hub-db-pulse-2" d="M310 110 C350 92 390 74 438 56" />
+      <path className="hub-db-pulse hub-db-pulse-3" d="M310 110 C270 132 230 150 182 170" />
+      <path className="hub-db-pulse hub-db-pulse-4" d="M310 110 C350 132 390 150 438 170" />
+    </svg>
+  </div>
+);
+
+const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, fullWidth, badge, visual }) => {
   const titleC = isNegative ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.88)';
   const textC  = isNegative ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.65)';
+  const badgeC = isNegative ? 'rgba(255,255,255,0.42)' : 'rgba(0,0,0,0.42)';
   const hasVisual = Boolean(visual);
   const visualClass = visual ? `feature-card--${visual}` : '';
 
@@ -496,7 +527,23 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, full
       {visual === 'secureAccess' && <SecureAccessVisual />}
       {visual === 'automationList' && <AutomationListVisual />}
       {visual === 'protectionStack' && <ProtectionStackVisual />}
+      {visual === 'hubDatabase' && <HubDatabaseVisual />}
       <LandingCardHeader className={hasVisual ? 'feature-card-copy--visual' : undefined}>
+        {badge && (
+          <div style={{
+            display:       'inline-flex',
+            alignSelf:     'flex-start',
+            fontSize:      '0.66rem',
+            fontWeight:    700,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            color:         badgeC,
+            marginBottom:  '0.75rem',
+            fontFamily:    'ui-monospace, monospace',
+          }}>
+            {badge}
+          </div>
+        )}
         <LandingCardTitle style={{ color: titleC }}>{title}</LandingCardTitle>
       </LandingCardHeader>
       <LandingCardContent style={{ flex: 1 }}>
@@ -1092,36 +1139,42 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
           <FeatureCard
             isNegative={isNegative}
             title="Знания каждому!"
+            badge="открытые знания"
             visual="knowledgeLayers"
             text="Пишем понятные статьи и гайды по DevSecOps и не только. Рассказываем как настроить безопасность с нуля и сделать её частью культуры команды."
           />
           <FeatureCard
             isNegative={isNegative}
             title="Интеграция анализа безопасности"
+            badge="услуга"
             visual="securityAnalysis"
             text="Интегрируем автоматический анализ кода на уязвимости на каждом этапе разработки. Проверяем исходный код, тестируем работающее приложение и отслеживаем уязвимости в библиотеках — всё автоматически в CI/CD без участия команды."
           />
           <FeatureCard
             isNegative={isNegative}
             title="Настройка безопасного доступа"
+            badge="услуга"
             visual="secureAccess"
             text="Настраиваем и интегрируем защищённый доступ к сервисам и серверам. Подбираем решение под задачу — mTLS, VPN, Zero Trust или другой подход. Доступ получают только те, кому вы это разрешили."
           />
           <FeatureCard
             isNegative={isNegative}
             title="Проверка защищённости"
+            badge="услуга"
             visual="securityCheck"
             text="Этично проверяем сервис или сервер на наличие уязвимостей: открытые точки входа, слабые конфигурации и всё, что может стать проблемой раньше, чем вы об этом узнаете."
           />
           <FeatureCard
             isNegative={isNegative}
             title="Автоматизация"
+            badge="услуга"
             visual="automationList"
             text="Автоматизируем рутину — от простого bash-скрипта до сложных решений под индивидуальные требования."
           />
           <FeatureCard
             isNegative={isNegative}
             title="Подбор стека защиты"
+            badge="услуга"
             visual="protectionStack"
             text="Подбираем стек защиты с одной целью — максимальная эффективность при минимальных затратах ресурсов."
           />
@@ -1174,6 +1227,58 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
         }
         .eco-header {
           margin-bottom: clamp(3rem, 5vw, 4.5rem);
+        }
+        .eco-cards {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+        .hub-database-visual {
+          position: relative;
+          height: 14.2rem;
+          margin: 0.2rem 0 0.4rem;
+        }
+        .hub-database-network { width: 100%; height: 100%; }
+        .hub-db-link {
+          stroke: var(--visual-line-soft);
+          stroke-width: 2;
+        }
+        .hub-db-node {
+          fill: var(--visual-card-surface);
+          stroke: var(--visual-line-mid);
+          stroke-width: 2;
+        }
+        .hub-db-main-top, .hub-db-main-bottom {
+          fill: rgba(255,255,255,0.08);
+          stroke: var(--visual-line-strong);
+          stroke-width: 2;
+        }
+        .hub-db-main-body {
+          fill: rgba(255,255,255,0.04);
+          stroke: var(--visual-line-strong);
+          stroke-width: 2;
+        }
+        .hub-db-glow { animation: hubDbPulse 2.4s ease-in-out infinite; transform-origin: center; }
+        .hub-db-pulse {
+          fill: none;
+          stroke: var(--visual-access);
+          stroke-width: 2.5;
+          stroke-linecap: round;
+          stroke-dasharray: 14 16;
+          opacity: 0;
+          animation: hubDbFlow 2.2s linear infinite;
+        }
+        .hub-db-pulse-2 { animation-delay: 0.35s; }
+        .hub-db-pulse-3 { animation-delay: 0.7s; }
+        .hub-db-pulse-4 { animation-delay: 1.05s; }
+        @keyframes hubDbFlow {
+          0% { stroke-dashoffset: 72; opacity: 0; }
+          20% { opacity: 1; }
+          100% { stroke-dashoffset: 0; opacity: 0; }
+        }
+        @keyframes hubDbPulse {
+          0%, 100% { transform: scale(0.92); opacity: 0.45; }
+          50% { transform: scale(1.08); opacity: 0.9; }
         }
         .eco-rotating-text {
           overflow: visible !important;
@@ -1229,6 +1334,15 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
               shineColor={shinyGlow}
             />
           </p>
+        </div>
+
+        <div className="eco-cards">
+          <FeatureCard
+            isNegative={isNegative}
+            visual="hubDatabase"
+            title="Opensophy Hub (O.Hub)"
+            text="Гибридная open-source платформа для документации и публикации контента. Подходит для технических команд, авторов и всех, кто хочет красиво и структурировано делиться знаниями."
+          />
         </div>
 
       </div>
