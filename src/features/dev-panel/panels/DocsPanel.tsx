@@ -11,7 +11,7 @@ import {
   FolderOpen, Plus, Trash2,
   ChevronRight, ChevronDown, FolderPlus, FilePlus,
   Loader2, Bold, Italic, Code, Link, Hash, List,
-  RefreshCw, Minus, Image, BarChart2, Table,
+  RefreshCw, Minus, Image, BarChart2, Table, Search,
   Columns, AlertCircle, Calculator, Footprints, LayoutGrid, Type,
   Edit3,
 } from 'lucide-react';
@@ -72,6 +72,7 @@ const parseName = (name: string) => {
   const sm = RE_PN_SLUG.exec(ai);
   return { type, icon, title: sm ? sm[1].trim() : ai.trim(), slug: sm ? sm[2].trim() : null };
 };
+
 
 const buildTree = (flat: FlatEntry[]): TreeEntry[] => {
   const m = new Map<string,TreeEntry>();
@@ -614,8 +615,6 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
   }, []);
 
   const fileName = filePath.split('/').pop()?.replace(/\.md$/, '') ?? '';
-  const isDark = t.bg === '#111112';
-
   useEffect(() => {
     setLoading(true);
     bridge.readFile(filePath)
@@ -796,8 +795,8 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
         placeholder="Начните писать..."
         style={{
           flex:1, padding:'12px 14px', border:'none',
-          background: isDark ? '#0d0d0e' : '#eceae5',
-          color: isDark ? '#e2e8f0' : '#1e293b',
+          background: t.inpBg,
+          color: t.editorFg,
           fontSize:12,
           fontFamily:'ui-monospace, "Cascadia Code", "Fira Code", monospace',
           lineHeight:1.75, resize:'none', outline:'none',
@@ -838,7 +837,6 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
   const isActive = entry.path === selectedPath;
   const isDragOver = dragOverPath === entry.path;
   const p = entry.parsed;
-  const typeDot: Record<string,string> = { N:'#22c55e', C:'#14b8a6', A:'#f59e0b' };
 
   const actionBtn = (ico: React.ReactNode, tip: string, fn: () => void, danger?: boolean) => (
     <button key={tip} title={tip}
@@ -872,19 +870,17 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
         style={{
           display:'flex', alignItems:'center', gap:5, cursor:'grab', userSelect:'none',
           width:'100%', textAlign:'left',
-          padding:`4px 8px 4px ${8 + entry.depth * 14}px`,
-          borderRadius:6, border:'none',
+          padding:`5px 10px 5px ${12 + entry.depth * 14}px`,
+          borderRadius:7, border:'none',
           background: nodeBg,
           outline: nodeOutline,
           outlineOffset:-1, minHeight:28, transition:'background 0.1s',
         }}
       >
-        <span style={{width:14, height:14, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', color:t.fgSub}}>
+        <span style={{width:14, height:14, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', color:t.fgSub, opacity:isDir?1:0.55}}>
           {chevronIcon}
         </span>
-        {p.type && <span style={{width:7, height:7, borderRadius:'50%', flexShrink:0, background:typeDot[p.type] ?? t.fgSub}}/>}
-        {p.icon && <span style={{fontSize:9, color:t.fgSub, flexShrink:0, fontFamily:t.mono, maxWidth:60, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{p.icon}</span>}
-        <span style={{fontSize:12, color:t.fg, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, fontWeight}}>
+        <span style={{fontSize:14, color:t.fg, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, fontWeight}}>
           {p.title || entry.name}
         </span>
         {hov && (
@@ -902,7 +898,7 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
         )}
       </button>
       {isDir && expanded && entry.children.length > 0 && (
-        <div style={{marginLeft: 8 + entry.depth * 14 + 7, borderLeft:`1px solid ${t.border}`}}>
+        <div style={{marginLeft: 13 + entry.depth * 14, borderLeft:`1px solid ${t.border}`, paddingLeft: 8}}>
           {entry.children.map(c => (
             <TreeNode key={c.path} entry={c} onCreate={onCreate} onDelete={onDelete}
               onEdit={onEdit} onSelect={onSelect} onDrop={onDrop}
@@ -913,6 +909,24 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
       )}
     </div>
   );
+}
+
+
+function filterTreeByQuery(entries: TreeEntry[], query: string): TreeEntry[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return entries;
+
+  const walk = (items: TreeEntry[]): TreeEntry[] => items
+    .map(item => {
+      const title = (item.parsed.title || item.name).toLowerCase();
+      const matchesSelf = title.includes(q) || item.path.toLowerCase().includes(q);
+      const children = walk(item.children);
+      if (matchesSelf || children.length > 0) return { ...item, children };
+      return null;
+    })
+    .filter(Boolean) as TreeEntry[];
+
+  return walk(entries);
 }
 
 function countFiles(entries: TreeEntry[]): number {
@@ -931,6 +945,7 @@ export default function DocsPanel() {
   const [toDelete, setToDelete]         = useState<TreeEntry|null>(null);
   const [dragOverPath, setDragOverPath] = useState<string|null>(null);
   const [moving, setMoving]         = useState(false);
+  const [query, setQuery]           = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1015,6 +1030,7 @@ export default function DocsPanel() {
     }
   }, [tree, selected, load]);
 
+  const visibleTree = filterTreeByQuery(tree, query);
   const fileCount = countFiles(tree);
 
   const renderTreeContent = () => {
@@ -1024,13 +1040,13 @@ export default function DocsPanel() {
         <span style={{fontSize:12}}>Загрузка...</span>
       </div>
     );
-    if (tree.length === 0) return (
+    if (visibleTree.length === 0) return (
       <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:8, padding:28, color:t.fgMuted, textAlign:'center'}}>
         <FolderOpen size={28} style={{opacity:0.3}}/>
-        <div style={{fontSize:12}}>Docs/ пуста. Создай Секция</div>
+        <div style={{fontSize:12}}>{query ? 'Ничего не найдено' : 'Docs/ пуста. Создай Секция'}</div>
       </div>
     );
-    return tree.map(e => (
+    return visibleTree.map(e => (
       <TreeNode key={e.path} entry={e} onCreate={cfg => setModalCfg({cfg})}
         onDelete={setToDelete} onEdit={handleEdit}
         onSelect={p => setSelected(p)} onDrop={handleDrop}
@@ -1056,6 +1072,15 @@ export default function DocsPanel() {
           <Plus size={12}/> Секция
         </button>
         <div style={{flex:1}}/>
+        <div style={{display:'flex', alignItems:'center', gap:6, minWidth:220, maxWidth:340, width:'36%'}}>
+          <Search size={12} style={{color:t.fgSub}}/>
+          <input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Поиск документа..."
+            style={{width:'100%', padding:'6px 8px', borderRadius:6, border:`1px solid ${t.border}`, background:t.inpBg, color:t.fg, fontSize:12, fontFamily:t.mono, outline:'none'}}
+          />
+        </div>
         {moving && <Loader2 size={12} style={{color:t.fgMuted, animation:'devSpinAnim 1s linear infinite'}}/>}
         <button onClick={load} style={{display:'flex', alignItems:'center', gap:4, padding:'6px 10px', borderRadius:6, border:`1px solid ${t.border}`, background:'transparent', color:t.fgMuted, cursor:'pointer', fontSize:11, fontFamily:t.mono}}
           onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = t.surfaceHov}
