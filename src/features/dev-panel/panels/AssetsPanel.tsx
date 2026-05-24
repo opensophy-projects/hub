@@ -88,15 +88,15 @@ function DropZone({ label, accept, onFiles, loading, hint, t }: Readonly<{
           ? <Loader2 size={22} style={{ color: t.fgMuted, animation: 'devSpin 1s linear infinite', margin: '0 auto 10px' }}/>
           : <Upload size={22} style={{ color: dragOver ? t.fg : t.fgMuted, margin: '0 auto 10px' }}/>
         }
-        <div style={{ fontSize: 13, color: dragOver ? t.fg : t.fgMuted, fontWeight: 500, fontFamily: t.mono }}>
+        <div style={{ fontSize: 16, color: dragOver ? t.fg : t.fgMuted, fontWeight: 500, fontFamily: t.mono }}>
           {loading ? 'Загружаем...' : label}
         </div>
-        <div style={{ fontSize: 11, color: t.fgSub, marginTop: 4 }}>
-          {loading ? '' : 'Перетащи или кликни'}
+        <div style={{ fontSize: 13, color: t.fgSub, marginTop: 4 }}>
+          {loading ? '' : 'Перетащите файл сюда или нажмите для выбора'}
         </div>
       </button>
       {hint && (
-        <div style={{ fontSize: 10, color: t.fgSub, marginTop: 6, paddingLeft: 2 }}>{hint}</div>
+        <div style={{ fontSize: 12, color: t.fgSub, marginTop: 6, paddingLeft: 2 }}>{hint}</div>
       )}
     </div>
   );
@@ -129,10 +129,10 @@ function AssetItem({ asset, t }: Readonly<{
         <Image size={24} style={{ color: t.fgMuted, flexShrink: 0 }}/>
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 11, color: t.fg, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: t.mono }}>
+        <div style={{ fontSize: 13, color: t.fg, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: t.mono }}>
           {asset.filename}
         </div>
-        <div style={{ fontSize: 10, color: t.fgSub, fontFamily: t.mono }}>
+        <div style={{ fontSize: 12, color: t.fgSub, fontFamily: t.mono }}>
           {asset.path} · {formatBytes(asset.size)}
         </div>
       </div>
@@ -144,7 +144,7 @@ function AssetItem({ asset, t }: Readonly<{
           border: `1px solid ${copied ? t.success + '55' : t.border}`,
           background: copied ? t.bg : 'transparent',
           color: copied ? t.success : t.fgMuted,
-          fontSize: 10, cursor: 'pointer', fontFamily: t.mono, whiteSpace: 'nowrap',
+          fontSize: 12, cursor: 'pointer', fontFamily: t.mono, whiteSpace: 'nowrap',
         }}
       >
         {copied ? <Check size={10}/> : null}
@@ -257,7 +257,7 @@ export default function AssetsPanel() {
       </div>
 
       <DropZone
-        label={faviconSaved ? '✓ Favicon обновлён!' : 'Загрузить favicon'}
+        label={faviconSaved ? '✓ Иконка сайта обновлена!' : 'Загрузить иконку сайта (favicon)'}
         accept="image/png,image/svg+xml,image/x-icon,image/webp"
         onFiles={handleFaviconUpload}
         loading={faviconLoading}
@@ -268,7 +268,7 @@ export default function AssetsPanel() {
       <div style={{ height: 10 }} />
 
       <DropZone
-        label={logoSaved === 'light' ? '✓ Light logo обновлён!' : 'Загрузить light_logo'}
+        label={logoSaved === 'light' ? '✓ Логотип для светлой темы обновлён!' : 'Загрузить логотип для светлой темы'}
         accept="image/png,image/svg+xml,image/webp"
         onFiles={(files) => handleLogoUpload('light', files)}
         loading={lightLogoLoading}
@@ -279,7 +279,7 @@ export default function AssetsPanel() {
       <div style={{ height: 10 }} />
 
       <DropZone
-        label={logoSaved === 'dark' ? '✓ Dark logo обновлён!' : 'Загрузить dark_logo'}
+        label={logoSaved === 'dark' ? '✓ Логотип для тёмной темы обновлён!' : 'Загрузить логотип для тёмной темы'}
         accept="image/png,image/svg+xml,image/webp"
         onFiles={(files) => handleLogoUpload('dark', files)}
         loading={darkLogoLoading}
@@ -290,7 +290,7 @@ export default function AssetsPanel() {
       <div style={{
         marginTop: 10, padding: '8px 10px', borderRadius: 7,
         border: `1px solid ${t.border}`, background: t.surface,
-        fontSize: 10, color: t.fgSub, lineHeight: 1.55,
+        fontSize: 12, color: t.fgSub, lineHeight: 1.55,
       }}>
         Favicon используется только браузером для вкладок. В навигации отображается light_logo или dark_logo в зависимости от текущей темы; если вариант не задан, будет fallback на другой логотип или favicon.
       </div>
@@ -316,7 +316,7 @@ export default function AssetsPanel() {
 
       {assets.length > 0 && (
         <div style={{ marginTop: 14 }}>
-          <div style={{ fontSize: 10, color: t.fgSub, marginBottom: 8, fontFamily: t.mono }}>
+          <div style={{ fontSize: 12, color: t.fgSub, marginBottom: 8, fontFamily: t.mono }}>
             Загружено в этой сессии ({assets.length}):
           </div>
           {assets.map(a => <AssetItem key={a.filename} asset={a} t={t}/>)}
@@ -327,7 +327,7 @@ export default function AssetsPanel() {
         <div style={{
           marginTop: 12, padding: '8px 10px', borderRadius: 6,
           background: t.bg, border: `1px solid ${t.danger}44`,
-          color: t.danger, fontSize: 11,
+          color: t.danger, fontSize: 13,
           display: 'flex', gap: 6, alignItems: 'center',
         }}>
           ⚠ {error}

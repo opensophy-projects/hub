@@ -56,7 +56,7 @@ function ContactRow({ contact, index, onChange, onDelete, t }: {
   const fieldStyle: React.CSSProperties = {
     flex: 1, padding: '5px 8px', borderRadius: 5,
     border: `1px solid ${t.border}`,
-    background: t.inpBg, color: t.fg, fontSize: 11,
+    background: t.inpBg, color: t.fg, fontSize: 14,
     outline: 'none', fontFamily: t.mono, minWidth: 0,
   };
 
@@ -64,15 +64,15 @@ function ContactRow({ contact, index, onChange, onDelete, t }: {
     <div style={{ border: `1px solid ${t.border}`, borderRadius: 8, marginBottom: 8, overflow: 'hidden' }}>
       <div style={{
         display: 'flex', alignItems: 'center', gap: 6,
-        padding: '6px 10px', background: t.surface,
+        padding: '8px 12px', background: t.surface,
         borderBottom: `1px solid ${t.border}`,
       }}>
-        <span style={{ fontSize: 10, color: t.fgSub, fontFamily: t.mono }}>#{index + 1}</span>
-        <span style={{ flex: 1, fontSize: 11, color: t.fg, fontWeight: 500 }}>
+        <span style={{ fontSize: 12, color: t.fgSub, fontFamily: t.mono }}>#{index + 1}</span>
+        <span style={{ flex: 1, fontSize: 14, color: t.fg, fontWeight: 500 }}>
           {contact.title || 'Без названия'}
         </span>
         <span style={{
-          fontSize: 9, padding: '1px 5px', borderRadius: 3,
+          fontSize: 11, padding: '1px 5px', borderRadius: 3,
           background: t.surfaceHov, color: t.fgMuted,
         }}>
           {contact.href.startsWith('mailto:') ? 'email' : 'external'}
@@ -83,10 +83,10 @@ function ContactRow({ contact, index, onChange, onDelete, t }: {
           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = t.danger; }}
           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = t.fgSub; }}
         >
-          <Trash2 size={11}/>
+          <Trash2 size={14}/>
         </button>
       </div>
-      <div style={{ padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+      <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ display: 'flex', gap: 6 }}>
           <input value={contact.title}    onChange={e => set('title',    e.target.value)} placeholder="Название (GitHub, Telegram...)" style={fieldStyle}/>
           <input value={contact.subtitle} onChange={e => set('subtitle', e.target.value)} placeholder="Подпись"                        style={fieldStyle}/>
@@ -168,20 +168,20 @@ export default function ContactsPanel() {
           onClick={addContact}
           style={{
             width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            padding: '9px', borderRadius: 7,
+            padding: '11px', borderRadius: 7,
             border: `1px dashed ${t.border}`,
             background: 'transparent', color: t.fgMuted,
-            fontSize: 11, cursor: 'pointer', fontFamily: t.mono,
+            fontSize: 14, cursor: 'pointer', fontFamily: t.mono,
           }}
           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = t.borderStrong; (e.currentTarget as HTMLButtonElement).style.color = t.fg; }}
           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = t.border;       (e.currentTarget as HTMLButtonElement).style.color = t.fgMuted; }}
         >
-          <Plus size={13}/> Добавить контакт
+          <Plus size={15}/> Добавить контакт
         </button>
       </div>
 
       {error && (
-        <div style={{ padding: '8px 12px', color: t.danger, fontSize: 11, display: 'flex', gap: 5 }}>
+        <div style={{ padding: '8px 12px', color: t.danger, fontSize: 14, display: 'flex', gap: 8 }}>
           <AlertCircle size={11}/> {error}
         </div>
       )}
@@ -193,10 +193,10 @@ export default function ContactsPanel() {
         <button
           onClick={load}
           style={{
-            display: 'flex', alignItems: 'center', gap: 5,
+            display: 'flex', alignItems: 'center', gap: 8,
             padding: '6px 11px', borderRadius: 7,
             border: `1px solid ${t.border}`, background: 'transparent', color: t.fgMuted,
-            fontSize: 11, cursor: 'pointer', fontFamily: t.mono,
+            fontSize: 14, cursor: 'pointer', fontFamily: t.mono,
           }}
         >
           Обновить
@@ -210,7 +210,7 @@ export default function ContactsPanel() {
             border: `1px solid ${saved ? t.success + '66' : t.borderStrong}`,
             background: saved ? savedBg : t.surfaceHov,
             color: saved ? t.success : t.fg,
-            fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: t.mono,
+            fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: t.mono,
           }}
         >
           {saving && <Loader2 size={11} style={{ animation: 'devSpinAnim 1s linear infinite' }}/>}
