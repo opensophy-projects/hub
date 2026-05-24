@@ -13,7 +13,7 @@ import {
   Loader2, Bold, Italic, Code, Link, Hash, List,
   RefreshCw, Minus, Image, BarChart2, Table,
   Columns, AlertCircle, Calculator, Footprints, LayoutGrid, Type,
-  Edit3,
+  Edit3, Folder, FileText,
 } from 'lucide-react';
 
 interface FlatEntry { type: 'file'|'dir'; path: string; name: string; depth: number; }
@@ -72,6 +72,7 @@ const parseName = (name: string) => {
   const sm = RE_PN_SLUG.exec(ai);
   return { type, icon, title: sm ? sm[1].trim() : ai.trim(), slug: sm ? sm[2].trim() : null };
 };
+
 
 const buildTree = (flat: FlatEntry[]): TreeEntry[] => {
   const m = new Map<string,TreeEntry>();
@@ -614,8 +615,6 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
   }, []);
 
   const fileName = filePath.split('/').pop()?.replace(/\.md$/, '') ?? '';
-  const isDark = t.bg === '#111112';
-
   useEffect(() => {
     setLoading(true);
     bridge.readFile(filePath)
@@ -796,8 +795,8 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
         placeholder="Начните писать..."
         style={{
           flex:1, padding:'12px 14px', border:'none',
-          background: isDark ? '#0d0d0e' : '#eceae5',
-          color: isDark ? '#e2e8f0' : '#1e293b',
+          background: t.inpBg,
+          color: t.editorFg,
           fontSize:12,
           fontFamily:'ui-monospace, "Cascadia Code", "Fira Code", monospace',
           lineHeight:1.75, resize:'none', outline:'none',
@@ -872,17 +871,18 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
         style={{
           display:'flex', alignItems:'center', gap:5, cursor:'grab', userSelect:'none',
           width:'100%', textAlign:'left',
-          padding:`4px 8px 4px ${8 + entry.depth * 14}px`,
-          borderRadius:6, border:'none',
+          padding:`5px 10px 5px ${12 + entry.depth * 14}px`,
+          borderRadius:7, border:'none',
           background: nodeBg,
           outline: nodeOutline,
           outlineOffset:-1, minHeight:28, transition:'background 0.1s',
         }}
       >
-        <span style={{width:14, height:14, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', color:t.fgSub}}>
+        <span style={{width:14, height:14, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', color:t.fgSub, opacity:isDir?1:0.55}}>
           {chevronIcon}
         </span>
         {p.type && <span style={{width:7, height:7, borderRadius:'50%', flexShrink:0, background:typeDot[p.type] ?? t.fgSub}}/>}
+        <span style={{display:'flex', alignItems:'center', justifyContent:'center', width:16, color:isActive ? t.fg : t.fgMuted}}>{isDir ? <Folder size={12}/> : <FileText size={12}/>}</span>
         {p.icon && <span style={{fontSize:9, color:t.fgSub, flexShrink:0, fontFamily:t.mono, maxWidth:60, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{p.icon}</span>}
         <span style={{fontSize:12, color:t.fg, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, fontWeight}}>
           {p.title || entry.name}
@@ -902,7 +902,7 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
         )}
       </button>
       {isDir && expanded && entry.children.length > 0 && (
-        <div style={{marginLeft: 8 + entry.depth * 14 + 7, borderLeft:`1px solid ${t.border}`}}>
+        <div style={{marginLeft: 13 + entry.depth * 14, borderLeft:`1px solid ${t.border}`, paddingLeft: 8}}>
           {entry.children.map(c => (
             <TreeNode key={c.path} entry={c} onCreate={onCreate} onDelete={onDelete}
               onEdit={onEdit} onSelect={onSelect} onDrop={onDrop}
