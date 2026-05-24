@@ -2,6 +2,6 @@
   "useLanding": true,
   "showDotWaveBackground": true,
   "favicon": "/favicon.png",
-  "lightLogo": "",
+  "lightLogo": "/light_logo.png",
   "darkLogo": "/dark_logo.png"
 }
