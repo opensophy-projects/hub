@@ -7,7 +7,11 @@
 
 import { useEffect, useState } from 'react';
 
-const WS_URL = 'ws://127.0.0.1:7777';
+const resolveWsUrl = (): string => {
+  if (typeof globalThis.location === 'undefined') return 'ws://127.0.0.1:7777';
+  const proto = globalThis.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${proto}//${globalThis.location.hostname}:7777`;
+};
 
 export type BridgeStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 
@@ -59,7 +63,7 @@ function connect() {
   broadcast('connecting');
 
   try {
-    ws = new WebSocket(WS_URL);
+    ws = new WebSocket(resolveWsUrl());
   } catch {
     broadcast('error');
     scheduleReconnect();
@@ -93,7 +97,12 @@ function connect() {
     scheduleReconnect();
   };
 
-  ws.onerror = () => { broadcast('error'); };
+  ws.onerror = () => {
+    broadcast('error');
+    if (ws?.readyState === WebSocket.OPEN || ws?.readyState === WebSocket.CONNECTING) {
+      ws.close();
+    }
+  };
 }
 
 function scheduleReconnect() {

@@ -13,7 +13,7 @@ import {
   Loader2, Bold, Italic, Code, Link, Hash, List,
   RefreshCw, Minus, Image, BarChart2, Table,
   Columns, AlertCircle, Calculator, Footprints, LayoutGrid, Type,
-  Edit3,
+  Edit3, ExternalLink,
 } from 'lucide-react';
 
 interface FlatEntry { type: 'file'|'dir'; path: string; name: string; depth: number; }
@@ -71,6 +71,20 @@ const parseName = (name: string) => {
   const ai = im ? rest.slice(im[0].length) : rest;
   const sm = RE_PN_SLUG.exec(ai);
   return { type, icon, title: sm ? sm[1].trim() : ai.trim(), slug: sm ? sm[2].trim() : null };
+};
+
+
+const slugifyFallback = (value: string): string => toSlug(value).replace(/^-+|-+$/g, '');
+
+const docsPathToRoute = (filePath: string): string => {
+  const noExt = filePath.replace(/\.md$/, '');
+  const parts = noExt.split('/').filter(Boolean);
+  const docsIdx = parts.indexOf('Docs');
+  const scoped = docsIdx >= 0 ? parts.slice(docsIdx + 1) : parts;
+  const slugs = scoped
+    .map(part => parseName(part).slug ?? slugifyFallback(parseName(part).title))
+    .filter(Boolean);
+  return '/' + slugs.join('/');
 };
 
 const buildTree = (flat: FlatEntry[]): TreeEntry[] => {
@@ -579,6 +593,8 @@ function BlockPicker({ onInsert, t }: { readonly onInsert: (c:string) => void; r
 }
 
 function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; readonly onClose: () => void; readonly t: TTokens }) {
+  const pageRoute = docsPathToRoute(filePath);
+  const previewHref = pageRoute || '/';
   const [fm, setFm]           = useState<FM>({...EMPTY_FM});
   const [body, setBody]       = useState('');
   const [loading, setLoading] = useState(true);
@@ -614,9 +630,14 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
   }, []);
 
   const fileName = filePath.split('/').pop()?.replace(/\.md$/, '') ?? '';
-  const isDark = t.bg === '#111112';
+  const openPageOnSite = useCallback(() => {
+    const url = new URL(previewHref, globalThis.location.origin);
+    url.searchParams.set('devPreview', '1');
+    globalThis.open(url.toString(), "hub-admin-preview");
+  }, [previewHref]);
 
   useEffect(() => {
+    openPageOnSite();
     setLoading(true);
     bridge.readFile(filePath)
       .then(({ content }) => {
@@ -630,7 +651,7 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
       })
       .catch(e => toast.error((e as Error).message))
       .finally(() => setLoading(false));
-  }, [filePath, broadcastPreview]);
+  }, [filePath, broadcastPreview, openPageOnSite]);
 
   const save = useCallback(async () => {
     setSaving(true);
@@ -725,6 +746,9 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
         <span style={{flex:1, fontSize:11, color:t.fg, fontFamily:t.mono, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
           {fileName}{dirty && <span style={{color:t.warning, marginLeft:5}}>●</span>}
         </span>
+        <button onClick={openPageOnSite} style={{display:'flex', alignItems:'center', gap:6, padding:'5px 10px', borderRadius:6, border:`1px solid ${t.border}`, background:'transparent', color:t.fgMuted, cursor:'pointer', fontSize:11, fontFamily:t.mono, flexShrink:0}}>
+          <ExternalLink size={11}/> На сайте
+        </button>
         <button onClick={save} style={{display:'flex', alignItems:'center', gap:6, padding:'5px 12px', borderRadius:6, border:`1px solid ${dirty ? t.borderStrong : t.border}`, background:dirty ? t.surfaceHov : 'transparent', color:dirty ? t.fg : t.fgMuted, cursor:'pointer', fontSize:11, fontFamily:t.mono, flexShrink:0, fontWeight:dirty ? 600 : 400}}>
           {saving && <Loader2 size={11} style={{animation:'devSpinAnim 1s linear infinite'}}/>}
           Сохранить
@@ -796,8 +820,8 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
         placeholder="Начните писать..."
         style={{
           flex:1, padding:'12px 14px', border:'none',
-          background: isDark ? '#0d0d0e' : '#eceae5',
-          color: isDark ? '#e2e8f0' : '#1e293b',
+          background: t.inpBg,
+          color: t.editorFg,
           fontSize:12,
           fontFamily:'ui-monospace, "Cascadia Code", "Fira Code", monospace',
           lineHeight:1.75, resize:'none', outline:'none',
