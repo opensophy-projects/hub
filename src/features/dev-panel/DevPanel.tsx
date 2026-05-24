@@ -352,7 +352,7 @@ export default function DevPanel() {
           <div style={{
             display: 'flex', background: t.surface,
             borderBottom: `1px solid ${t.border}`,
-            flexShrink: 0, padding: '0 4px',
+            flexShrink: 0, padding: '4px',
             overflowX: 'auto',
           }}>
             {TABS.map(tb => {
@@ -363,11 +363,11 @@ export default function DevPanel() {
                   onMouseDown={e => { e.preventDefault(); setTab(tb.id); }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 5,
-                    padding: '9px 12px', border: 'none',
-                    borderBottom: `2px solid ${active ? t.fg : 'transparent'}`,
-                    background: 'transparent',
+                    padding: '8px 10px', border: `1px solid ${active ? t.borderStrong : 'transparent'}`,
+                    borderRadius: 8,
+                    background: active ? t.surfaceHov : 'transparent',
                     color: active ? t.fg : t.fgMuted,
-                    fontSize: 11, fontWeight: active ? 600 : 400,
+                    fontSize: 11, fontWeight: active ? 600 : 500,
                     cursor: 'pointer', fontFamily: t.mono,
                     flexShrink: 0, outline: 'none',
                   }}

@@ -11,7 +11,7 @@ import {
   FolderOpen, Plus, Trash2,
   ChevronRight, ChevronDown, FolderPlus, FilePlus,
   Loader2, Bold, Italic, Code, Link, Hash, List,
-  RefreshCw, Minus, Image, BarChart2, Table,
+  RefreshCw, Minus, Image, BarChart2, Table, Search,
   Columns, AlertCircle, Calculator, Footprints, LayoutGrid, Type,
   Edit3,
 } from 'lucide-react';
@@ -70,8 +70,15 @@ const parseName = (name: string) => {
   const icon = im?.[1] ?? null;
   const ai = im ? rest.slice(im[0].length) : rest;
   const sm = RE_PN_SLUG.exec(ai);
-  return { type, icon, title: sm ? sm[1].trim() : ai.trim(), slug: sm ? sm[2].trim() : null };
+  const rawTitle = sm ? sm[1].trim() : ai.trim();
+  const prettyTitle = rawTitle
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, ch => ch.toUpperCase());
+  return { type, icon, title: prettyTitle || rawTitle, slug: sm ? sm[2].trim() : null };
 };
+
 
 const buildTree = (flat: FlatEntry[]): TreeEntry[] => {
   const m = new Map<string,TreeEntry>();
@@ -387,7 +394,7 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
     fontSize:12, outline:'none', fontFamily:t.mono, boxSizing:'border-box',
   };
   const lbS: React.CSSProperties = {
-    fontSize:9, color:t.fgSub, textTransform:'uppercase',
+    fontSize:12, color:t.fgSub, textTransform:'uppercase',
     letterSpacing:'0.07em', marginBottom:4, display:'block',
   };
   const idleLabel = isEdit ? 'Применить' : 'Создать';
@@ -421,7 +428,7 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
           <input id="entry-slug" value={slug} onChange={e => { setSlug(e.target.value); setAuto(false); }} style={{...inp, flex:1}}/>
           <button
             onClick={() => { setAuto(true); setSlug(toSlug(title)); }}
-            style={{padding:'7px 10px', borderRadius:7, border:`1px solid ${t.border}`, background:t.surfaceHov, color:t.fgMuted, cursor:'pointer', fontSize:11, fontFamily:t.mono}}
+            style={{padding:'7px 10px', borderRadius:7, border:`1px solid ${t.border}`, background:t.surfaceHov, color:t.fgMuted, cursor:'pointer', fontSize:13, fontFamily:t.mono}}
           >↺</button>
         </div>
       </div>
@@ -453,7 +460,7 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
         </div>
       )}
       <div style={{display:'flex', gap:8, marginTop:16}}>
-        <button onClick={onClose} style={{flex:1, padding:'8px', borderRadius:7, border:`1px solid ${t.border}`, background:'transparent', color:t.fgMuted, cursor:'pointer', fontSize:12, fontFamily:t.mono}}>Отмена</button>
+        <button onClick={onClose} style={{flex:1, padding:'8px', borderRadius:7, border:`1px solid ${t.border}`, background:'transparent', color:t.fgMuted, cursor:'pointer', fontSize:14, fontFamily:t.mono}}>Отмена</button>
         <button onClick={doSave} disabled={saving} style={{flex:1, padding:'8px', borderRadius:7, border:`1px solid ${t.borderStrong}`, background:t.surfaceHov, color:t.fg, cursor:'pointer', fontSize:12, fontWeight:600, fontFamily:t.mono}}>
           {saveBtnLabel}
         </button>
@@ -497,7 +504,7 @@ function BlockPicker({ onInsert, t }: { readonly onInsert: (c:string) => void; r
   const rs = (active?: boolean): React.CSSProperties => ({
     width:'100%', display:'flex', alignItems:'center', gap:7, padding:'6px 10px',
     borderRadius:5, border:'none', cursor:'pointer', textAlign:'left' as const,
-    background: active ? t.surfaceHov : 'transparent', color:t.fg, fontSize:11, fontFamily:t.mono,
+    background: active ? t.surfaceHov : 'transparent', color:t.fg, fontSize:13, fontFamily:t.mono,
     justifyContent:'space-between' as const,
   });
 
@@ -512,7 +519,7 @@ function BlockPicker({ onInsert, t }: { readonly onInsert: (c:string) => void; r
           padding:'3px 8px', height:22, borderRadius:5,
           border:`1px solid ${open ? t.borderStrong : t.border}`,
           background: open ? t.surfaceHov : 'transparent',
-          color: open ? t.fg : t.fgMuted, cursor:'pointer', fontSize:11, fontFamily:t.mono, gap:4,
+          color: open ? t.fg : t.fgMuted, cursor:'pointer', fontSize:13, fontFamily:t.mono, gap:4,
         }}
         onMouseEnter={e => { if (!open) { (e.currentTarget as HTMLButtonElement).style.background = t.surfaceHov; (e.currentTarget as HTMLButtonElement).style.color = t.fg; } }}
         onMouseLeave={e => { if (!open) { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = t.fgMuted; } }}
@@ -545,7 +552,7 @@ function BlockPicker({ onInsert, t }: { readonly onInsert: (c:string) => void; r
                 <button onClick={() => setSub(null)} style={{display:'flex', alignItems:'center', gap:4, padding:'5px 8px', border:'none', background:'transparent', color:t.fgMuted, cursor:'pointer', fontSize:10, fontFamily:t.mono, marginBottom:3}}>
                   <ChevronRight size={9} style={{transform:'rotate(180deg)'}}/> Назад
                 </button>
-                <div style={{fontSize:9, color:t.fgSub, padding:'0 8px 5px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em'}}>{sub.label}</div>
+                <div style={{fontSize:12, color:t.fgSub, padding:'0 8px 5px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em'}}>{sub.label}</div>
                 {sub.variants!.map((v, vi) => (
                   <button
                     key={v.label + vi}
@@ -614,8 +621,6 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
   }, []);
 
   const fileName = filePath.split('/').pop()?.replace(/\.md$/, '') ?? '';
-  const isDark = t.bg === '#111112';
-
   useEffect(() => {
     setLoading(true);
     bridge.readFile(filePath)
@@ -718,17 +723,17 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
   return (
     <div style={{flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0}}>
       <div style={{display:'flex', alignItems:'center', gap:6, padding:'6px 10px', borderBottom:`1px solid ${t.border}`, background:t.surface, flexShrink:0}}>
-        <button onClick={onClose} style={{display:'flex', alignItems:'center', gap:4, padding:'5px 9px', borderRadius:6, border:`1px solid ${t.border}`, background:'transparent', color:t.fgMuted, cursor:'pointer', fontSize:11, fontFamily:t.mono, flexShrink:0}}
+        <button onClick={onClose} style={{display:'flex', alignItems:'center', gap:4, padding:'5px 9px', borderRadius:6, border:`1px solid ${t.border}`, background:'transparent', color:t.fgMuted, cursor:'pointer', fontSize:13, fontFamily:t.mono, flexShrink:0}}
           onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = t.surfaceHov}
           onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
         >← Назад</button>
         <span style={{flex:1, fontSize:11, color:t.fg, fontFamily:t.mono, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
           {fileName}{dirty && <span style={{color:t.warning, marginLeft:5}}>●</span>}
         </span>
-        <button onClick={save} style={{display:'flex', alignItems:'center', gap:6, padding:'5px 12px', borderRadius:6, border:`1px solid ${dirty ? t.borderStrong : t.border}`, background:dirty ? t.surfaceHov : 'transparent', color:dirty ? t.fg : t.fgMuted, cursor:'pointer', fontSize:11, fontFamily:t.mono, flexShrink:0, fontWeight:dirty ? 600 : 400}}>
+        <button onClick={save} style={{display:'flex', alignItems:'center', gap:6, padding:'5px 12px', borderRadius:6, border:`1px solid ${dirty ? t.borderStrong : t.border}`, background:dirty ? t.surfaceHov : 'transparent', color:dirty ? t.fg : t.fgMuted, cursor:'pointer', fontSize:13, fontFamily:t.mono, flexShrink:0, fontWeight:dirty ? 600 : 400}}>
           {saving && <Loader2 size={11} style={{animation:'devSpinAnim 1s linear infinite'}}/>}
           Сохранить
-          <span style={{fontSize:9, color:t.fgSub, background:t.inpBg, border:`1px solid ${t.border}`, borderRadius:3, padding:'1px 4px', fontFamily:t.mono}}>Ctrl+S</span>
+          <span style={{fontSize:12, color:t.fgSub, background:t.inpBg, border:`1px solid ${t.border}`, borderRadius:3, padding:'1px 4px', fontFamily:t.mono}}>Ctrl+S</span>
         </button>
       </div>
 
@@ -748,7 +753,7 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
               {k:'robots', l:'Robots'},
             ] as Array<{k: keyof FM; l: string; sp?: boolean; tp?: string}>).map(f => (
               <div key={f.k} style={{gridColumn: f.sp ? '1 / -1' : 'auto'}}>
-                <div style={{fontSize:9, color:t.fgSub, marginBottom:2, textTransform:'uppercase', letterSpacing:'0.06em'}}>{f.l}</div>
+                <div style={{fontSize:12, color:t.fgSub, marginBottom:2, textTransform:'uppercase', letterSpacing:'0.06em'}}>{f.l}</div>
                 <input
                   type={f.tp ?? 'text'}
                   value={fm[f.k]}
@@ -784,7 +789,7 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
         <div style={{width:1, height:14, background:t.border, margin:'0 3px'}}/>
         <BlockPicker onInsert={insertAtCursor} t={t}/>
         <div style={{flex:1}}/>
-        <span style={{fontSize:10, color:t.fgSub}}>{body.trim().split(/\s+/).filter(Boolean).length} слов</span>
+        <span style={{fontSize:12, color:t.fgSub}}>{body.trim().split(/\s+/).filter(Boolean).length} слов</span>
       </div>
 
       <textarea
@@ -796,8 +801,8 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
         placeholder="Начните писать..."
         style={{
           flex:1, padding:'12px 14px', border:'none',
-          background: isDark ? '#0d0d0e' : '#eceae5',
-          color: isDark ? '#e2e8f0' : '#1e293b',
+          background: t.inpBg,
+          color: t.editorFg,
           fontSize:12,
           fontFamily:'ui-monospace, "Cascadia Code", "Fira Code", monospace',
           lineHeight:1.75, resize:'none', outline:'none',
@@ -838,15 +843,14 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
   const isActive = entry.path === selectedPath;
   const isDragOver = dragOverPath === entry.path;
   const p = entry.parsed;
-  const typeDot: Record<string,string> = { N:'#22c55e', C:'#14b8a6', A:'#f59e0b' };
 
   const actionBtn = (ico: React.ReactNode, tip: string, fn: () => void, danger?: boolean) => (
     <button key={tip} title={tip}
       onClick={e => { e.stopPropagation(); fn(); }}
-      style={{width:28, height:28, borderRadius:5, border:'none', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', background:t.surfaceHov, color:danger ? t.danger : t.fgMuted, cursor:'pointer'}}
+      style={{height:32, borderRadius:6, border:`1px solid ${t.border}`, padding:'0 8px', flexShrink:0, display:'flex', alignItems:'center', gap:5, justifyContent:'center', background:t.surfaceHov, color:danger ? t.danger : t.fgMuted, cursor:'pointer', fontSize:13, fontFamily:t.mono}}
       onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = danger ? t.danger : t.fg; (e.currentTarget as HTMLButtonElement).style.background = danger ? 'rgba(239,68,68,0.1)' : t.surfaceHov; }}
       onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = danger ? t.danger : t.fgMuted; (e.currentTarget as HTMLButtonElement).style.background = t.surfaceHov; }}
-    >{ico}</button>
+    >{ico}<span>{tip}</span></button>
   );
 
   const nodeBg      = getNodeBackground(isDragOver, isDir, isActive, hov, t);
@@ -872,25 +876,23 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
         style={{
           display:'flex', alignItems:'center', gap:5, cursor:'grab', userSelect:'none',
           width:'100%', textAlign:'left',
-          padding:`4px 8px 4px ${8 + entry.depth * 14}px`,
-          borderRadius:6, border:'none',
+          padding:`5px 10px 5px ${12 + entry.depth * 14}px`,
+          borderRadius:7, border:'none',
           background: nodeBg,
           outline: nodeOutline,
           outlineOffset:-1, minHeight:28, transition:'background 0.1s',
         }}
       >
-        <span style={{width:14, height:14, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', color:t.fgSub}}>
+        <span style={{width:14, height:14, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', color:t.fgSub, opacity:isDir?1:0.55}}>
           {chevronIcon}
         </span>
-        {p.type && <span style={{width:7, height:7, borderRadius:'50%', flexShrink:0, background:typeDot[p.type] ?? t.fgSub}}/>}
-        {p.icon && <span style={{fontSize:9, color:t.fgSub, flexShrink:0, fontFamily:t.mono, maxWidth:60, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{p.icon}</span>}
-        <span style={{fontSize:12, color:t.fg, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, fontWeight}}>
+        <span style={{fontSize:16, color:t.fg, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, fontWeight}}>
           {p.title || entry.name}
         </span>
         {hov && (
           <div
             role="toolbar"
-            style={{display:'flex', gap:3, flexShrink:0}}
+            style={{display:'flex', gap:6, flexShrink:0}}
             onClick={e => e.stopPropagation()}
             onKeyDown={e => e.stopPropagation()}
           >
@@ -902,7 +904,7 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
         )}
       </button>
       {isDir && expanded && entry.children.length > 0 && (
-        <div style={{marginLeft: 8 + entry.depth * 14 + 7, borderLeft:`1px solid ${t.border}`}}>
+        <div style={{marginLeft: 13 + entry.depth * 14, borderLeft:`1px solid ${t.border}`, paddingLeft: 8}}>
           {entry.children.map(c => (
             <TreeNode key={c.path} entry={c} onCreate={onCreate} onDelete={onDelete}
               onEdit={onEdit} onSelect={onSelect} onDrop={onDrop}
@@ -913,6 +915,24 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
       )}
     </div>
   );
+}
+
+
+function filterTreeByQuery(entries: TreeEntry[], query: string): TreeEntry[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return entries;
+
+  const walk = (items: TreeEntry[]): TreeEntry[] => items
+    .map(item => {
+      const title = (item.parsed.title || item.name).toLowerCase();
+      const matchesSelf = title.includes(q) || item.path.toLowerCase().includes(q);
+      const children = walk(item.children);
+      if (matchesSelf || children.length > 0) return { ...item, children };
+      return null;
+    })
+    .filter(Boolean) as TreeEntry[];
+
+  return walk(entries);
 }
 
 function countFiles(entries: TreeEntry[]): number {
@@ -931,6 +951,7 @@ export default function DocsPanel() {
   const [toDelete, setToDelete]         = useState<TreeEntry|null>(null);
   const [dragOverPath, setDragOverPath] = useState<string|null>(null);
   const [moving, setMoving]         = useState(false);
+  const [query, setQuery]           = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1015,22 +1036,23 @@ export default function DocsPanel() {
     }
   }, [tree, selected, load]);
 
+  const visibleTree = filterTreeByQuery(tree, query);
   const fileCount = countFiles(tree);
 
   const renderTreeContent = () => {
     if (loading) return (
       <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:8, padding:24, color:t.fgMuted}}>
         <Loader2 size={14} style={{animation:'devSpinAnim 1s linear infinite'}}/>
-        <span style={{fontSize:12}}>Загрузка...</span>
+        <span style={{fontSize:14}}>Загрузка...</span>
       </div>
     );
-    if (tree.length === 0) return (
+    if (visibleTree.length === 0) return (
       <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:8, padding:28, color:t.fgMuted, textAlign:'center'}}>
         <FolderOpen size={28} style={{opacity:0.3}}/>
-        <div style={{fontSize:12}}>Docs/ пуста. Создай Секция</div>
+        <div style={{fontSize:14}}>{query ? 'Ничего не найдено' : 'Docs/ пуста. Создай Секция'}</div>
       </div>
     );
-    return tree.map(e => (
+    return visibleTree.map(e => (
       <TreeNode key={e.path} entry={e} onCreate={cfg => setModalCfg({cfg})}
         onDelete={setToDelete} onEdit={handleEdit}
         onSelect={p => setSelected(p)} onDrop={handleDrop}
@@ -1053,11 +1075,23 @@ export default function DocsPanel() {
     <div style={{flex:1, display:'flex', flexDirection:'column', overflow:'hidden'}}>
       <div style={{display:'flex', alignItems:'center', gap:8, padding:'7px 10px', borderBottom:`1px solid ${t.border}`, flexShrink:0, background:t.surface}}>
         <button onClick={() => setModalCfg({cfg:{parentPath:'Docs', entryType:'N'}})} style={{display:'flex', alignItems:'center', gap:5, padding:'6px 12px', borderRadius:7, border:`1px solid ${t.borderStrong}`, background:t.surfaceHov, color:t.fg, fontSize:11, fontWeight:500, cursor:'pointer', fontFamily:t.mono}}>
-          <Plus size={12}/> Секция
+          <Plus size={13}/> Секция
+        </button>
+        <button onClick={() => setModalCfg({cfg:{parentPath:'Docs', entryType:'A'}})} style={{display:'flex', alignItems:'center', gap:5, padding:'7px 12px', borderRadius:7, border:`1px solid ${t.border}`, background:'transparent', color:t.fg, fontSize:13, fontWeight:500, cursor:'pointer', fontFamily:t.mono}}>
+          <FilePlus size={13}/> Страница
         </button>
         <div style={{flex:1}}/>
+        <div style={{display:'flex', alignItems:'center', gap:6, minWidth:220, maxWidth:340, width:'36%'}}>
+          <Search size={12} style={{color:t.fgSub}}/>
+          <input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Поиск документа..."
+            style={{width:'100%', padding:'6px 8px', borderRadius:6, border:`1px solid ${t.border}`, background:t.inpBg, color:t.fg, fontSize:14, fontFamily:t.mono, outline:'none'}}
+          />
+        </div>
         {moving && <Loader2 size={12} style={{color:t.fgMuted, animation:'devSpinAnim 1s linear infinite'}}/>}
-        <button onClick={load} style={{display:'flex', alignItems:'center', gap:4, padding:'6px 10px', borderRadius:6, border:`1px solid ${t.border}`, background:'transparent', color:t.fgMuted, cursor:'pointer', fontSize:11, fontFamily:t.mono}}
+        <button onClick={load} style={{display:'flex', alignItems:'center', gap:4, padding:'6px 10px', borderRadius:6, border:`1px solid ${t.border}`, background:'transparent', color:t.fgMuted, cursor:'pointer', fontSize:13, fontFamily:t.mono}}
           onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = t.surfaceHov}
           onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
         >
@@ -1065,7 +1099,7 @@ export default function DocsPanel() {
         </button>
       </div>
 
-      <div style={{padding:'4px 12px', fontSize:9, color:t.fgSub, background:t.surface, borderBottom:`1px solid ${t.border}`}}>
+      <div style={{padding:'4px 12px', fontSize:12, color:t.fgSub, background:t.surface, borderBottom:`1px solid ${t.border}`}}>
         Перетащи страницу или категорию в другую папку
       </div>
 
@@ -1079,7 +1113,7 @@ export default function DocsPanel() {
         {renderTreeContent()}
       </section>
 
-      <div style={{padding:'5px 10px', borderTop:`1px solid ${t.border}`, display:'flex', alignItems:'center', justifyContent:'space-between', fontSize:10, color:t.fgSub, background:t.surface, flexShrink:0}}>
+      <div style={{padding:'5px 10px', borderTop:`1px solid ${t.border}`, display:'flex', alignItems:'center', justifyContent:'space-between', fontSize:12, color:t.fgSub, background:t.surface, flexShrink:0}}>
         <span>{fileCount} страниц</span>
         <span style={{fontFamily:t.mono}}>Docs/</span>
       </div>

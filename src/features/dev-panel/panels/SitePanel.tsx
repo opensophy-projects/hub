@@ -52,7 +52,7 @@ function ModeButton({
       onClick={onClick}
       style={{
         display: 'flex', alignItems: 'flex-start', gap: 12,
-        padding: '12px 14px', borderRadius: 9,
+        padding: '14px 16px', borderRadius: 9,
         border: `1px solid ${active ? t.borderStrong : t.border}`,
         background: active ? t.accentSoft : 'transparent',
         color: active ? t.fg : t.fgMuted,
@@ -65,9 +65,9 @@ function ModeButton({
       <div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
           {icon}
-          <span style={{ fontSize: 12, fontWeight: 600 }}>{label}</span>
+          <span style={{ fontSize: 14, fontWeight: 600 }}>{label}</span>
         </div>
-        <div style={{ fontSize: 10, color: t.fgSub, lineHeight: 1.5 }}>{description}</div>
+        <div style={{ fontSize: 12, color: t.fgSub, lineHeight: 1.5 }}>{description}</div>
       </div>
     </button>
   );
@@ -169,18 +169,18 @@ export default function SitePanel() {
   const handleToggleLanding = (value: boolean) =>
     applyConfigChange(
       { ...config, useLanding: value },
-      value ? 'Лендинг включён' : 'Welcome.md включён',
+      value ? 'Режим: лендинг' : 'Режим: документация',
     );
 
   const handleToggleDotWave = (value: boolean) =>
     applyConfigChange(
       { ...config, showDotWaveBackground: value },
-      value ? 'DotWave фон включён' : 'DotWave фон отключён',
+      value ? 'Фон шапки включён' : 'Фон шапки отключён',
     );
 
   if (loading) {
     return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: t.fgSub, fontSize: 12 }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: t.fgSub, fontSize: 14 }}>
         <Loader2 size={14} style={{ animation: 'devSpin 1s linear infinite' }} /> Загрузка...
       </div>
     );
@@ -194,7 +194,7 @@ export default function SitePanel() {
       {/* Заголовок */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 6,
-        fontSize: 9, fontWeight: 700, color: t.fgSub,
+        fontSize: 11, fontWeight: 700, color: t.fgSub,
         textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12,
       }}>
         ГЛАВНАЯ СТРАНИЦА
@@ -202,12 +202,12 @@ export default function SitePanel() {
 
       {/* Описание */}
       <div style={{
-        fontSize: 11, color: t.fgMuted, lineHeight: 1.55,
-        marginBottom: 16, padding: '8px 10px',
+        fontSize: 13, color: t.fgMuted, lineHeight: 1.55,
+        marginBottom: 16, padding: '10px 12px',
         borderRadius: 7, border: `1px solid ${t.border}`,
         background: t.surface,
       }}>
-        Выберите, что отображается на главной странице (<code style={{ fontFamily: t.mono, fontSize: 10 }}>/</code>).
+        Выберите, что отображается на главной странице (<code style={{ fontFamily: t.mono, fontSize: 12 }}>/</code>).
         Изменение вступит в силу при следующем обращении к странице.
       </div>
 
@@ -217,18 +217,18 @@ export default function SitePanel() {
           active={!config.useLanding}
           saving={saving}
           onClick={() => handleToggleLanding(false)}
-          icon={<FileText size={13} style={{ color: config.useLanding ? t.fgMuted : t.fg }} />}
+          icon={<FileText size={15} style={{ color: config.useLanding ? t.fgMuted : t.fg }} />}
           label="Welcome.md"
-          description={<>Стандартная документация. Файл <code style={{ fontFamily: t.mono }}>Docs/welcome.md</code> отображается как главная страница.</>}
+          description={<>Показывать обычную главную документации из файла <code style={{ fontFamily: t.mono }}>Docs/welcome.md</code>.</>}
           t={t}
         />
         <ModeButton
           active={config.useLanding}
           saving={saving}
           onClick={() => handleToggleLanding(true)}
-          icon={<LayoutTemplate size={13} style={{ color: config.useLanding ? t.fg : t.fgMuted }} />}
+          icon={<LayoutTemplate size={15} style={{ color: config.useLanding ? t.fg : t.fgMuted }} />}
           label="Лендинг"
-          description={<>Визуальная посадочная страница из <code style={{ fontFamily: t.mono }}>GeneralPage.tsx</code>. Welcome.md игнорируется.</>}
+          description={<>Показывать лендинг-страницу. В этом режиме <code style={{ fontFamily: t.mono }}>Welcome.md</code> не используется.</>}
           t={t}
         />
       </div>
@@ -237,9 +237,9 @@ export default function SitePanel() {
       {saving && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 6,
-          fontSize: 11, color: t.fgMuted, marginBottom: 10,
+          fontSize: 13, color: t.fgMuted, marginBottom: 10,
         }}>
-          <Loader2 size={11} style={{ animation: 'devSpin 1s linear infinite' }} />
+          <Loader2 size={13} style={{ animation: 'devSpin 1s linear infinite' }} />
           Сохранение...
         </div>
       )}
@@ -247,13 +247,13 @@ export default function SitePanel() {
       {/* Ошибка */}
       {error && (
         <div style={{
-          padding: '8px 10px', borderRadius: 6,
+          padding: '10px 12px', borderRadius: 6,
           background: t.bg, border: `1px solid ${t.danger}44`,
-          color: t.danger, fontSize: 11,
+          color: t.danger, fontSize: 13,
           display: 'flex', gap: 6, alignItems: 'center',
           marginBottom: 10,
         }}>
-          <AlertCircle size={12} /> {error}
+          <AlertCircle size={14} /> {error}
         </div>
       )}
 
@@ -266,8 +266,8 @@ export default function SitePanel() {
         borderRadius: 7, border: `1px solid ${t.border}`, background: t.surface,
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={{ fontSize: 11, color: t.fgMuted, fontWeight: 600 }}>DotWave фон в шапке документа</span>
-          <span style={{ fontSize: 10, color: t.fgSub }}>Если выключить, фон будет как у навигации.</span>
+          <span style={{ fontSize: 13, color: t.fgMuted, fontWeight: 600 }}>Фон в шапке страницы</span>
+          <span style={{ fontSize: 12, color: t.fgSub }}>Если выключить, шапка станет спокойнее и ближе к фону навигации.</span>
         </div>
         <button
           disabled={saving}
@@ -278,7 +278,7 @@ export default function SitePanel() {
             color: t.fgMuted,
             borderRadius: 6,
             padding: '5px 9px',
-            fontSize: 10,
+            fontSize: 12,
             fontFamily: t.mono,
             cursor: saving ? 'not-allowed' : 'pointer',
             opacity: saving ? 0.7 : 1,
@@ -290,12 +290,12 @@ export default function SitePanel() {
 
       {/* Текущее состояние */}
       <div style={{
-        fontSize: 10, color: t.fgSub,
+        fontSize: 12, color: t.fgSub,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <span>
           Сейчас: <strong style={{ color: t.fgMuted }}>
-            {config.useLanding ? 'Лендинг' : 'Welcome.md'} · DotWave: {dotWaveEnabled ? 'вкл' : 'выкл'}
+            {config.useLanding ? 'Лендинг' : 'Документация'} · Фон шапки: {dotWaveEnabled ? 'вкл' : 'выкл'}
           </strong>
         </span>
         <button
@@ -304,7 +304,7 @@ export default function SitePanel() {
             display: 'flex', alignItems: 'center', gap: 4,
             padding: '4px 8px', borderRadius: 5,
             border: `1px solid ${t.border}`, background: 'transparent',
-            color: t.fgMuted, fontSize: 10, cursor: 'pointer', fontFamily: t.mono,
+            color: t.fgMuted, fontSize: 12, cursor: 'pointer', fontFamily: t.mono,
           }}
         >
           <RefreshCw size={9} /> Обновить
@@ -313,35 +313,35 @@ export default function SitePanel() {
 
       {/* Подсказка о перезагрузке */}
       <div style={{
-        marginTop: 16, padding: '8px 10px', borderRadius: 7,
+        marginTop: 16, padding: '10px 12px', borderRadius: 7,
         border: `1px solid ${t.border}`, background: t.surface,
-        fontSize: 10, color: t.fgSub, lineHeight: 1.55,
+        fontSize: 12, color: t.fgSub, lineHeight: 1.55,
       }}>
-        💡 После изменения режима в dev-режиме достаточно обновить страницу (<code style={{ fontFamily: t.mono }}>F5</code>).
-        В продакшне потребуется пересборка.
+        💡 После изменения режима обновите страницу сайта (<code style={{ fontFamily: t.mono }}>F5</code>).
+        В production-окружении может понадобиться пересборка.
       </div>
 
       <div style={{ height: 1, background: t.border, margin: '12px 0' }} />
 
       {/* Цвета тем */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, fontWeight: 700, color: t.fgSub, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
-        ЦВЕТА ТЕМ
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700, color: t.fgSub, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+        ЦВЕТА САЙТА
       </div>
       <div style={{
-        marginBottom: 10, padding: '8px 10px', borderRadius: 7,
+        marginBottom: 10, padding: '10px 12px', borderRadius: 7,
         border: `1px solid ${t.border}`, background: t.surface,
-        fontSize: 10, color: t.fgMuted, lineHeight: 1.55,
+        fontSize: 12, color: t.fgMuted, lineHeight: 1.55,
       }}>
-        Здесь можно менять ВСЕ токены цветов. У каждого поля указано, где этот цвет используется.
+        Здесь можно настроить цвета светлой и тёмной тем. У каждого параметра есть подсказка — где он применяется.
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 330, overflowY: 'auto', paddingRight: 2 }} className="adm-scroll">
         {(Object.keys(THEME_COLOR_META) as ThemeColorKey[]).map((key) => (
           <div key={key} style={{ border: `1px solid ${t.border}`, borderRadius: 8, padding: 8, background: t.surface }}>
-            <div style={{ fontSize: 11, color: t.fg, fontWeight: 600 }}>{THEME_COLOR_META[key].label}</div>
-            <div style={{ fontSize: 10, color: t.fgSub, margin: '2px 0 6px' }}>{THEME_COLOR_META[key].usage}</div>
+            <div style={{ fontSize: 13, color: t.fg, fontWeight: 600 }}>{THEME_COLOR_META[key].label}</div>
+            <div style={{ fontSize: 12, color: t.fgSub, margin: '2px 0 6px' }}>{THEME_COLOR_META[key].usage}</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, color: t.fgMuted }}>
-                Dark ({key})
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: t.fgMuted }}>
+                Тёмная тема ({key})
                 <div style={{ display: 'flex', gap: 4 }}>
                   <input
                     type="color"
@@ -353,12 +353,12 @@ export default function SitePanel() {
                     type="text"
                     value={themeColors.dark[key]}
                     onChange={e => setThemeColors(prev => ({ dark: { ...prev.dark, [key]: e.target.value }, light: prev.light }))}
-                    style={{ flex: 1, height: 28, background: t.bg, border: `1px solid ${t.border}`, borderRadius: 6, color: t.fgMuted, padding: '0 8px', fontSize: 10, fontFamily: t.mono }}
+                    style={{ flex: 1, height: 28, background: t.bg, border: `1px solid ${t.border}`, borderRadius: 6, color: t.fgMuted, padding: '0 8px', fontSize: 12, fontFamily: t.mono }}
                   />
                 </div>
               </label>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, color: t.fgMuted }}>
-                Light ({key})
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: t.fgMuted }}>
+                Светлая тема ({key})
                 <div style={{ display: 'flex', gap: 4 }}>
                   <input
                     type="color"
@@ -370,7 +370,7 @@ export default function SitePanel() {
                     type="text"
                     value={themeColors.light[key]}
                     onChange={e => setThemeColors(prev => ({ dark: prev.dark, light: { ...prev.light, [key]: e.target.value } }))}
-                    style={{ flex: 1, height: 28, background: t.bg, border: `1px solid ${t.border}`, borderRadius: 6, color: t.fgMuted, padding: '0 8px', fontSize: 10, fontFamily: t.mono }}
+                    style={{ flex: 1, height: 28, background: t.bg, border: `1px solid ${t.border}`, borderRadius: 6, color: t.fgMuted, padding: '0 8px', fontSize: 12, fontFamily: t.mono }}
                   />
                 </div>
               </label>
@@ -382,26 +382,26 @@ export default function SitePanel() {
         <button
           onClick={saveThemeColors}
           style={{
-            flex: 1, borderRadius: 8, padding: '8px 10px',
+            flex: 1, borderRadius: 8, padding: '10px 12px',
             border: `1px solid ${t.borderStrong}`,
             background: t.accentSoft,
             color: t.fg,
-            fontSize: 11, fontFamily: t.mono, cursor: 'pointer',
+            fontSize: 13, fontFamily: t.mono, cursor: 'pointer',
           }}
         >
-          Применить
+          Сохранить цвета
         </button>
         <button
           onClick={resetThemeColors}
           style={{
-            flex: 1, borderRadius: 8, padding: '8px 10px',
+            flex: 1, borderRadius: 8, padding: '10px 12px',
             border: `1px solid ${t.border}`,
             background: 'transparent',
             color: t.fgMuted,
-            fontSize: 11, fontFamily: t.mono, cursor: 'pointer',
+            fontSize: 13, fontFamily: t.mono, cursor: 'pointer',
           }}
         >
-          Сбросить
+          Вернуть стандартные
         </button>
       </div>
     </div>
