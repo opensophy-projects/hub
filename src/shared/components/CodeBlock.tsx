@@ -62,7 +62,7 @@ async function loadLanguage(lang: string): Promise<void> {
   if (existing !== undefined) return existing;
   const promise = (async () => {
     try {
-      const loaders: Record<string, () => Promise<{ default: unknown }>> = {
+      const loaders: Record<string, () => Promise<HljsLanguageModule>> = {
         javascript: () => import('highlight.js/lib/languages/javascript'),
         typescript: () => import('highlight.js/lib/languages/typescript'),
         python:     () => import('highlight.js/lib/languages/python'),
@@ -85,10 +85,10 @@ async function loadLanguage(lang: string): Promise<void> {
       const loader = loaders[normalized];
       if (!loader) { loadedLanguages.add(normalized); return; }
       const module = await loader();
-      hljs.registerLanguage(normalized, (module as HljsLanguageModule).default);
+      hljs.registerLanguage(normalized, module.default);
       for (const [alias, target] of Object.entries(LANG_ALIASES)) {
         if (target === normalized && !loadedLanguages.has(alias)) {
-          hljs.registerLanguage(alias, (module as HljsLanguageModule).default);
+          hljs.registerLanguage(alias, module.default);
           loadedLanguages.add(alias);
         }
       }
@@ -299,9 +299,10 @@ function MobileMenu({ t, code, onFullscreen }: {
   useEffect(() => {
     if (!open) return;
     const onMouse = (e: MouseEvent) => {
+      const target = e.target instanceof Node ? e.target : null;
       if (
-        menuRef.current?.contains(e.target as Node) ||
-        triggerRef.current?.contains(e.target as Node)
+        menuRef.current?.contains(target) ||
+        triggerRef.current?.contains(target)
       ) return;
       setOpen(false);
     };
@@ -374,8 +375,6 @@ function MobileMenu({ t, code, onFullscreen }: {
     </>
   );
 }
-
-// ─── Одиночный блок кода (внутренний) ────────────────────────────────────────
 
 interface SingleCodeBlockProps {
   readonly code: string;
@@ -535,8 +534,6 @@ function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuer
   );
 }
 
-// ─── Табы ─────────────────────────────────────────────────────────────────────
-
 export interface CodeTab {
   label: string;
   code: string;
@@ -549,8 +546,6 @@ interface TabBarProps {
   readonly onSelect: (idx: number) => void;
   readonly t: ReturnType<typeof tk>;
 }
-
-// ─── TabBar — показывает только label, без дублирования language ──────────────
 
 function TabBar({ tabs, activeIdx, onSelect, t }: TabBarProps) {
   return (
@@ -594,8 +589,6 @@ function TabBar({ tabs, activeIdx, onSelect, t }: TabBarProps) {
     </div>
   );
 }
-
-// ─── Основной компонент CodeBlock ─────────────────────────────────────────────
 
 interface CodeBlockProps {
   readonly code: string;
