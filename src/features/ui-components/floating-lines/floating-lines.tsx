@@ -109,7 +109,7 @@ vec3 getLineColor(float t, vec3 baseColor) {
 
   if (shouldBend) {
     vec2 d = screenUv - mouseUv;
-    float influence = exp(-dot(d, d) * bendRadius); // radial falloff around cursor
+    float influence = exp(-dot(d, d) * bendRadius);
     float bendOffset = (mouseUv.y - screenUv.y) * influence * bendStrength * bendInfluence;
     y += bendOffset;
   }
@@ -210,21 +210,21 @@ type WavePosition = {
 };
 
 type FloatingLinesProps = {
-  linesGradient?: string[];
-  enabledWaves?: Array<'top' | 'middle' | 'bottom'>;
-  lineCount?: number | number[];
-  lineDistance?: number | number[];
-  topWavePosition?: WavePosition;
-  middleWavePosition?: WavePosition;
-  bottomWavePosition?: WavePosition;
-  animationSpeed?: number;
-  interactive?: boolean;
-  bendRadius?: number;
-  bendStrength?: number;
-  mouseDamping?: number;
-  parallax?: boolean;
-  parallaxStrength?: number;
-  mixBlendMode?: React.CSSProperties['mixBlendMode'];
+  readonly linesGradient?: string[];
+  readonly enabledWaves?: Array<'top' | 'middle' | 'bottom'>;
+  readonly lineCount?: number | number[];
+  readonly lineDistance?: number | number[];
+  readonly topWavePosition?: WavePosition;
+  readonly middleWavePosition?: WavePosition;
+  readonly bottomWavePosition?: WavePosition;
+  readonly animationSpeed?: number;
+  readonly interactive?: boolean;
+  readonly bendRadius?: number;
+  readonly bendStrength?: number;
+  readonly mouseDamping?: number;
+  readonly parallax?: boolean;
+  readonly parallaxStrength?: number;
+  readonly mixBlendMode?: React.CSSProperties['mixBlendMode'];
 };
 
 function hexToVec3(hex: string): Vector3 {
@@ -239,13 +239,13 @@ function hexToVec3(hex: string): Vector3 {
   let b = 255;
 
   if (value.length === 3) {
-    r = parseInt(value[0] + value[0], 16);
-    g = parseInt(value[1] + value[1], 16);
-    b = parseInt(value[2] + value[2], 16);
+    r = Number.parseInt(value[0] + value[0], 16);
+    g = Number.parseInt(value[1] + value[1], 16);
+    b = Number.parseInt(value[2] + value[2], 16);
   } else if (value.length === 6) {
-    r = parseInt(value.slice(0, 2), 16);
-    g = parseInt(value.slice(2, 4), 16);
-    b = parseInt(value.slice(4, 6), 16);
+    r = Number.parseInt(value.slice(0, 2), 16);
+    g = Number.parseInt(value.slice(2, 4), 16);
+    b = Number.parseInt(value.slice(4, 6), 16);
   }
 
   return new Vector3(r / 255, g / 255, b / 255);
@@ -258,10 +258,10 @@ export default function FloatingLines({
   lineDistance = [5],
   topWavePosition,
   middleWavePosition,
-  bottomWavePosition = { x: 2.0, y: -0.7, rotate: -1 },
+  bottomWavePosition = { x: 2, y: -0.7, rotate: -1 },
   animationSpeed = 1,
   interactive = true,
-  bendRadius = 5.0,
+  bendRadius = 5,
   bendStrength = -0.5,
   mouseDamping = 0.05,
   parallax = true,
@@ -333,18 +333,18 @@ export default function FloatingLines({
       bottomLineDistance: { value: bottomLineDistance },
 
       topWavePosition: {
-        value: new Vector3(topWavePosition?.x ?? 10.0, topWavePosition?.y ?? 0.5, topWavePosition?.rotate ?? -0.4)
+        value: new Vector3(topWavePosition?.x ?? 10, topWavePosition?.y ?? 0.5, topWavePosition?.rotate ?? -0.4)
       },
       middleWavePosition: {
         value: new Vector3(
-          middleWavePosition?.x ?? 5.0,
-          middleWavePosition?.y ?? 0.0,
+          middleWavePosition?.x ?? 5,
+          middleWavePosition?.y ?? 0,
           middleWavePosition?.rotate ?? 0.2
         )
       },
       bottomWavePosition: {
         value: new Vector3(
-          bottomWavePosition?.x ?? 2.0,
+          bottomWavePosition?.x ?? 2,
           bottomWavePosition?.y ?? -0.7,
           bottomWavePosition?.rotate ?? 0.4
         )
@@ -402,13 +402,14 @@ export default function FloatingLines({
 
     setSize();
 
+    // ResizeObserver для отслеживания изменений размера контейнера
     const ro =
-      typeof ResizeObserver !== 'undefined'
-        ? new ResizeObserver(() => {
+      typeof ResizeObserver === 'undefined'
+        ? null
+        : new ResizeObserver(() => {
             if (!active) return;
             setSize();
-          })
-        : null;
+          });
 
     if (ro) ro.observe(container);
 
@@ -419,7 +420,7 @@ export default function FloatingLines({
       const dpr = renderer.getPixelRatio();
 
       targetMouseRef.current.set(x * dpr, (rect.height - y) * dpr);
-      targetInfluenceRef.current = 1.0;
+      targetInfluenceRef.current = 1;
 
       if (parallax) {
         const centerX = rect.width / 2;
@@ -431,7 +432,7 @@ export default function FloatingLines({
     };
 
     const handlePointerLeave = () => {
-      targetInfluenceRef.current = 0.0;
+      targetInfluenceRef.current = 0;
     };
 
     if (interactive) {
@@ -479,9 +480,7 @@ export default function FloatingLines({
       material.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
-      if (renderer.domElement.parentElement) {
-        renderer.domElement.parentElement.removeChild(renderer.domElement);
-      }
+      renderer.domElement.remove();
     };
   }, [
     linesGradient,
