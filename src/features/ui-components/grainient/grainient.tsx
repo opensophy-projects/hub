@@ -30,7 +30,11 @@ interface GrainientProps {
 const hexToRgb = (hex: string): [number, number, number] => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if (!result) return [1, 1, 1];
-  return [parseInt(result[1], 16) / 255, parseInt(result[2], 16) / 255, parseInt(result[3], 16) / 255];
+  return [
+    Number.parseInt(result[1], 16) / 255,
+    Number.parseInt(result[2], 16) / 255,
+    Number.parseInt(result[3], 16) / 255,
+  ];
 };
 
 const vertex = `#version 300 es
@@ -124,9 +128,8 @@ void main(){
 }
 `;
 
-
-// Keep renderer/program alive across re-renders so Effect 2 can update
-// uniforms without ever rebuilding the WebGL context.
+// Renderer/program живут между ре-рендерами — Effect 2 обновляет
+// uniforms без пересоздания WebGL-контекста.
 type GrainientCtx = {
   renderer: InstanceType<typeof Renderer>;
   program: InstanceType<typeof Program>;
@@ -136,32 +139,32 @@ const ctxMap = new WeakMap<HTMLDivElement, GrainientCtx>();
 
 const Grainient: React.FC<GrainientProps> = ({
   timeSpeed = 0.25,
-  colorBalance = 0.0,
-  warpStrength = 1.0,
-  warpFrequency = 5.0,
-  warpSpeed = 2.0,
-  warpAmplitude = 50.0,
-  blendAngle = 0.0,
+  colorBalance = 0,
+  warpStrength = 1,
+  warpFrequency = 5,
+  warpSpeed = 2,
+  warpAmplitude = 50,
+  blendAngle = 0,
   blendSoftness = 0.05,
-  rotationAmount = 500.0,
-  noiseScale = 2.0,
+  rotationAmount = 500,
+  noiseScale = 2,
   grainAmount = 0.1,
-  grainScale = 2.0,
+  grainScale = 2,
   grainAnimated = false,
   contrast = 1.5,
-  gamma = 1.0,
-  saturation = 1.0,
-  centerX = 0.0,
-  centerY = 0.0,
+  gamma = 1,
+  saturation = 1,
+  centerX = 0,
+  centerY = 0,
   zoom = 0.9,
   color1 = '#FF9FFC',
   color2 = '#5227FF',
   color3 = '#B497CF',
-  className = ''
+  className = '',
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  // Effect 1: build WebGL context once, pause when offscreen / tab hidden
+  // Effect 1: создаёт WebGL-контекст один раз, останавливает анимацию вне экрана / при скрытой вкладке
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -170,7 +173,7 @@ const Grainient: React.FC<GrainientProps> = ({
       webgl: 2,
       alpha: true,
       antialias: false,
-      dpr: Math.min(window.devicePixelRatio || 1, 2)
+      dpr: Math.min(window.devicePixelRatio || 1, 2),
     });
 
     const gl = renderer.gl;
@@ -188,27 +191,27 @@ const Grainient: React.FC<GrainientProps> = ({
         iTime:           { value: 0 },
         iResolution:     { value: new Float32Array([1, 1]) },
         uTimeSpeed:      { value: 0.25 },
-        uColorBalance:   { value: 0.0 },
-        uWarpStrength:   { value: 1.0 },
-        uWarpFrequency:  { value: 5.0 },
-        uWarpSpeed:      { value: 2.0 },
-        uWarpAmplitude:  { value: 50.0 },
-        uBlendAngle:     { value: 0.0 },
+        uColorBalance:   { value: 0 },
+        uWarpStrength:   { value: 1 },
+        uWarpFrequency:  { value: 5 },
+        uWarpSpeed:      { value: 2 },
+        uWarpAmplitude:  { value: 50 },
+        uBlendAngle:     { value: 0 },
         uBlendSoftness:  { value: 0.05 },
-        uRotationAmount: { value: 500.0 },
-        uNoiseScale:     { value: 2.0 },
+        uRotationAmount: { value: 500 },
+        uNoiseScale:     { value: 2 },
         uGrainAmount:    { value: 0.1 },
-        uGrainScale:     { value: 2.0 },
-        uGrainAnimated:  { value: 0.0 },
+        uGrainScale:     { value: 2 },
+        uGrainAnimated:  { value: 0 },
         uContrast:       { value: 1.5 },
-        uGamma:          { value: 1.0 },
-        uSaturation:     { value: 1.0 },
+        uGamma:          { value: 1 },
+        uSaturation:     { value: 1 },
         uCenterOffset:   { value: new Float32Array([0, 0]) },
         uZoom:           { value: 0.9 },
         uColor1:         { value: new Float32Array([1, 1, 1]) },
         uColor2:         { value: new Float32Array([1, 1, 1]) },
-        uColor3:         { value: new Float32Array([1, 1, 1]) }
-      }
+        uColor3:         { value: new Float32Array([1, 1, 1]) },
+      },
     });
 
     const mesh = new Mesh(gl, { geometry, program });
@@ -272,15 +275,11 @@ const Grainient: React.FC<GrainientProps> = ({
       io.disconnect();
       document.removeEventListener('visibilitychange', onVisibility);
       ctxMap.delete(container);
-      try {
-        container.removeChild(canvas);
-      } catch {
-        // noop
-      }
+      canvas.remove();
     };
-  }, []); // renderer created once
+  }, []); // renderer создаётся один раз
 
-  // Effect 2: sync props to uniforms — zero GPU cost, no teardown
+  // Effect 2: синхронизирует props с uniforms — без затрат на GPU, без teardown
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -301,7 +300,7 @@ const Grainient: React.FC<GrainientProps> = ({
     u.uNoiseScale.value     = noiseScale;
     u.uGrainAmount.value    = grainAmount;
     u.uGrainScale.value     = grainScale;
-    u.uGrainAnimated.value  = grainAnimated ? 1.0 : 0.0;
+    u.uGrainAnimated.value  = grainAnimated ? 1 : 0;
     u.uContrast.value       = contrast;
     u.uGamma.value          = gamma;
     u.uSaturation.value     = saturation;
@@ -314,9 +313,8 @@ const Grainient: React.FC<GrainientProps> = ({
     timeSpeed, colorBalance, warpStrength, warpFrequency, warpSpeed,
     warpAmplitude, blendAngle, blendSoftness, rotationAmount, noiseScale,
     grainAmount, grainScale, grainAnimated, contrast, gamma, saturation,
-    centerX, centerY, zoom, color1, color2, color3
+    centerX, centerY, zoom, color1, color2, color3,
   ]);
-
 
   return <div ref={containerRef} className={`relative h-full w-full overflow-hidden ${className}`.trim()} />;
 };
