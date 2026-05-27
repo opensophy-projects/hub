@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 interface LightningProps {
   hue?: number;
@@ -15,18 +15,36 @@ const Lightning: React.FC<LightningProps> = ({ hue = 230, xOffset = 0, speed = 1
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const resizeCanvas = () => {
-      canvas.width = canvas.clientWidth;
-      canvas.height = canvas.clientHeight;
-    };
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+    const gl = canvas.getContext('webgl', {
+      alpha: true,
+      premultipliedAlpha: false,
+      antialias: false,
+      powerPreference: 'low-power',
+      preserveDrawingBuffer: false,
+    });
 
-    const gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: false });
     if (!gl) {
       console.error('WebGL not supported');
       return;
     }
+
+    let rafId = 0;
+    let disposed = false;
+
+    const resizeCanvas = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      const width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
+      const height = Math.max(1, Math.floor(canvas.clientHeight * dpr));
+
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+    };
+
+    resizeCanvas();
+    const resizeObserver = new ResizeObserver(resizeCanvas);
+    resizeObserver.observe(canvas);
 
     const vertexShaderSource = `
       attribute vec2 aPosition;
@@ -44,7 +62,7 @@ const Lightning: React.FC<LightningProps> = ({ hue = 230, xOffset = 0, speed = 1
       uniform float uSpeed;
       uniform float uIntensity;
       uniform float uSize;
-      
+
       #define OCTAVE_COUNT 10
 
       vec3 hsv2rgb(vec3 c) {
@@ -78,7 +96,7 @@ const Lightning: React.FC<LightningProps> = ({ hue = 230, xOffset = 0, speed = 1
           float b = hash12(ip + vec2(1.0, 0.0));
           float c = hash12(ip + vec2(0.0, 1.0));
           float d = hash12(ip + vec2(1.0, 1.0));
-          
+
           vec2 t = smoothstep(0.0, 1.0, fp);
           return mix(mix(a, b, t.x), mix(c, d, t.x), t.y);
       }
@@ -100,10 +118,10 @@ const Lightning: React.FC<LightningProps> = ({ hue = 230, xOffset = 0, speed = 1
           uv = 2.0 * uv - 1.0;
           uv.x *= iResolution.x / iResolution.y;
           uv.x += uXOffset;
-          
+
           uv += 2.0 * fbm(uv * uSize + 0.8 * iTime * uSpeed) - 1.0;
-          
-          float dist = abs(uv.x);
+
+          float dist = max(abs(uv.x), 0.015);
           vec3 baseColor = hsv2rgb(vec3(uHue / 360.0, 0.7, 0.8));
           vec3 col = baseColor * pow(mix(0.0, 0.07, hash11(iTime * uSpeed)) / dist, 1.0) * uIntensity;
           col = pow(col, vec3(1.0));
@@ -140,12 +158,14 @@ const Lightning: React.FC<LightningProps> = ({ hue = 230, xOffset = 0, speed = 1
     gl.linkProgram(program);
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
       console.error('Program linking error:', gl.getProgramInfoLog(program));
+      gl.deleteProgram(program);
       return;
     }
     gl.useProgram(program);
 
     const vertices = new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]);
     const vertexBuffer = gl.createBuffer();
+    if (!vertexBuffer) return;
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
 
@@ -163,6 +183,7 @@ const Lightning: React.FC<LightningProps> = ({ hue = 230, xOffset = 0, speed = 1
 
     const startTime = performance.now();
     const render = () => {
+      if (disposed) return;
       resizeCanvas();
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.uniform2f(iResolutionLocation, canvas.width, canvas.height);
@@ -174,12 +195,25 @@ const Lightning: React.FC<LightningProps> = ({ hue = 230, xOffset = 0, speed = 1
       gl.uniform1f(uIntensityLocation, intensity);
       gl.uniform1f(uSizeLocation, size);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
-      requestAnimationFrame(render);
+      rafId = requestAnimationFrame(render);
     };
-    requestAnimationFrame(render);
+
+    rafId = requestAnimationFrame(render);
 
     return () => {
-      window.removeEventListener('resize', resizeCanvas);
+      disposed = true;
+      if (rafId) cancelAnimationFrame(rafId);
+      resizeObserver.disconnect();
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, null);
+      gl.useProgram(null);
+      gl.deleteBuffer(vertexBuffer);
+      gl.deleteShader(vertexShader);
+      gl.deleteShader(fragmentShader);
+      gl.deleteProgram(program);
+
+      const loseContext = gl.getExtension('WEBGL_lose_context');
+      loseContext?.loseContext();
     };
   }, [hue, xOffset, speed, intensity, size]);
 

@@ -3,7 +3,7 @@
   "name": "Lightning",
   "description": "Анимированный фоновый UI-компонент.",
   "category": "backgrounds",
-  "main": "lightning.tsx",
+  "main": "background.tsx",
   "props": [
     {
       "name": "hue",
