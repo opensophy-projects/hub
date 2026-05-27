@@ -6,7 +6,6 @@ import { Plus, Trash2, Loader2, AlertCircle } from 'lucide-react';
 
 interface Contact { href: string; title: string; subtitle: string; external: boolean; }
 
-// Регексы с ограниченной длиной совпадения для защиты от ReDoS
 const RE_BLOCK    = /\{([^{}]{1,500})\}/g;
 const RE_HREF     = /href:\s*'([^']{0,300})'/;
 const RE_TITLE    = /title:\s*'([^']{0,300})'/;
@@ -17,9 +16,9 @@ function parseContacts(ts: string): Contact[] {
   const result: Contact[] = [];
   for (const m of matches) {
     const block    = m[1];
-    const href     = block.match(RE_HREF)?.[1]     ?? '';
-    const title    = block.match(RE_TITLE)?.[1]    ?? '';
-    const subtitle = block.match(RE_SUBTITLE)?.[1] ?? '';
+    const href     = RE_HREF.exec(block)?.[1]     ?? '';
+    const title    = RE_TITLE.exec(block)?.[1]    ?? '';
+    const subtitle = RE_SUBTITLE.exec(block)?.[1] ?? '';
     const external = block.includes('external: true');
     if (href) result.push({ href, title, subtitle, external });
   }
@@ -132,7 +131,6 @@ export default function ContactsPanel() {
   const addContact = () =>
     setContacts(prev => [...prev, { href: '', title: '', subtitle: '', external: true }]);
 
-  // Коллбэки вынесены из JSX, чтобы не превышать допустимую глубину вложенности функций
   const handleChange = useCallback((i: number, nc: Contact) => {
     setContacts(prev => prev.map((x, idx) => idx === i ? nc : x));
   }, []);
@@ -148,7 +146,6 @@ export default function ContactsPanel() {
     </div>
   );
 
-  // Фон кнопки "Сохранить" в состоянии saved зависит от текущей темы
   const savedBg = t.isDark ? 'rgba(34,197,94,0.1)' : 'rgba(22,163,74,0.08)';
 
   return (
