@@ -57,7 +57,7 @@ const getAnchorAndDir = (
       return { anchor: [0.5 * w, (1 + outside) * h], dir: [0, -1] };
     case 'bottom-right':
       return { anchor: [w, (1 + outside) * h], dir: [0, -1] };
-    default: // "top-center"
+    default:
       return { anchor: [0.5 * w, -outside * h], dir: [0, 1] };
   }
 };
@@ -155,7 +155,6 @@ const LightRays: React.FC<LightRaysProps> = ({
       gl.canvas.style.width = '100%';
       gl.canvas.style.height = '100%';
 
-      // Очищаем контейнер перед добавлением нового canvas
       while (containerRef.current.firstChild) {
         containerRef.current.firstChild.remove();
       }
