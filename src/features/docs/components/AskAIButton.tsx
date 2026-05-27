@@ -4,7 +4,6 @@ import { Copy, Check, ChevronDown, Sparkles } from 'lucide-react';
 interface AskAIButtonProps {
   isDark: boolean;
   pageTitle: string;
-  pageSlug: string;
   markdownContent?: string;
 }
 
@@ -85,7 +84,8 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target instanceof Node ? e.target : null;
+      if (ref.current && !ref.current.contains(target)) setOpen(false);
     };
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
