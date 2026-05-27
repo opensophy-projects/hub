@@ -13,7 +13,7 @@ interface PlasmaProps {
 const hexToRgb = (hex: string): [number, number, number] => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if (!result) return [1, 0.5, 0.2];
-  return [parseInt(result[1], 16) / 255, parseInt(result[2], 16) / 255, parseInt(result[3], 16) / 255];
+  return [Number.parseInt(result[1], 16) / 255, Number.parseInt(result[2], 16) / 255, Number.parseInt(result[3], 16) / 255];
 };
 
 const vertex = `#version 300 es
@@ -103,10 +103,10 @@ export const Plasma: React.FC<PlasmaProps> = ({
     if (!containerRef.current) return;
     const containerEl = containerRef.current;
 
-    const useCustomColor = color ? 1.0 : 0.0;
+    const useCustomColor = color ? 1 : 0;
     const customColorRgb = color ? hexToRgb(color) : [1, 1, 1];
 
-    const directionMultiplier = direction === 'reverse' ? -1.0 : 1.0;
+    const directionMultiplier = direction === 'reverse' ? -1 : 1;
 
     let renderer: Renderer;
     try {
@@ -114,7 +114,7 @@ export const Plasma: React.FC<PlasmaProps> = ({
         webgl: 2,
         alpha: true,
         antialias: false,
-        dpr: Math.min(window.devicePixelRatio || 1, 2)
+        dpr: Math.min(globalThis.devicePixelRatio || 1, 2)
       });
     } catch {
       return;
@@ -142,7 +142,7 @@ export const Plasma: React.FC<PlasmaProps> = ({
         uScale: { value: scale },
         uOpacity: { value: opacity },
         uMouse: { value: new Float32Array([0, 0]) },
-        uMouseInteractive: { value: mouseInteractive ? 1.0 : 0.0 }
+        uMouseInteractive: { value: mouseInteractive ? 1 : 0 }
       }
     });
 
@@ -191,7 +191,7 @@ export const Plasma: React.FC<PlasmaProps> = ({
         const u = segmentTime / pingpongDuration;
         const smooth = u * u * (3 - 2 * u);
         const pingpongTime = isForward ? smooth * pingpongDuration : (1 - smooth) * pingpongDuration;
-        program.uniforms.uDirection.value = 1.0;
+        program.uniforms.uDirection.value = 1;
         program.uniforms.iTime.value = pingpongTime;
       } else {
         program.uniforms.iTime.value = timeValue;
@@ -236,11 +236,7 @@ export const Plasma: React.FC<PlasmaProps> = ({
       if (mouseInteractive && containerEl) {
         containerEl.removeEventListener('mousemove', handleMouseMove);
       }
-      try {
-        containerEl?.removeChild(canvas);
-      } catch {
-        // noop
-      }
+      canvas.remove();
     };
   }, [color, speed, direction, scale, opacity, mouseInteractive]);
 
