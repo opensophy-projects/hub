@@ -7,7 +7,7 @@
   <!-- Главная страница -->
   <url>
     <loc>https://opensophy.com/</loc>
-    <lastmod>2026-05-24</lastmod>
+    <lastmod>2026-05-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -364,7 +364,7 @@
 
   <url>
     <loc>https://opensophy.com/article/linux/linux-files/</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
