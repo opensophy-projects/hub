@@ -194,13 +194,11 @@ const hexToRgb01 = (hex: string): [number, number, number] => {
   let h = hex.trim();
   if (h.startsWith('#')) h = h.slice(1);
   if (h.length === 3) {
-    const r = h[0],
-      g = h[1],
-      b = h[2];
+    const r = h[0], g = h[1], b = h[2];
     h = r + r + g + g + b + b;
   }
-  const intVal = parseInt(h, 16);
-  if (isNaN(intVal) || (h.length !== 6 && h.length !== 8)) return [1, 1, 1];
+  const intVal = Number.parseInt(h, 16);
+  if (Number.isNaN(intVal) || (h.length !== 6 && h.length !== 8)) return [1, 1, 1];
   const r = ((intVal >> 16) & 255) / 255;
   const g = ((intVal >> 8) & 255) / 255;
   const b = (intVal & 255) / 255;
@@ -211,8 +209,8 @@ const toPx = (v: number | string | undefined): number => {
   if (v == null) return 0;
   if (typeof v === 'number') return v;
   const s = String(v).trim();
-  const num = parseFloat(s.replace('px', ''));
-  return isNaN(num) ? 0 : num;
+  const num = Number.parseFloat(s.replace('px', ''));
+  return Number.isNaN(num) ? 0 : num;
 };
 
 const PrismaticBurst = ({
@@ -242,6 +240,7 @@ const PrismaticBurst = ({
   useEffect(() => {
     pausedRef.current = paused;
   }, [paused]);
+
   useEffect(() => {
     hoverDampRef.current = hoverDampness;
   }, [hoverDampness]);
@@ -250,7 +249,7 @@ const PrismaticBurst = ({
     const container = containerRef.current;
     if (!container) return;
 
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(globalThis.devicePixelRatio || 1, 2);
     const renderer = new Renderer({ dpr, alpha: false, antialias: false });
     rendererRef.current = renderer;
 
@@ -283,7 +282,6 @@ const PrismaticBurst = ({
       uniforms: {
         uResolution: { value: [1, 1] as [number, number] },
         uTime: { value: 0 },
-
         uIntensity: { value: 1 },
         uSpeed: { value: 1 },
         uAnimType: { value: 0 },
@@ -312,11 +310,11 @@ const PrismaticBurst = ({
     };
 
     let ro: ResizeObserver | null = null;
-    if ('ResizeObserver' in window) {
+    if ('ResizeObserver' in globalThis) {
       ro = new ResizeObserver(resize);
       ro.observe(container);
     } else {
-      (window as Window).addEventListener('resize', resize);
+      globalThis.addEventListener('resize', resize);
     }
     resize();
 
@@ -329,7 +327,7 @@ const PrismaticBurst = ({
     container.addEventListener('pointermove', onPointer, { passive: true });
 
     let io: IntersectionObserver | null = null;
-    if ('IntersectionObserver' in window) {
+    if ('IntersectionObserver' in globalThis) {
       io = new IntersectionObserver(
         entries => {
           if (entries[0]) isVisibleRef.current = entries[0].isIntersecting;
@@ -371,22 +369,17 @@ const PrismaticBurst = ({
       cancelAnimationFrame(raf);
       container.removeEventListener('pointermove', onPointer);
       ro?.disconnect();
-      if (!ro) window.removeEventListener('resize', resize);
+      if (!ro) globalThis.removeEventListener('resize', resize);
       io?.disconnect();
       document.removeEventListener('visibilitychange', onVis);
-      try {
-        container.removeChild(gl.canvas);
-      } catch (e) {
-        void e;
-      }
+      gl.canvas.remove();
       meshRef.current = null;
       triRef.current = null;
       programRef.current = null;
       try {
         const glCtx = rendererRef.current?.gl;
         if (glCtx && gradTexRef.current?.texture) glCtx.deleteTexture(gradTexRef.current.texture);
-      } catch (e) {
-        void e;
+      } catch (_err) {
       }
       rendererRef.current = null;
       gradTexRef.current = null;
@@ -415,7 +408,6 @@ const PrismaticBurst = ({
       hover: 2
     };
     program.uniforms.uAnimType.value = animTypeMap[animationType ?? 'rotate'];
-
     program.uniforms.uDistort.value = typeof distort === 'number' ? distort : 0;
 
     const ox = toPx(offset?.x);
@@ -448,8 +440,6 @@ const PrismaticBurst = ({
       gradTex.format = gl.RGBA;
       gradTex.type = gl.UNSIGNED_BYTE;
       gradTex.needsUpdate = true;
-    } else {
-      count = 0;
     }
     program.uniforms.uColorCount.value = count;
   }, [intensity, speed, animationType, colors, distort, offset, rayCount]);
