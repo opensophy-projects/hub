@@ -23,34 +23,62 @@ type AccordionProps = React.HTMLAttributes<HTMLDivElement> & {
   collapsible?: boolean;
 };
 
-const Accordion: React.FC<AccordionProps> = ({ type = 'single', value, defaultValue, onValueChange, collapsible = true, children, ...props }) => {
-  const initial = React.useMemo(() => {
-    if (value !== undefined) return Array.isArray(value) ? value : value ? [value] : [];
-    if (defaultValue !== undefined) return Array.isArray(defaultValue) ? defaultValue : defaultValue ? [defaultValue] : [];
-    return [];
-  }, [value, defaultValue]);
+function normalizeValue(val: string | string[] | undefined): string[] {
+  if (val === undefined) return [];
+  if (Array.isArray(val)) return val;
+  return val ? [val] : [];
+}
 
-  const [internalValue, setInternalValue] = React.useState<string[]>(initial);
-  const current = React.useMemo(
-    () => (value !== undefined ? (Array.isArray(value) ? value : value ? [value] : []) : internalValue),
-    [internalValue, value]
+const Accordion: React.FC<AccordionProps> = ({
+  type = 'single',
+  value,
+  defaultValue,
+  onValueChange,
+  collapsible = true,
+  children,
+  ...props
+}) => {
+  const initial = React.useMemo(
+    () => normalizeValue(value !== undefined ? value : defaultValue),
+    []
   );
 
+  const [internalValue, setInternalValue] = React.useState<string[]>(initial);
+
+  const current = React.useMemo<string[]>(() => {
+    if (value !== undefined) {
+      return normalizeValue(value);
+    }
+    return internalValue;
+  }, [internalValue, value]);
+
   const toggle = React.useCallback((itemValue: string) => {
-    let next: string[] = [];
+    let next: string[];
+
     if (type === 'multiple') {
-      next = current.includes(itemValue) ? current.filter((v) => v !== itemValue) : [...current, itemValue];
+      next = current.includes(itemValue)
+        ? current.filter((v) => v !== itemValue)
+        : [...current, itemValue];
     } else {
       const isOpen = current.includes(itemValue);
-      next = isOpen ? (collapsible ? [] : current) : [itemValue];
+      if (isOpen) {
+        next = collapsible ? [] : current;
+      } else {
+        next = [itemValue];
+      }
     }
 
     if (value === undefined) setInternalValue(next);
     onValueChange?.(type === 'single' ? (next[0] ?? '') : next);
   }, [collapsible, current, onValueChange, type, value]);
 
+  const contextValue = React.useMemo<AccordionContextValue>(
+    () => ({ type, value: current, toggle }),
+    [type, current, toggle]
+  );
+
   return (
-    <AccordionContext.Provider value={{ type, value: current, toggle }}>
+    <AccordionContext.Provider value={contextValue}>
       <div {...props}>{children}</div>
     </AccordionContext.Provider>
   );
@@ -63,11 +91,26 @@ AccordionItem.displayName = 'AccordionItem';
 
 const AccordionItemContext = React.createContext<{ value: string } | null>(null);
 
+function AccordionItemContextProvider({
+  value,
+  children,
+  forwardedRef,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement> & { value: string; forwardedRef: React.ForwardedRef<HTMLDivElement> }) {
+  const contextValue = React.useMemo(() => ({ value }), [value]);
+
+  return (
+    <AccordionItemContext.Provider value={contextValue}>
+      <AccordionItem ref={forwardedRef} value={value} {...props}>{children}</AccordionItem>
+    </AccordionItemContext.Provider>
+  );
+}
+
 const WrappedAccordionItem = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & { value: string }>(
   ({ value, children, ...props }, ref) => (
-    <AccordionItemContext.Provider value={{ value }}>
-      <AccordionItem ref={ref} value={value} {...props}>{children}</AccordionItem>
-    </AccordionItemContext.Provider>
+    <AccordionItemContextProvider value={value} forwardedRef={ref} {...props}>
+      {children}
+    </AccordionItemContextProvider>
   )
 );
 WrappedAccordionItem.displayName = 'WrappedAccordionItem';
@@ -93,7 +136,11 @@ const AccordionTrigger = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAtt
           {...props}
         >
           {children}
-          <ChevronDownIcon className={cn("shrink-0 opacity-60 transition-transform duration-200 ml-4", open && "rotate-180")} size={24} aria-hidden="true" />
+          <ChevronDownIcon
+            className={cn("shrink-0 opacity-60 transition-transform duration-200 ml-4", open && "rotate-180")}
+            size={24}
+            aria-hidden="true"
+          />
         </button>
       </div>
     );
@@ -101,18 +148,20 @@ const AccordionTrigger = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAtt
 );
 AccordionTrigger.displayName = 'AccordionTrigger';
 
-const AccordionContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, children, ...props }, ref) => {
-  const ctx = React.useContext(AccordionContext);
-  const item = React.useContext(AccordionItemContext);
-  if (!ctx || !item) return null;
-  const open = ctx.value.includes(item.value);
+const AccordionContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, children, ...props }, ref) => {
+    const ctx = React.useContext(AccordionContext);
+    const item = React.useContext(AccordionItemContext);
+    if (!ctx || !item) return null;
+    const open = ctx.value.includes(item.value);
 
-  return (
-    <div ref={ref} className={cn("overflow-hidden text-sm", open ? "block" : "hidden")} {...props}>
-      <div className={cn("px-6 pb-6 pt-0", className)}>{children}</div>
-    </div>
-  );
-});
+    return (
+      <div ref={ref} className={cn("overflow-hidden text-sm", open ? "block" : "hidden")} {...props}>
+        <div className={cn("px-6 pb-6 pt-0", className)}>{children}</div>
+      </div>
+    );
+  }
+);
 AccordionContent.displayName = 'AccordionContent';
 
 export { Accordion, AccordionContent, WrappedAccordionItem as AccordionItem, AccordionTrigger };
