@@ -402,7 +402,6 @@ export default function FloatingLines({
 
     setSize();
 
-    // ResizeObserver для отслеживания изменений размера контейнера
     const ro =
       typeof ResizeObserver === 'undefined'
         ? null
