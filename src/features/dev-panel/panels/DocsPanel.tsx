@@ -930,7 +930,7 @@ function filterTreeByQuery(entries: TreeEntry[], query: string): TreeEntry[] {
       if (matchesSelf || children.length > 0) return { ...item, children };
       return null;
     })
-    .filter(Boolean) as TreeEntry[];
+    .filter((x): x is TreeEntry => x !== null);
 
   return walk(entries);
 }
@@ -992,7 +992,7 @@ export default function DocsPanel() {
     const p = entry.parsed;
     const cfg: CC = {
       parentPath: entry.path.split('/').slice(0, -1).join('/'),
-      entryType: p.type as 'N'|'C',
+      entryType: p.type!,
     };
     setModalCfg({ cfg, existing: entry });
   }, []);
