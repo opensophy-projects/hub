@@ -39,7 +39,7 @@ const Accordion: React.FC<AccordionProps> = ({
   ...props
 }) => {
   const initial = React.useMemo(
-    () => normalizeValue(value !== undefined ? value : defaultValue),
+    () => normalizeValue(value === undefined ? defaultValue : value),
     []
   );
 
