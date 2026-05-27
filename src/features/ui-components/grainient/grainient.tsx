@@ -128,8 +128,7 @@ void main(){
 }
 `;
 
-// Renderer/program живут между ре-рендерами — Effect 2 обновляет
-// uniforms без пересоздания WebGL-контекста.
+
 type GrainientCtx = {
   renderer: InstanceType<typeof Renderer>;
   program: InstanceType<typeof Program>;
@@ -164,7 +163,7 @@ const Grainient: React.FC<GrainientProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  // Effect 1: создаёт WebGL-контекст один раз, останавливает анимацию вне экрана / при скрытой вкладке
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -277,9 +276,8 @@ const Grainient: React.FC<GrainientProps> = ({
       ctxMap.delete(container);
       canvas.remove();
     };
-  }, []); // renderer создаётся один раз
+  }, []); 
 
-  // Effect 2: синхронизирует props с uniforms — без затрат на GPU, без teardown
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
