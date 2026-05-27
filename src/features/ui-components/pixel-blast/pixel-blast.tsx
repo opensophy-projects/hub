@@ -350,7 +350,6 @@ void main(){
 
 const MAX_CLICKS = 10;
 
-// Тип внутреннего состояния Three.js-сцены
 type ThreeState = {
   renderer: THREE.WebGLRenderer;
   scene: THREE.Scene;
@@ -384,7 +383,6 @@ type ThreeState = {
   liquidEffect?: Effect;
 };
 
-// Уничтожает Three.js-сцену и освобождает ресурсы
 function destroyThree(t: ThreeState, container: HTMLElement) {
   t.resizeObserver?.disconnect();
   if (t.raf !== undefined) cancelAnimationFrame(t.raf);
@@ -398,7 +396,6 @@ function destroyThree(t: ThreeState, container: HTMLElement) {
   }
 }
 
-// Обновляет юниформы uniforms для жидкого эффекта
 function updateLiquidUniforms(liquidEffect: Effect, strength: number, wobbleSpeed: number) {
   const uStrength = liquidEffect.uniforms.get('uStrength');
   if (uStrength) uStrength.value = strength;
@@ -406,7 +403,6 @@ function updateLiquidUniforms(liquidEffect: Effect, strength: number, wobbleSpee
   if (uFreq) uFreq.value = wobbleSpeed;
 }
 
-// Обновляет uniform времени во всех пассах композера
 function updateComposerTimeUniforms(composer: EffectComposer, time: number) {
   type PassWithEffects = { effects?: Array<Effect & { uniforms: Map<string, THREE.Uniform> }> };
   for (const p of composer.passes) {
@@ -419,7 +415,6 @@ function updateComposerTimeUniforms(composer: EffectComposer, time: number) {
   }
 }
 
-// Генерирует случайное число через crypto API или Math.random как запасной вариант
 function randomFloat(): number {
   if (typeof globalThis.window !== 'undefined' && globalThis.window.crypto?.getRandomValues) {
     const u32 = new Uint32Array(1);
@@ -572,7 +567,6 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
   );
 };
 
-// Параметры для построения Three.js-сцены
 type BuildThreeParams = {
   container: HTMLElement;
   antialias: boolean;
@@ -599,7 +593,6 @@ type BuildThreeParams = {
   threeRef: React.MutableRefObject<ThreeState | null>;
 };
 
-// Создаёт и запускает Three.js-сцену
 function buildThree(p: BuildThreeParams): ThreeState {
   const {
     container, antialias, transparent, color, variant, pixelSize,
@@ -791,7 +784,6 @@ function buildThree(p: BuildThreeParams): ThreeState {
   return state;
 }
 
-// Параметры для обновления юниформов без пересоздания сцены
 type UpdateUniformsParams = {
   variant: PixelBlastVariant;
   pixelSize: number;
@@ -810,7 +802,6 @@ type UpdateUniformsParams = {
   liquidRadius: number;
 };
 
-// Обновляет параметры сцены без пересоздания рендерера
 function updateUniforms(t: ThreeState, p: UpdateUniformsParams) {
   t.uniforms.uShapeType.value = SHAPE_MAP[p.variant] ?? 0;
   t.uniforms.uPixelSize.value = p.pixelSize * t.renderer.getPixelRatio();
