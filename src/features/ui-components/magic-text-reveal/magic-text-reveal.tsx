@@ -35,9 +35,12 @@ interface MagicTextRevealProps {
   style?: React.CSSProperties;
 }
 
-// Измеряет реальный px-размер шрифта из CSS-значения (например clamp(...))
-function resolveNumericFontSize(fontSizePx: number): number {
-  return fontSizePx;
+// Параметры для создания частиц, сгруппированные в объект
+interface CreateParticlesConfig {
+  text: string;
+  font: string;
+  color: string;
+  density: number;
 }
 
 export const MagicTextReveal: React.FC<MagicTextRevealProps> = ({
@@ -64,36 +67,32 @@ export const MagicTextReveal: React.FC<MagicTextRevealProps> = ({
   const [hasBeenShown, setHasBeenShown] = useState(false);
 
   // Размеры канваса вычисляются из реального размера текста через off-screen canvas,
-  // с padding = spread чтобы частицы не вылезали за видимую область
+  // с padding = spread, чтобы частицы не вылезали за видимую область
   const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
 
   const transformedDensity = 6 - density;
 
   // DPR с запасом для чёткости
   const globalDpr = useMemo(() => {
-    if (typeof window === "undefined") return 1;
-    return (window.devicePixelRatio || 1) * 1.5;
+    if (typeof globalThis.window === "undefined") { return 1; }
+    return (globalThis.window.devicePixelRatio || 1) * 1.5;
   }, []);
 
   // Вычисляем размер канваса по реальным метрикам текста + отступ для частиц
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof globalThis.window === "undefined") { return; }
 
     const offscreen = document.createElement('canvas');
     const ctx = offscreen.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) { return; }
 
-    const resolvedSize = resolveNumericFontSize(fontSize);
-    ctx.font = `${fontWeight} ${resolvedSize}px ${fontFamily}`;
+    ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
     const metrics = ctx.measureText(text);
 
-    // Реальная ширина текста
     const textW = metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight;
-    // Реальная высота текста
-    const textH = (metrics.actualBoundingBoxAscent || resolvedSize) +
-                  (metrics.actualBoundingBoxDescent || resolvedSize * 0.2);
+    const textH = (metrics.actualBoundingBoxAscent || fontSize) +
+                  (metrics.actualBoundingBoxDescent || fontSize * 0.2);
 
-    // Добавляем spread с обеих сторон чтобы частицы не обрезались
     const padding = spread * 1.5;
     const w = Math.ceil(textW + padding * 2);
     const h = Math.ceil(textH + padding * 2);
@@ -105,35 +104,34 @@ export const MagicTextReveal: React.FC<MagicTextRevealProps> = ({
   const createParticles = useCallback((
     ctx: CanvasRenderingContext2D,
     canvas: HTMLCanvasElement,
-    text: string,
-    textX: number,
-    textY: number,
-    font: string,
-    color: string,
-    density: number
+    config: CreateParticlesConfig
   ): Particle[] => {
+    const { text: particleText, font, color: particleColor, density: particleDensity } = config;
     const particles: Particle[] = [];
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = color;
+    ctx.fillStyle = particleColor;
     ctx.font = font;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.imageSmoothingEnabled = true;
-    ctx.fillText(text, textX, textY);
+    ctx.fillText(particleText, canvas.width / 2, canvas.height / 2);
 
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
 
-    const dpr         = canvas.width / parseInt(canvas.style.width || String(canvas.width));
-    const sampleRate  = Math.max(2, Math.round(dpr)) * density;
+    const dpr = Number.parseInt(canvas.style.width || String(canvas.width), 10);
+    const computedDpr = canvas.width / dpr;
+    const sampleRate = Math.max(2, Math.round(computedDpr)) * particleDensity;
 
     let minX = canvas.width, maxX = 0, minY = canvas.height, maxY = 0;
     for (let y = 0; y < canvas.height; y += sampleRate) {
       for (let x = 0; x < canvas.width; x += sampleRate) {
         if (data[(y * canvas.width + x) * 4 + 3] > 0) {
-          if (x < minX) minX = x; if (x > maxX) maxX = x;
-          if (y < minY) minY = y; if (y > maxY) maxY = y;
+          if (x < minX) { minX = x; }
+          if (x > maxX) { maxX = x; }
+          if (y < minY) { minY = y; }
+          if (y > maxY) { maxY = y; }
         }
       }
     }
@@ -173,75 +171,89 @@ export const MagicTextReveal: React.FC<MagicTextRevealProps> = ({
     return particles;
   }, []);
 
-  // Обновление физики частиц
+  // Обновление частицы в режиме ховера — возврат на исходную позицию
+  const updateHoveredParticle = useCallback((p: Particle, dt: number, returnSpeed: number, fadeSpeed: number) => {
+    const dx = p.originalX - p.x;
+    const dy = p.originalY - p.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist > 0.1) {
+      p.x += (dx / dist) * returnSpeed * dt * 60;
+      p.y += (dy / dist) * returnSpeed * dt * 60;
+    } else {
+      p.x = p.originalX;
+      p.y = p.originalY;
+    }
+    p.opacity = Math.max(0, p.opacity - fadeSpeed * dt);
+  }, []);
+
+  // Обновление частицы в режиме парения — хаотичное движение вокруг исходной позиции
+  const updateFloatingParticle = useCallback((p: Particle, dt: number, floatRadius: number, floatSpeed: number, transitionSpeed: number, noisScale: number, chaosFactor: number) => {
+    p.floatingAngle += dt * p.floatingSpeed * (1 + Math.random() * chaosFactor);
+    const t  = Date.now() * 0.001;
+    const uo = p.floatingSpeed * 2000;
+    const nx = (Math.sin(t * p.floatingSpeed + p.floatingAngle) * 1.2 +
+                Math.sin((t + uo) * 0.5) * 0.8 +
+                (Math.random() - 0.5) * chaosFactor) * noisScale;
+    const ny = (Math.cos(t * p.floatingSpeed + p.floatingAngle * 1.5) * 0.6 +
+                Math.cos((t + uo) * 0.5) * 0.4 +
+                (Math.random() - 0.5) * chaosFactor) * noisScale;
+
+    const tx = p.originalX + floatRadius * nx;
+    const ty = p.originalY + floatRadius * ny;
+    const dx = tx - p.x;
+    const dy = ty - p.y;
+    const distT = Math.hypot(dx, dy);
+    const js    = Math.min(1, distT / (floatRadius * 1.5));
+    p.x += dx * transitionSpeed * dt + (Math.random() - 0.5) * floatSpeed * js;
+    p.y += dy * transitionSpeed * dt + (Math.random() - 0.5) * floatSpeed * js;
+
+    const distO = Math.hypot(p.x - p.originalX, p.y - p.originalY);
+    if (distO > floatRadius) {
+      const a = Math.atan2(p.y - p.originalY, p.x - p.originalX);
+      const pb = (distO - floatRadius) * 0.1;
+      p.x -= Math.cos(a) * pb;
+      p.y -= Math.sin(a) * pb;
+    }
+
+    const od = p.targetOpacity - p.opacity;
+    p.opacity += od * p.sparkleSpeed * dt * 3;
+    if (Math.abs(od) < 0.01) {
+      p.targetOpacity = Math.random() < 0.5
+        ? Math.random() * 0.1 * p.originalAlpha
+        : p.originalAlpha * 3;
+      p.sparkleSpeed = Math.random() * 3 + 1;
+    }
+  }, []);
+
+  // Обновление физики всех частиц
   const updateParticles = useCallback((
     particles: Particle[],
     dt: number,
-    isHovered: boolean,
-    showText: boolean,
-    setShowText: (v: boolean) => void,
-    spread: number,
-    speed: number
+    hovered: boolean,
+    textVisible: boolean,
+    setTextVisible: (v: boolean) => void,
+    spreadRadius: number,
+    animSpeed: number
   ) => {
-    const FLOAT_RADIUS     = spread;
+    const FLOAT_RADIUS     = spreadRadius;
     const RETURN_SPEED     = 3;
-    const FLOAT_SPEED      = speed;
+    const FLOAT_SPEED      = animSpeed;
     const TRANSITION_SPEED = 5 * FLOAT_SPEED;
     const NOISE_SCALE      = 0.6;
     const CHAOS_FACTOR     = 1.3;
     const FADE_SPEED       = 13;
 
     particles.forEach(p => {
-      if (isHovered) {
-        const dx = p.originalX - p.x, dy = p.originalY - p.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist > 0.1) {
-          p.x += (dx / dist) * RETURN_SPEED * dt * 60;
-          p.y += (dy / dist) * RETURN_SPEED * dt * 60;
-        } else {
-          p.x = p.originalX; p.y = p.originalY;
-        }
-        p.opacity = Math.max(0, p.opacity - FADE_SPEED * dt);
+      if (hovered) {
+        updateHoveredParticle(p, dt, RETURN_SPEED, FADE_SPEED);
       } else {
-        p.floatingAngle += dt * p.floatingSpeed * (1 + Math.random() * CHAOS_FACTOR);
-        const t  = Date.now() * 0.001;
-        const uo = p.floatingSpeed * 2000;
-        const nx = (Math.sin(t * p.floatingSpeed + p.floatingAngle) * 1.2 +
-                    Math.sin((t + uo) * 0.5) * 0.8 +
-                    (Math.random() - 0.5) * CHAOS_FACTOR) * NOISE_SCALE;
-        const ny = (Math.cos(t * p.floatingSpeed + p.floatingAngle * 1.5) * 0.6 +
-                    Math.cos((t + uo) * 0.5) * 0.4 +
-                    (Math.random() - 0.5) * CHAOS_FACTOR) * NOISE_SCALE;
-
-        const tx = p.originalX + FLOAT_RADIUS * nx;
-        const ty = p.originalY + FLOAT_RADIUS * ny;
-        const dx = tx - p.x, dy = ty - p.y;
-        const distT = Math.sqrt(dx * dx + dy * dy);
-        const js    = Math.min(1, distT / (FLOAT_RADIUS * 1.5));
-        p.x += dx * TRANSITION_SPEED * dt + (Math.random() - 0.5) * FLOAT_SPEED * js;
-        p.y += dy * TRANSITION_SPEED * dt + (Math.random() - 0.5) * FLOAT_SPEED * js;
-
-        const distO = Math.sqrt(Math.pow(p.x - p.originalX, 2) + Math.pow(p.y - p.originalY, 2));
-        if (distO > FLOAT_RADIUS) {
-          const a = Math.atan2(p.y - p.originalY, p.x - p.originalX);
-          const pb = (distO - FLOAT_RADIUS) * 0.1;
-          p.x -= Math.cos(a) * pb; p.y -= Math.sin(a) * pb;
-        }
-
-        const od = p.targetOpacity - p.opacity;
-        p.opacity += od * p.sparkleSpeed * dt * 3;
-        if (Math.abs(od) < 0.01) {
-          p.targetOpacity = Math.random() < 0.5
-            ? Math.random() * 0.1 * p.originalAlpha
-            : p.originalAlpha * 3;
-          p.sparkleSpeed = Math.random() * 3 + 1;
-        }
+        updateFloatingParticle(p, dt, FLOAT_RADIUS, FLOAT_SPEED, TRANSITION_SPEED, NOISE_SCALE, CHAOS_FACTOR);
       }
     });
 
-    if (isHovered && !showText)  setShowText(true);
-    if (!isHovered && showText)  setShowText(false);
-  }, []);
+    if (hovered && !textVisible)  { setTextVisible(true); }
+    if (!hovered && textVisible)  { setTextVisible(false); }
+  }, [updateHoveredParticle, updateFloatingParticle]);
 
   // Рендер частиц батчами по цвету
   const renderParticles = useCallback((
@@ -254,9 +266,9 @@ export const MagicTextReveal: React.FC<MagicTextRevealProps> = ({
 
     const byColor = new Map<string, Array<{x: number; y: number}>>();
     particles.forEach(p => {
-      if (p.opacity <= 0) return;
+      if (p.opacity <= 0) { return; }
       const c = p.color.replace(/[\d.]+\)$/, `${p.opacity})`);
-      if (!byColor.has(c)) byColor.set(c, []);
+      if (!byColor.has(c)) { byColor.set(c, []); }
       byColor.get(c)!.push({ x: p.x / dpr, y: p.y / dpr });
     });
     byColor.forEach((pts, c) => {
@@ -270,7 +282,7 @@ export const MagicTextReveal: React.FC<MagicTextRevealProps> = ({
   // Перестройка канваса при изменении размера или пропсов
   const renderCanvas = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas || canvasSize.w <= 0 || canvasSize.h <= 0) return;
+    if (!canvas || canvasSize.w <= 0 || canvasSize.h <= 0) { return; }
 
     const { w, h } = canvasSize;
     canvas.width        = w * globalDpr;
@@ -279,14 +291,15 @@ export const MagicTextReveal: React.FC<MagicTextRevealProps> = ({
     canvas.style.height = `${h}px`;
 
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) { return; }
 
     const font = `${fontWeight} ${fontSize * globalDpr}px ${fontFamily}`;
-    const particles = createParticles(
-      ctx, canvas, text,
-      canvas.width / 2, canvas.height / 2,
-      font, color, transformedDensity
-    );
+    const particles = createParticles(ctx, canvas, {
+      text,
+      font,
+      color,
+      density: transformedDensity,
+    });
     particlesRef.current = particles;
     renderParticles(ctx, particles, globalDpr);
   }, [canvasSize, globalDpr, text, fontSize, fontFamily, fontWeight, color, transformedDensity, createParticles, renderParticles]);
@@ -314,7 +327,9 @@ export const MagicTextReveal: React.FC<MagicTextRevealProps> = ({
     };
 
     animFrameRef.current = requestAnimationFrame(animate);
-    return () => { if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current); };
+    return () => {
+      if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); }
+    };
   }, [isHovered, showText, spread, speed, globalDpr, updateParticles, renderParticles]);
 
   const handleMouseEnter = useCallback(() => {
@@ -323,12 +338,9 @@ export const MagicTextReveal: React.FC<MagicTextRevealProps> = ({
   }, []);
 
   const handleMouseLeave = useCallback(() => {
-    if (resetOnMouseLeave || !hasBeenShown) setIsHovered(false);
+    if (resetOnMouseLeave || !hasBeenShown) { setIsHovered(false); }
   }, [resetOnMouseLeave, hasBeenShown]);
 
-  // Wrapper sized по канвасу (= по тексту + padding).
-  // display: inline-flex → размер по содержимому, центрируется родителем (ComponentWrapper flex).
-  // overflow: visible → частицы никогда не обрезаются, любой scale безопасен.
   const wrapperW = canvasSize.w || 'auto';
   const wrapperH = canvasSize.h || 'auto';
 
@@ -340,7 +352,6 @@ export const MagicTextReveal: React.FC<MagicTextRevealProps> = ({
         width:    wrapperW,
         height:   wrapperH,
         flexShrink: 0,
-        // overflow: visible — частицы не обрезаются при любом zoom/scale
         overflow: 'visible',
         backgroundColor: 'rgba(15, 15, 15, 0.8)',
         border: '1px solid rgba(255, 255, 255, 0.1)',
