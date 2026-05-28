@@ -1,6 +1,6 @@
 # HUB V.3.4
 
-> a hybrid platform for documentation and next-generation content
+> a hybrid platform for documentation and next-generation content.
 
 ---
 
