@@ -52,7 +52,7 @@ const ShinyText: React.FC<ShinyTextProps> = ({
   );
 };
 
-// ─── GlowingEffect (встроенный, для карточек без tailwind) ───────────────────
+// ─── GlowingEffectInline ──────────────────────────────────────────────────────
 
 const easeOutQuint = (x: number): number => 1 - Math.pow(1 - x, 5);
 
@@ -455,7 +455,6 @@ const ProtectionStackVisual: React.FC = () => (
   </div>
 );
 
-// Карта соответствия visual-типа компоненту
 const VISUAL_COMPONENTS: Record<VisualType, React.FC> = {
   securityAnalysis: SecurityAnalysisVisual,
   knowledgeLayers:  KnowledgeLayersVisual,
@@ -465,27 +464,49 @@ const VISUAL_COMPONENTS: Record<VisualType, React.FC> = {
   protectionStack:  ProtectionStackVisual,
 };
 
-// CSS-переменные для визуальных карточек
+// Токены для визуальных карточек в тёмной и светлой темах
+const VISUAL_VARS_DARK: React.CSSProperties = {
+  '--visual-card-surface':     '#0f0f0f',
+  '--visual-line-transparent': 'rgba(255,255,255,0)',
+  '--visual-line-soft':        'rgba(255,255,255,0.16)',
+  '--visual-line-mid':         'rgba(255,255,255,0.4)',
+  '--visual-line-strong':      'rgba(255,255,255,0.68)',
+  '--visual-fill-top':         'rgba(255,255,255,0.08)',
+  '--visual-fill-mid':         'rgba(255,255,255,0.03)',
+  '--visual-fill-bottom':      'rgba(255,255,255,0)',
+  '--visual-grid-line':        'rgba(255,255,255,0.07)',
+  '--visual-tooltip-bg':       'rgba(15,15,15,0.72)',
+  '--visual-tooltip-text':     'rgba(255,255,255,0.58)',
+  '--visual-tooltip-border':   'rgba(255,255,255,0.1)',
+  '--visual-layer-line':       'rgba(255,255,255,0.22)',
+  '--visual-layer-strong':     'rgba(255,255,255,0.52)',
+  '--visual-success':          '#57d97b',
+  '--visual-danger':           '#ff6363',
+  '--visual-access':           '#36e0d0',
+} as React.CSSProperties;
+
+const VISUAL_VARS_LIGHT: React.CSSProperties = {
+  '--visual-card-surface':     '#e3e2de',
+  '--visual-line-transparent': 'rgba(0,0,0,0)',
+  '--visual-line-soft':        'rgba(0,0,0,0.16)',
+  '--visual-line-mid':         'rgba(0,0,0,0.28)',
+  '--visual-line-strong':      'rgba(0,0,0,0.58)',
+  '--visual-fill-top':         'rgba(0,0,0,0.04)',
+  '--visual-fill-mid':         'rgba(0,0,0,0.02)',
+  '--visual-fill-bottom':      'rgba(0,0,0,0)',
+  '--visual-grid-line':        'rgba(0,0,0,0.075)',
+  '--visual-tooltip-bg':       'rgba(224,223,219,0.78)',
+  '--visual-tooltip-text':     'rgba(0,0,0,0.62)',
+  '--visual-tooltip-border':   'rgba(0,0,0,0.1)',
+  '--visual-layer-line':       'rgba(0,0,0,0.24)',
+  '--visual-layer-strong':     'rgba(0,0,0,0.4)',
+  '--visual-success':          '#168c3a',
+  '--visual-danger':           '#c62828',
+  '--visual-access':           '#078b80',
+} as React.CSSProperties;
+
 function buildVisualVars(isNegative: boolean): React.CSSProperties {
-  return {
-    '--visual-card-surface':        isNegative ? '#0f0f0f'                   : '#e3e2de',
-    '--visual-line-transparent':    isNegative ? 'rgba(255,255,255,0)'        : 'rgba(0,0,0,0)',
-    '--visual-line-soft':           isNegative ? 'rgba(255,255,255,0.16)'     : 'rgba(0,0,0,0.16)',
-    '--visual-line-mid':            isNegative ? 'rgba(255,255,255,0.4)'      : 'rgba(0,0,0,0.28)',
-    '--visual-line-strong':         isNegative ? 'rgba(255,255,255,0.68)'     : 'rgba(0,0,0,0.58)',
-    '--visual-fill-top':            isNegative ? 'rgba(255,255,255,0.08)'     : 'rgba(0,0,0,0.04)',
-    '--visual-fill-mid':            isNegative ? 'rgba(255,255,255,0.03)'     : 'rgba(0,0,0,0.02)',
-    '--visual-fill-bottom':         isNegative ? 'rgba(255,255,255,0)'        : 'rgba(0,0,0,0)',
-    '--visual-grid-line':           isNegative ? 'rgba(255,255,255,0.07)'     : 'rgba(0,0,0,0.075)',
-    '--visual-tooltip-bg':          isNegative ? 'rgba(15,15,15,0.72)'        : 'rgba(224,223,219,0.78)',
-    '--visual-tooltip-text':        isNegative ? 'rgba(255,255,255,0.58)'     : 'rgba(0,0,0,0.62)',
-    '--visual-tooltip-border':      isNegative ? 'rgba(255,255,255,0.1)'      : 'rgba(0,0,0,0.1)',
-    '--visual-layer-line':          isNegative ? 'rgba(255,255,255,0.22)'     : 'rgba(0,0,0,0.24)',
-    '--visual-layer-strong':        isNegative ? 'rgba(255,255,255,0.52)'     : 'rgba(0,0,0,0.4)',
-    '--visual-success':             isNegative ? '#57d97b'                    : '#168c3a',
-    '--visual-danger':              isNegative ? '#ff6363'                    : '#c62828',
-    '--visual-access':              isNegative ? '#36e0d0'                    : '#078b80',
-  } as React.CSSProperties;
+  return isNegative ? VISUAL_VARS_DARK : VISUAL_VARS_LIGHT;
 }
 
 const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, fullWidth, badge, visual }) => {
@@ -1390,7 +1411,7 @@ const LandingContent: React.FC = () => {
 
       <Navigation />
 
-      {/* Hero */}
+      {/* Герой */}
       <section style={{
         position:  'relative',
         minHeight: '100svh',
