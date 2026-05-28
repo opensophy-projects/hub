@@ -439,7 +439,8 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
     fontSize: 12, color: t.fgSub, textTransform: 'uppercase',
     letterSpacing: '0.07em', marginBottom: 4, display: 'block',
   };
-  const saveBtnLabel = saving ? '...' : (isEdit ? 'Применить' : 'Создать');
+  const actionLabel = isEdit ? 'Применить' : 'Создать'; 
+  const saveBtnLabel = saving ? '...' : actionLabel;
 
   return (
     <Modal onClose={onClose} width={isA && !isEdit ? 440 : 340} t={t}>
