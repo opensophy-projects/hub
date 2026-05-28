@@ -22,6 +22,73 @@ interface FuzzyTextProps {
   className?: string;
 }
 
+// Вычисляет числовой размер шрифта из CSS-значения
+function resolveNumericFontSize(fontSize: number | string): number {
+  if (typeof fontSize === 'number') return fontSize;
+  const temp = document.createElement('span');
+  temp.style.fontSize = fontSize;
+  document.body.appendChild(temp);
+  const size = Number.parseFloat(globalThis.getComputedStyle(temp).fontSize);
+  temp.remove();
+  return size;
+}
+
+// Вычисляет суммарную ширину текста с учётом letterSpacing
+function measureTotalWidth(
+  offCtx: CanvasRenderingContext2D,
+  text: string,
+  letterSpacing: number
+): number {
+  if (letterSpacing === 0) return offCtx.measureText(text).width;
+  let total = 0;
+  for (const char of text) {
+    total += offCtx.measureText(char).width + letterSpacing;
+  }
+  return total - letterSpacing;
+}
+
+// Рисует текст посимвольно с межбуквенным интервалом
+function drawTextWithSpacing(
+  offCtx: CanvasRenderingContext2D,
+  text: string,
+  xOffset: number,
+  ascent: number,
+  letterSpacing: number
+): void {
+  let xPos = xOffset;
+  for (const char of text) {
+    offCtx.fillText(char, xPos, ascent);
+    xPos += offCtx.measureText(char).width + letterSpacing;
+  }
+}
+
+// Вычисляет целевую интенсивность на основе состояния
+function resolveTargetIntensity(
+  isClicking: boolean,
+  isGlitching: boolean,
+  isHovering: boolean,
+  hoverIntensity: number,
+  baseIntensity: number
+): number {
+  if (isClicking || isGlitching) return 1;
+  if (isHovering) return hoverIntensity;
+  return baseIntensity;
+}
+
+// Плавно сближает текущую интенсивность с целевой
+function stepIntensity(
+  current: number,
+  target: number,
+  transitionDuration: number,
+  frameDuration: number
+): number {
+  if (transitionDuration <= 0) return target;
+  const step = 1 / (transitionDuration / frameDuration);
+  if (current < target) return Math.min(current + step, target);
+  if (current > target) return Math.max(current - step, target);
+  return current;
+}
+
 const FuzzyText: React.FC<FuzzyTextProps> = ({
   children,
   fontSize = 'clamp(2rem, 8vw, 8rem)',
@@ -60,7 +127,7 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
 
       const computedFontFamily =
         fontFamily === 'inherit'
-          ? window.getComputedStyle(canvas).fontFamily || 'sans-serif'
+          ? globalThis.getComputedStyle(canvas).fontFamily || 'sans-serif'
           : fontFamily;
 
       const fontSizeStr = typeof fontSize === 'number' ? `${fontSize}px` : fontSize;
@@ -73,18 +140,7 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
       }
       if (isCancelled) return;
 
-      let numericFontSize: number;
-      if (typeof fontSize === 'number') {
-        numericFontSize = fontSize;
-      } else {
-        const temp = document.createElement('span');
-        temp.style.fontSize = fontSize;
-        document.body.appendChild(temp);
-        const computedSize = window.getComputedStyle(temp).fontSize;
-        numericFontSize = parseFloat(computedSize);
-        document.body.removeChild(temp);
-      }
-
+      const numericFontSize = resolveNumericFontSize(fontSize);
       const text = React.Children.toArray(children).join('');
 
       const offscreen = document.createElement('canvas');
@@ -94,27 +150,19 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
       offCtx.font = `${fontWeight} ${fontSizeStr} ${computedFontFamily}`;
       offCtx.textBaseline = 'alphabetic';
 
-      let totalWidth = 0;
-      if (letterSpacing !== 0) {
-        for (const char of text) {
-          totalWidth += offCtx.measureText(char).width + letterSpacing;
-        }
-        totalWidth -= letterSpacing;
-      } else {
-        totalWidth = offCtx.measureText(text).width;
-      }
+      const totalWidth = measureTotalWidth(offCtx, text, letterSpacing);
 
       const metrics = offCtx.measureText(text);
       const actualLeft = metrics.actualBoundingBoxLeft ?? 0;
       const actualRight =
-        letterSpacing !== 0
-          ? totalWidth
-          : (metrics.actualBoundingBoxRight ?? metrics.width);
+        letterSpacing === 0
+          ? (metrics.actualBoundingBoxRight ?? metrics.width)
+          : totalWidth;
       const actualAscent = metrics.actualBoundingBoxAscent ?? numericFontSize;
       const actualDescent = metrics.actualBoundingBoxDescent ?? numericFontSize * 0.2;
 
       const textBoundingWidth = Math.ceil(
-        letterSpacing !== 0 ? totalWidth : actualLeft + actualRight
+        letterSpacing === 0 ? actualLeft + actualRight : totalWidth
       );
       const tightHeight = Math.ceil(actualAscent + actualDescent);
 
@@ -136,14 +184,10 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
         offCtx.fillStyle = color;
       }
 
-      if (letterSpacing !== 0) {
-        let xPos = xOffset;
-        for (const char of text) {
-          offCtx.fillText(char, xPos, actualAscent);
-          xPos += offCtx.measureText(char).width + letterSpacing;
-        }
-      } else {
+      if (letterSpacing === 0) {
         offCtx.fillText(text, xOffset - actualLeft, actualAscent);
+      } else {
+        drawTextWithSpacing(offCtx, text, xOffset, actualAscent, letterSpacing);
       }
 
       const horizontalMargin = fuzzRange + 20;
@@ -162,7 +206,6 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
       let isClicking = false;
       let isGlitching = false;
       let currentIntensity = baseIntensity;
-      let targetIntensity = baseIntensity;
       let lastFrameTime = 0;
       const frameDuration = 1000 / fps;
 
@@ -184,7 +227,7 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
         if (isCancelled) return;
 
         if (timestamp - lastFrameTime < frameDuration) {
-          animationFrameId = window.requestAnimationFrame(run);
+          animationFrameId = globalThis.requestAnimationFrame(run);
           return;
         }
         lastFrameTime = timestamp;
@@ -196,26 +239,12 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
           tightHeight + 2 * (fuzzRange + 10)
         );
 
-        if (isClicking) {
-          targetIntensity = 1;
-        } else if (isGlitching) {
-          targetIntensity = 1;
-        } else if (isHovering) {
-          targetIntensity = hoverIntensity;
-        } else {
-          targetIntensity = baseIntensity;
-        }
-
-        if (transitionDuration > 0) {
-          const step = 1 / (transitionDuration / frameDuration);
-          if (currentIntensity < targetIntensity) {
-            currentIntensity = Math.min(currentIntensity + step, targetIntensity);
-          } else if (currentIntensity > targetIntensity) {
-            currentIntensity = Math.max(currentIntensity - step, targetIntensity);
-          }
-        } else {
-          currentIntensity = targetIntensity;
-        }
+        const targetIntensity = resolveTargetIntensity(
+          isClicking, isGlitching, isHovering, hoverIntensity, baseIntensity
+        );
+        currentIntensity = stepIntensity(
+          currentIntensity, targetIntensity, transitionDuration, frameDuration
+        );
 
         for (let j = 0; j < tightHeight; j++) {
           let dx = 0,
@@ -230,10 +259,10 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
           }
           ctx.drawImage(offscreen, 0, j, offscreenWidth, 1, dx, j + dy, offscreenWidth, 1);
         }
-        animationFrameId = window.requestAnimationFrame(run);
+        animationFrameId = globalThis.requestAnimationFrame(run);
       };
 
-      animationFrameId = window.requestAnimationFrame(run);
+      animationFrameId = globalThis.requestAnimationFrame(run);
 
       const isInsideTextArea = (x: number, y: number) =>
         x >= interactiveLeft &&
@@ -288,7 +317,7 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
       }
 
       const cleanup = () => {
-        window.cancelAnimationFrame(animationFrameId);
+        globalThis.cancelAnimationFrame(animationFrameId);
         clearTimeout(glitchTimeoutId);
         clearTimeout(glitchEndTimeoutId);
         clearTimeout(clickTimeoutId);
@@ -310,13 +339,11 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
 
     return () => {
       isCancelled = true;
-      window.cancelAnimationFrame(animationFrameId);
+      globalThis.cancelAnimationFrame(animationFrameId);
       clearTimeout(glitchTimeoutId);
       clearTimeout(glitchEndTimeoutId);
       clearTimeout(clickTimeoutId);
-      if (canvas && canvas.cleanupFuzzyText) {
-        canvas.cleanupFuzzyText();
-      }
+      canvas?.cleanupFuzzyText?.();
     };
   }, [
     children,
