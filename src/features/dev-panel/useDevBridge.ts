@@ -8,7 +8,7 @@
 import { useEffect, useState } from 'react';
 
 const resolveWsUrl = (): string => {
-  if (typeof globalThis.location === 'undefined') return 'ws://127.0.0.1:7777';
+  if (!('location' in globalThis)) return 'ws://127.0.0.1:7777';
   const proto = globalThis.location.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${proto}//${globalThis.location.hostname}:7777`;
 };
@@ -126,7 +126,7 @@ function send<T = unknown>(action: string, payload?: unknown): Promise<T> {
       pending.delete(id);
       reject(new Error(`Timeout: ${action}`));
     }, 30_000);
-    pending.set(id, { resolve: resolve as (v: unknown) => void, reject, timeout });
+    pending.set(id, { resolve, reject, timeout });
     ws.send(JSON.stringify({ id, action, payload }));
   });
 }
