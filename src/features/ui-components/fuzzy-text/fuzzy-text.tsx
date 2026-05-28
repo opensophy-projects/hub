@@ -45,6 +45,25 @@ interface TextLayout {
   textBoundingWidth: number;
 }
 
+// Конфигурация шрифта и стиля для offscreen-канваса
+interface OffscreenConfig {
+  fontWeight: string | number;
+  fontSizeStr: string;
+  computedFontFamily: string;
+  numericFontSize: number;
+  letterSpacing: number;
+  gradient: string[] | null;
+  color: string;
+}
+
+// Конфигурация зоны взаимодействия для обработчиков событий
+interface InteractiveZone {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
 // Вычисляет числовой размер шрифта из CSS-значения
 function resolveNumericFontSize(fontSize: number | string): number {
   if (typeof fontSize === 'number') return fontSize;
@@ -86,16 +105,8 @@ function drawTextWithSpacing(
 }
 
 // Подготавливает offscreen-канвас с отрисованным текстом
-function buildOffscreenCanvas(
-  text: string,
-  fontWeight: string | number,
-  fontSizeStr: string,
-  computedFontFamily: string,
-  numericFontSize: number,
-  letterSpacing: number,
-  gradient: string[] | null,
-  color: string
-): TextLayout | null {
+function buildOffscreenCanvas(text: string, cfg: OffscreenConfig): TextLayout | null {
+  const { fontWeight, fontSizeStr, computedFontFamily, numericFontSize, letterSpacing, gradient, color } = cfg;
   const offscreen = document.createElement('canvas');
   const offCtx = offscreen.getContext('2d');
   if (!offCtx) return null;
@@ -149,16 +160,13 @@ function buildOffscreenCanvas(
 function attachEventListeners(
   canvas: HTMLCanvasElement,
   st: AnimState,
-  interactiveLeft: number,
-  interactiveRight: number,
-  interactiveTop: number,
-  interactiveBottom: number,
+  zone: InteractiveZone,
   enableHover: boolean,
   clickEffect: boolean
 ): () => void {
   const isInside = (x: number, y: number) =>
-    x >= interactiveLeft && x <= interactiveRight &&
-    y >= interactiveTop && y <= interactiveBottom;
+    x >= zone.left && x <= zone.right &&
+    y >= zone.top && y <= zone.bottom;
 
   const handleMouseMove = (e: MouseEvent) => {
     if (!enableHover) return;
@@ -305,13 +313,12 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
       }
       if (st.isCancelled) return;
 
-      const numericFontSize = resolveNumericFontSize(fontSize);
       const text = React.Children.toArray(children).join('');
-
-      const layout = buildOffscreenCanvas(
-        text, fontWeight, fontSizeStr, computedFontFamily,
-        numericFontSize, letterSpacing, gradient, color
-      );
+      const layout = buildOffscreenCanvas(text, {
+        fontWeight, fontSizeStr, computedFontFamily,
+        numericFontSize: resolveNumericFontSize(fontSize),
+        letterSpacing, gradient, color,
+      });
       if (!layout) return;
 
       const { offscreen, offscreenWidth, tightHeight, xOffset, textBoundingWidth } = layout;
@@ -363,10 +370,12 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
 
       const removeListeners = attachEventListeners(
         canvas, st,
-        horizontalMargin + xOffset,
-        horizontalMargin + xOffset + textBoundingWidth,
-        verticalMargin,
-        verticalMargin + tightHeight,
+        {
+          left: horizontalMargin + xOffset,
+          right: horizontalMargin + xOffset + textBoundingWidth,
+          top: verticalMargin,
+          bottom: verticalMargin + tightHeight,
+        },
         enableHover,
         clickEffect
       );
