@@ -35,12 +35,23 @@ interface MagicTextRevealProps {
   style?: React.CSSProperties;
 }
 
-// Параметры для создания частиц, сгруппированные в объект
+// Конфигурация для создания частиц
 interface CreateParticlesConfig {
   text: string;
   font: string;
   color: string;
   density: number;
+}
+
+// Константы физики частиц
+interface PhysicsConfig {
+  floatRadius: number;
+  floatSpeed: number;
+  transitionSpeed: number;
+  noiseScale: number;
+  chaosFactor: number;
+  returnSpeed: number;
+  fadeSpeed: number;
 }
 
 export const MagicTextReveal: React.FC<MagicTextRevealProps> = ({
@@ -74,13 +85,13 @@ export const MagicTextReveal: React.FC<MagicTextRevealProps> = ({
 
   // DPR с запасом для чёткости
   const globalDpr = useMemo(() => {
-    if (typeof globalThis.window === "undefined") { return 1; }
+    if (globalThis.window === undefined) { return 1; }
     return (globalThis.window.devicePixelRatio || 1) * 1.5;
   }, []);
 
   // Вычисляем размер канваса по реальным метрикам текста + отступ для частиц
   useEffect(() => {
-    if (typeof globalThis.window === "undefined") { return; }
+    if (globalThis.window === undefined) { return; }
 
     const offscreen = document.createElement('canvas');
     const ctx = offscreen.getContext('2d');
@@ -99,6 +110,27 @@ export const MagicTextReveal: React.FC<MagicTextRevealProps> = ({
 
     setCanvasSize({ w, h });
   }, [text, fontSize, fontFamily, fontWeight, spread]);
+
+  // Сканирование пикселей для определения границ текста
+  const scanTextBounds = useCallback((
+    data: Uint8ClampedArray,
+    canvasWidth: number,
+    canvasHeight: number,
+    sampleRate: number
+  ) => {
+    let minX = canvasWidth, maxX = 0, minY = canvasHeight, maxY = 0;
+    for (let y = 0; y < canvasHeight; y += sampleRate) {
+      for (let x = 0; x < canvasWidth; x += sampleRate) {
+        if (data[(y * canvasWidth + x) * 4 + 3] > 0) {
+          if (x < minX) { minX = x; }
+          if (x > maxX) { maxX = x; }
+          if (y < minY) { minY = y; }
+          if (y > maxY) { maxY = y; }
+        }
+      }
+    }
+    return { minX, maxX, minY, maxY };
+  }, []);
 
   // Создание частиц из растеризованного текста
   const createParticles = useCallback((
@@ -120,22 +152,11 @@ export const MagicTextReveal: React.FC<MagicTextRevealProps> = ({
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
 
-    const dpr = Number.parseInt(canvas.style.width || String(canvas.width), 10);
-    const computedDpr = canvas.width / dpr;
+    const styleWidth = Number.parseInt(canvas.style.width || String(canvas.width), 10);
+    const computedDpr = canvas.width / styleWidth;
     const sampleRate = Math.max(2, Math.round(computedDpr)) * particleDensity;
 
-    let minX = canvas.width, maxX = 0, minY = canvas.height, maxY = 0;
-    for (let y = 0; y < canvas.height; y += sampleRate) {
-      for (let x = 0; x < canvas.width; x += sampleRate) {
-        if (data[(y * canvas.width + x) * 4 + 3] > 0) {
-          if (x < minX) { minX = x; }
-          if (x > maxX) { maxX = x; }
-          if (y < minY) { minY = y; }
-          if (y > maxY) { maxY = y; }
-        }
-      }
-    }
-
+    const { minX, maxX, minY, maxY } = scanTextBounds(data, canvas.width, canvas.height, sampleRate);
     const spreadRadius = Math.max(maxX - minX, maxY - minY) * 0.1;
 
     for (let y = 0; y < canvas.height; y += sampleRate) {
@@ -169,34 +190,35 @@ export const MagicTextReveal: React.FC<MagicTextRevealProps> = ({
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     return particles;
-  }, []);
+  }, [scanTextBounds]);
 
   // Обновление частицы в режиме ховера — возврат на исходную позицию
-  const updateHoveredParticle = useCallback((p: Particle, dt: number, returnSpeed: number, fadeSpeed: number) => {
+  const updateHoveredParticle = useCallback((p: Particle, dt: number, physics: PhysicsConfig) => {
     const dx = p.originalX - p.x;
     const dy = p.originalY - p.y;
     const dist = Math.hypot(dx, dy);
     if (dist > 0.1) {
-      p.x += (dx / dist) * returnSpeed * dt * 60;
-      p.y += (dy / dist) * returnSpeed * dt * 60;
+      p.x += (dx / dist) * physics.returnSpeed * dt * 60;
+      p.y += (dy / dist) * physics.returnSpeed * dt * 60;
     } else {
       p.x = p.originalX;
       p.y = p.originalY;
     }
-    p.opacity = Math.max(0, p.opacity - fadeSpeed * dt);
+    p.opacity = Math.max(0, p.opacity - physics.fadeSpeed * dt);
   }, []);
 
   // Обновление частицы в режиме парения — хаотичное движение вокруг исходной позиции
-  const updateFloatingParticle = useCallback((p: Particle, dt: number, floatRadius: number, floatSpeed: number, transitionSpeed: number, noisScale: number, chaosFactor: number) => {
+  const updateFloatingParticle = useCallback((p: Particle, dt: number, physics: PhysicsConfig) => {
+    const { floatRadius, floatSpeed, transitionSpeed, noiseScale, chaosFactor } = physics;
     p.floatingAngle += dt * p.floatingSpeed * (1 + Math.random() * chaosFactor);
     const t  = Date.now() * 0.001;
     const uo = p.floatingSpeed * 2000;
     const nx = (Math.sin(t * p.floatingSpeed + p.floatingAngle) * 1.2 +
                 Math.sin((t + uo) * 0.5) * 0.8 +
-                (Math.random() - 0.5) * chaosFactor) * noisScale;
+                (Math.random() - 0.5) * chaosFactor) * noiseScale;
     const ny = (Math.cos(t * p.floatingSpeed + p.floatingAngle * 1.5) * 0.6 +
                 Math.cos((t + uo) * 0.5) * 0.4 +
-                (Math.random() - 0.5) * chaosFactor) * noisScale;
+                (Math.random() - 0.5) * chaosFactor) * noiseScale;
 
     const tx = p.originalX + floatRadius * nx;
     const ty = p.originalY + floatRadius * ny;
@@ -235,19 +257,21 @@ export const MagicTextReveal: React.FC<MagicTextRevealProps> = ({
     spreadRadius: number,
     animSpeed: number
   ) => {
-    const FLOAT_RADIUS     = spreadRadius;
-    const RETURN_SPEED     = 3;
-    const FLOAT_SPEED      = animSpeed;
-    const TRANSITION_SPEED = 5 * FLOAT_SPEED;
-    const NOISE_SCALE      = 0.6;
-    const CHAOS_FACTOR     = 1.3;
-    const FADE_SPEED       = 13;
+    const physics: PhysicsConfig = {
+      floatRadius:      spreadRadius,
+      returnSpeed:      3,
+      floatSpeed:       animSpeed,
+      transitionSpeed:  5 * animSpeed,
+      noiseScale:       0.6,
+      chaosFactor:      1.3,
+      fadeSpeed:        13,
+    };
 
     particles.forEach(p => {
       if (hovered) {
-        updateHoveredParticle(p, dt, RETURN_SPEED, FADE_SPEED);
+        updateHoveredParticle(p, dt, physics);
       } else {
-        updateFloatingParticle(p, dt, FLOAT_RADIUS, FLOAT_SPEED, TRANSITION_SPEED, NOISE_SCALE, CHAOS_FACTOR);
+        updateFloatingParticle(p, dt, physics);
       }
     });
 
