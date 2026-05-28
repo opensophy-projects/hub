@@ -61,7 +61,6 @@ interface GlowingEffectInlineProps {
   inactiveZone?: number;
   proximity?: number;
   spread?: number;
-  glow?: boolean;
   disabled?: boolean;
   movementDuration?: number;
   borderWidth?: number;
@@ -299,13 +298,15 @@ const LandingCardContent: React.FC<LandingCardContentProps> = ({ children, style
 
 // ─── FeatureCard (SecuritySection) ───────────────────────────────────────────
 
+type VisualType = 'securityAnalysis' | 'knowledgeLayers' | 'securityCheck' | 'secureAccess' | 'automationList' | 'protectionStack';
+
 interface FeatureCardProps {
   title: string;
   text: string;
   isNegative: boolean;
   fullWidth?: boolean;
   badge?: string;
-  visual?: 'securityAnalysis' | 'knowledgeLayers' | 'securityCheck' | 'secureAccess' | 'automationList' | 'protectionStack';
+  visual?: VisualType;
 }
 
 const SecurityAnalysisVisual: React.FC = () => (
@@ -345,7 +346,7 @@ const SecurityAnalysisVisual: React.FC = () => (
     <div className="security-analysis-marker-line" />
     <div className="security-analysis-tooltip">
       <span className="security-analysis-tooltip-dot" />
-      обнаружено <strong>76</strong> проблем
+      {' '}обнаружено <strong>76</strong> проблем
     </div>
     <div className="security-analysis-vignette" />
   </div>
@@ -407,7 +408,7 @@ const SecureAccessVisual: React.FC = () => (
     <div className="access-device access-device-phone"><span /></div>
     <div className="secure-access-tooltip">
       <span className="secure-access-tooltip-dot" />
-      подключено через <strong>mTLS</strong>
+      {' '}подключено через <strong>mTLS</strong>
     </div>
   </div>
 );
@@ -454,49 +455,62 @@ const ProtectionStackVisual: React.FC = () => (
   </div>
 );
 
+// Карта соответствия visual-типа компоненту
+const VISUAL_COMPONENTS: Record<VisualType, React.FC> = {
+  securityAnalysis: SecurityAnalysisVisual,
+  knowledgeLayers:  KnowledgeLayersVisual,
+  securityCheck:    SecurityCheckVisual,
+  secureAccess:     SecureAccessVisual,
+  automationList:   AutomationListVisual,
+  protectionStack:  ProtectionStackVisual,
+};
+
+// CSS-переменные для визуальных карточек
+function buildVisualVars(isNegative: boolean): React.CSSProperties {
+  return {
+    '--visual-card-surface':        isNegative ? '#0f0f0f'                   : '#e3e2de',
+    '--visual-line-transparent':    isNegative ? 'rgba(255,255,255,0)'        : 'rgba(0,0,0,0)',
+    '--visual-line-soft':           isNegative ? 'rgba(255,255,255,0.16)'     : 'rgba(0,0,0,0.16)',
+    '--visual-line-mid':            isNegative ? 'rgba(255,255,255,0.4)'      : 'rgba(0,0,0,0.28)',
+    '--visual-line-strong':         isNegative ? 'rgba(255,255,255,0.68)'     : 'rgba(0,0,0,0.58)',
+    '--visual-fill-top':            isNegative ? 'rgba(255,255,255,0.08)'     : 'rgba(0,0,0,0.04)',
+    '--visual-fill-mid':            isNegative ? 'rgba(255,255,255,0.03)'     : 'rgba(0,0,0,0.02)',
+    '--visual-fill-bottom':         isNegative ? 'rgba(255,255,255,0)'        : 'rgba(0,0,0,0)',
+    '--visual-grid-line':           isNegative ? 'rgba(255,255,255,0.07)'     : 'rgba(0,0,0,0.075)',
+    '--visual-tooltip-bg':          isNegative ? 'rgba(15,15,15,0.72)'        : 'rgba(224,223,219,0.78)',
+    '--visual-tooltip-text':        isNegative ? 'rgba(255,255,255,0.58)'     : 'rgba(0,0,0,0.62)',
+    '--visual-tooltip-border':      isNegative ? 'rgba(255,255,255,0.1)'      : 'rgba(0,0,0,0.1)',
+    '--visual-layer-line':          isNegative ? 'rgba(255,255,255,0.22)'     : 'rgba(0,0,0,0.24)',
+    '--visual-layer-strong':        isNegative ? 'rgba(255,255,255,0.52)'     : 'rgba(0,0,0,0.4)',
+    '--visual-success':             isNegative ? '#57d97b'                    : '#168c3a',
+    '--visual-danger':              isNegative ? '#ff6363'                    : '#c62828',
+    '--visual-access':              isNegative ? '#36e0d0'                    : '#078b80',
+  } as React.CSSProperties;
+}
+
 const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, fullWidth, badge, visual }) => {
-  const titleC = isNegative ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.88)';
-  const textC  = isNegative ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.65)';
-  const badgeC = isNegative ? 'rgba(255,255,255,0.42)' : 'rgba(0,0,0,0.42)';
+  const titleC    = isNegative ? 'rgba(255,255,255,0.9)'  : 'rgba(0,0,0,0.88)';
+  const textC     = isNegative ? 'rgba(255,255,255,0.7)'  : 'rgba(0,0,0,0.65)';
+  const badgeC    = isNegative ? 'rgba(255,255,255,0.42)' : 'rgba(0,0,0,0.42)';
   const hasVisual = Boolean(visual);
-  const visualClass = visual ? `feature-card--${visual}` : '';
+
+  const VisualComponent = visual ? VISUAL_COMPONENTS[visual] : null;
+
+  const cardStyle: React.CSSProperties = {
+    display:       'flex',
+    flexDirection: 'column',
+    minHeight:     hasVisual ? 356 : 176,
+    gridColumn:    fullWidth ? '1 / -1' : undefined,
+    ...(hasVisual ? buildVisualVars(isNegative) : {}),
+  };
 
   return (
     <LandingCard
       isNegative={isNegative}
-      className={hasVisual ? `feature-card feature-card--visual ${visualClass}` : 'feature-card'}
-      style={{
-        display:       'flex',
-        flexDirection: 'column',
-        minHeight:     hasVisual ? 356 : 176,
-        gridColumn:    fullWidth ? '1 / -1' : undefined,
-        ...(hasVisual ? {
-          '--visual-card-surface': isNegative ? '#0f0f0f' : '#e3e2de',
-          '--visual-line-transparent': isNegative ? 'rgba(255,255,255,0)' : 'rgba(0,0,0,0)',
-          '--visual-line-soft': isNegative ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.16)',
-          '--visual-line-mid': isNegative ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.28)',
-          '--visual-line-strong': isNegative ? 'rgba(255,255,255,0.68)' : 'rgba(0,0,0,0.58)',
-          '--visual-fill-top': isNegative ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
-          '--visual-fill-mid': isNegative ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-          '--visual-fill-bottom': isNegative ? 'rgba(255,255,255,0)' : 'rgba(0,0,0,0)',
-          '--visual-grid-line': isNegative ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.075)',
-          '--visual-tooltip-bg': isNegative ? 'rgba(15,15,15,0.72)' : 'rgba(224,223,219,0.78)',
-          '--visual-tooltip-text': isNegative ? 'rgba(255,255,255,0.58)' : 'rgba(0,0,0,0.62)',
-          '--visual-tooltip-border': isNegative ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-          '--visual-layer-line': isNegative ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.24)',
-          '--visual-layer-strong': isNegative ? 'rgba(255,255,255,0.52)' : 'rgba(0,0,0,0.4)',
-          '--visual-success': isNegative ? '#57d97b' : '#168c3a',
-          '--visual-danger': isNegative ? '#ff6363' : '#c62828',
-          '--visual-access': isNegative ? '#36e0d0' : '#078b80',
-        } : {}),
-      } as React.CSSProperties}
+      className={hasVisual ? `feature-card feature-card--visual feature-card--${visual}` : 'feature-card'}
+      style={cardStyle}
     >
-      {visual === 'securityAnalysis' && <SecurityAnalysisVisual />}
-      {visual === 'knowledgeLayers' && <KnowledgeLayersVisual />}
-      {visual === 'securityCheck' && <SecurityCheckVisual />}
-      {visual === 'secureAccess' && <SecureAccessVisual />}
-      {visual === 'automationList' && <AutomationListVisual />}
-      {visual === 'protectionStack' && <ProtectionStackVisual />}
+      {VisualComponent && <VisualComponent />}
       <LandingCardHeader className={hasVisual ? 'feature-card-copy--visual' : undefined}>
         {badge && (
           <div style={{
@@ -1142,18 +1156,21 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
           />
         </div>
 
-        <p className="sec-contact" style={{
-          color:      textMut,
-          fontFamily: 'Inter, system-ui, sans-serif',
-          fontSize:   'clamp(0.98rem, 1.25vw, 1.08rem)',
-          lineHeight: 1.7,
-          margin:     '1.5rem 0 0',
-        }}>
-          Чтобы заказать услугу или обсудить сотрудничество, напишите на{' '}
+        <p
+          className="sec-contact"
+          style={{
+            color:      textMut,
+            fontFamily: 'Inter, system-ui, sans-serif',
+            fontSize:   'clamp(0.98rem, 1.25vw, 1.08rem)',
+            lineHeight: 1.7,
+            margin:     '1.5rem 0 0',
+          }}
+        >
+          {'Чтобы заказать услугу или обсудить сотрудничество, напишите на '}
           <a href="mailto:opensophy@gmail.com" style={{ color: textMain, textDecoration: 'none' }}>
             opensophy@gmail.com
           </a>
-          . Все карточки с пометкой «услуга» доступны для заказа; «Знания каждому!» — открытая образовательная инициатива.
+          {'. Все карточки с пометкой «услуга» доступны для заказа; «Знания каждому!» — открытая образовательная инициатива.'}
         </p>
       </div>
     </section>
@@ -1169,8 +1186,8 @@ interface EcosystemSectionProps {
 }
 
 const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffset = 0 }) => {
-  const bg       = isNegative ? '#0a0a0a' : '#E8E7E3';
-  const textMut  = isNegative ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
+  const bg        = isNegative ? '#0a0a0a' : '#E8E7E3';
+  const textMut   = isNegative ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
   const shinyBase = isNegative ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.6)';
   const shinyGlow = isNegative ? '#ffffff'                : '#000000';
 
@@ -1326,10 +1343,8 @@ const LandingContent: React.FC = () => {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-        /* ── Hero title — адаптивный размер без обрезки ── */
         .hero-title-wrap {
           position: absolute;
-          /* Центрируем горизонтально относительно видимой области (за вычетом nav) */
           left: 0;
           right: 0;
           top: 50%;
@@ -1340,7 +1355,6 @@ const LandingContent: React.FC = () => {
           justify-content: center;
           padding: 0 clamp(1rem, 4vw, 3rem);
           pointer-events: none;
-          /* Смещение вправо на ширину навигационной панели задаётся inline-стилем */
         }
 
         .hero-title {
@@ -1349,16 +1363,10 @@ const LandingContent: React.FC = () => {
           line-height: 1;
           letter-spacing: 0.06em;
           white-space: nowrap;
-          /*
-            fluid-размер: минимум 2rem (320px экран),
-            максимум 10rem (≥1400px экран).
-            vw-коэффициент подобран так, чтобы текст никогда не вылазил за экран.
-          */
           font-size: clamp(2rem, 10vw, 10rem);
           color: var(--hero-text-color, currentColor);
         }
 
-        /* На очень маленьких экранах (< 360px) ещё немного уменьшаем */
         @media (max-width: 360px) {
           .hero-title {
             font-size: clamp(1.6rem, 11vw, 3rem);
@@ -1366,7 +1374,6 @@ const LandingContent: React.FC = () => {
           }
         }
 
-        /* Планшеты */
         @media (min-width: 361px) and (max-width: 768px) {
           .hero-title {
             font-size: clamp(2.5rem, 10vw, 5.5rem);
@@ -1374,7 +1381,6 @@ const LandingContent: React.FC = () => {
           }
         }
 
-        /* Десктоп с навигационной панелью (учитываем смещение) */
         @media (min-width: 1001px) {
           .hero-title {
             font-size: clamp(4rem, 8vw, 10rem);
@@ -1399,19 +1405,15 @@ const LandingContent: React.FC = () => {
           />
         </div>
 
-        {/* Нижний градиент — плавный переход к фону */}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0, height: '35%',
           pointerEvents: 'none',
           background: `linear-gradient(to bottom, transparent, ${bg})`,
         }} />
 
-        {/* Hero title — центрирован, адаптивный */}
         <div
           className="hero-title-wrap"
           style={{
-            /* Дополнительное смещение справа чтобы nav не перекрывал
-               (только на десктопе, где navOffset > 0) */
             paddingLeft: navOffset > 0 ? `calc(${navOffset}px + clamp(1rem, 4vw, 3rem))` : undefined,
           }}
         >
