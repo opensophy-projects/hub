@@ -22,6 +22,20 @@ interface FuzzyTextProps {
   className?: string;
 }
 
+// Разделяемое изменяемое состояние анимации
+interface AnimState {
+  isCancelled: boolean;
+  isHovering: boolean;
+  isClicking: boolean;
+  isGlitching: boolean;
+  currentIntensity: number;
+  lastFrameTime: number;
+  animationFrameId: number;
+  glitchTimeoutId: ReturnType<typeof setTimeout> | undefined;
+  glitchEndTimeoutId: ReturnType<typeof setTimeout> | undefined;
+  clickTimeoutId: ReturnType<typeof setTimeout> | undefined;
+}
+
 // Вычисляет числовой размер шрифта из CSS-значения
 function resolveNumericFontSize(fontSize: number | string): number {
   if (typeof fontSize === 'number') return fontSize;
@@ -64,14 +78,12 @@ function drawTextWithSpacing(
 
 // Вычисляет целевую интенсивность на основе состояния
 function resolveTargetIntensity(
-  isClicking: boolean,
-  isGlitching: boolean,
-  isHovering: boolean,
+  st: AnimState,
   hoverIntensity: number,
   baseIntensity: number
 ): number {
-  if (isClicking || isGlitching) return 1;
-  if (isHovering) return hoverIntensity;
+  if (st.isClicking || st.isGlitching) return 1;
+  if (st.isHovering) return hoverIntensity;
   return baseIntensity;
 }
 
@@ -87,6 +99,32 @@ function stepIntensity(
   if (current < target) return Math.min(current + step, target);
   if (current > target) return Math.max(current - step, target);
   return current;
+}
+
+// Запускает цикл глитча через общий объект состояния
+function startGlitchLoop(
+  st: AnimState,
+  glitchInterval: number,
+  glitchDuration: number
+): void {
+  if (st.isCancelled) return;
+  st.glitchTimeoutId = setTimeout(() => {
+    if (st.isCancelled) return;
+    st.isGlitching = true;
+    st.glitchEndTimeoutId = setTimeout(() => {
+      st.isGlitching = false;
+      startGlitchLoop(st, glitchInterval, glitchDuration);
+    }, glitchDuration);
+  }, glitchInterval);
+}
+
+// Обрабатывает клик с временным усилением интенсивности
+function handleClickEffect(st: AnimState): void {
+  st.isClicking = true;
+  clearTimeout(st.clickTimeoutId);
+  st.clickTimeoutId = setTimeout(() => {
+    st.isClicking = false;
+  }, 150);
 }
 
 const FuzzyText: React.FC<FuzzyTextProps> = ({
@@ -113,13 +151,21 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
   const canvasRef = useRef<HTMLCanvasElement & { cleanupFuzzyText?: () => void }>(null);
 
   useEffect(() => {
-    let animationFrameId: number;
-    let isCancelled = false;
-    let glitchTimeoutId: ReturnType<typeof setTimeout>;
-    let glitchEndTimeoutId: ReturnType<typeof setTimeout>;
-    let clickTimeoutId: ReturnType<typeof setTimeout>;
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    const st: AnimState = {
+      isCancelled: false,
+      isHovering: false,
+      isClicking: false,
+      isGlitching: false,
+      currentIntensity: baseIntensity,
+      lastFrameTime: 0,
+      animationFrameId: 0,
+      glitchTimeoutId: undefined,
+      glitchEndTimeoutId: undefined,
+      clickTimeoutId: undefined,
+    };
 
     const init = async () => {
       const ctx = canvas.getContext('2d');
@@ -138,7 +184,7 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
       } catch {
         await document.fonts.ready;
       }
-      if (isCancelled) return;
+      if (st.isCancelled) return;
 
       const numericFontSize = resolveNumericFontSize(fontSize);
       const text = React.Children.toArray(children).join('');
@@ -151,7 +197,6 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
       offCtx.textBaseline = 'alphabetic';
 
       const totalWidth = measureTotalWidth(offCtx, text, letterSpacing);
-
       const metrics = offCtx.measureText(text);
       const actualLeft = metrics.actualBoundingBoxLeft ?? 0;
       const actualRight =
@@ -165,7 +210,6 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
         letterSpacing === 0 ? actualLeft + actualRight : totalWidth
       );
       const tightHeight = Math.ceil(actualAscent + actualDescent);
-
       const extraWidthBuffer = 10;
       const offscreenWidth = textBoundingWidth + extraWidthBuffer;
 
@@ -201,36 +245,17 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
       const interactiveTop = verticalMargin;
       const interactiveRight = interactiveLeft + textBoundingWidth;
       const interactiveBottom = interactiveTop + tightHeight;
-
-      let isHovering = false;
-      let isClicking = false;
-      let isGlitching = false;
-      let currentIntensity = baseIntensity;
-      let lastFrameTime = 0;
       const frameDuration = 1000 / fps;
 
-      const startGlitchLoop = () => {
-        if (!glitchMode || isCancelled) return;
-        glitchTimeoutId = setTimeout(() => {
-          if (isCancelled) return;
-          isGlitching = true;
-          glitchEndTimeoutId = setTimeout(() => {
-            isGlitching = false;
-            startGlitchLoop();
-          }, glitchDuration);
-        }, glitchInterval);
-      };
-
-      if (glitchMode) startGlitchLoop();
+      if (glitchMode) startGlitchLoop(st, glitchInterval, glitchDuration);
 
       const run = (timestamp: number) => {
-        if (isCancelled) return;
-
-        if (timestamp - lastFrameTime < frameDuration) {
-          animationFrameId = globalThis.requestAnimationFrame(run);
+        if (st.isCancelled) return;
+        if (timestamp - st.lastFrameTime < frameDuration) {
+          st.animationFrameId = globalThis.requestAnimationFrame(run);
           return;
         }
-        lastFrameTime = timestamp;
+        st.lastFrameTime = timestamp;
 
         ctx.clearRect(
           -fuzzRange - 20,
@@ -239,30 +264,25 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
           tightHeight + 2 * (fuzzRange + 10)
         );
 
-        const targetIntensity = resolveTargetIntensity(
-          isClicking, isGlitching, isHovering, hoverIntensity, baseIntensity
-        );
-        currentIntensity = stepIntensity(
-          currentIntensity, targetIntensity, transitionDuration, frameDuration
+        const targetIntensity = resolveTargetIntensity(st, hoverIntensity, baseIntensity);
+        st.currentIntensity = stepIntensity(
+          st.currentIntensity, targetIntensity, transitionDuration, frameDuration
         );
 
         for (let j = 0; j < tightHeight; j++) {
-          let dx = 0,
-            dy = 0;
+          let dx = 0, dy = 0;
           if (direction === 'horizontal' || direction === 'both') {
-            dx = Math.floor(currentIntensity * (Math.random() - 0.5) * fuzzRange);
+            dx = Math.floor(st.currentIntensity * (Math.random() - 0.5) * fuzzRange);
           }
           if (direction === 'vertical' || direction === 'both') {
-            dy = Math.floor(
-              currentIntensity * (Math.random() - 0.5) * fuzzRange * 0.5
-            );
+            dy = Math.floor(st.currentIntensity * (Math.random() - 0.5) * fuzzRange * 0.5);
           }
           ctx.drawImage(offscreen, 0, j, offscreenWidth, 1, dx, j + dy, offscreenWidth, 1);
         }
-        animationFrameId = globalThis.requestAnimationFrame(run);
+        st.animationFrameId = globalThis.requestAnimationFrame(run);
       };
 
-      animationFrameId = globalThis.requestAnimationFrame(run);
+      st.animationFrameId = globalThis.requestAnimationFrame(run);
 
       const isInsideTextArea = (x: number, y: number) =>
         x >= interactiveLeft &&
@@ -273,37 +293,22 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
       const handleMouseMove = (e: MouseEvent) => {
         if (!enableHover) return;
         const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        isHovering = isInsideTextArea(x, y);
+        st.isHovering = isInsideTextArea(e.clientX - rect.left, e.clientY - rect.top);
       };
 
-      const handleMouseLeave = () => {
-        isHovering = false;
-      };
+      const handleMouseLeave = () => { st.isHovering = false; };
 
-      const handleClick = () => {
-        if (!clickEffect) return;
-        isClicking = true;
-        clearTimeout(clickTimeoutId);
-        clickTimeoutId = setTimeout(() => {
-          isClicking = false;
-        }, 150);
-      };
+      const handleClick = () => { if (clickEffect) handleClickEffect(st); };
 
       const handleTouchMove = (e: TouchEvent) => {
         if (!enableHover) return;
         e.preventDefault();
         const rect = canvas.getBoundingClientRect();
         const touch = e.touches[0];
-        const x = touch.clientX - rect.left;
-        const y = touch.clientY - rect.top;
-        isHovering = isInsideTextArea(x, y);
+        st.isHovering = isInsideTextArea(touch.clientX - rect.left, touch.clientY - rect.top);
       };
 
-      const handleTouchEnd = () => {
-        isHovering = false;
-      };
+      const handleTouchEnd = () => { st.isHovering = false; };
 
       if (enableHover) {
         canvas.addEventListener('mousemove', handleMouseMove);
@@ -311,59 +316,34 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
         canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
         canvas.addEventListener('touchend', handleTouchEnd);
       }
+      if (clickEffect) canvas.addEventListener('click', handleClick);
 
-      if (clickEffect) {
-        canvas.addEventListener('click', handleClick);
-      }
-
-      const cleanup = () => {
-        globalThis.cancelAnimationFrame(animationFrameId);
-        clearTimeout(glitchTimeoutId);
-        clearTimeout(glitchEndTimeoutId);
-        clearTimeout(clickTimeoutId);
+      canvas.cleanupFuzzyText = () => {
+        globalThis.cancelAnimationFrame(st.animationFrameId);
+        clearTimeout(st.glitchTimeoutId);
+        clearTimeout(st.glitchEndTimeoutId);
+        clearTimeout(st.clickTimeoutId);
         if (enableHover) {
           canvas.removeEventListener('mousemove', handleMouseMove);
           canvas.removeEventListener('mouseleave', handleMouseLeave);
           canvas.removeEventListener('touchmove', handleTouchMove);
           canvas.removeEventListener('touchend', handleTouchEnd);
         }
-        if (clickEffect) {
-          canvas.removeEventListener('click', handleClick);
-        }
+        if (clickEffect) canvas.removeEventListener('click', handleClick);
       };
-
-      canvas.cleanupFuzzyText = cleanup;
     };
 
     init();
 
     return () => {
-      isCancelled = true;
-      globalThis.cancelAnimationFrame(animationFrameId);
-      clearTimeout(glitchTimeoutId);
-      clearTimeout(glitchEndTimeoutId);
-      clearTimeout(clickTimeoutId);
+      st.isCancelled = true;
       canvas?.cleanupFuzzyText?.();
     };
   }, [
-    children,
-    fontSize,
-    fontWeight,
-    fontFamily,
-    color,
-    enableHover,
-    baseIntensity,
-    hoverIntensity,
-    fuzzRange,
-    fps,
-    direction,
-    transitionDuration,
-    clickEffect,
-    glitchMode,
-    glitchInterval,
-    glitchDuration,
-    gradient,
-    letterSpacing,
+    children, fontSize, fontWeight, fontFamily, color, enableHover,
+    baseIntensity, hoverIntensity, fuzzRange, fps, direction,
+    transitionDuration, clickEffect, glitchMode, glitchInterval,
+    glitchDuration, gradient, letterSpacing,
   ]);
 
   return <canvas ref={canvasRef} className={className} />;
