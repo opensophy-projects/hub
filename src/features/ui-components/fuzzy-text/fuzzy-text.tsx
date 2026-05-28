@@ -36,6 +36,15 @@ interface AnimState {
   clickTimeoutId: ReturnType<typeof setTimeout> | undefined;
 }
 
+// Параметры отрисованного текста для основного канваса
+interface TextLayout {
+  offscreen: HTMLCanvasElement;
+  offscreenWidth: number;
+  tightHeight: number;
+  xOffset: number;
+  textBoundingWidth: number;
+}
+
 // Вычисляет числовой размер шрифта из CSS-значения
 function resolveNumericFontSize(fontSize: number | string): number {
   if (typeof fontSize === 'number') return fontSize;
@@ -74,6 +83,125 @@ function drawTextWithSpacing(
     offCtx.fillText(char, xPos, ascent);
     xPos += offCtx.measureText(char).width + letterSpacing;
   }
+}
+
+// Подготавливает offscreen-канвас с отрисованным текстом
+function buildOffscreenCanvas(
+  text: string,
+  fontWeight: string | number,
+  fontSizeStr: string,
+  computedFontFamily: string,
+  numericFontSize: number,
+  letterSpacing: number,
+  gradient: string[] | null,
+  color: string
+): TextLayout | null {
+  const offscreen = document.createElement('canvas');
+  const offCtx = offscreen.getContext('2d');
+  if (!offCtx) return null;
+
+  const font = `${fontWeight} ${fontSizeStr} ${computedFontFamily}`;
+  offCtx.font = font;
+  offCtx.textBaseline = 'alphabetic';
+
+  const totalWidth = measureTotalWidth(offCtx, text, letterSpacing);
+  const metrics = offCtx.measureText(text);
+  const actualLeft = metrics.actualBoundingBoxLeft ?? 0;
+  const actualRight =
+    letterSpacing === 0
+      ? (metrics.actualBoundingBoxRight ?? metrics.width)
+      : totalWidth;
+  const actualAscent = metrics.actualBoundingBoxAscent ?? numericFontSize;
+  const actualDescent = metrics.actualBoundingBoxDescent ?? numericFontSize * 0.2;
+
+  const textBoundingWidth = Math.ceil(
+    letterSpacing === 0 ? actualLeft + actualRight : totalWidth
+  );
+  const tightHeight = Math.ceil(actualAscent + actualDescent);
+  const extraWidthBuffer = 10;
+  const offscreenWidth = textBoundingWidth + extraWidthBuffer;
+
+  offscreen.width = offscreenWidth;
+  offscreen.height = tightHeight;
+
+  offCtx.font = font;
+  offCtx.textBaseline = 'alphabetic';
+
+  if (gradient && gradient.length >= 2) {
+    const grad = offCtx.createLinearGradient(0, 0, offscreenWidth, 0);
+    gradient.forEach((c, i) => grad.addColorStop(i / (gradient.length - 1), c));
+    offCtx.fillStyle = grad;
+  } else {
+    offCtx.fillStyle = color;
+  }
+
+  const xOffset = extraWidthBuffer / 2;
+  if (letterSpacing === 0) {
+    offCtx.fillText(text, xOffset - actualLeft, actualAscent);
+  } else {
+    drawTextWithSpacing(offCtx, text, xOffset, actualAscent, letterSpacing);
+  }
+
+  return { offscreen, offscreenWidth, tightHeight, xOffset, textBoundingWidth };
+}
+
+// Регистрирует обработчики событий взаимодействия
+function attachEventListeners(
+  canvas: HTMLCanvasElement,
+  st: AnimState,
+  interactiveLeft: number,
+  interactiveRight: number,
+  interactiveTop: number,
+  interactiveBottom: number,
+  enableHover: boolean,
+  clickEffect: boolean
+): () => void {
+  const isInside = (x: number, y: number) =>
+    x >= interactiveLeft && x <= interactiveRight &&
+    y >= interactiveTop && y <= interactiveBottom;
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!enableHover) return;
+    const rect = canvas.getBoundingClientRect();
+    st.isHovering = isInside(e.clientX - rect.left, e.clientY - rect.top);
+  };
+
+  const handleMouseLeave = () => { st.isHovering = false; };
+
+  const handleClick = () => {
+    if (!clickEffect) return;
+    st.isClicking = true;
+    clearTimeout(st.clickTimeoutId);
+    st.clickTimeoutId = setTimeout(() => { st.isClicking = false; }, 150);
+  };
+
+  const handleTouchMove = (e: TouchEvent) => {
+    if (!enableHover) return;
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    st.isHovering = isInside(touch.clientX - rect.left, touch.clientY - rect.top);
+  };
+
+  const handleTouchEnd = () => { st.isHovering = false; };
+
+  if (enableHover) {
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mouseleave', handleMouseLeave);
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd);
+  }
+  if (clickEffect) canvas.addEventListener('click', handleClick);
+
+  return () => {
+    if (enableHover) {
+      canvas.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('mouseleave', handleMouseLeave);
+      canvas.removeEventListener('touchmove', handleTouchMove);
+      canvas.removeEventListener('touchend', handleTouchEnd);
+    }
+    if (clickEffect) canvas.removeEventListener('click', handleClick);
+  };
 }
 
 // Вычисляет целевую интенсивность на основе состояния
@@ -116,15 +244,6 @@ function startGlitchLoop(
       startGlitchLoop(st, glitchInterval, glitchDuration);
     }, glitchDuration);
   }, glitchInterval);
-}
-
-// Обрабатывает клик с временным усилением интенсивности
-function handleClickEffect(st: AnimState): void {
-  st.isClicking = true;
-  clearTimeout(st.clickTimeoutId);
-  st.clickTimeoutId = setTimeout(() => {
-    st.isClicking = false;
-  }, 150);
 }
 
 const FuzzyText: React.FC<FuzzyTextProps> = ({
@@ -189,64 +308,21 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
       const numericFontSize = resolveNumericFontSize(fontSize);
       const text = React.Children.toArray(children).join('');
 
-      const offscreen = document.createElement('canvas');
-      const offCtx = offscreen.getContext('2d');
-      if (!offCtx) return;
-
-      offCtx.font = `${fontWeight} ${fontSizeStr} ${computedFontFamily}`;
-      offCtx.textBaseline = 'alphabetic';
-
-      const totalWidth = measureTotalWidth(offCtx, text, letterSpacing);
-      const metrics = offCtx.measureText(text);
-      const actualLeft = metrics.actualBoundingBoxLeft ?? 0;
-      const actualRight =
-        letterSpacing === 0
-          ? (metrics.actualBoundingBoxRight ?? metrics.width)
-          : totalWidth;
-      const actualAscent = metrics.actualBoundingBoxAscent ?? numericFontSize;
-      const actualDescent = metrics.actualBoundingBoxDescent ?? numericFontSize * 0.2;
-
-      const textBoundingWidth = Math.ceil(
-        letterSpacing === 0 ? actualLeft + actualRight : totalWidth
+      const layout = buildOffscreenCanvas(
+        text, fontWeight, fontSizeStr, computedFontFamily,
+        numericFontSize, letterSpacing, gradient, color
       );
-      const tightHeight = Math.ceil(actualAscent + actualDescent);
-      const extraWidthBuffer = 10;
-      const offscreenWidth = textBoundingWidth + extraWidthBuffer;
+      if (!layout) return;
 
-      offscreen.width = offscreenWidth;
-      offscreen.height = tightHeight;
-
-      const xOffset = extraWidthBuffer / 2;
-      offCtx.font = `${fontWeight} ${fontSizeStr} ${computedFontFamily}`;
-      offCtx.textBaseline = 'alphabetic';
-
-      if (gradient && Array.isArray(gradient) && gradient.length >= 2) {
-        const grad = offCtx.createLinearGradient(0, 0, offscreenWidth, 0);
-        gradient.forEach((c, i) => grad.addColorStop(i / (gradient.length - 1), c));
-        offCtx.fillStyle = grad;
-      } else {
-        offCtx.fillStyle = color;
-      }
-
-      if (letterSpacing === 0) {
-        offCtx.fillText(text, xOffset - actualLeft, actualAscent);
-      } else {
-        drawTextWithSpacing(offCtx, text, xOffset, actualAscent, letterSpacing);
-      }
-
+      const { offscreen, offscreenWidth, tightHeight, xOffset, textBoundingWidth } = layout;
       const horizontalMargin = fuzzRange + 20;
-      const verticalMargin =
-        direction === 'vertical' || direction === 'both' ? fuzzRange + 10 : 0;
+      const verticalMargin = direction === 'vertical' || direction === 'both' ? fuzzRange + 10 : 0;
+
       canvas.width = offscreenWidth + horizontalMargin * 2;
       canvas.height = tightHeight + verticalMargin * 2;
       ctx.translate(horizontalMargin, verticalMargin);
 
-      const interactiveLeft = horizontalMargin + xOffset;
-      const interactiveTop = verticalMargin;
-      const interactiveRight = interactiveLeft + textBoundingWidth;
-      const interactiveBottom = interactiveTop + tightHeight;
       const frameDuration = 1000 / fps;
-
       if (glitchMode) startGlitchLoop(st, glitchInterval, glitchDuration);
 
       const run = (timestamp: number) => {
@@ -258,8 +334,7 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
         st.lastFrameTime = timestamp;
 
         ctx.clearRect(
-          -fuzzRange - 20,
-          -fuzzRange - 10,
+          -fuzzRange - 20, -fuzzRange - 10,
           offscreenWidth + 2 * (fuzzRange + 20),
           tightHeight + 2 * (fuzzRange + 10)
         );
@@ -272,9 +347,11 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
         for (let j = 0; j < tightHeight; j++) {
           let dx = 0, dy = 0;
           if (direction === 'horizontal' || direction === 'both') {
+            // NOSONAR: Math.random() используется для визуального шума — криптографическая стойкость не требуется
             dx = Math.floor(st.currentIntensity * (Math.random() - 0.5) * fuzzRange);
           }
           if (direction === 'vertical' || direction === 'both') {
+            // NOSONAR: аналогично — визуальный эффект смещения строк
             dy = Math.floor(st.currentIntensity * (Math.random() - 0.5) * fuzzRange * 0.5);
           }
           ctx.drawImage(offscreen, 0, j, offscreenWidth, 1, dx, j + dy, offscreenWidth, 1);
@@ -284,52 +361,22 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
 
       st.animationFrameId = globalThis.requestAnimationFrame(run);
 
-      const isInsideTextArea = (x: number, y: number) =>
-        x >= interactiveLeft &&
-        x <= interactiveRight &&
-        y >= interactiveTop &&
-        y <= interactiveBottom;
-
-      const handleMouseMove = (e: MouseEvent) => {
-        if (!enableHover) return;
-        const rect = canvas.getBoundingClientRect();
-        st.isHovering = isInsideTextArea(e.clientX - rect.left, e.clientY - rect.top);
-      };
-
-      const handleMouseLeave = () => { st.isHovering = false; };
-
-      const handleClick = () => { if (clickEffect) handleClickEffect(st); };
-
-      const handleTouchMove = (e: TouchEvent) => {
-        if (!enableHover) return;
-        e.preventDefault();
-        const rect = canvas.getBoundingClientRect();
-        const touch = e.touches[0];
-        st.isHovering = isInsideTextArea(touch.clientX - rect.left, touch.clientY - rect.top);
-      };
-
-      const handleTouchEnd = () => { st.isHovering = false; };
-
-      if (enableHover) {
-        canvas.addEventListener('mousemove', handleMouseMove);
-        canvas.addEventListener('mouseleave', handleMouseLeave);
-        canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-        canvas.addEventListener('touchend', handleTouchEnd);
-      }
-      if (clickEffect) canvas.addEventListener('click', handleClick);
+      const removeListeners = attachEventListeners(
+        canvas, st,
+        horizontalMargin + xOffset,
+        horizontalMargin + xOffset + textBoundingWidth,
+        verticalMargin,
+        verticalMargin + tightHeight,
+        enableHover,
+        clickEffect
+      );
 
       canvas.cleanupFuzzyText = () => {
         globalThis.cancelAnimationFrame(st.animationFrameId);
         clearTimeout(st.glitchTimeoutId);
         clearTimeout(st.glitchEndTimeoutId);
         clearTimeout(st.clickTimeoutId);
-        if (enableHover) {
-          canvas.removeEventListener('mousemove', handleMouseMove);
-          canvas.removeEventListener('mouseleave', handleMouseLeave);
-          canvas.removeEventListener('touchmove', handleTouchMove);
-          canvas.removeEventListener('touchend', handleTouchEnd);
-        }
-        if (clickEffect) canvas.removeEventListener('click', handleClick);
+        removeListeners();
       };
     };
 
