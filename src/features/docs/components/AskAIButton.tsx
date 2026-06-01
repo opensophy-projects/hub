@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Copy, Check, ChevronDown, Sparkles } from 'lucide-react';
 
 interface AskAIButtonProps {
@@ -79,19 +80,38 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
   const [copied,    setCopied]    = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const t   = getTheme(isDark);
 
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
       const target = e.target instanceof Node ? e.target : null;
-      if (ref.current && !ref.current.contains(target)) setOpen(false);
+      if (
+        (ref.current && ref.current.contains(target)) ||
+        (popupRef.current && popupRef.current.contains(target))
+      ) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
   }, [open]);
 
   const getPageUrl = () => globalThis.location.href;
+
+  const toggleOpen = () => {
+    if (open) { setOpen(false); return; }
+    const rect = ref.current?.getBoundingClientRect();
+    if (rect) {
+      const width = 200;
+      setMenuPos({
+        top: rect.bottom + 7,
+        left: Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8)),
+      });
+    }
+    setOpen(true);
+  };
 
   const handleProviderClick = (p: typeof PROVIDERS[0]) => {
     globalThis.open(p.getUrl(pageTitle, getPageUrl()), '_blank', 'noopener,noreferrer');
@@ -116,7 +136,7 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
   return (
     <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
       <button
-        onClick={() => setOpen(v => !v)}
+        onClick={toggleOpen}
         onMouseEnter={e => (e.currentTarget.style.background = t.btnHov)}
         onMouseLeave={e => (e.currentTarget.style.background = open ? t.btnHov : t.btnBg)}
         style={{
@@ -148,11 +168,11 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
         />
       </button>
 
-      {open && (
-        <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 7px)',
-          right: 0,
+      {open && createPortal(
+        <div ref={popupRef} style={{
+          position: 'fixed',
+          top: menuPos.top,
+          left: menuPos.left,
           width: '200px',
           background: t.popupBg,
           border: `1px solid ${t.border}`,
@@ -232,7 +252,8 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
             }
             {copied ? 'Скопировано!' : 'Копировать HTML'}
           </button>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

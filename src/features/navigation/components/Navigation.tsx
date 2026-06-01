@@ -686,22 +686,14 @@ const NavPanelContent: React.FC<{
 // ─── Вспомогательные функции для ToC ─────────────────────────────────────────
 
 function tocBorderColor(isActive: boolean, glowOp: number, isDark: boolean, accent: string): string {
-  if (isActive)   return isDark ? `color-mix(in srgb, ${accent} 72%, white 28%)` : accent;
-  if (glowOp > 0) return isDark ? `rgba(255,255,255,${glowOp * 0.55})` : `rgba(0,0,0,${glowOp * 0.28})`;
+  if (isActive)   return accent;
+  if (glowOp > 0) return isDark ? `rgba(255,255,255,${glowOp})` : `rgba(0,0,0,${glowOp})`;
   return 'transparent';
 }
 
 function tocShadow(isActive: boolean, glowOp: number, isDark: boolean, accent: string): string {
-  if (isActive) {
-    return isDark
-      ? `inset 0 0 0 1px ${accent}55, 0 0 18px ${accent}55, 0 0 36px ${accent}2f`
-      : `inset 0 0 0 1px ${accent}33, 0 0 18px ${accent}22`;
-  }
-  if (glowOp > 0) {
-    return isDark
-      ? `inset 0 0 0 1px rgba(255,255,255,${glowOp * 0.16}), 0 0 14px rgba(255,255,255,${glowOp * 0.08})`
-      : `inset 0 0 0 1px rgba(0,0,0,${glowOp * 0.08})`;
-  }
+  if (isActive)   return `inset 3px 0 10px -2px ${accent}88`;
+  if (glowOp > 0) return isDark ? `inset 3px 0 8px -3px rgba(255,255,255,${glowOp * 0.35})` : `inset 3px 0 8px -3px rgba(0,0,0,${glowOp * 0.35})`;
   return 'none';
 }
 
@@ -719,12 +711,6 @@ function getTocItemStyle(item: TocItem, dist: number, activeId: string, isDark: 
   else if (isActive) { opacity = 1;    glowOp = 1; }
   else { opacity = Math.max(0.32, 0.82 - dist * 0.18); glowOp = Math.max(0, 0.5 - dist * 0.16); }
   const baseFontSize = mobile ? 1.05 : 0.92;
-  const activeGlowBg = isDark
-    ? `radial-gradient(circle at 8% 50%, ${t.accent}33 0%, ${t.accent}16 38%, rgba(255,255,255,0.035) 100%)`
-    : `radial-gradient(circle at 8% 50%, ${t.accent}1f 0%, ${t.accent}0f 42%, rgba(0,0,0,0.02) 100%)`;
-  const nearGlowBg = glowOp > 0
-    ? (isDark ? `rgba(255,255,255,${glowOp * 0.035})` : `rgba(0,0,0,${glowOp * 0.018})`)
-    : 'transparent';
   const fontSizeStep = mobile ? 0.05 : 0.04;
   const fontSize     = `${baseFontSize - (item.level - 2) * fontSizeStep}rem`;
   const paddingLeft  = mobile ? 14 + (item.level - 2) * 18 : 12 + (item.level - 2) * 14;
@@ -732,13 +718,17 @@ function getTocItemStyle(item: TocItem, dist: number, activeId: string, isDark: 
     isActive,
     borderClr: tocBorderColor(isActive, glowOp, isDark, t.accent),
     shadow:    tocShadow(isActive, glowOp, isDark, t.accent),
-    background: isActive ? activeGlowBg : nearGlowBg,
     fontSize, paddingLeft,
     color: tocColor(isActive, opacity, isDark, t.accent),
   };
 }
 
 // ─── TocPanelContent ──────────────────────────────────────────────────────────
+
+function getTocItemBackground(isActive: boolean, isDark: boolean): string {
+  if (!isActive) return 'transparent';
+  return isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
+}
 
 function getTocItemFontWeight(isActive: boolean, level: number): number {
   if (isActive) return 600;
@@ -760,6 +750,7 @@ const TocPanelContent: React.FC<{
       {toc.map((item, index) => {
         const dist  = Math.abs(index - activeIndex);
         const style = getTocItemStyle(item, dist, activeId, isDark, mobile);
+        const bg    = getTocItemBackground(style.isActive, isDark);
         const fw    = getTocItemFontWeight(style.isActive, item.level);
         return (
           <button key={item.id}
@@ -771,13 +762,12 @@ const TocPanelContent: React.FC<{
               paddingRight:  mobile ? '1rem'    : '0.75rem',
               paddingLeft:   `${style.paddingLeft}px`,
               fontSize: style.fontSize, lineHeight: 1.45,
-              position: 'relative',
-              background: style.background, border: '1px solid transparent', cursor: 'pointer',
+              background: bg, border: 'none', cursor: 'pointer',
               borderLeft: '2px solid', borderLeftColor: style.borderClr,
-              boxShadow: style.shadow, borderRadius: '10px',
+              boxShadow: style.shadow, borderRadius: '0 8px 8px 0',
               color: style.color, fontWeight: fw,
-              textShadow: style.isActive ? `0 0 10px ${t.accent}99, 0 0 24px ${t.accent}55` : 'none',
-              transition: 'background 0.18s, box-shadow 0.18s, color 0.18s, transform 0.18s',
+              textShadow: style.isActive ? `0 0 8px ${t.accent}cc, 0 0 18px ${t.accent}88, 0 0 30px ${t.accent}44` : 'none',
+              transition: 'text-shadow 0.18s, color 0.18s',
             }}
           >{item.text}</button>
         );
@@ -997,10 +987,10 @@ function deriveDesktopNavValues(
 // ─── Подкомпоненты DesktopNav ─────────────────────────────────────────────────
 
 const DesktopSidebarShell: React.FC<{
-  isDocsPage: boolean; chromeGap: number; chromeTopGap: number;
+  enabled: boolean; isDocsPage: boolean; chromeGap: number; chromeTopGap: number;
   chromeRadius: number; sidebarShellWidth: number; sidebarBg: string;
-}> = ({ isDocsPage, chromeGap, chromeTopGap, chromeRadius, sidebarShellWidth, sidebarBg }) => {
-  if (!isDocsPage) return null;
+}> = ({ enabled, isDocsPage, chromeGap, chromeTopGap, chromeRadius, sidebarShellWidth, sidebarBg }) => {
+  if (!enabled || !isDocsPage) return null;
   return (
     <div
       aria-hidden
@@ -1048,7 +1038,7 @@ const DesktopReadingModeMenu: React.FC<{
 const DesktopRail: React.FC<{
   isDark: boolean; toggleTheme: () => void; logoPath: string;
   isDocsPage: boolean; chromeGap: number; chromeTopGap: number; chromeRadius: number;
-  panelOpen: boolean; t: ReturnType<typeof tk>;
+  panelOpen: boolean; shellEnabled: boolean; t: ReturnType<typeof tk>;
   state: DesktopNavState; derived: DesktopNavDerived;
   readingModeEnabled: boolean;
   onHideRail: () => void;
@@ -1056,7 +1046,7 @@ const DesktopRail: React.FC<{
   onTogglePanel: (panel: Exclude<PanelType, null>) => void;
 }> = ({
   isDark, toggleTheme, logoPath,
-  isDocsPage, chromeGap, chromeTopGap, chromeRadius, panelOpen, t,
+  isDocsPage, chromeGap, chromeTopGap, chromeRadius, panelOpen, shellEnabled, t,
   state, derived, readingModeEnabled,
   onHideRail, onOpenSearch, onTogglePanel,
 }) => {
@@ -1068,14 +1058,14 @@ const DesktopRail: React.FC<{
       position: 'fixed', left: chromeGap, top: chromeTopGap,
       height: isDocsPage ? `calc(100vh - ${chromeTopGap + chromeGap}px)` : '100vh',
       width: RAIL_W,
-      background: isDocsPage ? 'transparent' : sidebarBg,
-      border: isDocsPage ? 'none' : `1px solid ${t.border}`,
+      background: isDocsPage && shellEnabled ? 'transparent' : sidebarBg,
+      border: isDocsPage && shellEnabled ? 'none' : `1px solid ${t.border}`,
       borderRight: 'none',
       borderRadius: panelOpen ? `${chromeRadius}px 0 0 ${chromeRadius}px` : chromeRadius,
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       zIndex: 50, padding: '8px 0', gap: '2px',
-      backdropFilter: isDocsPage ? 'none' : 'blur(12px)',
-      WebkitBackdropFilter: isDocsPage ? 'none' : 'blur(12px)',
+      backdropFilter: isDocsPage && shellEnabled ? 'none' : 'blur(12px)',
+      WebkitBackdropFilter: isDocsPage && shellEnabled ? 'none' : 'blur(12px)',
     }}>
       <div style={{ width: RAIL_W, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         <BrandLogo logoPath={logoPath} size={28} />
@@ -1111,9 +1101,6 @@ const DesktopRail: React.FC<{
             <RailBtn icon={<ArrowUp size={18} />} label="Наверх"     isDark={isDark} onClick={() => globalThis.scrollTo({ top: 0, behavior: 'smooth' })}            title="Наверх" />
           </>
         )}
-        {isStandardMode && !standardTocVisible && (
-          <RailBtn icon={<List size={18} />} label="TOC" isDark={isDark} onClick={() => state.setStandardTocVisible(true)} title="Показать оглавление" />
-        )}
         <RailBtn icon={<Mail size={18} />} label="Контакты" isDark={isDark} isActive={activePanel === 'contacts'} onClick={() => onTogglePanel('contacts')} title="Контакты" />
       </div>
     </aside>
@@ -1123,6 +1110,7 @@ const DesktopRail: React.FC<{
 const DesktopSlidingPanel: React.FC<{
   isDocsPage: boolean; chromeGap: number; chromeTopGap: number; chromeRadius: number;
   panelOpen: boolean; panelWidth: number; panelBg: string; t: ReturnType<typeof tk>;
+  shellEnabled: boolean;
   panelTitle: Exclude<PanelType, null>; isStandardMode: boolean;
   currentDocSlug?: string; toc: TocItem[]; activeId: string; isDark: boolean;
   onResizeMouseDown: (e: React.MouseEvent) => void;
@@ -1130,7 +1118,7 @@ const DesktopSlidingPanel: React.FC<{
 }> = ({
   isDocsPage, chromeGap, chromeTopGap, chromeRadius,
   panelOpen, panelWidth, panelBg, t,
-  panelTitle, isStandardMode,
+  shellEnabled, panelTitle, isStandardMode,
   currentDocSlug, toc, activeId, isDark,
   onResizeMouseDown, onClose,
 }) => {
@@ -1144,7 +1132,7 @@ const DesktopSlidingPanel: React.FC<{
       position: 'fixed', left: chromeGap + RAIL_W, top: chromeTopGap,
       height: isDocsPage ? `calc(100vh - ${chromeTopGap + chromeGap}px)` : '100vh',
       width: panelOpen ? panelWidth : 0,
-      background: isDocsPage ? 'transparent' : panelBg,
+      background: isDocsPage && shellEnabled ? 'transparent' : panelBg,
       border: panelBorder,
       borderLeft: 'none',
       borderRadius: panelOpen ? `0 ${chromeRadius}px ${chromeRadius}px 0` : 0,
@@ -1227,6 +1215,8 @@ const DesktopNav: React.FC<{
   const readingModeEnabled = showDocActions;
   const derived = deriveDesktopNavValues(state, currentDocSlug, readingModeEnabled, isDark, floatingChrome);
   const { isDocsPage, chromeGap, chromeTopGap, chromeRadius, sidebarBg, isStandardMode, panelOpen, sidebarShellWidth, panelTitle } = derived;
+  const contentIsDocsPage = Boolean(currentDocSlug);
+  const shellEnabled = contentIsDocsPage;
   const panelBg = sidebarBg;
 
   useEffect(() => {
@@ -1238,9 +1228,14 @@ const DesktopNav: React.FC<{
   }, [state.standardTocVisible]);
 
   useEffect(() => {
-    buildCssVars(state.railVisible, isDocsPage, panelOpen, state.panelWidth, isStandardMode, state.standardTocVisible);
+    if (!contentIsDocsPage) {
+      clearDocCssVars();
+      document.documentElement.style.setProperty('--nav-left', '0px');
+      return () => { document.documentElement.style.removeProperty('--nav-left'); };
+    }
+    buildCssVars(state.railVisible, contentIsDocsPage, panelOpen, state.panelWidth, isStandardMode, state.standardTocVisible);
     return () => { document.documentElement.style.removeProperty('--nav-left'); };
-  }, [state.railVisible, panelOpen, state.panelWidth, isStandardMode, state.standardTocVisible, isDocsPage]);
+  }, [state.railVisible, panelOpen, state.panelWidth, isStandardMode, state.standardTocVisible, contentIsDocsPage]);
 
   useEffect(() => {
     return clearDocCssVars;
@@ -1263,7 +1258,7 @@ const DesktopNav: React.FC<{
   return (
     <>
       <DesktopSidebarShell
-        isDocsPage={isDocsPage} chromeGap={chromeGap} chromeTopGap={chromeTopGap}
+        enabled={shellEnabled} isDocsPage={isDocsPage} chromeGap={chromeGap} chromeTopGap={chromeTopGap}
         chromeRadius={chromeRadius} sidebarShellWidth={sidebarShellWidth} sidebarBg={sidebarBg}
       />
 
@@ -1271,7 +1266,7 @@ const DesktopNav: React.FC<{
         <DesktopRail
           isDark={isDark} toggleTheme={toggleTheme} logoPath={logoPath}
           isDocsPage={isDocsPage} chromeGap={chromeGap} chromeTopGap={chromeTopGap}
-          chromeRadius={chromeRadius} panelOpen={panelOpen} t={t}
+          chromeRadius={chromeRadius} panelOpen={panelOpen} shellEnabled={shellEnabled} t={t}
           state={state} derived={derived}
           readingModeEnabled={readingModeEnabled}
           onHideRail={() => state.setRailVisible(false)}
@@ -1299,7 +1294,7 @@ const DesktopNav: React.FC<{
         <DesktopSlidingPanel
           isDocsPage={isDocsPage} chromeGap={chromeGap} chromeTopGap={chromeTopGap}
           chromeRadius={chromeRadius} panelOpen={panelOpen} panelWidth={state.panelWidth}
-          panelBg={panelBg} t={t} panelTitle={panelTitle} isStandardMode={isStandardMode}
+          panelBg={panelBg} t={t} shellEnabled={shellEnabled} panelTitle={panelTitle} isStandardMode={isStandardMode}
           currentDocSlug={currentDocSlug} toc={toc} activeId={activeId} isDark={isDark}
           onResizeMouseDown={onResizeMouseDown}
           onClose={handlePanelClose}
@@ -1313,6 +1308,19 @@ const DesktopNav: React.FC<{
           toc={toc} activeId={activeId} isDark={isDark}
           onHideToc={() => state.setStandardTocVisible(false)}
         />
+      )}
+
+      {isStandardMode && !state.standardTocVisible && (
+        <button
+          onClick={() => state.setStandardTocVisible(true)}
+          style={{
+            position: 'fixed', right: chromeGap + 12, top: chromeTopGap + 12, zIndex: 56,
+            border: `1px solid ${t.border}`, borderRadius: '8px',
+            background: t.panelBg, color: t.fgMuted, padding: '6px 8px', cursor: 'pointer', fontSize: '0.75rem',
+          }}
+        >
+          Показать TOC
+        </button>
       )}
 
       <AnimatePresence>

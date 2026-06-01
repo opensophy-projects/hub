@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { TableContext } from '../lib/htmlParser';
 import Overlay from './Overlay';
+import { getTableUiTokens } from '@/features/table/components/tableUiTheme';
 import { useDragScroll } from '@/features/table/hooks/useDragScroll';
 import hljs from 'highlight.js/lib/core';
 import { makeTokens, themed } from '@/shared/tokens/theme';
@@ -35,10 +36,6 @@ function tk(isDark: boolean) {
     btnBdr: themed(isDark, 'rgba(255,255,255,0.12)', 'rgba(0,0,0,0.12)'),
     btnHov: themed(isDark, 'rgba(255,255,255,0.14)', 'rgba(0,0,0,0.12)'),
     btnClr: themed(isDark, 'rgba(255,255,255,0.72)', 'rgba(0,0,0,0.68)'),
-    menuBg: themed(isDark, '#222222', '#eceae6'),
-    menuBdr: themed(isDark, 'rgba(255,255,255,0.12)', 'rgba(0,0,0,0.1)'),
-    menuHov: themed(isDark, 'rgba(255,255,255,0.08)', 'rgba(0,0,0,0.06)'),
-    menuClr: themed(isDark, 'rgba(255,255,255,0.85)', 'rgba(0,0,0,0.82)'),
     fg: themed(isDark, '#e8e8e8', '#1a1a1a'),
     fgMuted: themed(isDark, 'rgba(255,255,255,0.35)', 'rgba(0,0,0,0.38)'),
     footerClr: themed(isDark, 'rgba(255,255,255,0.22)', 'rgba(0,0,0,0.32)'),
@@ -290,98 +287,130 @@ function Pill({ onClick, title, label, icon, t, active, success, btnRef }: {
   );
 }
 
-function MobileMenu({ t, code, onFullscreen }: {
-  readonly t: ReturnType<typeof tk>;
+
+const CodePortalMenu: React.FC<{
+  pos: { top: number; left: number };
+  isDark: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+  minWidth?: number;
+}> = ({ pos, isDark, onClose, children, minWidth = 220 }) => {
+  const t = getTableUiTokens(isDark);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onMouse = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) onClose(); };
+    const onScroll = () => onClose();
+    document.addEventListener('mousedown', onMouse);
+    window.addEventListener('scroll', onScroll, { capture: true, passive: true });
+    return () => {
+      document.removeEventListener('mousedown', onMouse);
+      window.removeEventListener('scroll', onScroll, true);
+    };
+  }, [onClose]);
+
+  return createPortal(
+    <>
+      <style>{`@keyframes tbIn{from{opacity:0;transform:translateY(-5px) scale(0.97)}to{opacity:1;transform:none}}`}</style>
+      <div ref={ref} style={{
+        position: 'fixed', top: pos.top, left: pos.left, minWidth, zIndex: 9999,
+        background: t.menuBg, border: `1px solid ${t.menuBdr}`,
+        borderRadius: 10,
+        boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.7)' : '0 8px 28px rgba(0,0,0,0.16)',
+        overflow: 'hidden', animation: 'tbIn 0.13s cubic-bezier(0.2,0,0,1)',
+      }}>
+        {children}
+      </div>
+    </>,
+    document.body,
+  );
+};
+
+function MobileMenu({ isDark, code, onFullscreen }: {
+  readonly isDark: boolean;
   readonly code: string;
   readonly onFullscreen: () => void;
 }) {
-  const [open, setOpen]     = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const menuRef    = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onMouse = (e: MouseEvent) => {
-      const target = e.target instanceof Node ? e.target : null;
-      if (
-        menuRef.current?.contains(target) ||
-        triggerRef.current?.contains(target)
-      ) return;
-      setOpen(false);
-    };
-    document.addEventListener('mousedown', onMouse, true);
-    return () => document.removeEventListener('mousedown', onMouse, true);
-  }, [open]);
+  const [open, setOpen]       = useState(false);
+  const [copied, setCopied]   = useState(false);
+  const [pos, setPos]         = useState({ top: 0, left: 0 });
+  const ref = useRef<HTMLButtonElement>(null);
+  const t = getTableUiTokens(isDark);
 
   const toggle = () => {
     if (open) { setOpen(false); return; }
-    const r = triggerRef.current?.getBoundingClientRect();
+    const r = ref.current?.getBoundingClientRect();
     if (!r) return;
-    const mw = 200;
-    setMenuPos({ top: r.bottom + 4, left: Math.max(8, Math.min(r.right - mw, window.innerWidth - mw - 8)) });
+    const mw = 220;
+    setPos({ top: r.bottom + 6, left: Math.max(8, Math.min(r.right - mw, window.innerWidth - mw - 8)) });
     setOpen(true);
   };
 
   const doCopy = async () => {
     await navigator.clipboard.writeText(code);
     setCopied(true);
-    setTimeout(() => { setCopied(false); }, 2000);
+    setTimeout(() => { setCopied(false); setOpen(false); }, 1500);
   };
 
-  const menu = open ? (
-    <>
-      <style>{`@keyframes cbMenuIn{from{opacity:0;transform:translateY(-5px) scale(0.97)}to{opacity:1;transform:none}}`}</style>
-      <div ref={menuRef} style={{
-        position: 'fixed', top: menuPos.top, left: menuPos.left,
-        minWidth: 200, zIndex: 99999,
-        background: t.menuBg, border: `1px solid ${t.menuBdr}`,
-        borderRadius: 10,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
-        overflow: 'hidden',
-        animation: 'cbMenuIn 0.13s cubic-bezier(0.2,0,0,1)',
-      }}>
-        <button onClick={doCopy} style={{
-          width: '100%', padding: '11px 14px',
-          display: 'flex', alignItems: 'center', gap: 10,
-          border: 'none', background: copied ? 'rgba(34,197,94,0.12)' : 'transparent',
-          color: copied ? '#22c55e' : t.menuClr,
-          fontSize: 13, fontWeight: copied ? 600 : 400,
-          cursor: 'pointer', textAlign: 'left',
-        }}>
-          <span style={{ display: 'flex', opacity: copied ? 1 : 0.6 }}>
-            {copied ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />}
-          </span>
-          <span>{copied ? 'Скопировано!' : 'Скопировать код'}</span>
-        </button>
-        <div style={{ height: 1, background: t.menuBdr }} />
-        <button onClick={() => { onFullscreen(); setOpen(false); }} style={{
-          width: '100%', padding: '11px 14px',
-          display: 'flex', alignItems: 'center', gap: 10,
-          border: 'none', background: 'transparent',
-          color: t.menuClr, fontSize: 13, cursor: 'pointer', textAlign: 'left',
-        }}>
-          <span style={{ display: 'flex', opacity: 0.6 }}><Maximize2 size={14} /></span>
-          <span>Развернуть</span>
-        </button>
-      </div>
-    </>
-  ) : null;
+  const sep = <div style={{ height: 1, margin: '3px 0', background: t.menuBdr }} />;
+
+  const sLabel = (label: string) => (
+    <div style={{ padding: '7px 14px 3px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: t.menuSub }}>{label}</div>
+  );
+
+  const mRow = (onClick: () => void, icon: React.ReactNode, label: string, sub?: string, green?: boolean) => {
+    const rowColor = green ? '#22c55e' : t.menuClr;
+    const rowBg = green ? t.greenBg : 'transparent';
+    const rowBgHover = green ? t.greenBg : t.menuHov;
+
+    return (
+      <button onClick={onClick} style={{
+        width: '100%', padding: sub ? '10px 14px' : '11px 14px',
+        display: 'flex', flexDirection: sub ? 'column' : 'row',
+        alignItems: sub ? 'flex-start' : 'center', gap: sub ? 2 : 10,
+        border: 'none', background: rowBg,
+        cursor: 'pointer', textAlign: 'left',
+        color: rowColor,
+        fontSize: 13, fontWeight: green ? 600 : 400, transition: 'background 0.1s',
+      }}
+        onMouseEnter={e => { if (!green) (e.currentTarget as HTMLButtonElement).style.background = rowBgHover; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = rowBg; }}
+      >
+        {!sub && <span style={{ opacity: green ? 1 : 0.6, flexShrink: 0, display: 'flex' }}>{icon}</span>}
+        <span style={{ flex: 1, fontWeight: 500 }}>{label}</span>
+        {sub && <span style={{ fontSize: 11, color: green ? t.greenSub : t.menuSub }}>{sub}</span>}
+      </button>
+    );
+  };
 
   return (
     <>
-      <button ref={triggerRef} onClick={toggle} style={{
+      <button ref={ref} onClick={toggle} style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         width: 36, height: 36, borderRadius: 8,
-        border: `1px solid ${t.btnBdr}`,
-        background: open ? t.btnHov : t.btnBg,
-        color: t.btnClr, cursor: 'pointer', flexShrink: 0,
-      }}>
+        border: `1px solid ${open ? t.btnActBdr : t.btnBdr}`,
+        background: open ? t.btnActBg : t.btnBg,
+        color: open ? t.btnActClr : t.btnClr,
+        cursor: 'pointer', flexShrink: 0, transition: 'all 0.13s',
+      }}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = open ? t.btnActBg : t.btnBg; }}
+      >
         <MoreHorizontal size={16} />
       </button>
-
-      {menu && createPortal(menu, document.body)}
+      {open && (
+        <CodePortalMenu pos={pos} isDark={isDark} onClose={() => setOpen(false)} minWidth={220}>
+          {sLabel('Копировать')}
+          {mRow(doCopy,
+            copied ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />,
+            copied ? 'Скопировано!' : 'Код',
+            copied ? undefined : 'Скопировать содержимое',
+            copied)}
+          {sep}
+          {mRow(() => { onFullscreen(); setOpen(false); }, <Maximize2 size={14} />, 'На весь экран')}
+          <div style={{ height: 4 }} />
+        </CodePortalMenu>
+      )}
     </>
   );
 }
@@ -398,6 +427,7 @@ interface SingleCodeBlockProps {
   readonly isExpanded: boolean;
   readonly setIsExpanded: (v: boolean) => void;
   readonly isMobile: boolean;
+  readonly isDark: boolean;
   readonly t: ReturnType<typeof tk>;
 }
 
@@ -412,7 +442,7 @@ function pluralLines(n: number): string {
   return 'строк';
 }
 
-function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuery, isCopied, handleCopy, setIsFullscreen, isExpanded, setIsExpanded, isMobile, t }: SingleCodeBlockProps) {
+function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuery, isCopied, handleCopy, setIsFullscreen, isExpanded, setIsExpanded, isMobile, isDark, t }: SingleCodeBlockProps) {
   const lines = useMemo(() => {
     const raw = code.split('\n');
     if (raw.at(-1) === '') raw.pop();
@@ -477,7 +507,7 @@ function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuer
       )}
 
       {isMobile && (
-        <MobileMenu t={t} code={code} onFullscreen={() => setIsFullscreen(true)} />
+        <MobileMenu isDark={isDark} code={code} onFullscreen={() => setIsFullscreen(true)} />
       )}
     </div>
   );
@@ -651,6 +681,7 @@ export function CodeBlock({ code, language = '', tabs }: CodeBlockProps) {
     isExpanded,
     setIsExpanded,
     isMobile,
+    isDark,
     t,
   };
 
