@@ -54,6 +54,7 @@ interface NavigationProps {
   currentDocSlug?: string;
   toc?: TocItem[];
   activeHeadingId?: string;
+  floatingChrome?: boolean;
 }
 
 interface SiteLogoConfig {
@@ -685,14 +686,22 @@ const NavPanelContent: React.FC<{
 // ─── Вспомогательные функции для ToC ─────────────────────────────────────────
 
 function tocBorderColor(isActive: boolean, glowOp: number, isDark: boolean, accent: string): string {
-  if (isActive)   return accent;
-  if (glowOp > 0) return isDark ? `rgba(255,255,255,${glowOp})` : `rgba(0,0,0,${glowOp})`;
+  if (isActive)   return isDark ? `color-mix(in srgb, ${accent} 72%, white 28%)` : accent;
+  if (glowOp > 0) return isDark ? `rgba(255,255,255,${glowOp * 0.55})` : `rgba(0,0,0,${glowOp * 0.28})`;
   return 'transparent';
 }
 
 function tocShadow(isActive: boolean, glowOp: number, isDark: boolean, accent: string): string {
-  if (isActive)   return `inset 3px 0 10px -2px ${accent}88`;
-  if (glowOp > 0) return isDark ? `inset 3px 0 8px -3px rgba(255,255,255,${glowOp * 0.35})` : `inset 3px 0 8px -3px rgba(0,0,0,${glowOp * 0.35})`;
+  if (isActive) {
+    return isDark
+      ? `inset 0 0 0 1px ${accent}55, 0 0 18px ${accent}55, 0 0 36px ${accent}2f`
+      : `inset 0 0 0 1px ${accent}33, 0 0 18px ${accent}22`;
+  }
+  if (glowOp > 0) {
+    return isDark
+      ? `inset 0 0 0 1px rgba(255,255,255,${glowOp * 0.16}), 0 0 14px rgba(255,255,255,${glowOp * 0.08})`
+      : `inset 0 0 0 1px rgba(0,0,0,${glowOp * 0.08})`;
+  }
   return 'none';
 }
 
@@ -710,6 +719,12 @@ function getTocItemStyle(item: TocItem, dist: number, activeId: string, isDark: 
   else if (isActive) { opacity = 1;    glowOp = 1; }
   else { opacity = Math.max(0.32, 0.82 - dist * 0.18); glowOp = Math.max(0, 0.5 - dist * 0.16); }
   const baseFontSize = mobile ? 1.05 : 0.92;
+  const activeGlowBg = isDark
+    ? `radial-gradient(circle at 8% 50%, ${t.accent}33 0%, ${t.accent}16 38%, rgba(255,255,255,0.035) 100%)`
+    : `radial-gradient(circle at 8% 50%, ${t.accent}1f 0%, ${t.accent}0f 42%, rgba(0,0,0,0.02) 100%)`;
+  const nearGlowBg = glowOp > 0
+    ? (isDark ? `rgba(255,255,255,${glowOp * 0.035})` : `rgba(0,0,0,${glowOp * 0.018})`)
+    : 'transparent';
   const fontSizeStep = mobile ? 0.05 : 0.04;
   const fontSize     = `${baseFontSize - (item.level - 2) * fontSizeStep}rem`;
   const paddingLeft  = mobile ? 14 + (item.level - 2) * 18 : 12 + (item.level - 2) * 14;
@@ -717,17 +732,13 @@ function getTocItemStyle(item: TocItem, dist: number, activeId: string, isDark: 
     isActive,
     borderClr: tocBorderColor(isActive, glowOp, isDark, t.accent),
     shadow:    tocShadow(isActive, glowOp, isDark, t.accent),
+    background: isActive ? activeGlowBg : nearGlowBg,
     fontSize, paddingLeft,
     color: tocColor(isActive, opacity, isDark, t.accent),
   };
 }
 
 // ─── TocPanelContent ──────────────────────────────────────────────────────────
-
-function getTocItemBackground(isActive: boolean, isDark: boolean): string {
-  if (!isActive) return 'transparent';
-  return isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
-}
 
 function getTocItemFontWeight(isActive: boolean, level: number): number {
   if (isActive) return 600;
@@ -749,7 +760,6 @@ const TocPanelContent: React.FC<{
       {toc.map((item, index) => {
         const dist  = Math.abs(index - activeIndex);
         const style = getTocItemStyle(item, dist, activeId, isDark, mobile);
-        const bg    = getTocItemBackground(style.isActive, isDark);
         const fw    = getTocItemFontWeight(style.isActive, item.level);
         return (
           <button key={item.id}
@@ -761,11 +771,13 @@ const TocPanelContent: React.FC<{
               paddingRight:  mobile ? '1rem'    : '0.75rem',
               paddingLeft:   `${style.paddingLeft}px`,
               fontSize: style.fontSize, lineHeight: 1.45,
-              background: bg, border: 'none', cursor: 'pointer',
+              position: 'relative',
+              background: style.background, border: '1px solid transparent', cursor: 'pointer',
               borderLeft: '2px solid', borderLeftColor: style.borderClr,
-              boxShadow: style.shadow, borderRadius: '0 8px 8px 0',
+              boxShadow: style.shadow, borderRadius: '10px',
               color: style.color, fontWeight: fw,
-              textShadow: style.isActive ? `0 0 12px ${t.accent}55` : 'none',
+              textShadow: style.isActive ? `0 0 10px ${t.accent}99, 0 0 24px ${t.accent}55` : 'none',
+              transition: 'background 0.18s, box-shadow 0.18s, color 0.18s, transform 0.18s',
             }}
           >{item.text}</button>
         );
@@ -966,8 +978,9 @@ function deriveDesktopNavValues(
   currentDocSlug: string | undefined,
   readingModeEnabled: boolean,
   isDark: boolean,
+  floatingChrome = false,
 ): DesktopNavDerived {
-  const isDocsPage       = Boolean(currentDocSlug);
+  const isDocsPage       = Boolean(currentDocSlug) || floatingChrome;
   const chromeGap        = isDocsPage ? DOC_CHROME_GAP : 0;
   const chromeTopGap     = isDocsPage ? DOC_CHROME_TOP_GAP : 0;
   const chromeRadius     = isDocsPage ? DOC_CHROME_RADIUS : 0;
@@ -1205,13 +1218,14 @@ const DesktopTocPanel: React.FC<{
 
 const DesktopNav: React.FC<{
   isDark: boolean; toggleTheme: () => void; currentDocSlug?: string; toc: TocItem[]; activeId: string; showDocActions: boolean; logoPath: string;
-}> = ({ isDark, toggleTheme, currentDocSlug, toc, activeId, showDocActions, logoPath }) => {
+  floatingChrome?: boolean;
+}> = ({ isDark, toggleTheme, currentDocSlug, toc, activeId, showDocActions, logoPath, floatingChrome = false }) => {
   const t   = tk(isDark);
   const state = useDesktopNavState();
   const { onResizeMouseDown } = usePanelResize(state.panelWidth, state.setPanelWidth);
 
   const readingModeEnabled = showDocActions;
-  const derived = deriveDesktopNavValues(state, currentDocSlug, readingModeEnabled, isDark);
+  const derived = deriveDesktopNavValues(state, currentDocSlug, readingModeEnabled, isDark, floatingChrome);
   const { isDocsPage, chromeGap, chromeTopGap, chromeRadius, sidebarBg, isStandardMode, panelOpen, sidebarShellWidth, panelTitle } = derived;
   const panelBg = sidebarBg;
 
@@ -1435,7 +1449,7 @@ const MobileNav: React.FC<{
 
 // ─── Navigation (основной экспорт) ───────────────────────────────────────────
 
-const Navigation: React.FC<NavigationProps> = ({ currentDocSlug, toc = [], activeHeadingId = '' }) => {
+const Navigation: React.FC<NavigationProps> = ({ currentDocSlug, toc = [], activeHeadingId = '', floatingChrome = false }) => {
   const { isDark, toggleTheme } = useTheme();
   const isDesktop = useIsDesktopNav();
   const showDocActions = toc.length > 0 || !!currentDocSlug;
@@ -1469,7 +1483,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentDocSlug, toc = [], activ
 
   const logoPath = getThemeLogoPath(logoConfig, isDark);
 
-  if (isDesktop) return <DesktopNav isDark={isDark} toggleTheme={toggleTheme} currentDocSlug={currentDocSlug} toc={toc} activeId={activeHeadingId} showDocActions={showDocActions} logoPath={logoPath} />;
+  if (isDesktop) return <DesktopNav isDark={isDark} toggleTheme={toggleTheme} currentDocSlug={currentDocSlug} toc={toc} activeId={activeHeadingId} showDocActions={showDocActions} logoPath={logoPath} floatingChrome={floatingChrome} />;
   return <MobileNav isDark={isDark} toggleTheme={toggleTheme} currentDocSlug={currentDocSlug} toc={toc} activeId={activeHeadingId} showDocActions={showDocActions} logoPath={logoPath} />;
 };
 

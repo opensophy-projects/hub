@@ -1,4 +1,5 @@
 import React, { useState, useRef, useContext, useMemo, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Copy, Check, Maximize2, Minimize2,
   ChevronDown, ChevronUp, Search, X, MoreHorizontal,
@@ -34,6 +35,10 @@ function tk(isDark: boolean) {
     btnBdr: themed(isDark, 'rgba(255,255,255,0.12)', 'rgba(0,0,0,0.12)'),
     btnHov: themed(isDark, 'rgba(255,255,255,0.14)', 'rgba(0,0,0,0.12)'),
     btnClr: themed(isDark, 'rgba(255,255,255,0.72)', 'rgba(0,0,0,0.68)'),
+    menuBg: themed(isDark, '#222222', '#eceae6'),
+    menuBdr: themed(isDark, 'rgba(255,255,255,0.12)', 'rgba(0,0,0,0.1)'),
+    menuHov: themed(isDark, 'rgba(255,255,255,0.08)', 'rgba(0,0,0,0.06)'),
+    menuClr: themed(isDark, 'rgba(255,255,255,0.85)', 'rgba(0,0,0,0.82)'),
     fg: themed(isDark, '#e8e8e8', '#1a1a1a'),
     fgMuted: themed(isDark, 'rgba(255,255,255,0.35)', 'rgba(0,0,0,0.38)'),
     footerClr: themed(isDark, 'rgba(255,255,255,0.22)', 'rgba(0,0,0,0.32)'),
@@ -325,7 +330,44 @@ function MobileMenu({ t, code, onFullscreen }: {
     setTimeout(() => { setCopied(false); }, 2000);
   };
 
-  const menuBg  = t.codeBg === '#0d0d0d' ? '#1a1a1a' : '#eceae6';
+  const menu = open ? (
+    <>
+      <style>{`@keyframes cbMenuIn{from{opacity:0;transform:translateY(-5px) scale(0.97)}to{opacity:1;transform:none}}`}</style>
+      <div ref={menuRef} style={{
+        position: 'fixed', top: menuPos.top, left: menuPos.left,
+        minWidth: 200, zIndex: 99999,
+        background: t.menuBg, border: `1px solid ${t.menuBdr}`,
+        borderRadius: 10,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
+        overflow: 'hidden',
+        animation: 'cbMenuIn 0.13s cubic-bezier(0.2,0,0,1)',
+      }}>
+        <button onClick={doCopy} style={{
+          width: '100%', padding: '11px 14px',
+          display: 'flex', alignItems: 'center', gap: 10,
+          border: 'none', background: copied ? 'rgba(34,197,94,0.12)' : 'transparent',
+          color: copied ? '#22c55e' : t.menuClr,
+          fontSize: 13, fontWeight: copied ? 600 : 400,
+          cursor: 'pointer', textAlign: 'left',
+        }}>
+          <span style={{ display: 'flex', opacity: copied ? 1 : 0.6 }}>
+            {copied ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />}
+          </span>
+          <span>{copied ? 'Скопировано!' : 'Скопировать код'}</span>
+        </button>
+        <div style={{ height: 1, background: t.menuBdr }} />
+        <button onClick={() => { onFullscreen(); setOpen(false); }} style={{
+          width: '100%', padding: '11px 14px',
+          display: 'flex', alignItems: 'center', gap: 10,
+          border: 'none', background: 'transparent',
+          color: t.menuClr, fontSize: 13, cursor: 'pointer', textAlign: 'left',
+        }}>
+          <span style={{ display: 'flex', opacity: 0.6 }}><Maximize2 size={14} /></span>
+          <span>Развернуть</span>
+        </button>
+      </div>
+    </>
+  ) : null;
 
   return (
     <>
@@ -339,39 +381,7 @@ function MobileMenu({ t, code, onFullscreen }: {
         <MoreHorizontal size={16} />
       </button>
 
-      {open && (
-        <div ref={menuRef} style={{
-          position: 'fixed', top: menuPos.top, left: menuPos.left,
-          minWidth: 200, zIndex: 99999,
-          background: menuBg, border: `1px solid ${t.btnBdr}`,
-          borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-          overflow: 'hidden',
-        }}>
-          <button onClick={doCopy} style={{
-            width: '100%', padding: '11px 14px',
-            display: 'flex', alignItems: 'center', gap: 10,
-            border: 'none', background: copied ? 'rgba(34,197,94,0.12)' : 'transparent',
-            color: copied ? '#22c55e' : t.btnClr,
-            fontSize: 13, fontWeight: copied ? 600 : 400,
-            cursor: 'pointer', textAlign: 'left',
-          }}>
-            <span style={{ display: 'flex', opacity: copied ? 1 : 0.6 }}>
-              {copied ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />}
-            </span>
-            <span>{copied ? 'Скопировано!' : 'Скопировать код'}</span>
-          </button>
-          <div style={{ height: 1, background: t.btnBdr }} />
-          <button onClick={() => { onFullscreen(); setOpen(false); }} style={{
-            width: '100%', padding: '11px 14px',
-            display: 'flex', alignItems: 'center', gap: 10,
-            border: 'none', background: 'transparent',
-            color: t.btnClr, fontSize: 13, cursor: 'pointer', textAlign: 'left',
-          }}>
-            <span style={{ display: 'flex', opacity: 0.6 }}><Maximize2 size={14} /></span>
-            <span>Развернуть</span>
-          </button>
-        </div>
-      )}
+      {menu && createPortal(menu, document.body)}
     </>
   );
 }

@@ -158,7 +158,7 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
           border: `1px solid ${t.border}`,
           borderRadius: '10px',
           boxShadow,
-          zIndex: 200,
+          zIndex: 100020,
           overflow: 'hidden',
           animation: 'askAiIn 0.13s ease',
         }}>

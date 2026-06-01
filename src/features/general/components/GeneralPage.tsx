@@ -1409,7 +1409,7 @@ const LandingContent: React.FC = () => {
         }
       `}</style>
 
-      <Navigation />
+      <Navigation floatingChrome />
 
       {/* Герой */}
       <section style={{
