@@ -1016,8 +1016,8 @@ const DesktopReadingModeMenu: React.FC<{
     <div style={{
       position: 'absolute', left: 'calc(100% - 1px)', top: 0, marginLeft: 0, width: '190px', padding: '8px',
       borderRadius: `0 ${radius}px ${radius}px 0`,
-      border: `1px solid ${t.border}`, borderLeft: 'none',
-      background: sidebarBg, boxShadow: '0 16px 50px rgba(0,0,0,0.14)', zIndex: 70,
+      border: 'none',
+      background: sidebarBg, boxShadow: 'none', zIndex: 70,
       backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
     }}>
       <button
@@ -1060,8 +1060,7 @@ const DesktopRail: React.FC<{
       height: isDocsPage ? `calc(100vh - ${chromeTopGap + chromeGap}px)` : '100vh',
       width: RAIL_W,
       background: isDocsPage && shellEnabled ? 'transparent' : sidebarBg,
-      border: isDocsPage && shellEnabled ? 'none' : `1px solid ${t.border}`,
-      borderRight: 'none',
+      border: 'none',
       borderRadius: panelOpen ? `${chromeRadius}px 0 0 ${chromeRadius}px` : chromeRadius,
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       zIndex: 50, padding: '8px 0', gap: '2px',
@@ -1123,24 +1122,17 @@ const DesktopSlidingPanel: React.FC<{
   currentDocSlug, toc, activeId, isDark,
   onResizeMouseDown, onClose,
 }) => {
-  const panelBorder = (() => {
-    if (isDocsPage && shellEnabled) return 'none';
-    return panelOpen ? `1px solid ${t.border}` : 'none';
-  })();
-
   return (
     <aside style={{
       position: 'fixed', left: chromeGap + RAIL_W, top: chromeTopGap,
       height: isDocsPage ? `calc(100vh - ${chromeTopGap + chromeGap}px)` : '100vh',
       width: panelOpen ? panelWidth : 0,
       background: isDocsPage && shellEnabled ? 'transparent' : panelBg,
-      border: panelBorder,
-      borderLeft: 'none',
+      border: 'none',
       borderRadius: panelOpen ? `0 ${chromeRadius}px ${chromeRadius}px 0` : 0,
       display: 'flex', flexDirection: 'column', zIndex: 49, overflow: 'hidden',
       pointerEvents: panelOpen ? 'auto' : 'none',
       visibility: panelOpen ? 'visible' : 'hidden',
-      boxShadow: panelOpen && !shellEnabled ? '0 18px 60px rgba(0,0,0,0.14)' : 'none',
       backdropFilter: isDocsPage && shellEnabled ? 'none' : 'blur(14px)',
       WebkitBackdropFilter: isDocsPage && shellEnabled ? 'none' : 'blur(14px)',
     }}>
@@ -1172,10 +1164,9 @@ const DesktopTocPanel: React.FC<{
   <aside style={{
     position: 'fixed', right: chromeGap, top: chromeTopGap, width: TOC_PANEL_W,
     height: isDocsPage ? `calc(100vh - ${chromeTopGap + chromeGap}px)` : '100vh',
-    border: `1px solid ${t.border}`, borderRight: 'none',
+    border: 'none', borderLeft: 'none',
     borderRadius: `${chromeRadius}px 0 0 ${chromeRadius}px`,
     overflow: 'hidden', background: panelBg, zIndex: 48,
-    boxShadow: '0 18px 60px rgba(0,0,0,0.14)',
     display: 'flex', flexDirection: 'column',
     backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
   }}>
