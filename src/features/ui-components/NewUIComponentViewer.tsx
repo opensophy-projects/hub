@@ -926,7 +926,7 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
   return (
     <div style={{ position: 'relative', width: '100%', overflow: 'visible' }}>
       <div style={{
-        position: 'absolute', top: 10, right: 10, zIndex: 5,
+        position: 'absolute', top: 10, right: 10, zIndex: 1,
         display: 'flex', gap: 6,
       }}>
         <button

@@ -54,6 +54,7 @@ interface NavigationProps {
   currentDocSlug?: string;
   toc?: TocItem[];
   activeHeadingId?: string;
+  floatingChrome?: boolean;
 }
 
 interface SiteLogoConfig {
@@ -765,7 +766,8 @@ const TocPanelContent: React.FC<{
               borderLeft: '2px solid', borderLeftColor: style.borderClr,
               boxShadow: style.shadow, borderRadius: '0 8px 8px 0',
               color: style.color, fontWeight: fw,
-              textShadow: style.isActive ? `0 0 12px ${t.accent}55` : 'none',
+              textShadow: style.isActive ? `0 0 8px ${t.accent}cc, 0 0 18px ${t.accent}88, 0 0 30px ${t.accent}44` : 'none',
+              transition: 'text-shadow 0.18s, color 0.18s',
             }}
           >{item.text}</button>
         );
@@ -966,8 +968,9 @@ function deriveDesktopNavValues(
   currentDocSlug: string | undefined,
   readingModeEnabled: boolean,
   isDark: boolean,
+  floatingChrome = false,
 ): DesktopNavDerived {
-  const isDocsPage       = Boolean(currentDocSlug);
+  const isDocsPage       = Boolean(currentDocSlug) || floatingChrome;
   const chromeGap        = isDocsPage ? DOC_CHROME_GAP : 0;
   const chromeTopGap     = isDocsPage ? DOC_CHROME_TOP_GAP : 0;
   const chromeRadius     = isDocsPage ? DOC_CHROME_RADIUS : 0;
@@ -984,10 +987,10 @@ function deriveDesktopNavValues(
 // ─── Подкомпоненты DesktopNav ─────────────────────────────────────────────────
 
 const DesktopSidebarShell: React.FC<{
-  isDocsPage: boolean; chromeGap: number; chromeTopGap: number;
+  enabled: boolean; isDocsPage: boolean; chromeGap: number; chromeTopGap: number;
   chromeRadius: number; sidebarShellWidth: number; sidebarBg: string;
-}> = ({ isDocsPage, chromeGap, chromeTopGap, chromeRadius, sidebarShellWidth, sidebarBg }) => {
-  if (!isDocsPage) return null;
+}> = ({ enabled, isDocsPage, chromeGap, chromeTopGap, chromeRadius, sidebarShellWidth, sidebarBg }) => {
+  if (!enabled || !isDocsPage) return null;
   return (
     <div
       aria-hidden
@@ -1013,8 +1016,9 @@ const DesktopReadingModeMenu: React.FC<{
     <div style={{
       position: 'absolute', left: 'calc(100% - 1px)', top: 0, marginLeft: 0, width: '190px', padding: '8px',
       borderRadius: `0 ${radius}px ${radius}px 0`,
-      border: `1px solid ${t.border}`, borderLeft: 'none',
+      border: 'none',
       background: sidebarBg, boxShadow: 'none', zIndex: 70,
+      backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
     }}>
       <button
         onClick={() => onSelect('standard')}
@@ -1035,7 +1039,7 @@ const DesktopReadingModeMenu: React.FC<{
 const DesktopRail: React.FC<{
   isDark: boolean; toggleTheme: () => void; logoPath: string;
   isDocsPage: boolean; chromeGap: number; chromeTopGap: number; chromeRadius: number;
-  panelOpen: boolean; t: ReturnType<typeof tk>;
+  panelOpen: boolean; shellEnabled: boolean; t: ReturnType<typeof tk>;
   state: DesktopNavState; derived: DesktopNavDerived;
   readingModeEnabled: boolean;
   onHideRail: () => void;
@@ -1043,7 +1047,7 @@ const DesktopRail: React.FC<{
   onTogglePanel: (panel: Exclude<PanelType, null>) => void;
 }> = ({
   isDark, toggleTheme, logoPath,
-  isDocsPage, chromeGap, chromeTopGap, chromeRadius, panelOpen, t,
+  isDocsPage, chromeGap, chromeTopGap, chromeRadius, panelOpen, shellEnabled, t,
   state, derived, readingModeEnabled,
   onHideRail, onOpenSearch, onTogglePanel,
 }) => {
@@ -1055,14 +1059,13 @@ const DesktopRail: React.FC<{
       position: 'fixed', left: chromeGap, top: chromeTopGap,
       height: isDocsPage ? `calc(100vh - ${chromeTopGap + chromeGap}px)` : '100vh',
       width: RAIL_W,
-      background: isDocsPage ? 'transparent' : sidebarBg,
-      border: isDocsPage ? 'none' : `1px solid ${t.border}`,
-      borderRight: 'none',
+      background: isDocsPage && shellEnabled ? 'transparent' : sidebarBg,
+      border: 'none',
       borderRadius: panelOpen ? `${chromeRadius}px 0 0 ${chromeRadius}px` : chromeRadius,
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       zIndex: 50, padding: '8px 0', gap: '2px',
-      backdropFilter: isDocsPage ? 'none' : 'blur(12px)',
-      WebkitBackdropFilter: isDocsPage ? 'none' : 'blur(12px)',
+      backdropFilter: isDocsPage && shellEnabled ? 'none' : 'blur(12px)',
+      WebkitBackdropFilter: isDocsPage && shellEnabled ? 'none' : 'blur(12px)',
     }}>
       <div style={{ width: RAIL_W, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         <BrandLogo logoPath={logoPath} size={28} />
@@ -1098,9 +1101,6 @@ const DesktopRail: React.FC<{
             <RailBtn icon={<ArrowUp size={18} />} label="Наверх"     isDark={isDark} onClick={() => globalThis.scrollTo({ top: 0, behavior: 'smooth' })}            title="Наверх" />
           </>
         )}
-        {isStandardMode && !standardTocVisible && (
-          <RailBtn icon={<List size={18} />} label="TOC" isDark={isDark} onClick={() => state.setStandardTocVisible(true)} title="Показать оглавление" />
-        )}
         <RailBtn icon={<Mail size={18} />} label="Контакты" isDark={isDark} isActive={activePanel === 'contacts'} onClick={() => onTogglePanel('contacts')} title="Контакты" />
       </div>
     </aside>
@@ -1110,6 +1110,7 @@ const DesktopRail: React.FC<{
 const DesktopSlidingPanel: React.FC<{
   isDocsPage: boolean; chromeGap: number; chromeTopGap: number; chromeRadius: number;
   panelOpen: boolean; panelWidth: number; panelBg: string; t: ReturnType<typeof tk>;
+  shellEnabled: boolean;
   panelTitle: Exclude<PanelType, null>; isStandardMode: boolean;
   currentDocSlug?: string; toc: TocItem[]; activeId: string; isDark: boolean;
   onResizeMouseDown: (e: React.MouseEvent) => void;
@@ -1117,29 +1118,23 @@ const DesktopSlidingPanel: React.FC<{
 }> = ({
   isDocsPage, chromeGap, chromeTopGap, chromeRadius,
   panelOpen, panelWidth, panelBg, t,
-  panelTitle, isStandardMode,
+  shellEnabled, panelTitle, isStandardMode,
   currentDocSlug, toc, activeId, isDark,
   onResizeMouseDown, onClose,
 }) => {
-  const panelBorder = (() => {
-    if (isDocsPage) return 'none';
-    return panelOpen ? `1px solid ${t.border}` : 'none';
-  })();
-
   return (
     <aside style={{
       position: 'fixed', left: chromeGap + RAIL_W, top: chromeTopGap,
       height: isDocsPage ? `calc(100vh - ${chromeTopGap + chromeGap}px)` : '100vh',
       width: panelOpen ? panelWidth : 0,
-      background: isDocsPage ? 'transparent' : panelBg,
-      border: panelBorder,
-      borderLeft: 'none',
+      background: isDocsPage && shellEnabled ? 'transparent' : panelBg,
+      border: 'none',
       borderRadius: panelOpen ? `0 ${chromeRadius}px ${chromeRadius}px 0` : 0,
       display: 'flex', flexDirection: 'column', zIndex: 49, overflow: 'hidden',
       pointerEvents: panelOpen ? 'auto' : 'none',
       visibility: panelOpen ? 'visible' : 'hidden',
-      backdropFilter: isDocsPage ? 'none' : 'blur(14px)',
-      WebkitBackdropFilter: isDocsPage ? 'none' : 'blur(14px)',
+      backdropFilter: isDocsPage && shellEnabled ? 'none' : 'blur(14px)',
+      WebkitBackdropFilter: isDocsPage && shellEnabled ? 'none' : 'blur(14px)',
     }}>
       {panelOpen && (
         <>
@@ -1205,14 +1200,17 @@ const DesktopTocPanel: React.FC<{
 
 const DesktopNav: React.FC<{
   isDark: boolean; toggleTheme: () => void; currentDocSlug?: string; toc: TocItem[]; activeId: string; showDocActions: boolean; logoPath: string;
-}> = ({ isDark, toggleTheme, currentDocSlug, toc, activeId, showDocActions, logoPath }) => {
+  floatingChrome?: boolean;
+}> = ({ isDark, toggleTheme, currentDocSlug, toc, activeId, showDocActions, logoPath, floatingChrome = false }) => {
   const t   = tk(isDark);
   const state = useDesktopNavState();
   const { onResizeMouseDown } = usePanelResize(state.panelWidth, state.setPanelWidth);
 
   const readingModeEnabled = showDocActions;
-  const derived = deriveDesktopNavValues(state, currentDocSlug, readingModeEnabled, isDark);
+  const derived = deriveDesktopNavValues(state, currentDocSlug, readingModeEnabled, isDark, floatingChrome);
   const { isDocsPage, chromeGap, chromeTopGap, chromeRadius, sidebarBg, isStandardMode, panelOpen, sidebarShellWidth, panelTitle } = derived;
+  const contentIsDocsPage = Boolean(currentDocSlug);
+  const shellEnabled = contentIsDocsPage;
   const panelBg = sidebarBg;
 
   useEffect(() => {
@@ -1224,9 +1222,14 @@ const DesktopNav: React.FC<{
   }, [state.standardTocVisible]);
 
   useEffect(() => {
-    buildCssVars(state.railVisible, isDocsPage, panelOpen, state.panelWidth, isStandardMode, state.standardTocVisible);
+    if (!contentIsDocsPage) {
+      clearDocCssVars();
+      document.documentElement.style.setProperty('--nav-left', '0px');
+      return () => { document.documentElement.style.removeProperty('--nav-left'); };
+    }
+    buildCssVars(state.railVisible, contentIsDocsPage, panelOpen, state.panelWidth, isStandardMode, state.standardTocVisible);
     return () => { document.documentElement.style.removeProperty('--nav-left'); };
-  }, [state.railVisible, panelOpen, state.panelWidth, isStandardMode, state.standardTocVisible, isDocsPage]);
+  }, [state.railVisible, panelOpen, state.panelWidth, isStandardMode, state.standardTocVisible, contentIsDocsPage]);
 
   useEffect(() => {
     return clearDocCssVars;
@@ -1249,7 +1252,7 @@ const DesktopNav: React.FC<{
   return (
     <>
       <DesktopSidebarShell
-        isDocsPage={isDocsPage} chromeGap={chromeGap} chromeTopGap={chromeTopGap}
+        enabled={shellEnabled} isDocsPage={isDocsPage} chromeGap={chromeGap} chromeTopGap={chromeTopGap}
         chromeRadius={chromeRadius} sidebarShellWidth={sidebarShellWidth} sidebarBg={sidebarBg}
       />
 
@@ -1257,7 +1260,7 @@ const DesktopNav: React.FC<{
         <DesktopRail
           isDark={isDark} toggleTheme={toggleTheme} logoPath={logoPath}
           isDocsPage={isDocsPage} chromeGap={chromeGap} chromeTopGap={chromeTopGap}
-          chromeRadius={chromeRadius} panelOpen={panelOpen} t={t}
+          chromeRadius={chromeRadius} panelOpen={panelOpen} shellEnabled={shellEnabled} t={t}
           state={state} derived={derived}
           readingModeEnabled={readingModeEnabled}
           onHideRail={() => state.setRailVisible(false)}
@@ -1285,7 +1288,7 @@ const DesktopNav: React.FC<{
         <DesktopSlidingPanel
           isDocsPage={isDocsPage} chromeGap={chromeGap} chromeTopGap={chromeTopGap}
           chromeRadius={chromeRadius} panelOpen={panelOpen} panelWidth={state.panelWidth}
-          panelBg={panelBg} t={t} panelTitle={panelTitle} isStandardMode={isStandardMode}
+          panelBg={panelBg} t={t} shellEnabled={shellEnabled} panelTitle={panelTitle} isStandardMode={isStandardMode}
           currentDocSlug={currentDocSlug} toc={toc} activeId={activeId} isDark={isDark}
           onResizeMouseDown={onResizeMouseDown}
           onClose={handlePanelClose}
@@ -1299,6 +1302,19 @@ const DesktopNav: React.FC<{
           toc={toc} activeId={activeId} isDark={isDark}
           onHideToc={() => state.setStandardTocVisible(false)}
         />
+      )}
+
+      {isStandardMode && !state.standardTocVisible && (
+        <button
+          onClick={() => state.setStandardTocVisible(true)}
+          style={{
+            position: 'fixed', right: chromeGap + 12, top: chromeTopGap + 12, zIndex: 56,
+            border: `1px solid ${t.border}`, borderRadius: '8px',
+            background: t.panelBg, color: t.fgMuted, padding: '6px 8px', cursor: 'pointer', fontSize: '0.75rem',
+          }}
+        >
+          Показать TOC
+        </button>
       )}
 
       <AnimatePresence>
@@ -1435,7 +1451,7 @@ const MobileNav: React.FC<{
 
 // ─── Navigation (основной экспорт) ───────────────────────────────────────────
 
-const Navigation: React.FC<NavigationProps> = ({ currentDocSlug, toc = [], activeHeadingId = '' }) => {
+const Navigation: React.FC<NavigationProps> = ({ currentDocSlug, toc = [], activeHeadingId = '', floatingChrome = false }) => {
   const { isDark, toggleTheme } = useTheme();
   const isDesktop = useIsDesktopNav();
   const showDocActions = toc.length > 0 || !!currentDocSlug;
@@ -1469,7 +1485,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentDocSlug, toc = [], activ
 
   const logoPath = getThemeLogoPath(logoConfig, isDark);
 
-  if (isDesktop) return <DesktopNav isDark={isDark} toggleTheme={toggleTheme} currentDocSlug={currentDocSlug} toc={toc} activeId={activeHeadingId} showDocActions={showDocActions} logoPath={logoPath} />;
+  if (isDesktop) return <DesktopNav isDark={isDark} toggleTheme={toggleTheme} currentDocSlug={currentDocSlug} toc={toc} activeId={activeHeadingId} showDocActions={showDocActions} logoPath={logoPath} floatingChrome={floatingChrome} />;
   return <MobileNav isDark={isDark} toggleTheme={toggleTheme} currentDocSlug={currentDocSlug} toc={toc} activeId={activeHeadingId} showDocActions={showDocActions} logoPath={logoPath} />;
 };
 
