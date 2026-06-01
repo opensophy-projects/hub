@@ -506,9 +506,44 @@ function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuer
         </>
       )}
 
-      {isMobile && (
+      {isMobile && (isModal ? (
+        <>
+          <button
+            onClick={handleCopy}
+            title={isCopied ? 'Скопировано!' : 'Копировать'}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 36, height: 36, borderRadius: 8,
+              border: `1px solid ${isCopied ? 'rgba(34,197,94,0.4)' : t.btnBdr}`,
+              background: isCopied ? 'rgba(34,197,94,0.16)' : t.btnBg,
+              color: isCopied ? '#22c55e' : t.btnClr,
+              cursor: 'pointer', flexShrink: 0, transition: 'all 0.13s',
+            }}
+            onMouseEnter={e => { if (!isCopied) (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
+            onMouseLeave={e => { if (!isCopied) (e.currentTarget as HTMLButtonElement).style.background = t.btnBg; }}
+          >
+            {isCopied ? <Check size={16} strokeWidth={2.5} /> : <Copy size={16} />}
+          </button>
+          <button
+            onClick={() => setIsFullscreen(false)}
+            title="Закрыть"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 36, height: 36, borderRadius: 8,
+              border: `1px solid ${t.btnBdr}`,
+              background: t.btnBg,
+              color: t.btnClr,
+              cursor: 'pointer', flexShrink: 0, transition: 'all 0.13s',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnBg; }}
+          >
+            <X size={16} />
+          </button>
+        </>
+      ) : (
         <MobileMenu isDark={isDark} code={code} onFullscreen={() => setIsFullscreen(true)} />
-      )}
+      ))}
     </div>
   );
 

@@ -1017,7 +1017,8 @@ const DesktopReadingModeMenu: React.FC<{
       position: 'absolute', left: 'calc(100% - 1px)', top: 0, marginLeft: 0, width: '190px', padding: '8px',
       borderRadius: `0 ${radius}px ${radius}px 0`,
       border: `1px solid ${t.border}`, borderLeft: 'none',
-      background: sidebarBg, boxShadow: 'none', zIndex: 70,
+      background: sidebarBg, boxShadow: '0 16px 50px rgba(0,0,0,0.14)', zIndex: 70,
+      backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
     }}>
       <button
         onClick={() => onSelect('standard')}
@@ -1123,7 +1124,7 @@ const DesktopSlidingPanel: React.FC<{
   onResizeMouseDown, onClose,
 }) => {
   const panelBorder = (() => {
-    if (isDocsPage) return 'none';
+    if (isDocsPage && shellEnabled) return 'none';
     return panelOpen ? `1px solid ${t.border}` : 'none';
   })();
 
@@ -1139,8 +1140,9 @@ const DesktopSlidingPanel: React.FC<{
       display: 'flex', flexDirection: 'column', zIndex: 49, overflow: 'hidden',
       pointerEvents: panelOpen ? 'auto' : 'none',
       visibility: panelOpen ? 'visible' : 'hidden',
-      backdropFilter: isDocsPage ? 'none' : 'blur(14px)',
-      WebkitBackdropFilter: isDocsPage ? 'none' : 'blur(14px)',
+      boxShadow: panelOpen && !shellEnabled ? '0 18px 60px rgba(0,0,0,0.14)' : 'none',
+      backdropFilter: isDocsPage && shellEnabled ? 'none' : 'blur(14px)',
+      WebkitBackdropFilter: isDocsPage && shellEnabled ? 'none' : 'blur(14px)',
     }}>
       {panelOpen && (
         <>
@@ -1170,9 +1172,10 @@ const DesktopTocPanel: React.FC<{
   <aside style={{
     position: 'fixed', right: chromeGap, top: chromeTopGap, width: TOC_PANEL_W,
     height: isDocsPage ? `calc(100vh - ${chromeTopGap + chromeGap}px)` : '100vh',
-    border: 'none', borderLeft: 'none',
+    border: `1px solid ${t.border}`, borderRight: 'none',
     borderRadius: `${chromeRadius}px 0 0 ${chromeRadius}px`,
     overflow: 'hidden', background: panelBg, zIndex: 48,
+    boxShadow: '0 18px 60px rgba(0,0,0,0.14)',
     display: 'flex', flexDirection: 'column',
     backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
   }}>
