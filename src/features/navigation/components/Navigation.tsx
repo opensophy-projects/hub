@@ -362,8 +362,7 @@ function useNavPanel(docs: Doc[], currentDocSlug: string | undefined) {
   useEffect(() => {
     if (!sectionOpen) return;
     const h = (e: MouseEvent) => {
-      // HTMLDivElement.contains принимает Node | null — приведение не нужно
-      if (sectionRef.current && !sectionRef.current.contains(e.target as Node)) {
+      if (sectionRef.current && !sectionRef.current.contains(e.target)) {
         setSectionOpen(false);
       }
     };
@@ -1051,7 +1050,7 @@ const DesktopRail: React.FC<{
   state, derived, readingModeEnabled,
   onHideRail, onOpenSearch, onTogglePanel,
 }) => {
-  const { readingMode, readingModeMenuOpen, setReadingModeMenuOpen, setReadingMode, activePanel, standardTocVisible } = state;
+  const { readingMode, readingModeMenuOpen, setReadingModeMenuOpen, setReadingMode, activePanel } = state;
   const { isStandardMode, sidebarBg } = derived;
 
   return (
@@ -1109,7 +1108,7 @@ const DesktopRail: React.FC<{
 
 const DesktopSlidingPanel: React.FC<{
   isDocsPage: boolean; chromeGap: number; chromeTopGap: number; chromeRadius: number;
-  panelOpen: boolean; panelWidth: number; panelBg: string; t: ReturnType<typeof tk>;
+  panelOpen: boolean; panelWidth: number; panelBg: string;
   shellEnabled: boolean;
   panelTitle: Exclude<PanelType, null>; isStandardMode: boolean;
   currentDocSlug?: string; toc: TocItem[]; activeId: string; isDark: boolean;
@@ -1117,7 +1116,7 @@ const DesktopSlidingPanel: React.FC<{
   onClose: () => void;
 }> = ({
   isDocsPage, chromeGap, chromeTopGap, chromeRadius,
-  panelOpen, panelWidth, panelBg, t,
+  panelOpen, panelWidth, panelBg,
   shellEnabled, panelTitle, isStandardMode,
   currentDocSlug, toc, activeId, isDark,
   onResizeMouseDown, onClose,
@@ -1252,7 +1251,7 @@ const DesktopNav: React.FC<{
   return (
     <>
       <DesktopSidebarShell
-        enabled={shellEnabled} isDocsPage={isDocsPage} chromeGap={chromeGap} chromeTopGap={chromeTopGap}
+        enabled={shellEnabled && state.railVisible} isDocsPage={isDocsPage} chromeGap={chromeGap} chromeTopGap={chromeTopGap}
         chromeRadius={chromeRadius} sidebarShellWidth={sidebarShellWidth} sidebarBg={sidebarBg}
       />
 
@@ -1288,7 +1287,7 @@ const DesktopNav: React.FC<{
         <DesktopSlidingPanel
           isDocsPage={isDocsPage} chromeGap={chromeGap} chromeTopGap={chromeTopGap}
           chromeRadius={chromeRadius} panelOpen={panelOpen} panelWidth={state.panelWidth}
-          panelBg={panelBg} t={t} shellEnabled={shellEnabled} panelTitle={panelTitle} isStandardMode={isStandardMode}
+          panelBg={panelBg} shellEnabled={shellEnabled} panelTitle={panelTitle} isStandardMode={isStandardMode}
           currentDocSlug={currentDocSlug} toc={toc} activeId={activeId} isDark={isDark}
           onResizeMouseDown={onResizeMouseDown}
           onClose={handlePanelClose}
