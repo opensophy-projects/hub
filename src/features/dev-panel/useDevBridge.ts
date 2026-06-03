@@ -161,6 +161,7 @@ export interface SiteConfig {
   favicon?: string;
   lightLogo?: string;
   darkLogo?: string;
+  introLoaderText?: string;
 }
 
 // ─── Typed bridge API ──────────────────────────────────────────────────────────

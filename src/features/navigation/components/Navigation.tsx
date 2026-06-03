@@ -500,13 +500,13 @@ const SectionDropdown: React.FC<{
 // ─── NavTreeContent ───────────────────────────────────────────────────────────
 
 const NavTreeContent: React.FC<{
-  error: boolean; loading: boolean; navTree: NavNode;
+  error: boolean; navTree: NavNode;
   currentDocSlug: string | undefined; expandedPaths: Set<string>;
   onToggle: (p: string) => void; isDark: boolean; mobile: boolean | undefined;
   activeNavSlug: string;
   onDocClick?: () => void;
   onDocHoverChange?: (payload: { doc: Doc; rect: DOMRect } | null) => void;
-}> = ({ error, loading, navTree, currentDocSlug, expandedPaths, onToggle, isDark, mobile, activeNavSlug, onDocClick, onDocHoverChange }) => {
+}> = ({ error, navTree, currentDocSlug, expandedPaths, onToggle, isDark, mobile, activeNavSlug, onDocClick, onDocHoverChange }) => {
   const t = tk(isDark);
 
   const isHomePage = globalThis.window?.location.pathname === '/';
@@ -523,8 +523,6 @@ const NavTreeContent: React.FC<{
       <button onClick={() => globalThis.location.reload()} style={{ padding: '0.35rem 0.85rem', borderRadius: '7px', border: `1px solid ${t.border}`, background: 'transparent', color: t.fgMuted, fontSize: mobile ? '0.9rem' : '0.75rem', cursor: 'pointer' }}>Обновить</button>
     </div>
   );
-  if (loading) return <div style={{ padding: '2rem', textAlign: 'center', fontSize: mobile ? '0.95rem' : '0.8rem', color: t.fgMuted }}>Загрузка...</div>;
-
   return (
     <nav style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
       {activeNavSlug === '' && (
@@ -590,7 +588,7 @@ const NavPanelContent: React.FC<{
   isDark: boolean; currentDocSlug?: string; mobile?: boolean;
 }> = ({ isDark, currentDocSlug, mobile }) => {
   const t = tk(isDark);
-  const { manifest: docs, loading, error } = useManifest();
+  const { manifest: docs, error } = useManifest();
   const { query, setQuery, sectionOpen, setSectionOpen, sectionRef, sections, activeNavSlug, expandedPaths, navTree, activeSection, togglePath, handleSectionSelect } = useNavPanel(docs as Doc[], currentDocSlug);
 
   const inputFontSize = mobile ? '1rem' : '0.855rem';
@@ -669,7 +667,7 @@ const NavPanelContent: React.FC<{
       {/* Дерево навигации */}
       <div style={{ flex: 1, overflowY: 'auto', padding: mobile ? '8px 6px 86px' : '6px' }}>
         <NavTreeContent
-          error={!!error} loading={loading} navTree={navTree}
+          error={!!error} navTree={navTree}
           currentDocSlug={currentDocSlug} expandedPaths={expandedPaths}
           onToggle={togglePath} isDark={isDark} mobile={mobile}
           activeNavSlug={activeNavSlug}

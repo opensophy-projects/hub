@@ -58,14 +58,19 @@ const updatedISO   = updated ? new Date(updated).toISOString() : publishedISO;
 const isHomePage   = url === '/';
 
 let faviconPath = '/favicon.png';
+let introLoaderText = 'opensophy';
 try {
   const siteConfigPath = path.join(process.cwd(), 'public/data/site-config.json');
   if (fs.existsSync(siteConfigPath)) {
     const cfg = JSON.parse(fs.readFileSync(siteConfigPath, 'utf-8'));
     if (typeof cfg.favicon === 'string' && cfg.favicon) faviconPath = cfg.favicon;
+    if (typeof cfg.introLoaderText === 'string' && cfg.introLoaderText.trim()) {
+      introLoaderText = cfg.introLoaderText.trim();
+    }
   }
 } catch {
   faviconPath = '/favicon.png';
+  introLoaderText = 'opensophy';
 }
 
 const faviconType = faviconPath.endsWith('.svg')
@@ -137,9 +142,22 @@ const articleJsonLd = type === 'article' ? JSON.stringify({
       (function () {
         var t = localStorage.getItem('theme') || 'dark';
         var d = t !== 'light';
+        var root = document.documentElement;
+        var overrides = null;
+        try { overrides = JSON.parse(localStorage.getItem('hub:theme-color-overrides') || 'null'); } catch (_) {}
+        if (overrides) {
+          ['dark', 'light'].forEach(function (mode) {
+            var colors = overrides[mode] || {};
+            Object.keys(colors).forEach(function (key) {
+              if (colors[key]) root.style.setProperty('--hub-theme-' + mode + '-' + key, colors[key]);
+            });
+          });
+        }
         document.documentElement.classList.toggle('dark', d);
         document.documentElement.style.colorScheme = d ? 'dark' : 'light';
-        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+        document.documentElement.style.backgroundColor = d
+          ? 'var(--hub-theme-dark-bgPage, #0a0a0a)'
+          : 'var(--hub-theme-light-bgPage, #E8E7E3)';
       })();
     </script>
 
@@ -222,6 +240,83 @@ const articleJsonLd = type === 'article' ? JSON.stringify({
       html.dark        { background-color: #0a0a0a; }
       body { margin: 0; padding: 0; overflow-x: hidden; }
 
+      #hub-intro-loader {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--hub-theme-light-bgPage, #E8E7E3);
+        color: var(--hub-theme-light-fg, #111111);
+        opacity: 1;
+        transition: opacity 1.05s ease;
+        pointer-events: all;
+      }
+      html.dark #hub-intro-loader {
+        background: var(--hub-theme-dark-bgPage, #0a0a0a);
+        color: var(--hub-theme-dark-fg, #e8e8e8);
+      }
+      #hub-intro-loader.is-hiding { opacity: 0; }
+      #hub-intro-loader[hidden],
+      html.hub-intro-loader-skip #hub-intro-loader { display: none; }
+      .hub-intro-loader__inner {
+        width: min(78vw, 360px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 22px;
+      }
+      .hub-intro-loader__title {
+        margin: 0;
+        font-size: clamp(2.2rem, 10vw, 5.4rem);
+        font-weight: 700;
+        letter-spacing: -0.065em;
+        line-height: 0.9;
+        background-image: linear-gradient(110deg, currentColor 0%, currentColor 36%, rgba(255,255,255,0.98) 50%, currentColor 64%, currentColor 100%);
+        background-size: 220% 100%;
+        background-position: 150% center;
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: hubIntroShine 1.65s linear infinite;
+      }
+      html:not(.dark) .hub-intro-loader__title {
+        background-image: linear-gradient(110deg, currentColor 0%, currentColor 36%, rgba(255,255,255,0.95) 48%, rgba(0,0,0,0.84) 52%, currentColor 66%, currentColor 100%);
+      }
+      .hub-intro-loader__track {
+        width: 100%;
+        height: 4px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: var(--hub-theme-light-accentSoft, rgba(0,0,0,0.07));
+      }
+      html.dark .hub-intro-loader__track {
+        background: var(--hub-theme-dark-accentSoft, rgba(255,255,255,0.08));
+      }
+      .hub-intro-loader__bar {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--hub-theme-light-accent, #000000);
+        transform-origin: left center;
+        transform: scaleX(var(--hub-intro-progress, 0.08));
+        transition: transform 260ms cubic-bezier(.22,.61,.36,1);
+      }
+      html.dark .hub-intro-loader__bar {
+        background: var(--hub-theme-dark-accent, #ffffff);
+      }
+      @keyframes hubIntroShine {
+        from { background-position: 150% center; }
+        to { background-position: -70% center; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #hub-intro-loader { transition-duration: 250ms; }
+        .hub-intro-loader__title { animation: none; }
+        .hub-intro-loader__bar { transition-duration: 120ms; }
+      }
+
       /* Скрытый SEO-контент — видим для ботов, невидим для пользователей */
       #seo-landing-content {
         position: absolute;
@@ -236,6 +331,56 @@ const articleJsonLd = type === 'article' ? JSON.stringify({
   </head>
 
   <body>
+    <script is:inline>
+      (function () {
+        var key = 'hub:intro-loader-shown';
+        var shouldShow = true;
+        try { shouldShow = sessionStorage.getItem(key) !== '1'; } catch (_) {}
+        if (!shouldShow) document.documentElement.classList.add('hub-intro-loader-skip');
+        else { try { sessionStorage.setItem(key, '1'); } catch (_) {} }
+      })();
+    </script>
+    <div id="hub-intro-loader" aria-label="Загрузка сайта" role="status">
+      <div class="hub-intro-loader__inner">
+        <p class="hub-intro-loader__title">{introLoaderText}</p>
+        <div class="hub-intro-loader__track" aria-hidden="true"><span class="hub-intro-loader__bar"></span></div>
+      </div>
+    </div>
+    <script is:inline>
+      (function () {
+        var loader = document.getElementById('hub-intro-loader');
+        if (!loader) return;
+        if (document.documentElement.classList.contains('hub-intro-loader-skip')) {
+          loader.remove();
+          return;
+        }
+        var progress = 0.08;
+        var done = false;
+        var setProgress = function (value) {
+          progress = Math.max(progress, Math.min(value, 1));
+          loader.style.setProperty('--hub-intro-progress', String(progress));
+        };
+        var timer = window.setInterval(function () {
+          if (done) return;
+          var limit = document.readyState === 'interactive' ? 0.86 : 0.72;
+          setProgress(progress + (limit - progress) * 0.08 + 0.006);
+        }, 120);
+        var hide = function () {
+          if (done) return;
+          done = true;
+          window.clearInterval(timer);
+          setProgress(1);
+          window.setTimeout(function () {
+            loader.classList.add('is-hiding');
+            window.setTimeout(function () { loader.remove(); }, 1150);
+          }, 180);
+        };
+        if (document.readyState === 'complete') hide();
+        else window.addEventListener('load', hide, { once: true });
+        window.addEventListener('pagehide', function () { window.clearInterval(timer); }, { once: true });
+      })();
+    </script>
+
     <ErrorBoundary>
       <ThemeProvider>
         <slot />
@@ -249,9 +394,22 @@ const articleJsonLd = type === 'article' ? JSON.stringify({
       document.addEventListener('astro:after-swap', function () {
         var t = localStorage.getItem('theme') || 'dark';
         var d = t !== 'light';
+        var root = document.documentElement;
+        var overrides = null;
+        try { overrides = JSON.parse(localStorage.getItem('hub:theme-color-overrides') || 'null'); } catch (_) {}
+        if (overrides) {
+          ['dark', 'light'].forEach(function (mode) {
+            var colors = overrides[mode] || {};
+            Object.keys(colors).forEach(function (key) {
+              if (colors[key]) root.style.setProperty('--hub-theme-' + mode + '-' + key, colors[key]);
+            });
+          });
+        }
         document.documentElement.classList.toggle('dark', d);
         document.documentElement.style.colorScheme = d ? 'dark' : 'light';
-        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+        document.documentElement.style.backgroundColor = d
+          ? 'var(--hub-theme-dark-bgPage, #0a0a0a)'
+          : 'var(--hub-theme-light-bgPage, #E8E7E3)';
       });
     </script>
   </body>

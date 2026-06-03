@@ -75,6 +75,9 @@ function normalizeSiteConfig(config) {
     favicon: typeof config.favicon === 'string' && config.favicon ? config.favicon : '/favicon.png',
     lightLogo: typeof config.lightLogo === 'string' ? config.lightLogo : '',
     darkLogo: typeof config.darkLogo === 'string' ? config.darkLogo : '',
+    introLoaderText: typeof config.introLoaderText === 'string' && config.introLoaderText.trim()
+      ? config.introLoaderText.trim()
+      : 'opensophy',
   };
 }
 

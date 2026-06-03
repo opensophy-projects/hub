@@ -76,7 +76,7 @@ function ModeButton({
 export default function SitePanel() {
   const t = useContext(ThemeTokensContext);
 
-  const [config, setConfig]   = useState<SiteConfig>({ useLanding: false, showDotWaveBackground: true });
+  const [config, setConfig]   = useState<SiteConfig>({ useLanding: false, showDotWaveBackground: true, introLoaderText: 'opensophy' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState('');
@@ -99,6 +99,7 @@ export default function SitePanel() {
       setConfig({
         useLanding: cfg.useLanding === true,
         showDotWaveBackground: cfg.showDotWaveBackground !== false,
+        introLoaderText: typeof cfg.introLoaderText === 'string' && cfg.introLoaderText.trim() ? cfg.introLoaderText : 'opensophy',
       });
     } catch (e: unknown) {
       setError((e as Error).message);
@@ -177,6 +178,23 @@ export default function SitePanel() {
       { ...config, showDotWaveBackground: value },
       value ? 'Фон шапки включён' : 'Фон шапки отключён',
     );
+
+  const handleIntroLoaderTextBlur = () => {
+    const nextText = (config.introLoaderText || '').trim() || 'opensophy';
+    if (nextText === config.introLoaderText) return;
+    void applyConfigChange(
+      { ...config, introLoaderText: nextText },
+      'Текст загрузчика обновлён',
+    );
+  };
+
+  const handleIntroLoaderTextSave = () => {
+    const nextText = (config.introLoaderText || '').trim() || 'opensophy';
+    void applyConfigChange(
+      { ...config, introLoaderText: nextText },
+      'Текст загрузчика обновлён',
+    );
+  };
 
   if (loading) {
     return (
@@ -288,6 +306,52 @@ export default function SitePanel() {
         </button>
       </div>
 
+      {/* Отображение загрузчика */}
+      <div style={{ height: 1, background: t.border, margin: '12px 0' }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700, color: t.fgSub, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+        ОТОБРАЖЕНИЕ ЗАГРУЗЧИКА
+      </div>
+      <div style={{
+        display: 'flex', flexDirection: 'column', gap: 8,
+        marginBottom: 12, padding: '10px 12px',
+        borderRadius: 7, border: `1px solid ${t.border}`, background: t.surface,
+      }}>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: t.fgMuted }}>
+          Текст intro loader
+          <input
+            type="text"
+            value={config.introLoaderText || 'opensophy'}
+            disabled={saving}
+            onChange={e => setConfig(prev => ({ ...prev, introLoaderText: e.target.value }))}
+            onBlur={handleIntroLoaderTextBlur}
+            placeholder="opensophy"
+            style={{
+              height: 34, background: t.bg, border: `1px solid ${t.border}`,
+              borderRadius: 7, color: t.fg, padding: '0 10px',
+              fontSize: 13, fontFamily: t.mono, outline: 'none',
+            }}
+          />
+        </label>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <span style={{ fontSize: 12, color: t.fgSub, lineHeight: 1.45 }}>
+            Используется на первом экране загрузки. Цвета берутся из текущих токенов темы.
+          </span>
+          <button
+            disabled={saving}
+            onClick={handleIntroLoaderTextSave}
+            style={{
+              flexShrink: 0, border: `1px solid ${t.borderStrong}`,
+              background: t.accentSoft, color: t.fg,
+              borderRadius: 6, padding: '7px 10px', fontSize: 12,
+              fontFamily: t.mono, cursor: saving ? 'not-allowed' : 'pointer',
+              opacity: saving ? 0.7 : 1,
+            }}
+          >
+            Сохранить
+          </button>
+        </div>
+      </div>
+
       {/* Текущее состояние */}
       <div style={{
         fontSize: 12, color: t.fgSub,
@@ -295,7 +359,7 @@ export default function SitePanel() {
       }}>
         <span>
           Сейчас: <strong style={{ color: t.fgMuted }}>
-            {config.useLanding ? 'Лендинг' : 'Документация'} · Фон шапки: {dotWaveEnabled ? 'вкл' : 'выкл'}
+            {config.useLanding ? 'Лендинг' : 'Документация'} · Фон шапки: {dotWaveEnabled ? 'вкл' : 'выкл'} · Loader: {config.introLoaderText || 'opensophy'}
           </strong>
         </span>
         <button

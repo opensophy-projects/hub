@@ -3,5 +3,6 @@
   "showDotWaveBackground": false,
   "favicon": "/favicon.png",
   "lightLogo": "/light_logo.png",
-  "darkLogo": "/dark_logo.png"
+  "darkLogo": "/dark_logo.png",
+  "introLoaderText": "opensophy"
 }
