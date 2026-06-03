@@ -47,24 +47,26 @@ function getCardStyles(isDark: boolean, hasAccent: boolean, accentColor: string)
   const card: React.CSSProperties = {
     position: 'relative',
     borderRadius: '12px',
-    border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : t.border}`,
+    border: hasAccent
+      ? `1.5px solid ${accentColor}`
+      : `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : t.border}`,
     background: isDark ? '#0f0f0f' : t.accentSoft,
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
-    boxShadow: isDark ? '0 2px 12px rgba(0,0,0,0.4)' : '0 1px 4px rgba(0,0,0,0.05)',
+    boxShadow: hasAccent
+      ? (isDark
+          ? `0 2px 12px rgba(0,0,0,0.4), 0 0 0 1px ${accentColor}22`
+          : `0 1px 4px rgba(0,0,0,0.05), 0 0 0 1px ${accentColor}18`)
+      : (isDark ? '0 2px 12px rgba(0,0,0,0.4)' : '0 1px 4px rgba(0,0,0,0.05)'),
   };
 
-  const accentBar: React.CSSProperties = hasAccent ? {
-    position: 'absolute', top: 0, left: 0, right: 0,
-    height: '3px', background: accentColor,
-    borderRadius: '12px 12px 0 0',
-  } : {};
+  // accentBar больше не используется — граница теперь на самой карточке
+  const accentBar: React.CSSProperties = {};
 
   const body: React.CSSProperties = {
     padding: '1.25rem', flex: 1,
     display: 'flex', flexDirection: 'column', gap: '0.5rem',
-    paddingTop: hasAccent ? '1.4rem' : '1.25rem',
   };
 
   const iconWrap: React.CSSProperties = {
@@ -103,8 +105,6 @@ const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark
     <>
       <style>{cardHoverStyle}</style>
       <div style={s.card} className={`${CARD_HOVER_CLASS} ${isDark ? 'card-dark' : 'card-light'}`}>
-        {hasAccent && <div style={s.accentBar} />}
-
         {/* ── Изображение карточки — адаптивное, сохраняет пропорции ──────── */}
         {image && (
           <>
@@ -123,9 +123,7 @@ const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark
                 justifyContent: 'center',
                 overflow: 'hidden',
                 flexShrink: 0,
-                // Минимальная высота пока картинка грузится
                 minHeight: '80px',
-                // Максимум — чтобы очень высокие картинки не разрывали сетку
                 maxHeight: '300px',
               }}
             >
@@ -135,14 +133,10 @@ const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark
                 style={{
                   display: 'block',
                   width: '100%',
-                  // Высота авто — картинка сохраняет свои пропорции
                   height: 'auto',
-                  // Но не выше 300px
                   maxHeight: '300px',
-                  // contain — не обрезаем, показываем целиком с letterbox если нужно
                   objectFit: 'contain',
                   objectPosition: 'center',
-                  // Небольшой padding чтобы не прилипало к краям карточки
                   padding: '6px',
                   boxSizing: 'border-box',
                 }}
@@ -224,7 +218,6 @@ const CardGrid: React.FC<CardGridProps> = ({ cols = 2, children }) => {
     gridTemplateColumns: `repeat(${safeCols}, 1fr)`,
     gap: '1rem',
     margin: '1.5rem 0',
-    // align-items: stretch — все карточки в строке одной высоты
     alignItems: 'stretch',
   };
 
