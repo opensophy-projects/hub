@@ -1042,11 +1042,12 @@ const DesktopRail: React.FC<{
   onHideRail: () => void;
   onOpenSearch: () => void;
   onTogglePanel: (panel: Exclude<PanelType, null>) => void;
+  hasToc: boolean;
 }> = ({
   isDark, toggleTheme, logoPath,
   isDocsPage, chromeGap, chromeTopGap, chromeRadius, panelOpen, shellEnabled, t,
   state, derived, readingModeEnabled,
-  onHideRail, onOpenSearch, onTogglePanel,
+  onHideRail, onOpenSearch, onTogglePanel, hasToc,
 }) => {
   const { readingMode, readingModeMenuOpen, setReadingModeMenuOpen, setReadingMode, activePanel } = state;
   const { isStandardMode, sidebarBg } = derived;
@@ -1094,7 +1095,7 @@ const DesktopRail: React.FC<{
         )}
         {!isStandardMode && (
           <>
-            <RailBtn icon={<List size={18} />}    label="Оглавление" isDark={isDark} isActive={activePanel === 'toc'}      onClick={() => onTogglePanel('toc')}      title="Оглавление" />
+            {hasToc && <RailBtn icon={<List size={18} />} label="Оглавление" isDark={isDark} isActive={activePanel === 'toc'} onClick={() => onTogglePanel('toc')} title="Оглавление" />}
             <RailBtn icon={<ArrowUp size={18} />} label="Наверх"     isDark={isDark} onClick={() => globalThis.scrollTo({ top: 0, behavior: 'smooth' })}            title="Наверх" />
           </>
         )}
@@ -1203,6 +1204,7 @@ const DesktopNav: React.FC<{
   const state = useDesktopNavState();
   const { onResizeMouseDown } = usePanelResize(state.panelWidth, state.setPanelWidth);
 
+  const hasToc = toc.length > 0;
   const readingModeEnabled = showDocActions;
   const derived = deriveDesktopNavValues(state, currentDocSlug, readingModeEnabled, isDark, floatingChrome);
   const { isDocsPage, chromeGap, chromeTopGap, chromeRadius, sidebarBg, isStandardMode, panelOpen, sidebarShellWidth, panelTitle } = derived;
@@ -1224,13 +1226,17 @@ const DesktopNav: React.FC<{
       document.documentElement.style.setProperty('--nav-left', '0px');
       return () => { document.documentElement.style.removeProperty('--nav-left'); };
     }
-    buildCssVars(state.railVisible, contentIsDocsPage, panelOpen, state.panelWidth, isStandardMode, state.standardTocVisible);
+    buildCssVars(state.railVisible, contentIsDocsPage, panelOpen, state.panelWidth, isStandardMode, state.standardTocVisible && hasToc);
     return () => { document.documentElement.style.removeProperty('--nav-left'); };
-  }, [state.railVisible, panelOpen, state.panelWidth, isStandardMode, state.standardTocVisible, contentIsDocsPage]);
+  }, [state.railVisible, panelOpen, state.panelWidth, isStandardMode, state.standardTocVisible, contentIsDocsPage, hasToc]);
 
   useEffect(() => {
     return clearDocCssVars;
   }, []);
+
+  useEffect(() => {
+    if (!hasToc && state.activePanel === 'toc') { state.setActivePanel(null); }
+  }, [hasToc, state]);
 
   const handleTogglePanel = useCallback((panel: Exclude<PanelType, null>) => {
     if (isStandardMode) {
@@ -1263,6 +1269,7 @@ const DesktopNav: React.FC<{
           onHideRail={() => state.setRailVisible(false)}
           onOpenSearch={() => state.setSearchOpen(true)}
           onTogglePanel={handleTogglePanel}
+          hasToc={hasToc}
         />
       )}
 
@@ -1292,7 +1299,7 @@ const DesktopNav: React.FC<{
         />
       )}
 
-      {isStandardMode && state.standardTocVisible && (
+      {isStandardMode && hasToc && state.standardTocVisible && (
         <DesktopTocPanel
           isDocsPage={isDocsPage} chromeGap={chromeGap} chromeTopGap={chromeTopGap}
           chromeRadius={chromeRadius} panelBg={panelBg} t={t}
@@ -1301,7 +1308,7 @@ const DesktopNav: React.FC<{
         />
       )}
 
-      {isStandardMode && !state.standardTocVisible && (
+      {isStandardMode && hasToc && !state.standardTocVisible && (
         <button
           onClick={() => state.setStandardTocVisible(true)}
           style={{
@@ -1399,7 +1406,12 @@ const MobileNav: React.FC<{
   const t = tk(isDark);
   const [sheet, setSheet]           = useState<MobileSheet>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const hasToc = toc.length > 0;
   const toggle = (s: MobileSheet) => setSheet(prev => prev === s ? null : s);
+
+  useEffect(() => {
+    if (!hasToc && sheet === 'toc') { setSheet(null); }
+  }, [hasToc, sheet]);
 
   return (
     <>
@@ -1427,7 +1439,7 @@ const MobileNav: React.FC<{
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <BrandLogo logoPath={logoPath} size={38} />
             </div>
-            <MobBtn label="Оглавление" icon={<List size={22} />}   isDark={isDark} onClick={() => toggle('toc')} isActive={sheet === 'toc'} />
+            {hasToc && <MobBtn label="Оглавление" icon={<List size={22} />} isDark={isDark} onClick={() => toggle('toc')} isActive={sheet === 'toc'} />}
             <MobBtn label="Наверх"     icon={<ArrowUp size={22} />} isDark={isDark} onClick={() => { setSheet(null); globalThis.scrollTo({ top: 0, behavior: 'smooth' }); }} isActive={false} />
           </>
         )}

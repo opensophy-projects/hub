@@ -25,53 +25,58 @@ export interface CardGridProps {
 const CARD_HOVER_CLASS = 'sophy-card';
 
 const cardHoverStyle = `
-  .${CARD_HOVER_CLASS} { transition: transform 0.15s, box-shadow 0.15s; }
+  .${CARD_HOVER_CLASS} { transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease; }
   .${CARD_HOVER_CLASS}:hover { transform: translateY(-2px); }
-  .${CARD_HOVER_CLASS}.card-dark:hover  { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
-  .${CARD_HOVER_CLASS}.card-light:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.09); }
+  .${CARD_HOVER_CLASS}.card-dark:hover  { border-color: rgba(255,255,255,0.16); box-shadow: 0 18px 42px rgba(0,0,0,0.38); }
+  .${CARD_HOVER_CLASS}.card-light:hover { border-color: rgba(0,0,0,0.13); box-shadow: 0 16px 34px rgba(0,0,0,0.08); }
 `;
 
-function getIconWrapBg(hasAccent: boolean, accentColor: string, isDark: boolean): string {
-  const t = makeTokens(isDark);
-  if (hasAccent) return `${accentColor}22`;
-  return isDark ? 'rgba(255,255,255,0.07)' : t.accentSoft;
+function getIconWrapBg(isDark: boolean): string {
+  return isDark ? 'rgba(255,255,255,0.055)' : 'rgba(0,0,0,0.045)';
 }
 
-function getIconColor(hasAccent: boolean, accentColor: string, isDark: boolean): string {
-  if (hasAccent) return accentColor;
-  return isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.55)';
+function getIconColor(isDark: boolean): string {
+  return isDark ? 'rgba(255,255,255,0.76)' : 'rgba(0,0,0,0.6)';
 }
 
 function getCardStyles(isDark: boolean, hasAccent: boolean, accentColor: string) {
   const t = makeTokens(isDark);
+  const accentWash = hasAccent
+    ? `radial-gradient(circle at 26px 24px, ${accentColor}24 0, transparent 42px), `
+    : '';
   const card: React.CSSProperties = {
     position: 'relative',
-    borderRadius: '12px',
-    border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : t.border}`,
-    background: isDark ? '#0f0f0f' : t.accentSoft,
+    borderRadius: '14px',
+    border: `1px solid ${isDark ? 'rgba(255,255,255,0.105)' : t.border}`,
+    background: `${accentWash}${isDark ? 'linear-gradient(145deg, #111 0%, #0d0d0d 100%)' : 'linear-gradient(145deg, #ffffff 0%, #f7f6f2 100%)'}`,
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
-    boxShadow: isDark ? '0 2px 12px rgba(0,0,0,0.4)' : '0 1px 4px rgba(0,0,0,0.05)',
+    boxShadow: isDark ? '0 10px 30px rgba(0,0,0,0.28)' : '0 8px 24px rgba(0,0,0,0.055)',
   };
 
   const accentBar: React.CSSProperties = hasAccent ? {
-    position: 'absolute', top: 0, left: 0, right: 0,
-    height: '3px', background: accentColor,
-    borderRadius: '12px 12px 0 0',
+    position: 'absolute', top: 12, left: 18, right: 18,
+    height: '2px', borderRadius: 999,
+    background: `linear-gradient(90deg, transparent 0%, ${accentColor} 18%, ${accentColor}aa 50%, ${accentColor} 82%, transparent 100%)`,
+    opacity: isDark ? 0.72 : 0.62,
+    boxShadow: `0 0 14px ${accentColor}33`,
+    pointerEvents: 'none',
   } : {};
 
   const body: React.CSSProperties = {
-    padding: '1.25rem', flex: 1,
-    display: 'flex', flexDirection: 'column', gap: '0.5rem',
-    paddingTop: hasAccent ? '1.4rem' : '1.25rem',
+    padding: '1.4rem', flex: 1,
+    display: 'flex', flexDirection: 'column', gap: '0.55rem',
+    paddingTop: hasAccent ? '1.65rem' : '1.4rem',
   };
 
   const iconWrap: React.CSSProperties = {
-    width: '36px', height: '36px', borderRadius: '8px',
-    background: getIconWrapBg(hasAccent, accentColor, isDark),
+    width: '40px', height: '40px', borderRadius: '11px',
+    background: getIconWrapBg(isDark),
+    border: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)'}`,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    marginBottom: '0.4rem', flexShrink: 0,
+    marginBottom: '0.45rem', flexShrink: 0,
+    boxShadow: isDark ? 'inset 0 1px 0 rgba(255,255,255,0.05)' : 'inset 0 1px 0 rgba(255,255,255,0.75)',
   };
 
   const title: React.CSSProperties = {
@@ -94,7 +99,7 @@ function getCardStyles(isDark: boolean, hasAccent: boolean, accentColor: string)
 const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark = false }) => {
   const accentColor = color || (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)');
   const hasAccent   = !!color;
-  const iconColor   = getIconColor(hasAccent, accentColor, isDark);
+  const iconColor   = getIconColor(isDark);
   const s           = getCardStyles(isDark, hasAccent, accentColor);
 
   const [lightboxOpen, setLightboxOpen] = useState(false);

@@ -15,6 +15,8 @@ import type { UniversalProps, ComponentConfig, PropDefinition } from './types';
 import { makeTokens, themed } from '@/shared/tokens/theme';
 
 type PropValue = string | number | boolean | string[] | undefined;
+const MAX_SPECIFIC_CONTROLS = 100;
+const MAX_SELECT_OPTIONS = 100;
 type ComponentPropsMap = Record<string, PropValue>;
 type AnyComponent = React.ComponentType<Record<string, PropValue>>;
 type TabType = 'universal' | 'specific' | 'source';
@@ -371,6 +373,7 @@ const UniversalSidebar: React.FC<{ universalProps: UniversalProps; onChange: (ke
 );
 
 const AiSelect: React.FC<{ label: string; value: string; options: string[]; onChange: (v: string) => void; t: T }> = ({ label, value, options, onChange, t }) => {
+  const safeOptions = useMemo(() => options.slice(0, MAX_SELECT_OPTIONS), [options]);
   const [open, setOpen]   = useState(false);
   const [hov,  setHov]    = useState<string | null>(null);
   const [rect, setRect]   = useState<DOMRect | null>(null);
@@ -392,7 +395,7 @@ const AiSelect: React.FC<{ label: string; value: string; options: string[]; onCh
 
   // Вычисляет, нужно ли открывать дропдаун вверх
   const computeDropUp = (r: DOMRect) => {
-    const h = Math.min(options.length * 34 + 48, 240);
+    const h = Math.min(safeOptions.length * 34 + 48, 240);
     return globalThis.innerHeight - r.bottom < h && r.top > h;
   };
 
@@ -408,7 +411,7 @@ const AiSelect: React.FC<{ label: string; value: string; options: string[]; onCh
     globalThis.addEventListener('resize', upd);
     return () => { globalThis.removeEventListener('scroll', upd, true); globalThis.removeEventListener('resize', upd); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, options.length]);
+  }, [open, safeOptions.length]);
 
   return (
     <div style={{ padding: '6px 12px' }}>
@@ -425,7 +428,7 @@ const AiSelect: React.FC<{ label: string; value: string; options: string[]; onCh
         </button>
         {open && rect && createPortal(
           <div ref={pRef} style={{ position: 'fixed', left: rect.left, width: w, zIndex: 99999, background: t.barBg, border: `1px solid ${t.inpBdr}`, borderRadius: 8, boxShadow: t.modalShadow, overflow: 'auto', maxHeight: 240, ...(dropUp ? { bottom: globalThis.innerHeight - rect.top + 4 } : { top: rect.bottom + 4 }) }}>
-            {options.map(opt => {
+            {safeOptions.map(opt => {
               let optBg: string;
               if (hov === opt)        { optBg = t.btnHov; }
               else if (opt === value) { optBg = t.btnBg; }
@@ -444,11 +447,60 @@ const AiSelect: React.FC<{ label: string; value: string; options: string[]; onCh
   );
 };
 
+
+const BOOLEAN_OPTIONS = ['false', 'true'];
+
+const SPECIFIC_STRING_OPTIONS: Record<string, string[]> = {
+  shineDirection: ['left', 'right'],
+  direction: ['left', 'right', 'up', 'down'],
+  mixBlendMode: ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity'],
+  blendMode: ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion'],
+  textAlign: ['left', 'center', 'right', 'justify'],
+  align: ['left', 'center', 'right'],
+  position: ['top', 'right', 'bottom', 'left', 'center'],
+};
+
+function getSpecificOptions(prop: PropDefinition): string[] | null {
+  if (prop.options?.length) { return prop.options; }
+  if (prop.type === 'boolean' || prop.control === 'checkbox' || prop.control === 'boolean') { return BOOLEAN_OPTIONS; }
+  const byName = SPECIFIC_STRING_OPTIONS[prop.name];
+  if (byName) { return byName; }
+  if (/direction/i.test(prop.name)) { return ['left', 'right', 'up', 'down']; }
+  if (/blend/i.test(prop.name)) { return SPECIFIC_STRING_OPTIONS.mixBlendMode; }
+  return null;
+}
+
+function isColorProp(prop: PropDefinition): boolean {
+  return prop.control === 'color' || (prop.type === 'string' && (/(^|[-_])(color|colour)(s)?($|[-_])/i.test(prop.name) || /color|colour/i.test(prop.name)));
+}
+
+const BooleanSelect: React.FC<{ label: string; value: boolean; onChange: (v: boolean) => void; t: T }> = ({ label, value, onChange, t }) => (
+  <AiSelect label={label} value={String(value)} options={BOOLEAN_OPTIONS} onChange={v => onChange(v === 'true')} t={t} />
+);
+
+const SpecificColorControl: React.FC<{ label: string; value: string; onChange: (v: string | undefined) => void; t: T }> = ({ label, value, onChange, t }) => {
+  const [open, setOpen] = useState(false);
+  const hasColor = /^#[0-9a-f]{6}$/i.test(value);
+  return (
+    <div style={{ padding: '6px 12px' }}>
+      <div style={{ fontSize: 10, fontWeight: 600, color: t.fgMuted, marginBottom: 4, letterSpacing: '0.02em' }}>{label}</div>
+      <button onClick={() => setOpen(v => !v)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 8px', borderRadius: 6, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: t.fg, fontSize: 12, cursor: 'pointer' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ width: 14, height: 14, borderRadius: 4, background: hasColor ? value : t.btnBg, border: `1px solid ${t.barBorder}` }} />
+          {hasColor ? value : 'Выбрать цвет'}
+        </span>
+        <svg width="9" height="9" viewBox="0 0 10 10" style={{ opacity: 0.4, transform: open ? 'rotate(180deg)' : 'none' }}><path d="M2 3 L5 7 L8 3" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" /></svg>
+      </button>
+      {open && <div style={{ marginTop: 8, border: `1px solid ${t.barBorder}`, borderRadius: 8, overflow: 'hidden', background: t.barBg }}><ColorPicker value={hasColor ? value : '#4287f5'} onChange={onChange} t={t} /></div>}
+    </div>
+  );
+};
+
 const SpecificSidebar: React.FC<{ config: ComponentConfig; componentProps: ComponentPropsMap; onChange: (name: string, v: PropValue) => void; t: T }> = ({ config, componentProps, onChange, t }) => {
   const visibleProps = useMemo(
-    () => config.specificProps?.length
+    () => (config.specificProps?.length
       ? config.props.filter((p: PropDefinition) => config.specificProps!.includes(p.name))
-      : config.props,
+      : config.props).slice(0, MAX_SPECIFIC_CONTROLS),
     [config],
   );
   if (!visibleProps.length) { return <div style={{ padding: '20px 12px', textAlign: 'center', fontSize: 12, color: t.fgMuted }}>Нет специфических настроек</div>; }
@@ -456,20 +508,34 @@ const SpecificSidebar: React.FC<{ config: ComponentConfig; componentProps: Compo
     <div>
       {visibleProps.map((prop: PropDefinition, i: number) => (
         <div key={prop.name} style={{ borderBottom: i < visibleProps.length - 1 ? `1px solid ${t.sectionBdr}` : 'none' }}>
-          {prop.control === 'select' && <AiSelect label={prop.description} value={typeof componentProps[prop.name] === 'string' ? componentProps[prop.name] as string : (prop.default as string ?? '')} options={prop.options ?? []} onChange={v => onChange(prop.name, v)} t={t} />}
-          {prop.control === 'number' && (
-            <div style={{ padding: '6px 12px' }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: t.fgMuted, marginBottom: 4, letterSpacing: '0.02em' }}>{prop.description}</div>
-              <NumberInput value={typeof componentProps[prop.name] === 'number' ? componentProps[prop.name] as number : (prop.default as number ?? 0)} onChange={v => onChange(prop.name, v)} min={prop.min ?? 0} max={prop.max ?? 100} step={prop.step ?? 1} t={t} />
-            </div>
-          )}
-          {prop.control !== 'select' && prop.control !== 'number' && (
-            <div style={{ padding: '6px 12px' }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: t.fgMuted, marginBottom: 4, letterSpacing: '0.02em' }}>{prop.description}</div>
-              <input type="text" value={typeof componentProps[prop.name] === 'string' ? componentProps[prop.name] as string : (prop.default as string ?? '')} onChange={e => onChange(prop.name, e.target.value)}
-                style={{ width: '100%', padding: '4px 7px', borderRadius: 6, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: t.inpClr, fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
-            </div>
-          )}
+          {(() => {
+            const current = componentProps[prop.name] ?? prop.default;
+            const options = getSpecificOptions(prop);
+            if (prop.type === 'boolean' || prop.control === 'checkbox' || prop.control === 'boolean') {
+              return <BooleanSelect label={prop.description} value={typeof current === 'boolean' ? current : current === 'true'} onChange={v => onChange(prop.name, v)} t={t} />;
+            }
+            if (prop.control === 'select' || options) {
+              return <AiSelect label={prop.description} value={typeof current === 'string' ? current : String(current ?? '')} options={options ?? []} onChange={v => onChange(prop.name, v)} t={t} />;
+            }
+            if (prop.control === 'number') {
+              return (
+                <div style={{ padding: '6px 12px' }}>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: t.fgMuted, marginBottom: 4, letterSpacing: '0.02em' }}>{prop.description}</div>
+                  <NumberInput value={typeof current === 'number' ? current : (prop.default as number ?? 0)} onChange={v => onChange(prop.name, v)} min={prop.min ?? 0} max={prop.max ?? 100} step={prop.step ?? 1} t={t} />
+                </div>
+              );
+            }
+            if (isColorProp(prop)) {
+              return <SpecificColorControl label={prop.description} value={typeof current === 'string' ? current : ''} onChange={v => onChange(prop.name, v)} t={t} />;
+            }
+            return (
+              <div style={{ padding: '6px 12px' }}>
+                <div style={{ fontSize: 10, fontWeight: 600, color: t.fgMuted, marginBottom: 4, letterSpacing: '0.02em' }}>{prop.description}</div>
+                <input type="text" value={typeof current === 'string' ? current : ''} onChange={e => onChange(prop.name, e.target.value)}
+                  style={{ width: '100%', padding: '4px 7px', borderRadius: 6, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: t.inpClr, fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+            );
+          })()}
         </div>
       ))}
     </div>
@@ -857,7 +923,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
       {!isMobile && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', flexShrink: 0, borderBottom: `1px solid ${t.barBorder}`, background: t.barBg, overflowX: 'auto' }}>
           <button onClick={onRefresh} style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 999, border: `1px solid ${t.btnBdr}`, background: t.btnBg, color: t.btnClr, padding: '8px 12px', fontSize: 12, whiteSpace: 'nowrap', cursor: 'pointer' }}><Play size={14} />Запуск</button>
-          <button onClick={onReset}   style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 999, border: `1px solid ${t.btnBdr}`, background: t.btnBg, color: t.btnClr, padding: '8px 12px', fontSize: 12, whiteSpace: 'nowrap', cursor: 'pointer' }}><RefreshCcw size={14} />Сброс</button>
+          <button onClick={onReset}   style={{ display: 'flex', alignItems: 'center', gap: 8, borderRadius: 999, border: `1px solid ${t.btnActBdr}`, background: t.btnActBg, color: t.btnActClr, padding: '11px 18px', fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', cursor: 'pointer', boxShadow: t.outerShadow }}><RefreshCcw size={17} />Сброс</button>
           <button onClick={() => setSourceVisible(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 999, border: `1px solid ${t.btnBdr}`, background: sourceVisible ? t.tabActBg : t.btnBg, color: sourceVisible ? t.tabActClr : t.btnClr, padding: '8px 12px', fontSize: 12, whiteSpace: 'nowrap', cursor: 'pointer' }}>
             <PanelRight size={14} />{sourceVisible ? 'Скрыть код' : 'Код'}
           </button>
