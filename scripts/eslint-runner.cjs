@@ -7,4 +7,9 @@ if (typeof Module.enableCompileCache === "function") {
   Module.enableCompileCache = () => ({ status: "DISABLED_BY_RUNNER" });
 }
 
-require("eslint/bin/eslint.js");
+const path = require("node:path");
+
+const eslintPackageJson = require.resolve("eslint/package.json");
+const eslintBin = path.join(path.dirname(eslintPackageJson), "bin/eslint.js");
+
+require(eslintBin);
