@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import initialManifest from '../../../../public/data/docs/manifest.json';
 
 export interface DocMetadata {
   id: string;
@@ -27,27 +27,8 @@ export interface UseManifestResult {
   error: string | null;
 }
 
+const docsManifest = initialManifest as DocMetadata[];
+
 export function useManifest(): UseManifestResult {
-  const [manifest, setManifest] = useState<DocMetadata[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch('/data/docs/manifest.json')
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json() as Promise<DocMetadata[]>;
-      })
-      .then(data => {
-        setManifest(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('[useManifest] Failed to load manifest:', err);
-        setError(String(err));
-        setLoading(false);
-      });
-  }, []);
-
-  return { manifest, loading, error };
+  return { manifest: docsManifest, loading: false, error: null };
 }
