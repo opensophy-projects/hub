@@ -610,6 +610,15 @@ const processElement = (
 };
 
 export const parseHtmlToReact = (html: string): React.ReactNode[] => {
+  if (typeof DOMParser === 'undefined') {
+    return [
+      React.createElement('div', {
+        key: 'ssr-html',
+        dangerouslySetInnerHTML: { __html: sanitizeHtml(html) },
+      }),
+    ];
+  }
+
   const rawDoc = new DOMParser().parseFromString(html, 'text/html');
 
   // KaTeX-элементы сохраняются до санитизации, т.к. DOMPurify может изменить их разметку.

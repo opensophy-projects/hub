@@ -1,4 +1,4 @@
-import React, { useMemo, CSSProperties } from 'react';
+import React, { useMemo, type CSSProperties } from 'react';
 import type { UniversalProps } from './types';
 
 interface ComponentWrapperProps extends UniversalProps {

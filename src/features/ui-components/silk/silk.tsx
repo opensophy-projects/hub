@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useEffect, FC } from 'react';
+import React, { useMemo, useRef, useEffect, type FC } from 'react';
 import * as THREE from 'three';
 
 // ─── Types ────────────────────────────────────────────────────────────────────

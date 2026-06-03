@@ -71,5 +71,5 @@ if (!doc || !slug) return Astro.redirect('/404');
       <article set:html={doc.content ?? ''} />
     </main>
   </noscript>
-  <DocContent client:only="react" doc={doc} />
+  <DocContent client:load doc={doc} />
 </Layout>
