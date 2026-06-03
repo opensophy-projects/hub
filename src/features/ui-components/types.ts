@@ -27,7 +27,7 @@ export interface PropDefinition {
   type: string;
   default: PropValue;
   description: string;
-  control: 'text' | 'number' | 'select' | 'checkbox' | 'color';
+  control: 'text' | 'number' | 'select' | 'checkbox' | 'boolean' | 'color';
   options?: string[];
   min?: number;
   max?: number;
