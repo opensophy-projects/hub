@@ -65,11 +65,19 @@ if (!doc || !slug) return Astro.redirect('/404');
   keywords={doc.keywords}
   robots={doc.robots}
   lang={doc.lang || 'ru'}
+  preloadDocsManifest={true}
 >
-  <noscript>
-    <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;">
+  <div id="doc-static-shell" style="min-height:100vh;background:#0a0a0a;color:#e8e8e8;">
+    <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem 4rem;">
+      <header style="padding:1rem 0 2rem;border-bottom:1px solid rgba(255,255,255,0.12);margin-bottom:2rem;">
+        <h1 style="font-size:clamp(1.8rem,5vw,3rem);line-height:1.15;margin:0 0 1rem;font-family:system-ui,-apple-system,sans-serif;">{doc.title}</h1>
+        {doc.description && <p style="font-size:1rem;line-height:1.65;margin:0;color:rgba(255,255,255,0.72);">{doc.description}</p>}
+      </header>
       <article set:html={doc.content ?? ''} />
     </main>
+  </div>
+  <noscript>
+    <style>#doc-static-shell{display:block!important}</style>
   </noscript>
   <DocContent client:only="react" doc={doc} />
 </Layout>

@@ -1493,11 +1493,17 @@ const LandingContent: React.FC = () => {
 
 // ─── GeneralPage ──────────────────────────────────────────────────────────────
 
-const GeneralPage: React.FC = () => (
-  <ThemeProvider>
-    <LandingContent />
-  </ThemeProvider>
-);
+const GeneralPage: React.FC = () => {
+  useEffect(() => {
+    document.getElementById('landing-static-shell')?.remove();
+  }, []);
+
+  return (
+    <ThemeProvider>
+      <LandingContent />
+    </ThemeProvider>
+  );
+};
 
 export { ShinyText, GlowingEffectInline, FeatureCard };
 export default GeneralPage;

@@ -174,6 +174,10 @@ const DocHero: React.FC<DocHeroProps> = ({ doc, isDark, readTime, liveFM, showDo
 
 const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
   const { isDark } = useTheme();
+
+  useEffect(() => {
+    document.getElementById('doc-static-shell')?.remove();
+  }, []);
   const t = makeTokens(isDark);
   const [fullscreenTableHtml, setFullscreenTableHtml] = useState<string | null>(null);
   const [showDotWaveBackground, setShowDotWaveBackground] = useState(true);

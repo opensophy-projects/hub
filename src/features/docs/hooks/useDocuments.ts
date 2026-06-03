@@ -1,5 +1,11 @@
 import { useState, useEffect } from 'react';
 
+declare global {
+  interface Window {
+    __HUB_DOC_MANIFEST__?: DocMetadata[];
+  }
+}
+
 export interface DocMetadata {
   id: string;
   title: string;
@@ -27,12 +33,21 @@ export interface UseManifestResult {
   error: string | null;
 }
 
+function getPreloadedManifest(): DocMetadata[] {
+  if (globalThis.window === undefined) return [];
+  return Array.isArray(globalThis.window.__HUB_DOC_MANIFEST__)
+    ? globalThis.window.__HUB_DOC_MANIFEST__
+    : [];
+}
+
 export function useManifest(): UseManifestResult {
-  const [manifest, setManifest] = useState<DocMetadata[]>([]);
-  const [loading, setLoading]   = useState(true);
+  const [manifest, setManifest] = useState<DocMetadata[]>(() => getPreloadedManifest());
+  const [loading, setLoading]   = useState(() => getPreloadedManifest().length === 0);
   const [error, setError]       = useState<string | null>(null);
 
   useEffect(() => {
+    if (manifest.length > 0) return;
+
     fetch('/data/docs/manifest.json')
       .then(res => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -47,7 +62,7 @@ export function useManifest(): UseManifestResult {
         setError(String(err));
         setLoading(false);
       });
-  }, []);
+  }, [manifest.length]);
 
   return { manifest, loading, error };
 }

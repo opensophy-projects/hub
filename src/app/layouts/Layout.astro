@@ -20,6 +20,7 @@ interface Props {
   keywords?: string;
   robots?: string;
   lang?: string;
+  preloadDocsManifest?: boolean;
 }
 
 const SITE = {
@@ -48,6 +49,7 @@ const {
   keywords    = SITE.keywords,
   robots      = 'index, follow',
   lang        = SITE.lang,
+  preloadDocsManifest = false,
 } = Astro.props;
 
 const pageTitle    = title === SITE.name ? title : `${title} — ${SITE.name}`;
@@ -66,6 +68,18 @@ try {
   }
 } catch {
   faviconPath = '/favicon.png';
+}
+
+let docsManifestJson = '[]';
+if (preloadDocsManifest) {
+  try {
+    const manifestPath = path.join(process.cwd(), 'public/data/docs/manifest.json');
+    if (fs.existsSync(manifestPath)) {
+      docsManifestJson = fs.readFileSync(manifestPath, 'utf-8');
+    }
+  } catch {
+    docsManifestJson = '[]';
+  }
 }
 
 const faviconType = faviconPath.endsWith('.svg')
@@ -189,6 +203,15 @@ const articleJsonLd = type === 'article' ? JSON.stringify({
     <link rel="icon"             href={faviconPath} type={faviconType} />
     <link rel="apple-touch-icon" href={faviconPath} />
 
+    {preloadDocsManifest && (
+      <>
+        <!-- Preload docs manifest only on document pages, not on the landing page -->
+        <script is:inline define:vars={{ docsManifestJson }}>
+          window.__HUB_DOC_MANIFEST__ = JSON.parse(docsManifestJson);
+        </script>
+      </>
+    )}
+
     <!-- Astro SPA transitions -->
     <ClientRouter />
 
@@ -242,7 +265,7 @@ const articleJsonLd = type === 'article' ? JSON.stringify({
       </ThemeProvider>
     </ErrorBoundary>
 
-    <DevPanelLoader client:only="react" />
+    {import.meta.env.DEV && <DevPanelLoader client:only="react" />}
 
     <!-- Re-apply theme after SPA navigation -->
     <script is:inline>
