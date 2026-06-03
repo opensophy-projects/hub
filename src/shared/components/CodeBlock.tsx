@@ -8,7 +8,8 @@ import Overlay from './Overlay';
 import { useDragScroll } from '@/features/table/hooks/useDragScroll';
 import hljs from 'highlight.js/lib/core';
 import { makeTokens, themed } from '@/shared/tokens/theme';
-import { PortalMenu, useMenuHelpers, MenuTriggerButton } from '@/shared/components/portalMenuShared';
+import { PortalMenu, MenuTriggerButton } from '@/shared/components/portalMenuShared';
+import { useMenuHelpers } from '@/shared/components/portalMenuHelpers';
 
 function tk(isDark: boolean) {
   const t = makeTokens(isDark);

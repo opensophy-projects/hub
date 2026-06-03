@@ -2,7 +2,8 @@ import React, { useState, useRef } from 'react';
 import { Filter, X, Maximize2, Copy, Check, ChevronDown, Search } from 'lucide-react';
 import { parseTableForCopy, toMd, toTsv, type CopyFormat } from '@/features/table/utils/copyUtils';
 import { getTableUiTokens } from './tableUiTheme';
-import { PortalMenu, useMenuHelpers, MenuTriggerButton } from '@/shared/components/portalMenuShared';
+import { PortalMenu, MenuTriggerButton } from '@/shared/components/portalMenuShared';
+import { useMenuHelpers } from '@/shared/components/portalMenuHelpers';
 
 interface TableControlsBarProps {
   readonly isDark: boolean;

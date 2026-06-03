@@ -379,7 +379,8 @@ const PrismaticBurst = ({
       try {
         const glCtx = rendererRef.current?.gl;
         if (glCtx && gradTexRef.current?.texture) glCtx.deleteTexture(gradTexRef.current.texture);
-      } catch (_err) {
+      } catch {
+        // Ignore cleanup errors from lost WebGL contexts.
       }
       rendererRef.current = null;
       gradTexRef.current = null;
