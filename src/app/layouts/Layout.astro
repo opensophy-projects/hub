@@ -68,6 +68,17 @@ try {
   faviconPath = '/favicon.png';
 }
 
+
+let docsManifestJson = '[]';
+try {
+  const manifestPath = path.join(process.cwd(), 'public/data/docs/manifest.json');
+  if (fs.existsSync(manifestPath)) {
+    docsManifestJson = fs.readFileSync(manifestPath, 'utf-8');
+  }
+} catch {
+  docsManifestJson = '[]';
+}
+
 const faviconType = faviconPath.endsWith('.svg')
   ? 'image/svg+xml'
   : faviconPath.endsWith('.ico')
@@ -189,6 +200,12 @@ const articleJsonLd = type === 'article' ? JSON.stringify({
     <link rel="icon"             href={faviconPath} type={faviconType} />
     <link rel="apple-touch-icon" href={faviconPath} />
 
+
+    <!-- Preload docs manifest for instant navigation without an extra render loader -->
+    <script is:inline define:vars={{ docsManifestJson }}>
+      window.__HUB_DOC_MANIFEST__ = JSON.parse(docsManifestJson);
+    </script>
+
     <!-- Astro SPA transitions -->
     <ClientRouter />
 
@@ -242,7 +259,7 @@ const articleJsonLd = type === 'article' ? JSON.stringify({
       </ThemeProvider>
     </ErrorBoundary>
 
-    <DevPanelLoader client:only="react" />
+    {import.meta.env.DEV && <DevPanelLoader client:only="react" />}
 
     <!-- Re-apply theme after SPA navigation -->
     <script is:inline>

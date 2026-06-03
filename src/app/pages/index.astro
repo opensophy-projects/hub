@@ -127,7 +127,7 @@ const lang        = useLanding ? 'ru' : (welcomeDoc?.lang || 'ru');
       <GeneralPageWrapper client:only="react" />
     </>
   ) : welcomeDoc ? (
-    <DocContent client:only="react" doc={welcomeDoc} />
+    <DocContent client:load doc={welcomeDoc} />
   ) : (
     <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;">
       <p>Загрузка...</p>
