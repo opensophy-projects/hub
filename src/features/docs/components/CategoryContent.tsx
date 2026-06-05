@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, ChevronRight, FileText, Tag, User } from 'lucide-react';
+import { CalendarDays, ChevronRight, FileText, RefreshCw, Tag } from 'lucide-react';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import { useTheme } from '@/shared/contexts/useTheme';
 import Navigation from '@/features/navigation/components/Navigation';
@@ -11,24 +11,20 @@ interface CategoryDoc {
   title: string;
   slug: string;
   description: string;
-  author?: string;
   date?: string;
   updated?: string;
   tags?: string[];
   icon?: string;
   typename?: string;
-  frontmatter?: Record<string, unknown>;
 }
 
 interface CategoryData {
   id: string;
   title: string;
   slug: string;
-  description: string;
   icon?: string | null;
   navSlug?: string;
   navTitle?: string;
-  navIcon?: string;
   parentTitle?: string;
   docs: CategoryDoc[];
 }
@@ -48,24 +44,10 @@ function formatDate(date?: string): string | null {
   return parsed.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
-function stringifyFrontmatterValue(value: unknown): string {
-  if (Array.isArray(value)) return value.map(stringifyFrontmatterValue).join(', ');
-  if (value === null || value === undefined) return '';
-  if (typeof value === 'object') return JSON.stringify(value);
-  return String(value);
-}
-
-function getFrontmatterEntries(doc: CategoryDoc): Array<[string, string]> {
-  return Object.entries(doc.frontmatter ?? {})
-    .map(([key, value]) => [key, stringifyFrontmatterValue(value)] as [string, string])
-    .filter(([, value]) => value.trim().length > 0);
-}
-
 const CategoryCard: React.FC<{ doc: CategoryDoc; isDark: boolean }> = ({ doc, isDark }) => {
   const t = makeTokens(isDark);
-  const frontmatterEntries = getFrontmatterEntries(doc);
   const formattedDate = formatDate(doc.date);
-  const accentColor = t.accent;
+  const formattedUpdated = formatDate(doc.updated);
 
   return (
     <a
@@ -98,7 +80,7 @@ const CategoryCard: React.FC<{ doc: CategoryDoc; isDark: boolean }> = ({ doc, is
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
-              color: accentColor,
+              color: t.accent,
             }}
           >
             {doc.icon ? <LucideIcon name={doc.icon} size={18} /> : <FileText size={18} />}
@@ -106,7 +88,7 @@ const CategoryCard: React.FC<{ doc: CategoryDoc; isDark: boolean }> = ({ doc, is
           <div style={{ minWidth: 0 }}>
             <h2 style={{ fontSize: '1rem', fontWeight: 700, lineHeight: 1.3, margin: 0, color: t.fg }}>{doc.title}</h2>
             {doc.typename && (
-              <div style={{ marginTop: 4, fontSize: '0.72rem', color: t.fgMuted, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              <div style={{ marginTop: 4, fontSize: '0.8rem', color: t.fgMuted, fontWeight: 600 }}>
                 {doc.typename}
               </div>
             )}
@@ -117,15 +99,15 @@ const CategoryCard: React.FC<{ doc: CategoryDoc; isDark: boolean }> = ({ doc, is
           <p style={{ fontSize: '0.86rem', lineHeight: 1.6, color: t.fgMuted, margin: 0 }}>{doc.description}</p>
         )}
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem', marginTop: 'auto' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.55rem 0.8rem', marginTop: 'auto' }}>
           {formattedDate && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.72rem', color: t.fgMuted }}>
               <CalendarDays size={12} />{formattedDate}
             </span>
           )}
-          {doc.author && (
+          {formattedUpdated && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.72rem', color: t.fgMuted }}>
-              <User size={12} />{doc.author}
+              <RefreshCw size={12} />Обновлено: {formattedUpdated}
             </span>
           )}
         </div>
@@ -139,17 +121,6 @@ const CategoryCard: React.FC<{ doc: CategoryDoc; isDark: boolean }> = ({ doc, is
             ))}
           </div>
         )}
-
-        {frontmatterEntries.length > 0 && (
-          <dl style={{ margin: '0.25rem 0 0', display: 'grid', gap: '0.45rem', paddingTop: '0.75rem', borderTop: `1px solid ${t.border}` }}>
-            {frontmatterEntries.map(([key, value]) => (
-              <div key={key} style={{ display: 'grid', gridTemplateColumns: 'minmax(72px, max-content) 1fr', gap: '0.5rem', alignItems: 'baseline' }}>
-                <dt style={{ fontSize: '0.68rem', color: t.fgMuted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{key}</dt>
-                <dd style={{ minWidth: 0, margin: 0, fontSize: '0.75rem', color: t.fg, overflowWrap: 'anywhere' }}>{value}</dd>
-              </div>
-            ))}
-          </dl>
-        )}
       </div>
     </a>
   );
@@ -159,17 +130,63 @@ const CategoryContentMain: React.FC<CategoryContentProps> = ({ category }) => {
   const { isDark } = useTheme();
   const t = makeTokens(isDark);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [navLeft, setNavLeft] = useState('0px');
+  const [docRight, setDocRight] = useState('0px');
+  const [docChromeGap, setDocChromeGap] = useState('0px');
+  const [docChromeRadius, setDocChromeRadius] = useState('0px');
+  const [docChromeTopGap, setDocChromeTopGap] = useState('0px');
+  const [showLeftBorder, setShowLeftBorder] = useState(false);
+  const [showRightBorder, setShowRightBorder] = useState(false);
   const sortedDocs = useMemo(() => [...category.docs].sort((a, b) => a.title.localeCompare(b.title)), [category.docs]);
 
   useEffect(() => {
     const check = () => setIsDesktop(window.innerWidth > 1000);
     check();
     window.addEventListener('resize', check, { passive: true });
-    return () => window.removeEventListener('resize', check);
+    document.addEventListener('astro:after-swap', check);
+    document.addEventListener('astro:page-load', check);
+    return () => {
+      window.removeEventListener('resize', check);
+      document.removeEventListener('astro:after-swap', check);
+      document.removeEventListener('astro:page-load', check);
+    };
   }, []);
 
+  useEffect(() => {
+    if (!isDesktop) {
+      setNavLeft('0px');
+      setDocRight('0px');
+      setDocChromeGap('0px');
+      setDocChromeRadius('0px');
+      setDocChromeTopGap('0px');
+      setShowLeftBorder(false);
+      setShowRightBorder(false);
+      return;
+    }
+    const readVar = () => {
+      const css = getComputedStyle(document.documentElement);
+      const left = css.getPropertyValue('--nav-left').trim();
+      const right = css.getPropertyValue('--doc-right').trim();
+      const leftBorder = css.getPropertyValue('--doc-border-left').trim();
+      const chromeGap = css.getPropertyValue('--doc-chrome-gap').trim();
+      const chromeRadius = css.getPropertyValue('--doc-chrome-radius').trim();
+      const chromeTopGap = css.getPropertyValue('--doc-chrome-top-gap').trim();
+      const rightBorder = css.getPropertyValue('--doc-border-right').trim();
+      setNavLeft(left || '64px');
+      setDocRight(right || '0px');
+      setDocChromeGap(chromeGap || '0px');
+      setDocChromeRadius(chromeRadius || '0px');
+      setDocChromeTopGap(chromeTopGap || chromeGap || '0px');
+      setShowLeftBorder(leftBorder === '1');
+      setShowRightBorder(rightBorder === '1');
+    };
+    readVar();
+    const observer = new MutationObserver(readVar);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
+    return () => observer.disconnect();
+  }, [isDesktop]);
+
   const navChromeBg = isDark ? 'rgba(15,15,15,0.84)' : 'rgba(224,223,219,0.82)';
-  const mainMarginLeft = isDesktop ? '64px' : '0';
 
   return (
     <div style={{ minHeight: '100vh', background: isDesktop ? navChromeBg : t.bgPage, position: 'relative' }}>
@@ -186,15 +203,22 @@ const CategoryContentMain: React.FC<CategoryContentProps> = ({ category }) => {
 
       <main
         style={{
-          minHeight: '100vh',
           background: t.bgPage,
-          marginLeft: mainMarginLeft,
+          marginLeft: isDesktop ? navLeft : '0',
+          marginRight: isDesktop ? docRight : '0',
           position: 'relative',
           zIndex: 1,
+          marginTop: isDesktop ? docChromeTopGap : '0',
+          marginBottom: isDesktop ? docChromeGap : '3.5rem',
+          minHeight: isDesktop ? `calc(100vh - (${docChromeTopGap} + ${docChromeGap}))` : '100vh',
+          border: isDesktop ? `1px solid ${t.border}` : 'none',
+          borderRadius: isDesktop ? docChromeRadius : 0,
+          overflow: isDesktop ? 'hidden' : 'visible',
+          boxShadow: isDesktop ? `0 0 0 1px ${t.border}, inset 0 1px 0 rgba(255,255,255,0.03)` : 'none',
           transition: 'none',
         }}
       >
-        <header style={{ background: t.surface, borderBottom: `1px solid ${t.border}`, padding: '3rem 2rem 2.25rem' }}>
+        <header style={{ background: t.surface, borderBottom: `1px solid ${t.border}`, padding: '3rem 2rem 2.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap', fontSize: '0.8rem', color: t.fgMuted }}>
             <a href="/" style={{ color: t.fg, textDecoration: 'none', opacity: 0.7 }}>Главная</a>
             {(category.navTitle || category.parentTitle) && <ChevronRight size={14} style={{ opacity: 0.45 }} />}
@@ -202,7 +226,7 @@ const CategoryContentMain: React.FC<CategoryContentProps> = ({ category }) => {
             {category.parentTitle && category.parentTitle !== category.navTitle && <ChevronRight size={14} style={{ opacity: 0.45 }} />}
             {category.parentTitle && category.parentTitle !== category.navTitle && <span>{category.parentTitle}</span>}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
             <span style={{ width: 44, height: 44, borderRadius: 12, background: t.accentSoft, border: `1px solid ${t.accentBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.accent, flexShrink: 0 }}>
               {category.icon ? <LucideIcon name={category.icon} size={22} /> : <FileText size={22} />}
             </span>
@@ -211,12 +235,13 @@ const CategoryContentMain: React.FC<CategoryContentProps> = ({ category }) => {
               <h1 style={{ fontSize: 'clamp(1.7rem,4vw,2.8rem)', fontWeight: 700, lineHeight: 1.15, color: t.fg, margin: 0 }}>{category.title}</h1>
             </div>
           </div>
-          <p style={{ fontSize: 'clamp(0.95rem,1.5vw,1.08rem)', lineHeight: 1.65, color: t.fgMuted, margin: 0, maxWidth: 720 }}>
-            {category.description}. Всего статей: {sortedDocs.length}.
-          </p>
         </header>
 
-        <section style={{ padding: '2rem', maxWidth: 1280, margin: '0 auto' }}>
+        <section style={{
+          padding: '2rem 2rem 3rem',
+          borderLeft: showLeftBorder ? `1px solid ${t.borderStrong}` : 'none',
+          borderRight: showRightBorder ? `1px solid ${t.borderStrong}` : 'none',
+        }}>
           <div className="category-doc-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '1rem', alignItems: 'stretch' }}>
             {sortedDocs.map(doc => <CategoryCard key={doc.id} doc={doc} isDark={isDark} />)}
           </div>

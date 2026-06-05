@@ -280,7 +280,7 @@ const CategoryNode: React.FC<{
   const t = tk(isDark);
   const categorySlug = [activeNavSlug, path].filter(Boolean).join('/');
   const isActiveCategory = currentDocSlug === categorySlug;
-  const expanded = expandedPaths.has(path) || isActiveCategory;
+  const expanded = expandedPaths.has(path);
   const total    = countDocs(node);
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -378,16 +378,30 @@ function useActiveNavSlug(sections: NavSection[]): [string, React.Dispatch<React
   return [activeNavSlug, setActiveNavSlug];
 }
 
-function useExpandedPaths(currentDocSlug: string | undefined, activeNavSlug: string): [Set<string>, React.Dispatch<React.SetStateAction<Set<string>>>] {
+function buildCategorySlugSet(docs: Doc[]): Set<string> {
+  const categorySlugs = new Set<string>();
+  for (const doc of docs) {
+    const pathItems = doc.categoryPath ?? [];
+    pathItems.forEach((_, index) => {
+      const slug = [doc.navSlug, ...pathItems.slice(0, index + 1).map((cat) => cat.slug)].filter(Boolean).join('/');
+      if (slug) categorySlugs.add(slug);
+    });
+  }
+  return categorySlugs;
+}
+
+function useExpandedPaths(currentDocSlug: string | undefined, activeNavSlug: string, categorySlugs: Set<string>): [Set<string>, React.Dispatch<React.SetStateAction<Set<string>>>] {
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   useEffect(() => {
     if (!currentDocSlug) return;
     let slug = currentDocSlug;
     if (activeNavSlug && slug.startsWith(activeNavSlug + '/')) slug = slug.slice(activeNavSlug.length + 1);
-    const parts     = slug.split('/');
-    const pathParts = parts.slice(0, -1).map((_, i) => parts.slice(0, i + 1).join('/'));
-    if (pathParts.length) startTransition(() => setExpandedPaths(new Set(pathParts)));
-  }, [currentDocSlug, activeNavSlug]);
+    const parts = slug.split('/').filter(Boolean);
+    const isCategoryPage = categorySlugs.has(currentDocSlug);
+    const pathSource = isCategoryPage ? parts : parts.slice(0, -1);
+    const pathParts = pathSource.map((_, i) => pathSource.slice(0, i + 1).join('/'));
+    startTransition(() => setExpandedPaths(new Set(pathParts)));
+  }, [currentDocSlug, activeNavSlug, categorySlugs]);
   return [expandedPaths, setExpandedPaths];
 }
 
@@ -397,7 +411,8 @@ function useNavPanel(docs: Doc[], currentDocSlug: string | undefined) {
   const sectionRef                    = useRef<HTMLDivElement>(null);
   const sections                          = useNavSections(docs);
   const [activeNavSlug, setActiveNavSlug] = useActiveNavSlug(sections);
-  const [expandedPaths, setExpandedPaths] = useExpandedPaths(currentDocSlug, activeNavSlug);
+  const categorySlugs = useMemo(() => buildCategorySlugSet(docs), [docs]);
+  const [expandedPaths, setExpandedPaths] = useExpandedPaths(currentDocSlug, activeNavSlug, categorySlugs);
 
   useEffect(() => {
     if (!sectionOpen) return;
