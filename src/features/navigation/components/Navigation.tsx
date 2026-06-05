@@ -71,6 +71,11 @@ function toDocHref(slug?: string): string {
   return `/${slug}/`;
 }
 
+function toCategoryHref(activeNavSlug: string, path: string): string {
+  const slug = [activeNavSlug, path].filter(Boolean).join('/');
+  return toDocHref(slug);
+}
+
 // ─── Токены темы ──────────────────────────────────────────────────────────────
 
 const THEME_DARK = {
@@ -269,32 +274,67 @@ function getCategoryNodeBackground(expanded: boolean, isDark: boolean): string {
 const CategoryNode: React.FC<{
   node: NavNode; path: string; expandedPaths: Set<string>;
   onToggle: (p: string) => void; isDark: boolean; currentDocSlug?: string;
-  onDocClick?: () => void; mobile?: boolean;
+  onDocClick?: () => void; mobile?: boolean; activeNavSlug: string;
   onDocHoverChange?: (payload: { doc: Doc; rect: DOMRect } | null) => void;
-}> = memo(({ node, path, expandedPaths, onToggle, isDark, currentDocSlug, onDocClick, mobile, onDocHoverChange }) => {
+}> = memo(({ node, path, expandedPaths, onToggle, isDark, currentDocSlug, onDocClick, mobile, activeNavSlug, onDocHoverChange }) => {
   const t = tk(isDark);
-  const expanded = expandedPaths.has(path);
+  const categorySlug = [activeNavSlug, path].filter(Boolean).join('/');
+  const isActiveCategory = currentDocSlug === categorySlug;
+  const expanded = expandedPaths.has(path) || isActiveCategory;
   const total    = countDocs(node);
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
-      <button onClick={() => onToggle(path)} style={{
-        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: mobile ? '10px 14px' : '8px 10px', borderRadius: '8px',
+      <div style={{
+        width: '100%', display: 'flex', alignItems: 'stretch', justifyContent: 'space-between',
+        borderRadius: '8px',
         fontSize: mobile ? '1rem' : '0.875rem', fontWeight: 600,
-        border: `1px solid ${expanded ? t.elevatedBorder : t.border}`,
-        background: getCategoryNodeBackground(expanded, isDark),
-        boxShadow: expanded ? t.elevatedShadowSoft : 'none',
-        color: t.fg, cursor: 'pointer', textAlign: 'left',
+        border: `1px solid ${isActiveCategory || expanded ? t.elevatedBorder : t.border}`,
+        background: isActiveCategory ? t.accentSoft : getCategoryNodeBackground(expanded, isDark),
+        boxShadow: expanded || isActiveCategory ? t.elevatedShadowSoft : 'none',
+        color: isActiveCategory ? t.accent : t.fg,
+        overflow: 'hidden',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: t.fgMuted }}>
-            {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        <button
+          type="button"
+          onClick={() => onToggle(path)}
+          aria-label={expanded ? `Свернуть категорию ${node.title}` : `Развернуть категорию ${node.title}`}
+          style={{
+            width: mobile ? 42 : 36,
+            border: 'none',
+            borderRight: `1px solid ${isActiveCategory || expanded ? t.elevatedBorder : t.border}`,
+            background: 'transparent',
+            color: t.fgMuted,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        </button>
+        <a
+          href={toCategoryHref(activeNavSlug, path)}
+          onClick={onDocClick}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '0.5rem',
+            padding: mobile ? '10px 14px 10px 10px' : '8px 10px',
+            color: 'inherit',
+            textDecoration: 'none',
+          }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
+            {node.icon && <span style={{ width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: t.fgMuted }}><LucideIcon name={node.icon} size={14} /></span>}
+            <span style={{ wordBreak: 'break-word', lineHeight: 1.35 }}>{node.title}</span>
           </span>
-          {node.icon && <span style={{ width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: t.fgMuted }}><LucideIcon name={node.icon} size={14} /></span>}
-          <span style={{ wordBreak: 'break-word', lineHeight: 1.35 }}>{node.title}</span>
-        </div>
-        {total > 0 && <span style={{ fontSize: '0.72rem', padding: '2px 7px', borderRadius: '5px', background: t.accentSoft, color: t.fgMuted, flexShrink: 0 }}>{total}</span>}
-      </button>
+          {total > 0 && <span style={{ fontSize: '0.72rem', padding: '2px 7px', borderRadius: '5px', background: t.accentSoft, color: t.fgMuted, flexShrink: 0 }}>{total}</span>}
+        </a>
+      </div>
       {expanded && (
         <div style={{
           marginLeft: '0.65rem', paddingLeft: '0.45rem',
@@ -305,7 +345,7 @@ const CategoryNode: React.FC<{
             <DocLink key={doc.id} doc={doc} isDark={isDark} isActive={currentDocSlug === doc.slug} onClick={onDocClick} mobile={mobile} onPreviewChange={onDocHoverChange} />
           ))}
           {Object.entries(node.children).sort(([a], [b]) => a.localeCompare(b)).map(([key, child]) => (
-            <CategoryNode key={key} node={child} path={`${path}/${key}`} expandedPaths={expandedPaths} onToggle={onToggle} isDark={isDark} currentDocSlug={currentDocSlug} onDocClick={onDocClick} mobile={mobile} onDocHoverChange={onDocHoverChange} />
+            <CategoryNode key={key} node={child} path={`${path}/${key}`} expandedPaths={expandedPaths} onToggle={onToggle} isDark={isDark} currentDocSlug={currentDocSlug} onDocClick={onDocClick} mobile={mobile} activeNavSlug={activeNavSlug} onDocHoverChange={onDocHoverChange} />
           ))}
         </div>
       )}
@@ -536,7 +576,7 @@ const NavTreeContent: React.FC<{
         </div>
       )}
       {Object.entries(navTree.children).sort(([a], [b]) => a.localeCompare(b)).map(([key, node]) => (
-        <CategoryNode key={key} node={node} path={key} expandedPaths={expandedPaths} onToggle={onToggle} isDark={isDark} currentDocSlug={currentDocSlug} onDocClick={onDocClick} mobile={mobile} onDocHoverChange={onDocHoverChange} />
+        <CategoryNode key={key} node={node} path={key} expandedPaths={expandedPaths} onToggle={onToggle} isDark={isDark} currentDocSlug={currentDocSlug} onDocClick={onDocClick} mobile={mobile} activeNavSlug={activeNavSlug} onDocHoverChange={onDocHoverChange} />
       ))}
     </nav>
   );

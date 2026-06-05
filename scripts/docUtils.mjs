@@ -664,7 +664,43 @@ export function parseDoc(rawContent, mdPath, docsDir) {
     keywords:     metadata.keywords || '',
     robots:       metadata.robots   || 'index, follow',
     icon:         finalIcon,
+    frontmatter:  metadata,
   };
+}
+
+
+function toCategoryDoc(doc) {
+  const { content, keywords, robots, ...categoryDoc } = doc;
+  return categoryDoc;
+}
+
+export function buildCategoryPages(docs) {
+  const categories = new Map();
+
+  for (const doc of docs) {
+    const pathItems = doc.categoryPath ?? [];
+    pathItems.forEach((item, index) => {
+      const slug = [doc.navSlug, ...pathItems.slice(0, index + 1).map((cat) => cat.slug)].filter(Boolean).join('/');
+      if (!slug) return;
+      const parentPath = pathItems[index - 1] ?? null;
+      const category = categories.get(slug) ?? {
+        id: `category:${slug}`,
+        slug,
+        title: item.title,
+        description: `Статьи в категории «${item.title}»`,
+        icon: item.icon ?? null,
+        navSlug: doc.navSlug,
+        navTitle: doc.navTitle,
+        navIcon: doc.navIcon,
+        parentTitle: parentPath?.title ?? doc.navTitle ?? '',
+        docs: [],
+      };
+      category.docs.push(toCategoryDoc(doc));
+      categories.set(slug, category);
+    });
+  }
+
+  return Array.from(categories.values()).sort((a, b) => a.slug.localeCompare(b.slug));
 }
 
 export function buildDocFromPath(mdPath, docsDir) {

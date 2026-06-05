@@ -1,11 +1,13 @@
 ---
 import Layout from '@/app/layouts/Layout.astro';
 import DocContent from '@/features/docs/components/DocContent';
+import CategoryContent from '@/features/docs/components/CategoryContent';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
   scanDocsDirectoryRecursive,
   buildDocFromPath,
+  buildCategoryPages,
 } from '../../../scripts/docUtils.mjs';
 
 export const prerender = import.meta.env.DEV ? false : true;
@@ -16,7 +18,8 @@ export async function getStaticPaths() {
 
   const allMdFiles = scanDocsDirectoryRecursive(docsDir);
   const seen = new Map<string, string>();
-  const paths: Array<{ params: { slug: string }; props: { doc: any } }> = [];
+  const docs: any[] = [];
+  const paths: Array<{ params: { slug: string }; props: { doc?: any; category?: any } }> = [];
 
   for (const mdPath of allMdFiles) {
     const doc = buildDocFromPath(mdPath, docsDir);
@@ -26,50 +29,72 @@ export async function getStaticPaths() {
       continue;
     }
     seen.set(doc.slug, mdPath);
+    docs.push(doc);
     paths.push({ params: { slug: doc.slug }, props: { doc } });
   }
+  const categories = buildCategoryPages(docs);
+  for (const category of categories) {
+    if (seen.has(category.slug)) {
+      console.warn(`[category dedup] Category slug "${category.slug}" conflicts with a document, skipping category page`);
+      continue;
+    }
+    seen.set(category.slug, '<category>');
+    paths.push({ params: { slug: category.slug }, props: { category } });
+  }
+
   return paths;
 }
 
 const { slug } = Astro.params;
 const docsDir = path.join(process.cwd(), 'Docs');
 let doc: any = null;
+let category: any = null;
 
 if (import.meta.env.DEV) {
   if (slug && fs.existsSync(docsDir)) {
     const allMdFiles = scanDocsDirectoryRecursive(docsDir);
+    const docs: any[] = [];
     for (const mdPath of allMdFiles) {
       try {
         const candidate = buildDocFromPath(mdPath, docsDir);
-        if (candidate.slug === slug) { doc = candidate; break; }
+        docs.push(candidate);
+        if (candidate.slug === slug) doc = candidate;
       } catch (e) {
         console.warn(`[slug] Failed to build doc from ${mdPath}:`, e);
       }
     }
+    if (!doc) category = buildCategoryPages(docs).find((candidate) => candidate.slug === slug) ?? null;
   }
 } else {
   doc = (Astro.props as any).doc ?? null;
+  category = (Astro.props as any).category ?? null;
 }
 
-if (!doc || !slug) return Astro.redirect('/404');
+if ((!doc && !category) || !slug) return Astro.redirect('/404');
 ---
 
 <Layout
-  title={doc.title}
-  description={doc.description}
-  image={doc.image}
+  title={doc?.title ?? category.title}
+  description={doc?.description ?? category.description}
+  image={doc?.image}
   url={`/${slug}/`}
-  type="article"
-  author={doc.author}
-  date={doc.date}
-  keywords={doc.keywords}
-  robots={doc.robots}
-  lang={doc.lang || 'ru'}
+  type={doc ? 'article' : 'website'}
+  author={doc?.author}
+  date={doc?.date}
+  keywords={doc?.keywords}
+  robots={doc?.robots}
+  lang={doc?.lang || 'ru'}
 >
-  <noscript>
-    <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;">
-      <article set:html={doc.content ?? ''} />
-    </main>
-  </noscript>
-  <DocContent client:only="react" doc={doc} />
+  {doc ? (
+    <>
+      <noscript>
+        <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;">
+          <article set:html={doc.content ?? ''} />
+        </main>
+      </noscript>
+      <DocContent client:only="react" doc={doc} />
+    </>
+  ) : (
+    <CategoryContent client:only="react" category={category} />
+  )}
 </Layout>

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildCategoryPages } from './docUtils.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -59,6 +60,24 @@ function generateSitemap() {
     <lastmod>${lastmod}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
+  </url>
+`;
+    urlCount++;
+  }
+
+  for (const category of buildCategoryPages(docs)) {
+    const latestDocDate = category.docs
+      .map((doc) => doc.updated || doc.date)
+      .filter(Boolean)
+      .sort()
+      .at(-1);
+
+    sitemap += `
+  <url>
+    <loc>${BASE_URL}/${category.slug}/</loc>
+    <lastmod>${latestDocDate || today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>
 `;
     urlCount++;
