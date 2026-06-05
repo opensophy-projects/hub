@@ -19,6 +19,7 @@ export interface DocMetadata {
   navSlug?: string;
   navTitle?: string;
   navIcon?: string;
+  frontmatter?: Record<string, unknown>;
 }
 
 export interface UseManifestResult {
