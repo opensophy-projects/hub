@@ -1444,7 +1444,7 @@ const MobBtn: React.FC<{
   const t = tk(isDark);
   return (
     <button onClick={onClick}
-      style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', padding: '0', border: 'none', background: 'transparent', cursor: 'pointer', color: isActive ? t.accent : t.fgMuted, outline: 'none', minWidth: 0 }}>
+      style={{ flex: 1, minWidth: 44, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', padding: '0 4px', border: 'none', background: 'transparent', cursor: 'pointer', color: isActive ? t.accent : t.fgMuted, outline: 'none' }}>
       <span style={{ width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
       <span style={{ fontSize: '10px', fontWeight: 400, lineHeight: 1, marginTop: '1px' }}>{label}</span>
     </button>
@@ -1468,38 +1468,85 @@ const MobileNav: React.FC<{
     if (!hasToc && sheet === 'toc') { setSheet(null); }
   }, [hasToc, sheet]);
 
+  /*
+   * Архитектура: nav = position relative
+   * Логотип — position absolute, left 50%, transform -50% → ВСЕГДА по центру
+   * Левая группа кнопок — flex 1, justify-content flex-end
+   * Правая группа кнопок — flex 1, justify-content flex-start
+   * Кнопки внутри групп НЕ имеют flex:1, они фиксированной ширины.
+   * Когда кнопок меньше (нет ToC) — они просто прижимаются к логотипу,
+   * но сам логотип остаётся строго по центру экрана.
+   */
+
+  const scrollTop = () => { setSheet(null); globalThis.scrollTo({ top: 0, behavior: 'smooth' }); };
+
+  // Левые кнопки (всегда): Тема, Поиск, [Разделы если showDocActions]
+  const leftButtons = !showDocActions ? (
+    <>
+      <MobBtn label="Тема"  icon={isDark ? <Sun size={22} /> : <Moon size={22} />} isDark={isDark} onClick={toggleTheme}                                   isActive={false} />
+      <MobBtn label="Поиск" icon={<Search size={22} />}                            isDark={isDark} onClick={() => { setSheet(null); setSearchOpen(true); }} isActive={false} />
+    </>
+  ) : (
+    <>
+      <MobBtn label="Тема"    icon={isDark ? <Sun size={22} /> : <Moon size={22} />} isDark={isDark} onClick={toggleTheme}                                   isActive={false} />
+      <MobBtn label="Поиск"   icon={<Search size={22} />}                            isDark={isDark} onClick={() => { setSheet(null); setSearchOpen(true); }} isActive={false} />
+      <MobBtn label="Разделы" icon={<FolderOpen size={22} />}                        isDark={isDark} onClick={() => toggle('nav')}                           isActive={sheet === 'nav'} />
+    </>
+  );
+
+  // Правые кнопки:
+  // Главная:       Разделы, Контакты
+  // Документ+ToC:  Оглавление, Наверх, Контакты
+  // Документ−ToC:  Наверх, Контакты
+  const rightButtons = !showDocActions ? (
+    <>
+      <MobBtn label="Разделы"  icon={<FolderOpen size={22} />} isDark={isDark} onClick={() => toggle('nav')}      isActive={sheet === 'nav'} />
+      <MobBtn label="Контакты" icon={<Mail size={22} />}       isDark={isDark} onClick={() => toggle('contacts')} isActive={sheet === 'contacts'} />
+    </>
+  ) : hasToc ? (
+    <>
+      <MobBtn label="Оглавление" icon={<List size={22} />}    isDark={isDark} onClick={() => toggle('toc')}      isActive={sheet === 'toc'} />
+      <MobBtn label="Наверх"     icon={<ArrowUp size={22} />} isDark={isDark} onClick={scrollTop}                isActive={false} />
+      <MobBtn label="Контакты"   icon={<Mail size={22} />}    isDark={isDark} onClick={() => toggle('contacts')} isActive={sheet === 'contacts'} />
+    </>
+  ) : (
+    <>
+      <MobBtn label="Наверх"   icon={<ArrowUp size={22} />} isDark={isDark} onClick={scrollTop}                isActive={false} />
+      <MobBtn label="Контакты" icon={<Mail size={22} />}    isDark={isDark} onClick={() => toggle('contacts')} isActive={sheet === 'contacts'} />
+    </>
+  );
+
   return (
     <>
       {sheet && <MobilePanel type={sheet} onClose={() => setSheet(null)} isDark={isDark} currentDocSlug={currentDocSlug} toc={toc} activeId={activeId} />}
 
       <nav style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 60, height: '60px',
-        background: t.mobBg, borderTop: `1px solid ${t.border}`, display: 'flex', alignItems: 'stretch',
+        background: t.mobBg, borderTop: `1px solid ${t.border}`,
+        display: 'flex', alignItems: 'stretch',
       }}>
-        <MobBtn label="Тема"  icon={isDark ? <Sun size={22} /> : <Moon size={22} />} isDark={isDark} onClick={toggleTheme} isActive={false} />
-        <MobBtn label="Поиск" icon={<Search size={22} />} isDark={isDark} onClick={() => { setSheet(null); setSearchOpen(true); }} isActive={false} />
+        {/* Лого: всегда строго по центру навбара */}
+        <div aria-hidden style={{
+          position: 'absolute', left: '50%', top: '50%',
+          transform: 'translate(-50%, -50%)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          pointerEvents: 'none', zIndex: 1,
+        }}>
+          <BrandLogo logoPath={logoPath} size={38} />
+        </div>
 
-        {!showDocActions && (
-          <>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <BrandLogo logoPath={logoPath} size={38} />
-            </div>
-            <MobBtn label="Разделы" icon={<FolderOpen size={22} />} isDark={isDark} onClick={() => toggle('nav')} isActive={sheet === 'nav'} />
-          </>
-        )}
+        {/* Левая половина — кнопки прижаты к правому краю (к логотипу) */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'stretch', justifyContent: 'flex-end' }}>
+          {leftButtons}
+        </div>
 
-        {showDocActions && (
-          <>
-            <MobBtn label="Разделы" icon={<FolderOpen size={22} />} isDark={isDark} onClick={() => toggle('nav')} isActive={sheet === 'nav'} />
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <BrandLogo logoPath={logoPath} size={38} />
-            </div>
-            {hasToc && <MobBtn label="Оглавление" icon={<List size={22} />} isDark={isDark} onClick={() => toggle('toc')} isActive={sheet === 'toc'} />}
-            <MobBtn label="Наверх"     icon={<ArrowUp size={22} />} isDark={isDark} onClick={() => { setSheet(null); globalThis.scrollTo({ top: 0, behavior: 'smooth' }); }} isActive={false} />
-          </>
-        )}
+        {/* Центральный spacer шириной логотипа чтобы кнопки не залезали под него */}
+        <div aria-hidden style={{ width: 48, flexShrink: 0 }} />
 
-        <MobBtn label="Контакты" icon={<Mail size={22} />} isDark={isDark} onClick={() => toggle('contacts')} isActive={sheet === 'contacts'} />
+        {/* Правая половина — кнопки прижаты к левому краю (к логотипу) */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'stretch', justifyContent: 'flex-start' }}>
+          {rightButtons}
+        </div>
       </nav>
 
       <AnimatePresence>
