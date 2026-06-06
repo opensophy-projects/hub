@@ -307,6 +307,7 @@ interface FeatureCardProps {
   fullWidth?: boolean;
   badge?: string;
   visual?: VisualType;
+  price?: string;
 }
 
 const SecurityAnalysisVisual: React.FC = () => (
@@ -509,10 +510,12 @@ function buildVisualVars(isNegative: boolean): React.CSSProperties {
   return isNegative ? VISUAL_VARS_DARK : VISUAL_VARS_LIGHT;
 }
 
-const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, fullWidth, badge, visual }) => {
+const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, fullWidth, badge, visual, price }) => {
   const titleC    = isNegative ? 'rgba(255,255,255,0.9)'  : 'rgba(0,0,0,0.88)';
   const textC     = isNegative ? 'rgba(255,255,255,0.7)'  : 'rgba(0,0,0,0.65)';
   const badgeC    = isNegative ? 'rgba(255,255,255,0.42)' : 'rgba(0,0,0,0.42)';
+  const priceC    = isNegative ? 'rgba(255,255,255,0.88)' : 'rgba(0,0,0,0.82)';
+  const priceMutC = isNegative ? 'rgba(255,255,255,0.36)' : 'rgba(0,0,0,0.32)';
   const hasVisual = Boolean(visual);
 
   const VisualComponent = visual ? VISUAL_COMPONENTS[visual] : null;
@@ -550,8 +553,36 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, text, isNegative, full
         )}
         <LandingCardTitle style={{ color: titleC }}>{title}</LandingCardTitle>
       </LandingCardHeader>
-      <LandingCardContent style={{ flex: 1 }}>
+      <LandingCardContent style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <LandingCardDescription style={{ color: textC }}>{text}</LandingCardDescription>
+        {price && (
+          <div style={{
+            display:    'flex',
+            alignItems: 'baseline',
+            gap:        '0.3em',
+            marginTop:  '1rem',
+          }}>
+            <span style={{
+              fontSize:      '0.65rem',
+              fontWeight:    500,
+              letterSpacing: '0.06em',
+              color:         priceMutC,
+              fontFamily:    'ui-monospace, monospace',
+              textTransform: 'uppercase',
+            }}>
+              от
+            </span>
+            <span style={{
+              fontSize:      'clamp(1rem, 1.6vw, 1.2rem)',
+              fontWeight:    600,
+              color:         priceC,
+              fontFamily:    'Inter, system-ui, sans-serif',
+              letterSpacing: '-0.01em',
+            }}>
+              {price}
+            </span>
+          </div>
+        )}
       </LandingCardContent>
     </LandingCard>
   );
@@ -1145,6 +1176,7 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
             title="Интеграция анализа безопасности"
             badge="услуга"
             visual="securityAnalysis"
+            price="10 000 ₽"
             text="Интегрируем автоматический анализ кода на уязвимости на каждом этапе разработки. Проверяем исходный код, тестируем работающее приложение и отслеживаем уязвимости в библиотеках — всё автоматически в CI/CD без участия команды."
           />
           <FeatureCard
@@ -1152,6 +1184,7 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
             title="Настройка безопасного доступа"
             badge="услуга"
             visual="secureAccess"
+            price="10 000 ₽"
             text="Настраиваем и интегрируем защищённый доступ к сервисам и серверам. Подбираем решение под задачу — mTLS, VPN, Zero Trust или другой подход. Доступ получают только те, кому вы это разрешили."
           />
           <FeatureCard
@@ -1159,6 +1192,7 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
             title="Проверка защищённости"
             badge="услуга"
             visual="securityCheck"
+            price="5 000 ₽"
             text="Этично проверяем сервис или сервер на наличие уязвимостей: открытые точки входа, слабые конфигурации и всё, что может стать проблемой раньше, чем вы об этом узнаете."
           />
           <FeatureCard
@@ -1166,6 +1200,7 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
             title="Автоматизация"
             badge="услуга"
             visual="automationList"
+            price="15 000 ₽"
             text="Автоматизируем рутину — от простого bash-скрипта до сложных решений под индивидуальные требования."
           />
           <FeatureCard
@@ -1173,6 +1208,7 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
             title="Подбор стека защиты"
             badge="услуга"
             visual="protectionStack"
+            price="5 000 ₽"
             text="Подбираем стек защиты с одной целью — максимальная эффективность при минимальных затратах ресурсов."
           />
         </div>
