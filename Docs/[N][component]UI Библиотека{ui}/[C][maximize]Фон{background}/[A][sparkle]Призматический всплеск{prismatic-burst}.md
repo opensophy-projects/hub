@@ -10,3 +10,15 @@ lang: ru
 
 [uic:prismatic-burst]
 
+| Проп | Type | Обычно | Описание |
+|------|------|---------|-------------|
+| `intensity` | `number` | `2` | Яркость лучей |
+| `speed` | `number` | `0.5` | Скорость анимации |
+| `animationType` | `string` | `'rotate3d'` | Режим (`rotate`/`rotate3d`/`hover`) |
+| `colors` | `string[]` | `undefined` | Кастомные цвета спектра (до 64) |
+| `distort` | `number` | `0` | Сила bend-деформации лучей |
+| `paused` | `boolean` | `false` | Пауза анимации |
+| `rayCount` | `number` | `24` | Количество лучей в паттерне |
+| `hoverDampness` | `number` | `0.1` | Инерция hover-режима |
+| `offset` | `object` | `{x:0,y:0}` | Смещение центра (px) |
+| `mixBlendMode` | `string` | `'screen'` | CSS mix-blend-mode |
