@@ -10,3 +10,12 @@ lang: ru
 
 [uic:dark-veil]
 
+| Проп | Type | Обычно | Описание |
+|------|------|---------|-------------|
+| `speed` | `number` | `0.5` | Скорость анимации |
+| `hueShift` | `number` | `0` | Сдвиг оттенка (0–360°) |
+| `noiseIntensity` | `number` | `0` | Интенсивность зернистости |
+| `scanlineIntensity` | `number` | `0` | Интенсивность сканлайнов |
+| `scanlineFrequency` | `number` | `0` | Частота сканлайнов |
+| `warpAmount` | `number` | `0` | Сила UV-деформации |
+| `resolutionScale` | `number` | `1` | Масштаб разрешения (0.5 = экономия GPU) |
