@@ -1,7 +1,7 @@
 import { registry } from './registry';
 import type { ComponentConfig, LoadedComponent } from '../types';
 
-const sourceModules = import.meta.glob('./**/*.{ts,tsx}', { query: '?raw', import: 'default' });
+const sourceModules = import.meta.glob('./**/*.{ts,tsx,js,jsx,css,html,json}', { query: '?raw', import: 'default' });
 
 type PropValue = string | number | boolean | string[] | undefined;
 
@@ -11,17 +11,23 @@ const loadingPromises = new Map<string, Promise<LoadedComponent | null>>();
 
 
 
+function componentBaseDir(componentId: string): string {
+  const registryBase = registry.getBaseDir(componentId);
+  return registryBase ? registryBase.replace(/^\.\.\//, './') : `./${componentId}`;
+}
+
 function pickMainSourcePath(componentId: string, config: ComponentConfig): string | null {
   const mainFile = (config as ComponentConfig & { main?: string }).main;
+  const baseDir = componentBaseDir(componentId);
 
   const preferred = [
-    mainFile && `./${componentId}/${mainFile}`,
-    `./${componentId}/${componentId}.tsx`,
-    `./${componentId}/index.tsx`,
-    `./${componentId}/index.ts`,
+    mainFile && `${baseDir}/${mainFile}`,
+    `${baseDir}/${componentId}.tsx`,
+    `${baseDir}/index.tsx`,
+    `${baseDir}/index.ts`,
   ].filter((p): p is string => !!p && !p.endsWith('undefined'));
 
-  const allSourceFiles = Object.keys(sourceModules).filter(k => k.startsWith(`./${componentId}/`));
+  const allSourceFiles = Object.keys(sourceModules).filter(k => k.startsWith(`${baseDir}/`));
   const candidates = [...new Set([...preferred, ...allSourceFiles])];
 
   for (const candidate of candidates) {
@@ -33,7 +39,8 @@ function pickMainSourcePath(componentId: string, config: ComponentConfig): strin
 
 async function loadFileContents(componentId: string, config: ComponentConfig): Promise<Record<string, string>> {
   const sourcePath = pickMainSourcePath(componentId, config);
-  const allSourcePaths = Object.keys(sourceModules).filter(k => k.startsWith(`./${componentId}/`));
+  const baseDir = componentBaseDir(componentId);
+  const allSourcePaths = Object.keys(sourceModules).filter(k => k.startsWith(`${baseDir}/`));
   if (!sourcePath && allSourcePaths.length === 0) return {};
 
   const orderedPaths = sourcePath
@@ -43,7 +50,7 @@ async function loadFileContents(componentId: string, config: ComponentConfig): P
   try {
     const entries = await Promise.all(orderedPaths.map(async (path) => {
       const source = await sourceModules[path]() as string;
-      const relativeName = path.replace(`./${componentId}/`, '');
+      const relativeName = path.replace(`${baseDir}/`, '');
       return [relativeName, source] as const;
     }));
     return Object.fromEntries(entries);
