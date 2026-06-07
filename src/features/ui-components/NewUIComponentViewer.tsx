@@ -5,9 +5,8 @@ import { createPortal } from 'react-dom';
 import { useTheme } from '@/shared/contexts/useTheme';
 import {
   Minimize2, Play, RefreshCcw, Copy, Check,
-  Settings, PanelRight,
-  X, Code2, Move, EyeOff, RotateCcw, FileCode2,
-  ChevronDown, ChevronRight,
+  PanelRight, X, Code2, EyeOff, RotateCcw, FileCode2,
+  ChevronDown, ChevronRight, Settings,
 } from 'lucide-react';
 import hljs from 'highlight.js/lib/core';
 import tsLanguage from 'highlight.js/lib/languages/typescript';
@@ -19,13 +18,12 @@ import { loadComponent, getDefaultProps } from './loader';
 import { ComponentWrapper } from './ComponentWrapper';
 import { useIsMobile } from '@/shared/hooks/useBreakpoint';
 import type { UniversalProps, ComponentConfig } from './types';
-import { makeTokens, themed } from '@/shared/tokens/theme';
+import { makeTokens } from '@/shared/tokens/theme';
 
 type PropValue = string | number | boolean | string[] | undefined;
 type ComponentPropsMap = Record<string, PropValue>;
 type AnyComponent = React.ComponentType<Record<string, PropValue>>;
-// Только appearance и code — цвет убран
-type TabType = 'appearance' | 'transform' | 'code';
+type TabType = 'settings' | 'code';
 
 interface LoadedComponentData {
   config: ComponentConfig;
@@ -33,75 +31,60 @@ interface LoadedComponentData {
   fileContents: Record<string, string>;
 }
 
-// ─── Токены, максимально близкие к Navigation ────────────────────────────────
+// ─── Токены ───────────────────────────────────────────────────────────────────
 
 function tk(isDark: boolean) {
   const t = makeTokens(isDark);
   return {
-    // Рейл + панель
-    railBg:         isDark ? '#0F0F0F' : '#dddcd8',
-    panelBg:        isDark ? '#0F0F0F' : '#dddcd8',
-    surfaceBg:      isDark ? '#141414' : '#d5d4d0',
-    outerBg:        t.bg,
-    border:         isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.09)',
-    borderStrong:   isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.18)',
-    fg:             isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)',
-    fgMuted:        isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)',
-    fgSub:          isDark ? 'rgba(255,255,255,0.30)' : 'rgba(0,0,0,0.30)',
-    // Кнопки рейла
-    btnBg:          isDark ? 'transparent' : 'transparent',
-    btnBdr:         'transparent',
-    btnHov:         isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-    btnClr:         isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)',
-    btnActBg:       isDark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.08)',
-    btnActBdr:      isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)',
-    btnActClr:      isDark ? '#ffffff' : '#000000',
-    // Инпуты
-    inpBg:          isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
-    inpBdr:         isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)',
-    inpClr:         isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.8)',
-    // Акцент
-    accent:         t.accent,
-    accentSoft:     t.accentSoft,
-    // Тени
-    shadow:         isDark
+    railBg:       isDark ? '#0F0F0F' : '#dddcd8',
+    panelBg:      isDark ? '#0F0F0F' : '#dddcd8',
+    surfaceBg:    isDark ? '#141414' : '#d5d4d0',
+    codeBg:       isDark ? '#0a0a0a' : '#e8e7e3',
+    outerBg:      t.bg,
+    border:       isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.09)',
+    borderStrong: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.18)',
+    fg:           isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)',
+    fgMuted:      isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)',
+    fgSub:        isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)',
+    btnHov:       isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+    btnClr:       isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)',
+    btnActBg:     isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.09)',
+    btnActBdr:    isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.16)',
+    btnActClr:    isDark ? '#ffffff' : '#000000',
+    inpBg:        isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+    inpBdr:       isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)',
+    inpClr:       isDark ? 'rgba(255,255,255,0.8)'  : 'rgba(0,0,0,0.8)',
+    accent:       t.accent,
+    accentSoft:   t.accentSoft,
+    shadow:       isDark
       ? '0 8px 32px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05)'
       : '0 8px 32px rgba(0,0,0,0.14), 0 0 0 1px rgba(0,0,0,0.07)',
-    // Ширина рейла — как в Navigation
-    railW: 64,
+    railW:  64,
     panelW: 280,
-    mobBg: isDark ? '#0F0F0F' : '#dcdbd7',
+    mobBg:  isDark ? '#0F0F0F' : '#dcdbd7',
   };
 }
-
 type T = ReturnType<typeof tk>;
 
-// ─── Кнопка рейла — точная копия RailBtn из Navigation ───────────────────────
+// ─── RailBtn ──────────────────────────────────────────────────────────────────
 
 const RailBtn: React.FC<{
-  icon: React.ReactNode;
-  label: string;
-  isActive?: boolean;
-  t: T;
-  onClick: () => void;
-  title?: string;
+  icon: React.ReactNode; label: string; isActive?: boolean; t: T;
+  onClick: () => void; title?: string;
 }> = ({ icon, label, isActive, t, onClick, title }) => {
   const [hov, setHov] = useState(false);
   const color = isActive ? t.btnActClr : hov ? t.fg : t.btnClr;
   return (
     <button
-      onClick={onClick}
-      title={title ?? label}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
+      onClick={onClick} title={title ?? label}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{
         width: t.railW - 8,
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'center', gap: 5, padding: '10px 4px',
         border: `1px solid ${isActive ? t.btnActBdr : 'transparent'}`,
         background: isActive ? t.btnActBg : hov ? t.btnHov : 'transparent',
-        color,
-        cursor: 'pointer', borderRadius: 12, flexShrink: 0,
+        color, cursor: 'pointer', borderRadius: 12, flexShrink: 0,
         transition: 'background 0.12s, color 0.12s',
       }}
     >
@@ -111,52 +94,10 @@ const RailBtn: React.FC<{
   );
 };
 
-// ─── PanelHeader — как в Navigation ──────────────────────────────────────────
-
-const PanelHeader: React.FC<{
-  title: string;
-  description?: string;
-  t: T;
-  onClose?: () => void;
-}> = ({ title, description, t, onClose }) => (
-  <div style={{
-    flexShrink: 0,
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '11px 14px 9px',
-    borderBottom: `1px solid ${t.border}`,
-  }}>
-    <div>
-      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: t.fg }}>
-        {title}
-      </div>
-      {description && (
-        <div style={{ fontSize: 10, color: t.fgSub, marginTop: 2 }}>{description}</div>
-      )}
-    </div>
-    {onClose && (
-      <button
-        onClick={onClose}
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 24, height: 24, borderRadius: 6,
-          border: 'none', background: 'transparent', color: t.fgMuted, cursor: 'pointer',
-        }}
-        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = t.fg; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = t.fgMuted; }}
-      >
-        <X size={13} />
-      </button>
-    )}
-  </div>
-);
-
 // ─── AccordionSection ─────────────────────────────────────────────────────────
 
 const AccordionSection: React.FC<{
-  label: string;
-  defaultOpen?: boolean;
-  t: T;
-  children: React.ReactNode;
+  label: string; defaultOpen?: boolean; t: T; children: React.ReactNode;
 }> = ({ label, defaultOpen = true, t, children }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -165,13 +106,11 @@ const AccordionSection: React.FC<{
         onClick={() => setOpen(v => !v)}
         style={{
           width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '8px 14px', background: 'transparent', border: 'none', cursor: 'pointer',
+          padding: '9px 14px', background: 'transparent', border: 'none', cursor: 'pointer',
         }}
       >
-        <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: t.fgMuted }}>{label}</span>
-        {open
-          ? <ChevronDown size={11} style={{ color: t.fgSub }} />
-          : <ChevronRight size={11} style={{ color: t.fgSub }} />}
+        <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: t.fgMuted }}>{label}</span>
+        {open ? <ChevronDown size={11} style={{ color: t.fgSub }} /> : <ChevronRight size={11} style={{ color: t.fgSub }} />}
       </button>
       {open && <div>{children}</div>}
     </div>
@@ -181,7 +120,7 @@ const AccordionSection: React.FC<{
 // ─── NumberInput ──────────────────────────────────────────────────────────────
 
 function getDecimalPlaces(step: number): number {
-  if (step >= 1)   return 0;
+  if (step >= 1) return 0;
   if (step >= 0.1) return 1;
   return 2;
 }
@@ -236,11 +175,10 @@ const NumberInput: React.FC<{
   );
 };
 
-// ─── FieldRow — теперь с ВИДИМОЙ кнопкой «Сбросить» ─────────────────────────
+// ─── FieldRow — видимая кнопка «Сбросить» ─────────────────────────────────────
 
 const FieldRow: React.FC<{
-  label: string;
-  fieldKey: keyof UniversalProps;
+  label: string; fieldKey: keyof UniversalProps;
   min: number; max: number; step: number; defaultVal: number;
   universalProps: UniversalProps;
   onChange: (key: keyof UniversalProps, v: PropValue) => void;
@@ -249,20 +187,18 @@ const FieldRow: React.FC<{
   const val       = (universalProps[fieldKey] as number) ?? defaultVal;
   const isChanged = Math.abs(val - defaultVal) > 0.001;
   return (
-    <div style={{ padding: '7px 14px', borderBottom: `1px solid ${t.border}` }}>
+    <div style={{ padding: '8px 14px', borderBottom: `1px solid ${t.border}` }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: t.fg }}>{label}</span>
-        {/* Кнопка «Сбросить» — всегда видна когда значение изменено */}
+        <span style={{ fontSize: 11, fontWeight: 500, color: t.fg }}>{label}</span>
         {isChanged && (
           <button
             onClick={() => onChange(fieldKey, defaultVal)}
             title="Сбросить"
             style={{
               display: 'flex', alignItems: 'center', gap: 3,
-              padding: '2px 7px', borderRadius: 5,
+              padding: '2px 8px', borderRadius: 5,
               border: `1px solid ${t.borderStrong}`,
-              background: t.inpBg,
-              color: t.fgMuted,
+              background: t.inpBg, color: t.fgMuted,
               fontSize: 10, fontWeight: 600, cursor: 'pointer',
               transition: 'color 0.1s, background 0.1s',
             }}
@@ -275,8 +211,7 @@ const FieldRow: React.FC<{
               (e.currentTarget as HTMLButtonElement).style.background = t.inpBg;
             }}
           >
-            <RotateCcw size={9} />
-            Сбросить
+            <RotateCcw size={9} /> Сбросить
           </button>
         )}
       </div>
@@ -285,50 +220,52 @@ const FieldRow: React.FC<{
   );
 };
 
-// ─── Группы полей ─────────────────────────────────────────────────────────────
+// ─── Все поля в одной панели (без разделения по табам) ───────────────────────
 
-const UNIVERSAL_FIELD_GROUPS: Record<'transform' | 'appearance', {
-  label: string;
+const ALL_FIELDS: Array<{
+  groupLabel: string;
   fields: Array<{ label: string; key: keyof UniversalProps; min: number; max: number; step: number; default: number }>;
-}> = {
-  transform: { label: 'Трансформация', fields: [
-    { label: 'Масштаб',    key: 'scale',   min: 0.1,  max: 3,    step: 0.05, default: 1 },
-    { label: 'Смещение X', key: 'offsetX', min: -500, max: 500,  step: 1,    default: 0 },
-    { label: 'Смещение Y', key: 'offsetY', min: -500, max: 500,  step: 1,    default: 0 },
-    { label: 'Вращение Z', key: 'rotateZ', min: -180, max: 180,  step: 1,    default: 0 },
-  ] },
-  appearance: { label: 'Внешний вид', fields: [
-    { label: 'Прозрачность', key: 'opacity',    min: 0, max: 1,  step: 0.05, default: 1 },
-    { label: 'Яркость',      key: 'brightness', min: 0, max: 2,  step: 0.05, default: 1 },
-    { label: 'Контраст',     key: 'contrast',   min: 0, max: 2,  step: 0.05, default: 1 },
-    { label: 'Насыщенность', key: 'saturate',   min: 0, max: 2,  step: 0.05, default: 1 },
-    { label: 'Размытие',     key: 'blur',       min: 0, max: 20, step: 0.5,  default: 0 },
-  ] },
-};
+}> = [
+  {
+    groupLabel: 'Внешний вид',
+    fields: [
+      { label: 'Прозрачность', key: 'opacity',    min: 0, max: 1,  step: 0.05, default: 1 },
+      { label: 'Яркость',      key: 'brightness', min: 0, max: 2,  step: 0.05, default: 1 },
+      { label: 'Контраст',     key: 'contrast',   min: 0, max: 2,  step: 0.05, default: 1 },
+      { label: 'Насыщенность', key: 'saturate',   min: 0, max: 2,  step: 0.05, default: 1 },
+      { label: 'Размытие',     key: 'blur',       min: 0, max: 20, step: 0.5,  default: 0 },
+    ],
+  },
+  {
+    groupLabel: 'Трансформация',
+    fields: [
+      { label: 'Масштаб',    key: 'scale',   min: 0.1,  max: 3,   step: 0.05, default: 1 },
+      { label: 'Смещение X', key: 'offsetX', min: -500, max: 500, step: 1,    default: 0 },
+      { label: 'Смещение Y', key: 'offsetY', min: -500, max: 500, step: 1,    default: 0 },
+      { label: 'Вращение Z', key: 'rotateZ', min: -180, max: 180, step: 1,    default: 0 },
+    ],
+  },
+];
 
-// ─── UniversalSidebar — цвет убран ────────────────────────────────────────────
-
-const UniversalSidebar: React.FC<{
-  section: 'appearance' | 'transform';
+const SettingsSidebar: React.FC<{
   universalProps: UniversalProps;
   onChange: (key: keyof UniversalProps, v: PropValue) => void;
   t: T;
-}> = ({ section, universalProps, onChange, t }) => {
-  const group = UNIVERSAL_FIELD_GROUPS[section];
-  return (
-    <div>
-      <AccordionSection label={group.label} defaultOpen t={t}>
+}> = ({ universalProps, onChange, t }) => (
+  <div style={{ overflowY: 'auto', flex: 1 }}>
+    {ALL_FIELDS.map(group => (
+      <AccordionSection key={group.groupLabel} label={group.groupLabel} defaultOpen t={t}>
         {group.fields.map(f => (
           <FieldRow
-            key={f.key} label={f.label} fieldKey={f.key}
+            key={String(f.key)} label={f.label} fieldKey={f.key}
             min={f.min} max={f.max} step={f.step} defaultVal={f.default}
             universalProps={universalProps} onChange={onChange} t={t}
           />
         ))}
       </AccordionSection>
-    </div>
-  );
-};
+    ))}
+  </div>
+);
 
 // ─── hljs ─────────────────────────────────────────────────────────────────────
 
@@ -354,50 +291,73 @@ function languageFromFile(name: string): string {
 }
 
 function highlightCode(code: string, fileName: string): string {
-  const language = languageFromFile(fileName);
-  if (hljs.getLanguage(language)) {
-    return hljs.highlight(code, { language, ignoreIllegals: true }).value;
+  const lang = languageFromFile(fileName);
+  if (hljs.getLanguage(lang)) {
+    return hljs.highlight(code, { language: lang, ignoreIllegals: true }).value;
   }
   return hljs.highlightAuto(code).value;
 }
 
-const HLJS_THEME = `
-.uiv-code .hljs-keyword,.uiv-code .hljs-selector-tag,.uiv-code .hljs-title.function_ { color: #c084fc; }
-.uiv-code .hljs-string,.uiv-code .hljs-attr,.uiv-code .hljs-template-string { color: #86efac; }
-.uiv-code .hljs-number,.uiv-code .hljs-literal { color: #fbbf24; }
-.uiv-code .hljs-comment { color: #64748b; font-style: italic; }
-.uiv-code .hljs-title.class_,.uiv-code .hljs-built_in,.uiv-code .hljs-type { color: #67e8f9; }
-.uiv-code .hljs-tag,.uiv-code .hljs-name { color: #fb7185; }
+const HLJS_CSS = `
+.uiv-hl .hljs-keyword,.uiv-hl .hljs-selector-tag,.uiv-hl .hljs-title.function_ { color:#c084fc }
+.uiv-hl .hljs-string,.uiv-hl .hljs-attr,.uiv-hl .hljs-template-string { color:#86efac }
+.uiv-hl .hljs-number,.uiv-hl .hljs-literal { color:#fbbf24 }
+.uiv-hl .hljs-comment { color:#64748b; font-style:italic }
+.uiv-hl .hljs-title.class_,.uiv-hl .hljs-built_in,.uiv-hl .hljs-type { color:#67e8f9 }
+.uiv-hl .hljs-tag,.uiv-hl .hljs-name { color:#fb7185 }
 `;
 
-// ─── SourceCodePanel — split view: слева превью, справа код ──────────────────
-// Используется внутри FullscreenDesktop: принимает children (превью) снаружи.
+// ─── SourceCodeEditor ─────────────────────────────────────────────────────────
+// Ключевые исправления:
+// 1. pre и textarea синхронизированы через одинаковые padding/font/size
+// 2. overflow: auto на ОБОИХ — скролл работает
+// 3. textarea поверх pre, оба абсолютно позиционированы
+// 4. Изменения мгновенно видны (state внутри компонента)
 
 const SourceCodeEditor: React.FC<{
   fileContents: Record<string, string>;
   t: T;
 }> = ({ fileContents, t }) => {
   const files = useMemo(() => Object.entries(fileContents), [fileContents]);
-  const initialDrafts = useMemo(() => Object.fromEntries(files), [files]);
-  const [activeFile, setActiveFile] = useState(files[0]?.[0] ?? '');
-  const [drafts, setDrafts]         = useState<Record<string, string>>(initialDrafts);
+  const [activeFile, setActiveFile] = useState(() => files[0]?.[0] ?? '');
+  const [drafts, setDrafts]         = useState<Record<string, string>>(() => Object.fromEntries(files));
   const [copied, setCopied]         = useState(false);
 
+  // Синхронизируем при смене пропсов (новый компонент)
   useEffect(() => {
-    setDrafts(initialDrafts);
-    setActiveFile(files[0]?.[0] ?? '');
-  }, [files, initialDrafts]);
+    const initial = Object.fromEntries(Object.entries(fileContents));
+    setDrafts(initial);
+    setActiveFile(Object.keys(fileContents)[0] ?? '');
+  }, [fileContents]);
 
-  const activeCode    = drafts[activeFile] ?? '';
-  const originalCode  = fileContents[activeFile] ?? '';
-  const isDirty       = activeCode !== originalCode;
-  const highlighted   = useMemo(() => highlightCode(activeCode, activeFile), [activeCode, activeFile]);
+  const activeCode   = drafts[activeFile] ?? '';
+  const originalCode = fileContents[activeFile] ?? '';
+  const isDirty      = activeCode !== originalCode;
+
+  // Подсветка пересчитывается при каждом изменении кода — мгновенно
+  const highlighted = useMemo(() => highlightCode(activeCode, activeFile), [activeCode, activeFile]);
 
   const copyCode = async () => {
-    if (!activeCode) return;
     await navigator.clipboard.writeText(activeCode);
     setCopied(true);
-    setTimeout(() => setCopied(false), 1200);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  // Общие стили для pre и textarea — должны совпадать ИДЕАЛЬНО
+  const editorStyle: React.CSSProperties = {
+    position:    'absolute',
+    inset:       0,
+    margin:      0,
+    padding:     '16px 18px',
+    fontSize:    12.5,
+    lineHeight:  1.7,
+    fontFamily:  '"Fira Code", "Cascadia Code", "JetBrains Mono", ui-monospace, monospace',
+    tabSize:     2,
+    whiteSpace:  'pre',
+    overflowX:   'auto',
+    overflowY:   'auto',
+    wordBreak:   'normal' as const,
+    boxSizing:   'border-box' as const,
   };
 
   if (files.length === 0) {
@@ -409,114 +369,172 @@ const SourceCodeEditor: React.FC<{
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <style>{HLJS_THEME}</style>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+      <style>{HLJS_CSS}</style>
 
       {/* Тулбар */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        padding: '8px 12px', borderBottom: `1px solid ${t.border}`,
-        background: t.surfaceBg, flexShrink: 0, flexWrap: 'wrap',
+        display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
+        padding: '7px 10px', borderBottom: `1px solid ${t.border}`,
+        background: t.surfaceBg, flexShrink: 0,
       }}>
-        {/* Вкладки файлов */}
-        <div style={{ display: 'flex', gap: 4, flex: 1, overflow: 'hidden', flexWrap: 'wrap' }}>
+        {/* Табы файлов */}
+        <div style={{ display: 'flex', gap: 4, flex: 1, overflow: 'hidden' }}>
           {files.map(([name]) => {
-            const isActive = name === activeFile;
-            const dirty    = (drafts[name] ?? '') !== (fileContents[name] ?? '');
+            const isAct = name === activeFile;
+            const dirty = (drafts[name] ?? '') !== (fileContents[name] ?? '');
             return (
               <button
-                key={name}
-                onClick={() => setActiveFile(name)}
+                key={name} onClick={() => setActiveFile(name)}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  padding: '5px 10px', borderRadius: 7,
-                  border: `1px solid ${isActive ? t.borderStrong : t.border}`,
-                  background: isActive ? t.btnActBg : 'transparent',
-                  color: isActive ? t.fg : t.fgMuted,
-                  fontSize: 11, fontFamily: 'ui-monospace, monospace',
-                  cursor: 'pointer', flexShrink: 0,
-                  fontWeight: isActive ? 600 : 400,
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  padding: '4px 9px', borderRadius: 6,
+                  border: `1px solid ${isAct ? t.borderStrong : t.border}`,
+                  background: isAct ? t.btnActBg : 'transparent',
+                  color: isAct ? t.fg : t.fgMuted,
+                  fontSize: 11, fontFamily: 'ui-monospace,monospace',
+                  cursor: 'pointer', fontWeight: isAct ? 600 : 400, flexShrink: 0,
                 }}
               >
                 <FileCode2 size={11} />
-                <span style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
-                {dirty && <span style={{ color: t.accent, fontSize: 10 }}>●</span>}
+                <span style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+                {dirty && <span style={{ color: t.accent, marginLeft: 2 }}>●</span>}
               </button>
             );
           })}
         </div>
 
-        {/* Кнопки действий */}
-        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+        {/* Действия */}
+        <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
           <button
             onClick={copyCode}
             style={{
-              display: 'flex', alignItems: 'center', gap: 5,
-              padding: '5px 10px', borderRadius: 7,
-              border: `1px solid ${copied ? t.accent + '55' : t.border}`,
+              display: 'flex', alignItems: 'center', gap: 4,
+              padding: '4px 9px', borderRadius: 6,
+              border: `1px solid ${copied ? t.accent + '66' : t.border}`,
               background: copied ? t.btnActBg : 'transparent',
               color: copied ? t.accent : t.fgMuted,
-              fontSize: 11, cursor: 'pointer', fontWeight: 600,
+              fontSize: 11, cursor: 'pointer',
             }}
           >
-            {copied ? <Check size={12} /> : <Copy size={12} />}
+            {copied ? <Check size={11} /> : <Copy size={11} />}
             {copied ? 'Скопировано' : 'Копировать'}
           </button>
           {isDirty && (
             <button
               onClick={() => setDrafts(prev => ({ ...prev, [activeFile]: originalCode }))}
               style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '5px 10px', borderRadius: 7,
+                display: 'flex', alignItems: 'center', gap: 4,
+                padding: '4px 9px', borderRadius: 6,
                 border: `1px solid ${t.borderStrong}`,
                 background: t.inpBg, color: t.fg,
                 fontSize: 11, cursor: 'pointer', fontWeight: 600,
               }}
             >
-              <RotateCcw size={12} />
-              Сбросить
+              <RotateCcw size={11} /> Сбросить
             </button>
           )}
         </div>
-        <span style={{ fontSize: 10, color: t.fgSub, flexShrink: 0 }}>Редактирование локальное</span>
       </div>
 
-      {/* Редактор */}
-      <div className="uiv-code" style={{ flex: 1, minHeight: 0, position: 'relative', overflow: 'hidden' }}>
+      {/* Редактор — pre + textarea наложенные друг на друга */}
+      <div
+        className="uiv-hl"
+        style={{ flex: 1, minHeight: 0, position: 'relative', background: t.codeBg, overflow: 'hidden' }}
+      >
+        {/* pre: подсветка синтаксиса, pointer-events:none */}
         <pre
-          aria-hidden="true"
+          aria-hidden
           style={{
-            position: 'absolute', inset: 0, margin: 0,
-            padding: '16px 20px', overflow: 'auto',
-            fontSize: 12.5, lineHeight: 1.65,
-            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-            color: t.fg, whiteSpace: 'pre', tabSize: 2,
-            pointerEvents: 'none',
-            background: t.outerBg,
+            ...editorStyle,
+            color:          t.fg,
+            background:     'transparent',
+            pointerEvents:  'none',
+            zIndex:         1,
+            // Скролл pre управляется textarea через JS
+            overflow:       'hidden',
           }}
         >
-          <code dangerouslySetInnerHTML={{ __html: highlighted + (activeCode.endsWith('\n') ? ' ' : '') }} />
+          <code dangerouslySetInnerHTML={{ __html: highlighted }} />
         </pre>
-        <textarea
-          aria-label={`Редактировать ${activeFile}`}
+
+        {/* textarea: прозрачный текст, реальный скролл */}
+        <SyncedTextarea
           value={activeCode}
-          spellCheck={false}
-          onChange={e => setDrafts(prev => ({ ...prev, [activeFile]: e.target.value }))}
-          style={{
-            position: 'absolute', inset: 0,
-            width: '100%', height: '100%',
-            resize: 'none', border: 'none', outline: 'none',
-            margin: 0, padding: '16px 20px',
-            overflow: 'auto',
-            fontSize: 12.5, lineHeight: 1.65,
-            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-            color: 'transparent', caretColor: t.accent,
-            background: 'transparent',
-            whiteSpace: 'pre', tabSize: 2,
-          }}
+          onChange={val => setDrafts(prev => ({ ...prev, [activeFile]: val }))}
+          editorStyle={editorStyle}
+          t={t}
         />
       </div>
     </div>
+  );
+};
+
+// ─── SyncedTextarea — синхронизирует скролл с pre ─────────────────────────────
+
+const SyncedTextarea: React.FC<{
+  value: string;
+  onChange: (v: string) => void;
+  editorStyle: React.CSSProperties;
+  t: T;
+}> = ({ value, onChange, editorStyle, t }) => {
+  const taRef  = useRef<HTMLTextAreaElement>(null);
+  const preRef = useRef<HTMLPreElement | null>(null);
+
+  // Находим соседний pre при маунте
+  useEffect(() => {
+    const pre = taRef.current?.previousElementSibling as HTMLPreElement | null;
+    preRef.current = pre;
+  }, []);
+
+  const syncScroll = useCallback(() => {
+    const ta  = taRef.current;
+    const pre = preRef.current;
+    if (!ta || !pre) return;
+    pre.scrollTop  = ta.scrollTop;
+    pre.scrollLeft = ta.scrollLeft;
+  }, []);
+
+  // Tab — вставляем 2 пробела
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key !== 'Tab') return;
+    e.preventDefault();
+    const ta = e.currentTarget;
+    const s  = ta.selectionStart;
+    const en = ta.selectionEnd;
+    const nv = value.slice(0, s) + '  ' + value.slice(en);
+    onChange(nv);
+    requestAnimationFrame(() => {
+      ta.selectionStart = ta.selectionEnd = s + 2;
+    });
+  }, [value, onChange]);
+
+  return (
+    <textarea
+      ref={taRef}
+      value={value}
+      spellCheck={false}
+      autoCorrect="off"
+      autoCapitalize="off"
+      onChange={e => onChange(e.target.value)}
+      onScroll={syncScroll}
+      onKeyDown={handleKeyDown}
+      style={{
+        ...editorStyle,
+        // Текст прозрачный — видна только подсветка из pre
+        color:       'transparent',
+        caretColor:  t.accent,
+        background:  'transparent',
+        resize:      'none',
+        border:      'none',
+        outline:     'none',
+        zIndex:      2,
+        // Скролл на textarea — pre синхронизируется через onScroll
+        overflow:    'auto',
+        overflowX:   'auto',
+        overflowY:   'auto',
+      }}
+    />
   );
 };
 
@@ -539,12 +557,10 @@ const ComponentRender: React.FC<ComponentRenderProps> = ({
   const isFill = layoutMode === 'fill';
   return (
     <div style={{
-      width: '100%',
-      height: isFill ? '100%' : 'auto',
-      minWidth: 0, minHeight: 0,
-      position: 'relative',
+      width: '100%', height: isFill ? '100%' : 'auto',
+      minWidth: 0, minHeight: 0, position: 'relative',
       overflow: isFill ? 'hidden' : 'visible',
-      ...(isFill ? { isolation: 'isolate', contain: 'layout paint style' } : {}),
+      ...(isFill ? { isolation: 'isolate' as const, contain: 'layout paint style' } : {}),
     }}>
       <ComponentWrapper {...universalProps} isDark={isDark} layoutMode={layoutMode} className="w-full h-full">
         <Suspense fallback={null}>
@@ -555,12 +571,126 @@ const ComponentRender: React.FC<ComponentRenderProps> = ({
   );
 };
 
-// ─── FullscreenModal ──────────────────────────────────────────────────────────
+// ─── FullscreenDesktop ────────────────────────────────────────────────────────
 
-type MobileSheet = 'appearance' | 'transform' | 'code' | null;
+const FullscreenDesktop: React.FC<ComponentRenderProps & {
+  activeTab: TabType;
+  panelOpen: boolean;
+  onTabSelect: (tab: TabType) => void;
+  onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
+  onRefresh: () => void;
+  onReset: () => void;
+  onClose: () => void;
+  onTogglePanel: () => void;
+  t: T;
+}> = ({
+  Component, componentProps, universalProps, refreshKey, isDark, componentCategory,
+  fileContents, activeTab, panelOpen,
+  onTabSelect, onUniversalPropChange, onRefresh, onReset, onClose, onTogglePanel, t,
+}) => {
+  const isBackground = componentCategory === 'backgrounds';
+
+  const previewStyle: React.CSSProperties = isBackground
+    ? { flex: 1, minWidth: 0, minHeight: 0, position: 'relative', overflow: 'hidden' }
+    : { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48, overflow: 'auto', position: 'relative' };
+
+  return (
+    <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+
+      {/* ── Рейл ── */}
+      <aside style={{
+        width: t.railW, flexShrink: 0,
+        background: t.railBg, borderRight: `1px solid ${t.border}`,
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        padding: '8px 0', gap: 2, zIndex: 10,
+      }}>
+        {/* Логотип-заглушка */}
+        <div style={{ width: t.railW, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', color: t.fgSub, textTransform: 'uppercase' as const }}>UI</span>
+        </div>
+
+        <RailBtn icon={<Play size={18} />}       label="Запуск"    t={t} onClick={onRefresh} />
+        <RailBtn icon={<RefreshCcw size={18} />} label="Сброс"     t={t} onClick={onReset} />
+        <RailBtn
+          icon={<Settings size={18} />}
+          label="Настройки"
+          isActive={panelOpen && activeTab === 'settings'}
+          t={t}
+          onClick={() => { onTabSelect('settings'); if (!panelOpen || activeTab === 'settings') onTogglePanel(); }}
+        />
+        <RailBtn
+          icon={<Code2 size={18} />}
+          label="Код"
+          isActive={panelOpen && activeTab === 'code'}
+          t={t}
+          onClick={() => { onTabSelect('code'); if (!panelOpen || activeTab === 'code') onTogglePanel(); }}
+        />
+        <div style={{ flex: 1 }} />
+        <RailBtn icon={<Minimize2 size={18} />}  label="Свернуть"  t={t} onClick={onClose} />
+      </aside>
+
+      {/* ── Превью ── */}
+      <div style={previewStyle}>
+        <ComponentRender
+          Component={Component} componentProps={componentProps}
+          universalProps={universalProps} refreshKey={refreshKey}
+          isDark={isDark} componentCategory={componentCategory}
+          fileContents={fileContents}
+        />
+      </div>
+
+      {/* ── Правая панель ── */}
+      {panelOpen && (
+        <aside style={{
+          width: activeTab === 'code' ? 'min(50%, 720px)' : `${t.panelW}px`,
+          flexShrink: 0,
+          borderLeft: `1px solid ${t.border}`,
+          background: t.panelBg,
+          display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          transition: 'width 0.18s ease',
+        }}>
+          {/* Шапка панели */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '10px 12px 8px', borderBottom: `1px solid ${t.border}`,
+            background: t.surfaceBg, flexShrink: 0,
+          }}>
+            <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: t.fg }}>
+              {activeTab === 'settings' ? 'Настройки' : 'Код'}
+            </span>
+            <button
+              onClick={onTogglePanel}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 24, height: 24, borderRadius: 6,
+                border: 'none', background: 'transparent', color: t.fgMuted, cursor: 'pointer',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = t.fg; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = t.fgMuted; }}
+            >
+              <X size={13} />
+            </button>
+          </div>
+
+          {/* Контент */}
+          {activeTab === 'settings' && (
+            <SettingsSidebar universalProps={universalProps} onChange={onUniversalPropChange} t={t} />
+          )}
+          {activeTab === 'code' && (
+            <SourceCodeEditor fileContents={fileContents} t={t} />
+          )}
+        </aside>
+      )}
+    </div>
+  );
+};
+
+// ─── Мобильная версия ─────────────────────────────────────────────────────────
+
+type MobileSheet = 'settings' | 'code' | null;
 
 function useSheetDrag(initialVh: number) {
-  const [sheetVh,    setSheetVh]    = useState(initialVh);
+  const [sheetVh, setSheetVh]    = useState(initialVh);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartY  = useRef<number | null>(null);
   const dragStartVh = useRef(initialVh);
@@ -570,14 +700,9 @@ function useSheetDrag(initialVh: number) {
       if (dragStartY.current === null) return;
       const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
       const delta   = dragStartY.current - clientY;
-      const deltaVh = (delta / globalThis.innerHeight) * 100;
-      setSheetVh(Math.max(10, Math.min(92, dragStartVh.current + deltaVh)));
+      setSheetVh(Math.max(10, Math.min(92, dragStartVh.current + (delta / globalThis.innerHeight) * 100)));
     };
-    const onUp = () => {
-      if (dragStartY.current === null) return;
-      dragStartY.current = null;
-      setIsDragging(false);
-    };
+    const onUp = () => { dragStartY.current = null; setIsDragging(false); };
     globalThis.addEventListener('mousemove', onMove);
     globalThis.addEventListener('mouseup', onUp);
     globalThis.addEventListener('touchmove', onMove, { passive: true });
@@ -599,201 +724,6 @@ function useSheetDrag(initialVh: number) {
   return { sheetVh, isDragging, startDrag };
 }
 
-// ─── FullscreenDesktop — главный layout ──────────────────────────────────────
-// Структура: рейл (64px) | превью (flex) | панель настроек (280px) / код (flex)
-
-const FullscreenDesktop: React.FC<ComponentRenderProps & {
-  activeTab: TabType;
-  panelOpen: boolean;
-  onTabSelect: (tab: TabType) => void;
-  onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
-  onRefresh: () => void;
-  onReset: () => void;
-  onClose: () => void;
-  t: T;
-}> = ({
-  Component, componentProps, universalProps, refreshKey, isDark, componentCategory,
-  fileContents, activeTab, panelOpen,
-  onTabSelect, onUniversalPropChange, onRefresh, onReset, onClose, t,
-}) => {
-  const isBackground = componentCategory === 'backgrounds';
-  const isCode       = activeTab === 'code';
-
-  const previewStyle: React.CSSProperties = isBackground
-    ? { flex: 1, minWidth: 0, minHeight: 0, position: 'relative', overflow: 'hidden' }
-    : { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48, overflow: 'hidden', position: 'relative' };
-
-  return (
-    <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
-
-      {/* ── Рейл — точная копия стиля Navigation ── */}
-      <aside style={{
-        width: t.railW, flexShrink: 0,
-        background: t.railBg,
-        borderRight: `1px solid ${t.border}`,
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        padding: '8px 0', gap: 2, zIndex: 10,
-      }}>
-        <div style={{ width: t.railW, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <Settings size={18} style={{ color: t.fgSub }} />
-        </div>
-        <RailBtn icon={<Play size={18} />}       label="Запуск"   t={t} onClick={onRefresh} />
-        <RailBtn icon={<RefreshCcw size={18} />} label="Сброс"    t={t} onClick={onReset} />
-        <div style={{ flex: 1 }} />
-        <RailBtn
-          icon={panelOpen ? <EyeOff size={18} /> : <PanelRight size={18} />}
-          label={panelOpen ? 'Скрыть' : 'Настройки'}
-          t={t}
-          onClick={() => onTabSelect(activeTab === 'code' ? 'appearance' : activeTab)}
-        />
-        <RailBtn icon={<Minimize2 size={18} />}  label="Свернуть" t={t} onClick={onClose} />
-      </aside>
-
-      {/* ── Превью ── */}
-      <div style={previewStyle} color={t.fg}>
-        <ComponentRender
-          Component={Component}
-          componentProps={componentProps}
-          universalProps={universalProps}
-          refreshKey={refreshKey}
-          isDark={isDark}
-          componentCategory={componentCategory}
-          fileContents={fileContents}
-        />
-      </div>
-
-      {/* ── Правая панель (настройки ИЛИ код) ── */}
-      {panelOpen && !isCode && (
-        <aside style={{
-          width: t.panelW, flexShrink: 0,
-          borderLeft: `1px solid ${t.border}`,
-          background: t.panelBg,
-          display: 'flex', flexDirection: 'column', overflow: 'hidden',
-        }}>
-          {/* Шапка с табами — как в DevPanel */}
-          <div style={{
-            display: 'flex', background: t.surfaceBg,
-            borderBottom: `1px solid ${t.border}`,
-            flexShrink: 0, padding: 4,
-          }}>
-            {([
-              { id: 'appearance' as const, label: 'Внешний вид' },
-              { id: 'transform'  as const, label: 'Трансформация' },
-            ]).map(tab => {
-              const active = tab.id === activeTab;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => onTabSelect(tab.id)}
-                  style={{
-                    flex: 1, padding: '8px 6px', borderRadius: 8,
-                    border: `1px solid ${active ? t.borderStrong : 'transparent'}`,
-                    background: active ? t.btnActBg : 'transparent',
-                    color: active ? t.fg : t.fgMuted,
-                    fontSize: 11, fontWeight: active ? 600 : 400,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-            <button
-              onClick={() => onTabSelect('code')}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 4,
-                padding: '8px 10px', borderRadius: 8,
-                border: '1px solid transparent',
-                background: 'transparent',
-                color: t.fgMuted,
-                fontSize: 11, cursor: 'pointer',
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = t.fg; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = t.fgMuted; }}
-            >
-              <Code2 size={13} />
-              Код
-            </button>
-          </div>
-
-          {/* Описание */}
-          <div style={{
-            padding: '10px 14px 8px',
-            borderBottom: `1px solid ${t.border}`,
-            flexShrink: 0,
-          }}>
-            <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: t.fgMuted }}>
-              {activeTab === 'appearance' ? 'Внешний вид' : 'Трансформация'}
-            </div>
-            <div style={{ fontSize: 10, color: t.fgSub, marginTop: 2 }}>
-              Только общие безопасные настройки предпросмотра.
-            </div>
-          </div>
-
-          {/* Контент вкладки */}
-          <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-            <UniversalSidebar
-              section={activeTab as 'appearance' | 'transform'}
-              universalProps={universalProps}
-              onChange={onUniversalPropChange}
-              t={t}
-            />
-          </div>
-        </aside>
-      )}
-
-      {/* ── Code panel — split view: превью уже слева, тут только редактор ── */}
-      {panelOpen && isCode && (
-        <aside style={{
-          // В режиме кода занимаем ~50% ширины — превью остаётся слева
-          width: '50%', maxWidth: 720, flexShrink: 0,
-          borderLeft: `1px solid ${t.border}`,
-          background: t.panelBg,
-          display: 'flex', flexDirection: 'column', overflow: 'hidden',
-        }}>
-          <div style={{
-            display: 'flex', background: t.surfaceBg,
-            borderBottom: `1px solid ${t.border}`,
-            flexShrink: 0, padding: 4,
-          }}>
-            <button
-              onClick={() => onTabSelect('appearance')}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 4,
-                padding: '8px 10px', borderRadius: 8,
-                border: '1px solid transparent',
-                background: 'transparent', color: t.fgMuted,
-                fontSize: 11, cursor: 'pointer',
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = t.fg; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = t.fgMuted; }}
-            >
-              ← Настройки
-            </button>
-            <div style={{ flex: 1 }} />
-            <button
-              style={{
-                display: 'flex', alignItems: 'center', gap: 4,
-                padding: '8px 10px', borderRadius: 8,
-                border: `1px solid ${t.borderStrong}`,
-                background: t.btnActBg, color: t.fg,
-                fontSize: 11, fontWeight: 600, cursor: 'default',
-              }}
-            >
-              <Code2 size={13} />
-              Код
-            </button>
-          </div>
-
-          <SourceCodeEditor fileContents={fileContents} t={t} />
-        </aside>
-      )}
-    </div>
-  );
-};
-
-// ─── Мобильная версия ─────────────────────────────────────────────────────────
-
 const MobBtn: React.FC<{
   label: string; icon: React.ReactNode; t: T; onClick: () => void; isActive: boolean;
 }> = ({ label, icon, t, onClick, isActive }) => (
@@ -810,24 +740,20 @@ const MobBtn: React.FC<{
 );
 
 const FullscreenMobile: React.FC<ComponentRenderProps & {
-  onClose: () => void;
-  onRefresh: () => void;
-  onReset: () => void;
+  onClose: () => void; onRefresh: () => void; onReset: () => void;
   onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
   t: T;
 }> = ({
   Component, componentProps, universalProps, refreshKey, isDark, componentCategory,
   fileContents, onClose, onRefresh, onReset, onUniversalPropChange, t,
 }) => {
-  const [mobSheet, setMobSheet] = useState<MobileSheet>(null);
+  const [sheet, setSheet] = useState<MobileSheet>(null);
   const { sheetVh, isDragging, startDrag } = useSheetDrag(55);
   const isBackground = componentCategory === 'backgrounds';
-  const mobSheetOpen = mobSheet !== null;
 
   const LABELS: Record<Exclude<MobileSheet, null>, string> = {
-    appearance: 'Внешний вид',
-    transform:  'Трансформация',
-    code:       'Исходный код',
+    settings: 'Настройки',
+    code:     'Исходный код',
   };
 
   return (
@@ -836,17 +762,13 @@ const FullscreenMobile: React.FC<ComponentRenderProps & {
         <ComponentRender Component={Component} componentProps={componentProps} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} componentCategory={componentCategory} fileContents={fileContents} />
       </div>
 
-      {mobSheetOpen && (
-        <button
-          onClick={() => setMobSheet(null)}
-          aria-label="Закрыть"
-          style={{ position: 'absolute', inset: 0, bottom: 60, zIndex: 10, background: 'rgba(0,0,0,0.25)', border: 'none', padding: 0 }}
-        />
+      {sheet && (
+        <button onClick={() => setSheet(null)} aria-label="Закрыть" style={{ position: 'absolute', inset: 0, bottom: 60, zIndex: 10, background: 'rgba(0,0,0,0.25)', border: 'none', padding: 0 }} />
       )}
 
       <div style={{
         position: 'absolute', bottom: 60, left: 0, right: 0,
-        height: mobSheetOpen ? `min(${sheetVh}dvh, 720px)` : 0,
+        height: sheet ? `min(${sheetVh}dvh, 720px)` : 0,
         overflow: 'hidden', zIndex: 20, display: 'flex', flexDirection: 'column',
         transition: isDragging ? 'none' : 'height 0.22s cubic-bezier(0.4,0,0.2,1)',
       }}>
@@ -857,59 +779,47 @@ const FullscreenMobile: React.FC<ComponentRenderProps & {
             onTouchStart={e => startDrag(e.touches[0].clientY)}
             style={{ background: 'none', border: 'none', padding: 0, cursor: 'ns-resize', touchAction: 'none', userSelect: 'none', width: '100%' }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 10, paddingBottom: 4 }}>
-                <div style={{ width: 36, height: 4, borderRadius: 2, background: t.fgSub }} />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 18px 10px', borderBottom: `1px solid ${t.border}` }}>
-                <span style={{ fontSize: '1.1rem', fontWeight: 700, color: t.fg }}>
-                  {mobSheet ? LABELS[mobSheet] : ''}
-                </span>
-                <button onClick={() => setMobSheet(null)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 10, border: `1px solid ${t.border}`, background: t.btnHov, color: t.fg, cursor: 'pointer', flexShrink: 0 }}>
-                  <X size={14} />
-                </button>
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 10, paddingBottom: 4 }}>
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: t.fgSub }} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 18px 10px', borderBottom: `1px solid ${t.border}` }}>
+              <span style={{ fontSize: '1.1rem', fontWeight: 700, color: t.fg }}>{sheet ? LABELS[sheet] : ''}</span>
+              <button onClick={() => setSheet(null)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 10, border: `1px solid ${t.border}`, background: t.btnHov, color: t.fg, cursor: 'pointer', flexShrink: 0 }}>
+                <X size={14} />
+              </button>
             </div>
           </button>
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            {(mobSheet === 'appearance' || mobSheet === 'transform') && (
-              <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                <UniversalSidebar section={mobSheet} universalProps={universalProps} onChange={onUniversalPropChange} t={t} />
-              </div>
+            {sheet === 'settings' && (
+              <SettingsSidebar universalProps={universalProps} onChange={onUniversalPropChange} t={t} />
             )}
-            {mobSheet === 'code' && (
+            {sheet === 'code' && (
               <SourceCodeEditor fileContents={fileContents} t={t} />
             )}
           </div>
         </div>
       </div>
 
-      <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0, height: 60,
-        background: t.mobBg, borderTop: `1px solid ${t.border}`,
-        display: 'flex', alignItems: 'stretch', zIndex: 30,
-        paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
-      }}>
-        <MobBtn label="Обновить"  icon={<Play size={20} />}       t={t} onClick={() => { setMobSheet(null); onRefresh(); }}                              isActive={false} />
-        <MobBtn label="Сбросить"  icon={<RefreshCcw size={20} />} t={t} onClick={() => { setMobSheet(null); onReset(); }}                                isActive={false} />
-        <MobBtn label="Вид"       icon={<Settings size={20} />}   t={t} onClick={() => setMobSheet(p => p === 'appearance' ? null : 'appearance')}      isActive={mobSheet === 'appearance'} />
-        <MobBtn label="Трансформ" icon={<Move size={20} />}       t={t} onClick={() => setMobSheet(p => p === 'transform'  ? null : 'transform')}       isActive={mobSheet === 'transform'} />
-        <MobBtn label="Код"       icon={<Code2 size={20} />}      t={t} onClick={() => setMobSheet(p => p === 'code' ? null : 'code')}                  isActive={mobSheet === 'code'} />
-        <MobBtn label="Свернуть"  icon={<Minimize2 size={20} />}  t={t} onClick={onClose}                                                               isActive={false} />
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: t.mobBg, borderTop: `1px solid ${t.border}`, display: 'flex', alignItems: 'stretch', zIndex: 30, paddingBottom: 'max(0px, env(safe-area-inset-bottom))' }}>
+        <MobBtn label="Обновить" icon={<Play size={20} />}       t={t} onClick={() => { setSheet(null); onRefresh(); }}                        isActive={false} />
+        <MobBtn label="Сброс"    icon={<RefreshCcw size={20} />} t={t} onClick={() => { setSheet(null); onReset(); }}                          isActive={false} />
+        <MobBtn label="Настройки" icon={<Settings size={20} />}  t={t} onClick={() => setSheet(p => p === 'settings' ? null : 'settings')}    isActive={sheet === 'settings'} />
+        <MobBtn label="Код"      icon={<Code2 size={20} />}      t={t} onClick={() => setSheet(p => p === 'code' ? null : 'code')}             isActive={sheet === 'code'} />
+        <MobBtn label="Свернуть" icon={<Minimize2 size={20} />}  t={t} onClick={onClose}                                                      isActive={false} />
       </div>
     </>
   );
 };
 
+// ─── FullscreenModal ──────────────────────────────────────────────────────────
+
 const FullscreenModal: React.FC<ComponentRenderProps & {
-  onClose: () => void;
-  onRefresh: () => void;
+  onClose: () => void; onRefresh: () => void;
   onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
-  onReset: () => void;
-  t: T;
+  onReset: () => void; t: T;
 }> = ({ Component, componentProps, universalProps, refreshKey, isDark, componentCategory, fileContents, onClose, onRefresh, onUniversalPropChange, onReset, t }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('appearance');
-  const [panelOpen, setPanelOpen] = useState(true);
+  const [activeTab,  setActiveTab]  = useState<TabType>('settings');
+  const [panelOpen,  setPanelOpen]  = useState(true);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -921,12 +831,13 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
 
   const handleTabSelect = useCallback((tab: TabType) => {
     setActiveTab(tab);
-    if (!panelOpen) setPanelOpen(true);
-  }, [panelOpen]);
+  }, []);
 
-  const shared: ComponentRenderProps = {
-    Component, componentProps, universalProps, refreshKey, isDark, componentCategory, fileContents,
-  };
+  const handleTogglePanel = useCallback(() => {
+    setPanelOpen(v => !v);
+  }, []);
+
+  const shared: ComponentRenderProps = { Component, componentProps, universalProps, refreshKey, isDark, componentCategory, fileContents };
 
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: t.outerBg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -940,17 +851,15 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
           onRefresh={onRefresh}
           onReset={onReset}
           onClose={onClose}
+          onTogglePanel={handleTogglePanel}
           t={t}
         />
       ) : (
         <div style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
           <FullscreenMobile
             {...shared}
-            onClose={onClose}
-            onRefresh={onRefresh}
-            onReset={onReset}
-            onUniversalPropChange={onUniversalPropChange}
-            t={t}
+            onClose={onClose} onRefresh={onRefresh} onReset={onReset}
+            onUniversalPropChange={onUniversalPropChange} t={t}
           />
         </div>
       )}
@@ -959,47 +868,35 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
   );
 };
 
-// ─── PreviewPanel — карточка на странице документации ───────────────────────
+// ─── PreviewPanel — карточка на странице ─────────────────────────────────────
 
 const PreviewPanel: React.FC<ComponentRenderProps & {
-  onOpenFullscreen: () => void;
-  t: T;
-  loading: boolean;
+  onOpenFullscreen: () => void; t: T; loading: boolean;
 }> = ({ Component, componentProps, universalProps, refreshKey, isDark, componentCategory, onOpenFullscreen, t, loading, fileContents }) => {
   const isBackground = componentCategory === 'backgrounds';
   return (
     <div style={{ position: 'relative', width: '100%', overflow: 'visible' }}>
       <button
-        onClick={onOpenFullscreen}
-        title="Настройки"
+        onClick={onOpenFullscreen} title="Открыть настройки"
         style={{
           position: 'absolute', top: 10, right: 10, zIndex: 1,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           width: 36, height: 36, borderRadius: 10,
           border: `1px solid ${t.borderStrong}`,
-          background: t.railBg,
-          color: t.fg,
-          cursor: 'pointer',
-          boxShadow: t.shadow,
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
+          background: t.railBg, color: t.fg, cursor: 'pointer',
+          boxShadow: t.shadow, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
         }}
         onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
         onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = t.railBg; }}
       >
         <Settings size={17} />
       </button>
-
       <div style={{
         width: '100%',
-        ...(isBackground
-          ? { height: 400 }
-          : { minHeight: 500, paddingTop: 60, paddingBottom: 120 }
-        ),
+        ...(isBackground ? { height: 400 } : { minHeight: 500, paddingTop: 60, paddingBottom: 120 }),
         display: 'flex',
         alignItems: isBackground ? 'stretch' : 'center',
         justifyContent: isBackground ? 'stretch' : 'center',
-        color: t.fg,
         position: 'relative',
         overflow: isBackground ? 'hidden' : 'visible',
       }}>
@@ -1010,12 +907,9 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
         )}
         {!loading && (
           <ComponentRender
-            Component={Component}
-            componentProps={componentProps}
-            universalProps={universalProps}
-            refreshKey={refreshKey}
-            isDark={isDark}
-            componentCategory={componentCategory}
+            Component={Component} componentProps={componentProps}
+            universalProps={universalProps} refreshKey={refreshKey}
+            isDark={isDark} componentCategory={componentCategory}
             fileContents={fileContents}
           />
         )}
@@ -1028,8 +922,6 @@ function scheduleHideLoading(setLoading: (v: boolean) => void) {
   requestAnimationFrame(() => requestAnimationFrame(() => setLoading(false)));
 }
 
-// ─── DEFAULT PROPS ────────────────────────────────────────────────────────────
-
 const DEFAULT_UNIVERSAL_PROPS: UniversalProps = {
   enableUniversalProps: true,
   scale: 1, color: undefined, colorMode: 'original',
@@ -1041,8 +933,8 @@ const DEFAULT_UNIVERSAL_PROPS: UniversalProps = {
 // ─── UIComponentViewer ────────────────────────────────────────────────────────
 
 const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) => {
-  const { isDark } = useTheme();
-  const t = tk(isDark);
+  const { isDark }  = useTheme();
+  const t           = tk(isDark);
 
   const [isFullscreen,   setIsFullscreen]   = useState(false);
   const [refreshKey,     setRefreshKey]     = useState(0);
@@ -1060,7 +952,8 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
   }, [componentId]);
 
   const handleRefresh         = useCallback(() => setRefreshKey(k => k + 1), []);
-  const handleUniversalChange = useCallback((key: keyof UniversalProps, value: PropValue) => setUniversalProps(prev => ({ ...prev, [key]: value })), []);
+  const handleUniversalChange = useCallback((key: keyof UniversalProps, value: PropValue) =>
+    setUniversalProps(prev => ({ ...prev, [key]: value })), []);
   const handleReset           = useCallback(() => {
     if (!componentData) return;
     setComponentProps(getDefaultProps(componentData.config));
@@ -1074,8 +967,8 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
   const PlaceholderComponent = useMemo(() => () => null, []);
 
   const effectiveData = componentData ?? {
-    config:       placeholderConfig,
-    Component:    PlaceholderComponent as AnyComponent,
+    config: placeholderConfig,
+    Component: PlaceholderComponent as AnyComponent,
     fileContents: {},
   };
 
@@ -1091,12 +984,7 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
 
   return (
     <div className="not-prose" style={{ margin: '1.25rem 0', overflow: 'visible', position: 'relative' }}>
-      <PreviewPanel
-        {...shared}
-        onOpenFullscreen={() => setIsFullscreen(true)}
-        t={t}
-        loading={loading}
-      />
+      <PreviewPanel {...shared} onOpenFullscreen={() => setIsFullscreen(true)} t={t} loading={loading} />
       {isFullscreen && componentData && (
         <FullscreenModal
           {...shared}
