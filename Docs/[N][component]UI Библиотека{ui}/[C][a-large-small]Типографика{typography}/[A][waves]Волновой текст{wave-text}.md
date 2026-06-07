@@ -9,3 +9,11 @@ lang: ru
 ---
 
 [uic:wave-text]
+
+| Проп | Type | Обычно | Описание |
+|------|------|---------|-------------|
+| `children` | `string` | `'Волновой текст'` | Текст для анимации |
+| `amplitude` | `number` | `8` | Амплитуда волны (px) |
+| `duration` | `number` | `1.2` | Длительность цикла (с) |
+| `staggerDelay` | `number` | `0.05` | Задержка между буквами (с) |
+| `className` | `string` | `'text-4xl font-bold'` | CSS классы |
