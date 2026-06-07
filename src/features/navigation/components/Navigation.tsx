@@ -20,7 +20,7 @@ import {
   Search, Sun, Moon, ChevronDown, ChevronRight,
   Mail, X, Home, AlertTriangle,
   FolderOpen, List, PanelLeft, ArrowUp,
-  Crown, BookOpenText,
+  Crown, BookOpenText, PanelRight,
 } from 'lucide-react';
 import { useIsDesktopNav } from '@/shared/hooks/useBreakpoint';
 import { makeTokens } from '@/shared/tokens/theme';
@@ -95,6 +95,7 @@ const THEME_DARK = {
   mobBg:            '#0F0F0F',
   panelFullBg:      '#0F0F0F',
   surface:          '#0F0F0F',
+  placeholderClr:   'rgba(255,255,255,0.35)',
 } as const;
 
 const THEME_LIGHT = {
@@ -114,6 +115,7 @@ const THEME_LIGHT = {
   mobBg:            '#dcdbd7',
   panelFullBg:      '#E0DFDb',
   surface:          '#d5d4d0',
+  placeholderClr:   'rgba(0,0,0,0.45)',
 } as const;
 
 function tk(isDark: boolean) {
@@ -215,7 +217,7 @@ const DocLink: React.FC<{
         boxShadow: isActive ? t.elevatedShadowSoft : 'none',
         lineHeight: 1.4,
       }}>
-      {doc.icon && <span style={{ flexShrink: 0, width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fgMuted }}><LucideIcon name={doc.icon} size={14} /></span>}
+      {doc.icon && <span style={{ flexShrink: 0, width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fgMuted }}><LucideIcon name={doc.icon} size={18} /></span>}
       <span style={{ minWidth: 0 }}>
         <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.35 }}>{doc.title}</span>
         {!!doc.description && (
@@ -639,6 +641,30 @@ function getSectionOpenBorder(sectionOpen: boolean, isDark: boolean): string {
   return isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)';
 }
 
+function getUnifiedControlStyle(isDark: boolean, isActive: boolean = false) {
+  const t = tk(isDark);
+  return {
+    border: `1px solid ${isActive ? getSectionOpenBorder(true, isDark) : t.sectionBorder}`,
+    background: t.sectionBg,
+    boxShadow: t.sectionShadow,
+    borderRadius: '8px',
+  };
+}
+
+// ─── FIX 2: placeholder CSS injected globally so ::placeholder can be styled ──
+const PLACEHOLDER_STYLE_ID = 'nav-search-placeholder-style';
+function ensurePlaceholderStyle(isDark: boolean) {
+  // placeholder = same as t.fg but at 55% opacity so it reads as hint text
+  const color = isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
+  let el = document.getElementById(PLACEHOLDER_STYLE_ID);
+  if (!el) {
+    el = document.createElement('style');
+    el.id = PLACEHOLDER_STYLE_ID;
+    document.head.appendChild(el);
+  }
+  el.textContent = `.nav-search-input::placeholder { color: ${color}; opacity: 1; }`;
+}
+
 const NavPanelContent: React.FC<{
   isDark: boolean; currentDocSlug?: string; mobile?: boolean;
 }> = ({ isDark, currentDocSlug, mobile }) => {
@@ -647,18 +673,23 @@ const NavPanelContent: React.FC<{
   const { query, setQuery, sectionOpen, setSectionOpen, sectionRef, sections, activeNavSlug, expandedPaths, navTree, activeSection, togglePath, handleSectionSelect } = useNavPanel(docs as Doc[], currentDocSlug);
 
   const inputFontSize = mobile ? '1rem' : '0.855rem';
-  const inputPadding  = mobile ? '0.6rem 0.6rem 0.6rem 2.4rem' : '0.45rem 0.5rem 0.45rem 2.1rem';
+  const inputPadding  = mobile ? '0.6rem 0.6rem 0.6rem 2.4rem' : '0.4rem 0.65rem 0.4rem 2.1rem';
   const iconSize      = mobile ? 15 : 13;
   const [hoverPreview, setHoverPreview] = useState<{ doc: Doc; rect: DOMRect } | null>(null);
   const [focused, setFocused]           = useState(false);
 
+  // FIX 2: inject placeholder style whenever theme changes
+  useEffect(() => { ensurePlaceholderStyle(isDark); }, [isDark]);
+
+  const controlStyle        = getUnifiedControlStyle(isDark, false);
+  const controlStyleFocused = getUnifiedControlStyle(isDark, true);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
 
-      {/* Строка поиска */}
       <div style={{ flexShrink: 0, padding: mobile ? '12px 14px' : '10px', borderBottom: 'none' }}>
         <div style={{ position: 'relative' }}>
-          <Search size={iconSize} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: t.fgSub, pointerEvents: 'none' }} />
+          <Search size={iconSize} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: t.fg, pointerEvents: 'none' }} />
           <input
             type="text"
             placeholder="Поиск..."
@@ -666,17 +697,15 @@ const NavPanelContent: React.FC<{
             onChange={e => setQuery(e.target.value)}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
+            className="nav-search-input"
             style={{
               width: '100%',
               padding: inputPadding,
-              borderRadius: '8px',
               fontSize: inputFontSize,
-              border: `1px solid ${focused ? t.inputBorderFocus : t.inputBorder}`,
-              background: t.inputBg,
-              color: t.inputClr,
-              boxShadow: focused ? t.inputShadowFocus : t.inputShadow,
+              color: t.fg,
               outline: 'none',
               boxSizing: 'border-box',
+              ...(focused ? controlStyleFocused : controlStyle),
             }}
           />
         </div>
@@ -685,16 +714,16 @@ const NavPanelContent: React.FC<{
       {sections.length > 1 && activeSection && (
         <div
           ref={sectionRef}
-          style={{ flexShrink: 0, padding: mobile ? '10px 14px' : '8px 10px', borderBottom: 'none', position: 'relative', zIndex: 10 }}
+          style={{ flexShrink: 0, padding: mobile ? '4px 14px 10px' : '2px 10px 8px', borderBottom: 'none', position: 'relative', zIndex: 10 }}
         >
           <button
             onClick={() => setSectionOpen(v => !v)}
             style={{
               width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: mobile ? '0.55rem 0.85rem' : '0.4rem 0.65rem',
-              borderRadius: '8px', fontSize: mobile ? '1rem' : '0.875rem',
-              border: `1px solid ${getSectionOpenBorder(sectionOpen, isDark)}`,
-              background: t.sectionBg, color: t.fg, cursor: 'pointer', boxShadow: t.sectionShadow,
+              fontSize: mobile ? '1rem' : '0.875rem',
+              color: t.fg, cursor: 'pointer',
+              ...getUnifiedControlStyle(isDark, sectionOpen),
             }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden', minWidth: 0, flex: 1 }}>
               {activeSection.navSlug === ''
@@ -719,7 +748,6 @@ const NavPanelContent: React.FC<{
         </div>
       )}
 
-      {/* Дерево навигации */}
       <div style={{ flex: 1, overflowY: 'auto', padding: mobile ? '8px 6px 86px' : '6px' }}>
         <NavTreeContent
           error={!!error} navTree={navTree}
@@ -735,75 +763,66 @@ const NavPanelContent: React.FC<{
   );
 };
 
-// ─── Вспомогательные функции для ToC ─────────────────────────────────────────
+// ─── TocPanelContent ──────────────────────────────────────────────────────────
+// FIX 3: three-line dimming effect — prev/next items semi-transparent, active bright
 
-function tocBorderColor(isActive: boolean, glowOp: number, isDark: boolean, accent: string): string {
-  if (isActive)   return accent;
-  if (glowOp > 0) return isDark ? `rgba(255,255,255,${glowOp})` : `rgba(0,0,0,${glowOp})`;
-  return 'transparent';
-}
+function getTocItemStyle3(
+  item: TocItem,
+  index: number,
+  activeIndex: number,
+  isDark: boolean,
+  mobile: boolean,
+) {
+  const t = tk(isDark);
+  const isActive    = index === activeIndex && activeIndex !== -1;
+  const dist        = activeIndex !== -1 ? Math.abs(index - activeIndex) : -1;
+  // ±1 and ±2 neighbours all get the same accent-like border color
+  const isNear      = dist === 1 || dist === 2;
 
-function tocShadow(isActive: boolean, glowOp: number, isDark: boolean, accent: string): string {
-  if (isActive)   return `inset 3px 0 10px -2px ${accent}88`;
-  if (glowOp > 0) return isDark ? `inset 3px 0 8px -3px rgba(255,255,255,${glowOp * 0.35})` : `inset 3px 0 8px -3px rgba(0,0,0,${glowOp * 0.35})`;
-  return 'none';
-}
-
-function tocColor(isActive: boolean, opacity: number, isDark: boolean, accent: string): string {
-  if (isActive) return accent;
-  return isDark ? `rgba(255,255,255,${opacity})` : `rgba(0,0,0,${opacity})`;
-}
-
-function getTocItemStyle(item: TocItem, dist: number, activeId: string, isDark: boolean, mobile: boolean) {
-  const t         = tk(isDark);
-  const isActive  = item.id === activeId && activeId !== '';
-  const hasActive = activeId !== '';
-  let opacity: number; let glowOp: number;
-  if (!hasActive)    { opacity = 0.65; glowOp = 0; }
-  else if (isActive) { opacity = 1;    glowOp = 1; }
-  else { opacity = Math.max(0.32, 0.82 - dist * 0.18); glowOp = Math.max(0, 0.5 - dist * 0.16); }
   const baseFontSize = mobile ? 1.05 : 0.92;
   const fontSizeStep = mobile ? 0.05 : 0.04;
   const fontSize     = `${baseFontSize - (item.level - 2) * fontSizeStep}rem`;
   const paddingLeft  = mobile ? 14 + (item.level - 2) * 18 : 12 + (item.level - 2) * 14;
-  return {
-    isActive,
-    borderClr: tocBorderColor(isActive, glowOp, isDark, t.accent),
-    shadow:    tocShadow(isActive, glowOp, isDark, t.accent),
-    fontSize, paddingLeft,
-    color: tocColor(isActive, opacity, isDark, t.accent),
-  };
-}
 
-// ─── TocPanelContent ──────────────────────────────────────────────────────────
+  let color: string;
+  let borderLeftColor: string;
+  let opacity = 1;
 
-function getTocItemBackground(isActive: boolean, isDark: boolean): string {
-  if (!isActive) return 'transparent';
-  return isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
-}
+  if (isActive) {
+    color           = t.accent;
+    borderLeftColor = t.accent;
+  } else if (isNear) {
+    // ±1 and ±2 — same border color as active but semi-transparent
+    color           = isDark ? 'rgba(255,255,255,0.50)' : 'rgba(0,0,0,0.48)';
+    // border same hue as accent but faded — use accent with low alpha via the same value trick
+    borderLeftColor = t.accent + (isDark ? '55' : '55'); // 33% opacity accent
+    opacity         = dist === 1 ? 0.85 : 0.65;
+  } else {
+    color           = t.fgMuted;
+    borderLeftColor = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)';
+    if (activeIndex !== -1) {
+      opacity = dist <= 4 ? 0.55 : 0.38;
+    }
+  }
 
-function getTocItemFontWeight(isActive: boolean, level: number): number {
-  if (isActive) return 600;
-  return level === 2 ? 500 : 400;
+  return { isActive, isNear, fontSize, paddingLeft, color, borderLeftColor, opacity };
 }
 
 const TocPanelContent: React.FC<{
   toc: TocItem[]; activeId: string; isDark: boolean; onItemClick?: () => void; mobile?: boolean;
 }> = ({ toc, activeId, isDark, onItemClick, mobile = false }) => {
   const t = tk(isDark);
+  const activeIndex = activeId ? toc.findIndex(item => item.id === activeId) : -1;
+
   if (!toc.length) return (
     <div style={{ padding: '2.5rem 1.5rem', textAlign: 'center', fontSize: mobile ? '1rem' : '0.875rem', color: t.fgMuted }}>
       На этой странице нет заголовков
     </div>
   );
-  const activeIndex = toc.findIndex(i => i.id === activeId);
   return (
     <nav style={{ padding: mobile ? '8px 6px' : '6px 4px' }}>
       {toc.map((item, index) => {
-        const dist  = Math.abs(index - activeIndex);
-        const style = getTocItemStyle(item, dist, activeId, isDark, mobile);
-        const bg    = getTocItemBackground(style.isActive, isDark);
-        const fw    = getTocItemFontWeight(style.isActive, item.level);
+        const style = getTocItemStyle3(item, index, activeIndex, isDark, mobile);
         return (
           <button key={item.id}
             onClick={() => { scrollToElement(item.id); onItemClick?.(); }}
@@ -814,12 +833,13 @@ const TocPanelContent: React.FC<{
               paddingRight:  mobile ? '1rem'    : '0.75rem',
               paddingLeft:   `${style.paddingLeft}px`,
               fontSize: style.fontSize, lineHeight: 1.45,
-              background: bg, border: 'none', cursor: 'pointer',
-              borderLeft: '2px solid', borderLeftColor: style.borderClr,
-              boxShadow: style.shadow, borderRadius: '0 8px 8px 0',
-              color: style.color, fontWeight: fw,
-              textShadow: style.isActive ? `0 0 8px ${t.accent}cc, 0 0 18px ${t.accent}88, 0 0 30px ${t.accent}44` : 'none',
-              transition: 'text-shadow 0.18s, color 0.18s',
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              borderLeft: '2px solid', borderLeftColor: style.borderLeftColor,
+              borderRadius: '0 8px 8px 0',
+              color: style.color,
+              opacity: style.opacity,
+              fontWeight: style.isActive ? 600 : style.isNear ? 500 : 400,
+              transition: 'color 0.15s, border-color 0.15s, opacity 0.15s',
             }}
           >{item.text}</button>
         );
@@ -947,6 +967,8 @@ const PANEL_TITLES: Record<Exclude<PanelType, null>, string> = {
   toc:      'Оглавление',
   contacts: 'Контакты',
 };
+
+// ─── BrandLogo ────────────────────────────────────────────────────────────────
 
 const BrandLogo: React.FC<{ logoPath: string; size: number }> = ({ logoPath, size }) => {
   if (!logoPath) return <span aria-hidden style={{ width: size, height: size, display: 'inline-block' }} />;
@@ -1120,14 +1142,15 @@ const DesktopRail: React.FC<{
       backdropFilter: isDocsPage && shellEnabled ? 'none' : 'blur(12px)',
       WebkitBackdropFilter: isDocsPage && shellEnabled ? 'none' : 'blur(12px)',
     }}>
-      <div style={{ width: RAIL_W, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <BrandLogo logoPath={logoPath} size={28} />
+      {/* Логотип */}
+      <div style={{ width: RAIL_W, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <BrandLogo logoPath={logoPath} size={42} />
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: 1, width: '100%', padding: '2px 0' }}>
-        <RailBtn icon={<PanelLeft size={18} />}                         label="Панель"     isDark={isDark} onClick={onHideRail}                                               title="Скрыть" />
-        <RailBtn icon={isDark ? <Sun size={18} /> : <Moon size={18} />} label="Тема"       isDark={isDark} onClick={toggleTheme}                                             title={isDark ? 'Светлая' : 'Тёмная'} />
-        <RailBtn icon={<Search size={18} />}                            label="Поиск"      isDark={isDark} onClick={onOpenSearch}                                            title="Поиск" />
-        <RailBtn icon={<FolderOpen size={18} />}                        label="Разделы"    isDark={isDark} isActive={activePanel === 'nav'} onClick={() => onTogglePanel('nav')} title="Разделы" />
+        <RailBtn icon={<PanelLeft size={18} />}                         label="Скрыть панель"  isDark={isDark} onClick={onHideRail}                                               title="Скрыть панель" />
+        <RailBtn icon={isDark ? <Sun size={18} /> : <Moon size={18} />} label="Тема"           isDark={isDark} onClick={toggleTheme}                                             title={isDark ? 'Светлая' : 'Тёмная'} />
+        <RailBtn icon={<Search size={18} />}                            label="Поиск"          isDark={isDark} onClick={onOpenSearch}                                            title="Поиск" />
+        <RailBtn icon={<FolderOpen size={18} />}                        label="Разделы"        isDark={isDark} isActive={activePanel === 'nav'} onClick={() => onTogglePanel('nav')} title="Разделы" />
         {readingModeEnabled && (
           <div style={{ position: 'relative' }}>
             <RailBtn
@@ -1154,6 +1177,9 @@ const DesktopRail: React.FC<{
             <RailBtn icon={<ArrowUp size={18} />} label="Наверх"     isDark={isDark} onClick={() => globalThis.scrollTo({ top: 0, behavior: 'smooth' })}            title="Наверх" />
           </>
         )}
+        {isStandardMode && !state.standardTocVisible && (
+          <RailBtn icon={<ArrowUp size={18} />} label="Наверх" isDark={isDark} onClick={() => globalThis.scrollTo({ top: 0, behavior: 'smooth' })} title="Наверх" />
+        )}
         <RailBtn icon={<Mail size={18} />} label="Контакты" isDark={isDark} isActive={activePanel === 'contacts'} onClick={() => onTogglePanel('contacts')} title="Контакты" />
       </div>
     </aside>
@@ -1169,9 +1195,9 @@ const DesktopSlidingPanel: React.FC<{
   onResizeMouseDown: (e: React.MouseEvent) => void;
   onClose: () => void;
 }> = ({
-  isDocsPage, chromeGap, chromeTopGap, chromeRadius,
-  panelOpen, panelWidth, panelBg,
-  shellEnabled, panelTitle, isStandardMode,
+  isDocsPage, chromeGap, chromeTopGap,
+  chromeRadius, panelOpen, panelWidth,
+  panelBg, shellEnabled, panelTitle, isStandardMode,
   currentDocSlug, toc, activeId, isDark,
   onResizeMouseDown, onClose,
 }) => {
@@ -1328,19 +1354,15 @@ const DesktopNav: React.FC<{
         />
       )}
 
+      {/* FIX 1: "Показать панель" — bigger, text only on hover */}
       {!state.railVisible && (
-        <button
+        <ShowPanelBtn
+          isDark={isDark}
+          chromeGap={chromeGap}
+          chromeTopGap={chromeTopGap}
+          t={t}
           onClick={() => state.setRailVisible(true)}
-          style={{
-            position: 'fixed', left: chromeGap + 8, top: chromeTopGap + 8, zIndex: 55,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: 30, height: 30, borderRadius: '8px',
-            border: `1px solid ${t.border}`, background: t.railBg, color: t.fgMuted, cursor: 'pointer',
-          }}
-          title="Показать"
-        >
-          <PanelLeft size={14} />
-        </button>
+        />
       )}
 
       {state.railVisible && (
@@ -1363,17 +1385,15 @@ const DesktopNav: React.FC<{
         />
       )}
 
+      {/* FIX 1: "Показать оглавление" — bigger, text only on hover */}
       {isStandardMode && hasToc && !state.standardTocVisible && (
-        <button
+        <ShowTocBtn
+          isDark={isDark}
+          chromeGap={chromeGap}
+          chromeTopGap={chromeTopGap}
+          t={t}
           onClick={() => state.setStandardTocVisible(true)}
-          style={{
-            position: 'fixed', right: chromeGap + 12, top: chromeTopGap + 12, zIndex: 56,
-            border: `1px solid ${t.border}`, borderRadius: '8px',
-            background: t.panelBg, color: t.fgMuted, padding: '6px 8px', cursor: 'pointer', fontSize: '0.75rem',
-          }}
-        >
-          Показать TOC
-        </button>
+        />
       )}
 
       <AnimatePresence>
@@ -1384,6 +1404,84 @@ const DesktopNav: React.FC<{
         )}
       </AnimatePresence>
     </>
+  );
+};
+
+// ─── FIX 1: ShowPanelBtn & ShowTocBtn — larger, label only on hover ──────────
+
+const ShowPanelBtn: React.FC<{
+  isDark: boolean; chromeGap: number; chromeTopGap: number;
+  t: ReturnType<typeof tk>; onClick: () => void;
+}> = ({ isDark, chromeGap, chromeTopGap, t, onClick }) => {
+  const [hov, setHov] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        position: 'fixed', left: chromeGap + 8, top: chromeTopGap + 8, zIndex: 55,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        gap: '4px',
+        width: hov ? 52 : 44, height: hov ? 52 : 44,
+        borderRadius: '12px',
+        border: `1px solid ${t.border}`,
+        background: t.railBg,
+        color: hov ? t.fg : t.fgMuted,
+        cursor: 'pointer',
+        transition: 'width 0.15s, height 0.15s, color 0.15s',
+        overflow: 'hidden',
+      }}
+      title="Показать панель"
+    >
+      <PanelLeft size={16} />
+      <span style={{
+        fontSize: '9px', fontWeight: 500, lineHeight: 1.2, textAlign: 'center',
+        letterSpacing: '0.01em', whiteSpace: 'pre-line',
+        maxHeight: hov ? '24px' : '0px',
+        opacity: hov ? 1 : 0,
+        overflow: 'hidden',
+        transition: 'max-height 0.15s, opacity 0.15s',
+      }}>{'Показать\nпанель'}</span>
+    </button>
+  );
+};
+
+const ShowTocBtn: React.FC<{
+  isDark: boolean; chromeGap: number; chromeTopGap: number;
+  t: ReturnType<typeof tk>; onClick: () => void;
+}> = ({ isDark, chromeGap, chromeTopGap, t, onClick }) => {
+  const [hov, setHov] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        position: 'fixed', right: chromeGap + 8, top: chromeTopGap + 8, zIndex: 56,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        gap: '4px',
+        width: hov ? 52 : 44, height: hov ? 52 : 44,
+        borderRadius: '12px',
+        border: `1px solid ${t.border}`,
+        background: t.panelBg,
+        color: hov ? t.fg : t.fgMuted,
+        cursor: 'pointer',
+        transition: 'width 0.15s, height 0.15s, color 0.15s',
+        overflow: 'hidden',
+      }}
+      title="Показать оглавление"
+    >
+      <PanelRight size={16} />
+      <span style={{
+        fontSize: '9px', fontWeight: 500, lineHeight: 1.2, textAlign: 'center',
+        letterSpacing: '0.01em', whiteSpace: 'pre-line',
+        maxHeight: hov ? '24px' : '0px',
+        opacity: hov ? 1 : 0,
+        overflow: 'hidden',
+        transition: 'max-height 0.15s, opacity 0.15s',
+      }}>{'Показать\nоглавл.'}</span>
+    </button>
   );
 };
 
@@ -1468,19 +1566,8 @@ const MobileNav: React.FC<{
     if (!hasToc && sheet === 'toc') { setSheet(null); }
   }, [hasToc, sheet]);
 
-  /*
-   * Архитектура: nav = position relative
-   * Логотип — position absolute, left 50%, transform -50% → ВСЕГДА по центру
-   * Левая группа кнопок — flex 1, justify-content flex-end
-   * Правая группа кнопок — flex 1, justify-content flex-start
-   * Кнопки внутри групп НЕ имеют flex:1, они фиксированной ширины.
-   * Когда кнопок меньше (нет ToC) — они просто прижимаются к логотипу,
-   * но сам логотип остаётся строго по центру экрана.
-   */
-
   const scrollTop = () => { setSheet(null); globalThis.scrollTo({ top: 0, behavior: 'smooth' }); };
 
-  // Левые кнопки (всегда): Тема, Поиск, [Разделы если showDocActions]
   const leftButtons = !showDocActions ? (
     <>
       <MobBtn label="Тема"  icon={isDark ? <Sun size={22} /> : <Moon size={22} />} isDark={isDark} onClick={toggleTheme}                                   isActive={false} />
@@ -1494,10 +1581,6 @@ const MobileNav: React.FC<{
     </>
   );
 
-  // Правые кнопки:
-  // Главная:       Разделы, Контакты
-  // Документ+ToC:  Оглавление, Наверх, Контакты
-  // Документ−ToC:  Наверх, Контакты
   const rightButtons = !showDocActions ? (
     <>
       <MobBtn label="Разделы"  icon={<FolderOpen size={22} />} isDark={isDark} onClick={() => toggle('nav')}      isActive={sheet === 'nav'} />
@@ -1525,25 +1608,25 @@ const MobileNav: React.FC<{
         background: t.mobBg, borderTop: `1px solid ${t.border}`,
         display: 'flex', alignItems: 'stretch',
       }}>
-        {/* Лого: всегда строго по центру навбара */}
+        {/* Логотип */}
         <div aria-hidden style={{
           position: 'absolute', left: '50%', top: '50%',
           transform: 'translate(-50%, -50%)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           pointerEvents: 'none', zIndex: 1,
         }}>
-          <BrandLogo logoPath={logoPath} size={38} />
+          <BrandLogo logoPath={logoPath} size={48} />
         </div>
 
-        {/* Левая половина — кнопки прижаты к правому краю (к логотипу) */}
+        {/* Левая половина */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'stretch', justifyContent: 'flex-end' }}>
           {leftButtons}
         </div>
 
-        {/* Центральный spacer шириной логотипа чтобы кнопки не залезали под него */}
-        <div aria-hidden style={{ width: 48, flexShrink: 0 }} />
+        {/* Центральный spacer */}
+        <div aria-hidden style={{ width: 56, flexShrink: 0 }} />
 
-        {/* Правая половина — кнопки прижаты к левому краю (к логотипу) */}
+        {/* Правая половина */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'stretch', justifyContent: 'flex-start' }}>
           {rightButtons}
         </div>
