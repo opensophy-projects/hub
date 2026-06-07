@@ -1,6 +1,6 @@
 ---
 title: "Градиентные жалюзи"
-description: UI Компонент. Анимированный фоновый эффект градиентные жалюзи.
+description: WebGL-фон на OGL с эффектом градиентных жалюзи. Горизонтальные полосы нарезают градиент, накладываются со spotlight-пятном от мыши и анимированным шумом. Поддерживает вращение, зеркалирование, UV-дисторшн и mix-blend-mode.
 date: 2026-05-18
 tags: разработка, ui, ui-компоненты
 keywords: react background, animated background, gradient-blinds, shader
