@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { useTheme } from '@/shared/contexts/useTheme';
 import {
   Minimize2, Play, RefreshCcw, Copy, Check,
-  PanelRight, X, Code2, EyeOff, RotateCcw, FileCode2,
+  X, Code2, EyeOff, RotateCcw,
   ChevronDown, ChevronRight, Settings,
 } from 'lucide-react';
 import hljs from 'highlight.js/lib/core';
@@ -66,7 +66,7 @@ function tk(isDark: boolean) {
 }
 type T = ReturnType<typeof tk>;
 
-// ─── RailBtn ──────────────────────────────────────────────────────────────────
+// ─── RailBtn — без серого фона, только цвет иконки/текста ─────────────────────
 
 const RailBtn: React.FC<{
   icon: React.ReactNode; label: string; isActive?: boolean; t: T;
@@ -82,10 +82,10 @@ const RailBtn: React.FC<{
         width: t.railW - 8,
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'center', gap: 5, padding: '10px 4px',
-        border: `1px solid ${isActive ? t.btnActBdr : 'transparent'}`,
-        background: isActive ? t.btnActBg : hov ? t.btnHov : 'transparent',
+        border: 'none',
+        background: 'transparent',
         color, cursor: 'pointer', borderRadius: 12, flexShrink: 0,
-        transition: 'background 0.12s, color 0.12s',
+        transition: 'color 0.12s',
       }}
     >
       <span style={{ width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
@@ -175,7 +175,7 @@ const NumberInput: React.FC<{
   );
 };
 
-// ─── FieldRow — видимая кнопка «Сбросить» ─────────────────────────────────────
+// ─── FieldRow ─────────────────────────────────────────────────────────────────
 
 const FieldRow: React.FC<{
   label: string; fieldKey: keyof UniversalProps;
@@ -220,7 +220,7 @@ const FieldRow: React.FC<{
   );
 };
 
-// ─── Все поля в одной панели (без разделения по табам) ───────────────────────
+// ─── ALL_FIELDS ───────────────────────────────────────────────────────────────
 
 const ALL_FIELDS: Array<{
   groupLabel: string;
@@ -307,35 +307,140 @@ const HLJS_CSS = `
 .uiv-hl .hljs-tag,.uiv-hl .hljs-name { color:#fb7185 }
 `;
 
-// ─── SourceCodeEditor ─────────────────────────────────────────────────────────
-// Ключевые исправления:
-// 1. pre и textarea синхронизированы через одинаковые padding/font/size
-// 2. overflow: auto на ОБОИХ — скролл работает
-// 3. textarea поверх pre, оба абсолютно позиционированы
-// 4. Изменения мгновенно видны (state внутри компонента)
+// ─── Live compilation via Babel standalone ────────────────────────────────────
 
-const SourceCodeEditor: React.FC<{
+let babelLoaded = false;
+let babelLoading: Promise<void> | null = null;
+
+async function ensureBabel(): Promise<void> {
+  if (babelLoaded) return;
+  if (babelLoading) return babelLoading;
+  babelLoading = new Promise<void>((resolve, reject) => {
+    if ((window as any).Babel) { babelLoaded = true; resolve(); return; }
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.10/babel.min.js';
+    script.onload = () => { babelLoaded = true; resolve(); };
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+  return babelLoading;
+}
+
+async function compileAndRender(code: string): Promise<AnyComponent | null> {
+  try {
+    await ensureBabel();
+    const Babel = (window as any).Babel;
+    if (!Babel) return null;
+
+    // Transform TSX/TS to JS
+    const result = Babel.transform(code, {
+      presets: [
+        ['react', { runtime: 'classic' }],
+        ['typescript', { allExtensions: true, isTSX: true }],
+      ],
+      plugins: [],
+    });
+
+    if (!result?.code) return null;
+
+    // Remove import statements, we'll provide deps manually
+    let transformed = result.code
+      .replace(/^import\s[^;]+;?\s*$/gm, '')
+      .replace(/^export\s+default\s+/m, 'const __defaultExport = ')
+      .replace(/^export\s+\{[^}]+\};?\s*$/gm, '');
+
+    // Build factory function with common deps injected
+    const factory = new Function(
+      'React', 'useState', 'useEffect', 'useRef', 'useMemo', 'useCallback',
+      'useLayoutEffect', 'useReducer', 'useContext', 'useId',
+      `
+      "use strict";
+      ${transformed}
+      return typeof __defaultExport !== 'undefined' ? __defaultExport : null;
+      `
+    );
+
+    const Component = factory(
+      React,
+      React.useState, React.useEffect, React.useRef, React.useMemo, React.useCallback,
+      React.useLayoutEffect, React.useReducer, React.useContext, React.useId,
+    );
+
+    if (typeof Component === 'function') return Component as AnyComponent;
+    return null;
+  } catch (err) {
+    console.warn('[LiveEdit] compile error:', err);
+    return null;
+  }
+}
+
+// ─── SourceCodeEditor ─────────────────────────────────────────────────────────
+
+interface SourceCodeEditorProps {
   fileContents: Record<string, string>;
   t: T;
-}> = ({ fileContents, t }) => {
+  onLiveComponent?: (comp: AnyComponent | null) => void;
+}
+
+const SourceCodeEditor: React.FC<SourceCodeEditorProps> = ({ fileContents, t, onLiveComponent }) => {
   const files = useMemo(() => Object.entries(fileContents), [fileContents]);
   const [activeFile, setActiveFile] = useState(() => files[0]?.[0] ?? '');
   const [drafts, setDrafts]         = useState<Record<string, string>>(() => Object.fromEntries(files));
   const [copied, setCopied]         = useState(false);
+  const [compileError, setCompileError] = useState<string | null>(null);
+  const [isCompiling, setIsCompiling]   = useState(false);
+  const compileTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Синхронизируем при смене пропсов (новый компонент)
+  // Sync when fileContents changes (new component loaded)
   useEffect(() => {
     const initial = Object.fromEntries(Object.entries(fileContents));
     setDrafts(initial);
     setActiveFile(Object.keys(fileContents)[0] ?? '');
-  }, [fileContents]);
+    setCompileError(null);
+    onLiveComponent?.(null); // reset to original
+  }, [fileContents]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const activeCode   = drafts[activeFile] ?? '';
   const originalCode = fileContents[activeFile] ?? '';
   const isDirty      = activeCode !== originalCode;
 
-  // Подсветка пересчитывается при каждом изменении кода — мгновенно
   const highlighted = useMemo(() => highlightCode(activeCode, activeFile), [activeCode, activeFile]);
+
+  // Debounced live compile on code change
+  useEffect(() => {
+    if (!isDirty) {
+      onLiveComponent?.(null);
+      setCompileError(null);
+      return;
+    }
+    // Only compile main component files (tsx/jsx/ts/js)
+    const ext = activeFile.split('.').pop()?.toLowerCase() ?? '';
+    if (!['tsx', 'jsx', 'ts', 'js'].includes(ext)) return;
+
+    if (compileTimeout.current) clearTimeout(compileTimeout.current);
+    compileTimeout.current = setTimeout(async () => {
+      setIsCompiling(true);
+      try {
+        const comp = await compileAndRender(activeCode);
+        if (comp) {
+          setCompileError(null);
+          onLiveComponent?.(comp);
+        } else {
+          setCompileError('Не удалось скомпилировать');
+          onLiveComponent?.(null);
+        }
+      } catch (e: any) {
+        setCompileError(e?.message ?? 'Ошибка компиляции');
+        onLiveComponent?.(null);
+      } finally {
+        setIsCompiling(false);
+      }
+    }, 800);
+
+    return () => {
+      if (compileTimeout.current) clearTimeout(compileTimeout.current);
+    };
+  }, [activeCode, activeFile, isDirty]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const copyCode = async () => {
     await navigator.clipboard.writeText(activeCode);
@@ -343,7 +448,6 @@ const SourceCodeEditor: React.FC<{
     setTimeout(() => setCopied(false), 1500);
   };
 
-  // Общие стили для pre и textarea — должны совпадать ИДЕАЛЬНО
   const editorStyle: React.CSSProperties = {
     position:    'absolute',
     inset:       0,
@@ -370,7 +474,12 @@ const SourceCodeEditor: React.FC<{
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-      <style>{HLJS_CSS}</style>
+      <style>{`
+        ${HLJS_CSS}
+        /* Fix 3: прозрачный текст textarea — убираем видимое выделение */
+        .uiv-editor-ta::selection { background: rgba(99,102,241,0.35); }
+        .uiv-editor-ta::-moz-selection { background: rgba(99,102,241,0.35); }
+      `}</style>
 
       {/* Тулбар */}
       <div style={{
@@ -378,7 +487,7 @@ const SourceCodeEditor: React.FC<{
         padding: '7px 10px', borderBottom: `1px solid ${t.border}`,
         background: t.surfaceBg, flexShrink: 0,
       }}>
-        {/* Табы файлов */}
+        {/* Табы файлов — без иконок (Fix 4) */}
         <div style={{ display: 'flex', gap: 4, flex: 1, overflow: 'hidden' }}>
           {files.map(([name]) => {
             const isAct = name === activeFile;
@@ -396,13 +505,26 @@ const SourceCodeEditor: React.FC<{
                   cursor: 'pointer', fontWeight: isAct ? 600 : 400, flexShrink: 0,
                 }}
               >
-                <FileCode2 size={11} />
+                {/* No icon — Fix 4 */}
                 <span style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
-                {dirty && <span style={{ color: t.accent, marginLeft: 2 }}>●</span>}
+                {dirty && <span style={{ color: t.accent, marginLeft: 2, fontSize: 14, lineHeight: 1 }}>●</span>}
               </button>
             );
           })}
         </div>
+
+        {/* Compile status */}
+        {isCompiling && (
+          <span style={{ fontSize: 10, color: t.fgMuted, fontFamily: 'ui-monospace,monospace' }}>компиляция…</span>
+        )}
+        {compileError && !isCompiling && (
+          <span style={{ fontSize: 10, color: '#f87171', fontFamily: 'ui-monospace,monospace', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={compileError}>
+            ✗ {compileError}
+          </span>
+        )}
+        {isDirty && !isCompiling && !compileError && (
+          <span style={{ fontSize: 10, color: '#4ade80', fontFamily: 'ui-monospace,monospace' }}>✓ применено</span>
+        )}
 
         {/* Действия */}
         <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
@@ -422,7 +544,11 @@ const SourceCodeEditor: React.FC<{
           </button>
           {isDirty && (
             <button
-              onClick={() => setDrafts(prev => ({ ...prev, [activeFile]: originalCode }))}
+              onClick={() => {
+                setDrafts(prev => ({ ...prev, [activeFile]: originalCode }));
+                onLiveComponent?.(null);
+                setCompileError(null);
+              }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 4,
                 padding: '4px 9px', borderRadius: 6,
@@ -437,12 +563,12 @@ const SourceCodeEditor: React.FC<{
         </div>
       </div>
 
-      {/* Редактор — pre + textarea наложенные друг на друга */}
+      {/* Редактор */}
       <div
         className="uiv-hl"
         style={{ flex: 1, minHeight: 0, position: 'relative', background: t.codeBg, overflow: 'hidden' }}
       >
-        {/* pre: подсветка синтаксиса, pointer-events:none */}
+        {/* pre: подсветка синтаксиса */}
         <pre
           aria-hidden
           style={{
@@ -451,14 +577,13 @@ const SourceCodeEditor: React.FC<{
             background:     'transparent',
             pointerEvents:  'none',
             zIndex:         1,
-            // Скролл pre управляется textarea через JS
             overflow:       'hidden',
           }}
         >
           <code dangerouslySetInnerHTML={{ __html: highlighted }} />
         </pre>
 
-        {/* textarea: прозрачный текст, реальный скролл */}
+        {/* textarea: прозрачный текст поверх */}
         <SyncedTextarea
           value={activeCode}
           onChange={val => setDrafts(prev => ({ ...prev, [activeFile]: val }))}
@@ -470,7 +595,7 @@ const SourceCodeEditor: React.FC<{
   );
 };
 
-// ─── SyncedTextarea — синхронизирует скролл с pre ─────────────────────────────
+// ─── SyncedTextarea ───────────────────────────────────────────────────────────
 
 const SyncedTextarea: React.FC<{
   value: string;
@@ -481,7 +606,6 @@ const SyncedTextarea: React.FC<{
   const taRef  = useRef<HTMLTextAreaElement>(null);
   const preRef = useRef<HTMLPreElement | null>(null);
 
-  // Находим соседний pre при маунте
   useEffect(() => {
     const pre = taRef.current?.previousElementSibling as HTMLPreElement | null;
     preRef.current = pre;
@@ -495,7 +619,6 @@ const SyncedTextarea: React.FC<{
     pre.scrollLeft = ta.scrollLeft;
   }, []);
 
-  // Tab — вставляем 2 пробела
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key !== 'Tab') return;
     e.preventDefault();
@@ -516,12 +639,13 @@ const SyncedTextarea: React.FC<{
       spellCheck={false}
       autoCorrect="off"
       autoCapitalize="off"
+      className="uiv-editor-ta"
       onChange={e => onChange(e.target.value)}
       onScroll={syncScroll}
       onKeyDown={handleKeyDown}
       style={{
         ...editorStyle,
-        // Текст прозрачный — видна только подсветка из pre
+        // Fix 3: текст прозрачный, каретка видна, ::selection стилизован через CSS
         color:       'transparent',
         caretColor:  t.accent,
         background:  'transparent',
@@ -529,7 +653,6 @@ const SyncedTextarea: React.FC<{
         border:      'none',
         outline:     'none',
         zIndex:      2,
-        // Скролл на textarea — pre синхронизируется через onScroll
         overflow:    'auto',
         overflowX:   'auto',
         overflowY:   'auto',
@@ -582,11 +705,13 @@ const FullscreenDesktop: React.FC<ComponentRenderProps & {
   onReset: () => void;
   onClose: () => void;
   onTogglePanel: () => void;
+  onLiveComponent: (comp: AnyComponent | null) => void;
   t: T;
 }> = ({
   Component, componentProps, universalProps, refreshKey, isDark, componentCategory,
   fileContents, activeTab, panelOpen,
-  onTabSelect, onUniversalPropChange, onRefresh, onReset, onClose, onTogglePanel, t,
+  onTabSelect, onUniversalPropChange, onRefresh, onReset, onClose, onTogglePanel,
+  onLiveComponent, t,
 }) => {
   const isBackground = componentCategory === 'backgrounds';
 
@@ -604,9 +729,9 @@ const FullscreenDesktop: React.FC<ComponentRenderProps & {
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         padding: '8px 0', gap: 2, zIndex: 10,
       }}>
-        {/* Логотип-заглушка */}
+        {/* Fix 1: кнопка Свернуть вместо текста "UI" */}
         <div style={{ width: t.railW, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', color: t.fgSub, textTransform: 'uppercase' as const }}>UI</span>
+          <RailBtn icon={<Minimize2 size={18} />} label="Свернуть" t={t} onClick={onClose} />
         </div>
 
         <RailBtn icon={<Play size={18} />}       label="Запуск"    t={t} onClick={onRefresh} />
@@ -625,8 +750,6 @@ const FullscreenDesktop: React.FC<ComponentRenderProps & {
           t={t}
           onClick={() => { onTabSelect('code'); if (!panelOpen || activeTab === 'code') onTogglePanel(); }}
         />
-        <div style={{ flex: 1 }} />
-        <RailBtn icon={<Minimize2 size={18} />}  label="Свернуть"  t={t} onClick={onClose} />
       </aside>
 
       {/* ── Превью ── */}
@@ -677,7 +800,7 @@ const FullscreenDesktop: React.FC<ComponentRenderProps & {
             <SettingsSidebar universalProps={universalProps} onChange={onUniversalPropChange} t={t} />
           )}
           {activeTab === 'code' && (
-            <SourceCodeEditor fileContents={fileContents} t={t} />
+            <SourceCodeEditor fileContents={fileContents} t={t} onLiveComponent={onLiveComponent} />
           )}
         </aside>
       )}
@@ -724,6 +847,7 @@ function useSheetDrag(initialVh: number) {
   return { sheetVh, isDragging, startDrag };
 }
 
+// Fix 2: MobBtn без серого фона
 const MobBtn: React.FC<{
   label: string; icon: React.ReactNode; t: T; onClick: () => void; isActive: boolean;
 }> = ({ label, icon, t, onClick, isActive }) => (
@@ -733,6 +857,7 @@ const MobBtn: React.FC<{
     background: 'transparent', cursor: 'pointer',
     color: isActive ? t.accent : t.fgMuted,
     outline: 'none', minWidth: 0,
+    transition: 'color 0.12s',
   }}>
     <span style={{ width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
     <span style={{ fontSize: 10, fontWeight: 400, lineHeight: 1, marginTop: 1 }}>{label}</span>
@@ -742,10 +867,11 @@ const MobBtn: React.FC<{
 const FullscreenMobile: React.FC<ComponentRenderProps & {
   onClose: () => void; onRefresh: () => void; onReset: () => void;
   onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
+  onLiveComponent: (comp: AnyComponent | null) => void;
   t: T;
 }> = ({
   Component, componentProps, universalProps, refreshKey, isDark, componentCategory,
-  fileContents, onClose, onRefresh, onReset, onUniversalPropChange, t,
+  fileContents, onClose, onRefresh, onReset, onUniversalPropChange, onLiveComponent, t,
 }) => {
   const [sheet, setSheet] = useState<MobileSheet>(null);
   const { sheetVh, isDragging, startDrag } = useSheetDrag(55);
@@ -784,7 +910,7 @@ const FullscreenMobile: React.FC<ComponentRenderProps & {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 18px 10px', borderBottom: `1px solid ${t.border}` }}>
               <span style={{ fontSize: '1.1rem', fontWeight: 700, color: t.fg }}>{sheet ? LABELS[sheet] : ''}</span>
-              <button onClick={() => setSheet(null)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 10, border: `1px solid ${t.border}`, background: t.btnHov, color: t.fg, cursor: 'pointer', flexShrink: 0 }}>
+              <button onClick={() => setSheet(null)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 10, border: `1px solid ${t.border}`, background: 'transparent', color: t.fg, cursor: 'pointer', flexShrink: 0 }}>
                 <X size={14} />
               </button>
             </div>
@@ -794,12 +920,13 @@ const FullscreenMobile: React.FC<ComponentRenderProps & {
               <SettingsSidebar universalProps={universalProps} onChange={onUniversalPropChange} t={t} />
             )}
             {sheet === 'code' && (
-              <SourceCodeEditor fileContents={fileContents} t={t} />
+              <SourceCodeEditor fileContents={fileContents} t={t} onLiveComponent={onLiveComponent} />
             )}
           </div>
         </div>
       </div>
 
+      {/* Fix 1 mobile: свернуть вместо "UI" текста */}
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: t.mobBg, borderTop: `1px solid ${t.border}`, display: 'flex', alignItems: 'stretch', zIndex: 30, paddingBottom: 'max(0px, env(safe-area-inset-bottom))' }}>
         <MobBtn label="Обновить" icon={<Play size={20} />}       t={t} onClick={() => { setSheet(null); onRefresh(); }}                        isActive={false} />
         <MobBtn label="Сброс"    icon={<RefreshCcw size={20} />} t={t} onClick={() => { setSheet(null); onReset(); }}                          isActive={false} />
@@ -817,7 +944,8 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
   onClose: () => void; onRefresh: () => void;
   onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
   onReset: () => void; t: T;
-}> = ({ Component, componentProps, universalProps, refreshKey, isDark, componentCategory, fileContents, onClose, onRefresh, onUniversalPropChange, onReset, t }) => {
+  onLiveComponent: (comp: AnyComponent | null) => void;
+}> = ({ Component, componentProps, universalProps, refreshKey, isDark, componentCategory, fileContents, onClose, onRefresh, onUniversalPropChange, onReset, onLiveComponent, t }) => {
   const [activeTab,  setActiveTab]  = useState<TabType>('settings');
   const [panelOpen,  setPanelOpen]  = useState(true);
   const isMobile = useIsMobile();
@@ -829,13 +957,8 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
     return () => { document.body.style.overflow = ''; document.removeEventListener('keydown', onKey); };
   }, [onClose]);
 
-  const handleTabSelect = useCallback((tab: TabType) => {
-    setActiveTab(tab);
-  }, []);
-
-  const handleTogglePanel = useCallback(() => {
-    setPanelOpen(v => !v);
-  }, []);
+  const handleTabSelect = useCallback((tab: TabType) => { setActiveTab(tab); }, []);
+  const handleTogglePanel = useCallback(() => { setPanelOpen(v => !v); }, []);
 
   const shared: ComponentRenderProps = { Component, componentProps, universalProps, refreshKey, isDark, componentCategory, fileContents };
 
@@ -852,6 +975,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
           onReset={onReset}
           onClose={onClose}
           onTogglePanel={handleTogglePanel}
+          onLiveComponent={onLiveComponent}
           t={t}
         />
       ) : (
@@ -859,7 +983,9 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
           <FullscreenMobile
             {...shared}
             onClose={onClose} onRefresh={onRefresh} onReset={onReset}
-            onUniversalPropChange={onUniversalPropChange} t={t}
+            onUniversalPropChange={onUniversalPropChange}
+            onLiveComponent={onLiveComponent}
+            t={t}
           />
         </div>
       )}
@@ -868,7 +994,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
   );
 };
 
-// ─── PreviewPanel — карточка на странице ─────────────────────────────────────
+// ─── PreviewPanel ─────────────────────────────────────────────────────────────
 
 const PreviewPanel: React.FC<ComponentRenderProps & {
   onOpenFullscreen: () => void; t: T; loading: boolean;
@@ -942,9 +1068,12 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
   const [universalProps, setUniversalProps] = useState<UniversalProps>(DEFAULT_UNIVERSAL_PROPS);
   const [componentData,  setComponentData]  = useState<LoadedComponentData | null>(null);
   const [loading,        setLoading]        = useState(true);
+  // Live component from code editor
+  const [liveComponent,  setLiveComponent]  = useState<AnyComponent | null>(null);
 
   useEffect(() => {
     setLoading(true);
+    setLiveComponent(null);
     loadComponent(componentId).then(data => {
       if (data) { setComponentData(data); setComponentProps(getDefaultProps(data.config)); }
       scheduleHideLoading(setLoading);
@@ -954,12 +1083,19 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
   const handleRefresh         = useCallback(() => setRefreshKey(k => k + 1), []);
   const handleUniversalChange = useCallback((key: keyof UniversalProps, value: PropValue) =>
     setUniversalProps(prev => ({ ...prev, [key]: value })), []);
-  const handleReset           = useCallback(() => {
+  const handleReset = useCallback(() => {
     if (!componentData) return;
     setComponentProps(getDefaultProps(componentData.config));
     setUniversalProps(DEFAULT_UNIVERSAL_PROPS);
+    setLiveComponent(null);
     setRefreshKey(k => k + 1);
   }, [componentData]);
+
+  const handleLiveComponent = useCallback((comp: AnyComponent | null) => {
+    setLiveComponent(comp);
+    // Bump refresh key so component re-mounts with new code
+    if (comp) setRefreshKey(k => k + 1);
+  }, []);
 
   const placeholderConfig: ComponentConfig = useMemo(() => ({
     id: componentId, name: '…', description: '', props: [], specificProps: [],
@@ -972,8 +1108,11 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
     fileContents: {},
   };
 
+  // Use live-compiled component if available, otherwise original
+  const activeComponent = liveComponent ?? effectiveData.Component;
+
   const shared: ComponentRenderProps = {
-    Component:         effectiveData.Component,
+    Component:         activeComponent,
     componentProps,
     universalProps,
     refreshKey,
@@ -992,6 +1131,7 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
           onRefresh={handleRefresh}
           onUniversalPropChange={handleUniversalChange}
           onReset={handleReset}
+          onLiveComponent={handleLiveComponent}
           t={t}
         />
       )}
