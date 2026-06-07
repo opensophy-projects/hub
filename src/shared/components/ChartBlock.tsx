@@ -70,6 +70,38 @@ function detectKeys(data: ChartRow[]): { nameKey: string; valueKeys: string[] } 
   return { nameKey: keys[0] ?? 'name', valueKeys: keys.slice(1) };
 }
 
+// ─── Утилита: яркость цвета ───────────────────────────────────────────────────
+// Возвращает relative luminance [0..1] по WCAG.
+// Используется чтобы определить, слишком ли тёмный цвет на тёмном фоне
+// или слишком светлый на светлом фоне.
+
+function hexLuminance(hex: string): number {
+  const c = hex.replace('#', '');
+  if (c.length !== 6) return 0.5; // fallback для некорректных значений
+  const r = parseInt(c.slice(0, 2), 16) / 255;
+  const g = parseInt(c.slice(2, 4), 16) / 255;
+  const b = parseInt(c.slice(4, 6), 16) / 255;
+  const toLinear = (v: number) =>
+    v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+}
+
+/**
+ * FIX: Если цвет почти невидим на фоне (очень тёмный в dark-mode или очень
+ * светлый в light-mode) — заменяем его на DEFAULT_COLORS[idx].
+ * Это решает ситуацию, когда пользователь задаёт, например, #383838 в тёмной теме.
+ */
+function safeColor(color: string, idx: number, isDark: boolean): string {
+  const lum = hexLuminance(color);
+  if (isDark && lum < 0.04)  return DEFAULT_COLORS[idx % DEFAULT_COLORS.length];
+  if (!isDark && lum > 0.92) return DEFAULT_COLORS[idx % DEFAULT_COLORS.length];
+  return color;
+}
+
+function safePalette(palette: string[], isDark: boolean): string[] {
+  return palette.map((c, i) => safeColor(c, i, isDark));
+}
+
 // ─── Кастомный Tooltip ────────────────────────────────────────────────────────
 
 const CustomTooltip: React.FC<{
@@ -106,8 +138,6 @@ const CustomTooltip: React.FC<{
         </div>
       )}
       {payload.map(entry => {
-        // Если передана rowColorMap — берём цвет из неё по label строки,
-        // иначе используем entry.color (работает для multi-series bar)
         const resolvedColor = (rowColorMap && label)
           ? (rowColorMap[label] ?? entry.color)
           : entry.color;
@@ -270,9 +300,22 @@ function renderArea(
   palette: string[],
   stacked: boolean,
   hidden: Set<string>,
-  t: ReturnType<typeof tk>
+  t: ReturnType<typeof tk>,
+  isDark: boolean,
 ) {
   const visible = valueKeys.filter(k => !hidden.has(k));
+
+  // FIX: увеличиваем opacity заливки для светлой темы и для stacked-режима,
+  // иначе области почти не видны на белом фоне.
+  // Stacked: верхний stop должен быть заметно непрозрачным, иначе нижние
+  // серии (которые перекрыты верхними) вообще не проглядывают.
+  const fillTop    = stacked
+    ? (isDark ? 0.55 : 0.65)
+    : (isDark ? 0.25 : 0.40);
+  const fillBottom = stacked
+    ? (isDark ? 0.10 : 0.15)
+    : 0;
+
   return (
     <AreaChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
       <defs>
@@ -281,8 +324,8 @@ function renderArea(
           const color = palette[idx % palette.length];
           return (
             <linearGradient key={key} id={`area-grad-${idx}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity={0.2} />
-              <stop offset="100%" stopColor={color} stopOpacity={0} />
+              <stop offset="0%" stopColor={color} stopOpacity={fillTop} />
+              <stop offset="100%" stopColor={color} stopOpacity={fillBottom} />
             </linearGradient>
           );
         })}
@@ -324,7 +367,6 @@ function renderArea(
 
 function getMaxBarSize(seriesCount: number, horizontal: boolean): number {
   if (horizontal) return 32;
-  // вертикальный: шире
   if (seriesCount <= 1) return 96;
   if (seriesCount <= 3) return 72;
   return 52;
@@ -332,12 +374,10 @@ function getMaxBarSize(seriesCount: number, horizontal: boolean): number {
 
 function getCategoryGap(rowCount: number, horizontal: boolean): string {
   if (horizontal) {
-    // для горизонтального — минимальный gap, бары толще
     if (rowCount <= 4)  return '12%';
     if (rowCount <= 8)  return '16%';
     return '20%';
   }
-  // вертикальный: уменьшаем gap чтобы бары были шире
   if (rowCount <= 3)  return '12%';
   if (rowCount <= 6)  return '16%';
   if (rowCount <= 10) return '20%';
@@ -371,8 +411,6 @@ function renderBar({
 }: RenderBarOptions) {
   const isSingleSeries = valueKeys.length === 1;
 
-  // Для single-series horizontal: скрываем строки через фильтр данных
-  // Для multi-series: скрываем серии
   const visibleData = (isSingleSeries && horizontal)
     ? data.filter(d => !hidden.has(String(d[nameKey])))
     : data;
@@ -385,9 +423,7 @@ function renderBar({
   const maxSize = getMaxBarSize(visible.length, horizontal);
   const bGap = visible.length <= 2 ? 4 : 3;
 
-  // ── FIX: строим карту row-name → color для tooltip в bar-horizontal ──────
-  // Recharts передаёт в payload entry.color = Bar.fill (всегда первый цвет),
-  // игнорируя Cell. Передаём rowColorMap в content чтобы взять правильный цвет.
+  // FIX: строим карту row-name → color для tooltip в bar-horizontal
   const rowColorMap: Record<string, string> | undefined = (isSingleSeries && horizontal)
     ? Object.fromEntries(
         data.map((row, origIdx) => [
@@ -554,8 +590,15 @@ function pluralRecords(n: number): string {
 // ─── ChartBlock ───────────────────────────────────────────────────────────────
 
 const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDark }) => {
-  const t       = tk(isDark);
-  const palette = colors?.length ? colors : DEFAULT_COLORS;
+  const t = tk(isDark);
+
+  // FIX: применяем safePalette — заменяем невидимые цвета на контрастные fallback'и.
+  // Это устраняет баг с #383838 в тёмной теме (luminance < 0.04 → невидим).
+  const palette = useMemo(() => {
+    const raw = colors?.length ? colors : DEFAULT_COLORS;
+    return safePalette(raw, isDark);
+  }, [colors, isDark]);
+
   const { nameKey, valueKeys } = useMemo(() => detectKeys(data), [data]);
 
   const [hidden, setHidden] = useState<Set<string>>(new Set());
@@ -590,8 +633,8 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
   const chart = useMemo(() => {
     if (isEmpty) return null;
     switch (type) {
-      case 'area':           return renderArea(data, nameKey, valueKeys, palette, false, hidden, t);
-      case 'area-stacked':   return renderArea(data, nameKey, valueKeys, palette, true,  hidden, t);
+      case 'area':           return renderArea(data, nameKey, valueKeys, palette, false, hidden, t, isDark);
+      case 'area-stacked':   return renderArea(data, nameKey, valueKeys, palette, true,  hidden, t, isDark);
       case 'bar':            return renderBar({ data, nameKey, valueKeys, palette, stacked: false, horizontal: false, hidden, t });
       case 'bar-stacked':    return renderBar({ data, nameKey, valueKeys, palette, stacked: true,  horizontal: false, hidden, t });
       case 'bar-horizontal': return renderBar({ data, nameKey, valueKeys, palette, stacked: false, horizontal: true,  hidden, t });
@@ -600,7 +643,7 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
       case 'radar':          return renderRadar(data, nameKey, valueKeys, palette, hidden, t);
       default:               return null;
     }
-  }, [type, data, nameKey, valueKeys, palette, hidden, t, isEmpty]);
+  }, [type, data, nameKey, valueKeys, palette, hidden, t, isEmpty, isDark]);
 
   return (
     <div className="not-prose" style={{ margin: '1.5rem 0' }}>
