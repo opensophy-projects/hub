@@ -77,7 +77,9 @@ const CustomTooltip: React.FC<{
   payload?: Array<{ name: string; value: number; color: string }>;
   label?: string;
   t: ReturnType<typeof tk>;
-}> = ({ active, payload, label, t }) => {
+  // для bar-horizontal передаём карту row→color чтобы обойти баг recharts
+  rowColorMap?: Record<string, string>;
+}> = ({ active, payload, label, t, rowColorMap }) => {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
@@ -103,30 +105,37 @@ const CustomTooltip: React.FC<{
           {label}
         </div>
       )}
-      {payload.map(entry => (
-        <div key={entry.name} style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 14,
-          marginTop: 3,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-            <div style={{
-              width: 7,
-              height: 7,
-              borderRadius: '50%',
-              background: entry.color,
-              flexShrink: 0,
-              boxShadow: `0 0 0 2px ${entry.color}33`,
-            }} />
-            <span style={{ opacity: 0.6, fontSize: 11 }}>{entry.name}</span>
+      {payload.map(entry => {
+        // Если передана rowColorMap — берём цвет из неё по label строки,
+        // иначе используем entry.color (работает для multi-series bar)
+        const resolvedColor = (rowColorMap && label)
+          ? (rowColorMap[label] ?? entry.color)
+          : entry.color;
+        return (
+          <div key={entry.name} style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 14,
+            marginTop: 3,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <div style={{
+                width: 7,
+                height: 7,
+                borderRadius: '50%',
+                background: resolvedColor,
+                flexShrink: 0,
+                boxShadow: `0 0 0 2px ${resolvedColor}33`,
+              }} />
+              <span style={{ opacity: 0.6, fontSize: 11 }}>{entry.name}</span>
+            </div>
+            <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+              {entry.value.toLocaleString()}
+            </span>
           </div>
-          <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
-            {entry.value.toLocaleString()}
-          </span>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
@@ -236,7 +245,7 @@ const CustomLegend: React.FC<{
 // ─── Высота чарта ─────────────────────────────────────────────────────────────
 
 function chartHeight(type: ChartType, rowCount: number): number {
-  if (type === 'bar-horizontal') return Math.max(110, rowCount * 42 + 40);
+  if (type === 'bar-horizontal') return Math.max(110, rowCount * 48 + 40);
   if (type === 'pie' || type === 'pie-donut') return 248;
   if (type === 'radar') return 276;
   return 218;
@@ -313,17 +322,26 @@ function renderArea(
 
 // ─── Bar ──────────────────────────────────────────────────────────────────────
 
-function getMaxBarSize(seriesCount: number): number {
-  if (seriesCount <= 1) return 64;
-  if (seriesCount <= 3) return 48;
-  return 36;
+function getMaxBarSize(seriesCount: number, horizontal: boolean): number {
+  if (horizontal) return 32;
+  // вертикальный: шире
+  if (seriesCount <= 1) return 96;
+  if (seriesCount <= 3) return 72;
+  return 52;
 }
 
-function getCategoryGap(rowCount: number): string {
-  if (rowCount <= 3)  return '18%';
-  if (rowCount <= 6)  return '22%';
-  if (rowCount <= 10) return '28%';
-  return '32%';
+function getCategoryGap(rowCount: number, horizontal: boolean): string {
+  if (horizontal) {
+    // для горизонтального — минимальный gap, бары толще
+    if (rowCount <= 4)  return '12%';
+    if (rowCount <= 8)  return '16%';
+    return '20%';
+  }
+  // вертикальный: уменьшаем gap чтобы бары были шире
+  if (rowCount <= 3)  return '12%';
+  if (rowCount <= 6)  return '16%';
+  if (rowCount <= 10) return '20%';
+  return '24%';
 }
 
 interface RenderBarOptions {
@@ -352,6 +370,9 @@ function renderBar({
   stacked, horizontal, hidden, t,
 }: RenderBarOptions) {
   const isSingleSeries = valueKeys.length === 1;
+
+  // Для single-series horizontal: скрываем строки через фильтр данных
+  // Для multi-series: скрываем серии
   const visibleData = (isSingleSeries && horizontal)
     ? data.filter(d => !hidden.has(String(d[nameKey])))
     : data;
@@ -361,15 +382,27 @@ function renderBar({
 
   const useRowColors = isSingleSeries;
   const a = ap(t);
-  const maxSize = getMaxBarSize(visible.length);
+  const maxSize = getMaxBarSize(visible.length, horizontal);
   const bGap = visible.length <= 2 ? 4 : 3;
+
+  // ── FIX: строим карту row-name → color для tooltip в bar-horizontal ──────
+  // Recharts передаёт в payload entry.color = Bar.fill (всегда первый цвет),
+  // игнорируя Cell. Передаём rowColorMap в content чтобы взять правильный цвет.
+  const rowColorMap: Record<string, string> | undefined = (isSingleSeries && horizontal)
+    ? Object.fromEntries(
+        data.map((row, origIdx) => [
+          String(row[nameKey]),
+          palette[origIdx % palette.length],
+        ])
+      )
+    : undefined;
 
   return (
     <BarChart
       data={visibleData}
       layout={horizontal ? 'vertical' : 'horizontal'}
       margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
-      barCategoryGap={getCategoryGap(data.length)}
+      barCategoryGap={getCategoryGap(data.length, horizontal)}
       barGap={bGap}
     >
       {horizontal
@@ -386,7 +419,7 @@ function renderBar({
         )
       }
       <Tooltip
-        content={<CustomTooltip t={t} />}
+        content={<CustomTooltip t={t} rowColorMap={rowColorMap} />}
         cursor={{ fill: t.cursorFill }}
       />
       {visible.map((key) => {
@@ -404,11 +437,11 @@ function renderBar({
             maxBarSize={maxSize}
             isAnimationActive={false}
           >
-            {useRowColors && visibleData.map((_, rowIdx) => {
-              const origIdx = data.indexOf(visibleData[rowIdx]);
+            {useRowColors && visibleData.map((row, rowIdx) => {
+              const origIdx = data.indexOf(row);
               return (
                 <Cell
-                  key={`cell-${String(visibleData[rowIdx][nameKey])}`}
+                  key={`cell-${String(row[nameKey])}`}
                   fill={palette[(origIdx === -1 ? rowIdx : origIdx) % palette.length]}
                 />
               );
