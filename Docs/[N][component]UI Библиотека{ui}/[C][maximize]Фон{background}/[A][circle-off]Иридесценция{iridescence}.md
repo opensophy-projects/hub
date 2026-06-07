@@ -10,3 +10,9 @@ lang: ru
 
 [uic:iridescence]
 
+| Проп | Type | Обычно | Описание |
+|------|------|---------|-------------|
+| `color` | `[number,number,number]` | `[1,1,1]` | Цвет-множитель RGB (0–1) |
+| `speed` | `number` | `1.0` | Скорость анимации |
+| `amplitude` | `number` | `0.1` | Сила смещения UV от мыши |
+| `mouseReact` | `boolean` | `true` | Реакция на движение мыши |
