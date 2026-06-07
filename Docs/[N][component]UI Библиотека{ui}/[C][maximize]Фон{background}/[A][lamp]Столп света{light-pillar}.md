@@ -10,3 +10,16 @@ lang: ru
 
 [uic:light-pillar]
 
+| Проп | Type | Обычно | Описание |
+|------|------|---------|-------------|
+| `topColor` | `string` | `'#5227FF'` | Цвет верхней части столпа |
+| `bottomColor` | `string` | `'#FF9FFC'` | Цвет нижней части столпа |
+| `intensity` | `number` | `1.0` | Яркость итогового изображения |
+| `rotationSpeed` | `number` | `0.3` | Скорость вращения столпа |
+| `interactive` | `boolean` | `false` | Управление вращением мышью |
+| `glowAmount` | `number` | `0.005` | Интенсивность свечения |
+| `pillarWidth` | `number` | `3.0` | Ширина столпа |
+| `pillarHeight` | `number` | `0.4` | Коэффициент вертикального сжатия |
+| `noiseIntensity` | `number` | `0.5` | Интенсивность плёночного шума |
+| `pillarRotation` | `number` | `0` | Статический поворот камеры (°) |
+| `quality` | `string` | `'high'` | Качество рендера (`low`/`medium`/`high`) |
