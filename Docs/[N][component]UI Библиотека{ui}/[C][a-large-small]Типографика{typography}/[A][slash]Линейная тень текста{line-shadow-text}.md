@@ -9,3 +9,10 @@ lang: ru
 ---
 
 [uic:line-shadow-text]
+
+| Проп | Type | Обычно | Описание |
+|------|------|---------|-------------|
+| `text` | `string` | `'LineShadow'` | Текст для отображения |
+| `shadowColor` | `string` | `'#a855f7'` | Цвет диагональной штриховки-тени |
+| `className` | `string` | `'text-6xl font-bold'` | CSS классы |
+| `as` | `string` | `'span'` | HTML-тег обёртки |

@@ -5,19 +5,25 @@ import { createPortal } from 'react-dom';
 import { useTheme } from '@/shared/contexts/useTheme';
 import {
   Minimize2, Play, RefreshCcw, Copy, Check,
-  Settings, PanelRight, PanelRightClose,
-  X, Code2,
+  X, Code2, EyeOff,
+  ChevronDown, ChevronRight, Settings,
 } from 'lucide-react';
+import hljs from 'highlight.js/lib/core';
+import tsLanguage from 'highlight.js/lib/languages/typescript';
+import javascript from 'highlight.js/lib/languages/javascript';
+import css from 'highlight.js/lib/languages/css';
+import xml from 'highlight.js/lib/languages/xml';
+import jsonLanguage from 'highlight.js/lib/languages/json';
 import { loadComponent, getDefaultProps } from './loader';
 import { ComponentWrapper } from './ComponentWrapper';
 import { useIsMobile } from '@/shared/hooks/useBreakpoint';
-import type { UniversalProps, ComponentConfig, PropDefinition } from './types';
-import { makeTokens, themed } from '@/shared/tokens/theme';
+import type { UniversalProps, ComponentConfig } from './types';
+import { makeTokens } from '@/shared/tokens/theme';
 
 type PropValue = string | number | boolean | string[] | undefined;
 type ComponentPropsMap = Record<string, PropValue>;
 type AnyComponent = React.ComponentType<Record<string, PropValue>>;
-type TabType = 'universal' | 'specific' | 'source';
+type TabType = 'settings' | 'code';
 
 interface LoadedComponentData {
   config: ComponentConfig;
@@ -25,277 +31,143 @@ interface LoadedComponentData {
   fileContents: Record<string, string>;
 }
 
+// ─── Токены ───────────────────────────────────────────────────────────────────
+
 function tk(isDark: boolean) {
   const t = makeTokens(isDark);
   return {
-    outerBg:        t.bg,
-    barBg:          t.surface,
-    outerBorder:    t.border,
-    inpBg:          t.inpBg,
-    inpBdr:         t.inpBdr,
-    inpFoc:         t.inpBdrFocus,
-    inpClr:         t.inpClr,
-    plhClr:         t.plhClr,
-    panelBg:        themed(isDark, '#0d0d0d', '#dddcd8'),
-    barBorder:      themed(isDark, 'rgba(255,255,255,0.08)', 'rgba(0,0,0,0.09)'),
-    btnBg:          themed(isDark, 'rgba(255,255,255,0.08)', 'rgba(0,0,0,0.07)'),
-    btnBdr:         themed(isDark, 'rgba(255,255,255,0.12)', 'rgba(0,0,0,0.12)'),
-    btnHov:         themed(isDark, 'rgba(255,255,255,0.14)', 'rgba(0,0,0,0.12)'),
-    btnClr:         themed(isDark, 'rgba(255,255,255,0.72)', 'rgba(0,0,0,0.68)'),
-    btnActBg:       themed(isDark, 'rgba(255,255,255,0.15)', 'rgba(0,0,0,0.12)'),
-    btnActBdr:      themed(isDark, 'rgba(255,255,255,0.22)', 'rgba(0,0,0,0.22)'),
-    btnActClr:      themed(isDark, '#ffffff', '#000000'),
-    fg:             themed(isDark, '#e8e8e8', '#1a1a1a'),
-    fgMuted:        themed(isDark, 'rgba(255,255,255,0.35)', 'rgba(0,0,0,0.38)'),
-    fgSub:          themed(isDark, 'rgba(255,255,255,0.22)', 'rgba(0,0,0,0.28)'),
-    sectionBdr:     themed(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.07)'),
-    outerShadow:    themed(isDark, '0 2px 12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)', '0 1px 6px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.07)'),
-    modalShadow:    themed(isDark, '0 24px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.05)', '0 24px 80px rgba(0,0,0,0.2)'),
-    tabActBg:       themed(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)'),
-    tabActBdr:      themed(isDark, 'rgba(255,255,255,0.15)', 'rgba(0,0,0,0.18)'),
-    tabActClr:      themed(isDark, '#ffffff', '#000000'),
-    tabClr:         themed(isDark, 'rgba(255,255,255,0.45)', 'rgba(0,0,0,0.45)'),
-    dangerClr:      themed(isDark, '#f87171', '#dc2626'),
-    mobBg:          isDark ? '#0F0F0F' : '#dcdbd7',
-    accent:         t.accent,
-    accentSoft:     t.accentSoft,
+    railBg:       isDark ? '#0F0F0F' : '#dddcd8',
+    panelBg:      isDark ? '#0F0F0F' : '#dddcd8',
+    surfaceBg:    isDark ? '#141414' : '#d5d4d0',
+    codeBg:       isDark ? '#0a0a0a' : '#e8e7e3',
+    outerBg:      t.bg,
+    border:       isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.09)',
+    borderStrong: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.18)',
+    fg:           isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)',
+    fgMuted:      isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)',
+    fgSub:        isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)',
+    btnHov:       isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+    btnClr:       isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)',
+    btnActBg:     isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.09)',
+    btnActBdr:    isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.16)',
+    btnActClr:    isDark ? '#ffffff' : '#000000',
+    inpBg:        isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+    inpBdr:       isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)',
+    inpClr:       isDark ? 'rgba(255,255,255,0.8)'  : 'rgba(0,0,0,0.8)',
+    accent:       t.accent,
+    accentSoft:   t.accentSoft,
+    shadow:       isDark
+      ? '0 8px 32px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05)'
+      : '0 8px 32px rgba(0,0,0,0.14), 0 0 0 1px rgba(0,0,0,0.07)',
+    railW:  64,
+    panelW: 280,
+    mobBg:  isDark ? '#0F0F0F' : '#dcdbd7',
   };
 }
-
 type T = ReturnType<typeof tk>;
 
-// ─── MobBtn ───────────────────────────────────────────────────────────────────
+// ─── RailBtn ─────────────────────────────────────────────────────────────────
 
-const MobBtn: React.FC<{
-  label: string; icon: React.ReactNode; t: T; onClick: () => void; isActive: boolean;
-}> = ({ label, icon, t, onClick, isActive }) => (
-  <button onClick={onClick} style={{
-    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-    justifyContent: 'center', gap: 4, padding: 0, border: 'none',
-    background: 'transparent', cursor: 'pointer',
-    color: isActive ? t.accent : t.fgMuted,
-    outline: 'none', minWidth: 0,
-  }}>
-    <span style={{ width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
-    <span style={{ fontSize: 10, fontWeight: 400, lineHeight: 1, marginTop: 1 }}>{label}</span>
-  </button>
-);
-
-const DEFAULT_UNIVERSAL_PROPS: UniversalProps = {
-  enableUniversalProps: true,
-  scale: 1, color: undefined, colorMode: 'original',
-  offsetX: 0, offsetY: 0, rotateZ: 0,
-  justifyContent: 'center', alignItems: 'center',
-  opacity: 1, blur: 0, brightness: 1, contrast: 1, saturate: 1,
+const RailBtn: React.FC<{
+  icon: React.ReactNode; label: string; isActive?: boolean; t: T;
+  onClick: () => void; title?: string;
+}> = ({ icon, label, isActive, t, onClick, title }) => {
+  const [hov, setHov] = useState(false);
+  const color = isActive ? t.btnActClr : hov ? t.fg : t.btnClr;
+  return (
+    <button
+      onClick={onClick} title={title ?? label}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{
+        width: t.railW - 8,
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center', gap: 5, padding: '10px 4px',
+        border: 'none',
+        background: 'transparent',
+        color, cursor: 'pointer', borderRadius: 12, flexShrink: 0,
+        transition: 'color 0.12s',
+      }}
+    >
+      <span style={{ width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
+      <span style={{ fontSize: 10, fontWeight: 500, lineHeight: 1.1, letterSpacing: '0.01em', textAlign: 'center' }}>{label}</span>
+    </button>
+  );
 };
 
-const FIELD_GROUPS: Array<{
-  label: string;
-  fields: Array<{ label: string; key: keyof UniversalProps; min: number; max: number; step: number; default: number }>;
-}> = [
-  { label: 'Трансформация', fields: [
-    { label: 'Масштаб',    key: 'scale',   min: 0.1,  max: 3,    step: 0.05, default: 1 },
-    { label: 'Смещение X', key: 'offsetX', min: -500, max: 500,  step: 1,    default: 0 },
-    { label: 'Смещение Y', key: 'offsetY', min: -500, max: 500,  step: 1,    default: 0 },
-    { label: 'Вращение Z', key: 'rotateZ', min: -180, max: 180,  step: 1,    default: 0 },
-  ]},
-  { label: 'Внешний вид', fields: [
-    { label: 'Прозрачность', key: 'opacity',    min: 0, max: 1,  step: 0.05, default: 1 },
-    { label: 'Яркость',      key: 'brightness', min: 0, max: 2,  step: 0.05, default: 1 },
-    { label: 'Контраст',     key: 'contrast',   min: 0, max: 2,  step: 0.05, default: 1 },
-    { label: 'Насыщенность', key: 'saturate',   min: 0, max: 2,  step: 0.05, default: 1 },
-    { label: 'Размытие',     key: 'blur',       min: 0, max: 20, step: 0.5,  default: 0 },
-  ]},
-];
+// ─── AccordionSection ─────────────────────────────────────────────────────────
 
-// ─── Утилиты для работы с цветом ─────────────────────────────────────────────
-
-function hsvToRgb(h: number, s: number, v: number): [number, number, number] {
-  const f = (n: number) => {
-    const k = (n + h / 60) % 6;
-    return v - v * s * Math.max(0, Math.min(k, 4 - k, 1));
-  };
-  return [Math.round(f(5) * 255), Math.round(f(3) * 255), Math.round(f(1) * 255)];
-}
-
-function rgbToHsv(r: number, g: number, b: number): [number, number, number] {
-  r /= 255; g /= 255; b /= 255;
-  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
-  let h = 0;
-  if (d !== 0) {
-    if (max === r)      { h = ((g - b) / d + 6) % 6; }
-    else if (max === g) { h = (b - r) / d + 2; }
-    else                { h = (r - g) / d + 4; }
-    h *= 60;
-  }
-  return [h, max === 0 ? 0 : d / max, max];
-}
-
-function rgbToHex(r: number, g: number, b: number): string {
-  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
-}
-
-function hexToRgb(hex: string): [number, number, number] | null {
-  const c = hex.replace('#', '');
-  if (c.length !== 6) { return null; }
-  const n = Number.parseInt(c, 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}
-
-function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
-  r /= 255; g /= 255; b /= 255;
-  const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2;
-  if (max === min) { return [0, 0, Math.round(l * 100)]; }
-  const d = max - min, s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-  let h = 0;
-  if (max === r)      { h = ((g - b) / d + 6) % 6; }
-  else if (max === g) { h = (b - r) / d + 2; }
-  else                { h = (r - g) / d + 4; }
-  return [Math.round(h * 60), Math.round(s * 100), Math.round(l * 100)];
-}
-
-const ColorPicker: React.FC<{ value: string; onChange: (hex: string | undefined) => void; t: T }> = ({ value, onChange, t }) => {
-  const [hue, setHue]         = useState(217);
-  const [sat, setSat]         = useState(0.73);
-  const [val, setVal]         = useState(0.96);
-  const [hexInput, setHexInput] = useState('4287f5');
-  const [copied, setCopied]   = useState(false);
-  const svRef  = useRef<HTMLDivElement>(null);
-  const hueRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!value) { return; }
-    const rgb = hexToRgb(value);
-    if (!rgb) { return; }
-    const [h, s, v] = rgbToHsv(...rgb);
-    setHue(h); setSat(s); setVal(v); setHexInput(value.replace('#', ''));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const currentRgb = useMemo(() => hsvToRgb(hue, sat, val), [hue, sat, val]);
-  const currentHex = useMemo(() => rgbToHex(...currentRgb), [currentRgb]);
-  const currentHsl = useMemo(() => rgbToHsl(...currentRgb), [currentRgb]);
-  const hueColor   = useMemo(() => rgbToHex(...hsvToRgb(hue, 1, 1)), [hue]);
-
-  const emit = useCallback((h: number, s: number, v: number) => {
-    const hex = rgbToHex(...hsvToRgb(h, s, v));
-    onChange(hex);
-    setHexInput(hex.replace('#', ''));
-  }, [onChange]);
-
-  const handleSvDrag = useCallback((e: MouseEvent | React.MouseEvent) => {
-    const el = svRef.current;
-    if (!el) { return; }
-    const rect = el.getBoundingClientRect();
-    const s = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const v = Math.max(0, Math.min(1, 1 - (e.clientY - rect.top) / rect.height));
-    setSat(s); setVal(v); emit(hue, s, v);
-  }, [hue, emit]);
-
-  const handleSvMouseDown = useCallback((e: React.MouseEvent) => {
-    handleSvDrag(e);
-    const onMove = (ev: MouseEvent) => handleSvDrag(ev);
-    const onUp   = () => { globalThis.removeEventListener('mousemove', onMove); globalThis.removeEventListener('mouseup', onUp); };
-    globalThis.addEventListener('mousemove', onMove);
-    globalThis.addEventListener('mouseup', onUp);
-  }, [handleSvDrag]);
-
-  const handleHueDrag = useCallback((e: MouseEvent | React.MouseEvent) => {
-    const el = hueRef.current;
-    if (!el) { return; }
-    const rect = el.getBoundingClientRect();
-    const h = Math.max(0, Math.min(360, ((e.clientX - rect.left) / rect.width) * 360));
-    setHue(h); emit(h, sat, val);
-  }, [sat, val, emit]);
-
-  const handleHueMouseDown = useCallback((e: React.MouseEvent) => {
-    handleHueDrag(e);
-    const onMove = (ev: MouseEvent) => handleHueDrag(ev);
-    const onUp   = () => { globalThis.removeEventListener('mousemove', onMove); globalThis.removeEventListener('mouseup', onUp); };
-    globalThis.addEventListener('mousemove', onMove);
-    globalThis.addEventListener('mouseup', onUp);
-  }, [handleHueDrag]);
-
+const AccordionSection: React.FC<{
+  label: string; defaultOpen?: boolean; t: T; children: React.ReactNode;
+}> = ({ label, defaultOpen = true, t, children }) => {
+  const [open, setOpen] = useState(defaultOpen);
   return (
-    <div style={{ userSelect: 'none' }}>
-      <div ref={svRef} role="slider" aria-label="Насыщенность и яркость" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(sat * 100)} tabIndex={0} onMouseDown={handleSvMouseDown}
-        style={{ position: 'relative', width: '100%', height: 140, cursor: 'crosshair', background: `linear-gradient(to bottom, transparent, #000), linear-gradient(to right, #fff, ${hueColor})` }}>
-        <div style={{ position: 'absolute', left: `${sat * 100}%`, top: `${(1 - val) * 100}%`, width: 13, height: 13, borderRadius: '50%', border: '2px solid #fff', boxShadow: '0 0 0 1px rgba(0,0,0,0.4),0 1px 4px rgba(0,0,0,0.5)', transform: 'translate(-50%,-50%)', pointerEvents: 'none' }} />
-      </div>
-      <div style={{ padding: '10px 12px 0' }}>
-        <div ref={hueRef} role="slider" aria-label="Оттенок" aria-valuemin={0} aria-valuemax={360} aria-valuenow={Math.round(hue)} tabIndex={0} onMouseDown={handleHueMouseDown}
-          style={{ position: 'relative', height: 10, borderRadius: 5, cursor: 'pointer', background: 'linear-gradient(to right,#f00 0%,#ff0 16.67%,#0f0 33.33%,#0ff 50%,#00f 66.67%,#f0f 83.33%,#f00 100%)' }}>
-          <div style={{ position: 'absolute', top: '50%', left: `${(hue / 360) * 100}%`, width: 16, height: 16, borderRadius: '50%', background: hueColor, border: '2px solid #fff', boxShadow: '0 0 0 1px rgba(0,0,0,0.3)', transform: 'translate(-50%,-50%)', pointerEvents: 'none' }} />
-        </div>
-      </div>
-      <div style={{ padding: '10px 12px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
-        <div style={{ width: 22, height: 22, borderRadius: 5, flexShrink: 0, background: currentHex, border: `1px solid ${t.barBorder}` }} />
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: t.fgMuted, marginBottom: 3 }}>HEX</div>
-          <input value={hexInput} onChange={e => {
-            const raw = e.target.value; setHexInput(raw);
-            const clean = raw.replace('#', '');
-            if (clean.length === 6) {
-              const rgb = hexToRgb('#' + clean);
-              if (rgb) { const [h, s, v] = rgbToHsv(...rgb); setHue(h); setSat(s); setVal(v); onChange('#' + clean); }
-            }
-            if (clean === '') { onChange(undefined); }
-          }} placeholder="4287f5" style={{ width: '100%', padding: '3px 6px', borderRadius: 5, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: t.inpClr, fontSize: 11, fontFamily: 'ui-monospace,monospace', outline: 'none', boxSizing: 'border-box' }} />
-        </div>
-        <button onClick={async () => { await navigator.clipboard.writeText(currentHex); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
-          style={{ width: 22, height: 22, borderRadius: 5, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: copied ? '#22c55e' : t.fg, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          {copied
-            ? <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
-            : <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><rect x="4" y="1" width="8" height="10" rx="2" stroke="currentColor" strokeWidth="1.3" /><rect x="1" y="3" width="8" height="10" rx="2" stroke="currentColor" strokeWidth="1.3" fill={t.inpBg} /></svg>}
-        </button>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, margin: '8px 0 0', background: t.barBorder }}>
-        {[{ label: 'RGB', value: currentRgb.join(', ') }, { label: 'HSL', value: `${currentHsl[0]}°, ${currentHsl[1]}%, ${currentHsl[2]}%` }].map(({ label, value: v }) => (
-          <div key={label} style={{ background: t.outerBg, padding: '5px 12px' }}>
-            <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: t.fgMuted, marginBottom: 1 }}>{label}</div>
-            <div style={{ fontSize: 10, fontFamily: 'ui-monospace,monospace', color: t.fg }}>{v}</div>
-          </div>
-        ))}
-      </div>
-      <div style={{ padding: '8px 12px' }}>
-        <button onClick={() => { onChange(undefined); setHexInput(''); }}
-          style={{ width: '100%', padding: '4px', borderRadius: 5, border: `1px solid ${t.inpBdr}`, background: 'transparent', color: t.fgMuted, fontSize: 10, cursor: 'pointer' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnBg; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}>
-          Сбросить цвет
-        </button>
-      </div>
+    <div style={{ borderBottom: `1px solid ${t.border}` }}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '9px 14px', background: 'transparent', border: 'none', cursor: 'pointer',
+        }}
+      >
+        <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: t.fgMuted }}>{label}</span>
+        {open ? <ChevronDown size={11} style={{ color: t.fgSub }} /> : <ChevronRight size={11} style={{ color: t.fgSub }} />}
+      </button>
+      {open && <div>{children}</div>}
     </div>
   );
 };
 
+// ─── NumberInput ──────────────────────────────────────────────────────────────
+
 function getDecimalPlaces(step: number): number {
-  if (step >= 1)   { return 0; }
-  if (step >= 0.1) { return 1; }
+  if (step >= 1) return 0;
+  if (step >= 0.1) return 1;
   return 2;
 }
 
-const NumberInput: React.FC<{ value: number; onChange: (v: number) => void; min: number; max: number; step: number; t: T }> = ({ value, onChange, min, max, step, t }) => {
+const NumberInput: React.FC<{
+  value: number; onChange: (v: number) => void;
+  min: number; max: number; step: number; t: T;
+}> = ({ value, onChange, min, max, step, t }) => {
   const [editing, setEditing] = useState(false);
   const [raw, setRaw]         = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const commit = () => {
     const n = Number.parseFloat(raw);
-    if (!Number.isNaN(n)) { onChange(Math.min(max, Math.max(min, n))); }
+    if (!Number.isNaN(n)) onChange(Math.min(max, Math.max(min, n)));
     setEditing(false);
   };
   const places = getDecimalPlaces(step);
   const numStr = places > 0 ? value.toFixed(places) : String(Math.round(value));
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={e => onChange(Number(e.target.value))} style={{ flex: 1, accentColor: t.fg, cursor: 'pointer', height: 3, minWidth: 0 }} />
+      <input
+        type="range" min={min} max={max} step={step} value={value}
+        onChange={e => onChange(Number(e.target.value))}
+        style={{ flex: 1, accentColor: t.accent, cursor: 'pointer', height: 3, minWidth: 0 }}
+      />
       {editing ? (
-        <input ref={inputRef} type="number" value={raw} min={min} max={max} step={step} onChange={e => setRaw(e.target.value)} onBlur={commit}
-          onKeyDown={e => { if (e.key === 'Enter') { commit(); } if (e.key === 'Escape') { setEditing(false); } }}
-          style={{ width: 46, padding: '2px 4px', borderRadius: 5, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: t.inpClr, fontSize: 11, textAlign: 'center', outline: 'none', fontFamily: 'ui-monospace,monospace', flexShrink: 0 }} />
+        <input
+          ref={inputRef} type="number" value={raw} min={min} max={max} step={step}
+          onChange={e => setRaw(e.target.value)} onBlur={commit}
+          onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false); }}
+          style={{
+            width: 46, padding: '2px 4px', borderRadius: 5,
+            border: `1px solid ${t.inpBdr}`, background: t.inpBg,
+            color: t.inpClr, fontSize: 11, textAlign: 'center', outline: 'none',
+            fontFamily: 'ui-monospace,monospace', flexShrink: 0,
+          }}
+        />
       ) : (
-        <button onClick={() => { setRaw(String(value)); setEditing(true); setTimeout(() => inputRef.current?.select(), 0); }}
-          style={{ width: 46, padding: '2px 4px', borderRadius: 5, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: t.inpClr, fontSize: 11, textAlign: 'center', cursor: 'pointer', fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
+        <button
+          onClick={() => { setRaw(String(value)); setEditing(true); setTimeout(() => inputRef.current?.select(), 0); }}
+          style={{
+            width: 46, padding: '2px 4px', borderRadius: 5,
+            border: `1px solid ${t.inpBdr}`, background: t.inpBg,
+            color: t.inpClr, fontSize: 11, textAlign: 'center', cursor: 'pointer',
+            fontFamily: 'ui-monospace,monospace', flexShrink: 0,
+          }}
+        >
           {numStr}
         </button>
       )}
@@ -303,196 +175,262 @@ const NumberInput: React.FC<{ value: number; onChange: (v: number) => void; min:
   );
 };
 
-const FieldRow: React.FC<{ label: string; fieldKey: keyof UniversalProps; min: number; max: number; step: number; defaultVal: number; universalProps: UniversalProps; onChange: (key: keyof UniversalProps, v: PropValue) => void; t: T }> = ({ label, fieldKey, min, max, step, defaultVal, universalProps, onChange, t }) => {
+// ─── FieldRow ─────────────────────────────────────────────────────────────────
+
+const FieldRow: React.FC<{
+  label: string; fieldKey: keyof UniversalProps;
+  min: number; max: number; step: number; defaultVal: number;
+  universalProps: UniversalProps;
+  onChange: (key: keyof UniversalProps, v: PropValue) => void;
+  t: T;
+}> = ({ label, fieldKey, min, max, step, defaultVal, universalProps, onChange, t }) => {
   const val       = (universalProps[fieldKey] as number) ?? defaultVal;
   const isChanged = Math.abs(val - defaultVal) > 0.001;
   return (
-    <div style={{ padding: '6px 12px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-        <span style={{ fontSize: 10, fontWeight: 600, color: isChanged ? t.fg : t.fgMuted, letterSpacing: '0.02em' }}>{label}</span>
-        {isChanged && <button onClick={() => onChange(fieldKey, defaultVal)} style={{ fontSize: 9, color: t.fgSub, background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }} title="Сбросить">↺</button>}
+    <div style={{ padding: '8px 14px', borderBottom: `1px solid ${t.border}` }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+        <span style={{ fontSize: 11, fontWeight: 500, color: t.fg }}>{label}</span>
+        {isChanged && (
+          <button
+            onClick={() => onChange(fieldKey, defaultVal)}
+            title="Сбросить"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 3,
+              padding: '2px 8px', borderRadius: 5,
+              border: `1px solid ${t.borderStrong}`,
+              background: t.inpBg, color: t.fgMuted,
+              fontSize: 10, fontWeight: 600, cursor: 'pointer',
+              transition: 'color 0.1s, background 0.1s',
+            }}
+          >
+            Сбросить
+          </button>
+        )}
       </div>
       <NumberInput value={val} onChange={v => onChange(fieldKey, v)} min={min} max={max} step={step} t={t} />
     </div>
   );
 };
 
-const AccordionSection: React.FC<{ label: string; defaultOpen?: boolean; t: T; children: React.ReactNode }> = ({ label, defaultOpen = true, t, children }) => {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div style={{ borderBottom: `1px solid ${t.sectionBdr}` }}>
-      <button onClick={() => setOpen(v => !v)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 12px', background: `${t.barBg}88`, border: 'none', cursor: 'pointer' }}>
-        <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: t.fgMuted }}>{label}</span>
-        <svg width="9" height="9" viewBox="0 0 10 10" style={{ opacity: 0.35, transform: open ? 'rotate(180deg)' : 'none', flexShrink: 0 }}><path d="M2 3 L5 7 L8 3" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" /></svg>
-      </button>
-      {open && <div>{children}</div>}
-    </div>
-  );
-};
+// ─── ALL_FIELDS ───────────────────────────────────────────────────────────────
 
-const ColorSection: React.FC<{ universalProps: UniversalProps; onChange: (key: keyof UniversalProps, v: PropValue) => void; t: T }> = ({ universalProps, onChange, t }) => {
-  const [open, setOpen] = useState(true);
-  const colorMode       = universalProps.colorMode ?? 'original';
-  const currentColor    = universalProps.color;
-  return (
-    <div style={{ borderBottom: `1px solid ${t.sectionBdr}` }}>
-      <button onClick={() => setOpen(v => !v)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', background: `${t.barBg}88`, border: 'none', cursor: 'pointer' }}>
-        <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: t.fgMuted, flex: 1, textAlign: 'left' }}>Цвет</span>
-        {colorMode === 'solid' && currentColor && <div style={{ width: 12, height: 12, borderRadius: 3, background: currentColor, border: `1px solid ${t.barBorder}`, flexShrink: 0 }} />}
-        <span style={{ fontSize: 10, color: t.fgMuted, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>{colorMode === 'solid' && currentColor ? currentColor : 'оригинал'}</span>
-        <svg width="9" height="9" viewBox="0 0 10 10" style={{ opacity: 0.35, transform: open ? 'rotate(180deg)' : 'none', flexShrink: 0 }}><path d="M2 3 L5 7 L8 3" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" /></svg>
-      </button>
-      {open && (
-        <div>
-          <div style={{ display: 'flex', margin: '0 12px 8px', borderRadius: 7, overflow: 'hidden', border: `1px solid ${t.barBorder}` }}>
-            {(['original', 'solid'] as const).map(mode => (
-              <button key={mode} onClick={() => onChange('colorMode', mode)} style={{ flex: 1, padding: '5px 6px', fontSize: 10, fontWeight: colorMode === mode ? 700 : 400, border: 'none', cursor: 'pointer', background: colorMode === mode ? t.tabActBg : t.barBg, color: colorMode === mode ? t.tabActClr : t.fgMuted }}>
-                {mode === 'original' ? 'Оригинал' : 'Цвет'}
-              </button>
-            ))}
-          </div>
-          {colorMode === 'solid' && <ColorPicker value={currentColor ?? '#4287f5'} onChange={hex => onChange('color', hex)} t={t} />}
-          {colorMode === 'original' && <div style={{ padding: '6px 12px 10px', fontSize: 10, color: t.fgMuted }}>Оригинальные цвета компонента</div>}
-        </div>
-      )}
-    </div>
-  );
-};
+const ALL_FIELDS: Array<{
+  groupLabel: string;
+  fields: Array<{ label: string; key: keyof UniversalProps; min: number; max: number; step: number; default: number }>;
+}> = [
+  {
+    groupLabel: 'Внешний вид',
+    fields: [
+      { label: 'Прозрачность', key: 'opacity',    min: 0, max: 1,  step: 0.05, default: 1 },
+      { label: 'Яркость',      key: 'brightness', min: 0, max: 2,  step: 0.05, default: 1 },
+      { label: 'Контраст',     key: 'contrast',   min: 0, max: 2,  step: 0.05, default: 1 },
+      { label: 'Насыщенность', key: 'saturate',   min: 0, max: 2,  step: 0.05, default: 1 },
+      { label: 'Размытие',     key: 'blur',       min: 0, max: 20, step: 0.5,  default: 0 },
+    ],
+  },
+  {
+    groupLabel: 'Трансформация',
+    fields: [
+      { label: 'Масштаб',    key: 'scale',   min: 0.1,  max: 3,   step: 0.05, default: 1 },
+      { label: 'Смещение X', key: 'offsetX', min: -500, max: 500, step: 1,    default: 0 },
+      { label: 'Смещение Y', key: 'offsetY', min: -500, max: 500, step: 1,    default: 0 },
+      { label: 'Вращение Z', key: 'rotateZ', min: -180, max: 180, step: 1,    default: 0 },
+    ],
+  },
+];
 
-const UniversalSidebar: React.FC<{ universalProps: UniversalProps; onChange: (key: keyof UniversalProps, v: PropValue) => void; t: T }> = ({ universalProps, onChange, t }) => (
-  <div>
-    <ColorSection universalProps={universalProps} onChange={onChange} t={t} />
-    {FIELD_GROUPS.map(group => (
-      <AccordionSection key={group.label} label={group.label} defaultOpen={group.label === FIELD_GROUPS[0].label} t={t}>
-        {group.fields.map(f => <FieldRow key={f.key} label={f.label} fieldKey={f.key} min={f.min} max={f.max} step={f.step} defaultVal={f.default} universalProps={universalProps} onChange={onChange} t={t} />)}
+const SettingsSidebar: React.FC<{
+  universalProps: UniversalProps;
+  onChange: (key: keyof UniversalProps, v: PropValue) => void;
+  t: T;
+}> = ({ universalProps, onChange, t }) => (
+  <div style={{ overflowY: 'auto', flex: 1 }}>
+    {ALL_FIELDS.map(group => (
+      <AccordionSection key={group.groupLabel} label={group.groupLabel} defaultOpen t={t}>
+        {group.fields.map(f => (
+          <FieldRow
+            key={String(f.key)} label={f.label} fieldKey={f.key}
+            min={f.min} max={f.max} step={f.step} defaultVal={f.default}
+            universalProps={universalProps} onChange={onChange} t={t}
+          />
+        ))}
       </AccordionSection>
     ))}
   </div>
 );
 
-const AiSelect: React.FC<{ label: string; value: string; options: string[]; onChange: (v: string) => void; t: T }> = ({ label, value, options, onChange, t }) => {
-  const [open, setOpen]   = useState(false);
-  const [hov,  setHov]    = useState<string | null>(null);
-  const [rect, setRect]   = useState<DOMRect | null>(null);
-  const [w,    setW]      = useState(0);
-  const [dropUp, setDropUp] = useState(false);
-  const ref    = useRef<HTMLDivElement>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const pRef   = useRef<HTMLDivElement>(null);
+// ─── hljs ─────────────────────────────────────────────────────────────────────
 
+hljs.registerLanguage('typescript', tsLanguage);
+hljs.registerLanguage('tsx', tsLanguage);
+hljs.registerLanguage('javascript', javascript);
+hljs.registerLanguage('jsx', javascript);
+hljs.registerLanguage('css', css);
+hljs.registerLanguage('html', xml);
+hljs.registerLanguage('xml', xml);
+hljs.registerLanguage('json', jsonLanguage);
+
+function languageFromFile(name: string): string {
+  const ext = name.split('.').pop()?.toLowerCase();
+  if (ext === 'ts')   return 'typescript';
+  if (ext === 'tsx')  return 'tsx';
+  if (ext === 'js')   return 'javascript';
+  if (ext === 'jsx')  return 'jsx';
+  if (ext === 'css')  return 'css';
+  if (ext === 'html') return 'html';
+  if (ext === 'json') return 'json';
+  return 'typescript';
+}
+
+function highlightCode(code: string, fileName: string): string {
+  const lang = languageFromFile(fileName);
+  if (hljs.getLanguage(lang)) {
+    return hljs.highlight(code, { language: lang, ignoreIllegals: true }).value;
+  }
+  return hljs.highlightAuto(code).value;
+}
+
+const HLJS_CSS = `
+.uiv-hl .hljs-keyword,.uiv-hl .hljs-selector-tag,.uiv-hl .hljs-title.function_ { color:#c084fc }
+.uiv-hl .hljs-string,.uiv-hl .hljs-attr,.uiv-hl .hljs-template-string { color:#86efac }
+.uiv-hl .hljs-number,.uiv-hl .hljs-literal { color:#fbbf24 }
+.uiv-hl .hljs-comment { color:#64748b; font-style:italic }
+.uiv-hl .hljs-title.class_,.uiv-hl .hljs-built_in,.uiv-hl .hljs-type { color:#67e8f9 }
+.uiv-hl .hljs-tag,.uiv-hl .hljs-name { color:#fb7185 }
+`;
+
+// ─── SourceCodeViewer (read-only, copyable) ───────────────────────────────────
+
+interface SourceCodeViewerProps {
+  fileContents: Record<string, string>;
+  t: T;
+}
+
+const SourceCodeViewer: React.FC<SourceCodeViewerProps> = ({ fileContents, t }) => {
+  const files = useMemo(() => Object.entries(fileContents), [fileContents]);
+  const [activeFile, setActiveFile] = useState(() => files[0]?.[0] ?? '');
+  const [copied, setCopied] = useState(false);
+
+  // Sync active file when fileContents changes
   useEffect(() => {
-    if (!open) { return; }
-    const h = (e: MouseEvent) => {
-      const target = e.target instanceof Node ? e.target : null;
-      if (!ref.current?.contains(target) && !pRef.current?.contains(target)) { setOpen(false); }
-    };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, [open]);
+    setActiveFile(Object.keys(fileContents)[0] ?? '');
+  }, [fileContents]);
 
-  // Вычисляет, нужно ли открывать дропдаун вверх
-  const computeDropUp = (r: DOMRect) => {
-    const h = Math.min(options.length * 34 + 48, 240);
-    return globalThis.innerHeight - r.bottom < h && r.top > h;
+  const activeCode = fileContents[activeFile] ?? '';
+  const highlighted = useMemo(() => highlightCode(activeCode, activeFile), [activeCode, activeFile]);
+
+  const copyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(activeCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // fallback: select all text in pre
+    }
   };
 
-  useEffect(() => {
-    if (!open || !btnRef.current) { return; }
-    const upd = () => {
-      if (!btnRef.current) { return; }
-      const r = btnRef.current.getBoundingClientRect();
-      setRect(r); setW(r.width); setDropUp(computeDropUp(r));
-    };
-    upd();
-    globalThis.addEventListener('scroll', upd, true);
-    globalThis.addEventListener('resize', upd);
-    return () => { globalThis.removeEventListener('scroll', upd, true); globalThis.removeEventListener('resize', upd); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, options.length]);
+  if (files.length === 0) {
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fgMuted, fontSize: 13 }}>
+        Исходный код недоступен
+      </div>
+    );
+  }
 
   return (
-    <div style={{ padding: '6px 12px' }}>
-      <div style={{ fontSize: 10, fontWeight: 600, color: t.fgMuted, marginBottom: 4, letterSpacing: '0.02em' }}>{label}</div>
-      <div ref={ref} style={{ position: 'relative' }}>
-        <button ref={btnRef} onClick={() => {
-          if (!btnRef.current) { return; }
-          const r = btnRef.current.getBoundingClientRect();
-          setRect(r); setW(r.width); setDropUp(computeDropUp(r)); setOpen(v => !v);
-        }}
-          style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 8px', borderRadius: 6, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: t.fg, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
-          <span>{value}</span>
-          <svg width="9" height="9" viewBox="0 0 10 10" style={{ opacity: 0.4, transform: open ? 'rotate(180deg)' : 'none' }}><path d="M2 3 L5 7 L8 3" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" /></svg>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+      <style>{`
+        ${HLJS_CSS}
+        .uiv-code-pre { tab-size: 2; }
+        .uiv-code-pre::-webkit-scrollbar { width: 6px; height: 6px; }
+        .uiv-code-pre::-webkit-scrollbar-track { background: transparent; }
+        .uiv-code-pre::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.25); border-radius: 3px; }
+      `}</style>
+
+      {/* Тулбар */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
+        padding: '7px 10px', borderBottom: `1px solid ${t.border}`,
+        background: t.surfaceBg, flexShrink: 0,
+      }}>
+        {/* Табы файлов */}
+        <div style={{ display: 'flex', gap: 4, flex: 1, overflow: 'hidden' }}>
+          {files.map(([name]) => {
+            const isAct = name === activeFile;
+            return (
+              <button
+                key={name} onClick={() => setActiveFile(name)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  padding: '4px 9px', borderRadius: 6,
+                  border: `1px solid ${isAct ? t.borderStrong : t.border}`,
+                  background: isAct ? t.btnActBg : 'transparent',
+                  color: isAct ? t.fg : t.fgMuted,
+                  fontSize: 11, fontFamily: 'ui-monospace,monospace',
+                  cursor: 'pointer', fontWeight: isAct ? 600 : 400, flexShrink: 0,
+                }}
+              >
+                <span style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Кнопка копирования */}
+        <button
+          onClick={copyCode}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '4px 9px', borderRadius: 6,
+            border: `1px solid ${copied ? t.accent + '66' : t.border}`,
+            background: copied ? t.btnActBg : 'transparent',
+            color: copied ? t.accent : t.fgMuted,
+            fontSize: 11, cursor: 'pointer', flexShrink: 0,
+          }}
+        >
+          {copied ? <Check size={11} /> : <Copy size={11} />}
+          {copied ? 'Скопировано' : 'Копировать'}
         </button>
-        {open && rect && createPortal(
-          <div ref={pRef} style={{ position: 'fixed', left: rect.left, width: w, zIndex: 99999, background: t.barBg, border: `1px solid ${t.inpBdr}`, borderRadius: 8, boxShadow: t.modalShadow, overflow: 'auto', maxHeight: 240, ...(dropUp ? { bottom: globalThis.innerHeight - rect.top + 4 } : { top: rect.bottom + 4 }) }}>
-            {options.map(opt => {
-              let optBg: string;
-              if (hov === opt)        { optBg = t.btnHov; }
-              else if (opt === value) { optBg = t.btnBg; }
-              else                    { optBg = 'transparent'; }
-              return <button key={opt} onClick={() => { onChange(opt); setOpen(false); }} onMouseEnter={() => setHov(opt)} onMouseLeave={() => setHov(null)}
-                style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '6px 11px', fontSize: 12, textAlign: 'left', cursor: 'pointer', border: 'none', color: t.fg, background: optBg }}>
-                {opt === value && <span style={{ marginRight: 6, opacity: 0.5 }}>✓</span>}
-                {opt}
-              </button>;
-            })}
-          </div>,
-          document.body,
-        )}
+      </div>
+
+      {/* Код — только для чтения, можно выделять и копировать */}
+      <div
+        className="uiv-hl"
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflow: 'auto',
+          background: t.codeBg,
+          position: 'relative',
+        }}
+      >
+        <pre
+          className="uiv-code-pre"
+          style={{
+            margin: 0,
+            padding: '16px 18px',
+            fontSize: 12.5,
+            lineHeight: 1.7,
+            fontFamily: '"Fira Code", "Cascadia Code", "JetBrains Mono", ui-monospace, monospace',
+            whiteSpace: 'pre',
+            wordBreak: 'normal' as const,
+            color: t.fg,
+            background: 'transparent',
+            // Разрешаем выделение текста
+            userSelect: 'text',
+            WebkitUserSelect: 'text',
+            cursor: 'text',
+          }}
+        >
+          <code
+            dangerouslySetInnerHTML={{ __html: highlighted }}
+            style={{ userSelect: 'text', WebkitUserSelect: 'text' } as React.CSSProperties}
+          />
+        </pre>
       </div>
     </div>
   );
 };
-
-const SpecificSidebar: React.FC<{ config: ComponentConfig; componentProps: ComponentPropsMap; onChange: (name: string, v: PropValue) => void; t: T }> = ({ config, componentProps, onChange, t }) => {
-  const visibleProps = useMemo(
-    () => config.specificProps?.length
-      ? config.props.filter((p: PropDefinition) => config.specificProps!.includes(p.name))
-      : config.props,
-    [config],
-  );
-  if (!visibleProps.length) { return <div style={{ padding: '20px 12px', textAlign: 'center', fontSize: 12, color: t.fgMuted }}>Нет специфических настроек</div>; }
-  return (
-    <div>
-      {visibleProps.map((prop: PropDefinition, i: number) => (
-        <div key={prop.name} style={{ borderBottom: i < visibleProps.length - 1 ? `1px solid ${t.sectionBdr}` : 'none' }}>
-          {prop.control === 'select' && <AiSelect label={prop.description} value={typeof componentProps[prop.name] === 'string' ? componentProps[prop.name] as string : (prop.default as string ?? '')} options={prop.options ?? []} onChange={v => onChange(prop.name, v)} t={t} />}
-          {prop.control === 'number' && (
-            <div style={{ padding: '6px 12px' }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: t.fgMuted, marginBottom: 4, letterSpacing: '0.02em' }}>{prop.description}</div>
-              <NumberInput value={typeof componentProps[prop.name] === 'number' ? componentProps[prop.name] as number : (prop.default as number ?? 0)} onChange={v => onChange(prop.name, v)} min={prop.min ?? 0} max={prop.max ?? 100} step={prop.step ?? 1} t={t} />
-            </div>
-          )}
-          {prop.control !== 'select' && prop.control !== 'number' && (
-            <div style={{ padding: '6px 12px' }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: t.fgMuted, marginBottom: 4, letterSpacing: '0.02em' }}>{prop.description}</div>
-              <input type="text" value={typeof componentProps[prop.name] === 'string' ? componentProps[prop.name] as string : (prop.default as string ?? '')} onChange={e => onChange(prop.name, e.target.value)}
-                style={{ width: '100%', padding: '4px 7px', borderRadius: 6, border: `1px solid ${t.inpBdr}`, background: t.inpBg, color: t.inpClr, fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-};
-
-const TabBar: React.FC<{ active: TabType; onSelect: (t: TabType) => void; t: T }> = ({ active, onSelect, t }) => (
-  <div style={{ display: 'flex', padding: '6px 12px', gap: 4, borderBottom: `1px solid ${t.barBorder}`, background: `${t.barBg}88`, flexShrink: 0 }}>
-    {(['universal', 'specific'] as TabType[]).map(tab => {
-      const a = active === tab;
-      return <button key={tab} onClick={() => onSelect(tab)} style={{ flex: 1, padding: '5px 8px', borderRadius: 7, border: `1px solid ${a ? t.tabActBdr : 'transparent'}`, background: a ? t.tabActBg : 'transparent', color: a ? t.tabActClr : t.tabClr, fontSize: 11, fontWeight: a ? 600 : 400, cursor: 'pointer' }}>{tab === 'universal' ? 'Общие' : 'Специфические'}</button>;
-    })}
-  </div>
-);
-
-const SettingsContent: React.FC<{ activeTab: TabType; onTabSelect: (t: TabType) => void; config: ComponentConfig; componentProps: ComponentPropsMap; universalProps: UniversalProps; onPropChange: (name: string, v: PropValue) => void; onUniversalChange: (key: keyof UniversalProps, v: PropValue) => void; t: T }> = ({ activeTab, onTabSelect, config, componentProps, universalProps, onPropChange, onUniversalChange, t }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-    <TabBar active={activeTab} onSelect={onTabSelect} t={t} />
-    <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
-      {activeTab === 'universal' ? <UniversalSidebar universalProps={universalProps} onChange={onUniversalChange} t={t} /> : <SpecificSidebar config={config} componentProps={componentProps} onChange={onPropChange} t={t} />}
-    </div>
-  </div>
-);
 
 // ─── ComponentRender ──────────────────────────────────────────────────────────
 
@@ -506,18 +444,17 @@ interface ComponentRenderProps {
   fileContents: Record<string, string>;
 }
 
-const ComponentRender: React.FC<ComponentRenderProps> = ({ Component, componentProps, universalProps, refreshKey, isDark, componentCategory }) => {
+const ComponentRender: React.FC<ComponentRenderProps> = ({
+  Component, componentProps, universalProps, refreshKey, isDark, componentCategory,
+}) => {
   const layoutMode = componentCategory === 'backgrounds' ? 'fill' : 'content';
   const isFill = layoutMode === 'fill';
   return (
     <div style={{
-      width: '100%',
-      height: isFill ? '100%' : 'auto',
-      minWidth: 0,
-      minHeight: 0,
-      position: 'relative',
+      width: '100%', height: isFill ? '100%' : 'auto',
+      minWidth: 0, minHeight: 0, position: 'relative',
       overflow: isFill ? 'hidden' : 'visible',
-      ...(isFill ? { isolation: 'isolate', contain: 'layout paint style' } : {}),
+      ...(isFill ? { isolation: 'isolate' as const, contain: 'layout paint style' } : {}),
     }}>
       <ComponentWrapper {...universalProps} isDark={isDark} layoutMode={layoutMode} className="w-full h-full">
         <Suspense fallback={null}>
@@ -528,84 +465,145 @@ const ComponentRender: React.FC<ComponentRenderProps> = ({ Component, componentP
   );
 };
 
-// ─── SourceCodePanel ──────────────────────────────────────────────────────────
+// ─── FullscreenDesktop ────────────────────────────────────────────────────────
 
-const SourceCodePanel: React.FC<{ fileContents: Record<string, string>; t: T }> = ({ fileContents, t }) => {
-  const files = Object.entries(fileContents);
-  const [activeFile, setActiveFile] = useState(files[0]?.[0] ?? '');
-  const [copied,     setCopied]     = useState(false);
+const FullscreenDesktop: React.FC<ComponentRenderProps & {
+  activeTab: TabType;
+  panelOpen: boolean;
+  onTabSelect: (tab: TabType) => void;
+  onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
+  onRefresh: () => void;
+  onReset: () => void;
+  onClose: () => void;
+  onTogglePanel: () => void;
+  t: T;
+}> = ({
+  Component, componentProps, universalProps, refreshKey, isDark, componentCategory,
+  fileContents, activeTab, panelOpen,
+  onTabSelect, onUniversalPropChange, onRefresh, onReset, onClose, onTogglePanel,
+  t,
+}) => {
+  const isBackground = componentCategory === 'backgrounds';
 
-  useEffect(() => {
-    if (!files.length) { setActiveFile(''); return; }
-    if (!activeFile || !files.some(([name]) => name === activeFile)) { setActiveFile(files[0][0]); }
-  }, [activeFile, files]);
-
-  const activeCode = files.find(([name]) => name === activeFile)?.[1] ?? '';
-
-  const copyActiveCode = async () => {
-    if (!activeCode) { return; }
-    await navigator.clipboard.writeText(activeCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1200);
-  };
-
-  if (files.length === 0) {
-    return <div style={{ padding: 12, fontSize: 12, color: t.fgMuted }}>Исходный код компонента недоступен.</div>;
-  }
+  const previewStyle: React.CSSProperties = isBackground
+    ? { flex: 1, minWidth: 0, minHeight: 0, position: 'relative', overflow: 'hidden' }
+    : { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48, overflow: 'auto', position: 'relative' };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: t.outerBg }}>
-      <div style={{ display: 'flex', gap: 6, padding: '8px 10px', borderBottom: `1px solid ${t.barBorder}`, flexWrap: 'wrap', alignItems: 'center', flexShrink: 0 }}>
-        <button onClick={copyActiveCode} style={{ display: 'flex', alignItems: 'center', gap: 6, border: `1px solid ${t.btnBdr}`, background: copied ? t.tabActBg : t.btnBg, color: copied ? t.tabActClr : t.btnClr, borderRadius: 999, padding: '6px 10px', fontSize: 11, cursor: 'pointer' }}>
-          {copied ? <Check size={13} /> : <Copy size={13} />}
-          {copied ? 'Скопировано' : 'Копировать'}
-        </button>
-        {files.length > 1 && files.map(([name]) => {
-          const isActive = name === activeFile;
-          return (
-            <button key={name} onClick={() => setActiveFile(name)} style={{ border: `1px solid ${isActive ? t.tabActBdr : t.btnBdr}`, background: isActive ? t.tabActBg : t.btnBg, color: isActive ? t.tabActClr : t.btnClr, borderRadius: 6, padding: '4px 8px', fontSize: 11, fontFamily: 'ui-monospace, monospace', cursor: 'pointer' }}>
-              {name}
-            </button>
-          );
-        })}
+    <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+
+      {/* ── Рейл ── */}
+      <aside style={{
+        width: t.railW, flexShrink: 0,
+        background: t.railBg, borderRight: `1px solid ${t.border}`,
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        padding: '8px 0', gap: 2, zIndex: 10,
+      }}>
+        <div style={{ width: t.railW, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <RailBtn icon={<Minimize2 size={18} />} label="Свернуть" t={t} onClick={onClose} />
+        </div>
+
+        <RailBtn icon={<Play size={18} />}       label="Запуск"    t={t} onClick={onRefresh} />
+        <RailBtn icon={<RefreshCcw size={18} />} label="Сброс"     t={t} onClick={onReset} />
+        <RailBtn
+          icon={<Settings size={18} />}
+          label="Настройки"
+          isActive={panelOpen && activeTab === 'settings'}
+          t={t}
+          onClick={() => { onTabSelect('settings'); if (!panelOpen || activeTab === 'settings') onTogglePanel(); }}
+        />
+        <RailBtn
+          icon={<Code2 size={18} />}
+          label="Код"
+          isActive={panelOpen && activeTab === 'code'}
+          t={t}
+          onClick={() => { onTabSelect('code'); if (!panelOpen || activeTab === 'code') onTogglePanel(); }}
+        />
+      </aside>
+
+      {/* ── Превью ── */}
+      <div style={previewStyle}>
+        <ComponentRender
+          Component={Component} componentProps={componentProps}
+          universalProps={universalProps} refreshKey={refreshKey}
+          isDark={isDark} componentCategory={componentCategory}
+          fileContents={fileContents}
+        />
       </div>
-      <pre style={{ margin: 0, padding: '12px 16px', flex: 1, overflow: 'auto', fontSize: 12, lineHeight: 1.5, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', color: t.fg, background: t.panelBg, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', tabSize: 2 }}>
-        <code>{activeCode}</code>
-      </pre>
+
+      {/* ── Правая панель ── */}
+      {panelOpen && (
+        <aside style={{
+          width: activeTab === 'code' ? 'min(50%, 720px)' : `${t.panelW}px`,
+          flexShrink: 0,
+          borderLeft: `1px solid ${t.border}`,
+          background: t.panelBg,
+          display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          transition: 'width 0.18s ease',
+        }}>
+          {/* Шапка панели */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '10px 12px 8px', borderBottom: `1px solid ${t.border}`,
+            background: t.surfaceBg, flexShrink: 0,
+          }}>
+            <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: t.fg }}>
+              {activeTab === 'settings' ? 'Настройки' : 'Код'}
+            </span>
+            <button
+              onClick={onTogglePanel}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 24, height: 24, borderRadius: 6,
+                border: 'none', background: 'transparent', color: t.fgMuted, cursor: 'pointer',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = t.fg; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = t.fgMuted; }}
+            >
+              <X size={13} />
+            </button>
+          </div>
+
+          {/* Контент */}
+          {activeTab === 'settings' && (
+            <SettingsSidebar universalProps={universalProps} onChange={onUniversalPropChange} t={t} />
+          )}
+          {activeTab === 'code' && (
+            <SourceCodeViewer fileContents={fileContents} t={t} />
+          )}
+        </aside>
+      )}
     </div>
   );
 };
 
-// ─── Хук для перетаскивания шторки ───────────────────────────────────────────
+// ─── Мобильная версия ─────────────────────────────────────────────────────────
+
+type MobileSheet = 'settings' | 'code' | null;
 
 function useSheetDrag(initialVh: number) {
-  const [sheetVh,    setSheetVh]    = useState(initialVh);
+  const [sheetVh, setSheetVh]    = useState(initialVh);
   const [isDragging, setIsDragging] = useState(false);
-  const dragStartY   = useRef<number | null>(null);
-  const dragStartVh  = useRef(initialVh);
+  const dragStartY  = useRef<number | null>(null);
+  const dragStartVh = useRef(initialVh);
 
   useEffect(() => {
     const onMove = (e: MouseEvent | TouchEvent) => {
-      if (dragStartY.current === null) { return; }
+      if (dragStartY.current === null) return;
       const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
       const delta   = dragStartY.current - clientY;
-      const deltaVh = (delta / globalThis.innerHeight) * 100;
-      setSheetVh(Math.max(10, Math.min(92, dragStartVh.current + deltaVh)));
+      setSheetVh(Math.max(10, Math.min(92, dragStartVh.current + (delta / globalThis.innerHeight) * 100)));
     };
-    const onUp = () => {
-      if (dragStartY.current === null) { return; }
-      dragStartY.current = null;
-      setIsDragging(false);
-    };
+    const onUp = () => { dragStartY.current = null; setIsDragging(false); };
     globalThis.addEventListener('mousemove', onMove);
-    globalThis.addEventListener('mouseup',   onUp);
+    globalThis.addEventListener('mouseup', onUp);
     globalThis.addEventListener('touchmove', onMove, { passive: true });
-    globalThis.addEventListener('touchend',  onUp);
+    globalThis.addEventListener('touchend', onUp);
     return () => {
       globalThis.removeEventListener('mousemove', onMove);
-      globalThis.removeEventListener('mouseup',   onUp);
+      globalThis.removeEventListener('mouseup', onUp);
       globalThis.removeEventListener('touchmove', onMove);
-      globalThis.removeEventListener('touchend',  onUp);
+      globalThis.removeEventListener('touchend', onUp);
     };
   }, []);
 
@@ -618,297 +616,142 @@ function useSheetDrag(initialVh: number) {
   return { sheetVh, isDragging, startDrag };
 }
 
-// ─── Кнопка-ручка для изменения высоты шторки ────────────────────────────────
-
-const SheetDragHandle: React.FC<{
-  onMouseDown: (e: React.MouseEvent) => void;
-  onTouchStart: (e: React.TouchEvent) => void;
-  title: string;
-  children: React.ReactNode;
-  t: T;
-}> = ({ onMouseDown, onTouchStart, title, children, t }) => (
-  <button
-    aria-label={title}
-    onMouseDown={onMouseDown}
-    onTouchStart={onTouchStart}
-    style={{
-      flexShrink: 0,
-      cursor: 'ns-resize',
-      touchAction: 'none',
-      userSelect: 'none',
-      width: '100%',
-      background: 'none',
-      border: 'none',
-      padding: 0,
-      color: t.fg,
-      display: 'block',
-    }}
-  >
-    {children}
+const MobBtn: React.FC<{
+  label: string; icon: React.ReactNode; t: T; onClick: () => void; isActive: boolean;
+}> = ({ label, icon, t, onClick, isActive }) => (
+  <button onClick={onClick} style={{
+    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+    justifyContent: 'center', gap: 4, padding: 0, border: 'none',
+    background: 'transparent', cursor: 'pointer',
+    color: isActive ? t.accent : t.fgMuted,
+    outline: 'none', minWidth: 0,
+    transition: 'color 0.12s',
+  }}>
+    <span style={{ width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
+    <span style={{ fontSize: 10, fontWeight: 400, lineHeight: 1, marginTop: 1 }}>{label}</span>
   </button>
 );
 
-// ─── FullscreenModal ──────────────────────────────────────────────────────────
-
-type MobileFullscreenSheet = 'universal' | 'specific' | 'code' | null;
-
-// ─── Десктопная часть FullscreenModal ─────────────────────────────────────────
-
-const FullscreenDesktop: React.FC<{
-  Component: AnyComponent;
-  componentProps: ComponentPropsMap;
-  universalProps: UniversalProps;
-  refreshKey: number;
-  isDark: boolean;
-  componentCategory?: string;
-  fileContents: Record<string, string>;
-  config: ComponentConfig;
-  activeTab: TabType;
-  panelOpen: boolean;
-  sourceVisible: boolean;
-  onTabSelect: (tab: TabType) => void;
-  onPropChange: (name: string, v: PropValue) => void;
-  onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
-  desktopPreviewStyle: React.CSSProperties;
-  t: T;
-}> = ({
-  Component, componentProps, universalProps, refreshKey, isDark, componentCategory,
-  fileContents, config, activeTab, panelOpen, sourceVisible,
-  onTabSelect, onPropChange, onUniversalPropChange, desktopPreviewStyle, t,
-}) => {
-  if (sourceVisible) {
-    return (
-      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        <SourceCodePanel fileContents={fileContents} t={t} />
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <div style={desktopPreviewStyle}>
-        <ComponentRender
-          Component={Component}
-          componentProps={componentProps}
-          universalProps={universalProps}
-          refreshKey={refreshKey}
-          isDark={isDark}
-          componentCategory={componentCategory}
-          fileContents={fileContents}
-        />
-      </div>
-      {panelOpen && (
-        <div style={{ width: 280, flexShrink: 0, borderLeft: `1px solid ${t.barBorder}`, background: t.panelBg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <SettingsContent
-            activeTab={activeTab}
-            onTabSelect={onTabSelect}
-            config={config}
-            componentProps={componentProps}
-            universalProps={universalProps}
-            onPropChange={onPropChange}
-            onUniversalChange={onUniversalPropChange}
-            t={t}
-          />
-        </div>
-      )}
-    </>
-  );
-};
-
-// ─── Мобильная часть FullscreenModal ──────────────────────────────────────────
-
-const FullscreenMobile: React.FC<{
-  Component: AnyComponent;
-  componentProps: ComponentPropsMap;
-  universalProps: UniversalProps;
-  refreshKey: number;
-  isDark: boolean;
-  componentCategory?: string;
-  fileContents: Record<string, string>;
-  config: ComponentConfig;
-  onClose: () => void;
-  onRefresh: () => void;
-  onReset: () => void;
-  onPropChange: (name: string, v: PropValue) => void;
+const FullscreenMobile: React.FC<ComponentRenderProps & {
+  onClose: () => void; onRefresh: () => void; onReset: () => void;
   onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
   t: T;
 }> = ({
   Component, componentProps, universalProps, refreshKey, isDark, componentCategory,
-  fileContents, config, onClose, onRefresh, onReset, onPropChange, onUniversalPropChange, t,
+  fileContents, onClose, onRefresh, onReset, onUniversalPropChange, t,
 }) => {
-  const [mobSheet, setMobSheet] = useState<MobileFullscreenSheet>(null);
+  const [sheet, setSheet] = useState<MobileSheet>(null);
   const { sheetVh, isDragging, startDrag } = useSheetDrag(55);
-  const isBackground  = componentCategory === 'backgrounds';
-  const mobSheetOpen  = mobSheet !== null;
+  const isBackground = componentCategory === 'backgrounds';
 
-  const mobSheetLabel: Record<Exclude<MobileFullscreenSheet, null>, string> = {
-    universal: 'Общие',
-    specific:  'Специфические',
-    code:      'Исходный код',
+  const LABELS: Record<Exclude<MobileSheet, null>, string> = {
+    settings: 'Настройки',
+    code:     'Исходный код',
   };
 
   return (
     <>
-      <div style={{ position: 'absolute', inset: 0, bottom: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fg, overflow: isBackground ? 'hidden' : 'visible' }}>
+      <div style={{ position: 'absolute', inset: 0, bottom: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: isBackground ? 'hidden' : 'visible' }}>
         <ComponentRender Component={Component} componentProps={componentProps} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} componentCategory={componentCategory} fileContents={fileContents} />
       </div>
 
-      {mobSheetOpen && (
-        <button
-          onClick={() => setMobSheet(null)}
-          aria-label="Закрыть панель"
-          style={{ position: 'absolute', inset: 0, bottom: 60, zIndex: 10, background: 'rgba(0,0,0,0.25)', cursor: 'default', border: 'none', padding: 0 }}
-        />
+      {sheet && (
+        <button onClick={() => setSheet(null)} aria-label="Закрыть" style={{ position: 'absolute', inset: 0, bottom: 60, zIndex: 10, background: 'rgba(0,0,0,0.25)', border: 'none', padding: 0 }} />
       )}
 
       <div style={{
         position: 'absolute', bottom: 60, left: 0, right: 0,
-        height: mobSheetOpen ? `min(${sheetVh}dvh, 720px)` : 0,
+        height: sheet ? `min(${sheetVh}dvh, 720px)` : 0,
         overflow: 'hidden', zIndex: 20, display: 'flex', flexDirection: 'column',
         transition: isDragging ? 'none' : 'height 0.22s cubic-bezier(0.4,0,0.2,1)',
       }}>
-        <div style={{ flex: 1, background: t.panelBg, borderTop: `1px solid ${t.barBorder}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <SheetDragHandle
-            t={t}
-            title="Изменить высоту панели"
+        <div style={{ flex: 1, background: t.panelBg, borderTop: `1px solid ${t.border}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <button
+            aria-label="Изменить высоту"
             onMouseDown={e => startDrag(e.clientY)}
             onTouchStart={e => startDrag(e.touches[0].clientY)}
+            style={{ background: 'none', border: 'none', padding: 0, cursor: 'ns-resize', touchAction: 'none', userSelect: 'none', width: '100%' }}
           >
             <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 10, paddingBottom: 4 }}>
               <div style={{ width: 36, height: 4, borderRadius: 2, background: t.fgSub }} />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 18px 10px', borderBottom: `1px solid ${t.barBorder}` }}>
-              <span style={{ fontSize: '1.1rem', fontWeight: 700, color: t.fg, letterSpacing: '-0.01em' }}>
-                {mobSheet ? mobSheetLabel[mobSheet] : ''}
-              </span>
-              <button onClick={() => setMobSheet(null)}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 10, border: `1px solid ${t.barBorder}`, background: t.btnBg, color: t.fg, cursor: 'pointer', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 18px 10px', borderBottom: `1px solid ${t.border}` }}>
+              <span style={{ fontSize: '1.1rem', fontWeight: 700, color: t.fg }}>{sheet ? LABELS[sheet] : ''}</span>
+              <button onClick={() => setSheet(null)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 10, border: `1px solid ${t.border}`, background: 'transparent', color: t.fg, cursor: 'pointer', flexShrink: 0 }}>
                 <X size={14} />
               </button>
             </div>
-          </SheetDragHandle>
-
+          </button>
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            {mobSheet === 'universal' && (
-              <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                <UniversalSidebar universalProps={universalProps} onChange={onUniversalPropChange} t={t} />
-              </div>
+            {sheet === 'settings' && (
+              <SettingsSidebar universalProps={universalProps} onChange={onUniversalPropChange} t={t} />
             )}
-            {mobSheet === 'specific' && (
-              <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                <SpecificSidebar config={config} componentProps={componentProps} onChange={onPropChange} t={t} />
-              </div>
-            )}
-            {mobSheet === 'code' && (
-              <SourceCodePanel fileContents={fileContents} t={t} />
+            {sheet === 'code' && (
+              <SourceCodeViewer fileContents={fileContents} t={t} />
             )}
           </div>
         </div>
       </div>
 
-      <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0, height: 60,
-        background: t.mobBg, borderTop: `1px solid ${t.barBorder}`,
-        display: 'flex', alignItems: 'stretch', zIndex: 30,
-        paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
-      }}>
-        <MobBtn label="Обновить"  icon={<Play size={20} />}       t={t} onClick={() => { setMobSheet(null); onRefresh(); }}                               isActive={false} />
-        <MobBtn label="Сбросить"  icon={<RefreshCcw size={20} />} t={t} onClick={() => { setMobSheet(null); onReset(); }}                                 isActive={false} />
-        <MobBtn label="Общие"     icon={<Settings size={20} />}   t={t} onClick={() => setMobSheet(p => p === 'universal' ? null : 'universal')}           isActive={mobSheet === 'universal'} />
-        <MobBtn label="Специфич." icon={<PanelRight size={20} />} t={t} onClick={() => setMobSheet(p => p === 'specific'  ? null : 'specific')}            isActive={mobSheet === 'specific'} />
-        <MobBtn label="Код"       icon={<Code2 size={20} />}      t={t} onClick={() => setMobSheet(p => p === 'code'      ? null : 'code')}                isActive={mobSheet === 'code'} />
-        <MobBtn label="Свернуть"  icon={<Minimize2 size={20} />}  t={t} onClick={onClose}                                                                 isActive={false} />
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: t.mobBg, borderTop: `1px solid ${t.border}`, display: 'flex', alignItems: 'stretch', zIndex: 30, paddingBottom: 'max(0px, env(safe-area-inset-bottom))' }}>
+        <MobBtn label="Обновить" icon={<Play size={20} />}       t={t} onClick={() => { setSheet(null); onRefresh(); }}                        isActive={false} />
+        <MobBtn label="Сброс"    icon={<RefreshCcw size={20} />} t={t} onClick={() => { setSheet(null); onReset(); }}                          isActive={false} />
+        <MobBtn label="Настройки" icon={<Settings size={20} />}  t={t} onClick={() => setSheet(p => p === 'settings' ? null : 'settings')}    isActive={sheet === 'settings'} />
+        <MobBtn label="Код"      icon={<Code2 size={20} />}      t={t} onClick={() => setSheet(p => p === 'code' ? null : 'code')}             isActive={sheet === 'code'} />
+        <MobBtn label="Свернуть" icon={<Minimize2 size={20} />}  t={t} onClick={onClose}                                                      isActive={false} />
       </div>
     </>
   );
 };
 
-const FullscreenModal: React.FC<ComponentRenderProps & {
-  config: ComponentConfig;
-  fileContents: Record<string, string>;
-  onClose: () => void;
-  onRefresh: () => void;
-  onPropChange: (name: string, v: PropValue) => void;
-  onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
-  onReset: () => void;
-  t: T;
-}> = ({ Component, componentProps, universalProps, refreshKey, isDark, componentCategory, config, fileContents, onClose, onRefresh, onPropChange, onUniversalPropChange, onReset, t }) => {
-  const [activeTab,     setActiveTab]     = useState<TabType>('universal');
-  const [panelOpen,     setPanelOpen]     = useState(true);
-  const [sourceVisible, setSourceVisible] = useState(false);
-  const isMobile = useIsMobile();
+// ─── FullscreenModal ──────────────────────────────────────────────────────────
 
-  const isBackground = componentCategory === 'backgrounds';
+const FullscreenModal: React.FC<ComponentRenderProps & {
+  onClose: () => void; onRefresh: () => void;
+  onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
+  onReset: () => void; t: T;
+}> = ({ Component, componentProps, universalProps, refreshKey, isDark, componentCategory, fileContents, onClose, onRefresh, onUniversalPropChange, onReset, t }) => {
+  const [activeTab,  setActiveTab]  = useState<TabType>('settings');
+  const [panelOpen,  setPanelOpen]  = useState(true);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { onClose(); } };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
     return () => { document.body.style.overflow = ''; document.removeEventListener('keydown', onKey); };
   }, [onClose]);
 
-  const desktopPreviewStyle: React.CSSProperties = isBackground
-    ? { flex: 1, display: 'flex', overflow: 'hidden', color: t.fg, minWidth: 0, minHeight: 0, position: 'relative' }
-    : { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48, overflow: 'hidden', color: t.fg, minWidth: 0, minHeight: 0 };
+  const handleTabSelect = useCallback((tab: TabType) => { setActiveTab(tab); }, []);
+  const handleTogglePanel = useCallback(() => { setPanelOpen(v => !v); }, []);
+
+  const shared: ComponentRenderProps = { Component, componentProps, universalProps, refreshKey, isDark, componentCategory, fileContents };
 
   return createPortal(
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: t.outerBg, display: 'flex', flexDirection: 'column' }}>
-
-      {!isMobile && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', flexShrink: 0, borderBottom: `1px solid ${t.barBorder}`, background: t.barBg, overflowX: 'auto' }}>
-          <button onClick={onRefresh} style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 999, border: `1px solid ${t.btnBdr}`, background: t.btnBg, color: t.btnClr, padding: '8px 12px', fontSize: 12, whiteSpace: 'nowrap', cursor: 'pointer' }}><Play size={14} />Запуск</button>
-          <button onClick={onReset}   style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 999, border: `1px solid ${t.btnBdr}`, background: t.btnBg, color: t.btnClr, padding: '8px 12px', fontSize: 12, whiteSpace: 'nowrap', cursor: 'pointer' }}><RefreshCcw size={14} />Сброс</button>
-          <button onClick={() => setSourceVisible(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 999, border: `1px solid ${t.btnBdr}`, background: sourceVisible ? t.tabActBg : t.btnBg, color: sourceVisible ? t.tabActClr : t.btnClr, padding: '8px 12px', fontSize: 12, whiteSpace: 'nowrap', cursor: 'pointer' }}>
-            <PanelRight size={14} />{sourceVisible ? 'Скрыть код' : 'Код'}
-          </button>
-          <button onClick={() => setPanelOpen(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 999, border: `1px solid ${t.btnBdr}`, background: t.btnBg, color: t.btnClr, padding: '8px 12px', fontSize: 12, whiteSpace: 'nowrap', cursor: 'pointer' }}>
-            {panelOpen ? <PanelRightClose size={14} /> : <PanelRight size={14} />}{panelOpen ? 'Скрыть настройки' : 'Настройки'}
-          </button>
-          <button onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 999, border: `1px solid ${t.btnBdr}`, background: t.btnBg, color: t.btnClr, padding: '8px 12px', fontSize: 12, whiteSpace: 'nowrap', cursor: 'pointer', marginLeft: 'auto' }}>
-            <Minimize2 size={14} />Свернуть
-          </button>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: t.outerBg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {!isMobile ? (
+        <FullscreenDesktop
+          {...shared}
+          activeTab={activeTab}
+          panelOpen={panelOpen}
+          onTabSelect={handleTabSelect}
+          onUniversalPropChange={onUniversalPropChange}
+          onRefresh={onRefresh}
+          onReset={onReset}
+          onClose={onClose}
+          onTogglePanel={handleTogglePanel}
+          t={t}
+        />
+      ) : (
+        <div style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
+          <FullscreenMobile
+            {...shared}
+            onClose={onClose} onRefresh={onRefresh} onReset={onReset}
+            onUniversalPropChange={onUniversalPropChange}
+            t={t}
+          />
         </div>
       )}
-
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
-        {isMobile ? (
-          <FullscreenMobile
-            Component={Component}
-            componentProps={componentProps}
-            universalProps={universalProps}
-            refreshKey={refreshKey}
-            isDark={isDark}
-            componentCategory={componentCategory}
-            fileContents={fileContents}
-            config={config}
-            onClose={onClose}
-            onRefresh={onRefresh}
-            onReset={onReset}
-            onPropChange={onPropChange}
-            onUniversalPropChange={onUniversalPropChange}
-            t={t}
-          />
-        ) : (
-          <FullscreenDesktop
-            Component={Component}
-            componentProps={componentProps}
-            universalProps={universalProps}
-            refreshKey={refreshKey}
-            isDark={isDark}
-            componentCategory={componentCategory}
-            fileContents={fileContents}
-            config={config}
-            activeTab={activeTab}
-            panelOpen={panelOpen}
-            sourceVisible={sourceVisible}
-            onTabSelect={setActiveTab}
-            onPropChange={onPropChange}
-            onUniversalPropChange={onUniversalPropChange}
-            desktopPreviewStyle={desktopPreviewStyle}
-            t={t}
-          />
-        )}
-      </div>
     </div>,
     document.body,
   );
@@ -917,72 +760,45 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
 // ─── PreviewPanel ─────────────────────────────────────────────────────────────
 
 const PreviewPanel: React.FC<ComponentRenderProps & {
-  onOpenFullscreen: () => void;
-  t: T;
-  loading: boolean;
+  onOpenFullscreen: () => void; t: T; loading: boolean;
 }> = ({ Component, componentProps, universalProps, refreshKey, isDark, componentCategory, onOpenFullscreen, t, loading, fileContents }) => {
   const isBackground = componentCategory === 'backgrounds';
-
   return (
     <div style={{ position: 'relative', width: '100%', overflow: 'visible' }}>
-      <div style={{
-        position: 'absolute', top: 10, right: 10, zIndex: 1,
-        display: 'flex', gap: 6,
-      }}>
-        <button
-          onClick={onOpenFullscreen}
-          title="Настройки"
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: 36, height: 36, borderRadius: 10,
-            border: `1.5px solid ${t.btnActBdr}`,
-            background: t.barBg,
-            color: t.fg,
-            cursor: 'pointer',
-            flexShrink: 0,
-            boxShadow: t.outerShadow,
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-          }}
-          onMouseEnter={e => {
-            (e.currentTarget as HTMLButtonElement).style.background = t.btnHov;
-            (e.currentTarget as HTMLButtonElement).style.color = t.btnActClr;
-          }}
-          onMouseLeave={e => {
-            (e.currentTarget as HTMLButtonElement).style.background = t.barBg;
-            (e.currentTarget as HTMLButtonElement).style.color = t.fg;
-          }}
-        >
-          <Settings size={17} />
-        </button>
-      </div>
-
+      <button
+        onClick={onOpenFullscreen} title="Открыть настройки"
+        style={{
+          position: 'absolute', top: 10, right: 10, zIndex: 1,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 36, height: 36, borderRadius: 10,
+          border: `1px solid ${t.borderStrong}`,
+          background: t.railBg, color: t.fg, cursor: 'pointer',
+          boxShadow: t.shadow, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+        }}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = t.railBg; }}
+      >
+        <Settings size={17} />
+      </button>
       <div style={{
         width: '100%',
-        ...(isBackground
-          ? { height: 400 }
-          : { minHeight: 500, paddingTop: 60, paddingBottom: 120 }
-        ),
+        ...(isBackground ? { height: 400 } : { minHeight: 500, paddingTop: 60, paddingBottom: 120 }),
         display: 'flex',
         alignItems: isBackground ? 'stretch' : 'center',
         justifyContent: isBackground ? 'stretch' : 'center',
-        color: t.fg,
         position: 'relative',
         overflow: isBackground ? 'hidden' : 'visible',
       }}>
         {loading && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', zIndex: 2, fontSize: 12, color: t.fgSub, fontFamily: 'ui-monospace, monospace' }}>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, fontSize: 12, color: t.fgSub, fontFamily: 'ui-monospace, monospace' }}>
             Загрузка…
           </div>
         )}
         {!loading && (
           <ComponentRender
-            Component={Component}
-            componentProps={componentProps}
-            universalProps={universalProps}
-            refreshKey={refreshKey}
-            isDark={isDark}
-            componentCategory={componentCategory}
+            Component={Component} componentProps={componentProps}
+            universalProps={universalProps} refreshKey={refreshKey}
+            isDark={isDark} componentCategory={componentCategory}
             fileContents={fileContents}
           />
         )}
@@ -992,14 +808,22 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
 };
 
 function scheduleHideLoading(setLoading: (v: boolean) => void) {
-  requestAnimationFrame(() => { requestAnimationFrame(() => setLoading(false)); });
+  requestAnimationFrame(() => requestAnimationFrame(() => setLoading(false)));
 }
+
+const DEFAULT_UNIVERSAL_PROPS: UniversalProps = {
+  enableUniversalProps: true,
+  scale: 1, color: undefined, colorMode: 'original',
+  offsetX: 0, offsetY: 0, rotateZ: 0,
+  justifyContent: 'center', alignItems: 'center',
+  opacity: 1, blur: 0, brightness: 1, contrast: 1, saturate: 1,
+};
 
 // ─── UIComponentViewer ────────────────────────────────────────────────────────
 
 const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) => {
-  const { isDark } = useTheme();
-  const t          = tk(isDark);
+  const { isDark }  = useTheme();
+  const t           = tk(isDark);
 
   const [isFullscreen,   setIsFullscreen]   = useState(false);
   const [refreshKey,     setRefreshKey]     = useState(0);
@@ -1017,17 +841,19 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
   }, [componentId]);
 
   const handleRefresh         = useCallback(() => setRefreshKey(k => k + 1), []);
-  const handlePropChange      = useCallback((name: string, value: PropValue) => { setComponentProps(prev => ({ ...prev, [name]: value })); setRefreshKey(k => k + 1); }, []);
-  const handleUniversalChange = useCallback((key: keyof UniversalProps, value: PropValue) => setUniversalProps(prev => ({ ...prev, [key]: value })), []);
-  const handleReset           = useCallback(() => {
-    if (!componentData) { return; }
+  const handleUniversalChange = useCallback((key: keyof UniversalProps, value: PropValue) =>
+    setUniversalProps(prev => ({ ...prev, [key]: value })), []);
+  const handleReset = useCallback(() => {
+    if (!componentData) return;
     setComponentProps(getDefaultProps(componentData.config));
     setUniversalProps(DEFAULT_UNIVERSAL_PROPS);
     setRefreshKey(k => k + 1);
   }, [componentData]);
 
-  const placeholderConfig: ComponentConfig = useMemo(() => ({ id: componentId, name: '…', description: '', props: [], specificProps: [] }), [componentId]);
-  const PlaceholderComponent               = useMemo(() => () => null, []);
+  const placeholderConfig: ComponentConfig = useMemo(() => ({
+    id: componentId, name: '…', description: '', props: [], specificProps: [],
+  }), [componentId]);
+  const PlaceholderComponent = useMemo(() => () => null, []);
 
   const effectiveData = componentData ?? {
     config: placeholderConfig,
@@ -1035,7 +861,7 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
     fileContents: {},
   };
 
-  const shared = {
+  const shared: ComponentRenderProps = {
     Component:         effectiveData.Component,
     componentProps,
     universalProps,
@@ -1047,19 +873,12 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
 
   return (
     <div className="not-prose" style={{ margin: '1.25rem 0', overflow: 'visible', position: 'relative' }}>
-      <PreviewPanel
-        {...shared}
-        onOpenFullscreen={() => setIsFullscreen(true)}
-        t={t}
-        loading={loading}
-      />
+      <PreviewPanel {...shared} onOpenFullscreen={() => setIsFullscreen(true)} t={t} loading={loading} />
       {isFullscreen && componentData && (
         <FullscreenModal
           {...shared}
-          config={componentData.config}
           onClose={() => setIsFullscreen(false)}
           onRefresh={handleRefresh}
-          onPropChange={handlePropChange}
           onUniversalPropChange={handleUniversalChange}
           onReset={handleReset}
           t={t}

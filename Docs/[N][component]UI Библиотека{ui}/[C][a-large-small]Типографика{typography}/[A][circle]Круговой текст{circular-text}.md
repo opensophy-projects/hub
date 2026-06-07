@@ -9,3 +9,10 @@ lang: ru
 ---
 
 [uic:circular-text]
+
+| Проп | Type | Обычно | Описание |
+|------|------|---------|-------------|
+| `text` | `string` | `'CIRCULAR TEXT • CIRCULAR TEXT •'` | Текст по кругу |
+| `spinDuration` | `number` | `20` | Длительность одного оборота (с) |
+| `onHover` | `string` | `'speedUp'` | Поведение при наведении (`slowDown`/`speedUp`/`pause`/`goBonkers`) |
+| `className` | `string` | `''` | CSS классы |

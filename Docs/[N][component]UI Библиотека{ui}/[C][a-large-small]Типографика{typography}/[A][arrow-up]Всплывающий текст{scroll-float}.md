@@ -9,3 +9,15 @@ lang: ru
 ---
 
 [uic:scroll-float]
+
+| Проп | Type | Обычно | Описание |
+|------|------|---------|-------------|
+| `children` | `string` | `'Scroll Float'` | Текст для анимации |
+| `animationDuration` | `number` | `1` | Длительность анимации буквы (с) |
+| `ease` | `string` | `'back.inOut(2)'` | GSAP easing |
+| `scrollStart` | `string` | `'center bottom+=50%'` | Точка начала (ScrollTrigger) |
+| `scrollEnd` | `string` | `'bottom bottom-=40%'` | Точка конца (ScrollTrigger) |
+| `stagger` | `number` | `0.03` | Задержка между буквами (с) |
+| `scrollContainerRef` | `RefObject` | `undefined` | Ref скролл-контейнера |
+| `containerClassName` | `string` | `''` | CSS классы `<h2>` |
+| `textClassName` | `string` | `''` | CSS классы текстового `<span>` |

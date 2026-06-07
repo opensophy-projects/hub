@@ -3,8 +3,15 @@ import type { ComponentConfig } from '../types';
 
 // Авто-обнаружение компонентов через import.meta.glob
 // Добавить компонент = создать папку с config.json + ComponentName.tsx
-const configModules = import.meta.glob('../*/config.json', { eager: true });
-const componentModules = import.meta.glob('../*/*.tsx');
+const configModules = import.meta.glob('../**/config.json', { eager: true });
+const componentModules = import.meta.glob([
+  '../**/*.{ts,tsx}',
+  '!../registry/**',
+  '!../loader.ts',
+  '!../types.ts',
+  '!../ComponentWrapper.tsx',
+  '!../NewUIComponentViewer.tsx',
+]);
 
 type AnyComponent = React.ComponentType<Record<string, unknown>>;
 
@@ -13,9 +20,20 @@ function isReactComponent(value: unknown): value is AnyComponent {
   return typeof value === 'object' && value !== null && '$$typeof' in value;
 }
 
-// Извлекает id компонента из пути к config.json
-function idFromPath(path: string): string {
-  return path.split('/').at(-2) ?? '';
+
+// Извлекает id компонента из конфига, чтобы компоненты можно было вкладывать
+// в папки вида backgrounds/component/config.json без изменения публичного id.
+function idFromConfigPath(path: string): string {
+  const cfg = configFromModule(configModules[path]);
+  return cfg?.id || path.split('/').at(-2) || '';
+}
+
+function baseDirFromConfigPath(path: string): string {
+  return path.replace(/\/config\.json$/, '');
+}
+
+function configPathById(id: string): string | null {
+  return Object.keys(configModules).find(path => idFromConfigPath(path) === id) ?? null;
 }
 
 // Нормализует модуль конфига — поддерживает default-экспорт и прямой объект
@@ -27,11 +45,12 @@ function configFromModule(mod: unknown): ComponentConfig | null {
 
 export const registry = {
   getAllIds(): string[] {
-    return Object.keys(configModules).map(idFromPath).filter(Boolean);
+    return Object.keys(configModules).map(idFromConfigPath).filter(Boolean);
   },
 
   getConfig(id: string): ComponentConfig | null {
-    const mod = configModules[`../${id}/config.json`];
+    const path = configPathById(id);
+    const mod = path ? configModules[path] : null;
     return mod ? configFromModule(mod) : null;
   },
 
@@ -46,15 +65,17 @@ export const registry = {
     if (!config) return null;
 
     const mainFile = (config as ComponentConfig & { main?: string }).main;
+    const configPath = configPathById(id);
+    const baseDir = configPath ? baseDirFromConfigPath(configPath) : `../${id}`;
 
     // Приоритетные кандидаты: явный main, затем index-файлы, затем все .tsx в папке
     const preferred = [
-      mainFile && `../${id}/${mainFile}`,
-      `../${id}/index.ts`,
-      `../${id}/index.tsx`,
+      mainFile && `${baseDir}/${mainFile}`,
+      `${baseDir}/index.ts`,
+      `${baseDir}/index.tsx`,
     ].filter((p): p is string => !!p && !p.endsWith('undefined'));
 
-    const allTsx = Object.keys(componentModules).filter(k => k.startsWith(`../${id}/`));
+    const allTsx = Object.keys(componentModules).filter(k => k.startsWith(`${baseDir}/`));
     const candidates = [...new Set([...preferred, ...allTsx])];
 
     for (const candidate of candidates) {
@@ -79,8 +100,13 @@ export const registry = {
     this.loadComponent(id).catch(e => console.warn('[registry] preload failed: %s', id, e));
   },
 
+  getBaseDir(id: string): string | null {
+    const path = configPathById(id);
+    return path ? baseDirFromConfigPath(path) : null;
+  },
+
   hasComponent(id: string): boolean {
-    return !!configModules[`../${id}/config.json`];
+    return configPathById(id) !== null;
   },
 };
 
