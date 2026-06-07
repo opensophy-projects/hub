@@ -9,3 +9,13 @@ lang: ru
 ---
 
 [uic:rolling-text]
+
+| Проп | Type | Обычно | Описание |
+|------|------|---------|-------------|
+| `text` | `string` | `'Перекатывающийся текст'` | Текст для анимации |
+| `duration` | `number` | `0.5` | Длительность анимации буквы (с) |
+| `delay` | `number` | `0.1` | Задержка stagger между буквами (с) |
+| `inView` | `boolean` | `false` | Запуск при появлении в вьюпорте |
+| `inViewOnce` | `boolean` | `true` | Анимировать только один раз |
+| `inViewMargin` | `string` | `'0px'` | rootMargin для IntersectionObserver |
+| `className` | `string` | `'text-4xl font-bold'` | CSS классы |
