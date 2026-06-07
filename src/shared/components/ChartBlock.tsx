@@ -17,7 +17,6 @@ export type ChartType =
   | 'pie'  | 'pie-donut'
   | 'radar';
 
-// Строка данных: первый ключ — строковое имя категории, остальные — числовые значения
 export type ChartRow = Record<string, string | number>;
 
 interface ChartBlockProps {
@@ -28,37 +27,42 @@ interface ChartBlockProps {
   isDark: boolean;
 }
 
-// ─── Цветовая палитра по умолчанию ───────────────────────────────────────────
+// ─── Палитра ──────────────────────────────────────────────────────────────────
 
 const DEFAULT_COLORS = [
-  '#7234ff', '#22c55e', '#f59e0b', '#3b82f6',
-  '#ef4444', '#ec4899', '#14b8a6', '#f97316',
+  '#7c3aed', '#10b981', '#f59e0b', '#3b82f6',
+  '#f43f5e', '#8b5cf6', '#06b6d4', '#fb923c',
 ];
 
-// ─── Токены темы ──────────────────────────────────────────────────────────────
+// ─── Токены ───────────────────────────────────────────────────────────────────
 
 function tk(isDark: boolean) {
   const t = makeTokens(isDark);
   return {
-    outerBg:     t.bg,
-    outerBorder: t.border,
-    outerShadow: isDark
-      ? '0 2px 12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)'
-      : '0 1px 6px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.07)',
-    tooltipBg:   isDark ? '#1a1a1a'                : '#ffffff',
-    tooltipBdr:  isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)',
-    tooltipText: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)',
-    axisText:    isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)',
-    titleText:   isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.28)',
-    footerText:  isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.32)',
-    footerBdr:   isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)',
-    legendText:  isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)',
-    legendMuted: isDark ? 'rgba(255,255,255,0.2)'  : 'rgba(0,0,0,0.2)',
-    gridLine:    isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+    outerBg:      t.bg,
+    outerBorder:  isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)',
+    outerShadow:  isDark
+      ? '0 4px 24px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.04) inset'
+      : '0 2px 12px rgba(0,0,0,0.07), 0 1px 0 rgba(255,255,255,0.9) inset',
+    tooltipBg:    isDark ? '#18181b' : '#ffffff',
+    tooltipBdr:   isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+    tooltipText:  isDark ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.85)',
+    tooltipShadow: isDark
+      ? '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)'
+      : '0 8px 24px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)',
+    axisText:     isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
+    titleText:    isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.25)',
+    footerText:   isDark ? 'rgba(255,255,255,0.2)'  : 'rgba(0,0,0,0.28)',
+    footerBdr:    isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)',
+    legendText:   isDark ? 'rgba(255,255,255,0.5)'  : 'rgba(0,0,0,0.5)',
+    legendMuted:  isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.18)',
+    gridLine:     isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+    cursorFill:   isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+    dotBg:        isDark ? '#18181b' : '#ffffff',
   };
 }
 
-// ─── Определение ключей данных ────────────────────────────────────────────────
+// ─── Определение ключей ───────────────────────────────────────────────────────
 
 function detectKeys(data: ChartRow[]): { nameKey: string; valueKeys: string[] } {
   if (!data.length) return { nameKey: 'name', valueKeys: [] };
@@ -66,7 +70,7 @@ function detectKeys(data: ChartRow[]): { nameKey: string; valueKeys: string[] } 
   return { nameKey: keys[0] ?? 'name', valueKeys: keys.slice(1) };
 }
 
-// ─── Тултипы ─────────────────────────────────────────────────────────────────
+// ─── Кастомный Tooltip ────────────────────────────────────────────────────────
 
 const CustomTooltip: React.FC<{
   active?: boolean;
@@ -77,17 +81,50 @@ const CustomTooltip: React.FC<{
   if (!active || !payload?.length) return null;
   return (
     <div style={{
-      background: t.tooltipBg, border: `1px solid ${t.tooltipBdr}`,
-      borderRadius: 8, padding: '8px 12px', fontSize: 12,
-      color: t.tooltipText, boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+      background: t.tooltipBg,
+      border: `1px solid ${t.tooltipBdr}`,
+      borderRadius: 10,
+      padding: '9px 13px',
+      fontSize: 12,
+      color: t.tooltipText,
+      boxShadow: t.tooltipShadow,
       pointerEvents: 'none',
+      minWidth: 120,
     }}>
-      {label && <div style={{ fontWeight: 600, marginBottom: 4, opacity: 0.7 }}>{label}</div>}
+      {label && (
+        <div style={{
+          fontWeight: 600,
+          fontSize: 11,
+          marginBottom: 7,
+          opacity: 0.5,
+          letterSpacing: '0.03em',
+          textTransform: 'uppercase',
+        }}>
+          {label}
+        </div>
+      )}
       {payload.map(entry => (
-        <div key={entry.name} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-          <div style={{ width: 8, height: 8, borderRadius: 2, background: entry.color, flexShrink: 0 }} />
-          <span style={{ opacity: 0.7 }}>{entry.name}:</span>
-          <span style={{ fontWeight: 600 }}>{entry.value}</span>
+        <div key={entry.name} style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 14,
+          marginTop: 3,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+            <div style={{
+              width: 7,
+              height: 7,
+              borderRadius: '50%',
+              background: entry.color,
+              flexShrink: 0,
+              boxShadow: `0 0 0 2px ${entry.color}33`,
+            }} />
+            <span style={{ opacity: 0.6, fontSize: 11 }}>{entry.name}</span>
+          </div>
+          <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+            {entry.value.toLocaleString()}
+          </span>
         </div>
       ))}
     </div>
@@ -103,15 +140,29 @@ const PieTooltip: React.FC<{
   const entry = payload[0];
   return (
     <div style={{
-      background: t.tooltipBg, border: `1px solid ${t.tooltipBdr}`,
-      borderRadius: 8, padding: '8px 12px', fontSize: 12,
-      color: t.tooltipText, boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+      background: t.tooltipBg,
+      border: `1px solid ${t.tooltipBdr}`,
+      borderRadius: 10,
+      padding: '9px 13px',
+      fontSize: 12,
+      color: t.tooltipText,
+      boxShadow: t.tooltipShadow,
       pointerEvents: 'none',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <div style={{ width: 8, height: 8, borderRadius: 2, background: entry.payload.fill, flexShrink: 0 }} />
-        <span style={{ fontWeight: 600 }}>{entry.name}:</span>
-        <span>{entry.value}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{
+          width: 7,
+          height: 7,
+          borderRadius: '50%',
+          background: entry.payload.fill,
+          flexShrink: 0,
+          boxShadow: `0 0 0 2px ${entry.payload.fill}33`,
+        }} />
+        <span style={{ fontWeight: 600 }}>{entry.name}</span>
+        <span style={{ opacity: 0.5, fontSize: 11 }}>·</span>
+        <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+          {entry.value.toLocaleString()}
+        </span>
       </div>
     </div>
   );
@@ -130,8 +181,11 @@ const CustomLegend: React.FC<{
   if (items.length <= 1) return null;
   return (
     <div style={{
-      display: 'flex', flexWrap: 'wrap', justifyContent: 'center',
-      gap: '4px 12px', padding: '2px 12px 10px',
+      display: 'flex',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      gap: '3px 8px',
+      padding: '0 14px 12px',
     }}>
       {items.map(item => {
         const isHidden = hidden.has(item.key);
@@ -140,21 +194,36 @@ const CustomLegend: React.FC<{
             key={item.key}
             onClick={() => onToggle(item.key)}
             style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              background: 'none', border: 'none', cursor: 'pointer',
-              padding: '3px 6px', borderRadius: 5, outline: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              background: isHidden
+                ? 'transparent'
+                : `${item.color}14`,
+              border: `1px solid ${isHidden ? t.legendMuted : item.color + '40'}`,
+              cursor: 'pointer',
+              padding: '3px 9px 3px 7px',
+              borderRadius: 20,
+              outline: 'none',
               color: isHidden ? t.legendMuted : t.legendText,
-              fontSize: 11, fontWeight: isHidden ? 400 : 500,
-              userSelect: 'none', transition: 'color 0.12s',
+              fontSize: 11,
+              fontWeight: 500,
+              userSelect: 'none',
+              transition: 'all 0.15s ease',
             }}
           >
             <div style={{
-              width: 10, height: 10, borderRadius: 3, flexShrink: 0,
-              background: isHidden ? 'transparent' : item.color,
-              border: `2px solid ${isHidden ? t.legendMuted : item.color}`,
-              transition: 'all 0.12s',
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              flexShrink: 0,
+              background: isHidden ? t.legendMuted : item.color,
+              transition: 'all 0.15s ease',
             }} />
-            <span style={{ textDecoration: isHidden ? 'line-through' : 'none' }}>
+            <span style={{
+              textDecoration: isHidden ? 'line-through' : 'none',
+              opacity: isHidden ? 0.5 : 1,
+            }}>
               {item.key}
             </span>
           </button>
@@ -164,42 +233,76 @@ const CustomLegend: React.FC<{
   );
 };
 
-// ─── Высота графика ───────────────────────────────────────────────────────────
+// ─── Высота чарта ─────────────────────────────────────────────────────────────
 
 function chartHeight(type: ChartType, rowCount: number): number {
-  if (type === 'bar-horizontal') return Math.max(100, rowCount * 40 + 36);
-  if (type === 'pie' || type === 'pie-donut') return 240;
-  if (type === 'radar') return 270;
-  return 210;
+  if (type === 'bar-horizontal') return Math.max(110, rowCount * 42 + 40);
+  if (type === 'pie' || type === 'pie-donut') return 248;
+  if (type === 'radar') return 276;
+  return 218;
 }
 
 // ─── Пропсы осей ─────────────────────────────────────────────────────────────
 
 function ap(t: ReturnType<typeof tk>) {
-  return { tick: { fill: t.axisText, fontSize: 11 }, axisLine: false, tickLine: false };
+  return {
+    tick: { fill: t.axisText, fontSize: 11, fontWeight: 500 },
+    axisLine: false,
+    tickLine: false,
+  };
 }
 
 // ─── Area ─────────────────────────────────────────────────────────────────────
 
 function renderArea(
   data: ChartRow[],
-  nameKey: string, valueKeys: string[], palette: string[],
-  stacked: boolean, hidden: Set<string>, t: ReturnType<typeof tk>
+  nameKey: string,
+  valueKeys: string[],
+  palette: string[],
+  stacked: boolean,
+  hidden: Set<string>,
+  t: ReturnType<typeof tk>
 ) {
   const visible = valueKeys.filter(k => !hidden.has(k));
   return (
-    <AreaChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-      <XAxis dataKey={nameKey} {...ap(t)} />
-      <YAxis {...ap(t)} width={38} />
-      <Tooltip content={<CustomTooltip t={t} />} cursor={{ stroke: t.gridLine, strokeWidth: 1 }} />
+    <AreaChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+      <defs>
+        {visible.map((key) => {
+          const idx = valueKeys.indexOf(key);
+          const color = palette[idx % palette.length];
+          return (
+            <linearGradient key={key} id={`area-grad-${idx}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.2} />
+              <stop offset="100%" stopColor={color} stopOpacity={0} />
+            </linearGradient>
+          );
+        })}
+      </defs>
+      <XAxis dataKey={nameKey} {...ap(t)} tickMargin={8} />
+      <YAxis {...ap(t)} width={40} tickMargin={4} />
+      <Tooltip
+        content={<CustomTooltip t={t} />}
+        cursor={{ stroke: t.gridLine, strokeWidth: 1 }}
+      />
       {visible.map((key) => {
         const idx = valueKeys.indexOf(key);
         const color = palette[idx % palette.length];
         return (
-          <Area key={key} type="monotone" dataKey={key}
-            stroke={color} fill={color} fillOpacity={0.1} strokeWidth={2}
+          <Area
+            key={key}
+            type="monotone"
+            dataKey={key}
+            stroke={color}
+            fill={`url(#area-grad-${idx})`}
+            strokeWidth={2}
             stackId={stacked ? 'stack' : undefined}
-            dot={false} activeDot={{ r: 4, strokeWidth: 0 }}
+            dot={false}
+            activeDot={{
+              r: 4,
+              strokeWidth: 2,
+              stroke: t.dotBg,
+              fill: color,
+            }}
             isAnimationActive={false}
           />
         );
@@ -211,16 +314,16 @@ function renderArea(
 // ─── Bar ──────────────────────────────────────────────────────────────────────
 
 function getMaxBarSize(seriesCount: number): number {
-  if (seriesCount <= 1) return 72;
-  if (seriesCount <= 3) return 56;
-  return 40;
+  if (seriesCount <= 1) return 64;
+  if (seriesCount <= 3) return 48;
+  return 36;
 }
 
 function getCategoryGap(rowCount: number): string {
-  if (rowCount <= 3)  return '15%';
-  if (rowCount <= 6)  return '20%';
-  if (rowCount <= 10) return '25%';
-  return '30%';
+  if (rowCount <= 3)  return '18%';
+  if (rowCount <= 6)  return '22%';
+  if (rowCount <= 10) return '28%';
+  return '32%';
 }
 
 interface RenderBarOptions {
@@ -239,12 +342,8 @@ function getBarRadius(
   horizontal: boolean,
   isLastVisible: boolean
 ): [number, number, number, number] {
-  if (!stacked) {
-    return horizontal ? [0, 3, 3, 0] : [3, 3, 0, 0];
-  }
-  if (isLastVisible) {
-    return horizontal ? [0, 3, 3, 0] : [3, 3, 0, 0];
-  }
+  if (!stacked) return horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0];
+  if (isLastVisible) return horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0];
   return [0, 0, 0, 0];
 }
 
@@ -253,8 +352,6 @@ function renderBar({
   stacked, horizontal, hidden, t,
 }: RenderBarOptions) {
   const isSingleSeries = valueKeys.length === 1;
-
-  // Для горизонтальных одиночных серий скрываем строки по имени, иначе — по ключу серии
   const visibleData = (isSingleSeries && horizontal)
     ? data.filter(d => !hidden.has(String(d[nameKey])))
     : data;
@@ -265,31 +362,47 @@ function renderBar({
   const useRowColors = isSingleSeries;
   const a = ap(t);
   const maxSize = getMaxBarSize(visible.length);
-  const bGap = visible.length <= 2 ? 3 : 2;
+  const bGap = visible.length <= 2 ? 4 : 3;
 
   return (
     <BarChart
       data={visibleData}
       layout={horizontal ? 'vertical' : 'horizontal'}
-      margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+      margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
       barCategoryGap={getCategoryGap(data.length)}
       barGap={bGap}
     >
       {horizontal
-        ? <><YAxis dataKey={nameKey} type="category" {...a} width={90} /><XAxis type="number" {...a} /></>
-        : <><XAxis dataKey={nameKey} {...a} /><YAxis {...a} width={38} /></>
+        ? (
+          <>
+            <YAxis dataKey={nameKey} type="category" {...a} width={96} tickMargin={6} />
+            <XAxis type="number" {...a} tickMargin={8} />
+          </>
+        ) : (
+          <>
+            <XAxis dataKey={nameKey} {...a} tickMargin={8} />
+            <YAxis {...a} width={40} tickMargin={4} />
+          </>
+        )
       }
-      <Tooltip content={<CustomTooltip t={t} />} cursor={{ fill: t.gridLine }} />
+      <Tooltip
+        content={<CustomTooltip t={t} />}
+        cursor={{ fill: t.cursorFill }}
+      />
       {visible.map((key) => {
         const idx = valueKeys.indexOf(key);
         const seriesColor = palette[idx % palette.length];
         const isLastVisible = visible.indexOf(key) === visible.length - 1;
         const radius = getBarRadius(stacked, horizontal, isLastVisible);
         return (
-          <Bar key={key} dataKey={key} fill={seriesColor}
+          <Bar
+            key={key}
+            dataKey={key}
+            fill={seriesColor}
             radius={radius}
             stackId={stacked ? 'stack' : undefined}
-            maxBarSize={maxSize} isAnimationActive={false}
+            maxBarSize={maxSize}
+            isAnimationActive={false}
           >
             {useRowColors && visibleData.map((_, rowIdx) => {
               const origIdx = data.indexOf(visibleData[rowIdx]);
@@ -311,18 +424,27 @@ function renderBar({
 
 function renderPie(
   data: ChartRow[],
-  nameKey: string, valueKeys: string[], palette: string[],
-  donut: boolean, hidden: Set<string>, t: ReturnType<typeof tk>
+  nameKey: string,
+  valueKeys: string[],
+  palette: string[],
+  donut: boolean,
+  hidden: Set<string>,
+  t: ReturnType<typeof tk>
 ) {
   const valueKey = valueKeys[0] ?? 'value';
   const visibleData = data.filter(d => !hidden.has(String(d[nameKey])));
   return (
     <PieChart margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
       <Pie
-        data={visibleData} dataKey={valueKey} nameKey={nameKey}
-        cx="50%" cy="50%"
-        innerRadius={donut ? '50%' : '0%'} outerRadius="78%"
-        paddingAngle={2} strokeWidth={0}
+        data={visibleData}
+        dataKey={valueKey}
+        nameKey={nameKey}
+        cx="50%"
+        cy="50%"
+        innerRadius={donut ? '52%' : '0%'}
+        outerRadius="80%"
+        paddingAngle={donut ? 3 : 1}
+        strokeWidth={0}
         style={{ outline: 'none' }}
         isAnimationActive={false}
       >
@@ -347,22 +469,39 @@ function renderPie(
 
 function renderRadar(
   data: ChartRow[],
-  nameKey: string, valueKeys: string[], palette: string[],
-  hidden: Set<string>, t: ReturnType<typeof tk>
+  nameKey: string,
+  valueKeys: string[],
+  palette: string[],
+  hidden: Set<string>,
+  t: ReturnType<typeof tk>
 ) {
   const visible = valueKeys.filter(k => !hidden.has(k));
   return (
-    <RadarChart data={data} cx="50%" cy="50%" outerRadius="72%"
-      margin={{ top: 8, right: 16, left: 16, bottom: 8 }}>
-      <PolarGrid stroke={t.gridLine} />
-      <PolarAngleAxis dataKey={nameKey} tick={{ fill: t.axisText, fontSize: 11 }} />
+    <RadarChart
+      data={data}
+      cx="50%"
+      cy="50%"
+      outerRadius="72%"
+      margin={{ top: 8, right: 20, left: 20, bottom: 8 }}
+    >
+      <PolarGrid stroke={t.gridLine} strokeWidth={1} />
+      <PolarAngleAxis
+        dataKey={nameKey}
+        tick={{ fill: t.axisText, fontSize: 11, fontWeight: 500 }}
+      />
       <Tooltip content={<CustomTooltip t={t} />} />
       {visible.map((key) => {
         const idx = valueKeys.indexOf(key);
         const color = palette[idx % palette.length];
         return (
-          <Radar key={key} dataKey={key}
-            stroke={color} fill={color} fillOpacity={0.12} strokeWidth={2}
+          <Radar
+            key={key}
+            dataKey={key}
+            stroke={color}
+            fill={color}
+            fillOpacity={0.1}
+            strokeWidth={2}
+            dot={{ r: 3, fill: color, strokeWidth: 0 }}
             isAnimationActive={false}
           />
         );
@@ -371,7 +510,7 @@ function renderRadar(
   );
 }
 
-// ─── Склонение слова "запись" ─────────────────────────────────────────────────
+// ─── Склонение ────────────────────────────────────────────────────────────────
 
 function pluralRecords(n: number): string {
   if (n === 1) return 'запись';
@@ -431,8 +570,8 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
   }, [type, data, nameKey, valueKeys, palette, hidden, t, isEmpty]);
 
   return (
-    <div className="not-prose" style={{ margin: '1.25rem 0' }}>
-      {/* Глобальный сброс outline для всех recharts-элементов */}
+    <div className="not-prose" style={{ margin: '1.5rem 0' }}>
+      {/* Сброс outline для recharts */}
       <style>{`
         .recharts-wrapper:focus,
         .recharts-wrapper *:focus,
@@ -445,32 +584,48 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
           outline: none !important;
           box-shadow: none !important;
         }
+        .recharts-active-dot circle {
+          filter: drop-shadow(0 0 3px currentColor);
+        }
       `}</style>
+
       <div style={{
-        borderRadius: 12,
+        borderRadius: 14,
         border: `1px solid ${t.outerBorder}`,
         background: t.outerBg,
         boxShadow: t.outerShadow,
         overflow: 'hidden',
         outline: 'none',
       }}>
+        {/* Шапка */}
         {title && (
           <div style={{
-            padding: '10px 16px 0',
-            fontSize: '0.68rem', fontWeight: 700,
-            textTransform: 'uppercase', letterSpacing: '0.08em',
+            padding: '12px 18px 0',
+            fontSize: '0.65rem',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
             color: t.titleText,
           }}>
             {title}
           </div>
         )}
 
-        <div style={{ padding: title ? '10px 4px 0' : '14px 4px 0', outline: 'none' }}>
+        {/* Тело */}
+        <div style={{
+          padding: title ? '10px 6px 2px' : '16px 6px 2px',
+          outline: 'none',
+        }}>
           {isEmpty ? (
             <div style={{
-              height: 140, display: 'flex', alignItems: 'center',
-              justifyContent: 'center', fontSize: 13,
-              color: t.axisText, fontStyle: 'italic',
+              height: 140,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 13,
+              color: t.axisText,
+              fontStyle: 'italic',
+              opacity: 0.6,
             }}>
               Нет данных
             </div>
@@ -481,17 +636,39 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
           )}
         </div>
 
+        {/* Легенда */}
         {!isEmpty && (
-          <CustomLegend items={legendItems} hidden={hidden} onToggle={toggleHidden} t={t} />
+          <div style={{ padding: '8px 10px 0' }}>
+            <CustomLegend
+              items={legendItems}
+              hidden={hidden}
+              onToggle={toggleHidden}
+              t={t}
+            />
+          </div>
         )}
 
+        {/* Футер */}
         <div style={{
-          padding: '5px 16px 7px', fontSize: 11, color: t.footerText,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          borderTop: `1px solid ${t.footerBdr}`, userSelect: 'none',
+          padding: '6px 18px 8px',
+          fontSize: 11,
+          color: t.footerText,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderTop: `1px solid ${t.footerBdr}`,
+          userSelect: 'none',
+          marginTop: 4,
         }}>
-          <span>{data.length}{' '}{pluralRecords(data.length)}</span>
-          <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 10, opacity: 0.6 }}>
+          <span style={{ opacity: 0.7 }}>
+            {data.length} {pluralRecords(data.length)}
+          </span>
+          <span style={{
+            fontFamily: 'ui-monospace, monospace',
+            fontSize: 10,
+            opacity: 0.45,
+            letterSpacing: '0.04em',
+          }}>
             {type}
           </span>
         </div>
