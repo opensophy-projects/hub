@@ -10,3 +10,11 @@ lang: ru
 
 [uic:plasma]
 
+| Проп | Type | Обычно | Описание |
+|------|------|---------|-------------|
+| `color` | `string` | `'#ff8844'` | Цвет-тинт плазмы |
+| `speed` | `number` | `1` | Скорость анимации |
+| `direction` | `string` | `'forward'` | Направление (`forward`/`reverse`/`pingpong`) |
+| `scale` | `number` | `1` | Масштаб паттерна |
+| `opacity` | `number` | `1` | Прозрачность |
+| `mouseInteractive` | `boolean` | `false` | Деформация от позиции мыши |
