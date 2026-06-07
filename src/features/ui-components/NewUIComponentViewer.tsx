@@ -9,11 +9,6 @@ import {
   ChevronDown, ChevronRight, Settings,
 } from 'lucide-react';
 import hljs from 'highlight.js/lib/core';
-import tsLanguage from 'highlight.js/lib/languages/typescript';
-import javascript from 'highlight.js/lib/languages/javascript';
-import css from 'highlight.js/lib/languages/css';
-import xml from 'highlight.js/lib/languages/xml';
-import jsonLanguage from 'highlight.js/lib/languages/json';
 import { loadComponent, getDefaultProps } from './loader';
 import { ComponentWrapper } from './ComponentWrapper';
 import { useIsMobile } from '@/shared/hooks/useBreakpoint';
@@ -261,14 +256,27 @@ const SettingsSidebar: React.FC<{
 
 // ─── hljs ─────────────────────────────────────────────────────────────────────
 
-hljs.registerLanguage('typescript', tsLanguage);
-hljs.registerLanguage('tsx', tsLanguage);
-hljs.registerLanguage('javascript', javascript);
-hljs.registerLanguage('jsx', javascript);
-hljs.registerLanguage('css', css);
-hljs.registerLanguage('html', xml);
-hljs.registerLanguage('xml', xml);
-hljs.registerLanguage('json', jsonLanguage);
+let hljsReady = false;
+
+async function initHljs(): Promise<void> {
+  if (hljsReady) return;
+  const [ts, js, cssLang, xmlLang, jsonLang] = await Promise.all([
+    import('highlight.js/lib/languages/typescript'),
+    import('highlight.js/lib/languages/javascript'),
+    import('highlight.js/lib/languages/css'),
+    import('highlight.js/lib/languages/xml'),
+    import('highlight.js/lib/languages/json'),
+  ]);
+  hljs.registerLanguage('typescript', ts.default);
+  hljs.registerLanguage('tsx',        ts.default);
+  hljs.registerLanguage('javascript', js.default);
+  hljs.registerLanguage('jsx',        js.default);
+  hljs.registerLanguage('css',        cssLang.default);
+  hljs.registerLanguage('html',       xmlLang.default);
+  hljs.registerLanguage('xml',        xmlLang.default);
+  hljs.registerLanguage('json',       jsonLang.default);
+  hljsReady = true;
+}
 
 function languageFromFile(name: string): string {
   const ext = name.split('.').pop()?.toLowerCase();
@@ -309,15 +317,24 @@ interface SourceCodeViewerProps {
 const SourceCodeViewer: React.FC<SourceCodeViewerProps> = ({ fileContents, t }) => {
   const files = useMemo(() => Object.entries(fileContents), [fileContents]);
   const [activeFile, setActiveFile] = useState(() => files[0]?.[0] ?? '');
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied]         = useState(false);
+  const [hljsInit, setHljsInit]     = useState(hljsReady);
+
+  useEffect(() => {
+    if (hljsInit) return;
+    initHljs().then(() => setHljsInit(true));
+  }, [hljsInit]);
 
   // Sync active file when fileContents changes
   useEffect(() => {
     setActiveFile(Object.keys(fileContents)[0] ?? '');
   }, [fileContents]);
 
-  const activeCode = fileContents[activeFile] ?? '';
-  const highlighted = useMemo(() => highlightCode(activeCode, activeFile), [activeCode, activeFile]);
+  const activeCode  = fileContents[activeFile] ?? '';
+  const highlighted = useMemo(
+    () => (hljsInit ? highlightCode(activeCode, activeFile) : ''),
+    [activeCode, activeFile, hljsInit],
+  );
 
   const copyCode = async () => {
     try {
@@ -416,7 +433,6 @@ const SourceCodeViewer: React.FC<SourceCodeViewerProps> = ({ fileContents, t }) 
             wordBreak: 'normal' as const,
             color: t.fg,
             background: 'transparent',
-            // Разрешаем выделение текста
             userSelect: 'text',
             WebkitUserSelect: 'text',
             cursor: 'text',
@@ -582,7 +598,7 @@ const FullscreenDesktop: React.FC<ComponentRenderProps & {
 type MobileSheet = 'settings' | 'code' | null;
 
 function useSheetDrag(initialVh: number) {
-  const [sheetVh, setSheetVh]    = useState(initialVh);
+  const [sheetVh, setSheetVh]       = useState(initialVh);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartY  = useRef<number | null>(null);
   const dragStartVh = useRef(initialVh);
@@ -694,11 +710,11 @@ const FullscreenMobile: React.FC<ComponentRenderProps & {
       </div>
 
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: t.mobBg, borderTop: `1px solid ${t.border}`, display: 'flex', alignItems: 'stretch', zIndex: 30, paddingBottom: 'max(0px, env(safe-area-inset-bottom))' }}>
-        <MobBtn label="Обновить" icon={<Play size={20} />}       t={t} onClick={() => { setSheet(null); onRefresh(); }}                        isActive={false} />
-        <MobBtn label="Сброс"    icon={<RefreshCcw size={20} />} t={t} onClick={() => { setSheet(null); onReset(); }}                          isActive={false} />
-        <MobBtn label="Настройки" icon={<Settings size={20} />}  t={t} onClick={() => setSheet(p => p === 'settings' ? null : 'settings')}    isActive={sheet === 'settings'} />
-        <MobBtn label="Код"      icon={<Code2 size={20} />}      t={t} onClick={() => setSheet(p => p === 'code' ? null : 'code')}             isActive={sheet === 'code'} />
-        <MobBtn label="Свернуть" icon={<Minimize2 size={20} />}  t={t} onClick={onClose}                                                      isActive={false} />
+        <MobBtn label="Обновить" icon={<Play size={20} />}       t={t} onClick={() => { setSheet(null); onRefresh(); }}                     isActive={false} />
+        <MobBtn label="Сброс"    icon={<RefreshCcw size={20} />} t={t} onClick={() => { setSheet(null); onReset(); }}                       isActive={false} />
+        <MobBtn label="Настройки" icon={<Settings size={20} />}  t={t} onClick={() => setSheet(p => p === 'settings' ? null : 'settings')} isActive={sheet === 'settings'} />
+        <MobBtn label="Код"      icon={<Code2 size={20} />}      t={t} onClick={() => setSheet(p => p === 'code' ? null : 'code')}          isActive={sheet === 'code'} />
+        <MobBtn label="Свернуть" icon={<Minimize2 size={20} />}  t={t} onClick={onClose}                                                   isActive={false} />
       </div>
     </>
   );
@@ -722,7 +738,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
     return () => { document.body.style.overflow = ''; document.removeEventListener('keydown', onKey); };
   }, [onClose]);
 
-  const handleTabSelect = useCallback((tab: TabType) => { setActiveTab(tab); }, []);
+  const handleTabSelect   = useCallback((tab: TabType) => { setActiveTab(tab); }, []);
   const handleTogglePanel = useCallback(() => { setPanelOpen(v => !v); }, []);
 
   const shared: ComponentRenderProps = { Component, componentProps, universalProps, refreshKey, isDark, componentCategory, fileContents };
