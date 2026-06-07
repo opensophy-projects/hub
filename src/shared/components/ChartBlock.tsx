@@ -17,6 +17,7 @@ export type ChartType =
   | 'pie'  | 'pie-donut'
   | 'radar';
 
+// Строка данных: первый ключ — строковое имя категории, остальные — числовые значения
 export type ChartRow = Record<string, string | number>;
 
 interface ChartBlockProps {
@@ -27,42 +28,37 @@ interface ChartBlockProps {
   isDark: boolean;
 }
 
-// ─── Палитра ──────────────────────────────────────────────────────────────────
+// ─── Цветовая палитра по умолчанию ───────────────────────────────────────────
 
 const DEFAULT_COLORS = [
-  '#7c3aed', '#10b981', '#f59e0b', '#3b82f6',
-  '#f43f5e', '#8b5cf6', '#06b6d4', '#fb923c',
+  '#7234ff', '#22c55e', '#f59e0b', '#3b82f6',
+  '#ef4444', '#ec4899', '#14b8a6', '#f97316',
 ];
 
-// ─── Токены ───────────────────────────────────────────────────────────────────
+// ─── Токены темы ──────────────────────────────────────────────────────────────
 
 function tk(isDark: boolean) {
   const t = makeTokens(isDark);
   return {
-    outerBg:      t.bg,
-    outerBorder:  isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)',
-    outerShadow:  isDark
-      ? '0 4px 24px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.04) inset'
-      : '0 2px 12px rgba(0,0,0,0.07), 0 1px 0 rgba(255,255,255,0.9) inset',
-    tooltipBg:    isDark ? '#18181b' : '#ffffff',
-    tooltipBdr:   isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-    tooltipText:  isDark ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.85)',
-    tooltipShadow: isDark
-      ? '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)'
-      : '0 8px 24px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)',
-    axisText:     isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
-    titleText:    isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.25)',
-    footerText:   isDark ? 'rgba(255,255,255,0.2)'  : 'rgba(0,0,0,0.28)',
-    footerBdr:    isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)',
-    legendText:   isDark ? 'rgba(255,255,255,0.5)'  : 'rgba(0,0,0,0.5)',
-    legendMuted:  isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.18)',
-    gridLine:     isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-    cursorFill:   isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
-    dotBg:        isDark ? '#18181b' : '#ffffff',
+    outerBg:     t.bg,
+    outerBorder: t.border,
+    outerShadow: isDark
+      ? '0 2px 12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)'
+      : '0 1px 6px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.07)',
+    tooltipBg:   isDark ? '#1a1a1a'                : '#ffffff',
+    tooltipBdr:  isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)',
+    tooltipText: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)',
+    axisText:    isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)',
+    titleText:   isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.28)',
+    footerText:  isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.32)',
+    footerBdr:   isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)',
+    legendText:  isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)',
+    legendMuted: isDark ? 'rgba(255,255,255,0.2)'  : 'rgba(0,0,0,0.2)',
+    gridLine:    isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
   };
 }
 
-// ─── Определение ключей ───────────────────────────────────────────────────────
+// ─── Определение ключей данных ────────────────────────────────────────────────
 
 function detectKeys(data: ChartRow[]): { nameKey: string; valueKeys: string[] } {
   if (!data.length) return { nameKey: 'name', valueKeys: [] };
@@ -70,102 +66,30 @@ function detectKeys(data: ChartRow[]): { nameKey: string; valueKeys: string[] } 
   return { nameKey: keys[0] ?? 'name', valueKeys: keys.slice(1) };
 }
 
-// ─── Утилита: яркость цвета ───────────────────────────────────────────────────
-// Возвращает relative luminance [0..1] по WCAG.
-// Используется чтобы определить, слишком ли тёмный цвет на тёмном фоне
-// или слишком светлый на светлом фоне.
-
-function hexLuminance(hex: string): number {
-  const c = hex.replace('#', '');
-  if (c.length !== 6) return 0.5; // fallback для некорректных значений
-  const r = parseInt(c.slice(0, 2), 16) / 255;
-  const g = parseInt(c.slice(2, 4), 16) / 255;
-  const b = parseInt(c.slice(4, 6), 16) / 255;
-  const toLinear = (v: number) =>
-    v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-  return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
-}
-
-/**
- * FIX: Если цвет почти невидим на фоне (очень тёмный в dark-mode или очень
- * светлый в light-mode) — заменяем его на DEFAULT_COLORS[idx].
- * Это решает ситуацию, когда пользователь задаёт, например, #383838 в тёмной теме.
- */
-function safeColor(color: string, idx: number, isDark: boolean): string {
-  const lum = hexLuminance(color);
-  if (isDark && lum < 0.04)  return DEFAULT_COLORS[idx % DEFAULT_COLORS.length];
-  if (!isDark && lum > 0.92) return DEFAULT_COLORS[idx % DEFAULT_COLORS.length];
-  return color;
-}
-
-function safePalette(palette: string[], isDark: boolean): string[] {
-  return palette.map((c, i) => safeColor(c, i, isDark));
-}
-
-// ─── Кастомный Tooltip ────────────────────────────────────────────────────────
+// ─── Тултипы ─────────────────────────────────────────────────────────────────
 
 const CustomTooltip: React.FC<{
   active?: boolean;
   payload?: Array<{ name: string; value: number; color: string }>;
   label?: string;
   t: ReturnType<typeof tk>;
-  // для bar-horizontal передаём карту row→color чтобы обойти баг recharts
-  rowColorMap?: Record<string, string>;
-}> = ({ active, payload, label, t, rowColorMap }) => {
+}> = ({ active, payload, label, t }) => {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
-      background: t.tooltipBg,
-      border: `1px solid ${t.tooltipBdr}`,
-      borderRadius: 10,
-      padding: '9px 13px',
-      fontSize: 12,
-      color: t.tooltipText,
-      boxShadow: t.tooltipShadow,
+      background: t.tooltipBg, border: `1px solid ${t.tooltipBdr}`,
+      borderRadius: 8, padding: '8px 12px', fontSize: 12,
+      color: t.tooltipText, boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
       pointerEvents: 'none',
-      minWidth: 120,
     }}>
-      {label && (
-        <div style={{
-          fontWeight: 600,
-          fontSize: 11,
-          marginBottom: 7,
-          opacity: 0.5,
-          letterSpacing: '0.03em',
-          textTransform: 'uppercase',
-        }}>
-          {label}
+      {label && <div style={{ fontWeight: 600, marginBottom: 4, opacity: 0.7 }}>{label}</div>}
+      {payload.map(entry => (
+        <div key={entry.name} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+          <div style={{ width: 8, height: 8, borderRadius: 2, background: entry.color, flexShrink: 0 }} />
+          <span style={{ opacity: 0.7 }}>{entry.name}:</span>
+          <span style={{ fontWeight: 600 }}>{entry.value}</span>
         </div>
-      )}
-      {payload.map(entry => {
-        const resolvedColor = (rowColorMap && label)
-          ? (rowColorMap[label] ?? entry.color)
-          : entry.color;
-        return (
-          <div key={entry.name} style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 14,
-            marginTop: 3,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-              <div style={{
-                width: 7,
-                height: 7,
-                borderRadius: '50%',
-                background: resolvedColor,
-                flexShrink: 0,
-                boxShadow: `0 0 0 2px ${resolvedColor}33`,
-              }} />
-              <span style={{ opacity: 0.6, fontSize: 11 }}>{entry.name}</span>
-            </div>
-            <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
-              {entry.value.toLocaleString()}
-            </span>
-          </div>
-        );
-      })}
+      ))}
     </div>
   );
 };
@@ -179,29 +103,15 @@ const PieTooltip: React.FC<{
   const entry = payload[0];
   return (
     <div style={{
-      background: t.tooltipBg,
-      border: `1px solid ${t.tooltipBdr}`,
-      borderRadius: 10,
-      padding: '9px 13px',
-      fontSize: 12,
-      color: t.tooltipText,
-      boxShadow: t.tooltipShadow,
+      background: t.tooltipBg, border: `1px solid ${t.tooltipBdr}`,
+      borderRadius: 8, padding: '8px 12px', fontSize: 12,
+      color: t.tooltipText, boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
       pointerEvents: 'none',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{
-          width: 7,
-          height: 7,
-          borderRadius: '50%',
-          background: entry.payload.fill,
-          flexShrink: 0,
-          boxShadow: `0 0 0 2px ${entry.payload.fill}33`,
-        }} />
-        <span style={{ fontWeight: 600 }}>{entry.name}</span>
-        <span style={{ opacity: 0.5, fontSize: 11 }}>·</span>
-        <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
-          {entry.value.toLocaleString()}
-        </span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ width: 8, height: 8, borderRadius: 2, background: entry.payload.fill, flexShrink: 0 }} />
+        <span style={{ fontWeight: 600 }}>{entry.name}:</span>
+        <span>{entry.value}</span>
       </div>
     </div>
   );
@@ -220,11 +130,8 @@ const CustomLegend: React.FC<{
   if (items.length <= 1) return null;
   return (
     <div style={{
-      display: 'flex',
-      flexWrap: 'wrap',
-      justifyContent: 'center',
-      gap: '3px 8px',
-      padding: '0 14px 12px',
+      display: 'flex', flexWrap: 'wrap', justifyContent: 'center',
+      gap: '4px 12px', padding: '2px 12px 10px',
     }}>
       {items.map(item => {
         const isHidden = hidden.has(item.key);
@@ -233,36 +140,21 @@ const CustomLegend: React.FC<{
             key={item.key}
             onClick={() => onToggle(item.key)}
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              background: isHidden
-                ? 'transparent'
-                : `${item.color}14`,
-              border: `1px solid ${isHidden ? t.legendMuted : item.color + '40'}`,
-              cursor: 'pointer',
-              padding: '3px 9px 3px 7px',
-              borderRadius: 20,
-              outline: 'none',
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '3px 6px', borderRadius: 5, outline: 'none',
               color: isHidden ? t.legendMuted : t.legendText,
-              fontSize: 11,
-              fontWeight: 500,
-              userSelect: 'none',
-              transition: 'all 0.15s ease',
+              fontSize: 11, fontWeight: isHidden ? 400 : 500,
+              userSelect: 'none', transition: 'color 0.12s',
             }}
           >
             <div style={{
-              width: 6,
-              height: 6,
-              borderRadius: '50%',
-              flexShrink: 0,
-              background: isHidden ? t.legendMuted : item.color,
-              transition: 'all 0.15s ease',
+              width: 10, height: 10, borderRadius: 3, flexShrink: 0,
+              background: isHidden ? 'transparent' : item.color,
+              border: `2px solid ${isHidden ? t.legendMuted : item.color}`,
+              transition: 'all 0.12s',
             }} />
-            <span style={{
-              textDecoration: isHidden ? 'line-through' : 'none',
-              opacity: isHidden ? 0.5 : 1,
-            }}>
+            <span style={{ textDecoration: isHidden ? 'line-through' : 'none' }}>
               {item.key}
             </span>
           </button>
@@ -272,89 +164,42 @@ const CustomLegend: React.FC<{
   );
 };
 
-// ─── Высота чарта ─────────────────────────────────────────────────────────────
+// ─── Высота графика ───────────────────────────────────────────────────────────
 
 function chartHeight(type: ChartType, rowCount: number): number {
-  if (type === 'bar-horizontal') return Math.max(110, rowCount * 48 + 40);
-  if (type === 'pie' || type === 'pie-donut') return 248;
-  if (type === 'radar') return 276;
-  return 218;
+  if (type === 'bar-horizontal') return Math.max(100, rowCount * 40 + 36);
+  if (type === 'pie' || type === 'pie-donut') return 240;
+  if (type === 'radar') return 270;
+  return 210;
 }
 
 // ─── Пропсы осей ─────────────────────────────────────────────────────────────
 
 function ap(t: ReturnType<typeof tk>) {
-  return {
-    tick: { fill: t.axisText, fontSize: 11, fontWeight: 500 },
-    axisLine: false,
-    tickLine: false,
-  };
+  return { tick: { fill: t.axisText, fontSize: 11 }, axisLine: false, tickLine: false };
 }
 
 // ─── Area ─────────────────────────────────────────────────────────────────────
 
 function renderArea(
   data: ChartRow[],
-  nameKey: string,
-  valueKeys: string[],
-  palette: string[],
-  stacked: boolean,
-  hidden: Set<string>,
-  t: ReturnType<typeof tk>,
-  isDark: boolean,
+  nameKey: string, valueKeys: string[], palette: string[],
+  stacked: boolean, hidden: Set<string>, t: ReturnType<typeof tk>
 ) {
   const visible = valueKeys.filter(k => !hidden.has(k));
-
-  // FIX: увеличиваем opacity заливки для светлой темы и для stacked-режима,
-  // иначе области почти не видны на белом фоне.
-  // Stacked: верхний stop должен быть заметно непрозрачным, иначе нижние
-  // серии (которые перекрыты верхними) вообще не проглядывают.
-  const fillTop    = stacked
-    ? (isDark ? 0.55 : 0.65)
-    : (isDark ? 0.25 : 0.40);
-  const fillBottom = stacked
-    ? (isDark ? 0.10 : 0.15)
-    : 0;
-
   return (
-    <AreaChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-      <defs>
-        {visible.map((key) => {
-          const idx = valueKeys.indexOf(key);
-          const color = palette[idx % palette.length];
-          return (
-            <linearGradient key={key} id={`area-grad-${idx}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity={fillTop} />
-              <stop offset="100%" stopColor={color} stopOpacity={fillBottom} />
-            </linearGradient>
-          );
-        })}
-      </defs>
-      <XAxis dataKey={nameKey} {...ap(t)} tickMargin={8} />
-      <YAxis {...ap(t)} width={40} tickMargin={4} />
-      <Tooltip
-        content={<CustomTooltip t={t} />}
-        cursor={{ stroke: t.gridLine, strokeWidth: 1 }}
-      />
+    <AreaChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+      <XAxis dataKey={nameKey} {...ap(t)} />
+      <YAxis {...ap(t)} width={38} />
+      <Tooltip content={<CustomTooltip t={t} />} cursor={{ stroke: t.gridLine, strokeWidth: 1 }} />
       {visible.map((key) => {
         const idx = valueKeys.indexOf(key);
         const color = palette[idx % palette.length];
         return (
-          <Area
-            key={key}
-            type="monotone"
-            dataKey={key}
-            stroke={color}
-            fill={`url(#area-grad-${idx})`}
-            strokeWidth={2}
+          <Area key={key} type="monotone" dataKey={key}
+            stroke={color} fill={color} fillOpacity={0.1} strokeWidth={2}
             stackId={stacked ? 'stack' : undefined}
-            dot={false}
-            activeDot={{
-              r: 4,
-              strokeWidth: 2,
-              stroke: t.dotBg,
-              fill: color,
-            }}
+            dot={false} activeDot={{ r: 4, strokeWidth: 0 }}
             isAnimationActive={false}
           />
         );
@@ -365,23 +210,17 @@ function renderArea(
 
 // ─── Bar ──────────────────────────────────────────────────────────────────────
 
-function getMaxBarSize(seriesCount: number, horizontal: boolean): number {
-  if (horizontal) return 32;
-  if (seriesCount <= 1) return 96;
-  if (seriesCount <= 3) return 72;
-  return 52;
+function getMaxBarSize(seriesCount: number): number {
+  if (seriesCount <= 1) return 72;
+  if (seriesCount <= 3) return 56;
+  return 40;
 }
 
-function getCategoryGap(rowCount: number, horizontal: boolean): string {
-  if (horizontal) {
-    if (rowCount <= 4)  return '12%';
-    if (rowCount <= 8)  return '16%';
-    return '20%';
-  }
-  if (rowCount <= 3)  return '12%';
-  if (rowCount <= 6)  return '16%';
-  if (rowCount <= 10) return '20%';
-  return '24%';
+function getCategoryGap(rowCount: number): string {
+  if (rowCount <= 3)  return '15%';
+  if (rowCount <= 6)  return '20%';
+  if (rowCount <= 10) return '25%';
+  return '30%';
 }
 
 interface RenderBarOptions {
@@ -400,8 +239,12 @@ function getBarRadius(
   horizontal: boolean,
   isLastVisible: boolean
 ): [number, number, number, number] {
-  if (!stacked) return horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0];
-  if (isLastVisible) return horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0];
+  if (!stacked) {
+    return horizontal ? [0, 3, 3, 0] : [3, 3, 0, 0];
+  }
+  if (isLastVisible) {
+    return horizontal ? [0, 3, 3, 0] : [3, 3, 0, 0];
+  }
   return [0, 0, 0, 0];
 }
 
@@ -411,6 +254,7 @@ function renderBar({
 }: RenderBarOptions) {
   const isSingleSeries = valueKeys.length === 1;
 
+  // Для горизонтальных одиночных серий скрываем строки по имени, иначе — по ключу серии
   const visibleData = (isSingleSeries && horizontal)
     ? data.filter(d => !hidden.has(String(d[nameKey])))
     : data;
@@ -420,64 +264,38 @@ function renderBar({
 
   const useRowColors = isSingleSeries;
   const a = ap(t);
-  const maxSize = getMaxBarSize(visible.length, horizontal);
-  const bGap = visible.length <= 2 ? 4 : 3;
-
-  // FIX: строим карту row-name → color для tooltip в bar-horizontal
-  const rowColorMap: Record<string, string> | undefined = (isSingleSeries && horizontal)
-    ? Object.fromEntries(
-        data.map((row, origIdx) => [
-          String(row[nameKey]),
-          palette[origIdx % palette.length],
-        ])
-      )
-    : undefined;
+  const maxSize = getMaxBarSize(visible.length);
+  const bGap = visible.length <= 2 ? 3 : 2;
 
   return (
     <BarChart
       data={visibleData}
       layout={horizontal ? 'vertical' : 'horizontal'}
-      margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
-      barCategoryGap={getCategoryGap(data.length, horizontal)}
+      margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+      barCategoryGap={getCategoryGap(data.length)}
       barGap={bGap}
     >
       {horizontal
-        ? (
-          <>
-            <YAxis dataKey={nameKey} type="category" {...a} width={96} tickMargin={6} />
-            <XAxis type="number" {...a} tickMargin={8} />
-          </>
-        ) : (
-          <>
-            <XAxis dataKey={nameKey} {...a} tickMargin={8} />
-            <YAxis {...a} width={40} tickMargin={4} />
-          </>
-        )
+        ? <><YAxis dataKey={nameKey} type="category" {...a} width={90} /><XAxis type="number" {...a} /></>
+        : <><XAxis dataKey={nameKey} {...a} /><YAxis {...a} width={38} /></>
       }
-      <Tooltip
-        content={<CustomTooltip t={t} rowColorMap={rowColorMap} />}
-        cursor={{ fill: t.cursorFill }}
-      />
+      <Tooltip content={<CustomTooltip t={t} />} cursor={{ fill: t.gridLine }} />
       {visible.map((key) => {
         const idx = valueKeys.indexOf(key);
         const seriesColor = palette[idx % palette.length];
         const isLastVisible = visible.indexOf(key) === visible.length - 1;
         const radius = getBarRadius(stacked, horizontal, isLastVisible);
         return (
-          <Bar
-            key={key}
-            dataKey={key}
-            fill={seriesColor}
+          <Bar key={key} dataKey={key} fill={seriesColor}
             radius={radius}
             stackId={stacked ? 'stack' : undefined}
-            maxBarSize={maxSize}
-            isAnimationActive={false}
+            maxBarSize={maxSize} isAnimationActive={false}
           >
-            {useRowColors && visibleData.map((row, rowIdx) => {
-              const origIdx = data.indexOf(row);
+            {useRowColors && visibleData.map((_, rowIdx) => {
+              const origIdx = data.indexOf(visibleData[rowIdx]);
               return (
                 <Cell
-                  key={`cell-${String(row[nameKey])}`}
+                  key={`cell-${String(visibleData[rowIdx][nameKey])}`}
                   fill={palette[(origIdx === -1 ? rowIdx : origIdx) % palette.length]}
                 />
               );
@@ -493,27 +311,18 @@ function renderBar({
 
 function renderPie(
   data: ChartRow[],
-  nameKey: string,
-  valueKeys: string[],
-  palette: string[],
-  donut: boolean,
-  hidden: Set<string>,
-  t: ReturnType<typeof tk>
+  nameKey: string, valueKeys: string[], palette: string[],
+  donut: boolean, hidden: Set<string>, t: ReturnType<typeof tk>
 ) {
   const valueKey = valueKeys[0] ?? 'value';
   const visibleData = data.filter(d => !hidden.has(String(d[nameKey])));
   return (
     <PieChart margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
       <Pie
-        data={visibleData}
-        dataKey={valueKey}
-        nameKey={nameKey}
-        cx="50%"
-        cy="50%"
-        innerRadius={donut ? '52%' : '0%'}
-        outerRadius="80%"
-        paddingAngle={donut ? 3 : 1}
-        strokeWidth={0}
+        data={visibleData} dataKey={valueKey} nameKey={nameKey}
+        cx="50%" cy="50%"
+        innerRadius={donut ? '50%' : '0%'} outerRadius="78%"
+        paddingAngle={2} strokeWidth={0}
         style={{ outline: 'none' }}
         isAnimationActive={false}
       >
@@ -538,39 +347,22 @@ function renderPie(
 
 function renderRadar(
   data: ChartRow[],
-  nameKey: string,
-  valueKeys: string[],
-  palette: string[],
-  hidden: Set<string>,
-  t: ReturnType<typeof tk>
+  nameKey: string, valueKeys: string[], palette: string[],
+  hidden: Set<string>, t: ReturnType<typeof tk>
 ) {
   const visible = valueKeys.filter(k => !hidden.has(k));
   return (
-    <RadarChart
-      data={data}
-      cx="50%"
-      cy="50%"
-      outerRadius="72%"
-      margin={{ top: 8, right: 20, left: 20, bottom: 8 }}
-    >
-      <PolarGrid stroke={t.gridLine} strokeWidth={1} />
-      <PolarAngleAxis
-        dataKey={nameKey}
-        tick={{ fill: t.axisText, fontSize: 11, fontWeight: 500 }}
-      />
+    <RadarChart data={data} cx="50%" cy="50%" outerRadius="72%"
+      margin={{ top: 8, right: 16, left: 16, bottom: 8 }}>
+      <PolarGrid stroke={t.gridLine} />
+      <PolarAngleAxis dataKey={nameKey} tick={{ fill: t.axisText, fontSize: 11 }} />
       <Tooltip content={<CustomTooltip t={t} />} />
       {visible.map((key) => {
         const idx = valueKeys.indexOf(key);
         const color = palette[idx % palette.length];
         return (
-          <Radar
-            key={key}
-            dataKey={key}
-            stroke={color}
-            fill={color}
-            fillOpacity={0.1}
-            strokeWidth={2}
-            dot={{ r: 3, fill: color, strokeWidth: 0 }}
+          <Radar key={key} dataKey={key}
+            stroke={color} fill={color} fillOpacity={0.12} strokeWidth={2}
             isAnimationActive={false}
           />
         );
@@ -579,7 +371,7 @@ function renderRadar(
   );
 }
 
-// ─── Склонение ────────────────────────────────────────────────────────────────
+// ─── Склонение слова "запись" ─────────────────────────────────────────────────
 
 function pluralRecords(n: number): string {
   if (n === 1) return 'запись';
@@ -590,15 +382,8 @@ function pluralRecords(n: number): string {
 // ─── ChartBlock ───────────────────────────────────────────────────────────────
 
 const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDark }) => {
-  const t = tk(isDark);
-
-  // FIX: применяем safePalette — заменяем невидимые цвета на контрастные fallback'и.
-  // Это устраняет баг с #383838 в тёмной теме (luminance < 0.04 → невидим).
-  const palette = useMemo(() => {
-    const raw = colors?.length ? colors : DEFAULT_COLORS;
-    return safePalette(raw, isDark);
-  }, [colors, isDark]);
-
+  const t       = tk(isDark);
+  const palette = colors?.length ? colors : DEFAULT_COLORS;
   const { nameKey, valueKeys } = useMemo(() => detectKeys(data), [data]);
 
   const [hidden, setHidden] = useState<Set<string>>(new Set());
@@ -633,8 +418,8 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
   const chart = useMemo(() => {
     if (isEmpty) return null;
     switch (type) {
-      case 'area':           return renderArea(data, nameKey, valueKeys, palette, false, hidden, t, isDark);
-      case 'area-stacked':   return renderArea(data, nameKey, valueKeys, palette, true,  hidden, t, isDark);
+      case 'area':           return renderArea(data, nameKey, valueKeys, palette, false, hidden, t);
+      case 'area-stacked':   return renderArea(data, nameKey, valueKeys, palette, true,  hidden, t);
       case 'bar':            return renderBar({ data, nameKey, valueKeys, palette, stacked: false, horizontal: false, hidden, t });
       case 'bar-stacked':    return renderBar({ data, nameKey, valueKeys, palette, stacked: true,  horizontal: false, hidden, t });
       case 'bar-horizontal': return renderBar({ data, nameKey, valueKeys, palette, stacked: false, horizontal: true,  hidden, t });
@@ -643,11 +428,11 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
       case 'radar':          return renderRadar(data, nameKey, valueKeys, palette, hidden, t);
       default:               return null;
     }
-  }, [type, data, nameKey, valueKeys, palette, hidden, t, isEmpty, isDark]);
+  }, [type, data, nameKey, valueKeys, palette, hidden, t, isEmpty]);
 
   return (
-    <div className="not-prose" style={{ margin: '1.5rem 0' }}>
-      {/* Сброс outline для recharts */}
+    <div className="not-prose" style={{ margin: '1.25rem 0' }}>
+      {/* Глобальный сброс outline для всех recharts-элементов */}
       <style>{`
         .recharts-wrapper:focus,
         .recharts-wrapper *:focus,
@@ -660,48 +445,32 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
           outline: none !important;
           box-shadow: none !important;
         }
-        .recharts-active-dot circle {
-          filter: drop-shadow(0 0 3px currentColor);
-        }
       `}</style>
-
       <div style={{
-        borderRadius: 14,
+        borderRadius: 12,
         border: `1px solid ${t.outerBorder}`,
         background: t.outerBg,
         boxShadow: t.outerShadow,
         overflow: 'hidden',
         outline: 'none',
       }}>
-        {/* Шапка */}
         {title && (
           <div style={{
-            padding: '12px 18px 0',
-            fontSize: '0.65rem',
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
+            padding: '10px 16px 0',
+            fontSize: '0.68rem', fontWeight: 700,
+            textTransform: 'uppercase', letterSpacing: '0.08em',
             color: t.titleText,
           }}>
             {title}
           </div>
         )}
 
-        {/* Тело */}
-        <div style={{
-          padding: title ? '10px 6px 2px' : '16px 6px 2px',
-          outline: 'none',
-        }}>
+        <div style={{ padding: title ? '10px 4px 0' : '14px 4px 0', outline: 'none' }}>
           {isEmpty ? (
             <div style={{
-              height: 140,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 13,
-              color: t.axisText,
-              fontStyle: 'italic',
-              opacity: 0.6,
+              height: 140, display: 'flex', alignItems: 'center',
+              justifyContent: 'center', fontSize: 13,
+              color: t.axisText, fontStyle: 'italic',
             }}>
               Нет данных
             </div>
@@ -712,39 +481,17 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
           )}
         </div>
 
-        {/* Легенда */}
         {!isEmpty && (
-          <div style={{ padding: '8px 10px 0' }}>
-            <CustomLegend
-              items={legendItems}
-              hidden={hidden}
-              onToggle={toggleHidden}
-              t={t}
-            />
-          </div>
+          <CustomLegend items={legendItems} hidden={hidden} onToggle={toggleHidden} t={t} />
         )}
 
-        {/* Футер */}
         <div style={{
-          padding: '6px 18px 8px',
-          fontSize: 11,
-          color: t.footerText,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          borderTop: `1px solid ${t.footerBdr}`,
-          userSelect: 'none',
-          marginTop: 4,
+          padding: '5px 16px 7px', fontSize: 11, color: t.footerText,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          borderTop: `1px solid ${t.footerBdr}`, userSelect: 'none',
         }}>
-          <span style={{ opacity: 0.7 }}>
-            {data.length} {pluralRecords(data.length)}
-          </span>
-          <span style={{
-            fontFamily: 'ui-monospace, monospace',
-            fontSize: 10,
-            opacity: 0.45,
-            letterSpacing: '0.04em',
-          }}>
+          <span>{data.length}{' '}{pluralRecords(data.length)}</span>
+          <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 10, opacity: 0.6 }}>
             {type}
           </span>
         </div>
