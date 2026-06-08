@@ -65,29 +65,6 @@ function detectKeys(data: ChartRow[]): { nameKey: string; valueKeys: string[] } 
   return { nameKey: keys[0] ?? 'name', valueKeys: keys.slice(1) };
 }
 
-// ─── SVG Glow Defs ────────────────────────────────────────────────────────────
-
-// Встроенный SVG-фильтр для glow-эффекта на барах
-// Используется как customized prop в <Bar>
-function GlowDefs({ id, color, blur = 6, opacity = 0.55 }: {
-  id: string; color: string; blur?: number; opacity?: number;
-}) {
-  return (
-    <defs>
-      <filter id={id} x="-40%" y="-40%" width="180%" height="180%">
-        <feGaussianBlur in="SourceGraphic" stdDeviation={blur} result="blur" />
-        <feColorMatrix in="blur" type="matrix"
-          values={`0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 ${opacity} 0`}
-          result="coloredBlur" />
-        <feMerge>
-          <feMergeNode in="coloredBlur" />
-          <feMergeNode in="SourceGraphic" />
-        </feMerge>
-      </filter>
-    </defs>
-  );
-}
-
 // ─── Тултипы ─────────────────────────────────────────────────────────────────
 
 const CustomTooltip: React.FC<{
@@ -206,7 +183,6 @@ function chartHeight(type: ChartType, rowCount: number): number {
   if (type === 'bar-horizontal') return Math.max(120, rowCount * 44 + 40);
   if (type === 'pie' || type === 'pie-donut') return 248;
   if (type === 'radar') return 278;
-  // bar и bar-stacked — увеличены
   if (type === 'bar' || type === 'bar-stacked') return 280;
   return 220;
 }
@@ -239,7 +215,6 @@ function renderArea(
       <defs>
         {visible.map((key) => {
           const idx = valueKeys.indexOf(key);
-          const color = palette[idx % palette.length];
           return (
             <filter key={`glow-${key}`} id={`area-glow-${idx}`} x="-30%" y="-30%" width="160%" height="160%">
               <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
@@ -277,7 +252,6 @@ function renderArea(
 
 // ─── Bar ──────────────────────────────────────────────────────────────────────
 
-// Увеличенные размеры барів
 function getMaxBarSize(seriesCount: number): number {
   if (seriesCount <= 1) return 96;
   if (seriesCount <= 3) return 72;
@@ -299,6 +273,8 @@ interface RenderBarOptions {
   stacked: boolean;
   horizontal: boolean;
   hidden: Set<string>;
+  // FIX: для single-series row-color bars hovered содержит nameKey-значение строки,
+  //      для multi-series hovered содержит valueKey серии
   hovered: string | null;
   t: ReturnType<typeof tk>;
 }
@@ -313,33 +289,14 @@ function getBarRadius(
   return [0, 0, 0, 0];
 }
 
-// Кастомизированный бар с glow-эффектом
-function GlowBar(props: any) {
-  const { x, y, width, height, fill, glowColor, opacity } = props;
-  if (!width || !height) return null;
-  return (
-    <g opacity={opacity ?? 1} style={{ transition: 'opacity 0.2s' }}>
-      {/* Glow-слой */}
-      <rect
-        x={x - 2} y={y - 2} width={width + 4} height={height + 4}
-        rx={4} fill={glowColor ?? fill}
-        style={{ filter: `blur(6px)`, opacity: 0.45 }}
-      />
-      {/* Основной бар */}
-      <rect x={x} y={y} width={width} height={height}
-        rx={props.radius?.[0] ?? 4}
-        fill={fill}
-      />
-    </g>
-  );
-}
-
 function renderBar({
   data, nameKey, valueKeys, palette,
   stacked, horizontal, hidden, hovered, t,
 }: RenderBarOptions) {
   const isSingleSeries = valueKeys.length === 1;
 
+  // FIX: для bar-horizontal single-series скрываем строки по nameKey,
+  //      для остальных — по valueKey
   const visibleData = (isSingleSeries && horizontal)
     ? data.filter(d => !hidden.has(String(d[nameKey])))
     : data;
@@ -370,7 +327,9 @@ function renderBar({
         const seriesColor = palette[idx % palette.length];
         const isLastVisible = visible.indexOf(key) === visible.length - 1;
         const radius = getBarRadius(stacked, horizontal, isLastVisible);
-        const op = hovered === null ? 1 : hovered === key ? 1 : 0.22;
+
+        // FIX: для multi-series opacity управляется по valueKey (как раньше)
+        const multiSeriesOp = hovered === null ? 1 : hovered === key ? 1 : 0.22;
 
         return (
           <Bar key={key} dataKey={key}
@@ -380,14 +339,21 @@ function renderBar({
             maxBarSize={maxSize}
             isAnimationActive={false}
             shape={(props: any) => {
-              // Для stacked — только последний слой рисует glow поверх всех
               const glow = !stacked || isLastVisible;
+
+              // FIX: получаем имя строки из props напрямую, не через datum
+              const rowName = String(props[nameKey] ?? visibleData[props.index]?.[nameKey] ?? '');
+
               const cellFill = useRowColors
-                ? palette[(data.indexOf(props.datum ?? visibleData[props.index]) ?? props.index) % palette.length]
+                ? palette[(data.findIndex(d => String(d[nameKey]) === rowName) + data.length) % palette.length]
                 : seriesColor;
+
+              // FIX: для single-series (row-colors) opacity определяется по имени строки,
+              //      для multi-series — по ключу серии
               const cellOp = useRowColors
-                ? (hovered === null ? 1 : hovered === String(props.datum?.[nameKey] ?? '') ? 1 : 0.22)
-                : op;
+                ? (hovered === null ? 1 : hovered === rowName ? 1 : 0.22)
+                : multiSeriesOp;
+
               return (
                 <g opacity={cellOp} style={{ transition: 'opacity 0.18s' }}>
                   {glow && (
@@ -427,40 +393,52 @@ function renderBar({
   );
 }
 
-// ─── Pie ──────────────────────────────────────────────────────────────────────
+// ─── Pie (вынесен в компонент, чтобы можно было использовать useState) ────────
 
-function renderActiveShape(props: any, donut: boolean) {
-  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
-  return (
-    <g>
-      <filter id="pie-glow">
-        <feGaussianBlur stdDeviation="4" result="blur" />
-        <feMerge>
-          <feMergeNode in="blur" />
-          <feMergeNode in="SourceGraphic" />
-        </feMerge>
-      </filter>
-      <Sector
-        cx={cx} cy={cy}
-        innerRadius={donut ? innerRadius - 2 : 0}
-        outerRadius={outerRadius + 6}
-        startAngle={startAngle} endAngle={endAngle}
-        fill={fill}
-        style={{ filter: `drop-shadow(0 0 8px ${fill}cc)` }}
-      />
-    </g>
-  );
+interface PieChartInnerProps {
+  data: ChartRow[];
+  nameKey: string;
+  valueKeys: string[];
+  palette: string[];
+  donut: boolean;
+  hidden: Set<string>;
+  // FIX: hovered здесь — имя сектора (nameKey-значение)
+  hovered: string | null;
+  t: ReturnType<typeof tk>;
 }
 
-function renderPie(
-  data: ChartRow[],
-  nameKey: string, valueKeys: string[], palette: string[],
-  donut: boolean, hidden: Set<string>,
-  t: ReturnType<typeof tk>
-) {
+// FIX: вынесли в настоящий React-компонент — useState теперь вызывается корректно
+const PieChartInner: React.FC<PieChartInnerProps> = ({
+  data, nameKey, valueKeys, palette, donut, hidden, hovered, t,
+}) => {
   const valueKey = valueKeys[0] ?? 'value';
   const visibleData = data.filter(d => !hidden.has(String(d[nameKey])));
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
+
+  // FIX: activeIndex синхронизируем с hovered из легенды
+  const resolvedActiveIndex = useMemo(() => {
+    if (hovered !== null) {
+      const idx = visibleData.findIndex(d => String(d[nameKey]) === hovered);
+      return idx >= 0 ? idx : activeIndex;
+    }
+    return activeIndex;
+  }, [hovered, visibleData, nameKey, activeIndex]);
+
+  const renderActive = useCallback((props: any) => {
+    const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
+    return (
+      <g>
+        <Sector
+          cx={cx} cy={cy}
+          innerRadius={donut ? innerRadius - 2 : 0}
+          outerRadius={outerRadius + 6}
+          startAngle={startAngle} endAngle={endAngle}
+          fill={fill}
+          style={{ filter: `drop-shadow(0 0 8px ${fill}cc)` }}
+        />
+      </g>
+    );
+  }, [donut]);
 
   return (
     <PieChart margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
@@ -471,19 +449,22 @@ function renderPie(
         paddingAngle={2.5} strokeWidth={0}
         style={{ outline: 'none' }}
         isAnimationActive={false}
-        activeIndex={activeIndex}
-        activeShape={(props: any) => renderActiveShape(props, donut)}
+        activeIndex={resolvedActiveIndex}
+        activeShape={renderActive}
         onMouseEnter={(_, index) => setActiveIndex(index)}
         onMouseLeave={() => setActiveIndex(undefined)}
       >
         {visibleData.map((entry) => {
           const rowName = String(entry[nameKey]);
           const origIdx = data.findIndex(d => String(d[nameKey]) === rowName);
+          // FIX: затемняем секторы при hover через легенду
+          const op = hovered === null ? 1 : hovered === rowName ? 1 : 0.22;
           return (
             <Cell
               key={rowName}
               fill={palette[origIdx % palette.length]}
-              style={{ outline: 'none', cursor: 'default' }}
+              opacity={op}
+              style={{ outline: 'none', cursor: 'default', transition: 'opacity 0.18s' }}
             />
           );
         })}
@@ -491,7 +472,7 @@ function renderPie(
       <Tooltip content={<PieTooltip t={t} />} />
     </PieChart>
   );
-}
+};
 
 // ─── Radar ────────────────────────────────────────────────────────────────────
 
@@ -556,6 +537,9 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
 
   const isEmpty = !data.length || !valueKeys.length;
 
+  // FIX: для pie/single-bar легенда строится по nameKey строк,
+  //      для остальных — по valueKeys серий.
+  //      Это же определяет семантику `hovered` — имя строки vs имя серии.
   const legendItems: LegendItem[] = useMemo(() => {
     const isPie = type === 'pie' || type === 'pie-donut';
     const isSingleBar = (type === 'bar' || type === 'bar-horizontal') && valueKeys.length === 1;
@@ -586,9 +570,20 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
       case 'bar-horizontal':
         return renderBar({ data, nameKey, valueKeys, palette, stacked: false, horizontal: true,  hidden, hovered, t });
       case 'pie':
-        return renderPie(data, nameKey, valueKeys, palette, false, hidden, t);
       case 'pie-donut':
-        return renderPie(data, nameKey, valueKeys, palette, true,  hidden, t);
+        // FIX: используем компонент вместо функции, чтобы useState работал корректно
+        return (
+          <PieChartInner
+            data={data}
+            nameKey={nameKey}
+            valueKeys={valueKeys}
+            palette={palette}
+            donut={type === 'pie-donut'}
+            hidden={hidden}
+            hovered={hovered}
+            t={t}
+          />
+        );
       case 'radar':
         return renderRadar(data, nameKey, valueKeys, palette, hidden, hovered, t);
       default:
