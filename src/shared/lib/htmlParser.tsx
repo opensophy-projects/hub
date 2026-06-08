@@ -1,6 +1,7 @@
 import React, { createContext, lazy, Suspense } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
 import { CodeBlock } from '../components/CodeBlock';
+import MermaidViewer from '../components/MermaidViewer';
 import type { CodeTab } from '../components/CodeBlock';
 import TableWithControls from '@/features/table/components/TableWithControls';
 import Alert from '../components/Alert';
@@ -76,15 +77,31 @@ const TAG_STYLES: Record<number, React.CSSProperties> = {
   6: { fontSize: '0.875rem',                      fontWeight: 700, marginTop: '1rem',    marginBottom: '0.5rem',  textTransform: 'uppercase', letterSpacing: '0.05em', scrollMarginTop: '5rem' },
 };
 
+const getCodeLanguage = (element: Element, codeElement: Element): string => (
+  element.dataset.lang ||
+  element.dataset.language ||
+  codeElement.className.replace('language-', '') ||
+  ''
+).trim();
+
 const processPreElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const codeElement = element.querySelector('code');
   if (!codeElement) return;
   const code = codeElement.textContent || '';
-  const language =
-    element.dataset.lang ||
-    element.dataset.language ||
-    codeElement.className.replace('language-', '') ||
-    '';
+  const language = getCodeLanguage(element, codeElement);
+
+  if (language.toLowerCase() === 'mermaid') {
+    elements.push(
+      React.createElement(
+        TableContext.Consumer,
+        { key },
+        ({ isDark }: { onTableClick?: (html: string) => void; isDark: boolean }) =>
+          React.createElement(MermaidViewer, { chart: code.trim(), isDark }),
+      ),
+    );
+    return;
+  }
+
   elements.push(React.createElement(CodeBlock, { key, code: code.trim(), language }));
 };
 

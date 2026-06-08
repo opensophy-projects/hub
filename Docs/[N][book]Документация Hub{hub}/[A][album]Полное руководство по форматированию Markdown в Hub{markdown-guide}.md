@@ -1411,3 +1411,55 @@ i\hbar \frac{\partial \Psi}{\partial t} = -\frac{\hbar^2}{2m} \nabla^2 \Psi + V\
 | Тесты      | 70       | 80     |
 :::
 ```
+
+## Mermaid-блок-схемы
+
+Для интерактивных схем используйте fenced code block с языком `mermaid`. Hub автоматически отрисует такой блок в viewer с управлением: перетаскивание мышью/пальцем, колесо мыши, pinch-to-zoom на тач-экране, кнопки увеличения, уменьшения, вписывания и сброса масштаба.
+
+```mermaid
+flowchart TD
+  A(["Старт"]) --> B{"Есть задача?"}
+  B -- Да --> C["Описать шаги"]
+  C --> D["Проверить результат"]
+  D --> E(["Готово"])
+  B -- Нет --> F["Собрать требования"]
+  F --> B
+```
+
+````markdown
+```mermaid
+flowchart TD
+  A(["Старт"]) --> B{"Есть задача?"}
+  B -- Да --> C["Описать шаги"]
+  C --> D["Проверить результат"]
+  D --> E(["Готово"])
+  B -- Нет --> F["Собрать требования"]
+  F --> B
+```
+````
+
+### Sequence diagram
+
+```mermaid
+sequenceDiagram
+  participant U as Пользователь
+  participant UI as Hub UI
+  participant M as Mermaid Viewer
+  U->>UI: Открывает markdown-страницу
+  UI->>M: Передаёт код схемы
+  M-->>UI: Возвращает SVG
+  UI-->>U: Показывает интерактивную схему
+```
+
+````markdown
+```mermaid
+sequenceDiagram
+  participant U as Пользователь
+  participant UI as Hub UI
+  participant M as Mermaid Viewer
+  U->>UI: Открывает markdown-страницу
+  UI->>M: Передаёт код схемы
+  M-->>UI: Возвращает SVG
+  UI-->>U: Показывает интерактивную схему
+```
+````
