@@ -44,87 +44,166 @@ function formatDate(date?: string): string | null {
   return parsed.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
+// ─── CategoryCard — aligned with GeneralPage FeatureCard + Card aesthetics ───
+
 const CategoryCard: React.FC<{ doc: CategoryDoc; isDark: boolean }> = ({ doc, isDark }) => {
   const t = makeTokens(isDark);
   const formattedDate = formatDate(doc.date);
   const formattedUpdated = formatDate(doc.updated);
 
+  // Match GeneralPage card border/bg tokens exactly
+  const cardBorder = isDark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)';
+  const cardBg     = isDark ? '#0f0f0f'                : 'rgba(0,0,0,0.02)';
+  const cardBgHov  = isDark ? '#141414'                : 'rgba(0,0,0,0.04)';
+
+  // Icon wrap — same pattern as FeatureCard / Card
+  const iconWrapBg  = isDark ? 'rgba(255,255,255,0.07)' : t.accentSoft;
+  const iconWrapBdr = isDark ? 'rgba(255,255,255,0.1)'  : t.border;
+  const iconColor   = isDark ? 'rgba(255,255,255,0.7)'  : 'rgba(0,0,0,0.55)';
+
+  // Title / text
+  const titleColor  = isDark ? 'rgba(255,255,255,0.9)'  : 'rgba(0,0,0,0.88)';
+  const textColor   = isDark ? 'rgba(255,255,255,0.7)'  : 'rgba(0,0,0,0.65)';
+  const metaColor   = isDark ? 'rgba(255,255,255,0.32)' : 'rgba(0,0,0,0.32)';
+
+  // Badge / type label — match GeneralPage badge style
+  const badgeColor  = isDark ? 'rgba(255,255,255,0.42)' : 'rgba(0,0,0,0.42)';
+
+  // Tag pill — same as GeneralPage
+  const tagBg  = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
+  const tagBdr = isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
+  const tagClr = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)';
+
+  // Hover shadow — matching Card.tsx
+  const shadowHov = isDark
+    ? '0 6px 24px rgba(0,0,0,0.5)'
+    : '0 4px 16px rgba(0,0,0,0.09)';
+
   return (
     <a
       href={toDocHref(doc.slug)}
-      className={`category-doc-card ${isDark ? 'category-doc-card-dark' : 'category-doc-card-light'}`}
+      className="cat-doc-card"
       style={{
         position: 'relative',
-        borderRadius: '12px',
-        border: `1px solid ${t.border}`,
-        background: isDark ? '#0f0f0f' : t.accentSoft,
+        borderRadius: '16px',
+        border: `1px solid ${cardBorder}`,
+        background: cardBg,
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
         minHeight: '100%',
         textDecoration: 'none',
         color: t.fg,
-        boxShadow: isDark ? '0 2px 12px rgba(0,0,0,0.4)' : '0 1px 4px rgba(0,0,0,0.05)',
+        // Inherit GeneralPage card baseline shadow: none (flat)
+        boxShadow: 'none',
+        // CSS var for hover — set inline for the hover animation
+        ['--card-bg-hov' as string]: cardBgHov,
+        ['--shadow-hov' as string]:  shadowHov,
       }}
     >
-      <div style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-          <span
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 8,
-              background: isDark ? 'rgba(255,255,255,0.07)' : t.accentSoft,
-              border: `1px solid ${t.border}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              color: t.accent,
-            }}
-          >
+      <div style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+
+        {/* Icon + typename row */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: '8px', flexShrink: 0,
+            background: iconWrapBg,
+            border: `1px solid ${iconWrapBdr}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: iconColor,
+          }}>
             {doc.icon ? <LucideIcon name={doc.icon} size={18} /> : <FileText size={18} />}
-          </span>
-          <div style={{ minWidth: 0 }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: 700, lineHeight: 1.3, margin: 0, color: t.fg }}>{doc.title}</h2>
-            {doc.typename && (
-              <div style={{ marginTop: 4, fontSize: '0.8rem', color: t.fgMuted, fontWeight: 600 }}>
-                {doc.typename}
-              </div>
-            )}
           </div>
+
+          {doc.typename && (
+            <span style={{
+              fontSize: '0.64rem',
+              fontWeight: 700,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: badgeColor,
+              fontFamily: 'ui-monospace, monospace',
+              marginTop: '4px',
+            }}>
+              {doc.typename}
+            </span>
+          )}
         </div>
 
+        {/* Title */}
+        <h2 style={{
+          fontSize: 'clamp(0.95rem, 1.6vw, 1.1rem)',
+          fontWeight: 700,
+          lineHeight: 1.3,
+          margin: 0,
+          color: titleColor,
+        }}>
+          {doc.title}
+        </h2>
+
+        {/* Description */}
         {doc.description && (
-          <p style={{ fontSize: '0.86rem', lineHeight: 1.6, color: t.fgMuted, margin: 0 }}>{doc.description}</p>
+          <p style={{
+            fontSize: 'clamp(0.82rem, 1.2vw, 0.9rem)',
+            lineHeight: 1.6,
+            color: textColor,
+            margin: 0,
+            flex: 1,
+          }}>
+            {doc.description}
+          </p>
         )}
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.55rem 0.8rem', marginTop: 'auto' }}>
-          {formattedDate && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.72rem', color: t.fgMuted }}>
-              <CalendarDays size={12} />{formattedDate}
-            </span>
-          )}
-          {formattedUpdated && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.72rem', color: t.fgMuted }}>
-              <RefreshCw size={12} />Обновлено: {formattedUpdated}
-            </span>
-          )}
-        </div>
-
+        {/* Tags */}
         {doc.tags && doc.tags.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {doc.tags.map(tag => (
-              <span key={tag} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.68rem', padding: '2px 7px', borderRadius: 999, background: t.accentSoft, border: `1px solid ${t.accentBorder}`, color: t.fgMuted }}>
-                <Tag size={10} />{tag}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: 'auto', paddingTop: '0.25rem' }}>
+            {doc.tags.slice(0, 4).map(tag => (
+              <span key={tag} style={{
+                display: 'inline-flex', alignItems: 'center', gap: 3,
+                fontSize: '0.65rem', padding: '2px 7px',
+                borderRadius: '999px',
+                background: tagBg,
+                border: `1px solid ${tagBdr}`,
+                color: tagClr,
+                fontFamily: 'ui-monospace, monospace',
+              }}>
+                <Tag size={9} />{tag}
               </span>
             ))}
+          </div>
+        )}
+
+        {/* Date meta */}
+        {(formattedDate || formattedUpdated) && (
+          <div style={{
+            display: 'flex', flexWrap: 'wrap', gap: '0.5rem 0.75rem',
+            marginTop: doc.tags?.length ? '0.35rem' : 'auto',
+            paddingTop: '0.25rem',
+          }}>
+            {formattedDate && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                fontSize: '0.68rem', color: metaColor,
+              }}>
+                <CalendarDays size={11} />{formattedDate}
+              </span>
+            )}
+            {formattedUpdated && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                fontSize: '0.68rem', color: metaColor,
+              }}>
+                <RefreshCw size={11} />Обновлено: {formattedUpdated}
+              </span>
+            )}
           </div>
         )}
       </div>
     </a>
   );
 };
+
+// ─── CategoryContentMain ──────────────────────────────────────────────────────
 
 const CategoryContentMain: React.FC<CategoryContentProps> = ({ category }) => {
   const { isDark } = useTheme();
@@ -188,62 +267,148 @@ const CategoryContentMain: React.FC<CategoryContentProps> = ({ category }) => {
 
   const navChromeBg = isDark ? 'rgba(15,15,15,0.84)' : 'rgba(224,223,219,0.82)';
 
+  // Header bg — match GeneralPage section bg
+  const headerBg   = isDark ? '#0a0a0a' : '#E8E7E3';
+  const headerBdr  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+
+  // Icon wrap for header — same as card
+  const iconWrapBg  = isDark ? 'rgba(255,255,255,0.07)' : t.accentSoft;
+  const iconWrapBdr = isDark ? 'rgba(255,255,255,0.12)' : t.accentBorder;
+  const iconColor   = isDark ? 'rgba(255,255,255,0.7)'  : 'rgba(0,0,0,0.55)';
+  const titleColor  = isDark ? '#ffffff'                 : '#000000';
+  const mutedColor  = isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
+
   return (
     <div style={{ minHeight: '100vh', background: isDesktop ? navChromeBg : t.bgPage, position: 'relative' }}>
       <style>{`
-        .category-doc-card { transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s; }
-        .category-doc-card:hover { transform: translateY(-2px); }
-        .category-doc-card-dark:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
-        .category-doc-card-light:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.09); }
-        @media (max-width: 760px) { .category-doc-grid { grid-template-columns: 1fr !important; } }
-        @media (min-width: 761px) and (max-width: 1180px) { .category-doc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
+        /* Card hover — matches Card.tsx sophy-card pattern */
+        .cat-doc-card {
+          transition-property: transform, box-shadow, background !important;
+          transition-duration: 0.15s !important;
+          transition-timing-function: ease !important;
+        }
+        .cat-doc-card:hover {
+          transform: translateY(-2px);
+          box-shadow: var(--shadow-hov) !important;
+          background: var(--card-bg-hov) !important;
+        }
+        /* Responsive grid — matches GeneralPage sec-cards breakpoints */
+        .category-doc-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 1rem;
+          align-items: stretch;
+        }
+        @media (min-width: 900px) {
+          .category-doc-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
+        @media (max-width: 560px) {
+          .category-doc-grid { grid-template-columns: 1fr !important; }
+        }
       `}</style>
-      {isDesktop && <div aria-hidden style={{ position: 'fixed', inset: 0, background: navChromeBg, zIndex: 0, pointerEvents: 'none' }} />}
+
+      {isDesktop && (
+        <div aria-hidden style={{
+          position: 'fixed', inset: 0,
+          background: navChromeBg, zIndex: 0, pointerEvents: 'none',
+        }} />
+      )}
+
       <Navigation currentDocSlug={category.slug} toc={[]} activeHeadingId="" />
 
       <main
         style={{
           background: t.bgPage,
-          marginLeft: isDesktop ? navLeft : '0',
-          marginRight: isDesktop ? docRight : '0',
-          position: 'relative',
-          zIndex: 1,
-          marginTop: isDesktop ? docChromeTopGap : '0',
+          marginLeft:   isDesktop ? navLeft : '0',
+          marginRight:  isDesktop ? docRight : '0',
+          position:     'relative',
+          zIndex:       1,
+          marginTop:    isDesktop ? docChromeTopGap : '0',
           marginBottom: isDesktop ? docChromeGap : '3.5rem',
-          minHeight: isDesktop ? `calc(100vh - (${docChromeTopGap} + ${docChromeGap}))` : '100vh',
-          border: isDesktop ? `1px solid ${t.border}` : 'none',
+          minHeight:    isDesktop ? `calc(100vh - (${docChromeTopGap} + ${docChromeGap}))` : '100vh',
+          border:       isDesktop ? `1px solid ${t.border}` : 'none',
           borderRadius: isDesktop ? docChromeRadius : 0,
-          overflow: isDesktop ? 'hidden' : 'visible',
-          boxShadow: isDesktop ? `0 0 0 1px ${t.border}, inset 0 1px 0 rgba(255,255,255,0.03)` : 'none',
-          transition: 'none',
+          overflow:     isDesktop ? 'hidden' : 'visible',
+          boxShadow:    isDesktop ? `0 0 0 1px ${t.border}, inset 0 1px 0 rgba(255,255,255,0.03)` : 'none',
+          transition:   'none',
         }}
       >
-        <header style={{ background: t.surface, borderBottom: `1px solid ${t.border}`, padding: '3rem 2rem 2.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap', fontSize: '0.8rem', color: t.fgMuted }}>
-            <a href="/" style={{ color: t.fg, textDecoration: 'none', opacity: 0.7 }}>Главная</a>
-            {(category.navTitle || category.parentTitle) && <ChevronRight size={14} style={{ opacity: 0.45 }} />}
-            {category.navTitle && <span>{category.navTitle}</span>}
-            {category.parentTitle && category.parentTitle !== category.navTitle && <ChevronRight size={14} style={{ opacity: 0.45 }} />}
-            {category.parentTitle && category.parentTitle !== category.navTitle && <span>{category.parentTitle}</span>}
+        {/* Header — matches GeneralPage section top padding/fonts */}
+        <header style={{
+          background: headerBg,
+          borderBottom: `1px solid ${headerBdr}`,
+          padding: 'clamp(2rem, 4vw, 3rem) clamp(1.5rem, 4vw, 2.5rem)',
+        }}>
+          {/* Breadcrumb */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '0.5rem',
+            marginBottom: '1.5rem', flexWrap: 'wrap',
+            fontSize: '0.78rem', color: mutedColor,
+            fontFamily: 'ui-monospace, monospace',
+            letterSpacing: '0.02em',
+          }}>
+            <a href="/" style={{ color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)', textDecoration: 'none' }}>
+              Главная
+            </a>
+            {(category.navTitle || category.parentTitle) && (
+              <ChevronRight size={12} style={{ opacity: 0.4 }} />
+            )}
+            {category.navTitle && (
+              <span style={{ color: mutedColor }}>{category.navTitle}</span>
+            )}
+            {category.parentTitle && category.parentTitle !== category.navTitle && (
+              <>
+                <ChevronRight size={12} style={{ opacity: 0.4 }} />
+                <span style={{ color: mutedColor }}>{category.parentTitle}</span>
+              </>
+            )}
           </div>
+
+          {/* Icon + heading row */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
-            <span style={{ width: 44, height: 44, borderRadius: 12, background: t.accentSoft, border: `1px solid ${t.accentBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.accent, flexShrink: 0 }}>
+            <span style={{
+              width: 44, height: 44, borderRadius: '12px', flexShrink: 0,
+              background: iconWrapBg,
+              border: `1px solid ${iconWrapBdr}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: iconColor,
+            }}>
               {category.icon ? <LucideIcon name={category.icon} size={22} /> : <FileText size={22} />}
             </span>
             <div>
-              <div style={{ fontSize: '0.75rem', color: t.fgMuted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Категория</div>
-              <h1 style={{ fontSize: 'clamp(1.7rem,4vw,2.8rem)', fontWeight: 700, lineHeight: 1.15, color: t.fg, margin: 0 }}>{category.title}</h1>
+              <div style={{
+                fontSize: '0.64rem', fontWeight: 700,
+                letterSpacing: '0.12em', textTransform: 'uppercase',
+                color: mutedColor,
+                fontFamily: 'ui-monospace, monospace',
+                marginBottom: '0.35rem',
+              }}>
+                Категория
+              </div>
+              <h1 style={{
+                fontSize: 'clamp(1.5rem, 4vw, 2.4rem)',
+                fontWeight: 700, lineHeight: 1.15,
+                color: titleColor, margin: 0,
+                letterSpacing: '-0.02em',
+                fontFamily: 'Inter, system-ui, sans-serif',
+              }}>
+                {category.title}
+              </h1>
             </div>
           </div>
         </header>
 
+        {/* Cards grid */}
         <section style={{
-          padding: '2rem 2rem 3rem',
-          borderLeft: showLeftBorder ? `1px solid ${t.borderStrong}` : 'none',
+          padding: 'clamp(1.5rem, 3vw, 2.5rem) clamp(1.5rem, 4vw, 2.5rem) clamp(2.5rem, 5vw, 4rem)',
+          background: isDark ? '#0a0a0a' : '#E8E7E3',
+          borderLeft:  showLeftBorder  ? `1px solid ${t.borderStrong}` : 'none',
           borderRight: showRightBorder ? `1px solid ${t.borderStrong}` : 'none',
         }}>
-          <div className="category-doc-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '1rem', alignItems: 'stretch' }}>
-            {sortedDocs.map(doc => <CategoryCard key={doc.id} doc={doc} isDark={isDark} />)}
+          <div className="category-doc-grid">
+            {sortedDocs.map(doc => (
+              <CategoryCard key={doc.id} doc={doc} isDark={isDark} />
+            ))}
           </div>
         </section>
       </main>
