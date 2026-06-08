@@ -380,14 +380,19 @@ function renderBar({
             maxBarSize={maxSize}
             isAnimationActive={false}
             shape={(props: any) => {
-              // Для stacked — только последний слой рисует glow поверх всех
               const glow = !stacked || isLastVisible;
+              // recharts передаёт все поля строки напрямую в props
+              const rowName = String(props[nameKey] ?? '');
               const cellFill = useRowColors
-                ? palette[(data.indexOf(props.datum ?? visibleData[props.index]) ?? props.index) % palette.length]
+                ? (() => {
+                    const origIdx = data.findIndex(d => String(d[nameKey]) === rowName);
+                    return palette[(origIdx === -1 ? (props.index ?? 0) : origIdx) % palette.length];
+                  })()
                 : seriesColor;
               const cellOp = useRowColors
-                ? (hovered === null ? 1 : hovered === String(props.datum?.[nameKey] ?? '') ? 1 : 0.22)
+                ? (hovered === null ? 1 : hovered === rowName ? 1 : 0.22)
                 : op;
+              if (!props.width || !props.height) return <g />;
               return (
                 <g opacity={cellOp} style={{ transition: 'opacity 0.18s' }}>
                   {glow && (
@@ -410,17 +415,7 @@ function renderBar({
                 </g>
               );
             }}
-          >
-            {useRowColors && visibleData.map((row, rowIdx) => {
-              const origIdx = data.indexOf(row);
-              return (
-                <Cell
-                  key={`cell-${String(row[nameKey])}`}
-                  fill={palette[(origIdx === -1 ? rowIdx : origIdx) % palette.length]}
-                />
-              );
-            })}
-          </Bar>
+          />
         );
       })}
     </BarChart>
@@ -429,38 +424,36 @@ function renderBar({
 
 // ─── Pie ──────────────────────────────────────────────────────────────────────
 
-function renderActiveShape(props: any, donut: boolean) {
-  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
-  return (
-    <g>
-      <filter id="pie-glow">
-        <feGaussianBlur stdDeviation="4" result="blur" />
-        <feMerge>
-          <feMergeNode in="blur" />
-          <feMergeNode in="SourceGraphic" />
-        </feMerge>
-      </filter>
+function makeActiveShape(donut: boolean) {
+  return function ActiveShape(props: any) {
+    const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
+    return (
       <Sector
         cx={cx} cy={cy}
         innerRadius={donut ? innerRadius - 2 : 0}
         outerRadius={outerRadius + 6}
         startAngle={startAngle} endAngle={endAngle}
         fill={fill}
-        style={{ filter: `drop-shadow(0 0 8px ${fill}cc)` }}
+        style={{ filter: `drop-shadow(0 0 8px ${fill}cc)`, outline: 'none' }}
       />
-    </g>
-  );
+    );
+  };
 }
 
-function renderPie(
-  data: ChartRow[],
-  nameKey: string, valueKeys: string[], palette: string[],
-  donut: boolean, hidden: Set<string>,
-  t: ReturnType<typeof tk>
-) {
+// PieBlock — настоящий компонент, чтобы useState работал корректно
+const PieBlock: React.FC<{
+  data: ChartRow[];
+  nameKey: string;
+  valueKeys: string[];
+  palette: string[];
+  donut: boolean;
+  hidden: Set<string>;
+  t: ReturnType<typeof tk>;
+}> = ({ data, nameKey, valueKeys, palette, donut, hidden, t }) => {
   const valueKey = valueKeys[0] ?? 'value';
   const visibleData = data.filter(d => !hidden.has(String(d[nameKey])));
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
+  const activeShape = useMemo(() => makeActiveShape(donut), [donut]);
 
   return (
     <PieChart margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
@@ -472,8 +465,8 @@ function renderPie(
         style={{ outline: 'none' }}
         isAnimationActive={false}
         activeIndex={activeIndex}
-        activeShape={(props: any) => renderActiveShape(props, donut)}
-        onMouseEnter={(_, index) => setActiveIndex(index)}
+        activeShape={activeShape}
+        onMouseEnter={(_: any, index: number) => setActiveIndex(index)}
         onMouseLeave={() => setActiveIndex(undefined)}
       >
         {visibleData.map((entry) => {
@@ -491,7 +484,7 @@ function renderPie(
       <Tooltip content={<PieTooltip t={t} />} />
     </PieChart>
   );
-}
+};
 
 // ─── Radar ────────────────────────────────────────────────────────────────────
 
