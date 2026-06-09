@@ -23,13 +23,13 @@ function extendMaterial<T extends THREE.Material = THREE.Material>(
   BaseMaterial: new (params?: THREE.MaterialParameters) => T,
   cfg: ExtendMaterialConfig
 ): THREE.ShaderMaterial {
-  const physical: ShaderWithDefines = THREE.ShaderLib.physical;
+  const physical = THREE.ShaderLib.physical as ShaderWithDefines;
   const { vertexShader: baseVert, fragmentShader: baseFrag, uniforms: baseUniforms } = physical;
   const baseDefines = physical.defines ?? {};
 
   const uniforms: Record<string, THREE.IUniform> = THREE.UniformsUtils.clone(baseUniforms);
 
-  const defaults = new BaseMaterial(cfg.material || {}) as T & {
+  const defaults = new BaseMaterial(cfg.material ?? {}) as T & {
     color?: THREE.Color;
     roughness?: number;
     metalness?: number;
@@ -43,12 +43,12 @@ function extendMaterial<T extends THREE.Material = THREE.Material>(
   if ('envMap' in defaults) uniforms.envMap.value = defaults.envMap;
   if ('envMapIntensity' in defaults) uniforms.envMapIntensity.value = defaults.envMapIntensity;
 
-  Object.entries(cfg.uniforms ?? {}).forEach(([key, u]) => {
+  for (const [key, u] of Object.entries(cfg.uniforms ?? {})) {
     uniforms[key] =
-      u !== null && typeof u === 'object' && 'value' in (u as object)
+      u !== null && typeof u === 'object' && 'value' in u
         ? (u as THREE.IUniform<unknown>)
         : ({ value: u } as THREE.IUniform<unknown>);
-  });
+  }
 
   let vert = `${cfg.header}\n${cfg.vertexHeader ?? ''}\n${baseVert}`;
   let frag = `${cfg.header}\n${cfg.fragmentHeader ?? ''}\n${baseFrag}`;
@@ -314,18 +314,18 @@ gl_FragColor.rgb -= randomNoise / 15. * uNoiseIntensity;`,
     shadowCam.far = 64;
     dirLight.shadow.bias = -0.004;
 
-    // ── Group (handles rotation) ──────────────────────────────────────────────
+    // ── Группа (управляет поворотом) ──────────────────────────────────────────
     const group = new THREE.Group();
     group.rotation.z = degToRad(rotation);
     scene.add(group);
     group.add(dirLight);
 
-    // ── Mesh ──────────────────────────────────────────────────────────────────
+    // ── Меш ───────────────────────────────────────────────────────────────────
     const geometry = createStackedPlanesBufferGeometry(beamNumber, beamWidth, beamHeight, 0, 100);
     const mesh = new THREE.Mesh(geometry, beamMaterial);
     group.add(mesh);
 
-    // ── Animation loop ────────────────────────────────────────────────────────
+    // ── Цикл анимации ─────────────────────────────────────────────────────────
     let animId: number;
     let last = performance.now();
 
@@ -340,9 +340,8 @@ gl_FragColor.rgb -= randomNoise / 15. * uNoiseIntensity;`,
     };
     animate();
 
-    // ── Resize ────────────────────────────────────────────────────────────────
+    // ── Изменение размера ─────────────────────────────────────────────────────
     const onResize = () => {
-      if (!container) return;
       const w = container.clientWidth;
       const h = container.clientHeight;
       camera.aspect = w / h;
@@ -352,7 +351,6 @@ gl_FragColor.rgb -= randomNoise / 15. * uNoiseIntensity;`,
     const resizeObserver = new ResizeObserver(onResize);
     resizeObserver.observe(container);
 
-    // ── Cleanup ───────────────────────────────────────────────────────────────
     return () => {
       cancelAnimationFrame(animId);
       resizeObserver.disconnect();
