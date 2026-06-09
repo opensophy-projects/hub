@@ -594,7 +594,7 @@ const ResumeContent: React.FC = () => {
             color: textMain,
             margin: '0 0 0.85rem',
           }}>
-            Если я вам понравился — напишите мне.
+            Заинтересовал мой опыт?
           </p>
           <p style={{
             fontFamily: 'Inter, system-ui, sans-serif',
