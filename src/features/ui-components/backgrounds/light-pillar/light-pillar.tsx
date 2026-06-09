@@ -72,7 +72,7 @@ const LightPillar: React.FC<LightPillarProps> = ({
         waveIterations: 4,
         pixelRatio: Math.min(globalThis.devicePixelRatio, 2),
         precision: 'highp',
-        stepMultiplier: 1.0
+        stepMultiplier: 1
       }
     };
 
@@ -238,7 +238,7 @@ const LightPillar: React.FC<LightPillarProps> = ({
       waveCosValues[i] = Math.cos(waveAngle);
     }
 
-    const pillarRotRad = (pillarRotation * Math.PI) / 180.0;
+    const pillarRotRad = (pillarRotation * Math.PI) / 180;
     const pillarRotCos = Math.cos(pillarRotRad);
     const pillarRotSin = Math.sin(pillarRotRad);
 
