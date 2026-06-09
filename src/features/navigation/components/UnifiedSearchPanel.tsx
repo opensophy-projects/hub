@@ -431,8 +431,8 @@ function useSearchDocs(manifestDocs: DocMeta[]): DocMeta[] {
     let active = true;
 
     fetch('/data/site-config.json')
-      .then(res => {
-        if (!res.ok) return Promise.resolve<SiteConfig>({ useLanding: false });
+      .then(async (res): Promise<SiteConfig> => {
+        if (!res.ok) return { useLanding: false };
         return res.json() as Promise<SiteConfig>;
       })
       .then(cfg => {
