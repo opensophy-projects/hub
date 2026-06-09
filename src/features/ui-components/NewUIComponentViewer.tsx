@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { useTheme } from '@/shared/contexts/useTheme';
 import {
   Minimize2, Play, RefreshCcw, Copy, Check,
-  X, Code2, EyeOff,
+  X, Code2,
   ChevronDown, ChevronRight, Settings,
 } from 'lucide-react';
 import hljs from 'highlight.js/lib/core';
@@ -28,47 +28,77 @@ interface LoadedComponentData {
 
 // ─── Токены ───────────────────────────────────────────────────────────────────
 
+const TOKENS_DARK = {
+  railBg:       '#0F0F0F',
+  panelBg:      '#0F0F0F',
+  surfaceBg:    '#141414',
+  codeBg:       '#0a0a0a',
+  border:       'rgba(255,255,255,0.08)',
+  borderStrong: 'rgba(255,255,255,0.15)',
+  fg:           'rgba(255,255,255,0.85)',
+  fgMuted:      'rgba(255,255,255,0.55)',
+  fgSub:        'rgba(255,255,255,0.28)',
+  btnHov:       'rgba(255,255,255,0.06)',
+  btnClr:       'rgba(255,255,255,0.55)',
+  btnActBg:     'rgba(255,255,255,0.10)',
+  btnActBdr:    'rgba(255,255,255,0.16)',
+  btnActClr:    '#ffffff',
+  inpBg:        'rgba(255,255,255,0.05)',
+  inpBdr:       'rgba(255,255,255,0.10)',
+  inpClr:       'rgba(255,255,255,0.8)',
+  mobBg:        '#0F0F0F',
+  shadow:       '0 8px 32px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05)',
+} as const;
+
+const TOKENS_LIGHT = {
+  railBg:       '#dddcd8',
+  panelBg:      '#dddcd8',
+  surfaceBg:    '#d5d4d0',
+  codeBg:       '#e8e7e3',
+  border:       'rgba(0,0,0,0.09)',
+  borderStrong: 'rgba(0,0,0,0.18)',
+  fg:           'rgba(0,0,0,0.85)',
+  fgMuted:      'rgba(0,0,0,0.55)',
+  fgSub:        'rgba(0,0,0,0.28)',
+  btnHov:       'rgba(0,0,0,0.06)',
+  btnClr:       'rgba(0,0,0,0.55)',
+  btnActBg:     'rgba(0,0,0,0.09)',
+  btnActBdr:    'rgba(0,0,0,0.16)',
+  btnActClr:    '#000000',
+  inpBg:        'rgba(0,0,0,0.05)',
+  inpBdr:       'rgba(0,0,0,0.10)',
+  inpClr:       'rgba(0,0,0,0.8)',
+  mobBg:        '#dcdbd7',
+  shadow:       '0 8px 32px rgba(0,0,0,0.14), 0 0 0 1px rgba(0,0,0,0.07)',
+} as const;
+
 function tk(isDark: boolean) {
-  const t = makeTokens(isDark);
+  const t      = makeTokens(isDark);
+  const mode   = isDark ? TOKENS_DARK : TOKENS_LIGHT;
   return {
-    railBg:       isDark ? '#0F0F0F' : '#dddcd8',
-    panelBg:      isDark ? '#0F0F0F' : '#dddcd8',
-    surfaceBg:    isDark ? '#141414' : '#d5d4d0',
-    codeBg:       isDark ? '#0a0a0a' : '#e8e7e3',
-    outerBg:      t.bg,
-    border:       isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.09)',
-    borderStrong: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.18)',
-    fg:           isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)',
-    fgMuted:      isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)',
-    fgSub:        isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)',
-    btnHov:       isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-    btnClr:       isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)',
-    btnActBg:     isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.09)',
-    btnActBdr:    isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.16)',
-    btnActClr:    isDark ? '#ffffff' : '#000000',
-    inpBg:        isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-    inpBdr:       isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)',
-    inpClr:       isDark ? 'rgba(255,255,255,0.8)'  : 'rgba(0,0,0,0.8)',
-    accent:       t.accent,
-    accentSoft:   t.accentSoft,
-    shadow:       isDark
-      ? '0 8px 32px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05)'
-      : '0 8px 32px rgba(0,0,0,0.14), 0 0 0 1px rgba(0,0,0,0.07)',
+    ...mode,
+    outerBg:    t.bg,
+    accent:     t.accent,
+    accentSoft: t.accentSoft,
     railW:  64,
     panelW: 280,
-    mobBg:  isDark ? '#0F0F0F' : '#dcdbd7',
   };
 }
 type T = ReturnType<typeof tk>;
 
 // ─── RailBtn ─────────────────────────────────────────────────────────────────
 
+function getRailBtnColor(isActive: boolean | undefined, hov: boolean, t: T): string {
+  if (isActive) return t.btnActClr;
+  return hov ? t.fg : t.btnClr;
+}
+
 const RailBtn: React.FC<{
   icon: React.ReactNode; label: string; isActive?: boolean; t: T;
   onClick: () => void; title?: string;
 }> = ({ icon, label, isActive, t, onClick, title }) => {
   const [hov, setHov] = useState(false);
-  const color = isActive ? t.btnActClr : hov ? t.fg : t.btnClr;
+  const color = getRailBtnColor(isActive, hov, t);
   return (
     <button
       onClick={onClick} title={title ?? label}
@@ -145,7 +175,10 @@ const NumberInput: React.FC<{
         <input
           ref={inputRef} type="number" value={raw} min={min} max={max} step={step}
           onChange={e => setRaw(e.target.value)} onBlur={commit}
-          onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false); }}
+          onKeyDown={e => {
+            if (e.key === 'Enter') { commit(); }
+            if (e.key === 'Escape') { setEditing(false); }
+          }}
           style={{
             width: 46, padding: '2px 4px', borderRadius: 5,
             border: `1px solid ${t.inpBdr}`, background: t.inpBg,
@@ -325,7 +358,6 @@ const SourceCodeViewer: React.FC<SourceCodeViewerProps> = ({ fileContents, t }) 
     initHljs().then(() => setHljsInit(true));
   }, [hljsInit]);
 
-  // Sync active file when fileContents changes
   useEffect(() => {
     setActiveFile(Object.keys(fileContents)[0] ?? '');
   }, [fileContents]);
@@ -745,7 +777,16 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
 
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: t.outerBg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {!isMobile ? (
+      {isMobile ? (
+        <div style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
+          <FullscreenMobile
+            {...shared}
+            onClose={onClose} onRefresh={onRefresh} onReset={onReset}
+            onUniversalPropChange={onUniversalPropChange}
+            t={t}
+          />
+        </div>
+      ) : (
         <FullscreenDesktop
           {...shared}
           activeTab={activeTab}
@@ -758,15 +799,6 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
           onTogglePanel={handleTogglePanel}
           t={t}
         />
-      ) : (
-        <div style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
-          <FullscreenMobile
-            {...shared}
-            onClose={onClose} onRefresh={onRefresh} onReset={onReset}
-            onUniversalPropChange={onUniversalPropChange}
-            t={t}
-          />
-        </div>
       )}
     </div>,
     document.body,
