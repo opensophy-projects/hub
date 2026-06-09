@@ -24,7 +24,6 @@ export interface CardGridProps {
 
 const CARD_HOVER_CLASS = 'sophy-card';
 
-// Hover CSS — matches GeneralPage LandingCard / CategoryContent cat-doc-card pattern exactly
 const cardHoverStyle = `
   .${CARD_HOVER_CLASS} {
     transition-property: transform, box-shadow, background !important;
@@ -41,27 +40,20 @@ const cardHoverStyle = `
 // ─── Token helpers ────────────────────────────────────────────────────────────
 
 function getCardBg(isDark: boolean, accentColor: string | undefined): string {
-  // Base card background — matches GeneralPage LandingCard exactly
-  // Dark: flat near-black; Light: near-transparent off-white
-  // When there's an accent color we keep the same base and let the border carry the color
   if (isDark) return '#0f0f0f';
   return 'rgba(0,0,0,0.02)';
 }
 
 function getCardBorder(isDark: boolean, hasAccent: boolean, accentColor: string): string {
-  // With accent: use accent at low opacity so it's a colored tint, not a bright glow
   if (hasAccent) {
     return `1.5px solid ${accentColor}`;
   }
-  // Without accent: same subtle border as GeneralPage LandingCard
   return isDark
     ? '1px solid rgba(255,255,255,0.09)'
     : '1px solid rgba(0,0,0,0.09)';
 }
 
 function getCardBoxShadow(isDark: boolean, hasAccent: boolean, accentColor: string): string {
-  // GeneralPage cards have no box-shadow by default — flat look
-  // With accent we add a very subtle tinted shadow instead of the old bright glow
   if (hasAccent) {
     return isDark
       ? `0 2px 16px rgba(0,0,0,0.4), 0 0 0 1px ${accentColor}18`
@@ -71,8 +63,6 @@ function getCardBoxShadow(isDark: boolean, hasAccent: boolean, accentColor: stri
 }
 
 function getIconWrapBg(hasAccent: boolean, accentColor: string, isDark: boolean): string {
-  // With accent: very soft tint of the accent color
-  // Without accent: same as CategoryCard / GeneralPage FeatureCard
   if (hasAccent) return `${accentColor}22`;
   return isDark ? 'rgba(255,255,255,0.07)' : makeTokens(isDark).accentSoft;
 }
@@ -90,7 +80,6 @@ function getIconColor(hasAccent: boolean, accentColor: string, isDark: boolean):
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
 const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark = false }) => {
-  const t = makeTokens(isDark);
   const accentColor = color || '';
   const hasAccent   = !!color;
 
@@ -102,12 +91,9 @@ const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark
   const iconWrapBdr = getIconWrapBorder(hasAccent, accentColor, isDark);
   const iconColor   = getIconColor(hasAccent, accentColor, isDark);
 
-  // Text colors — same as GeneralPage FeatureCard
   const titleColor   = isDark ? 'rgba(255,255,255,0.9)'  : 'rgba(0,0,0,0.88)';
   const contentColor = isDark ? 'rgba(255,255,255,0.7)'  : 'rgba(0,0,0,0.65)';
-
-  // Image divider
-  const imgDivider = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
+  const imgDivider   = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
@@ -116,18 +102,18 @@ const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark
       <style>{cardHoverStyle}</style>
       <div
         style={{
-          position:     'relative',
-          borderRadius: '16px',   // GeneralPage uses 16px
-          border:       cardBorder,
-          background:   cardBg,
-          overflow:     'hidden',
-          display:      'flex',
-          flexDirection:'column',
-          boxShadow:    cardShadow,
+          position:      'relative',
+          borderRadius:  '16px',
+          border:        cardBorder,
+          background:    cardBg,
+          overflow:      'hidden',
+          display:       'flex',
+          flexDirection: 'column',
+          boxShadow:     cardShadow,
         }}
         className={`${CARD_HOVER_CLASS} ${isDark ? 'card-dark' : 'card-light'}`}
       >
-        {/* ── Card image ─────────────────────────────────────────────────── */}
+        {/* Изображение */}
         {image && (
           <>
             <button
@@ -135,32 +121,32 @@ const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark
               onClick={() => setLightboxOpen(true)}
               aria-label="Открыть изображение"
               style={{
-                padding:    0,
-                border:     'none',
-                background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                cursor:     'zoom-in',
-                width:      '100%',
-                display:    'flex',
-                alignItems: 'center',
+                padding:        0,
+                border:         'none',
+                background:     isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                cursor:         'zoom-in',
+                width:          '100%',
+                display:        'flex',
+                alignItems:     'center',
                 justifyContent: 'center',
-                overflow:   'hidden',
-                flexShrink: 0,
-                minHeight:  '80px',
-                maxHeight:  '300px',
+                overflow:       'hidden',
+                flexShrink:     0,
+                minHeight:      '80px',
+                maxHeight:      '300px',
               }}
             >
               <img
                 src={image}
                 alt={title ?? 'card image'}
                 style={{
-                  display:    'block',
-                  width:      '100%',
-                  height:     'auto',
-                  maxHeight:  '300px',
-                  objectFit: 'contain',
+                  display:        'block',
+                  width:          '100%',
+                  height:         'auto',
+                  maxHeight:      '300px',
+                  objectFit:      'contain',
                   objectPosition: 'center',
-                  padding:    '6px',
-                  boxSizing:  'border-box',
+                  padding:        '6px',
+                  boxSizing:      'border-box',
                 }}
                 onMouseEnter={e => {
                   (e.currentTarget as HTMLImageElement).style.opacity = '0.88';
@@ -172,15 +158,11 @@ const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark
                 }}
               />
             </button>
-            <div style={{
-              height:     '1px',
-              background: imgDivider,
-              flexShrink: 0,
-            }} />
+            <div style={{ height: '1px', background: imgDivider, flexShrink: 0 }} />
           </>
         )}
 
-        {/* ── Card body ──────────────────────────────────────────────────── */}
+        {/* Тело карточки */}
         <div style={{
           padding:       '1.25rem',
           flex:           1,
@@ -232,7 +214,7 @@ const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark
         </div>
       </div>
 
-      {/* Lightbox */}
+      {/* Лайтбокс */}
       {lightboxOpen && image && (
         <Overlay onClose={() => setLightboxOpen(false)} backdropCursor="zoom-out">
           <div style={{ position: 'relative' }}>
@@ -240,13 +222,13 @@ const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark
               src={image}
               alt={title ?? 'card image'}
               style={{
-                maxWidth:   '90vw',
-                maxHeight:  '90vh',
-                objectFit:  'contain',
+                maxWidth:     '90vw',
+                maxHeight:    '90vh',
+                objectFit:    'contain',
                 borderRadius: '10px',
-                boxShadow:  '0 8px 60px rgba(0,0,0,0.8)',
-                userSelect: 'none',
-                display:    'block',
+                boxShadow:    '0 8px 60px rgba(0,0,0,0.8)',
+                userSelect:   'none',
+                display:      'block',
               }}
             />
             <button
@@ -254,22 +236,22 @@ const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark
               onClick={() => setLightboxOpen(false)}
               aria-label="Закрыть"
               style={{
-                position:   'fixed',
-                top:        '1.25rem',
-                right:      '1.25rem',
-                background: 'rgba(255,255,255,0.12)',
-                border:     '1px solid rgba(255,255,255,0.2)',
-                borderRadius: '8px',
-                color:      '#fff',
-                width:      '36px',
-                height:     '36px',
-                display:    'flex',
-                alignItems: 'center',
+                position:       'fixed',
+                top:            '1.25rem',
+                right:          '1.25rem',
+                background:     'rgba(255,255,255,0.12)',
+                border:         '1px solid rgba(255,255,255,0.2)',
+                borderRadius:   '8px',
+                color:          '#fff',
+                width:          '36px',
+                height:         '36px',
+                display:        'flex',
+                alignItems:     'center',
                 justifyContent: 'center',
-                cursor:     'pointer',
-                fontSize:   '18px',
-                lineHeight:  1,
-                zIndex:      1,
+                cursor:         'pointer',
+                fontSize:       '18px',
+                lineHeight:      1,
+                zIndex:          1,
               }}
             >
               ✕
@@ -294,7 +276,6 @@ const CardGrid: React.FC<CardGridProps> = ({ cols = 2, children }) => {
     alignItems:          'stretch',
   };
 
-  // Responsive breakpoints — matches GeneralPage sec-cards / CategoryContent grid
   const styleTag = `
     .card-grid-${safeCols} {
       grid-template-columns: repeat(${safeCols}, 1fr);
