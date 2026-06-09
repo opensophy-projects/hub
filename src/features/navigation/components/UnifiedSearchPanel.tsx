@@ -432,13 +432,12 @@ function useSearchDocs(manifestDocs: DocMeta[]): DocMeta[] {
 
     fetch('/data/site-config.json')
       .then(res => {
-        // res.json() возвращает Promise<unknown>, явный каст необходим для типизации
-        if (!res.ok) return { useLanding: false };
+        if (!res.ok) return Promise.resolve<SiteConfig>({ useLanding: false });
         return res.json() as Promise<SiteConfig>;
       })
       .then(cfg => {
         if (!active) return;
-        setUseLanding((cfg as SiteConfig).useLanding === true);
+        setUseLanding(cfg.useLanding === true);
       })
       .catch(() => {
         if (!active) return;
