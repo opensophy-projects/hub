@@ -37,7 +37,8 @@ const BodyDropdown: React.FC<{
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
-      if (!menuRef.current?.contains(e.target as Node) && !anchorRef.current?.contains(e.target as Node))
+      const target = e.target instanceof Node ? e.target : null;
+      if (!menuRef.current?.contains(target) && !anchorRef.current?.contains(target))
         onClose();
     };
     document.addEventListener('mousedown', h, true);
@@ -78,7 +79,6 @@ const Pill: React.FC<{
 }> = ({ onClick, title, label, icon, t, active, danger }) => {
   const bg  = active ? t.btnActBg  : t.btnBg;
   const bdr = active ? t.btnActBdr : t.btnBdr;
-  // Вынесено из вложенного тернарника: danger → active → default
   let color: string;
   if (danger)      color = t.dangerClr;
   else if (active) color = t.btnActClr;
@@ -115,7 +115,6 @@ const CopyBtn: React.FC<{ isDark: boolean; tableHtml: string; t: TableUiTokens }
     setTimeout(() => setCopied(null), 2000);
   };
 
-  // Вынесено из вложенных тернарников
   const bg    = isCopied ? t.copiedBg  : t.btnBg;
   const bdr   = isCopied ? t.copiedBdr : t.btnBdr;
   const color = isCopied ? '#22c55e'   : t.btnClr;
