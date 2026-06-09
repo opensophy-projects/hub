@@ -1,13 +1,3 @@
-import type { CustomPageMetadata } from '../types';
+import ResumePage from './components/ResumePage';
 
-const metadata: CustomPageMetadata = {
-  title: 'Резюме — Даниил / @opensophy',
-  description:
-    'Резюме Даниила — главы проекта Opensophy. DevSecOps, open-source, безопасная инфраструктура.',
-  keywords: 'opensophy, резюме, даниил, devsecops, open source, безопасность, разработка',
-  robots: 'index, follow',
-  lang: 'ru',
-  type: 'website',
-};
-
-export default metadata;
+export default ResumePage;
