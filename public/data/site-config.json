@@ -3,5 +3,5 @@
   "showDotWaveBackground": false,
   "favicon": "/favicon.png",
   "lightLogo": "/light_logo.png",
-  "darkLogo": ""
+  "darkLogo": "/dark_logo.png"
 }
