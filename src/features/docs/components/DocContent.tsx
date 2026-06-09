@@ -310,7 +310,7 @@ const DocContentMain: React.FC<DocContentProps> = ({ doc }) => {
         style={{ position: 'fixed', top: 0, left: 0, height: '2px', width: '0%', background: t.accent, zIndex: 999, transition: 'none' }}
       />
 
-      <Navigation currentDocSlug={doc.slug} toc={toc} activeHeadingId={activeId} />
+      <Navigation currentDocSlug={doc.slug || 'welcome'} toc={toc} activeHeadingId={activeId} />
 
       <main
         className="min-h-screen"
