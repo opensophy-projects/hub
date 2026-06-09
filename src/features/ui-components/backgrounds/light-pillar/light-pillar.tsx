@@ -20,12 +20,12 @@ interface LightPillarProps {
 const LightPillar: React.FC<LightPillarProps> = ({
   topColor = '#5227FF',
   bottomColor = '#FF9FFC',
-  intensity = 1.0,
+  intensity = 1,
   rotationSpeed = 0.3,
   interactive = false,
   className = '',
   glowAmount = 0.005,
-  pillarWidth = 3.0,
+  pillarWidth = 3,
   pillarHeight = 0.4,
   noiseIntensity = 0.5,
   mixBlendMode = 'screen',
@@ -70,7 +70,7 @@ const LightPillar: React.FC<LightPillarProps> = ({
       high: {
         iterations: 80,
         waveIterations: 4,
-        pixelRatio: Math.min(window.devicePixelRatio, 2),
+        pixelRatio: Math.min(globalThis.devicePixelRatio, 2),
         precision: 'highp',
         stepMultiplier: 1.0
       }
@@ -258,8 +258,8 @@ const LightPillar: React.FC<LightPillarProps> = ({
         uPillarHeight: { value: pillarHeight },
         uNoiseIntensity: { value: noiseIntensity },
         uPillarRotation: { value: pillarRotation },
-        uRotCos: { value: 1.0 },
-        uRotSin: { value: 0.0 },
+        uRotCos: { value: 1 },
+        uRotSin: { value: 0 },
         uPillarRotCos: { value: pillarRotCos },
         uPillarRotSin: { value: pillarRotSin },
         uWaveSin: { value: waveSinValues },
@@ -280,7 +280,7 @@ const LightPillar: React.FC<LightPillarProps> = ({
     const handleMouseMove = (event: MouseEvent) => {
       if (!interactive) return;
       if (mouseMoveTimeout) return;
-      mouseMoveTimeout = window.setTimeout(() => { mouseMoveTimeout = null; }, 16);
+      mouseMoveTimeout = globalThis.setTimeout(() => { mouseMoveTimeout = null; }, 16);
       const rect = container.getBoundingClientRect();
       const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -318,7 +318,7 @@ const LightPillar: React.FC<LightPillarProps> = ({
     let resizeTimeout: number | null = null;
     const handleResize = () => {
       if (resizeTimeout) clearTimeout(resizeTimeout);
-      resizeTimeout = window.setTimeout(() => {
+      resizeTimeout = globalThis.setTimeout(() => {
         if (!rendererRef.current || !materialRef.current || !containerRef.current) return;
         const newWidth = containerRef.current.clientWidth;
         const newHeight = containerRef.current.clientHeight;
@@ -327,17 +327,17 @@ const LightPillar: React.FC<LightPillarProps> = ({
       }, 150);
     };
 
-    window.addEventListener('resize', handleResize, { passive: true });
+    globalThis.addEventListener('resize', handleResize, { passive: true });
 
     return () => {
-      window.removeEventListener('resize', handleResize);
+      globalThis.removeEventListener('resize', handleResize);
       if (interactive) container.removeEventListener('mousemove', handleMouseMove);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (rendererRef.current) {
         rendererRef.current.dispose();
         rendererRef.current.forceContextLoss();
         if (container.contains(rendererRef.current.domElement)) {
-          container.removeChild(rendererRef.current.domElement);
+          rendererRef.current.domElement.remove();
         }
       }
       if (materialRef.current) materialRef.current.dispose();
