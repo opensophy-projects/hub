@@ -1,5 +1,5 @@
 {
-  "useLanding": false,
+  "useLanding": true,
   "showDotWaveBackground": false,
   "favicon": "/favicon.png",
   "lightLogo": "",
