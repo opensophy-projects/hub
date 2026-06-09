@@ -419,7 +419,7 @@ function useNavPanel(docs: Doc[], currentDocSlug: string | undefined) {
   useEffect(() => {
     if (!sectionOpen) return;
     const h = (e: MouseEvent) => {
-      if (sectionRef.current && !sectionRef.current.contains(e.target)) {
+      if (sectionRef.current && !sectionRef.current.contains(e.target as unknown as Node)) {
         setSectionOpen(false);
       }
     };
@@ -651,10 +651,8 @@ function getUnifiedControlStyle(isDark: boolean, isActive: boolean = false) {
   };
 }
 
-// ─── FIX 2: placeholder CSS injected globally so ::placeholder can be styled ──
 const PLACEHOLDER_STYLE_ID = 'nav-search-placeholder-style';
 function ensurePlaceholderStyle(isDark: boolean) {
-  // placeholder = same as t.fg but at 55% opacity so it reads as hint text
   const color = isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
   let el = document.getElementById(PLACEHOLDER_STYLE_ID);
   if (!el) {
@@ -678,7 +676,6 @@ const NavPanelContent: React.FC<{
   const [hoverPreview, setHoverPreview] = useState<{ doc: Doc; rect: DOMRect } | null>(null);
   const [focused, setFocused]           = useState(false);
 
-  // FIX 2: inject placeholder style whenever theme changes
   useEffect(() => { ensurePlaceholderStyle(isDark); }, [isDark]);
 
   const controlStyle        = getUnifiedControlStyle(isDark, false);
@@ -764,7 +761,40 @@ const NavPanelContent: React.FC<{
 };
 
 // ─── TocPanelContent ──────────────────────────────────────────────────────────
-// FIX 3: three-line dimming effect — prev/next items semi-transparent, active bright
+
+// ─── Вспомогательные функции стиля элемента оглавления ───────────────────────
+
+function getTocItemColors(
+  isActive: boolean,
+  isNear: boolean,
+  dist: number,
+  activeIndex: number,
+  isDark: boolean,
+  t: ReturnType<typeof tk>,
+): { color: string; borderLeftColor: string; opacity: number } {
+  if (isActive) {
+    return { color: t.accent, borderLeftColor: t.accent, opacity: 1 };
+  }
+  if (isNear) {
+    const color           = isDark ? 'rgba(255,255,255,0.50)' : 'rgba(0,0,0,0.48)';
+    const borderLeftColor = t.accent + '55';
+    const opacity         = dist === 1 ? 0.85 : 0.65;
+    return { color, borderLeftColor, opacity };
+  }
+  const color           = t.fgMuted;
+  const borderLeftColor = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)';
+  let opacity = 1;
+  if (activeIndex !== -1) {
+    opacity = dist <= 4 ? 0.55 : 0.38;
+  }
+  return { color, borderLeftColor, opacity };
+}
+
+function getTocItemFontWeight(isActive: boolean, isNear: boolean): number {
+  if (isActive) return 600;
+  if (isNear)   return 500;
+  return 400;
+}
 
 function getTocItemStyle3(
   item: TocItem,
@@ -773,39 +803,20 @@ function getTocItemStyle3(
   isDark: boolean,
   mobile: boolean,
 ) {
-  const t = tk(isDark);
-  const isActive    = index === activeIndex && activeIndex !== -1;
-  const dist        = activeIndex !== -1 ? Math.abs(index - activeIndex) : -1;
-  // ±1 and ±2 neighbours all get the same accent-like border color
-  const isNear      = dist === 1 || dist === 2;
+  const t         = tk(isDark);
+  const isActive  = index === activeIndex && activeIndex !== -1;
+  const dist      = activeIndex === -1 ? -1 : Math.abs(index - activeIndex);
+  const isNear    = dist === 1 || dist === 2;
 
   const baseFontSize = mobile ? 1.05 : 0.92;
   const fontSizeStep = mobile ? 0.05 : 0.04;
   const fontSize     = `${baseFontSize - (item.level - 2) * fontSizeStep}rem`;
   const paddingLeft  = mobile ? 14 + (item.level - 2) * 18 : 12 + (item.level - 2) * 14;
 
-  let color: string;
-  let borderLeftColor: string;
-  let opacity = 1;
+  const { color, borderLeftColor, opacity } = getTocItemColors(isActive, isNear, dist, activeIndex, isDark, t);
+  const fontWeight = getTocItemFontWeight(isActive, isNear);
 
-  if (isActive) {
-    color           = t.accent;
-    borderLeftColor = t.accent;
-  } else if (isNear) {
-    // ±1 and ±2 — same border color as active but semi-transparent
-    color           = isDark ? 'rgba(255,255,255,0.50)' : 'rgba(0,0,0,0.48)';
-    // border same hue as accent but faded — use accent with low alpha via the same value trick
-    borderLeftColor = t.accent + (isDark ? '55' : '55'); // 33% opacity accent
-    opacity         = dist === 1 ? 0.85 : 0.65;
-  } else {
-    color           = t.fgMuted;
-    borderLeftColor = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)';
-    if (activeIndex !== -1) {
-      opacity = dist <= 4 ? 0.55 : 0.38;
-    }
-  }
-
-  return { isActive, isNear, fontSize, paddingLeft, color, borderLeftColor, opacity };
+  return { isActive, isNear, fontSize, paddingLeft, color, borderLeftColor, opacity, fontWeight };
 }
 
 const TocPanelContent: React.FC<{
@@ -838,7 +849,7 @@ const TocPanelContent: React.FC<{
               borderRadius: '0 8px 8px 0',
               color: style.color,
               opacity: style.opacity,
-              fontWeight: style.isActive ? 600 : style.isNear ? 500 : 400,
+              fontWeight: style.fontWeight,
               transition: 'color 0.15s, border-color 0.15s, opacity 0.15s',
             }}
           >{item.text}</button>
@@ -857,8 +868,8 @@ const ContactsPanelContent: React.FC<{ isDark: boolean; mobile?: boolean }> = ({
       {CONTACTS.map(c => (
         <a key={c.href} href={c.href} target={c.external ? '_blank' : undefined} rel={c.external ? 'noopener noreferrer' : undefined}
           style={{ display: 'flex', flexDirection: 'column', padding: mobile ? '14px 16px' : '10px', borderRadius: '10px', textDecoration: 'none', color: t.fg, fontSize: mobile ? '1rem' : '0.875rem', gap: '3px' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = t.hov; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+          onMouseEnter={e => { e.currentTarget.style.background = t.hov; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
           <div style={{ fontWeight: 600 }}>{c.title}</div>
           <div style={{ fontSize: mobile ? '0.875rem' : '0.75rem', color: t.fgMuted }}>{c.subtitle}</div>
         </a>
@@ -876,8 +887,8 @@ const PanelHeader: React.FC<{ title: string; isDark: boolean; onClose: () => voi
       <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: t.fgMuted }}>{title}</span>
       <button onClick={onClose}
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: '6px', border: 'none', background: 'transparent', color: t.fgMuted, cursor: 'pointer' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = t.fg; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = t.fgMuted; }}>
+        onMouseEnter={e => { e.currentTarget.style.color = t.fg; }}
+        onMouseLeave={e => { e.currentTarget.style.color = t.fgMuted; }}>
         <X size={13} />
       </button>
     </div>
@@ -1354,7 +1365,6 @@ const DesktopNav: React.FC<{
         />
       )}
 
-      {/* FIX 1: "Показать панель" — bigger, text only on hover */}
       {!state.railVisible && (
         <ShowPanelBtn
           isDark={isDark}
@@ -1385,7 +1395,6 @@ const DesktopNav: React.FC<{
         />
       )}
 
-      {/* FIX 1: "Показать оглавление" — bigger, text only on hover */}
       {isStandardMode && hasToc && !state.standardTocVisible && (
         <ShowTocBtn
           isDark={isDark}
@@ -1407,7 +1416,7 @@ const DesktopNav: React.FC<{
   );
 };
 
-// ─── FIX 1: ShowPanelBtn & ShowTocBtn — larger, label only on hover ──────────
+// ─── ShowPanelBtn & ShowTocBtn ────────────────────────────────────────────────
 
 const ShowPanelBtn: React.FC<{
   isDark: boolean; chromeGap: number; chromeTopGap: number;
@@ -1549,6 +1558,74 @@ const MobBtn: React.FC<{
   );
 };
 
+// ─── Кнопки левой части мобильной навигации ───────────────────────────────────
+
+function MobileLeftButtons({ isDark, showDocActions, toggleTheme, setSheet, setSearchOpen, sheet }: {
+  isDark: boolean;
+  showDocActions: boolean;
+  toggleTheme: () => void;
+  setSheet: (s: MobileSheet) => void;
+  setSearchOpen: (v: boolean) => void;
+  sheet: MobileSheet;
+}) {
+  const themeBtn = (
+    <MobBtn label="Тема" icon={isDark ? <Sun size={22} /> : <Moon size={22} />} isDark={isDark} onClick={toggleTheme} isActive={false} />
+  );
+  const searchBtn = (
+    <MobBtn label="Поиск" icon={<Search size={22} />} isDark={isDark} onClick={() => { setSheet(null); setSearchOpen(true); }} isActive={false} />
+  );
+  if (showDocActions) {
+    return (
+      <>
+        {themeBtn}
+        {searchBtn}
+        <MobBtn label="Разделы" icon={<FolderOpen size={22} />} isDark={isDark} onClick={() => setSheet(sheet === 'nav' ? null : 'nav')} isActive={sheet === 'nav'} />
+      </>
+    );
+  }
+  return (
+    <>
+      {themeBtn}
+      {searchBtn}
+    </>
+  );
+}
+
+// ─── Кнопки правой части мобильной навигации ──────────────────────────────────
+
+function MobileRightButtons({ isDark, showDocActions, hasToc, sheet, setSheet, scrollTop }: {
+  isDark: boolean;
+  showDocActions: boolean;
+  hasToc: boolean;
+  sheet: MobileSheet;
+  setSheet: (s: MobileSheet) => void;
+  scrollTop: () => void;
+}) {
+  if (!showDocActions) {
+    return (
+      <>
+        <MobBtn label="Разделы"  icon={<FolderOpen size={22} />} isDark={isDark} onClick={() => setSheet(sheet === 'nav' ? null : 'nav')}      isActive={sheet === 'nav'} />
+        <MobBtn label="Контакты" icon={<Mail size={22} />}       isDark={isDark} onClick={() => setSheet(sheet === 'contacts' ? null : 'contacts')} isActive={sheet === 'contacts'} />
+      </>
+    );
+  }
+  if (hasToc) {
+    return (
+      <>
+        <MobBtn label="Оглавление" icon={<List size={22} />}    isDark={isDark} onClick={() => setSheet(sheet === 'toc' ? null : 'toc')}           isActive={sheet === 'toc'} />
+        <MobBtn label="Наверх"     icon={<ArrowUp size={22} />} isDark={isDark} onClick={scrollTop}                                               isActive={false} />
+        <MobBtn label="Контакты"   icon={<Mail size={22} />}    isDark={isDark} onClick={() => setSheet(sheet === 'contacts' ? null : 'contacts')} isActive={sheet === 'contacts'} />
+      </>
+    );
+  }
+  return (
+    <>
+      <MobBtn label="Наверх"   icon={<ArrowUp size={22} />} isDark={isDark} onClick={scrollTop}                                               isActive={false} />
+      <MobBtn label="Контакты" icon={<Mail size={22} />}    isDark={isDark} onClick={() => setSheet(sheet === 'contacts' ? null : 'contacts')} isActive={sheet === 'contacts'} />
+    </>
+  );
+}
+
 // ─── MobileNav ────────────────────────────────────────────────────────────────
 
 type MobileSheet = 'nav' | 'toc' | 'contacts' | null;
@@ -1560,44 +1637,12 @@ const MobileNav: React.FC<{
   const [sheet, setSheet]           = useState<MobileSheet>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const hasToc = toc.length > 0;
-  const toggle = (s: MobileSheet) => setSheet(prev => prev === s ? null : s);
 
   useEffect(() => {
     if (!hasToc && sheet === 'toc') { setSheet(null); }
   }, [hasToc, sheet]);
 
   const scrollTop = () => { setSheet(null); globalThis.scrollTo({ top: 0, behavior: 'smooth' }); };
-
-  const leftButtons = !showDocActions ? (
-    <>
-      <MobBtn label="Тема"  icon={isDark ? <Sun size={22} /> : <Moon size={22} />} isDark={isDark} onClick={toggleTheme}                                   isActive={false} />
-      <MobBtn label="Поиск" icon={<Search size={22} />}                            isDark={isDark} onClick={() => { setSheet(null); setSearchOpen(true); }} isActive={false} />
-    </>
-  ) : (
-    <>
-      <MobBtn label="Тема"    icon={isDark ? <Sun size={22} /> : <Moon size={22} />} isDark={isDark} onClick={toggleTheme}                                   isActive={false} />
-      <MobBtn label="Поиск"   icon={<Search size={22} />}                            isDark={isDark} onClick={() => { setSheet(null); setSearchOpen(true); }} isActive={false} />
-      <MobBtn label="Разделы" icon={<FolderOpen size={22} />}                        isDark={isDark} onClick={() => toggle('nav')}                           isActive={sheet === 'nav'} />
-    </>
-  );
-
-  const rightButtons = !showDocActions ? (
-    <>
-      <MobBtn label="Разделы"  icon={<FolderOpen size={22} />} isDark={isDark} onClick={() => toggle('nav')}      isActive={sheet === 'nav'} />
-      <MobBtn label="Контакты" icon={<Mail size={22} />}       isDark={isDark} onClick={() => toggle('contacts')} isActive={sheet === 'contacts'} />
-    </>
-  ) : hasToc ? (
-    <>
-      <MobBtn label="Оглавление" icon={<List size={22} />}    isDark={isDark} onClick={() => toggle('toc')}      isActive={sheet === 'toc'} />
-      <MobBtn label="Наверх"     icon={<ArrowUp size={22} />} isDark={isDark} onClick={scrollTop}                isActive={false} />
-      <MobBtn label="Контакты"   icon={<Mail size={22} />}    isDark={isDark} onClick={() => toggle('contacts')} isActive={sheet === 'contacts'} />
-    </>
-  ) : (
-    <>
-      <MobBtn label="Наверх"   icon={<ArrowUp size={22} />} isDark={isDark} onClick={scrollTop}                isActive={false} />
-      <MobBtn label="Контакты" icon={<Mail size={22} />}    isDark={isDark} onClick={() => toggle('contacts')} isActive={sheet === 'contacts'} />
-    </>
-  );
 
   return (
     <>
@@ -1620,7 +1665,11 @@ const MobileNav: React.FC<{
 
         {/* Левая половина */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'stretch', justifyContent: 'flex-end' }}>
-          {leftButtons}
+          <MobileLeftButtons
+            isDark={isDark} showDocActions={showDocActions}
+            toggleTheme={toggleTheme} setSheet={setSheet}
+            setSearchOpen={setSearchOpen} sheet={sheet}
+          />
         </div>
 
         {/* Центральный spacer */}
@@ -1628,7 +1677,10 @@ const MobileNav: React.FC<{
 
         {/* Правая половина */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'stretch', justifyContent: 'flex-start' }}>
-          {rightButtons}
+          <MobileRightButtons
+            isDark={isDark} showDocActions={showDocActions} hasToc={hasToc}
+            sheet={sheet} setSheet={setSheet} scrollTop={scrollTop}
+          />
         </div>
       </nav>
 
