@@ -2,6 +2,8 @@
 import Layout from '@/app/layouts/Layout.astro';
 import DocContent from '@/features/docs/components/DocContent';
 import CategoryContent from '@/features/docs/components/CategoryContent';
+import { customPages, getCustomPageBySlug } from '@/custom';
+import CustomPageRenderer from '@/custom/CustomPageRenderer';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
@@ -14,12 +16,10 @@ export const prerender = import.meta.env.DEV ? false : true;
 
 export async function getStaticPaths() {
   const docsDir = path.join(process.cwd(), 'Docs');
-  if (!fs.existsSync(docsDir)) return [];
-
-  const allMdFiles = scanDocsDirectoryRecursive(docsDir);
+  const allMdFiles = fs.existsSync(docsDir) ? scanDocsDirectoryRecursive(docsDir) : [];
   const seen = new Map<string, string>();
   const docs: any[] = [];
-  const paths: Array<{ params: { slug: string }; props: { doc?: any; category?: any } }> = [];
+  const paths: Array<{ params: { slug: string }; props: { doc?: any; category?: any; customPage?: any } }> = [];
 
   for (const mdPath of allMdFiles) {
     const doc = buildDocFromPath(mdPath, docsDir);
@@ -42,6 +42,15 @@ export async function getStaticPaths() {
     paths.push({ params: { slug: category.slug }, props: { category } });
   }
 
+  for (const customPage of customPages) {
+    if (seen.has(customPage.slug)) {
+      console.warn(`[custom page dedup] Custom page slug "${customPage.slug}" conflicts with another page, skipping custom page from ${customPage.folderName}`);
+      continue;
+    }
+    seen.set(customPage.slug, `<custom:${customPage.folderName}>`);
+    paths.push({ params: { slug: customPage.slug }, props: { customPage } });
+  }
+
   return paths;
 }
 
@@ -49,6 +58,7 @@ const { slug } = Astro.params;
 const docsDir = path.join(process.cwd(), 'Docs');
 let doc: any = null;
 let category: any = null;
+let customPage: any = null;
 
 if (import.meta.env.DEV) {
   if (slug && fs.existsSync(docsDir)) {
@@ -64,26 +74,29 @@ if (import.meta.env.DEV) {
       }
     }
     if (!doc) category = buildCategoryPages(docs).find((candidate) => candidate.slug === slug) ?? null;
+    if (!doc && !category) customPage = getCustomPageBySlug(slug);
   }
 } else {
   doc = (Astro.props as any).doc ?? null;
   category = (Astro.props as any).category ?? null;
+  customPage = (Astro.props as any).customPage ?? null;
 }
 
-if ((!doc && !category) || !slug) return Astro.redirect('/404');
+if ((!doc && !category && !customPage) || !slug) return Astro.redirect('/404');
+
 ---
 
 <Layout
-  title={doc?.title ?? category.title}
-  description={doc?.description ?? category.description}
-  image={doc?.image}
+  title={doc?.title ?? category?.title ?? customPage?.metadata.title}
+  description={doc?.description ?? category?.description ?? customPage?.metadata.description}
+  image={doc?.image ?? customPage?.metadata.image}
   url={`/${slug}/`}
-  type={doc ? 'article' : 'website'}
-  author={doc?.author}
-  date={doc?.date}
-  keywords={doc?.keywords}
-  robots={doc?.robots}
-  lang={doc?.lang || 'ru'}
+  type={doc ? 'article' : (customPage?.metadata.type ?? 'website')}
+  author={doc?.author ?? customPage?.metadata.author}
+  date={doc?.date ?? customPage?.metadata.date}
+  keywords={doc?.keywords ?? customPage?.metadata.keywords}
+  robots={doc?.robots ?? customPage?.metadata.robots}
+  lang={doc?.lang || customPage?.metadata.lang || 'ru'}
 >
   {doc ? (
     <>
@@ -94,6 +107,8 @@ if ((!doc && !category) || !slug) return Astro.redirect('/404');
       </noscript>
       <DocContent client:only="react" doc={doc} />
     </>
+  ) : customPage ? (
+    <CustomPageRenderer client:only="react" slug={slug} />
   ) : (
     <CategoryContent client:only="react" category={category} />
   )}

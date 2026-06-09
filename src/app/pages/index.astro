@@ -1,7 +1,8 @@
 ---
 import Layout from '@/app/layouts/Layout.astro';
 import DocContent from '@/features/docs/components/DocContent';
-import GeneralPageWrapper from '@/features/general/components/GeneralPageWrapper';
+import { getCustomPageBySlug } from '@/custom';
+import CustomPageRenderer from '@/custom/CustomPageRenderer';
 import fs from 'node:fs';
 import path from 'node:path';
 import { buildDocFromPath } from '../../../scripts/docUtils.mjs';
@@ -36,13 +37,14 @@ if (!useLanding && fs.existsSync(welcomeMdPath)) {
 }
 
 const SITE_NAME = 'Opensophy';
-const LANDING_DESCRIPTION = 'Opensophy — open-source проект для IT-специалистов и инициатива открытой философии в IT. Качественные и доступные знания, услуги, инструменты и решения по безопасности, разработке и инфраструктуре — в открытом доступе.';
-const LANDING_KEYWORDS = 'opensophy, кибербезопасность, DevSecOps, linux, разработка, инструменты, туториалы, open source, IT, mTLS, SAST, DAST, SCA, zero trust, CI/CD';
+const landingPage = getCustomPageBySlug('general');
+const LANDING_DESCRIPTION = landingPage?.metadata.description || 'Opensophy — open-source проект для IT-специалистов и инициатива открытой философии в IT. Качественные и доступные знания, услуги, инструменты и решения по безопасности, разработке и инфраструктуре — в открытом доступе.';
+const LANDING_KEYWORDS = landingPage?.metadata.keywords || 'opensophy, кибербезопасность, DevSecOps, linux, разработка, инструменты, туториалы, open source, IT, mTLS, SAST, DAST, SCA, zero trust, CI/CD';
 
-const title       = useLanding ? SITE_NAME : (welcomeDoc?.title       || SITE_NAME);
+const title       = useLanding ? (landingPage?.metadata.title || SITE_NAME) : (welcomeDoc?.title       || SITE_NAME);
 const description = useLanding ? LANDING_DESCRIPTION : (welcomeDoc?.description || LANDING_DESCRIPTION);
 const keywords    = useLanding ? LANDING_KEYWORDS : (welcomeDoc?.keywords || '');
-const lang        = useLanding ? 'ru' : (welcomeDoc?.lang || 'ru');
+const lang        = useLanding ? (landingPage?.metadata.lang || 'ru') : (welcomeDoc?.lang || 'ru');
 ---
 
 <Layout
@@ -124,7 +126,7 @@ const lang        = useLanding ? 'ru' : (welcomeDoc?.lang || 'ru');
         </section>
       </article>
 
-      <GeneralPageWrapper client:only="react" />
+      {landingPage ? <CustomPageRenderer client:only="react" slug="general" /> : null}
     </>
   ) : welcomeDoc ? (
     <DocContent client:only="react" doc={welcomeDoc} />
