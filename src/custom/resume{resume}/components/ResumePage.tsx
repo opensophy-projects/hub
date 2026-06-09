@@ -1,4 +1,3 @@
-cat > "/home/claude/resume-page/src/custom/resume{resume}/components/ResumePage.tsx" << 'ENDOFFILE'
 import React, { useState, useEffect } from 'react';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import Navigation from '@/features/navigation/components/Navigation';
@@ -644,5 +643,3 @@ const ResumePage: React.FC = () => (
 );
 
 export default ResumePage;
-ENDOFFILE
-echo "done"
