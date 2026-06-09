@@ -9,7 +9,7 @@ import {
 import { TableContext } from '../lib/htmlParser';
 import { makeTokens } from '@/shared/tokens/theme';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Типы ─────────────────────────────────────────────────────────────────────
 
 export type ChartType =
   | 'area' | 'area-stacked'
@@ -126,6 +126,16 @@ const PieTooltip: React.FC<{
 
 interface LegendItem { key: string; color: string; }
 
+function legendItemColor(
+  isHidden: boolean,
+  isDimmed: boolean,
+  t: ReturnType<typeof tk>,
+): string {
+  if (isHidden) return t.legendMuted;
+  if (isDimmed)  return t.legendMuted;
+  return t.legendText;
+}
+
 const CustomLegend: React.FC<{
   items: LegendItem[];
   hidden: Set<string>;
@@ -141,8 +151,8 @@ const CustomLegend: React.FC<{
       gap: '4px 12px', padding: '2px 12px 10px',
     }}>
       {items.map(item => {
-        const isHidden  = hidden.has(item.key);
-        const isDimmed  = hovered !== null && hovered !== item.key && !isHidden;
+        const isHidden = hidden.has(item.key);
+        const isDimmed = hovered !== null && hovered !== item.key && !isHidden;
         return (
           <button
             key={item.key}
@@ -153,7 +163,7 @@ const CustomLegend: React.FC<{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               background: 'none', border: 'none', cursor: 'pointer',
               padding: '3px 6px', borderRadius: 5, outline: 'none',
-              color: isHidden ? t.legendMuted : isDimmed ? t.legendMuted : t.legendText,
+              color: legendItemColor(isHidden, isDimmed, t),
               fontSize: 11, fontWeight: isHidden ? 400 : 500,
               userSelect: 'none',
               transition: 'color 0.15s, opacity 0.15s',
@@ -203,12 +213,21 @@ function seriesOpacity(key: string, hovered: string | null, hidden: Set<string>)
 
 // ─── Area ─────────────────────────────────────────────────────────────────────
 
-function renderArea(
-  data: ChartRow[],
-  nameKey: string, valueKeys: string[], palette: string[],
-  stacked: boolean, hidden: Set<string>, hovered: string | null,
-  t: ReturnType<typeof tk>
-) {
+interface RenderAreaOptions {
+  data: ChartRow[];
+  nameKey: string;
+  valueKeys: string[];
+  palette: string[];
+  stacked: boolean;
+  hidden: Set<string>;
+  hovered: string | null;
+  t: ReturnType<typeof tk>;
+}
+
+function renderArea({
+  data, nameKey, valueKeys, palette,
+  stacked, hidden, hovered, t,
+}: RenderAreaOptions) {
   const visible = valueKeys.filter(k => !hidden.has(k));
   return (
     <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -273,8 +292,6 @@ interface RenderBarOptions {
   stacked: boolean;
   horizontal: boolean;
   hidden: Set<string>;
-  // FIX: для single-series row-color bars hovered содержит nameKey-значение строки,
-  //      для multi-series hovered содержит valueKey серии
   hovered: string | null;
   t: ReturnType<typeof tk>;
 }
@@ -289,14 +306,28 @@ function getBarRadius(
   return [0, 0, 0, 0];
 }
 
+function getMultiSeriesOpacity(hovered: string | null, key: string): number {
+  if (hovered === null) return 1;
+  return hovered === key ? 1 : 0.22;
+}
+
+function getCellOpacity(
+  useRowColors: boolean,
+  hovered: string | null,
+  rowName: string,
+  multiSeriesOp: number,
+): number {
+  if (!useRowColors) return multiSeriesOp;
+  if (hovered === null) return 1;
+  return hovered === rowName ? 1 : 0.22;
+}
+
 function renderBar({
   data, nameKey, valueKeys, palette,
   stacked, horizontal, hidden, hovered, t,
 }: RenderBarOptions) {
   const isSingleSeries = valueKeys.length === 1;
 
-  // FIX: для bar-horizontal single-series скрываем строки по nameKey,
-  //      для остальных — по valueKey
   const visibleData = (isSingleSeries && horizontal)
     ? data.filter(d => !hidden.has(String(d[nameKey])))
     : data;
@@ -327,9 +358,7 @@ function renderBar({
         const seriesColor = palette[idx % palette.length];
         const isLastVisible = visible.indexOf(key) === visible.length - 1;
         const radius = getBarRadius(stacked, horizontal, isLastVisible);
-
-        // FIX: для multi-series opacity управляется по valueKey (как раньше)
-        const multiSeriesOp = hovered === null ? 1 : hovered === key ? 1 : 0.22;
+        const multiSeriesOp = getMultiSeriesOpacity(hovered, key);
 
         return (
           <Bar key={key} dataKey={key}
@@ -341,18 +370,13 @@ function renderBar({
             shape={(props: any) => {
               const glow = !stacked || isLastVisible;
 
-              // FIX: получаем имя строки из props напрямую, не через datum
               const rowName = String(props[nameKey] ?? visibleData[props.index]?.[nameKey] ?? '');
 
               const cellFill = useRowColors
                 ? palette[(data.findIndex(d => String(d[nameKey]) === rowName) + data.length) % palette.length]
                 : seriesColor;
 
-              // FIX: для single-series (row-colors) opacity определяется по имени строки,
-              //      для multi-series — по ключу серии
-              const cellOp = useRowColors
-                ? (hovered === null ? 1 : hovered === rowName ? 1 : 0.22)
-                : multiSeriesOp;
+              const cellOp = getCellOpacity(useRowColors, hovered, rowName, multiSeriesOp);
 
               return (
                 <g opacity={cellOp} style={{ transition: 'opacity 0.18s' }}>
@@ -393,7 +417,7 @@ function renderBar({
   );
 }
 
-// ─── Pie (вынесен в компонент, чтобы можно было использовать useState) ────────
+// ─── Pie ──────────────────────────────────────────────────────────────────────
 
 interface PieChartInnerProps {
   data: ChartRow[];
@@ -402,12 +426,15 @@ interface PieChartInnerProps {
   palette: string[];
   donut: boolean;
   hidden: Set<string>;
-  // FIX: hovered здесь — имя сектора (nameKey-значение)
   hovered: string | null;
   t: ReturnType<typeof tk>;
 }
 
-// FIX: вынесли в настоящий React-компонент — useState теперь вызывается корректно
+function getPieSectorOpacity(hovered: string | null, rowName: string): number {
+  if (hovered === null) return 1;
+  return hovered === rowName ? 1 : 0.22;
+}
+
 const PieChartInner: React.FC<PieChartInnerProps> = ({
   data, nameKey, valueKeys, palette, donut, hidden, hovered, t,
 }) => {
@@ -415,7 +442,6 @@ const PieChartInner: React.FC<PieChartInnerProps> = ({
   const visibleData = data.filter(d => !hidden.has(String(d[nameKey])));
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
 
-  // FIX: activeIndex синхронизируем с hovered из легенды
   const resolvedActiveIndex = useMemo(() => {
     if (hovered !== null) {
       const idx = visibleData.findIndex(d => String(d[nameKey]) === hovered);
@@ -457,8 +483,7 @@ const PieChartInner: React.FC<PieChartInnerProps> = ({
         {visibleData.map((entry) => {
           const rowName = String(entry[nameKey]);
           const origIdx = data.findIndex(d => String(d[nameKey]) === rowName);
-          // FIX: затемняем секторы при hover через легенду
-          const op = hovered === null ? 1 : hovered === rowName ? 1 : 0.22;
+          const op = getPieSectorOpacity(hovered, rowName);
           return (
             <Cell
               key={rowName}
@@ -508,7 +533,7 @@ function renderRadar(
   );
 }
 
-// ─── pluralRecords ────────────────────────────────────────────────────────────
+// ─── Вспомогательные ─────────────────────────────────────────────────────────
 
 function pluralRecords(n: number): string {
   if (n === 1) return 'запись';
@@ -537,9 +562,6 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
 
   const isEmpty = !data.length || !valueKeys.length;
 
-  // FIX: для pie/single-bar легенда строится по nameKey строк,
-  //      для остальных — по valueKeys серий.
-  //      Это же определяет семантику `hovered` — имя строки vs имя серии.
   const legendItems: LegendItem[] = useMemo(() => {
     const isPie = type === 'pie' || type === 'pie-donut';
     const isSingleBar = (type === 'bar' || type === 'bar-horizontal') && valueKeys.length === 1;
@@ -560,9 +582,9 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
     if (isEmpty) return null;
     switch (type) {
       case 'area':
-        return renderArea(data, nameKey, valueKeys, palette, false, hidden, hovered, t);
+        return renderArea({ data, nameKey, valueKeys, palette, stacked: false, hidden, hovered, t });
       case 'area-stacked':
-        return renderArea(data, nameKey, valueKeys, palette, true, hidden, hovered, t);
+        return renderArea({ data, nameKey, valueKeys, palette, stacked: true,  hidden, hovered, t });
       case 'bar':
         return renderBar({ data, nameKey, valueKeys, palette, stacked: false, horizontal: false, hidden, hovered, t });
       case 'bar-stacked':
@@ -571,7 +593,6 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
         return renderBar({ data, nameKey, valueKeys, palette, stacked: false, horizontal: true,  hidden, hovered, t });
       case 'pie':
       case 'pie-donut':
-        // FIX: используем компонент вместо функции, чтобы useState работал корректно
         return (
           <PieChartInner
             data={data}
