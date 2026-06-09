@@ -419,7 +419,7 @@ function useNavPanel(docs: Doc[], currentDocSlug: string | undefined) {
   useEffect(() => {
     if (!sectionOpen) return;
     const h = (e: MouseEvent) => {
-      if (sectionRef.current && !sectionRef.current.contains(e.target as unknown as Node)) {
+      if (sectionRef.current && !sectionRef.current.contains(e.target as Node)) {
         setSectionOpen(false);
       }
     };
@@ -1560,14 +1560,16 @@ const MobBtn: React.FC<{
 
 // ─── Кнопки левой части мобильной навигации ───────────────────────────────────
 
-function MobileLeftButtons({ isDark, showDocActions, toggleTheme, setSheet, setSearchOpen, sheet }: {
-  isDark: boolean;
-  showDocActions: boolean;
-  toggleTheme: () => void;
-  setSheet: (s: MobileSheet) => void;
-  setSearchOpen: (v: boolean) => void;
-  sheet: MobileSheet;
-}) {
+interface MobileLeftButtonsProps {
+  readonly isDark: boolean;
+  readonly showDocActions: boolean;
+  readonly toggleTheme: () => void;
+  readonly setSheet: (s: MobileSheet) => void;
+  readonly setSearchOpen: (v: boolean) => void;
+  readonly sheet: MobileSheet;
+}
+
+function MobileLeftButtons({ isDark, showDocActions, toggleTheme, setSheet, setSearchOpen, sheet }: MobileLeftButtonsProps) {
   const themeBtn = (
     <MobBtn label="Тема" icon={isDark ? <Sun size={22} /> : <Moon size={22} />} isDark={isDark} onClick={toggleTheme} isActive={false} />
   );
@@ -1593,14 +1595,16 @@ function MobileLeftButtons({ isDark, showDocActions, toggleTheme, setSheet, setS
 
 // ─── Кнопки правой части мобильной навигации ──────────────────────────────────
 
-function MobileRightButtons({ isDark, showDocActions, hasToc, sheet, setSheet, scrollTop }: {
-  isDark: boolean;
-  showDocActions: boolean;
-  hasToc: boolean;
-  sheet: MobileSheet;
-  setSheet: (s: MobileSheet) => void;
-  scrollTop: () => void;
-}) {
+interface MobileRightButtonsProps {
+  readonly isDark: boolean;
+  readonly showDocActions: boolean;
+  readonly hasToc: boolean;
+  readonly sheet: MobileSheet;
+  readonly setSheet: (s: MobileSheet) => void;
+  readonly scrollTop: () => void;
+}
+
+function MobileRightButtons({ isDark, showDocActions, hasToc, sheet, setSheet, scrollTop }: MobileRightButtonsProps) {
   if (!showDocActions) {
     return (
       <>
