@@ -2,36 +2,35 @@ import { Renderer, Program, Mesh, Triangle, Texture } from 'ogl';
 import { useEffect, useRef } from 'react';
 
 interface EvilEyeProps {
-  readonly eyeColor?: string;
-  readonly intensity?: number;
-  readonly pupilSize?: number;
-  readonly irisWidth?: number;
-  readonly glowIntensity?: number;
-  readonly scale?: number;
-  readonly noiseScale?: number;
-  readonly pupilFollow?: number;
-  readonly flameSpeed?: number;
-  readonly backgroundColor?: string;
+  eyeColor?: string;
+  intensity?: number;
+  pupilSize?: number;
+  irisWidth?: number;
+  glowIntensity?: number;
+  scale?: number;
+  noiseScale?: number;
+  pupilFollow?: number;
+  flameSpeed?: number;
+  backgroundColor?: string;
 }
 
 function hexToVec3(hex: string): [number, number, number] {
   const h = hex.replace('#', '');
   return [
-    Number.parseInt(h.slice(0, 2), 16) / 255,
-    Number.parseInt(h.slice(2, 4), 16) / 255,
-    Number.parseInt(h.slice(4, 6), 16) / 255
+    parseInt(h.slice(0, 2), 16) / 255,
+    parseInt(h.slice(2, 4), 16) / 255,
+    parseInt(h.slice(4, 6), 16) / 255
   ];
-}
-
-// Вынесена в внешний скоуп для избежания пересоздания при каждом вызове generateNoiseTexture
-function noiseHash(x: number, y: number, s: number): number {
-  let n = x * 374761393 + y * 668265263 + s * 1274126177;
-  n = Math.imul(n ^ (n >>> 13), 1274126177);
-  return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
 }
 
 function generateNoiseTexture(size = 256): Uint8Array {
   const data = new Uint8Array(size * size * 4);
+
+  function hash(x: number, y: number, s: number): number {
+    let n = x * 374761393 + y * 668265263 + s * 1274126177;
+    n = Math.imul(n ^ (n >>> 13), 1274126177);
+    return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
+  }
 
   function noise(px: number, py: number, freq: number, seed: number): number {
     const fx = (px / size) * freq;
@@ -40,11 +39,11 @@ function generateNoiseTexture(size = 256): Uint8Array {
     const iy = Math.floor(fy);
     const tx = fx - ix;
     const ty = fy - iy;
-    const w = Math.trunc(freq);
-    const v00 = noiseHash(((ix % w) + w) % w, ((iy % w) + w) % w, seed);
-    const v10 = noiseHash((((ix + 1) % w) + w) % w, ((iy % w) + w) % w, seed);
-    const v01 = noiseHash(((ix % w) + w) % w, (((iy + 1) % w) + w) % w, seed);
-    const v11 = noiseHash((((ix + 1) % w) + w) % w, (((iy + 1) % w) + w) % w, seed);
+    const w = freq | 0;
+    const v00 = hash(((ix % w) + w) % w, ((iy % w) + w) % w, seed);
+    const v10 = hash((((ix + 1) % w) + w) % w, ((iy % w) + w) % w, seed);
+    const v01 = hash(((ix % w) + w) % w, (((iy + 1) % w) + w) % w, seed);
+    const v11 = hash((((ix + 1) % w) + w) % w, (((iy + 1) % w) + w) % w, seed);
     return v00 * (1 - tx) * (1 - ty) + v10 * tx * (1 - ty) + v01 * (1 - tx) * ty + v11 * tx * ty;
   }
 
@@ -174,9 +173,9 @@ export default function EvilEye({
   irisWidth = 0.25,
   glowIntensity = 0.35,
   scale = 0.8,
-  noiseScale = 1,
-  pupilFollow = 1,
-  flameSpeed = 1,
+  noiseScale = 1.0,
+  pupilFollow = 1.0,
+  flameSpeed = 1.0,
   backgroundColor = '#000000'
 }: EvilEyeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -244,7 +243,7 @@ export default function EvilEye({
       }
     });
     const onResize = () => resize(program);
-    globalThis.addEventListener('resize', onResize);
+    window.addEventListener('resize', onResize);
     resize(program);
 
     const mesh = new Mesh(gl, { geometry, program });
@@ -264,10 +263,10 @@ export default function EvilEye({
 
     return () => {
       cancelAnimationFrame(animationFrameId);
-      globalThis.removeEventListener('resize', onResize);
+      window.removeEventListener('resize', onResize);
       container.removeEventListener('mousemove', onMouseMove);
       container.removeEventListener('mouseleave', onMouseLeave);
-      gl.canvas.remove();
+      container.removeChild(gl.canvas);
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
   }, [eyeColor, intensity, pupilSize, irisWidth, glowIntensity, scale, noiseScale, pupilFollow, flameSpeed, backgroundColor]);

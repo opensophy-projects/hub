@@ -3,12 +3,14 @@ import * as THREE from 'three';
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
+type UniformValue = THREE.IUniform<unknown>;
+
 interface ExtendMaterialConfig {
   header: string;
   vertexHeader?: string;
   fragmentHeader?: string;
   material?: THREE.MeshPhysicalMaterialParameters & { fog?: boolean };
-  uniforms?: Record<string, unknown>;
+  uniforms?: Record<string, UniformValue | unknown>;
   vertex?: Record<string, string>;
   fragment?: Record<string, string>;
 }
