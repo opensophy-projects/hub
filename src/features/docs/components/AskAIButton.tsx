@@ -82,16 +82,13 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
   const ref = useRef<HTMLDivElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
-  const t   = getTheme(isDark);
+  const t = getTheme(isDark);
 
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
       const target = e.target instanceof Node ? e.target : null;
-      if (
-        (ref.current && ref.current.contains(target)) ||
-        (popupRef.current && popupRef.current.contains(target))
-      ) return;
+      if (ref.current?.contains(target) || popupRef.current?.contains(target)) return;
       setOpen(false);
     };
     document.addEventListener('mousedown', onDown);
