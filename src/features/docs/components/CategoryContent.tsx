@@ -263,12 +263,12 @@ const LAYOUT_DESKTOP_FALLBACKS: DocChromeLayout = {
 };
 
 function readDocChromeLayout(): DocChromeLayout {
-  const css        = getComputedStyle(document.documentElement);
-  const get        = (v: string) => css.getPropertyValue(v).trim();
-  const navLeft    = get('--nav-left')           || LAYOUT_DESKTOP_FALLBACKS.navLeft;
-  const docRight   = get('--doc-right')          || LAYOUT_DESKTOP_FALLBACKS.docRight;
-  const chromeGap  = get('--doc-chrome-gap')     || LAYOUT_DESKTOP_FALLBACKS.docChromeGap;
-  const chromeTop  = get('--doc-chrome-top-gap') || chromeGap;
+  const css       = getComputedStyle(document.documentElement);
+  const get       = (v: string) => css.getPropertyValue(v).trim();
+  const navLeft   = get('--nav-left')           || LAYOUT_DESKTOP_FALLBACKS.navLeft;
+  const docRight  = get('--doc-right')          || LAYOUT_DESKTOP_FALLBACKS.docRight;
+  const chromeGap = get('--doc-chrome-gap')     || LAYOUT_DESKTOP_FALLBACKS.docChromeGap;
+  const chromeTop = get('--doc-chrome-top-gap') || chromeGap;
   return {
     navLeft,
     docRight,
@@ -297,11 +297,90 @@ function useDocChromeLayout(isDesktop: boolean): DocChromeLayout {
   return layout;
 }
 
+// ─── Стиль тега <main> ────────────────────────────────────────────────────────
+
+function getMainStyle(
+  isDesktop: boolean,
+  layout: DocChromeLayout,
+  t: ReturnType<typeof makeTokens>,
+): React.CSSProperties {
+  if (!isDesktop) {
+    return {
+      background:   t.bgPage,
+      position:     'relative',
+      zIndex:       1,
+      marginBottom: '3.5rem',
+      minHeight:    '100vh',
+      transition:   'none',
+    };
+  }
+  const { navLeft, docRight, docChromeTopGap, docChromeGap, docChromeRadius } = layout;
+  return {
+    background:   t.bgPage,
+    marginLeft:   navLeft,
+    marginRight:  docRight,
+    position:     'relative',
+    zIndex:       1,
+    marginTop:    docChromeTopGap,
+    marginBottom: docChromeGap,
+    minHeight:    `calc(100vh - (${docChromeTopGap} + ${docChromeGap}))`,
+    border:       `1px solid ${t.border}`,
+    borderRadius: docChromeRadius,
+    overflow:     'hidden',
+    boxShadow:    `0 0 0 1px ${t.border}, inset 0 1px 0 rgba(255,255,255,0.03)`,
+    transition:   'none',
+  };
+}
+
+// ─── Токены шапки страницы ────────────────────────────────────────────────────
+
+interface PageTokens {
+  navChromeBg: string;
+  headerBg: string;
+  headerBdr: string;
+  iconWrapBg: string;
+  iconWrapBdr: string;
+  iconColor: string;
+  titleColor: string;
+  mutedColor: string;
+  breadcrumbLinkColor: string;
+  sectionBg: string;
+}
+
+function getPageTokens(isDark: boolean, t: ReturnType<typeof makeTokens>): PageTokens {
+  return isDark
+    ? {
+        navChromeBg:         'rgba(15,15,15,0.84)',
+        headerBg:            '#0a0a0a',
+        headerBdr:           'rgba(255,255,255,0.08)',
+        iconWrapBg:          'rgba(255,255,255,0.07)',
+        iconWrapBdr:         'rgba(255,255,255,0.12)',
+        iconColor:           'rgba(255,255,255,0.7)',
+        titleColor:          '#ffffff',
+        mutedColor:          'rgba(255,255,255,0.55)',
+        breadcrumbLinkColor: 'rgba(255,255,255,0.6)',
+        sectionBg:           '#0a0a0a',
+      }
+    : {
+        navChromeBg:         'rgba(224,223,219,0.82)',
+        headerBg:            '#E8E7E3',
+        headerBdr:           'rgba(0,0,0,0.08)',
+        iconWrapBg:          t.accentSoft,
+        iconWrapBdr:         t.accentBorder,
+        iconColor:           'rgba(0,0,0,0.55)',
+        titleColor:          '#000000',
+        mutedColor:          'rgba(0,0,0,0.55)',
+        breadcrumbLinkColor: 'rgba(0,0,0,0.5)',
+        sectionBg:           '#E8E7E3',
+      };
+}
+
 // ─── CategoryContentMain ──────────────────────────────────────────────────────
 
 const CategoryContentMain: React.FC<CategoryContentProps> = ({ category }) => {
   const { isDark } = useTheme();
   const t = makeTokens(isDark);
+  const pt = getPageTokens(isDark, t);
 
   const [isDesktop, setIsDesktop] = useState(false);
 
@@ -318,28 +397,18 @@ const CategoryContentMain: React.FC<CategoryContentProps> = ({ category }) => {
     };
   }, []);
 
-  const {
-    navLeft, docRight,
-    docChromeGap, docChromeRadius, docChromeTopGap,
-    showLeftBorder, showRightBorder,
-  } = useDocChromeLayout(isDesktop);
+  const layout = useDocChromeLayout(isDesktop);
+  const { showLeftBorder, showRightBorder } = layout;
 
   const sortedDocs = useMemo(
     () => [...category.docs].sort((a, b) => a.title.localeCompare(b.title)),
     [category.docs],
   );
 
-  const navChromeBg  = isDark ? 'rgba(15,15,15,0.84)'   : 'rgba(224,223,219,0.82)';
-  const headerBg     = isDark ? '#0a0a0a'                : '#E8E7E3';
-  const headerBdr    = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
-  const iconWrapBg   = isDark ? 'rgba(255,255,255,0.07)' : t.accentSoft;
-  const iconWrapBdr  = isDark ? 'rgba(255,255,255,0.12)' : t.accentBorder;
-  const iconColor    = isDark ? 'rgba(255,255,255,0.7)'  : 'rgba(0,0,0,0.55)';
-  const titleColor   = isDark ? '#ffffff'                : '#000000';
-  const mutedColor   = isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
+  const mainStyle = getMainStyle(isDesktop, layout, t);
 
   return (
-    <div style={{ minHeight: '100vh', background: isDesktop ? navChromeBg : t.bgPage, position: 'relative' }}>
+    <div style={{ minHeight: '100vh', background: isDesktop ? pt.navChromeBg : t.bgPage, position: 'relative' }}>
       <style>{`
         .cat-doc-card {
           transition-property: transform, box-shadow, background !important;
@@ -368,60 +437,40 @@ const CategoryContentMain: React.FC<CategoryContentProps> = ({ category }) => {
       {isDesktop && (
         <div aria-hidden style={{
           position: 'fixed', inset: 0,
-          background: navChromeBg, zIndex: 0, pointerEvents: 'none',
+          background: pt.navChromeBg, zIndex: 0, pointerEvents: 'none',
         }} />
       )}
 
       <Navigation currentDocSlug={category.slug} toc={[]} activeHeadingId="" />
 
-      <main
-        style={{
-          background:   t.bgPage,
-          marginLeft:   isDesktop ? navLeft         : '0',
-          marginRight:  isDesktop ? docRight        : '0',
-          position:     'relative',
-          zIndex:       1,
-          marginTop:    isDesktop ? docChromeTopGap : '0',
-          marginBottom: isDesktop ? docChromeGap    : '3.5rem',
-          minHeight:    isDesktop
-            ? `calc(100vh - (${docChromeTopGap} + ${docChromeGap}))`
-            : '100vh',
-          border:       isDesktop ? `1px solid ${t.border}` : 'none',
-          borderRadius: isDesktop ? docChromeRadius          : 0,
-          overflow:     isDesktop ? 'hidden'                 : 'visible',
-          boxShadow:    isDesktop
-            ? `0 0 0 1px ${t.border}, inset 0 1px 0 rgba(255,255,255,0.03)`
-            : 'none',
-          transition:   'none',
-        }}
-      >
+      <main style={mainStyle}>
         {/* Шапка */}
         <header style={{
-          background: headerBg,
-          borderBottom: `1px solid ${headerBdr}`,
-          padding: 'clamp(2rem, 4vw, 3rem) clamp(1.5rem, 4vw, 2.5rem)',
+          background:   pt.headerBg,
+          borderBottom: `1px solid ${pt.headerBdr}`,
+          padding:      'clamp(2rem, 4vw, 3rem) clamp(1.5rem, 4vw, 2.5rem)',
         }}>
           {/* Хлебные крошки */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: '0.5rem',
             marginBottom: '1.5rem', flexWrap: 'wrap',
-            fontSize: '0.78rem', color: mutedColor,
+            fontSize: '0.78rem', color: pt.mutedColor,
             fontFamily: 'ui-monospace, monospace',
             letterSpacing: '0.02em',
           }}>
-            <a href="/" style={{ color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)', textDecoration: 'none' }}>
+            <a href="/" style={{ color: pt.breadcrumbLinkColor, textDecoration: 'none' }}>
               Главная
             </a>
             {(category.navTitle || category.parentTitle) && (
               <ChevronRight size={12} style={{ opacity: 0.4 }} />
             )}
             {category.navTitle && (
-              <span style={{ color: mutedColor }}>{category.navTitle}</span>
+              <span style={{ color: pt.mutedColor }}>{category.navTitle}</span>
             )}
             {category.parentTitle && category.parentTitle !== category.navTitle && (
               <>
                 <ChevronRight size={12} style={{ opacity: 0.4 }} />
-                <span style={{ color: mutedColor }}>{category.parentTitle}</span>
+                <span style={{ color: pt.mutedColor }}>{category.parentTitle}</span>
               </>
             )}
           </div>
@@ -430,10 +479,10 @@ const CategoryContentMain: React.FC<CategoryContentProps> = ({ category }) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
             <span style={{
               width: 44, height: 44, borderRadius: '12px', flexShrink: 0,
-              background: iconWrapBg,
-              border: `1px solid ${iconWrapBdr}`,
+              background: pt.iconWrapBg,
+              border: `1px solid ${pt.iconWrapBdr}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: iconColor,
+              color: pt.iconColor,
             }}>
               {category.icon ? <LucideIcon name={category.icon} size={22} /> : <FileText size={22} />}
             </span>
@@ -441,7 +490,7 @@ const CategoryContentMain: React.FC<CategoryContentProps> = ({ category }) => {
               <div style={{
                 fontSize: '0.64rem', fontWeight: 700,
                 letterSpacing: '0.12em', textTransform: 'uppercase',
-                color: mutedColor,
+                color: pt.mutedColor,
                 fontFamily: 'ui-monospace, monospace',
                 marginBottom: '0.35rem',
               }}>
@@ -450,7 +499,7 @@ const CategoryContentMain: React.FC<CategoryContentProps> = ({ category }) => {
               <h1 style={{
                 fontSize: 'clamp(1.5rem, 4vw, 2.4rem)',
                 fontWeight: 700, lineHeight: 1.15,
-                color: titleColor, margin: 0,
+                color: pt.titleColor, margin: 0,
                 letterSpacing: '-0.02em',
                 fontFamily: 'Inter, system-ui, sans-serif',
               }}>
@@ -463,7 +512,7 @@ const CategoryContentMain: React.FC<CategoryContentProps> = ({ category }) => {
         {/* Сетка карточек */}
         <section style={{
           padding: 'clamp(1.5rem, 3vw, 2.5rem) clamp(1.5rem, 4vw, 2.5rem) clamp(2.5rem, 5vw, 4rem)',
-          background: isDark ? '#0a0a0a' : '#E8E7E3',
+          background:  pt.sectionBg,
           borderLeft:  showLeftBorder  ? `1px solid ${t.borderStrong}` : 'none',
           borderRight: showRightBorder ? `1px solid ${t.borderStrong}` : 'none',
         }}>
