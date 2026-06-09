@@ -419,7 +419,7 @@ function useNavPanel(docs: Doc[], currentDocSlug: string | undefined) {
   useEffect(() => {
     if (!sectionOpen) return;
     const h = (e: MouseEvent) => {
-      if (sectionRef.current && !sectionRef.current.contains(e.target as Node)) {
+      if (sectionRef.current && e.target instanceof Node && !sectionRef.current.contains(e.target)) {
         setSectionOpen(false);
       }
     };
