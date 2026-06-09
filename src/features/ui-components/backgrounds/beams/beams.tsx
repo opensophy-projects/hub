@@ -1,16 +1,16 @@
 import { useEffect, useRef, useMemo, FC } from 'react';
 import * as THREE from 'three';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Типы ─────────────────────────────────────────────────────────────────────
 
-type UniformValue = THREE.IUniform<unknown> | unknown;
+type UniformValue = THREE.IUniform<unknown>;
 
 interface ExtendMaterialConfig {
   header: string;
   vertexHeader?: string;
   fragmentHeader?: string;
   material?: THREE.MeshPhysicalMaterialParameters & { fog?: boolean };
-  uniforms?: Record<string, UniformValue>;
+  uniforms?: Record<string, UniformValue | unknown>;
   vertex?: Record<string, string>;
   fragment?: Record<string, string>;
 }
@@ -25,7 +25,7 @@ function extendMaterial<T extends THREE.Material = THREE.Material>(
   BaseMaterial: new (params?: THREE.MaterialParameters) => T,
   cfg: ExtendMaterialConfig
 ): THREE.ShaderMaterial {
-  const physical = THREE.ShaderLib.physical as ShaderWithDefines;
+  const physical: ShaderWithDefines = THREE.ShaderLib.physical;
   const { vertexShader: baseVert, fragmentShader: baseFrag, uniforms: baseUniforms } = physical;
   const baseDefines = physical.defines ?? {};
 
@@ -72,14 +72,14 @@ function extendMaterial<T extends THREE.Material = THREE.Material>(
   });
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Вспомогательные функции ──────────────────────────────────────────────────
 
 const hexToNormalizedRGB = (hex: string): [number, number, number] => {
   const clean = hex.replace('#', '');
   return [
-    parseInt(clean.substring(0, 2), 16) / 255,
-    parseInt(clean.substring(2, 4), 16) / 255,
-    parseInt(clean.substring(4, 6), 16) / 255,
+    Number.parseInt(clean.substring(0, 2), 16) / 255,
+    Number.parseInt(clean.substring(2, 4), 16) / 255,
+    Number.parseInt(clean.substring(4, 6), 16) / 255,
   ];
 };
 
@@ -141,7 +141,7 @@ float cnoise(vec3 P){
 }
 `;
 
-// ─── Geometry ─────────────────────────────────────────────────────────────────
+// ─── Геометрия ────────────────────────────────────────────────────────────────
 
 function createStackedPlanesBufferGeometry(
   n: number,
@@ -222,7 +222,6 @@ const Beams: FC<BeamsProps> = ({
 }) => {
   const mountRef = useRef<HTMLDivElement>(null);
 
-  // Build material only when these props change
   const beamMaterial = useMemo(
     () =>
       extendMaterial(THREE.MeshStandardMaterial, {
@@ -285,7 +284,7 @@ gl_FragColor.rgb -= randomNoise / 15. * uNoiseIntensity;`,
 
     // ── Renderer ──────────────────────────────────────────────────────────────
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio, 2));
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.physicallyCorrectLights = true;
     container.appendChild(renderer.domElement);
@@ -362,7 +361,7 @@ gl_FragColor.rgb -= randomNoise / 15. * uNoiseIntensity;`,
       renderer.dispose();
       geometry.dispose();
       beamMaterial.dispose();
-      container.removeChild(renderer.domElement);
+      renderer.domElement.remove();
     };
   }, [beamMaterial, beamWidth, beamHeight, beamNumber, lightColor, rotation]);
 
