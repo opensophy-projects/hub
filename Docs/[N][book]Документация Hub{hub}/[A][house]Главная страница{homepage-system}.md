@@ -38,8 +38,8 @@ Hub поддерживает два режима главной страницы
 :::col
 **`useLanding: true`**
 
-Показывает React-компонент `GeneralPageWrapper` из
-`src/features/general/components/GeneralPage.tsx`.
+Показывает кастомную React-страницу `general` из
+`src/custom/general{general}/Page.tsx`.
 Это полноценная визуальная посадочная страница с WebGL-анимацией,
 анимированными секциями и адаптивным макетом.
 :::
@@ -126,8 +126,8 @@ icon: crown
 
 ### Что такое GeneralPage
 
-`GeneralPageWrapper` → `GeneralPage` → `LandingContent` — это React-компонент
-в `src/features/general/components/GeneralPage.tsx`. Он полностью независим от
+`Page.tsx` → `GeneralPage` → `LandingContent` — это React-компонент
+в `src/custom/general{general}/components/GeneralPage.tsx`. Он полностью независим от
 системы Markdown и имеет собственную тему (синхронизированную с глобальной через
 `localStorage` и кастомное событие `hub:theme-change`).
 
@@ -144,13 +144,13 @@ LandingContent
 
 ### Как создать собственный лендинг
 
-Редактируйте `src/features/general/components/GeneralPage.tsx`.
+Редактируйте `src/custom/general{general}/components/GeneralPage.tsx` или создайте новую папку в `src/custom/`.
 Это обычный React-файл — можно менять всё, что внутри `LandingContent`.
 
 **Минимальный собственный лендинг:**
 
 ```tsx
-// src/features/general/components/GeneralPage.tsx
+// src/custom/general{general}/components/GeneralPage.tsx
 import React from 'react';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import Navigation from '@/features/navigation/components/Navigation';
