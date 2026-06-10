@@ -4,7 +4,7 @@ import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import Navigation from '@/features/navigation/components/Navigation';
 import SplitText from '@/features/ui-components/texts/split-text/split-text';
 
-// ─── ShinyText (inline, как в GeneralPage) ────────────────────────────────────
+// ─── ShinyText ────────────────────────────────────────────────────────────────
 
 interface ShinyTextProps {
   text: string;
@@ -52,7 +52,7 @@ const ShinyText: React.FC<ShinyTextProps> = ({
   );
 };
 
-// ─── Card primitives (как в GeneralPage) ─────────────────────────────────────
+// ─── Card ─────────────────────────────────────────────────────────────────────
 
 const ResumeCard = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & { isNegative: boolean }>(
   ({ children, isNegative, style, ...props }, ref) => {
@@ -75,6 +75,7 @@ const ResumeContent: React.FC = () => {
     return localStorage.getItem('theme') !== 'light';
   });
   const [navOffset, setNavOffset] = useState(0);
+  const aboutRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
@@ -102,6 +103,10 @@ const ResumeContent: React.FC = () => {
     return () => observer.disconnect();
   }, []);
 
+  const scrollToAbout = () => {
+    aboutRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   const bg        = isNegative ? '#0a0a0a' : '#E8E7E3';
   const textMain  = isNegative ? '#ffffff' : '#000000';
   const textMut   = isNegative ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
@@ -117,93 +122,43 @@ const ResumeContent: React.FC = () => {
     boxSizing: 'border-box',
     overflow: 'hidden',
   };
-
   const innerPad: React.CSSProperties = {
     padding: 'clamp(3rem, 6vw, 5rem) clamp(2rem, 6vw, 5rem)',
     boxSizing: 'border-box',
   };
+  const cardsPad: React.CSSProperties = {
+    padding: 'clamp(1rem, 2vw, 2rem) clamp(2rem, 6vw, 5rem) clamp(3rem, 8vw, 6rem)',
+    boxSizing: 'border-box',
+  };
 
-  // ─ Badge label ─
-  const Badge: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div style={{
-      display: 'inline-flex',
-      alignSelf: 'flex-start',
-      fontSize: '0.66rem',
-      fontWeight: 700,
-      letterSpacing: '0.12em',
-      textTransform: 'uppercase',
-      color: badgeC,
-      marginBottom: '0.75rem',
-      fontFamily: 'ui-monospace, monospace',
-    }}>{children}</div>
-  );
-
-  // ─ Section label (как "ЧЕМ ЗАНИМАЕТСЯ" в GeneralPage) ─
   const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <p style={{
-      fontSize: '1rem',
-      fontWeight: 600,
-      color: textMut,
-      letterSpacing: '0.14em',
-      textTransform: 'uppercase',
-      margin: '0 0 2rem',
-      fontFamily: 'Inter, sans-serif',
-    }}>{children}</p>
+    <p style={{ fontSize: '1rem', fontWeight: 600, color: textMut, letterSpacing: '0.14em', textTransform: 'uppercase', margin: '0 0 2rem', fontFamily: 'Inter, sans-serif' }}>{children}</p>
   );
 
-  // ─ Card heading ─
+  const Badge: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div style={{ display: 'inline-flex', alignSelf: 'flex-start', fontSize: '0.66rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: badgeC, marginBottom: '0.75rem', fontFamily: 'ui-monospace, monospace' }}>{children}</div>
+  );
+
   const CardHeading: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <h3 style={{
-      fontSize: 'clamp(1.1rem, 1.8vw, 1.4rem)',
-      fontWeight: 700,
-      lineHeight: 1.25,
-      margin: 0,
-      fontFamily: 'Inter, system-ui, sans-serif',
-      color: isNegative ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.88)',
-    }}>{children}</h3>
+    <h3 style={{ fontSize: 'clamp(1.15rem, 1.9vw, 1.45rem)', fontWeight: 700, lineHeight: 1.25, margin: 0, fontFamily: 'Inter, system-ui, sans-serif', color: isNegative ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.88)' }}>{children}</h3>
   );
 
-  // ─ Card description ─
   const CardDesc: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <p style={{
-      margin: '0.75rem 0 0',
-      fontSize: 'clamp(0.92rem, 1.3vw, 1.05rem)',
-      lineHeight: 1.7,
-      color: textBody,
-      fontFamily: 'Inter, system-ui, sans-serif',
-    }}>{children}</p>
+    <p style={{ margin: '0.85rem 0 0', fontSize: 'clamp(0.98rem, 1.4vw, 1.1rem)', lineHeight: 1.75, color: textBody, fontFamily: 'Inter, system-ui, sans-serif' }}>{children}</p>
   );
 
-  // ─ Bullet item ─
   const Bullet: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <li style={{
-      display: 'flex',
-      gap: '0.7rem',
-      alignItems: 'flex-start',
-      marginBottom: '0.65rem',
-      fontFamily: 'Inter, system-ui, sans-serif',
-      fontSize: 'clamp(0.88rem, 1.2vw, 0.98rem)',
-      lineHeight: 1.65,
-      color: textBody,
-      listStyle: 'none',
-    }}>
-      <span style={{
-        marginTop: '0.58em',
-        flex: '0 0 0.32rem',
-        width: '0.32rem',
-        height: '0.32rem',
-        borderRadius: '50%',
-        background: badgeC,
-      }} />
+    <li style={{ display: 'flex', gap: '0.7rem', alignItems: 'flex-start', marginBottom: '0.7rem', fontFamily: 'Inter, system-ui, sans-serif', fontSize: 'clamp(0.93rem, 1.25vw, 1.02rem)', lineHeight: 1.7, color: textBody, listStyle: 'none' }}>
+      <span style={{ marginTop: '0.6em', flex: '0 0 0.32rem', width: '0.32rem', height: '0.32rem', borderRadius: '50%', background: badgeC }} />
       <span>{children}</span>
     </li>
   );
 
   const Bullets: React.FC<{ items: React.ReactNode[] }> = ({ items }) => (
-    <ul style={{ margin: 0, padding: 0 }}>
-      {items.map((item, i) => <Bullet key={i}>{item}</Bullet>)}
-    </ul>
+    <ul style={{ margin: 0, padding: 0 }}>{items.map((item, i) => <Bullet key={i}>{item}</Bullet>)}</ul>
   );
+
+  const strong = (t: string) => <strong style={{ color: isNegative ? 'rgba(255,255,255,0.88)' : 'rgba(0,0,0,0.82)', fontWeight: 600 }}>{t}</strong>;
 
   return (
     <div style={{ minHeight: '100vh', background: bg, color: textMain }}>
@@ -212,14 +167,13 @@ const ResumeContent: React.FC = () => {
 
         .r-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
         .r-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
-        .r-grid-4 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
 
-        @media (max-width: 900px)  { .r-grid-3, .r-grid-4 { grid-template-columns: 1fr 1fr; } }
-        @media (max-width: 560px)  { .r-grid-2, .r-grid-3, .r-grid-4 { grid-template-columns: 1fr !important; } }
+        @media (max-width: 900px)  { .r-grid-3 { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 560px)  { .r-grid-2, .r-grid-3 { grid-template-columns: 1fr !important; } }
 
-        .r-card-header { padding: 1.5rem 1.5rem 0; position: relative; z-index: 1; }
-        .r-card-body   { padding: 1rem 1.5rem 1.5rem; position: relative; z-index: 1; }
-        .r-card-body-full { padding: 1.5rem; position: relative; z-index: 1; }
+        .r-card-header    { padding: 1.5rem 1.5rem 0; position: relative; z-index: 1; }
+        .r-card-body      { padding: 1.1rem 1.5rem 1.6rem; position: relative; z-index: 1; }
+        .r-card-body-full { padding: 1.6rem; position: relative; z-index: 1; }
 
         .resume-hero-center {
           min-height: 100svh;
@@ -240,35 +194,60 @@ const ResumeContent: React.FC = () => {
           font-weight: 500;
           line-height: 1.45;
           margin: 0 auto;
-          max-width: 820px;
+          max-width: 840px;
           text-align: center !important;
           display: block !important;
         }
 
-        .resume-status-dot {
-          display: inline-block;
-          width: 0.42rem;
-          height: 0.42rem;
-          border-radius: 50%;
-          background: #57d97b;
-          box-shadow: 0 0 8px rgba(87,217,123,0.7);
-          margin-right: 0.5rem;
-          vertical-align: middle;
-          animation: rdot 2.2s ease-in-out infinite;
-        }
-
-        @keyframes rdot { 0%, 100% { opacity: 1; } 50% { opacity: 0.38; } }
-
-        .r-period-chip {
+        /* кнопка-скролл */
+        .r-scroll-btn {
           display: inline-flex;
           align-items: center;
-          gap: 0.45rem;
-          padding: 0.3rem 0.72rem;
+          gap: 0.55rem;
+          margin-top: 2.5rem;
+          padding: 0.65rem 1.4rem;
           border-radius: 999px;
+          cursor: pointer;
+          font-family: 'Inter', system-ui, sans-serif;
+          font-size: clamp(0.9rem, 1.2vw, 1rem);
+          font-weight: 500;
+          letter-spacing: 0.01em;
+          transition: opacity 0.2s, transform 0.2s;
+          background: none;
+          text-decoration: none;
+        }
+        .r-scroll-btn:hover { opacity: 0.72; transform: translateY(2px); }
+
+        /* CTA layout */
+        .r-cta-grid {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          gap: 2rem;
+          align-items: start;
+        }
+        @media (max-width: 640px) {
+          .r-cta-grid { grid-template-columns: 1fr; }
+        }
+
+        /* links */
+        .r-contact-link {
+          display: flex;
+          align-items: center;
+          gap: 0.55rem;
           font-family: ui-monospace, monospace;
-          font-size: 0.66rem;
-          letter-spacing: 0.06em;
-          margin-bottom: 0.6rem;
+          font-size: 0.85rem;
+          letter-spacing: 0.03em;
+          text-decoration: none;
+          opacity: 0.78;
+          transition: opacity 0.18s;
+          padding: 0.5rem 0;
+        }
+        .r-contact-link:hover { opacity: 1; }
+        .r-contact-icon {
+          width: 1.5rem;
+          height: 1.5rem;
+          flex-shrink: 0;
+          opacity: 0.6;
         }
       `}</style>
 
@@ -276,11 +255,9 @@ const ResumeContent: React.FC = () => {
 
       {/* ══ HERO ══════════════════════════════════════════════════════════════ */}
       <section className="resume-hero-center" style={{ background: bg, marginLeft: navOffset > 0 ? `${navOffset}px` : 0 }}>
-        <p style={{
-          fontSize: '1rem', fontWeight: 600, color: textMut,
-          letterSpacing: '0.14em', textTransform: 'uppercase',
-          margin: '0 0 2rem', fontFamily: 'Inter, sans-serif',
-        }}>РЕЗЮМЕ</p>
+        <p style={{ fontSize: '1rem', fontWeight: 600, color: textMut, letterSpacing: '0.14em', textTransform: 'uppercase', margin: '0 0 2rem', fontFamily: 'Inter, sans-serif' }}>
+          РЕЗЮМЕ
+        </p>
 
         <h1 className="resume-hero-title" style={{ color: textMain }}>
           <SplitText
@@ -298,61 +275,53 @@ const ResumeContent: React.FC = () => {
           />
         </h1>
 
-        <div style={{ marginTop: '3rem' }}>
-          <span style={{
-            fontSize: 'clamp(1.2rem, 2.5vw, 1.8rem)',
-            fontWeight: 500,
-            fontFamily: 'Inter, sans-serif',
-          }}>
+        {/* Кнопка-скролл */}
+        <button
+          onClick={scrollToAbout}
+          className="r-scroll-btn"
+          style={{
+            border: `1px solid ${borderC}`,
+            color: textMain,
+          }}
+        >
+          <span style={{ fontSize: 'clamp(1rem, 1.5vw, 1.15rem)', fontWeight: 500, fontFamily: 'Inter, sans-serif' }}>
             <ShinyText text="давайте знакомиться!" speed={3.5} color={shinyBase} shineColor={shinyGlow} />
           </span>
-        </div>
+          {/* стрелка вниз */}
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ opacity: 0.55, flexShrink: 0 }}>
+            <path d="M7 2v10M3 8l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
       </section>
 
       {/* ══ О СЕБЕ ════════════════════════════════════════════════════════════ */}
-      <section style={{ ...secPad, background: bg }}>
+      <section ref={aboutRef} style={{ ...secPad, background: bg }}>
         <div style={innerPad}>
           <SectionLabel>О СЕБЕ</SectionLabel>
 
-          {/* Статус + уровень */}
+          {/* Статус */}
           <p style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: '0 0 1.5rem', color: textMain, fontFamily: 'Inter, sans-serif' }}>
-            <span className="resume-status-dot" />
             Статус: в поиске работы / компании.
           </p>
 
-          <p style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: 0, color: textMut, fontFamily: 'Inter, sans-serif' }}>
+          <p style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: '0 0 2.5rem', color: textMut, fontFamily: 'Inter, sans-serif' }}>
             <ShinyText
-              text="Декабрь 2025 — настоящее время · Junior DevSecOps."
+              text="Junior DevSecOps · декабрь 2025 — настоящее время."
               speed={4}
               color={shinyBase}
               shineColor={shinyGlow}
             />
           </p>
-        </div>
 
-        {/* About text cards */}
-        <div style={{ padding: 'clamp(2rem, 4vw, 3rem) clamp(2rem, 6vw, 5rem) clamp(3rem, 8vw, 6rem)', boxSizing: 'border-box' }}>
-          <ResumeCard isNegative={isNegative}>
-            <div className="r-card-body-full">
-              <Badge>кто я</Badge>
-              <p style={{
-                margin: 0,
-                fontFamily: 'Inter, system-ui, sans-serif',
-                fontSize: 'clamp(0.95rem, 1.4vw, 1.08rem)',
-                lineHeight: 1.8,
-                color: textBody,
-              }}>
-                Я Freelance DevSecOps-инженер в области кибербезопасности, автоматизации CI/CD процессов и
-                интеграции практик безопасности в жизненный цикл разработки. Специализируюсь на
-                внедрении автоматизированных проверок безопасности, SAST/DAST сканировании,
-                контейнеризации и построении защищённых CI/CD пайплайнов. Имею практический опыт
-                работы с международными командами, проведения исследований безопасности, обнаружения
-                и устранения уязвимостей в production-системах. Владею навыками наставничества,
-                технического письма и презентации результатов аудитов безопасности для технических и
-                нетехнических заинтересованных сторон.
-              </p>
-            </div>
-          </ResumeCard>
+          {/* Текст «кто я» — shiny-text без карточки */}
+          <p style={{ fontSize: 'clamp(1.15rem, 2vw, 1.55rem)', fontWeight: 400, lineHeight: 1.75, margin: 0, fontFamily: 'Inter, sans-serif', maxWidth: 860 }}>
+            <ShinyText
+              text="Freelance DevSecOps-инженер в области кибербезопасности, автоматизации CI/CD и интеграции практик безопасности в жизненный цикл разработки. Специализируюсь на SAST/DAST сканировании, контейнеризации и построении защищённых пайплайнов. Имею практический опыт работы с международными командами, обнаружения уязвимостей в production-системах и ответственного раскрытия. Владею навыками технического письма и презентации аудитов безопасности."
+              speed={7}
+              color={shinyBase}
+              shineColor={shinyGlow}
+            />
+          </p>
         </div>
       </section>
 
@@ -365,7 +334,7 @@ const ResumeContent: React.FC = () => {
           </h2>
           <p style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: 0, color: textMut, fontFamily: 'Inter, sans-serif' }}>
             <ShinyText
-              text="От SAST/DAST интеграции и CI/CD до Docker-контейнеров, документации и автоматизации рутины."
+              text="SAST/DAST интеграция, CI/CD, Docker, автоматизация рутины и техническая документация."
               speed={4}
               color={shinyBase}
               shineColor={shinyGlow}
@@ -373,17 +342,16 @@ const ResumeContent: React.FC = () => {
           </p>
         </div>
 
-        <div style={{ padding: 'clamp(2rem, 4vw, 3rem) clamp(2rem, 6vw, 5rem) clamp(3rem, 8vw, 6rem)', boxSizing: 'border-box' }}>
+        <div style={cardsPad}>
           <div className="r-grid-2">
-            {/* SAST/DAST/SCA */}
             <ResumeCard isNegative={isNegative} style={{ display: 'flex', flexDirection: 'column' }}>
               <div className="r-card-header">
                 <Badge>инструменты безопасности</Badge>
                 <CardHeading>SAST · DAST · SCA · ASPM</CardHeading>
               </div>
               <div className="r-card-body" style={{ flex: 1 }}>
-                <CardDesc>Установка, настройка и интеграция инструментов анализа безопасности в пайплайны разработки.</CardDesc>
-                <p style={{ margin: '1rem 0 0', fontFamily: 'ui-monospace, monospace', fontSize: '0.8rem', lineHeight: 1.7, color: textMut }}>
+                <CardDesc>Установка, настройка и интеграция инструментов анализа безопасности на каждом этапе пайплайна.</CardDesc>
+                <p style={{ margin: '1.1rem 0 0', fontFamily: 'ui-monospace, monospace', fontSize: '0.82rem', lineHeight: 1.8, color: textMut }}>
                   <ShinyText
                     text="SonarQube · Semgrep · OWASP ZAP · Nuclei · nmap · OpenVAS · Nikto · DefectDojo · Trivy"
                     speed={5}
@@ -394,64 +362,59 @@ const ResumeContent: React.FC = () => {
               </div>
             </ResumeCard>
 
-            {/* CI/CD */}
             <ResumeCard isNegative={isNegative} style={{ display: 'flex', flexDirection: 'column' }}>
               <div className="r-card-header">
                 <Badge>ci/cd</Badge>
-                <CardHeading>Настройка пайплайнов</CardHeading>
+                <CardHeading>Защищённые пайплайны</CardHeading>
               </div>
               <div className="r-card-body" style={{ flex: 1 }}>
-                <CardDesc>Построение защищённых CI/CD пайплайнов с автоматическими проверками безопасности на каждом этапе.</CardDesc>
-                <p style={{ margin: '1rem 0 0', fontFamily: 'ui-monospace, monospace', fontSize: '0.9rem', lineHeight: 1.7, color: textMut }}>
+                <CardDesc>Построение CI/CD пайплайнов с автоматическими security-чекпоинтами: SAST, SCA, DAST, секреты — всё на каждом PR.</CardDesc>
+                <p style={{ margin: '1.1rem 0 0', fontFamily: 'ui-monospace, monospace', fontSize: '0.9rem', color: textMut }}>
                   <ShinyText text="GitHub Actions · GitLab CI" speed={5} color={shinyBase} shineColor={shinyGlow} />
                 </p>
               </div>
             </ResumeCard>
 
-            {/* Docker */}
             <ResumeCard isNegative={isNegative} style={{ display: 'flex', flexDirection: 'column' }}>
               <div className="r-card-header">
                 <Badge>контейнеризация</Badge>
-                <CardHeading>Docker-контейнеры</CardHeading>
+                <CardHeading>Docker</CardHeading>
               </div>
               <div className="r-card-body" style={{ flex: 1 }}>
-                <CardDesc>Разработка и поддержка контейнеров с соблюдением best practices безопасности и минимизацией поверхности атаки.</CardDesc>
+                <CardDesc>Разработка и поддержка контейнеров с соблюдением best practices: минимальные образы, non-root, сканирование слоёв, минимизация поверхности атаки.</CardDesc>
               </div>
             </ResumeCard>
 
-            {/* Автоматизация */}
             <ResumeCard isNegative={isNegative} style={{ display: 'flex', flexDirection: 'column' }}>
               <div className="r-card-header">
                 <Badge>автоматизация</Badge>
-                <CardHeading>Скриптинг и автоматизация</CardHeading>
+                <CardHeading>Скриптинг и инструменты</CardHeading>
               </div>
               <div className="r-card-body" style={{ flex: 1 }}>
-                <CardDesc>Автоматизация рутины и создание инструментов для задач безопасности и инфраструктуры.</CardDesc>
-                <p style={{ margin: '1rem 0 0', fontFamily: 'ui-monospace, monospace', fontSize: '0.9rem', color: textMut }}>
+                <CardDesc>Автоматизация рутинных задач безопасности: мониторинг, сканирование, ротация ключей, отчётность — скриптами и кастомными инструментами.</CardDesc>
+                <p style={{ margin: '1.1rem 0 0', fontFamily: 'ui-monospace, monospace', fontSize: '0.9rem', color: textMut }}>
                   <ShinyText text="bash · python" speed={5} color={shinyBase} shineColor={shinyGlow} />
                 </p>
               </div>
             </ResumeCard>
 
-            {/* Документация */}
             <ResumeCard isNegative={isNegative} style={{ display: 'flex', flexDirection: 'column' }}>
               <div className="r-card-header">
                 <Badge>документация</Badge>
                 <CardHeading>Техническое письмо</CardHeading>
               </div>
               <div className="r-card-body" style={{ flex: 1 }}>
-                <CardDesc>Написание руководств по реагированию на инциденты, отчётов по безопасности и сопровождение проектов от проектирования до production.</CardDesc>
+                <CardDesc>Руководства по реагированию на инциденты, отчёты по уязвимостям с PoC и рекомендациями, сопровождение проекта от проектирования до production.</CardDesc>
               </div>
             </ResumeCard>
 
-            {/* AI */}
             <ResumeCard isNegative={isNegative} style={{ display: 'flex', flexDirection: 'column' }}>
               <div className="r-card-header">
                 <Badge>ai интеграция</Badge>
-                <CardHeading>AI в безопасности и разработке</CardHeading>
+                <CardHeading>AI в безопасности</CardHeading>
               </div>
               <div className="r-card-body" style={{ flex: 1 }}>
-                <CardDesc>Интеграция AI-инструментов в процессы безопасности и разработки для повышения эффективности и продуктивности систем.</CardDesc>
+                <CardDesc>Интеграция AI-инструментов в процессы безопасности и разработки: ускорение анализа, триаж находок, улучшение покрытия тестами.</CardDesc>
               </div>
             </ResumeCard>
           </div>
@@ -475,43 +438,40 @@ const ResumeContent: React.FC = () => {
           </p>
         </div>
 
-        <div style={{ padding: 'clamp(2rem, 4vw, 3rem) clamp(2rem, 6vw, 5rem) clamp(3rem, 8vw, 6rem)', boxSizing: 'border-box' }}>
+        <div style={cardsPad}>
           <div style={{ display: 'grid', gap: '1rem' }}>
 
-            {/* Freelance Security Researcher — большая карточка */}
+            {/* Freelance Security Researcher */}
             <ResumeCard isNegative={isNegative}>
               <div className="r-card-body-full">
-                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '1rem' }}>
+                <Badge>freelance · фев 2023 — ноя 2025 · 2 года 10 мес.</Badge>
+                <CardHeading>Security Researcher / Bug Bounty Hunter</CardHeading>
+                <div className="r-grid-2" style={{ marginTop: '1.4rem' }}>
                   <div>
-                    <Badge>freelance · фев 2023 — ноя 2025 · 2 года 10 мес.</Badge>
-                    <CardHeading>Security Researcher / Bug Bounty Hunter</CardHeading>
-                  </div>
-                </div>
-                <div className="r-grid-2" style={{ marginTop: '1.25rem' }}>
-                  <div>
-                    <p style={{ margin: '0 0 0.6rem', fontFamily: 'ui-monospace, monospace', fontSize: '0.66rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: badgeC }}>Обязанности</p>
+                    <p style={{ margin: '0 0 0.7rem', fontFamily: 'ui-monospace, monospace', fontSize: '0.66rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: badgeC }}>Обязанности</p>
                     <Bullets items={[
                       'Исследования безопасности и оценка уязвимостей в open-source проектах и публичных веб-приложениях',
-                      'Анализ утечек данных и выявление угроз через OSINT',
-                      'Разработка Telegram-ботов и Python-скриптов для автоматизированной разведки',
-                      'SAST/DAST сканирование (SonarCloud, OWASP ZAP, Snyk)',
-                      'Подготовка отчётов с PoC и рекомендациями по устранению',
-                      'Ответственное раскрытие уязвимостей',
+                      'Анализ утечек данных и выявление угроз через OSINT-методологии',
+                      'Разработка Telegram-ботов и Python-скриптов для автоматизированной разведки и мониторинга угроз',
+                      'SAST/DAST сканирование: SonarCloud, OWASP ZAP, Snyk',
+                      'Сканирование на секреты и ревью кода — выявление жёстко закодированных учётных данных и API-ключей',
+                      'Подготовка детальных отчётов с PoC и рекомендациями по устранению',
+                      'Ответственное раскрытие и координация с security-командами',
                     ]} />
                   </div>
                   <div>
-                    <p style={{ margin: '0 0 0.6rem', fontFamily: 'ui-monospace, monospace', fontSize: '0.66rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: badgeC }}>Результаты</p>
+                    <p style={{ margin: '0 0 0.7rem', fontFamily: 'ui-monospace, monospace', fontSize: '0.66rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: badgeC }}>Ключевые результаты</p>
                     <Bullets items={[
-                      <>Публичное исследование <strong style={{ color: isNegative ? 'rgba(255,255,255,0.88)' : 'rgba(0,0,0,0.82)' }}>n8n</strong> — выявление рисков безопасности. Получило отзывы от сообщества и комментарий инженера проекта в Discord. Стало стандартом безопасной работы с платформой</>,
-                      <><strong style={{ color: isNegative ? 'rgba(255,255,255,0.88)' : 'rgba(0,0,0,0.82)' }}>bolt.new</strong>: критическая логическая уязвимость обхода ограничений AI-токенов — ответственно раскрыта команде проекта</>,
-                      'Выявление и документирование множественных уязвимостей в публичных проектах',
+                      <>{strong('n8n')} — публичное исследование платформы автоматизации: выявление рисков безопасности. Получило отзывы от сообщества и комментарий инженера проекта в официальном Discord. Стало стандартом безопасной работы с платформой</>,
+                      <>{strong('bolt.new')} — обнаружена критическая логическая уязвимость обхода ограничений AI-токенов. Ответственно раскрыта команде проекта</>,
+                      'Выявление и документирование множественных уязвимостей в публичных проектах с последующим ответственным раскрытием',
                     ]} />
                   </div>
                 </div>
               </div>
             </ResumeCard>
 
-            {/* KIBERone + NetEase рядом */}
+            {/* KIBERone + NetEase */}
             <div className="r-grid-2">
               <ResumeCard isNegative={isNegative} style={{ display: 'flex', flexDirection: 'column' }}>
                 <div className="r-card-header">
@@ -521,11 +481,9 @@ const ResumeContent: React.FC = () => {
                 <div className="r-card-body" style={{ flex: 1 }}>
                   <Bullets items={[
                     'Преподавание основ программирования детям 6–14 лет',
-                    'Наставничество: код, отладка, ревью, IT-проекты (Unity, Roblox, веб)',
-                    'Адаптация сложного материала для разного уровня подготовки',
-                    <>
-                      <strong style={{ color: isNegative ? 'rgba(255,255,255,0.88)' : 'rgba(0,0,0,0.82)' }}>Лучшее:</strong> улучшение учебной программы с акцентом на практические навыки современной IT-индустрии
-                    </>,
+                    'Наставничество: код, отладка, ревью, IT-проекты (Unity, Roblox, веб, мобайл)',
+                    'Адаптация сложного технического материала для разного уровня подготовки',
+                    <>Улучшение учебной программы с акцентом на <strong style={{ color: isNegative ? 'rgba(255,255,255,0.88)' : 'rgba(0,0,0,0.82)', fontWeight: 600 }}>практические навыки</strong> современной IT-индустрии</>,
                   ]} />
                 </div>
               </ResumeCard>
@@ -540,7 +498,7 @@ const ResumeContent: React.FC = () => {
                     'Управление международным сообществом 50 000+ игроков',
                     'Координация команды модераторов, обучение, контроль качества',
                     'Антикризисное управление и деэскалация конфликтов',
-                    'Передача обратной связи игроков команде разработки',
+                    'Передача обратной связи игроков команде разработки: баг-репорты, фичер-реквесты',
                     'Сотрудничество с контент-криейторами через собственную дизайн-студию',
                   ]} />
                 </div>
@@ -552,10 +510,10 @@ const ResumeContent: React.FC = () => {
               <div className="r-card-body-full">
                 <Badge>premium studio · июн 2021 — дек 2022 · 1 г. 7 мес. · параллельно с netease</Badge>
                 <CardHeading>Основатель и главный дизайнер</CardHeading>
-                <div className="r-grid-3" style={{ marginTop: '1.25rem' }}>
+                <div className="r-grid-3" style={{ marginTop: '1.4rem' }}>
                   <CardDesc>Основание и руководство онлайн-студией цифрового дизайна для международных клиентов. Создание баннеров, логотипов, игровых ассетов и маркетинговых материалов.</CardDesc>
-                  <CardDesc>Стратегическое партнёрство с NetEase Games — аватарки и визуальные референсы для контент-криейторов. Успешное выполнение 30+ проектов.</CardDesc>
-                  <CardDesc>Полный цикл проектов: от брифинга до сдачи. Работа с клиентами из разных стран и культур. Совмещение двух ролей с сохранением высокого качества.</CardDesc>
+                  <CardDesc>Стратегическое партнёрство с NetEase Games — аватарки и визуальные референсы для контент-криейторов. 30+ успешных проектов.</CardDesc>
+                  <CardDesc>Полный цикл: от брифинга до сдачи. Работа с клиентами из разных стран. Совмещение двух профессиональных ролей с сохранением качества.</CardDesc>
                 </div>
               </div>
             </ResumeCard>
@@ -565,43 +523,54 @@ const ResumeContent: React.FC = () => {
 
       {/* ══ CTA ══════════════════════════════════════════════════════════════ */}
       <section style={{ ...secPad, background: bg }}>
-        <div style={{ ...innerPad, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+        <div style={innerPad}>
           <SectionLabel>СВЯЗАТЬСЯ</SectionLabel>
 
-          <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: '0 0 1.5rem', color: textMain, fontFamily: 'Inter, sans-serif' }}>
-            Понравился мой опыт? Напишите мне.
-          </h2>
+          <div className="r-cta-grid">
+            {/* Левая часть — текст */}
+            <div>
+              <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: '0 0 1.5rem', color: textMain, fontFamily: 'Inter, sans-serif' }}>
+                Рассматриваете мою кандидатуру?
+              </h2>
+              <p style={{ fontSize: 'clamp(1.1rem, 1.8vw, 1.4rem)', fontWeight: 400, lineHeight: 1.7, margin: 0, color: textMut, fontFamily: 'Inter, sans-serif', maxWidth: 560 }}>
+                <ShinyText
+                  text="Готов к собеседованию или оставить оффер на рассмотрение. Если нужна дополнительная информация — образование, местоположение и прочее — предоставлю по запросу."
+                  speed={4}
+                  color={shinyBase}
+                  shineColor={shinyGlow}
+                />
+              </p>
+            </div>
 
-          <p style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: '0 0 3rem', color: textMut, fontFamily: 'Inter, sans-serif', maxWidth: 720 }}>
-            <ShinyText
-              text="Открыт к вакансиям, проектам и сотрудничеству. Чувствительные данные — образование, местоположение и прочее — предоставлю по запросу."
-              speed={4}
-              color={shinyBase}
-              shineColor={shinyGlow}
-            />
-          </p>
+            {/* Правая часть — контакты */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 220 }}>
+              {/* Email */}
+              <a href="mailto:opensophy@gmail.com" className="r-contact-link" style={{ color: textMain }}>
+                <svg className="r-contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2"/>
+                  <path d="m22 7-10 7L2 7"/>
+                </svg>
+                opensophy@gmail.com
+              </a>
 
-          <a
-            href="mailto:opensophy@gmail.com"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              padding: '0.8rem 2rem',
-              borderRadius: 999,
-              border: `1px solid ${borderC}`,
-              background: isNegative ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-              fontFamily: 'ui-monospace, monospace',
-              fontSize: '0.9rem',
-              color: textMain,
-              textDecoration: 'none',
-              letterSpacing: '0.04em',
-              transition: 'opacity 0.2s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.opacity = '0.65')}
-            onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-          >
-            opensophy@gmail.com
-          </a>
+              {/* Telegram */}
+              <a href="https://t.me/opensophy" target="_blank" rel="noopener noreferrer" className="r-contact-link" style={{ color: textMain }}>
+                <svg className="r-contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21.5 4.5 2.5 10.5l7 2.5 2.5 7 3-5 5 4 1.5-14.5z"/>
+                  <path d="M9.5 13 15 8"/>
+                </svg>
+                @opensophy
+              </a>
+
+              {/* GitHub */}
+              <a href="https://github.com/opensophy-projects" target="_blank" rel="noopener noreferrer" className="r-contact-link" style={{ color: textMain }}>
+                <svg className="r-contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+                </svg>
+                github / opensophy-projects
+              </a>
+            </div>
+          </div>
         </div>
       </section>
     </div>
