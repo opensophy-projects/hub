@@ -267,7 +267,7 @@ const ResumeContent: React.FC = () => {
 
         <h1 className="resume-hero-title" style={{ color: textMain }}>
           <SplitText
-            text="Привет, меня зовут Даниил, также известен в it-сообществах как глава проекта opensophy или юзернеймов @opensophy."
+            text="Привет, меня зовут Кулешов Даниил, также известен в it-сообществах как глава проекта opensophy или юзернеймов @opensophy."
             splitType="words"
             tag="span"
             textAlign="center"
