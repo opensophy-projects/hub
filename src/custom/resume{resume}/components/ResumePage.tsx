@@ -319,14 +319,9 @@ const ResumeContent: React.FC = () => {
             />
           </p>
 
-          {/* Текст «кто я» — shiny-text без карточки, тоже по центру */}
-          <p style={{ fontSize: 'clamp(1.05rem, 1.7vw, 1.35rem)', fontWeight: 400, lineHeight: 1.8, margin: 0, fontFamily: 'Inter, sans-serif', maxWidth: 800, textAlign: 'center' }}>
-            <ShinyText
-              text="Freelance DevSecOps-инженер в области кибербезопасности, автоматизации CI/CD и интеграции практик безопасности в жизненный цикл разработки. Специализируюсь на SAST/DAST сканировании, контейнеризации и построении защищённых пайплайнов. Имею практический опыт работы с международными командами, обнаружения уязвимостей в production-системах и ответственного раскрытия. Владею навыками технического письма и презентации аудитов безопасности."
-              speed={7}
-              color={shinyBase}
-              shineColor={shinyGlow}
-            />
+          {/* Текст «кто я» — оригинальный, слева, с жирными ключевыми словами */}
+          <p style={{ fontSize: 'clamp(1.05rem, 1.7vw, 1.35rem)', fontWeight: 400, lineHeight: 1.8, margin: 0, fontFamily: 'Inter, sans-serif', maxWidth: 800, textAlign: 'left' }}>
+            Freelance DevSecOps-инженер в области кибербезопасности, автоматизации CI/CD и интеграции практик безопасности в жизненный цикл разработки. Специализируюсь на <strong style={{ color: textMain, fontWeight: 600 }}>SAST/DAST сканировании</strong>, <strong style={{ color: textMain, fontWeight: 600 }}>контейнеризации</strong> и построении защищённых пайплайнов. Имею практический опыт работы с международными командами, обнаружения уязвимостей в production-системах и ответственного раскрытия. Владею навыками <strong style={{ color: textMain, fontWeight: 600 }}>технического письма</strong> и презентации аудитов безопасности.
           </p>
         </div>
       </section>
@@ -529,53 +524,46 @@ const ResumeContent: React.FC = () => {
 
       {/* ══ CTA ══════════════════════════════════════════════════════════════ */}
       <section style={{ ...secPad, background: bg }}>
-        <div style={{ ...innerPad, paddingTop: 'clamp(5rem, 10vw, 8rem)' }}>
+        <div style={{ ...innerPad, paddingTop: 'clamp(5rem, 10vw, 8rem)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
           <SectionLabel>СВЯЗАТЬСЯ</SectionLabel>
 
-          <div className="r-cta-grid">
-            {/* Левая часть — текст */}
-            <div>
-              <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: '0 0 1.5rem', color: textMain, fontFamily: 'Inter, sans-serif' }}>
-                Рассматриваете мою кандидатуру?
-              </h2>
-              <p style={{ fontSize: 'clamp(1.1rem, 1.8vw, 1.4rem)', fontWeight: 400, lineHeight: 1.7, margin: 0, color: textMut, fontFamily: 'Inter, sans-serif' }}>
-                <ShinyText
-                  text="Готов к собеседованию или рассмотрению оффера. Если нужна дополнительная информация — образование, местоположение и прочее — предоставлю по запросу."
-                  speed={4}
-                  color={shinyBase}
-                  shineColor={shinyGlow}
-                />
-              </p>
-            </div>
+          <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: '0 0 1.5rem', color: textMain, fontFamily: 'Inter, sans-serif', maxWidth: 700 }}>
+            Рассматриваете мою кандидатуру?
+          </h2>
 
-            {/* Правая часть — контакты */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
-              {/* Email */}
-              <a href="mailto:opensophy@gmail.com" className="r-contact-link" style={{ color: textMain }}>
-                <svg className="r-contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="4" width="20" height="16" rx="2"/>
-                  <path d="m22 7-10 7L2 7"/>
-                </svg>
-                opensophy@gmail.com
-              </a>
+          <p style={{ fontSize: 'clamp(1.1rem, 1.8vw, 1.4rem)', fontWeight: 400, lineHeight: 1.7, margin: '0 0 3rem', color: textMut, fontFamily: 'Inter, sans-serif', maxWidth: 600 }}>
+            <ShinyText
+              text="Готов к собеседованию или рассмотрению оффера. Если нужна дополнительная информация — образование, местоположение и прочее — предоставлю по запросу."
+              speed={4}
+              color={shinyBase}
+              shineColor={shinyGlow}
+            />
+          </p>
 
-              {/* Telegram */}
-              <a href="https://t.me/opensophy" target="_blank" rel="noopener noreferrer" className="r-contact-link" style={{ color: textMain }}>
-                <svg className="r-contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21.5 4.5 2.5 10.5l7 2.5 2.5 7 3-5 5 4 1.5-14.5z"/>
-                  <path d="M9.5 13 15 8"/>
-                </svg>
-                @opensophy
-              </a>
+          {/* Контакты — горизонтально по центру на пк, вертикально на мобиле */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem 2.5rem', justifyContent: 'center', alignItems: 'center' }}>
+            <a href="mailto:opensophy@gmail.com" className="r-contact-link" style={{ color: textMain }}>
+              <svg className="r-contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2"/>
+                <path d="m22 7-10 7L2 7"/>
+              </svg>
+              opensophy@gmail.com
+            </a>
 
-              {/* GitHub */}
-              <a href="https://github.com/opensophy-projects" target="_blank" rel="noopener noreferrer" className="r-contact-link" style={{ color: textMain }}>
-                <svg className="r-contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
-                </svg>
-                github / opensophy-projects
-              </a>
-            </div>
+            <a href="https://t.me/opensophy" target="_blank" rel="noopener noreferrer" className="r-contact-link" style={{ color: textMain }}>
+              <svg className="r-contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21.5 4.5 2.5 10.5l7 2.5 2.5 7 3-5 5 4 1.5-14.5z"/>
+                <path d="M9.5 13 15 8"/>
+              </svg>
+              @opensophy
+            </a>
+
+            <a href="https://github.com/opensophy-projects" target="_blank" rel="noopener noreferrer" className="r-contact-link" style={{ color: textMain }}>
+              <svg className="r-contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+              </svg>
+              github / opensophy-projects
+            </a>
           </div>
         </div>
       </section>
