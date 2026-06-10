@@ -221,33 +221,39 @@ const ResumeContent: React.FC = () => {
         /* CTA layout */
         .r-cta-grid {
           display: grid;
-          grid-template-columns: 1fr auto;
-          gap: 2rem;
+          grid-template-columns: 1fr 280px;
+          gap: 4rem;
           align-items: start;
+          max-width: 900px;
+        }
+        @media (max-width: 820px) {
+          .r-cta-grid { grid-template-columns: 1fr 240px; gap: 2.5rem; }
         }
         @media (max-width: 640px) {
-          .r-cta-grid { grid-template-columns: 1fr; }
+          .r-cta-grid { grid-template-columns: 1fr; gap: 2rem; max-width: 100%; }
         }
 
         /* links */
         .r-contact-link {
           display: flex;
           align-items: center;
-          gap: 0.55rem;
+          gap: 0.6rem;
           font-family: ui-monospace, monospace;
-          font-size: 0.85rem;
+          font-size: clamp(0.8rem, 1.1vw, 0.9rem);
           letter-spacing: 0.03em;
           text-decoration: none;
           opacity: 0.78;
           transition: opacity 0.18s;
-          padding: 0.5rem 0;
+          padding: 0.55rem 0;
+          word-break: break-all;
         }
         .r-contact-link:hover { opacity: 1; }
         .r-contact-icon {
-          width: 1.5rem;
-          height: 1.5rem;
+          width: 1.4rem;
+          height: 1.4rem;
           flex-shrink: 0;
           opacity: 0.6;
+          min-width: 1.4rem;
         }
       `}</style>
 
@@ -296,15 +302,15 @@ const ResumeContent: React.FC = () => {
 
       {/* ══ О СЕБЕ ════════════════════════════════════════════════════════════ */}
       <section ref={aboutRef} style={{ ...secPad, background: bg }}>
-        <div style={innerPad}>
+        <div style={{ ...innerPad, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <SectionLabel>О СЕБЕ</SectionLabel>
 
-          {/* Статус */}
+          {/* Статус — по центру */}
           <p style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: '0 0 1.5rem', color: textMain, fontFamily: 'Inter, sans-serif' }}>
             Статус: в поиске работы / компании.
           </p>
 
-          <p style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: '0 0 2.5rem', color: textMut, fontFamily: 'Inter, sans-serif' }}>
+          <p style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: '0 0 3rem', color: textMut, fontFamily: 'Inter, sans-serif' }}>
             <ShinyText
               text="Junior DevSecOps · декабрь 2025 — настоящее время."
               speed={4}
@@ -313,10 +319,10 @@ const ResumeContent: React.FC = () => {
             />
           </p>
 
-          {/* Текст «кто я» — shiny-text без карточки */}
-          <p style={{ fontSize: 'clamp(1.15rem, 2vw, 1.55rem)', fontWeight: 400, lineHeight: 1.75, margin: 0, fontFamily: 'Inter, sans-serif', maxWidth: 860 }}>
+          {/* Текст «кто я» — shiny-text без карточки, тоже по центру */}
+          <p style={{ fontSize: 'clamp(1.05rem, 1.7vw, 1.35rem)', fontWeight: 400, lineHeight: 1.8, margin: 0, fontFamily: 'Inter, sans-serif', maxWidth: 800, textAlign: 'center' }}>
             <ShinyText
-              text="Freelance DevSecOps-инженер в области кибербезопасности, автоматизации CI/CD и интеграции практик безопасности в жизненный цикл разработки. Специализируюсь на SAST/DAST сканировании, контейнеризации и построении защищённых пайплайнов. Имею практический опыт работы с международными командами, обнаружения уязвимостей в production-системах и ответственного раскрытия. Владею навыками технического письма и презентации аудитов безопасности."
+              text="SAST/DAST интеграция, CI/CD, Docker, автоматизация рутины, техническая документация и исследования безопасности — вот чем я занимаюсь. Имею практический опыт работы с международными командами, обнаружения уязвимостей в production-системах и ответственного раскрытия."
               speed={7}
               color={shinyBase}
               shineColor={shinyGlow}
@@ -523,7 +529,7 @@ const ResumeContent: React.FC = () => {
 
       {/* ══ CTA ══════════════════════════════════════════════════════════════ */}
       <section style={{ ...secPad, background: bg }}>
-        <div style={innerPad}>
+        <div style={{ ...innerPad, paddingTop: 'clamp(5rem, 10vw, 8rem)' }}>
           <SectionLabel>СВЯЗАТЬСЯ</SectionLabel>
 
           <div className="r-cta-grid">
@@ -532,9 +538,9 @@ const ResumeContent: React.FC = () => {
               <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: '0 0 1.5rem', color: textMain, fontFamily: 'Inter, sans-serif' }}>
                 Рассматриваете мою кандидатуру?
               </h2>
-              <p style={{ fontSize: 'clamp(1.1rem, 1.8vw, 1.4rem)', fontWeight: 400, lineHeight: 1.7, margin: 0, color: textMut, fontFamily: 'Inter, sans-serif', maxWidth: 560 }}>
+              <p style={{ fontSize: 'clamp(1.1rem, 1.8vw, 1.4rem)', fontWeight: 400, lineHeight: 1.7, margin: 0, color: textMut, fontFamily: 'Inter, sans-serif' }}>
                 <ShinyText
-                  text="Готов к собеседованию или оставить оффер на рассмотрение. Если нужна дополнительная информация — образование, местоположение и прочее — предоставлю по запросу."
+                  text="Готов к собеседованию или рассмотрению оффера. Если нужна дополнительная информация — образование, местоположение и прочее — предоставлю по запросу."
                   speed={4}
                   color={shinyBase}
                   shineColor={shinyGlow}
@@ -543,7 +549,7 @@ const ResumeContent: React.FC = () => {
             </div>
 
             {/* Правая часть — контакты */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 220 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
               {/* Email */}
               <a href="mailto:opensophy@gmail.com" className="r-contact-link" style={{ color: textMain }}>
                 <svg className="r-contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
