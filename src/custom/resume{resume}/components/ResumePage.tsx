@@ -366,7 +366,7 @@ const ResumeContent: React.FC = () => {
           margin: '0 0 1.5rem',
           letterSpacing: '0.08em',
         }}>
-          Декабрь 2025 — настоящее время &nbsp;·&nbsp; Junior
+          Декабрь 2025 — настоящее время &nbsp;·&nbsp
         </p>
 
         {/* Текст о себе */}
