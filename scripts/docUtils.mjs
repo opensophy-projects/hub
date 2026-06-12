@@ -664,6 +664,15 @@ export function parseDoc(rawContent, mdPath, docsDir) {
     keywords:     metadata.keywords || '',
     robots:       metadata.robots   || 'index, follow',
     icon:         finalIcon,
+    // Приоритет сортировки в навигации/манифесте: меньше — выше в списке.
+    // Поле необязательное, по умолчанию 999 (в конец списка).
+    priority:     metadata.priority !== undefined && metadata.priority !== ''
+                     ? Number(metadata.priority)
+                     : 999,
+    // Slug кастомной React-страницы из src/custom/Название{slug}/,
+    // которая должна рендериться вместо markdown-контента.
+    // Пустая строка — обычная markdown-страница.
+    custom:       metadata.custom?.trim() || '',
     frontmatter:  metadata,
   };
 }
