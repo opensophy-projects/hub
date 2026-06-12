@@ -115,9 +115,16 @@ async function runGenerate() {
     }
   }
 
-  const sorted = [...manifest].sort(
-    (a, b) => new Date(b.date ?? 0).getTime() - new Date(a.date ?? 0).getTime()
-  );
+  const sorted = [...manifest].sort((a, b) => {
+  const pa = a.priority ?? 999;
+  const pb = b.priority ?? 999;
+
+  if (pa !== pb) {
+    return pa - pb;
+  }
+
+  return new Date(b.date ?? 0).getTime() - new Date(a.date ?? 0).getTime();
+});
 
   fs.writeFileSync(MANIFEST, JSON.stringify(sorted));
 
