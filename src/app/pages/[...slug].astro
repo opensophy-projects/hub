@@ -11,6 +11,7 @@ import {
   buildDocFromPath,
   buildCategoryPages,
 } from '../../../scripts/docUtils.mjs';
+import { resolveCustomSlug } from '../../../scripts/customUtils.mjs';
 
 export const prerender = import.meta.env.DEV ? false : true;
 
@@ -82,6 +83,9 @@ if (import.meta.env.DEV) {
   customPage = (Astro.props as any).customPage ?? null;
 }
 
+const frontmatterCustomSlug = resolveCustomSlug(doc?.frontmatter?.custom);
+const frontmatterCustomPage = frontmatterCustomSlug ? getCustomPageBySlug(frontmatterCustomSlug) : null;
+
 if ((!doc && !category && !customPage) || !slug) return Astro.redirect('/404');
 
 ---
@@ -105,7 +109,11 @@ if ((!doc && !category && !customPage) || !slug) return Astro.redirect('/404');
           <article set:html={doc.content ?? ''} />
         </main>
       </noscript>
-      <DocContent client:only="react" doc={doc} />
+      {frontmatterCustomPage ? (
+        <CustomPageRenderer client:only="react" slug={frontmatterCustomSlug} />
+      ) : (
+        <DocContent client:only="react" doc={doc} />
+      )}
     </>
   ) : customPage ? (
     <CustomPageRenderer client:only="react" slug={slug} />
