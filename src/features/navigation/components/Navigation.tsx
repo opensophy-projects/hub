@@ -44,6 +44,8 @@ interface Doc {
   author?: string; date?: string; updated?: string; tags?: string[];
   navSlug?: string; navTitle?: string; navIcon?: string;
   categoryPath?: CategoryPathItem[];
+  priority?: number;
+}
 }
 interface NavNode { title: string; slug: string; icon: string | null; docs: Doc[]; children: Record<string, NavNode>; isCategory: boolean; }
 interface NavSection { navSlug: string; navTitle: string; navIcon: string; }
