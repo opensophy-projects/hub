@@ -8,6 +8,7 @@ tags: "hub, opensophy, документация, платформа, markdown, u
 icon: boxes
 lang: ru
 robots: "index, follow"
+priority: 0
 ---
 
 # Hub
