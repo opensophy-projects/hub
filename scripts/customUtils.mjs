@@ -36,3 +36,16 @@ export function scanCustomPages(customDir) {
     .filter((page) => page.slug)
     .sort((a, b) => a.slug.localeCompare(b.slug));
 }
+
+/**
+ * Возвращает slug кастомной страницы из значения поля `custom` во frontmatter,
+ * либо null, если поле не задано/пустое.
+ *
+ * custom: resume  ->  'resume'
+ * (не задано)     ->  null
+ */
+export function resolveCustomSlug(value) {
+  if (!value) return null;
+  const v = String(value).trim();
+  return v || null;
+}
