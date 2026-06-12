@@ -8,6 +8,7 @@ tags: linux, devsecops
 icon: user-round-plus
 lang: ru
 robots: "index, follow"
+priority: 1
 ---
 
 
