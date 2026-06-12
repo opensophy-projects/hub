@@ -6,6 +6,7 @@ tags: "welcome, hub, opensophy"
 icon: crown
 lang: ru
 robots: "index, follow"
+priority: 0
 ---
 
 
