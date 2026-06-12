@@ -19,6 +19,8 @@ export interface DocMetadata {
   navSlug?: string;
   navTitle?: string;
   navIcon?: string;
+  priority?: number;
+  custom?: string;
   frontmatter?: Record<string, unknown>;
 }
 
