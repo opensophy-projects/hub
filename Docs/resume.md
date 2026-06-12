@@ -2,7 +2,7 @@
 title: Резюме
 description: hire me:)
 icon: user
-priority: 1
+priority: 3
 custom: resume
 ---
 
