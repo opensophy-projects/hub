@@ -189,6 +189,15 @@ function countDocs(node: NavNode): number {
   return node.docs.length + Object.values(node.children).reduce((s, c) => s + countDocs(c), 0);
 }
 
+function sortDocs(docs: Doc[]): Doc[] {
+  return [...docs].sort((a, b) => {
+    const pa = a.priority ?? 999;
+    const pb = b.priority ?? 999;
+    if (pa !== pb) return pa - pb;
+    return a.title.localeCompare(b.title);
+  });
+}
+
 function formatMetaDate(date?: string): string | null {
   if (!date) return null;
   const parsed = new Date(date);
@@ -344,7 +353,7 @@ const CategoryNode: React.FC<{
           marginTop: '4px', marginBottom: '4px',
           display: 'flex', flexDirection: 'column', gap: '2px',
         }}>
-          {[...node.docs].sort((a, b) => a.title.localeCompare(b.title)).map(doc => (
+          {sortDocs(node.docs).map(doc => (
             <DocLink key={doc.id} doc={doc} isDark={isDark} isActive={currentDocSlug === doc.slug} onClick={onDocClick} mobile={mobile} onPreviewChange={onDocHoverChange} />
           ))}
           {Object.entries(node.children).sort(([a], [b]) => a.localeCompare(b)).map(([key, child]) => (
@@ -588,7 +597,7 @@ const NavTreeContent: React.FC<{
       )}
       {filteredDocs.length > 0 && (
         <div style={{ marginBottom: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          {[...filteredDocs].sort((a, b) => a.title.localeCompare(b.title)).map(doc => (
+          {sortDocs(filteredDocs).map(doc => (
             <DocLink key={doc.id} doc={doc} isDark={isDark} isActive={currentDocSlug === doc.slug} onClick={onDocClick} mobile={mobile} onPreviewChange={onDocHoverChange} />
           ))}
         </div>
