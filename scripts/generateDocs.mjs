@@ -184,10 +184,18 @@ function generateDocs() {
   const docStart              = performance.now();
   const { manifest, fileErrors } = buildManifest(allMdFiles);
 
-  const sorted = manifest.toSorted(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
-  fs.writeFileSync(manifestFile, JSON.stringify(sorted));
+  const sorted = manifest.toSorted((a, b) => {
+  const pa = a.priority ?? 999;
+  const pb = b.priority ?? 999;
+
+  if (pa !== pb) {
+    return pa - pb;
+  }
+
+  return new Date(b.date).getTime() - new Date(a.date).getTime();
+});
+
+fs.writeFileSync(manifestFile, JSON.stringify(sorted));
 
   const docMs    = (performance.now() - docStart).toFixed(0);
   const allMs    = (performance.now() - startAll).toFixed(0);
