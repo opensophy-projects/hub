@@ -1,9 +1,7 @@
 ---
 title: Резюме
-description: Резюме @opensophy
+description: hire me:)
 icon: user
 priority: 1
 custom: resume
 ---
-
-e
