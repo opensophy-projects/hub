@@ -24,11 +24,13 @@ interface TreeEntry extends FlatEntry {
 interface FM {
   title: string; description: string; author: string; date: string;
   updated: string; tags: string; icon: string; lang: string; robots: string;
+  priority: string; custom: string;
 }
 const EMPTY_FM: FM = {
   title: '', description: '', author: '',
   date: new Date().toISOString().split('T')[0],
   updated: '', tags: '', icon: '', lang: 'ru', robots: 'index, follow',
+  priority: '', custom: '',
 };
 
 // Безопасная нормализация строки в slug без ReDoS-уязвимостей
@@ -439,7 +441,7 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
     fontSize: 12, color: t.fgSub, textTransform: 'uppercase',
     letterSpacing: '0.07em', marginBottom: 4, display: 'block',
   };
-  const actionLabel = isEdit ? 'Применить' : 'Создать'; 
+  const actionLabel = isEdit ? 'Применить' : 'Создать';
   const saveBtnLabel = saving ? '...' : actionLabel;
 
   return (
@@ -486,6 +488,7 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
               { k: 'description', l: 'Описание', sp: true }, { k: 'author', l: 'Автор' },
               { k: 'date', l: 'Дата', tp: 'date' }, { k: 'tags', l: 'Теги', sp: true },
               { k: 'lang', l: 'Lang' }, { k: 'robots', l: 'Robots' },
+              { k: 'priority', l: 'Приоритет' }, { k: 'custom', l: 'Custom (slug)' },
             ] as Array<{ k: keyof FM; l: string; sp?: boolean; tp?: string }>).map(f => (
               <div key={f.k} style={{ gridColumn: f.sp ? '1 / -1' : 'auto' }}>
                 <label htmlFor={`fm-${f.k}`} style={lbS}>{f.l}</label>
@@ -801,6 +804,7 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
               { k: 'updated', l: 'Updated', tp: 'date' }, { k: 'tags', l: 'Tags', sp: true },
               { k: 'icon', l: 'Icon' }, { k: 'lang', l: 'Lang' },
               { k: 'robots', l: 'Robots' },
+              { k: 'priority', l: 'Приоритет' }, { k: 'custom', l: 'Custom (slug)' },
             ] as Array<{ k: keyof FM; l: string; sp?: boolean; tp?: string }>).map(f => (
               <div key={f.k} style={{ gridColumn: f.sp ? '1 / -1' : 'auto' }}>
                 <div style={{ fontSize: 12, color: t.fgSub, marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{f.l}</div>
