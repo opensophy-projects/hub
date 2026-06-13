@@ -2,48 +2,6 @@ import type React from 'react';
 
 export type PropValue = string | number | boolean | string[] | undefined;
 
-// ─── Component Config ─────────────────────────────────────────────────────────
-
-export interface ComponentConfig {
-  id: string;
-  name: string;
-  description: string;
-  main?: string;
-  files?: Array<{
-    name: string;
-    path: string;
-    language: string;
-  }>;
-  props: PropDefinition[];
-  specificProps?: string[];
-  category?: string;
-  tags?: string[];
-  author?: string;
-  version?: string;
-}
-
-export interface PropDefinition {
-  name: string;
-  type: string;
-  default: PropValue;
-  description: string;
-  control: 'text' | 'number' | 'select' | 'checkbox' | 'color';
-  options?: string[];
-  min?: number;
-  max?: number;
-  step?: number;
-}
-
-export type PropConfig = PropDefinition;
-
-// ─── Loaded Component ─────────────────────────────────────────────────────────
-
-export interface LoadedComponent {
-  config: ComponentConfig;
-  Component: React.ComponentType<Record<string, PropValue>>;
-  fileContents: Record<string, string>;
-}
-
 // ─── Universal Props ──────────────────────────────────────────────────────────
 
 export interface UniversalProps {
@@ -75,4 +33,10 @@ export interface UniversalProps {
 export interface ComponentWithUniversalProps<T extends object = Record<string, PropValue>>
   extends UniversalProps {
   componentProps?: T;
+}
+
+// ─── Loaded Component ─────────────────────────────────────────────────────────
+
+export interface LoadedComponent {
+  Component: React.ComponentType<Record<string, PropValue>>;
 }
