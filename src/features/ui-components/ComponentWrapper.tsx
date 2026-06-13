@@ -8,10 +8,8 @@ interface ComponentWrapperProps extends UniversalProps {
   layoutMode?: 'fill' | 'content';
 }
 
-// Предикат для фильтрации массива: убирает false-значения и сужает тип до string
 const isString = (x: string | false): x is string => x !== false;
 
-// Вычисляет CSS-трансформации на основе параметров позиции и поворота
 function buildTransformParts(scale: number, offsetX: number, offsetY: number, rotateZ: number): string[] {
   return [
     (offsetX !== 0 || offsetY !== 0) && `translate(${offsetX}px, ${offsetY}px)`,
@@ -20,7 +18,6 @@ function buildTransformParts(scale: number, offsetX: number, offsetY: number, ro
   ].filter(isString);
 }
 
-// Вычисляет CSS-фильтры на основе параметров размытия, яркости, контраста и насыщенности
 function buildFilterParts(blur: number, brightness: number, contrast: number, saturate: number): string[] {
   return [
     blur !== 0       && `blur(${blur}px)`,
@@ -30,7 +27,6 @@ function buildFilterParts(blur: number, brightness: number, contrast: number, sa
   ].filter(isString);
 }
 
-// Вычисляет стили цвета в зависимости от режима colorMode
 function buildColorStyle(
   colorMode: string,
   color: string | undefined,
@@ -39,10 +35,7 @@ function buildColorStyle(
   gradientAngle: number,
   isDark: boolean,
 ): CSSProperties {
-  if (colorMode === 'solid' && color) {
-    return { color };
-  }
-
+  if (colorMode === 'solid' && color) return { color };
   if (colorMode === 'gradient' && gradientFrom && gradientTo) {
     return {
       background:           `linear-gradient(${gradientAngle}deg, ${gradientFrom}, ${gradientTo})`,
@@ -51,13 +44,9 @@ function buildColorStyle(
       backgroundClip:       'text',
     };
   }
-
-  // В режиме original ставим дефолтный цвет по теме —
-  // иначе компонент наследует цвет от фона и становится невидимым
   return { color: isDark ? '#e8e8e8' : '#1a1a1a' };
 }
 
-// Базовые стили для сглаживания шрифта, общие для всех вариантов
 const FONT_SMOOTHING: CSSProperties = {
   WebkitFontSmoothing: 'antialiased' as const,
   MozOsxFontSmoothing: 'grayscale'   as const,
@@ -93,7 +82,7 @@ export const ComponentWrapper: React.FC<ComponentWrapperProps> = ({
   const hasFilter    = blur !== 0 || brightness !== 1 || contrast !== 1 || saturate !== 1;
   const hasOpacity   = opacity !== 1;
 
-  // Внешний контейнер — всегда flex с центрированием
+  // Внешний контейнер — flex-центрирование, без ограничений overflow
   const containerStyle = useMemo<CSSProperties>(() => ({
     position: 'relative',
     display: 'flex',
@@ -101,47 +90,36 @@ export const ComponentWrapper: React.FC<ComponentWrapperProps> = ({
     alignItems,
     width:  width  || '100%',
     height: height || '100%',
-    minWidth: 0,
-    minHeight: 0,
-    overflow: 'hidden',
-    contain: 'layout paint style',
-    isolation: 'isolate',
+    // Без overflow: hidden — контент может выходить за границы при scale > 1
+    overflow: 'visible',
   }), [justifyContent, alignItems, width, height]);
 
-  // В fill-режиме внутренний блок растягивается на весь контейнер
-  // В content-режиме — сжимается до содержимого, но центрируется внешним flex
+  // fill-режим: компонент занимает весь контейнер (фоны, canvas-анимации)
+  // content-режим: компонент по своему размеру, без ограничений
   const baseContentStyle = useMemo<CSSProperties>(() => (layoutMode === 'fill' ? {
     width: '100%',
     height: '100%',
-    minWidth: 0,
-    minHeight: 0,
     position: 'relative',
-    overflow: 'hidden',
+    overflow: 'visible',
     flex: '0 0 100%',
     transformOrigin: 'center center',
   } : {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 'fit-content',
-    height: 'fit-content',
-    maxWidth: '100%',
-    maxHeight: '100%',
-    minWidth: 0,
-    minHeight: 0,
+    // Никаких maxWidth/maxHeight — компонент растёт свободно
     position: 'relative',
     overflow: 'visible',
-    flex: '0 1 auto',
+    flex: '0 0 auto',
     transformOrigin: 'center center',
   }), [layoutMode]);
 
   const contentStyle = useMemo<CSSProperties>(() => {
     if (!enableUniversalProps) return {};
 
-    const colorStyle      = buildColorStyle(colorMode, color, gradientFrom, gradientTo, gradientAngle, isDark);
-    const animationStyle  = animationSpeed === 1 ? {} : { '--animation-speed-multiplier': animationSpeed } as CSSProperties;
+    const colorStyle     = buildColorStyle(colorMode, color, gradientFrom, gradientTo, gradientAngle, isDark);
+    const animationStyle = animationSpeed === 1 ? {} : { '--animation-speed-multiplier': animationSpeed } as CSSProperties;
 
-    // Если трансформации, фильтры и прозрачность не применяются — возвращаем только цвет
     if (!hasTransform && !hasFilter && !hasOpacity) {
       return { ...colorStyle, ...animationStyle, ...FONT_SMOOTHING };
     }
@@ -150,9 +128,9 @@ export const ComponentWrapper: React.FC<ComponentWrapperProps> = ({
     const filterParts    = buildFilterParts(blur, brightness, contrast, saturate);
 
     return {
-      ...(transformParts.length > 0  ? { transform: transformParts.join(' ') } : {}),
-      ...(filterParts.length > 0     ? { filter:    filterParts.join(' ')    } : {}),
-      ...(hasOpacity                 ? { opacity                             } : {}),
+      ...(transformParts.length > 0 ? { transform: transformParts.join(' ') } : {}),
+      ...(filterParts.length > 0    ? { filter:    filterParts.join(' ')    } : {}),
+      ...(hasOpacity                ? { opacity                             } : {}),
       ...animationStyle,
       ...colorStyle,
       ...FONT_SMOOTHING,
