@@ -343,7 +343,6 @@ interface PageTokens {
   iconColor: string;
   titleColor: string;
   mutedColor: string;
-  breadcrumbLinkColor: string;
   sectionBg: string;
 }
 
@@ -358,7 +357,6 @@ function getPageTokens(isDark: boolean, t: ReturnType<typeof makeTokens>): PageT
         iconColor:           'rgba(255,255,255,0.7)',
         titleColor:          '#ffffff',
         mutedColor:          'rgba(255,255,255,0.55)',
-        breadcrumbLinkColor: 'rgba(255,255,255,0.6)',
         sectionBg:           '#0a0a0a',
       }
     : {
@@ -370,7 +368,6 @@ function getPageTokens(isDark: boolean, t: ReturnType<typeof makeTokens>): PageT
         iconColor:           'rgba(0,0,0,0.55)',
         titleColor:          '#000000',
         mutedColor:          'rgba(0,0,0,0.55)',
-        breadcrumbLinkColor: 'rgba(0,0,0,0.5)',
         sectionBg:           '#E8E7E3',
       };
 }
@@ -447,34 +444,9 @@ const CategoryContentMain: React.FC<CategoryContentProps> = ({ category }) => {
         {/* Шапка */}
         <header style={{
           background:   pt.headerBg,
-          borderBottom: `1px solid ${pt.headerBdr}`,
+
           padding:      'clamp(2rem, 4vw, 3rem) clamp(1.5rem, 4vw, 2.5rem)',
         }}>
-          {/* Хлебные крошки */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '0.5rem',
-            marginBottom: '1.5rem', flexWrap: 'wrap',
-            fontSize: '0.78rem', color: pt.mutedColor,
-            fontFamily: 'ui-monospace, monospace',
-            letterSpacing: '0.02em',
-          }}>
-            <a href="/" style={{ color: pt.breadcrumbLinkColor, textDecoration: 'none' }}>
-              Главная
-            </a>
-            {(category.navTitle || category.parentTitle) && (
-              <ChevronRight size={12} style={{ opacity: 0.4 }} />
-            )}
-            {category.navTitle && (
-              <span style={{ color: pt.mutedColor }}>{category.navTitle}</span>
-            )}
-            {category.parentTitle && category.parentTitle !== category.navTitle && (
-              <>
-                <ChevronRight size={12} style={{ opacity: 0.4 }} />
-                <span style={{ color: pt.mutedColor }}>{category.parentTitle}</span>
-              </>
-            )}
-          </div>
-
           {/* Иконка + заголовок */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
             <span style={{
@@ -486,26 +458,15 @@ const CategoryContentMain: React.FC<CategoryContentProps> = ({ category }) => {
             }}>
               {category.icon ? <LucideIcon name={category.icon} size={22} /> : <FileText size={22} />}
             </span>
-            <div>
-              <div style={{
-                fontSize: '0.64rem', fontWeight: 700,
-                letterSpacing: '0.12em', textTransform: 'uppercase',
-                color: pt.mutedColor,
-                fontFamily: 'ui-monospace, monospace',
-                marginBottom: '0.35rem',
-              }}>
-                Категория
-              </div>
-              <h1 style={{
-                fontSize: 'clamp(1.5rem, 4vw, 2.4rem)',
-                fontWeight: 700, lineHeight: 1.15,
-                color: pt.titleColor, margin: 0,
-                letterSpacing: '-0.02em',
-                fontFamily: 'Inter, system-ui, sans-serif',
-              }}>
-                {category.title}
-              </h1>
-            </div>
+            <h1 style={{
+              fontSize: 'clamp(1.5rem, 4vw, 2.4rem)',
+              fontWeight: 700, lineHeight: 1.15,
+              color: pt.titleColor, margin: 0,
+              letterSpacing: '-0.02em',
+              fontFamily: 'Inter, system-ui, sans-serif',
+            }}>
+              {category.title}
+            </h1>
           </div>
         </header>
 
