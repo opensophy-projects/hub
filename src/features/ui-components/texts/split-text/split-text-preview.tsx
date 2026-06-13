@@ -3,7 +3,7 @@ import SplitText from './split-text';
 const SplitTextPreview: React.FC = () => (
   <div style={{ padding: '2rem 1rem' }}>
     <SplitText
-      text="Привет, это Split Text!"
+      text="Привет, это Разбиение текста!"
       className="text-4xl font-bold"
       splitType="chars"
       delay={50}
