@@ -23,9 +23,22 @@ const sourceModules = import.meta.glob([
 
 type AnyComponent = React.ComponentType<Record<string, unknown>>;
 
+const REACT_MEMO_TYPE      = Symbol.for('react.memo');
+const REACT_FORWARD_REF    = Symbol.for('react.forward_ref');
+const REACT_ELEMENT_TYPE   = Symbol.for('react.element');
+const REACT_LAZY_TYPE      = Symbol.for('react.lazy');
+
 function isReactComponent(value: unknown): value is AnyComponent {
   if (typeof value === 'function') return true;
-  return typeof value === 'object' && value !== null && '$$typeof' in value;
+  if (typeof value !== 'object' || value === null) return false;
+  const typeOf = (value as { $$typeof?: symbol }).$$typeof;
+  return (
+    typeOf === REACT_MEMO_TYPE ||
+    typeOf === REACT_FORWARD_REF ||
+    typeOf === REACT_ELEMENT_TYPE ||
+    typeOf === REACT_LAZY_TYPE ||
+    typeOf !== undefined
+  );
 }
 
 // Имя папки = последний сегмент директории, содержащей файл.
@@ -49,27 +62,29 @@ function candidatesForId(id: string): string[] {
   return Object.keys(componentModules).filter((p) => folderNameFromPath(p) === id);
 }
 
-// Сортирует кандидатов: index.ts(x) -> <id>.tsx -> <id>-preview.tsx -> остальное
+// Сортирует кандидатов: index.ts(x) -> <id>-preview.tsx -> <id>.tsx -> остальное.
+// preview-файл приоритетнее основного, т.к. часто именно он содержит
+// самодостаточную демонстрацию (с дефолтными значениями, без внешних зависимостей).
 function orderCandidates(id: string, candidates: string[]): string[] {
   const isIndex   = (p: string) => /\/index\.tsx?$/.test(p);
-  const isNamed   = (p: string) => new RegExp(`/${id}\\.tsx?$`).test(p);
   const isPreview = (p: string) => new RegExp(`/${id}-preview\\.tsx?$`).test(p);
+  const isNamed   = (p: string) => new RegExp(`/${id}\\.tsx?$`).test(p);
 
   const indexFiles   = candidates.filter(isIndex);
-  const namedFiles   = candidates.filter((p) => !isIndex(p) && isNamed(p));
-  const previewFiles = candidates.filter((p) => !isIndex(p) && !isNamed(p) && isPreview(p));
-  const rest         = candidates.filter((p) => !isIndex(p) && !isNamed(p) && !isPreview(p));
+  const previewFiles = candidates.filter((p) => !isIndex(p) && isPreview(p));
+  const namedFiles   = candidates.filter((p) => !isIndex(p) && !isPreview(p) && isNamed(p));
+  const rest         = candidates.filter((p) => !isIndex(p) && !isPreview(p) && !isNamed(p));
 
-  return [...indexFiles, ...namedFiles, ...previewFiles, ...rest];
+  return [...indexFiles, ...previewFiles, ...namedFiles, ...rest];
 }
 
 // Категория компонента — определяется по пути (например '.../backgrounds/color-bends/...')
+const KNOWN_CATEGORIES = ['backgrounds', 'texts', 'buttons', 'cards', 'effects', 'loaders', 'inputs'];
+
 function categoryFromPath(path: string): string | undefined {
   const parts = path.split('/');
-  // ищем известные top-level категории где-либо в пути
-  const known = ['backgrounds', 'texts', 'buttons', 'cards', 'effects'];
   for (const part of parts) {
-    if (known.includes(part)) return part;
+    if (KNOWN_CATEGORIES.includes(part)) return part;
   }
   return undefined;
 }
@@ -88,6 +103,11 @@ export const registry = {
   async loadComponent(id: string): Promise<AnyComponent | null> {
     const candidates = orderCandidates(id, candidatesForId(id));
 
+    if (candidates.length === 0) {
+      console.warn(`[registry] no folder found for id: ${id}`);
+      return null;
+    }
+
     for (const path of candidates) {
       const loader = componentModules[path];
       if (!loader) continue;
@@ -97,12 +117,13 @@ export const registry = {
           ? mod['default']
           : Object.values(mod).find(isReactComponent);
         if (component) return component as AnyComponent;
+        console.warn(`[registry] %s loaded but no React component export found`, path);
       } catch (e) {
         console.warn('[registry] failed to load %s:', path, e);
       }
     }
 
-    console.warn(`[registry] no component found for id: ${id}`);
+    console.warn(`[registry] no component found for id: ${id} (checked ${candidates.length} file(s))`);
     return null;
   },
 
