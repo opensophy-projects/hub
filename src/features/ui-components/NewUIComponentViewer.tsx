@@ -490,9 +490,8 @@ interface ComponentRenderProps {
   /**
    * Режим раскладки контейнера:
    * - 'fill'    — компонент занимает всю выделенную область (фоны, полноразмерные демо)
-   * - 'content' — компонент центрируется и занимает своё естественное место (для fullscreen)
-   * По умолчанию 'fill' — без него компоненты с width:100%/height:100% коллапсируют
-   * до нулевого размера в режиме 'content' (чёрный экран / растяжение).
+   * - 'content' — компонент центрируется и занимает своё естественное место
+   * По умолчанию определяется по категории.
    */
   containerMode?: 'fill' | 'content';
 }
@@ -817,6 +816,9 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
   onOpenFullscreen: () => void; t: T; loading: boolean;
 }> = ({ Component, universalProps, refreshKey, isDark, componentCategory, onOpenFullscreen, t, loading, fileContents }) => {
   const isBackground = componentCategory === 'backgrounds';
+  // Для не-фоновых компонентов используем 'content' режим чтобы flex-центрирование работало
+  const previewContainerMode: 'fill' | 'content' = isBackground ? 'fill' : 'content';
+
   return (
     <div style={{ position: 'relative', width: '100%', overflow: 'visible' }}>
       <button
@@ -839,6 +841,10 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
         height: isBackground ? 400 : 320,
         position: 'relative',
         overflow: 'hidden',
+        // Flex-центрирование для content-режима
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}>
         {loading && (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, fontSize: 12, color: t.fgSub, fontFamily: 'ui-monospace, monospace' }}>
@@ -851,7 +857,7 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
             universalProps={universalProps} refreshKey={refreshKey}
             isDark={isDark} componentCategory={componentCategory}
             fileContents={fileContents}
-            containerMode="fill"
+            containerMode={previewContainerMode}
           />
         )}
       </div>
