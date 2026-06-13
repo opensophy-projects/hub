@@ -503,10 +503,10 @@ const ComponentRender: React.FC<ComponentRenderProps> = ({
   const isFill = resolvedMode === 'fill';
   return (
     <div style={{
-      width: '100%', height: isFill ? '100%' : 'auto',
-      minWidth: 0, minHeight: 0, position: 'relative',
-      overflow: isFill ? 'hidden' : 'visible',
-      ...(isFill ? { isolation: 'isolate' as const, contain: 'layout paint style' } : {}),
+      width: '100%',
+      height: isFill ? '100%' : 'auto',
+      position: 'relative',
+      overflow: 'visible',
     }}>
       <ComponentWrapper {...universalProps} isDark={isDark} layoutMode={resolvedMode} className="w-full h-full">
         <Suspense fallback={null}>
@@ -537,12 +537,13 @@ const FullscreenDesktop: React.FC<ComponentRenderProps & {
 }) => {
   const isBackground = componentCategory === 'backgrounds';
 
+  // overflow: auto позволяет скроллить если компонент большой, но не обрезает
   const previewStyle: React.CSSProperties = isBackground
-    ? { flex: 1, minWidth: 0, minHeight: 0, position: 'relative', overflow: 'hidden' }
-    : { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48, overflow: 'auto', position: 'relative' };
+    ? { flex: 1, position: 'relative', overflow: 'hidden' }
+    : { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48, overflow: 'auto', position: 'relative' };
 
   return (
-    <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', height: '100%', overflow: 'visible' }}>
 
       {/* ── Рейл ── */}
       <aside style={{
@@ -838,13 +839,15 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
       </button>
       <div style={{
         width: '100%',
-        height: isBackground ? 400 : 320,
+        // Для фонов фиксированная высота, для контентных — минимальная 240px, растёт по контенту
+        minHeight: isBackground ? 400 : 240,
+        height: isBackground ? 400 : 'auto',
         position: 'relative',
-        overflow: 'hidden',
-        // Flex-центрирование для content-режима
+        overflow: 'visible',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        padding: isBackground ? 0 : '40px 24px',
       }}>
         {loading && (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, fontSize: 12, color: t.fgSub, fontFamily: 'ui-monospace, monospace' }}>
