@@ -34,9 +34,3 @@ export interface ComponentWithUniversalProps<T extends object = Record<string, P
   extends UniversalProps {
   componentProps?: T;
 }
-
-// ─── Loaded Component ─────────────────────────────────────────────────────────
-
-export interface LoadedComponent {
-  Component: React.ComponentType<Record<string, PropValue>>;
-}
