@@ -30,7 +30,7 @@ const ScrollFloat: React.FC<ScrollFloatProps> = ({
   stagger = 0.03,
   demo = false,
 }) => {
-  const containerRef = useRef<HTMLHeadingElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const splitText = useMemo(() => {
     const text = typeof children === 'string' ? children : '';
@@ -124,7 +124,7 @@ const ScrollFloat: React.FC<ScrollFloatProps> = ({
   }, [scrollContainerRef, animationDuration, ease, scrollStart, scrollEnd, stagger, demo]);
 
   return (
-    <h2
+    <div
       ref={containerRef}
       className={`my-5 overflow-hidden ${containerClassName}`}
     >
@@ -133,7 +133,7 @@ const ScrollFloat: React.FC<ScrollFloatProps> = ({
       >
         {splitText}
       </span>
-    </h2>
+    </div>
   );
 };
 

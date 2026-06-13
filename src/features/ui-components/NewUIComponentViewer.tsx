@@ -9,20 +9,18 @@ import {
   ChevronDown, ChevronRight, Settings,
 } from 'lucide-react';
 import hljs from 'highlight.js/lib/core';
-import { loadComponent, getDefaultProps } from './loader';
+import { loadComponent } from './loader';
 import { ComponentWrapper } from './ComponentWrapper';
 import { useIsMobile } from '@/shared/hooks/useBreakpoint';
-import type { UniversalProps, ComponentConfig } from './types';
+import type { UniversalProps, PropValue } from './types';
 import { makeTokens } from '@/shared/tokens/theme';
 
-type PropValue = string | number | boolean | string[] | undefined;
-type ComponentPropsMap = Record<string, PropValue>;
-type AnyComponent = React.ComponentType<Record<string, PropValue>>;
+type AnyComponent = React.ComponentType<Record<string, unknown>>;
 type TabType = 'settings' | 'code';
 
 interface LoadedComponentData {
-  config: ComponentConfig;
   Component: AnyComponent;
+  category?: string;
   fileContents: Record<string, string>;
 }
 
@@ -484,29 +482,35 @@ const SourceCodeViewer: React.FC<SourceCodeViewerProps> = ({ fileContents, t }) 
 
 interface ComponentRenderProps {
   Component: AnyComponent;
-  componentProps: ComponentPropsMap;
   universalProps: UniversalProps;
   refreshKey: number;
   isDark: boolean;
   componentCategory?: string;
   fileContents: Record<string, string>;
+  /**
+   * Режим раскладки контейнера:
+   * - 'fill'    — компонент занимает всю выделенную область (фоны, полноразмерные демо)
+   * - 'content' — компонент центрируется и занимает своё естественное место
+   * По умолчанию определяется по категории.
+   */
+  containerMode?: 'fill' | 'content';
 }
 
 const ComponentRender: React.FC<ComponentRenderProps> = ({
-  Component, componentProps, universalProps, refreshKey, isDark, componentCategory,
+  Component, universalProps, refreshKey, isDark, containerMode,
 }) => {
-  const layoutMode = componentCategory === 'backgrounds' ? 'fill' : 'content';
-  const isFill = layoutMode === 'fill';
+  const resolvedMode = containerMode ?? 'fill';
+  const isFill = resolvedMode === 'fill';
   return (
     <div style={{
-      width: '100%', height: isFill ? '100%' : 'auto',
-      minWidth: 0, minHeight: 0, position: 'relative',
-      overflow: isFill ? 'hidden' : 'visible',
-      ...(isFill ? { isolation: 'isolate' as const, contain: 'layout paint style' } : {}),
+      width: '100%',
+      height: isFill ? '100%' : 'auto',
+      position: 'relative',
+      overflow: 'visible',
     }}>
-      <ComponentWrapper {...universalProps} isDark={isDark} layoutMode={layoutMode} className="w-full h-full">
+      <ComponentWrapper {...universalProps} isDark={isDark} layoutMode={resolvedMode} className="w-full h-full">
         <Suspense fallback={null}>
-          <Component key={refreshKey} {...componentProps} />
+          <Component key={refreshKey} />
         </Suspense>
       </ComponentWrapper>
     </div>
@@ -526,19 +530,20 @@ const FullscreenDesktop: React.FC<ComponentRenderProps & {
   onTogglePanel: () => void;
   t: T;
 }> = ({
-  Component, componentProps, universalProps, refreshKey, isDark, componentCategory,
+  Component, universalProps, refreshKey, isDark, componentCategory,
   fileContents, activeTab, panelOpen,
   onTabSelect, onUniversalPropChange, onRefresh, onReset, onClose, onTogglePanel,
   t,
 }) => {
   const isBackground = componentCategory === 'backgrounds';
 
+  // overflow: auto позволяет скроллить если компонент большой, но не обрезает
   const previewStyle: React.CSSProperties = isBackground
-    ? { flex: 1, minWidth: 0, minHeight: 0, position: 'relative', overflow: 'hidden' }
-    : { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48, overflow: 'auto', position: 'relative' };
+    ? { flex: 1, position: 'relative', overflow: 'hidden' }
+    : { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48, overflow: 'auto', position: 'relative' };
 
   return (
-    <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', height: '100%', overflow: 'visible' }}>
 
       {/* ── Рейл ── */}
       <aside style={{
@@ -572,10 +577,11 @@ const FullscreenDesktop: React.FC<ComponentRenderProps & {
       {/* ── Превью ── */}
       <div style={previewStyle}>
         <ComponentRender
-          Component={Component} componentProps={componentProps}
+          Component={Component}
           universalProps={universalProps} refreshKey={refreshKey}
           isDark={isDark} componentCategory={componentCategory}
           fileContents={fileContents}
+          containerMode={isBackground ? 'fill' : 'content'}
         />
       </div>
 
@@ -685,7 +691,7 @@ const FullscreenMobile: React.FC<ComponentRenderProps & {
   onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
   t: T;
 }> = ({
-  Component, componentProps, universalProps, refreshKey, isDark, componentCategory,
+  Component, universalProps, refreshKey, isDark, componentCategory,
   fileContents, onClose, onRefresh, onReset, onUniversalPropChange, t,
 }) => {
   const [sheet, setSheet] = useState<MobileSheet>(null);
@@ -700,7 +706,7 @@ const FullscreenMobile: React.FC<ComponentRenderProps & {
   return (
     <>
       <div style={{ position: 'absolute', inset: 0, bottom: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: isBackground ? 'hidden' : 'visible' }}>
-        <ComponentRender Component={Component} componentProps={componentProps} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} componentCategory={componentCategory} fileContents={fileContents} />
+        <ComponentRender Component={Component} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} componentCategory={componentCategory} fileContents={fileContents} containerMode={isBackground ? 'fill' : 'content'} />
       </div>
 
       {sheet && (
@@ -758,7 +764,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
   onClose: () => void; onRefresh: () => void;
   onUniversalPropChange: (key: keyof UniversalProps, v: PropValue) => void;
   onReset: () => void; t: T;
-}> = ({ Component, componentProps, universalProps, refreshKey, isDark, componentCategory, fileContents, onClose, onRefresh, onUniversalPropChange, onReset, t }) => {
+}> = ({ Component, universalProps, refreshKey, isDark, componentCategory, fileContents, onClose, onRefresh, onUniversalPropChange, onReset, t }) => {
   const [activeTab,  setActiveTab]  = useState<TabType>('settings');
   const [panelOpen,  setPanelOpen]  = useState(true);
   const isMobile = useIsMobile();
@@ -773,7 +779,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
   const handleTabSelect   = useCallback((tab: TabType) => { setActiveTab(tab); }, []);
   const handleTogglePanel = useCallback(() => { setPanelOpen(v => !v); }, []);
 
-  const shared: ComponentRenderProps = { Component, componentProps, universalProps, refreshKey, isDark, componentCategory, fileContents };
+  const shared: ComponentRenderProps = { Component, universalProps, refreshKey, isDark, componentCategory, fileContents };
 
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: t.outerBg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -809,8 +815,11 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
 
 const PreviewPanel: React.FC<ComponentRenderProps & {
   onOpenFullscreen: () => void; t: T; loading: boolean;
-}> = ({ Component, componentProps, universalProps, refreshKey, isDark, componentCategory, onOpenFullscreen, t, loading, fileContents }) => {
+}> = ({ Component, universalProps, refreshKey, isDark, componentCategory, onOpenFullscreen, t, loading, fileContents }) => {
   const isBackground = componentCategory === 'backgrounds';
+  // Для не-фоновых компонентов используем 'content' режим чтобы flex-центрирование работало
+  const previewContainerMode: 'fill' | 'content' = isBackground ? 'fill' : 'content';
+
   return (
     <div style={{ position: 'relative', width: '100%', overflow: 'visible' }}>
       <button
@@ -830,12 +839,15 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
       </button>
       <div style={{
         width: '100%',
-        ...(isBackground ? { height: 400 } : { minHeight: 500, paddingTop: 60, paddingBottom: 120 }),
-        display: 'flex',
-        alignItems: isBackground ? 'stretch' : 'center',
-        justifyContent: isBackground ? 'stretch' : 'center',
+        // Для фонов фиксированная высота, для контентных — минимальная 240px, растёт по контенту
+        minHeight: isBackground ? 400 : 240,
+        height: isBackground ? 400 : 'auto',
         position: 'relative',
-        overflow: isBackground ? 'hidden' : 'visible',
+        overflow: 'visible',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: isBackground ? 0 : '40px 24px',
       }}>
         {loading && (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, fontSize: 12, color: t.fgSub, fontFamily: 'ui-monospace, monospace' }}>
@@ -844,10 +856,11 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
         )}
         {!loading && (
           <ComponentRender
-            Component={Component} componentProps={componentProps}
+            Component={Component}
             universalProps={universalProps} refreshKey={refreshKey}
             isDark={isDark} componentCategory={componentCategory}
             fileContents={fileContents}
+            containerMode={previewContainerMode}
           />
         )}
       </div>
@@ -867,6 +880,9 @@ const DEFAULT_UNIVERSAL_PROPS: UniversalProps = {
   opacity: 1, blur: 0, brightness: 1, contrast: 1, saturate: 1,
 };
 
+// Заглушка — рендерится пока компонент не загружен/не найден
+const PlaceholderComponent: AnyComponent = () => null;
+
 // ─── UIComponentViewer ────────────────────────────────────────────────────────
 
 const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) => {
@@ -875,7 +891,6 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
 
   const [isFullscreen,   setIsFullscreen]   = useState(false);
   const [refreshKey,     setRefreshKey]     = useState(0);
-  const [componentProps, setComponentProps] = useState<ComponentPropsMap>({});
   const [universalProps, setUniversalProps] = useState<UniversalProps>(DEFAULT_UNIVERSAL_PROPS);
   const [componentData,  setComponentData]  = useState<LoadedComponentData | null>(null);
   const [loading,        setLoading]        = useState(true);
@@ -883,7 +898,7 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
   useEffect(() => {
     setLoading(true);
     loadComponent(componentId).then(data => {
-      if (data) { setComponentData(data); setComponentProps(getDefaultProps(data.config)); }
+      if (data) setComponentData(data);
       scheduleHideLoading(setLoading);
     });
   }, [componentId]);
@@ -892,30 +907,21 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
   const handleUniversalChange = useCallback((key: keyof UniversalProps, value: PropValue) =>
     setUniversalProps(prev => ({ ...prev, [key]: value })), []);
   const handleReset = useCallback(() => {
-    if (!componentData) return;
-    setComponentProps(getDefaultProps(componentData.config));
     setUniversalProps(DEFAULT_UNIVERSAL_PROPS);
     setRefreshKey(k => k + 1);
-  }, [componentData]);
+  }, []);
 
-  const placeholderConfig: ComponentConfig = useMemo(() => ({
-    id: componentId, name: '…', description: '', props: [], specificProps: [],
-  }), [componentId]);
-  const PlaceholderComponent = useMemo(() => () => null, []);
-
-  const effectiveData = componentData ?? {
-    config: placeholderConfig,
-    Component: PlaceholderComponent as AnyComponent,
+  const effectiveData: LoadedComponentData = componentData ?? {
+    Component: PlaceholderComponent,
     fileContents: {},
   };
 
   const shared: ComponentRenderProps = {
     Component:         effectiveData.Component,
-    componentProps,
     universalProps,
     refreshKey,
     isDark,
-    componentCategory: effectiveData.config.category,
+    componentCategory: effectiveData.category,
     fileContents:      effectiveData.fileContents,
   };
 
