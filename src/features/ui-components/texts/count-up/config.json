@@ -1,0 +1,19 @@
+{
+  "id": "count-up",
+  "name": "Счётчик",
+  "description": "Анимированный числовой счётчик на framer-motion с пружинной анимацией. Поддерживает направление, задержку, разделитель и программный запуск.",
+  "category": "text",
+  "main": "count-up-preview.tsx",
+  "props": [
+    { "name": "to", "type": "number", "default": 100, "description": "Конечное значение" },
+    { "name": "from", "type": "number", "default": 0, "description": "Начальное значение" },
+    { "name": "direction", "type": "select", "options": ["up", "down"], "default": "up", "description": "Направление счёта" },
+    { "name": "delay", "type": "number", "default": 0, "description": "Задержка перед запуском (сек)" },
+    { "name": "duration", "type": "number", "default": 2, "description": "Длительность анимации (сек)" },
+    { "name": "separator", "type": "string", "default": "", "description": "Разделитель тысяч" }
+  ],
+  "specificProps": ["to", "from", "direction", "separator"],
+  "tags": ["number", "counter", "animation", "spring", "framer-motion"],
+  "author": "davidhdev",
+  "version": "1.0.0"
+}

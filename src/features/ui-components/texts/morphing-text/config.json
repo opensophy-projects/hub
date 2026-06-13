@@ -1,0 +1,27 @@
+{
+  "id": "morphing-text",
+  "name": "Морфинг текста",
+  "description": "Плавный переход между словами через blur-морфинг с SVG-фильтром threshold. Слова перетекают друг в друга с эффектом расплавленного текста.",
+  "category": "text",
+  "main": "morphing-text-preview.tsx",
+  "props": [
+    {
+      "name": "texts",
+      "type": "string",
+      "default": "Дизайн, Интерфейс, Анимация, Движение",
+      "description": "Строки через запятую — каждая становится отдельным словом в цикле",
+      "control": "text"
+    },
+    {
+      "name": "className",
+      "type": "string",
+      "default": "",
+      "description": "CSS классы на корневом контейнере",
+      "control": "text"
+    }
+  ],
+  "specificProps": ["texts"],
+  "tags": ["animation", "text", "morph", "blur", "svg-filter", "loop"],
+  "author": "davidhdev",
+  "version": "1.0.0"
+}

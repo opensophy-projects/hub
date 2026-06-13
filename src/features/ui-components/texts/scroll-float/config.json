@@ -1,0 +1,85 @@
+{
+  "id": "scroll-float",
+  "name": "Scroll Float",
+  "description": "Текст с эффектом всплытия при скролле. Каждая буква анимируется через GSAP ScrollTrigger — появляется снизу с деформацией масштаба, синхронизированно с позицией скролла.",
+  "category": "text",
+  "main": "scroll-float-preview.tsx",
+  "props": [
+    {
+      "name": "children",
+      "type": "string",
+      "default": "Scroll Float",
+      "description": "Текст для анимации",
+      "control": "text"
+    },
+    {
+      "name": "animationDuration",
+      "type": "number",
+      "default": 1,
+      "description": "Длительность анимации каждой буквы (с)",
+      "control": "number",
+      "min": 0.1,
+      "max": 5,
+      "step": 0.1
+    },
+    {
+      "name": "ease",
+      "type": "string",
+      "default": "back.inOut(2)",
+      "description": "GSAP easing функция",
+      "control": "select",
+      "options": [
+        "back.inOut(2)",
+        "back.out(1.7)",
+        "power3.out",
+        "power4.out",
+        "elastic.out(1, 0.3)",
+        "expo.out",
+        "sine.inOut",
+        "circ.inOut"
+      ]
+    },
+    {
+      "name": "scrollStart",
+      "type": "string",
+      "default": "center bottom+=50%",
+      "description": "Точка начала анимации (ScrollTrigger start)",
+      "control": "text"
+    },
+    {
+      "name": "scrollEnd",
+      "type": "string",
+      "default": "bottom bottom-=40%",
+      "description": "Точка конца анимации (ScrollTrigger end)",
+      "control": "text"
+    },
+    {
+      "name": "stagger",
+      "type": "number",
+      "default": 0.03,
+      "description": "Задержка между буквами (с)",
+      "control": "number",
+      "min": 0,
+      "max": 0.3,
+      "step": 0.005
+    },
+    {
+      "name": "containerClassName",
+      "type": "string",
+      "default": "",
+      "description": "CSS классы для контейнера <h2>",
+      "control": "text"
+    },
+    {
+      "name": "textClassName",
+      "type": "string",
+      "default": "",
+      "description": "CSS классы для текстового <span>",
+      "control": "text"
+    }
+  ],
+  "specificProps": ["children", "animationDuration", "ease", "stagger", "scrollStart", "scrollEnd"],
+  "tags": ["animation", "text", "gsap", "scroll", "split", "scrub"],
+  "author": "davidhdev",
+  "version": "1.0.0"
+}

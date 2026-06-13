@@ -1,0 +1,62 @@
+{
+  "id": "curved-loop",
+  "name": "Curved Loop",
+  "description": "Бесконечный marquee-текст по кривой линии. Поддерживает перетаскивание мышью для изменения скорости и направления.",
+  "category": "text",
+  "main": "CurvedLoop.tsx",
+  "props": [
+    {
+      "name": "marqueeText",
+      "type": "string",
+      "default": "CURVED LOOP • CURVED LOOP •",
+      "description": "Текст бегущей строки",
+      "control": "text"
+    },
+    {
+      "name": "speed",
+      "type": "number",
+      "default": 2,
+      "description": "Скорость прокрутки (пикс/кадр)",
+      "control": "number",
+      "min": 0.5,
+      "max": 20,
+      "step": 0.5
+    },
+    {
+      "name": "curveAmount",
+      "type": "number",
+      "default": 400,
+      "description": "Глубина изгиба (px). 0 — прямая линия",
+      "control": "number",
+      "min": -600,
+      "max": 600,
+      "step": 10
+    },
+    {
+      "name": "direction",
+      "type": "string",
+      "default": "left",
+      "description": "Направление прокрутки",
+      "control": "select",
+      "options": ["left", "right"]
+    },
+    {
+      "name": "interactive",
+      "type": "boolean",
+      "default": true,
+      "description": "Включить перетаскивание",
+      "control": "checkbox"
+    },
+    {
+      "name": "className",
+      "type": "string",
+      "default": "text-4xl font-bold",
+      "description": "CSS классы для SVG-текста",
+      "control": "text"
+    }
+  ],
+  "specificProps": ["marqueeText", "speed", "curveAmount", "direction", "interactive"],
+  "tags": ["animation", "text", "marquee", "svg", "loop", "curved"],
+  "author": "davidhdev",
+  "version": "1.0.0"
+}

@@ -1,0 +1,42 @@
+{
+  "id": "floating-lines",
+  "name": "Floating Lines",
+  "description": "Анимированный фоновый UI-компонент.",
+  "category": "backgrounds",
+  "main": "floating-lines.tsx",
+  "props": [
+    {
+      "name": "animationSpeed",
+      "type": "number",
+      "default": 1,
+      "description": "animationSpeed",
+      "control": "number"
+    },
+    {
+      "name": "interactive",
+      "type": "boolean",
+      "default": true,
+      "description": "interactive",
+      "control": "boolean"
+    },
+    {
+      "name": "parallax",
+      "type": "boolean",
+      "default": false,
+      "description": "parallax",
+      "control": "boolean"
+    }
+  ],
+  "specificProps": [
+    "animationSpeed",
+    "interactive",
+    "parallax"
+  ],
+  "tags": [
+    "background",
+    "animation",
+    "react"
+  ],
+  "author": "veilosophy",
+  "version": "1.0.0"
+}
