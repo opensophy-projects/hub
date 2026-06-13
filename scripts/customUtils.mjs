@@ -7,7 +7,8 @@ function toSlug(value) {
     .replaceAll(/\s+/g, '-')
     .replaceAll(/[^\w/-]/g, '')
     .replaceAll(/-+/g, '-')
-    .replaceAll(/^[-/]+|[-/]+$/g, '');
+    .replace(/^[-/]+/, '')
+    .replace(/[-/]+$/, '');
 }
 
 export function parseCustomPageFolderName(folderName) {
@@ -18,7 +19,6 @@ export function parseCustomPageFolderName(folderName) {
 
 export function scanCustomPages(customDir) {
   if (!fs.existsSync(customDir)) return [];
-
   return fs.readdirSync(customDir, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => {
@@ -26,7 +26,6 @@ export function scanCustomPages(customDir) {
       const pagePathJsx = path.join(customDir, entry.name, 'Page.jsx');
       const hasPage = fs.existsSync(pagePathTsx) || fs.existsSync(pagePathJsx);
       if (!hasPage) return null;
-
       return {
         folderName: entry.name,
         slug: parseCustomPageFolderName(entry.name),
@@ -37,13 +36,7 @@ export function scanCustomPages(customDir) {
     .sort((a, b) => a.slug.localeCompare(b.slug));
 }
 
-/**
- * Возвращает slug кастомной страницы из значения поля `custom` во frontmatter,
- * либо null, если поле не задано/пустое.
- *
- * custom: resume  ->  'resume'
- * (не задано)     ->  null
- */
+// custom: resume -> 'resume', не задано -> null
 export function resolveCustomSlug(value) {
   if (!value) return null;
   const v = String(value).trim();
