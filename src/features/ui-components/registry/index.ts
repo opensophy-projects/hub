@@ -1,9 +1,12 @@
 import React from 'react';
 import type { ComponentConfig } from '../types';
 
-// Авто-обнаружение компонентов через import.meta.glob
-// Добавить компонент = создать папку с config.json + ComponentName.tsx
-const configModules = import.meta.glob('../**/config.json', { eager: true });
+// Авто-обнаружение компонентов без config.json.
+// Добавить компонент = создать папку и главный React-файл внутри неё:
+//   backgrounds/plasma-wave/plasma-wave.tsx
+// Если имя файла не совпадает с id папки, registry возьмёт первый подходящий .tsx
+// файл в этой папке, отдавая приоритет не-preview файлам. Связанные файлы могут
+// лежать рядом и импортироваться компонентом обычными относительными импортами.
 const componentModules = import.meta.glob([
   '../**/*.{ts,tsx}',
   '!../registry/**',
@@ -15,76 +18,124 @@ const componentModules = import.meta.glob([
 
 type AnyComponent = React.ComponentType<Record<string, unknown>>;
 
+type ComponentEntry = {
+  id: string;
+  baseDir: string;
+  category?: string;
+};
+
 function isReactComponent(value: unknown): value is AnyComponent {
   if (typeof value === 'function') return true;
   return typeof value === 'object' && value !== null && '$$typeof' in value;
 }
 
-
-// Извлекает id компонента из конфига, чтобы компоненты можно было вкладывать
-// в папки вида backgrounds/component/config.json без изменения публичного id.
-function idFromConfigPath(path: string): string {
-  const cfg = configFromModule(configModules[path]);
-  return cfg?.id || path.split('/').at(-2) || '';
+function segments(path: string): string[] {
+  return path.replace(/^\.\.\//, '').split('/');
 }
 
-function baseDirFromConfigPath(path: string): string {
-  return path.replace(/\/config\.json$/, '');
+function isPreviewFile(path: string): boolean {
+  return /(?:^|[-_.])preview\.(?:t|j)sx?$/.test(path);
 }
 
-function configPathById(id: string): string | null {
-  return Object.keys(configModules).find(path => idFromConfigPath(path) === id) ?? null;
+function isRunnableComponentFile(path: string): boolean {
+  return path.endsWith('.tsx') && !isPreviewFile(path);
 }
 
-// Нормализует модуль конфига — поддерживает default-экспорт и прямой объект
-function configFromModule(mod: unknown): ComponentConfig | null {
-  const m = mod as Record<string, unknown>;
-  const cfg = (m['default'] ?? m) as ComponentConfig;
-  return cfg?.id ? cfg : null;
+function entryFromPath(path: string): ComponentEntry | null {
+  if (!isRunnableComponentFile(path)) return null;
+
+  const parts = segments(path);
+  if (parts.length < 3) return null;
+
+  const fileName = parts.at(-1);
+  const id = parts.at(-2);
+  if (!fileName || !id) return null;
+
+  const baseDir = `../${parts.slice(0, -1).join('/')}`;
+  const category = parts.length >= 4 ? parts.at(-3) : undefined;
+  return { id, baseDir, category };
+}
+
+function entries(): ComponentEntry[] {
+  const byId = new Map<string, ComponentEntry>();
+
+  Object.keys(componentModules)
+    .map(entryFromPath)
+    .filter((entry): entry is ComponentEntry => entry !== null)
+    .sort((a, b) => a.id.localeCompare(b.id))
+    .forEach((entry) => {
+      if (!byId.has(entry.id)) byId.set(entry.id, entry);
+    });
+
+  return [...byId.values()];
+}
+
+function entryById(id: string): ComponentEntry | null {
+  return entries().find(entry => entry.id === id) ?? null;
+}
+
+function titleFromId(id: string): string {
+  return id
+    .split('-')
+    .filter(Boolean)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function configFromEntry(entry: ComponentEntry): ComponentConfig {
+  return {
+    id: entry.id,
+    name: titleFromId(entry.id),
+    description: '',
+    category: entry.category,
+  };
+}
+
+function candidatesForEntry(entry: ComponentEntry): string[] {
+  const allFiles = Object.keys(componentModules)
+    .filter(path => path.startsWith(`${entry.baseDir}/`));
+
+  const preferred = [
+    `${entry.baseDir}/${entry.id}.tsx`,
+    `${entry.baseDir}/index.tsx`,
+    `${entry.baseDir}/index.ts`,
+  ];
+
+  const fallback = allFiles
+    .filter(path => /\.tsx$/.test(path))
+    .sort((a, b) => Number(isPreviewFile(a)) - Number(isPreviewFile(b)) || a.localeCompare(b));
+
+  return [...new Set([...preferred, ...fallback])];
 }
 
 export const registry = {
   getAllIds(): string[] {
-    return Object.keys(configModules).map(idFromConfigPath).filter(Boolean);
+    return entries().map(entry => entry.id);
   },
 
   getConfig(id: string): ComponentConfig | null {
-    const path = configPathById(id);
-    const mod = path ? configModules[path] : null;
-    return mod ? configFromModule(mod) : null;
+    const entry = entryById(id);
+    return entry ? configFromEntry(entry) : null;
   },
 
   getByCategory(category: string): ComponentConfig[] {
-    return this.getAllIds()
-      .map(id => this.getConfig(id))
-      .filter((c): c is ComponentConfig => c?.category === category);
+    return entries()
+      .filter(entry => entry.category === category)
+      .map(configFromEntry);
   },
 
   async loadComponent(id: string): Promise<AnyComponent | null> {
-    const config = this.getConfig(id);
-    if (!config) return null;
+    const entry = entryById(id);
+    if (!entry) return null;
 
-    const mainFile = (config as ComponentConfig & { main?: string }).main;
-    const configPath = configPathById(id);
-    const baseDir = configPath ? baseDirFromConfigPath(configPath) : `../${id}`;
-
-    // Приоритетные кандидаты: явный main, затем index-файлы, затем все .tsx в папке
-    const preferred = [
-      mainFile && `${baseDir}/${mainFile}`,
-      `${baseDir}/index.ts`,
-      `${baseDir}/index.tsx`,
-    ].filter((p): p is string => !!p && !p.endsWith('undefined'));
-
-    const allTsx = Object.keys(componentModules).filter(k => k.startsWith(`${baseDir}/`));
-    const candidates = [...new Set([...preferred, ...allTsx])];
-
-    for (const candidate of candidates) {
+    for (const candidate of candidatesForEntry(entry)) {
       const loader = componentModules[candidate];
       if (!loader) continue;
+
       try {
         const mod = await loader() as Record<string, unknown>;
-        const component = isReactComponent(mod['default'])
-          ? mod['default']
+        const component = isReactComponent(mod.default)
+          ? mod.default
           : Object.values(mod).find(isReactComponent);
         if (component) return component;
       } catch (e) {
@@ -101,12 +152,11 @@ export const registry = {
   },
 
   getBaseDir(id: string): string | null {
-    const path = configPathById(id);
-    return path ? baseDirFromConfigPath(path) : null;
+    return entryById(id)?.baseDir ?? null;
   },
 
   hasComponent(id: string): boolean {
-    return configPathById(id) !== null;
+    return entryById(id) !== null;
   },
 };
 

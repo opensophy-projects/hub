@@ -899,7 +899,7 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
   }, [componentData]);
 
   const placeholderConfig: ComponentConfig = useMemo(() => ({
-    id: componentId, name: '…', description: '', props: [], specificProps: [],
+    id: componentId, name: '…', description: '',
   }), [componentId]);
   const PlaceholderComponent = useMemo(() => () => null, []);
 

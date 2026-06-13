@@ -8,13 +8,12 @@ export interface ComponentConfig {
   id: string;
   name: string;
   description: string;
-  main?: string;
   files?: Array<{
     name: string;
     path: string;
     language: string;
   }>;
-  props: PropDefinition[];
+  props?: PropDefinition[];
   specificProps?: string[];
   category?: string;
   tags?: string[];

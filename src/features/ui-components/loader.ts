@@ -1,5 +1,5 @@
 import { registry } from './registry';
-import type { ComponentConfig, LoadedComponent } from '../types';
+import type { ComponentConfig, LoadedComponent } from './types';
 
 const sourceModules = import.meta.glob('./**/*.{ts,tsx,js,jsx,css,html,json}', { query: '?raw', import: 'default' });
 
@@ -16,18 +16,18 @@ function componentBaseDir(componentId: string): string {
   return registryBase ? registryBase.replace(/^\.\.\//, './') : `./${componentId}`;
 }
 
-function pickMainSourcePath(componentId: string, config: ComponentConfig): string | null {
-  const mainFile = (config as ComponentConfig & { main?: string }).main;
+function pickMainSourcePath(componentId: string): string | null {
   const baseDir = componentBaseDir(componentId);
 
   const preferred = [
-    mainFile && `${baseDir}/${mainFile}`,
     `${baseDir}/${componentId}.tsx`,
     `${baseDir}/index.tsx`,
     `${baseDir}/index.ts`,
-  ].filter((p): p is string => !!p && !p.endsWith('undefined'));
+  ];
 
-  const allSourceFiles = Object.keys(sourceModules).filter(k => k.startsWith(`${baseDir}/`));
+  const allSourceFiles = Object.keys(sourceModules)
+    .filter(k => k.startsWith(`${baseDir}/`))
+    .sort((a, b) => Number(a.includes('preview.')) - Number(b.includes('preview.')) || a.localeCompare(b));
   const candidates = [...new Set([...preferred, ...allSourceFiles])];
 
   for (const candidate of candidates) {
@@ -37,8 +37,8 @@ function pickMainSourcePath(componentId: string, config: ComponentConfig): strin
   return null;
 }
 
-async function loadFileContents(componentId: string, config: ComponentConfig): Promise<Record<string, string>> {
-  const sourcePath = pickMainSourcePath(componentId, config);
+async function loadFileContents(componentId: string): Promise<Record<string, string>> {
+  const sourcePath = pickMainSourcePath(componentId);
   const baseDir = componentBaseDir(componentId);
   const allSourcePaths = Object.keys(sourceModules).filter(k => k.startsWith(`${baseDir}/`));
   if (!sourcePath && allSourcePaths.length === 0) return {};
@@ -74,7 +74,7 @@ async function loadComponentInternal(componentId: string): Promise<LoadedCompone
       return null;
     }
 
-    const fileContents = await loadFileContents(componentId, config);
+    const fileContents = await loadFileContents(componentId);
     return { config, Component, fileContents };
   } catch (error) {
     console.error('[loader] Ошибка при загрузке компонента:', componentId, error);
@@ -114,7 +114,7 @@ export function preloadComponent(componentId: string): void {
 // Возвращает дефолтные пропсы из конфига компонента
 export function getDefaultProps(config: ComponentConfig): Record<string, PropValue> {
   const props: Record<string, PropValue> = {};
-  config.props.forEach((prop) => {
+  (config.props ?? []).forEach((prop) => {
     props[prop.name] = prop.default as PropValue;
   });
   return props;
