@@ -92,6 +92,8 @@ export const ComponentWrapper: React.FC<ComponentWrapperProps> = ({
   const hasTransform = scale !== 1 || offsetX !== 0 || offsetY !== 0 || rotateZ !== 0;
   const hasFilter    = blur !== 0 || brightness !== 1 || contrast !== 1 || saturate !== 1;
   const hasOpacity   = opacity !== 1;
+
+  // Внешний контейнер — всегда flex с центрированием
   const containerStyle = useMemo<CSSProperties>(() => ({
     position: 'relative',
     display: 'flex',
@@ -106,6 +108,8 @@ export const ComponentWrapper: React.FC<ComponentWrapperProps> = ({
     isolation: 'isolate',
   }), [justifyContent, alignItems, width, height]);
 
+  // В fill-режиме внутренний блок растягивается на весь контейнер
+  // В content-режиме — сжимается до содержимого, но центрируется внешним flex
   const baseContentStyle = useMemo<CSSProperties>(() => (layoutMode === 'fill' ? {
     width: '100%',
     height: '100%',
@@ -116,7 +120,7 @@ export const ComponentWrapper: React.FC<ComponentWrapperProps> = ({
     flex: '0 0 100%',
     transformOrigin: 'center center',
   } : {
-    display: 'inline-flex',
+    display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     width: 'fit-content',
