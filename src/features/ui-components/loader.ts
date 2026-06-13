@@ -1,5 +1,5 @@
 import { registry } from './registry';
-import type { ComponentConfig, LoadedComponent } from '../types';
+import type { ComponentConfig, LoadedComponent } from './types';
 
 const sourceModules = import.meta.glob('./**/*.{ts,tsx,js,jsx,css,html,json}', { query: '?raw', import: 'default' });
 
@@ -16,18 +16,26 @@ function componentBaseDir(componentId: string): string {
   return registryBase ? registryBase.replace(/^\.\.\//, './') : `./${componentId}`;
 }
 
+function findSourceByName(files: string[], fileName: string): string | null {
+  const normalized = fileName.toLowerCase();
+  return files.find(path => path.split('/').at(-1)?.toLowerCase() === normalized) ?? null;
+}
+
 function pickMainSourcePath(componentId: string, config: ComponentConfig): string | null {
-  const mainFile = (config as ComponentConfig & { main?: string }).main;
   const baseDir = componentBaseDir(componentId);
 
+  const allSourceFiles = Object.keys(sourceModules)
+    .filter(k => k.startsWith(`${baseDir}/`))
+    .sort((a, b) => Number(a.includes('preview.')) - Number(b.includes('preview.')) || a.localeCompare(b));
+
+  const explicitMain = config.main ? findSourceByName(allSourceFiles, config.main) : null;
   const preferred = [
-    mainFile && `${baseDir}/${mainFile}`,
+    explicitMain,
     `${baseDir}/${componentId}.tsx`,
     `${baseDir}/index.tsx`,
     `${baseDir}/index.ts`,
-  ].filter((p): p is string => !!p && !p.endsWith('undefined'));
+  ].filter((path): path is string => Boolean(path));
 
-  const allSourceFiles = Object.keys(sourceModules).filter(k => k.startsWith(`${baseDir}/`));
   const candidates = [...new Set([...preferred, ...allSourceFiles])];
 
   for (const candidate of candidates) {
@@ -114,7 +122,7 @@ export function preloadComponent(componentId: string): void {
 // Возвращает дефолтные пропсы из конфига компонента
 export function getDefaultProps(config: ComponentConfig): Record<string, PropValue> {
   const props: Record<string, PropValue> = {};
-  config.props.forEach((prop) => {
+  (config.props ?? []).forEach((prop) => {
     props[prop.name] = prop.default as PropValue;
   });
   return props;

@@ -811,6 +811,11 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
   onOpenFullscreen: () => void; t: T; loading: boolean;
 }> = ({ Component, componentProps, universalProps, refreshKey, isDark, componentCategory, onOpenFullscreen, t, loading, fileContents }) => {
   const isBackground = componentCategory === 'backgrounds';
+  const previewScale = typeof universalProps.scale === 'number' ? universalProps.scale : 1;
+  const previewSize = isBackground
+    ? { height: Math.max(400, Math.round(400 * previewScale)) }
+    : { minHeight: Math.max(500, Math.round(500 * previewScale)), paddingTop: 60, paddingBottom: Math.max(120, Math.round(120 * previewScale)) };
+
   return (
     <div style={{ position: 'relative', width: '100%', overflow: 'visible' }}>
       <button
@@ -830,7 +835,7 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
       </button>
       <div style={{
         width: '100%',
-        ...(isBackground ? { height: 400 } : { minHeight: 500, paddingTop: 60, paddingBottom: 120 }),
+        ...previewSize,
         display: 'flex',
         alignItems: isBackground ? 'stretch' : 'center',
         justifyContent: isBackground ? 'stretch' : 'center',
@@ -899,7 +904,7 @@ const UIComponentViewer: React.FC<{ componentId: string }> = ({ componentId }) =
   }, [componentData]);
 
   const placeholderConfig: ComponentConfig = useMemo(() => ({
-    id: componentId, name: '…', description: '', props: [], specificProps: [],
+    id: componentId, name: '…', description: '',
   }), [componentId]);
   const PlaceholderComponent = useMemo(() => () => null, []);
 

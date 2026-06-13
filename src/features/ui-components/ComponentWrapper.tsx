@@ -98,13 +98,13 @@ export const ComponentWrapper: React.FC<ComponentWrapperProps> = ({
     justifyContent,
     alignItems,
     width:  width  || '100%',
-    height: height || '100%',
+    height: height || (layoutMode === 'fill' ? '100%' : 'auto'),
     minWidth: 0,
     minHeight: 0,
-    overflow: 'hidden',
-    contain: 'layout paint style',
+    overflow: layoutMode === 'fill' ? 'hidden' : 'visible',
+    ...(layoutMode === 'fill' ? { contain: 'layout paint style' as const } : {}),
     isolation: 'isolate',
-  }), [justifyContent, alignItems, width, height]);
+  }), [justifyContent, alignItems, width, height, layoutMode]);
 
   const baseContentStyle = useMemo<CSSProperties>(() => (layoutMode === 'fill' ? {
     width: '100%',

@@ -14,7 +14,7 @@ export interface ComponentConfig {
     path: string;
     language: string;
   }>;
-  props: PropDefinition[];
+  props?: PropDefinition[];
   specificProps?: string[];
   category?: string;
   tags?: string[];

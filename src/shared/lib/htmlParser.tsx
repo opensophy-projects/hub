@@ -339,7 +339,7 @@ const processUIComponent = (
   textContent: string,
   elements: React.ReactNode[],
 ): boolean => {
-  const match = /\[uic:([a-z-]+)\]/.exec(textContent);
+  const match = /\[uic:\s*([a-z0-9-_]+)\s*\]/i.exec(textContent);
   if (!match) return false;
 
   elements.push(
