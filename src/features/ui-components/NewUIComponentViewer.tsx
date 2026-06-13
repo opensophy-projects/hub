@@ -487,13 +487,21 @@ interface ComponentRenderProps {
   isDark: boolean;
   componentCategory?: string;
   fileContents: Record<string, string>;
+  /**
+   * Режим раскладки контейнера:
+   * - 'fill'    — компонент занимает всю выделенную область (фоны, полноразмерные демо)
+   * - 'content' — компонент центрируется и занимает своё естественное место (для fullscreen)
+   * По умолчанию 'fill' — без него компоненты с width:100%/height:100% коллапсируют
+   * до нулевого размера в режиме 'content' (чёрный экран / растяжение).
+   */
+  containerMode?: 'fill' | 'content';
 }
 
 const ComponentRender: React.FC<ComponentRenderProps> = ({
-  Component, universalProps, refreshKey, isDark, componentCategory,
+  Component, universalProps, refreshKey, isDark, containerMode,
 }) => {
-  const layoutMode = componentCategory === 'backgrounds' ? 'fill' : 'content';
-  const isFill = layoutMode === 'fill';
+  const resolvedMode = containerMode ?? 'fill';
+  const isFill = resolvedMode === 'fill';
   return (
     <div style={{
       width: '100%', height: isFill ? '100%' : 'auto',
@@ -501,7 +509,7 @@ const ComponentRender: React.FC<ComponentRenderProps> = ({
       overflow: isFill ? 'hidden' : 'visible',
       ...(isFill ? { isolation: 'isolate' as const, contain: 'layout paint style' } : {}),
     }}>
-      <ComponentWrapper {...universalProps} isDark={isDark} layoutMode={layoutMode} className="w-full h-full">
+      <ComponentWrapper {...universalProps} isDark={isDark} layoutMode={resolvedMode} className="w-full h-full">
         <Suspense fallback={null}>
           <Component key={refreshKey} />
         </Suspense>
@@ -573,6 +581,7 @@ const FullscreenDesktop: React.FC<ComponentRenderProps & {
           universalProps={universalProps} refreshKey={refreshKey}
           isDark={isDark} componentCategory={componentCategory}
           fileContents={fileContents}
+          containerMode={isBackground ? 'fill' : 'content'}
         />
       </div>
 
@@ -697,7 +706,7 @@ const FullscreenMobile: React.FC<ComponentRenderProps & {
   return (
     <>
       <div style={{ position: 'absolute', inset: 0, bottom: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: isBackground ? 'hidden' : 'visible' }}>
-        <ComponentRender Component={Component} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} componentCategory={componentCategory} fileContents={fileContents} />
+        <ComponentRender Component={Component} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} componentCategory={componentCategory} fileContents={fileContents} containerMode={isBackground ? 'fill' : 'content'} />
       </div>
 
       {sheet && (
@@ -827,12 +836,9 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
       </button>
       <div style={{
         width: '100%',
-        ...(isBackground ? { height: 400 } : { minHeight: 500, paddingTop: 60, paddingBottom: 120 }),
-        display: 'flex',
-        alignItems: isBackground ? 'stretch' : 'center',
-        justifyContent: isBackground ? 'stretch' : 'center',
+        height: isBackground ? 400 : 320,
         position: 'relative',
-        overflow: isBackground ? 'hidden' : 'visible',
+        overflow: 'hidden',
       }}>
         {loading && (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, fontSize: 12, color: t.fgSub, fontFamily: 'ui-monospace, monospace' }}>
@@ -845,6 +851,7 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
             universalProps={universalProps} refreshKey={refreshKey}
             isDark={isDark} componentCategory={componentCategory}
             fileContents={fileContents}
+            containerMode="fill"
           />
         )}
       </div>
