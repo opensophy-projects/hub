@@ -67,11 +67,55 @@ const ResumeCard = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
 );
 ResumeCard.displayName = 'ResumeCard';
 
+// ─── Вспомогательные компоненты секций ───────────────────────────────────────
+
+interface ColorProps {
+  color: string;
+}
+
+interface BadgeProps extends ColorProps {
+  children: React.ReactNode;
+}
+
+interface BulletsProps {
+  items: React.ReactNode[];
+  textBody: string;
+  badgeC: string;
+}
+
+const SectionLabel: React.FC<{ children: React.ReactNode; color: string }> = ({ children, color }) => (
+  <p style={{ fontSize: '1rem', fontWeight: 600, color, letterSpacing: '0.14em', textTransform: 'uppercase', margin: '0 0 2rem', fontFamily: 'Inter, sans-serif' }}>{children}</p>
+);
+
+const Badge: React.FC<BadgeProps> = ({ children, color }) => (
+  <div style={{ display: 'inline-flex', alignSelf: 'flex-start', fontSize: '0.66rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color, marginBottom: '0.75rem', fontFamily: 'ui-monospace, monospace' }}>{children}</div>
+);
+
+const CardHeading: React.FC<{ children: React.ReactNode; color: string }> = ({ children, color }) => (
+  <h3 style={{ fontSize: 'clamp(1.15rem, 1.9vw, 1.45rem)', fontWeight: 700, lineHeight: 1.25, margin: 0, fontFamily: 'Inter, system-ui, sans-serif', color }}>{children}</h3>
+);
+
+const CardDesc: React.FC<{ children: React.ReactNode; color: string }> = ({ children, color }) => (
+  <p style={{ margin: '0.85rem 0 0', fontSize: 'clamp(0.98rem, 1.4vw, 1.1rem)', lineHeight: 1.75, color, fontFamily: 'Inter, system-ui, sans-serif' }}>{children}</p>
+);
+
+const Bullet: React.FC<{ children: React.ReactNode; textBody: string; badgeC: string }> = ({ children, textBody, badgeC }) => (
+  <li style={{ display: 'flex', gap: '0.7rem', alignItems: 'flex-start', marginBottom: '0.7rem', fontFamily: 'Inter, system-ui, sans-serif', fontSize: 'clamp(0.93rem, 1.25vw, 1.02rem)', lineHeight: 1.7, color: textBody, listStyle: 'none' }}>
+    <span style={{ marginTop: '0.6em', flex: '0 0 0.32rem', width: '0.32rem', height: '0.32rem', borderRadius: '50%', background: badgeC }} />
+    <span>{children}</span>
+  </li>
+);
+
+const Bullets: React.FC<BulletsProps> = ({ items, textBody, badgeC }) => (
+  // NOSONAR: ключи — индексы массива, контент статичный и никогда не переупорядочивается
+  <ul style={{ margin: 0, padding: 0 }}>{items.map((item, i) => <Bullet key={i} textBody={textBody} badgeC={badgeC}>{item}</Bullet>)}</ul>
+);
+
 // ─── ResumeContent ────────────────────────────────────────────────────────────
 
 const ResumeContent: React.FC = () => {
   const [isNegative, setIsNegative] = useState(() => {
-    if (typeof globalThis.window === 'undefined') return true;
+    if (globalThis.window === undefined) return true;
     return localStorage.getItem('theme') !== 'light';
   });
   const [navOffset, setNavOffset] = useState(0);
@@ -115,6 +159,8 @@ const ResumeContent: React.FC = () => {
   const shinyBase = isNegative ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.6)';
   const shinyGlow = isNegative ? '#ffffff'                : '#000000';
   const borderC   = isNegative ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.09)';
+  const headingC  = isNegative ? 'rgba(255,255,255,0.9)'  : 'rgba(0,0,0,0.88)';
+  const strongC   = isNegative ? 'rgba(255,255,255,0.88)' : 'rgba(0,0,0,0.82)';
 
   const secPad: React.CSSProperties = {
     marginLeft: navOffset > 0 ? `${navOffset}px` : 0,
@@ -131,34 +177,7 @@ const ResumeContent: React.FC = () => {
     boxSizing: 'border-box',
   };
 
-  const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <p style={{ fontSize: '1rem', fontWeight: 600, color: textMut, letterSpacing: '0.14em', textTransform: 'uppercase', margin: '0 0 2rem', fontFamily: 'Inter, sans-serif' }}>{children}</p>
-  );
-
-  const Badge: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div style={{ display: 'inline-flex', alignSelf: 'flex-start', fontSize: '0.66rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: badgeC, marginBottom: '0.75rem', fontFamily: 'ui-monospace, monospace' }}>{children}</div>
-  );
-
-  const CardHeading: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <h3 style={{ fontSize: 'clamp(1.15rem, 1.9vw, 1.45rem)', fontWeight: 700, lineHeight: 1.25, margin: 0, fontFamily: 'Inter, system-ui, sans-serif', color: isNegative ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.88)' }}>{children}</h3>
-  );
-
-  const CardDesc: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <p style={{ margin: '0.85rem 0 0', fontSize: 'clamp(0.98rem, 1.4vw, 1.1rem)', lineHeight: 1.75, color: textBody, fontFamily: 'Inter, system-ui, sans-serif' }}>{children}</p>
-  );
-
-  const Bullet: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <li style={{ display: 'flex', gap: '0.7rem', alignItems: 'flex-start', marginBottom: '0.7rem', fontFamily: 'Inter, system-ui, sans-serif', fontSize: 'clamp(0.93rem, 1.25vw, 1.02rem)', lineHeight: 1.7, color: textBody, listStyle: 'none' }}>
-      <span style={{ marginTop: '0.6em', flex: '0 0 0.32rem', width: '0.32rem', height: '0.32rem', borderRadius: '50%', background: badgeC }} />
-      <span>{children}</span>
-    </li>
-  );
-
-  const Bullets: React.FC<{ items: React.ReactNode[] }> = ({ items }) => (
-    <ul style={{ margin: 0, padding: 0 }}>{items.map((item, i) => <Bullet key={i}>{item}</Bullet>)}</ul>
-  );
-
-  const strong = (t: string) => <strong style={{ color: isNegative ? 'rgba(255,255,255,0.88)' : 'rgba(0,0,0,0.82)', fontWeight: 600 }}>{t}</strong>;
+  const strong = (t: string) => <strong style={{ color: strongC, fontWeight: 600 }}>{t}</strong>;
 
   return (
     <div style={{ minHeight: '100vh', background: bg, color: textMain }}>
@@ -281,7 +300,6 @@ const ResumeContent: React.FC = () => {
           />
         </h1>
 
-        {/* Кнопка-скролл */}
         <button
           onClick={scrollToAbout}
           className="r-scroll-btn"
@@ -293,7 +311,6 @@ const ResumeContent: React.FC = () => {
           <span style={{ fontSize: 'clamp(1rem, 1.5vw, 1.15rem)', fontWeight: 500, fontFamily: 'Inter, sans-serif' }}>
             <ShinyText text="давайте знакомиться!" speed={3.5} color={shinyBase} shineColor={shinyGlow} />
           </span>
-          {/* стрелка вниз */}
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ opacity: 0.55, flexShrink: 0 }}>
             <path d="M7 2v10M3 8l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
@@ -303,9 +320,8 @@ const ResumeContent: React.FC = () => {
       {/* ══ О СЕБЕ ════════════════════════════════════════════════════════════ */}
       <section ref={aboutRef} style={{ ...secPad, background: bg }}>
         <div style={{ ...innerPad, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <SectionLabel>О СЕБЕ</SectionLabel>
+          <SectionLabel color={textMut}>О СЕБЕ</SectionLabel>
 
-          {/* Статус — по центру */}
           <p style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: '0 0 1.5rem', color: textMain, fontFamily: 'Inter, sans-serif' }}>
             Статус: в поиске работы / компании.
           </p>
@@ -319,7 +335,6 @@ const ResumeContent: React.FC = () => {
             />
           </p>
 
-          {/* Текст «кто я» — оригинальный, слева, с жирными ключевыми словами */}
           <p style={{ fontSize: 'clamp(1.05rem, 1.7vw, 1.35rem)', fontWeight: 400, lineHeight: 1.8, margin: 0, fontFamily: 'Inter, sans-serif', maxWidth: 800, textAlign: 'left' }}>
             Freelance DevSecOps-инженер в области кибербезопасности, автоматизации CI/CD и интеграции практик безопасности в жизненный цикл разработки. Специализируюсь на <strong style={{ color: textMain, fontWeight: 600 }}>SAST/DAST сканировании</strong>, <strong style={{ color: textMain, fontWeight: 600 }}>контейнеризации</strong> и построении защищённых пайплайнов. Имею практический опыт работы с международными командами, обнаружения уязвимостей в production-системах и ответственного раскрытия. Владею навыками <strong style={{ color: textMain, fontWeight: 600 }}>технического письма</strong> и презентации аудитов безопасности.
           </p>
@@ -329,7 +344,7 @@ const ResumeContent: React.FC = () => {
       {/* ══ КЛЮЧЕВЫЕ ОБЯЗАННОСТИ ════════════════════════════════════════════ */}
       <section style={{ ...secPad, background: bg }}>
         <div style={innerPad}>
-          <SectionLabel>КЛЮЧЕВЫЕ ОБЯЗАННОСТИ И СТЕК</SectionLabel>
+          <SectionLabel color={textMut}>КЛЮЧЕВЫЕ ОБЯЗАННОСТИ И СТЕК</SectionLabel>
           <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: '0 0 1.5rem', color: textMain, fontFamily: 'Inter, sans-serif' }}>
             Что я умею и с чем работаю.
           </h2>
@@ -347,11 +362,11 @@ const ResumeContent: React.FC = () => {
           <div className="r-grid-2">
             <ResumeCard isNegative={isNegative} style={{ display: 'flex', flexDirection: 'column' }}>
               <div className="r-card-header">
-                <Badge>инструменты безопасности</Badge>
-                <CardHeading>SAST · DAST · SCA · ASPM</CardHeading>
+                <Badge color={badgeC}>инструменты безопасности</Badge>
+                <CardHeading color={headingC}>SAST · DAST · SCA · ASPM</CardHeading>
               </div>
               <div className="r-card-body" style={{ flex: 1 }}>
-                <CardDesc>Установка, настройка и интеграция инструментов анализа безопасности на каждом этапе пайплайна.</CardDesc>
+                <CardDesc color={textBody}>Установка, настройка и интеграция инструментов анализа безопасности на каждом этапе пайплайна.</CardDesc>
                 <p style={{ margin: '1.1rem 0 0', fontFamily: 'ui-monospace, monospace', fontSize: '0.82rem', lineHeight: 1.8, color: textMut }}>
                   <ShinyText
                     text="SonarQube · Semgrep · OWASP ZAP · Nuclei · nmap · OpenVAS · Nikto · DefectDojo · Trivy"
@@ -365,11 +380,11 @@ const ResumeContent: React.FC = () => {
 
             <ResumeCard isNegative={isNegative} style={{ display: 'flex', flexDirection: 'column' }}>
               <div className="r-card-header">
-                <Badge>ci/cd</Badge>
-                <CardHeading>Защищённые пайплайны</CardHeading>
+                <Badge color={badgeC}>ci/cd</Badge>
+                <CardHeading color={headingC}>Защищённые пайплайны</CardHeading>
               </div>
               <div className="r-card-body" style={{ flex: 1 }}>
-                <CardDesc>Построение CI/CD пайплайнов с автоматическими security-чекпоинтами: SAST, SCA, DAST, секреты — всё на каждом PR.</CardDesc>
+                <CardDesc color={textBody}>Построение CI/CD пайплайнов с автоматическими security-чекпоинтами: SAST, SCA, DAST, секреты — всё на каждом PR.</CardDesc>
                 <p style={{ margin: '1.1rem 0 0', fontFamily: 'ui-monospace, monospace', fontSize: '0.9rem', color: textMut }}>
                   <ShinyText text="GitHub Actions · GitLab CI" speed={5} color={shinyBase} shineColor={shinyGlow} />
                 </p>
@@ -378,21 +393,21 @@ const ResumeContent: React.FC = () => {
 
             <ResumeCard isNegative={isNegative} style={{ display: 'flex', flexDirection: 'column' }}>
               <div className="r-card-header">
-                <Badge>контейнеризация</Badge>
-                <CardHeading>Docker</CardHeading>
+                <Badge color={badgeC}>контейнеризация</Badge>
+                <CardHeading color={headingC}>Docker</CardHeading>
               </div>
               <div className="r-card-body" style={{ flex: 1 }}>
-                <CardDesc>Разработка и поддержка контейнеров с соблюдением best practices: минимальные образы, non-root, сканирование слоёв, минимизация поверхности атаки.</CardDesc>
+                <CardDesc color={textBody}>Разработка и поддержка контейнеров с соблюдением best practices: минимальные образы, non-root, сканирование слоёв, минимизация поверхности атаки.</CardDesc>
               </div>
             </ResumeCard>
 
             <ResumeCard isNegative={isNegative} style={{ display: 'flex', flexDirection: 'column' }}>
               <div className="r-card-header">
-                <Badge>автоматизация</Badge>
-                <CardHeading>Скриптинг и инструменты</CardHeading>
+                <Badge color={badgeC}>автоматизация</Badge>
+                <CardHeading color={headingC}>Скриптинг и инструменты</CardHeading>
               </div>
               <div className="r-card-body" style={{ flex: 1 }}>
-                <CardDesc>Автоматизация рутинных задач безопасности: мониторинг, сканирование, ротация ключей, отчётность — скриптами и кастомными инструментами.</CardDesc>
+                <CardDesc color={textBody}>Автоматизация рутинных задач безопасности: мониторинг, сканирование, ротация ключей, отчётность — скриптами и кастомными инструментами.</CardDesc>
                 <p style={{ margin: '1.1rem 0 0', fontFamily: 'ui-monospace, monospace', fontSize: '0.9rem', color: textMut }}>
                   <ShinyText text="bash · python" speed={5} color={shinyBase} shineColor={shinyGlow} />
                 </p>
@@ -401,21 +416,21 @@ const ResumeContent: React.FC = () => {
 
             <ResumeCard isNegative={isNegative} style={{ display: 'flex', flexDirection: 'column' }}>
               <div className="r-card-header">
-                <Badge>документация</Badge>
-                <CardHeading>Техническое письмо</CardHeading>
+                <Badge color={badgeC}>документация</Badge>
+                <CardHeading color={headingC}>Техническое письмо</CardHeading>
               </div>
               <div className="r-card-body" style={{ flex: 1 }}>
-                <CardDesc>Руководства по реагированию на инциденты, отчёты по уязвимостям с PoC и рекомендациями, сопровождение проекта от проектирования до production.</CardDesc>
+                <CardDesc color={textBody}>Руководства по реагированию на инциденты, отчёты по уязвимостям с PoC и рекомендациями, сопровождение проекта от проектирования до production.</CardDesc>
               </div>
             </ResumeCard>
 
             <ResumeCard isNegative={isNegative} style={{ display: 'flex', flexDirection: 'column' }}>
               <div className="r-card-header">
-                <Badge>ai интеграция</Badge>
-                <CardHeading>AI в безопасности</CardHeading>
+                <Badge color={badgeC}>ai интеграция</Badge>
+                <CardHeading color={headingC}>AI в безопасности</CardHeading>
               </div>
               <div className="r-card-body" style={{ flex: 1 }}>
-                <CardDesc>Интеграция AI-инструментов в процессы безопасности и разработки: ускорение анализа, триаж находок, улучшение покрытия тестами.</CardDesc>
+                <CardDesc color={textBody}>Интеграция AI-инструментов в процессы безопасности и разработки: ускорение анализа, триаж находок, улучшение покрытия тестами.</CardDesc>
               </div>
             </ResumeCard>
           </div>
@@ -425,7 +440,7 @@ const ResumeContent: React.FC = () => {
       {/* ══ ОПЫТ ═════════════════════════════════════════════════════════════ */}
       <section style={{ ...secPad, background: bg }}>
         <div style={innerPad}>
-          <SectionLabel>ОПЫТ</SectionLabel>
+          <SectionLabel color={textMut}>ОПЫТ</SectionLabel>
           <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: '0 0 1.5rem', color: textMain, fontFamily: 'Inter, sans-serif' }}>
             Исследования безопасности, преподавание, сообщества и дизайн.
           </h2>
@@ -445,12 +460,12 @@ const ResumeContent: React.FC = () => {
             {/* Freelance Security Researcher */}
             <ResumeCard isNegative={isNegative}>
               <div className="r-card-body-full">
-                <Badge>freelance · фев 2023 — ноя 2025 · 2 года 10 мес.</Badge>
-                <CardHeading>Security Researcher / Bug Bounty Hunter</CardHeading>
+                <Badge color={badgeC}>freelance · фев 2023 — ноя 2025 · 2 года 10 мес.</Badge>
+                <CardHeading color={headingC}>Security Researcher / Bug Bounty Hunter</CardHeading>
                 <div className="r-grid-2" style={{ marginTop: '1.4rem' }}>
                   <div>
                     <p style={{ margin: '0 0 0.7rem', fontFamily: 'ui-monospace, monospace', fontSize: '0.66rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: badgeC }}>Обязанности</p>
-                    <Bullets items={[
+                    <Bullets textBody={textBody} badgeC={badgeC} items={[
                       'Исследования безопасности и оценка уязвимостей в open-source проектах и публичных веб-приложениях',
                       'Анализ утечек данных и выявление угроз через OSINT-методологии',
                       'Разработка Telegram-ботов и Python-скриптов для автоматизированной разведки и мониторинга угроз',
@@ -462,7 +477,7 @@ const ResumeContent: React.FC = () => {
                   </div>
                   <div>
                     <p style={{ margin: '0 0 0.7rem', fontFamily: 'ui-monospace, monospace', fontSize: '0.66rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: badgeC }}>Ключевые результаты</p>
-                    <Bullets items={[
+                    <Bullets textBody={textBody} badgeC={badgeC} items={[
                       <>{strong('n8n')} — публичное исследование платформы автоматизации: выявление рисков безопасности. Получило отзывы от сообщества и комментарий инженера проекта в официальном Discord. Стало стандартом безопасной работы с платформой</>,
                       <>{strong('bolt.new')} — обнаружена критическая логическая уязвимость обхода ограничений AI-токенов. Ответственно раскрыта команде проекта</>,
                       'Выявление и документирование множественных уязвимостей в публичных проектах с последующим ответственным раскрытием',
@@ -476,26 +491,26 @@ const ResumeContent: React.FC = () => {
             <div className="r-grid-2">
               <ResumeCard isNegative={isNegative} style={{ display: 'flex', flexDirection: 'column' }}>
                 <div className="r-card-header">
-                  <Badge>кибершкола kiberone · сен 2024 — янв 2025 · 5 мес.</Badge>
-                  <CardHeading>Преподаватель программирования</CardHeading>
+                  <Badge color={badgeC}>кибершкола kiberone · сен 2024 — янв 2025 · 5 мес.</Badge>
+                  <CardHeading color={headingC}>Преподаватель программирования</CardHeading>
                 </div>
                 <div className="r-card-body" style={{ flex: 1 }}>
-                  <Bullets items={[
+                  <Bullets textBody={textBody} badgeC={badgeC} items={[
                     'Преподавание основ программирования детям 6–14 лет',
                     'Наставничество: код, отладка, ревью, IT-проекты (Unity, Roblox, веб, мобайл)',
                     'Адаптация сложного технического материала для разного уровня подготовки',
-                    <>Улучшение учебной программы с акцентом на <strong style={{ color: isNegative ? 'rgba(255,255,255,0.88)' : 'rgba(0,0,0,0.82)', fontWeight: 600 }}>практические навыки</strong> современной IT-индустрии</>,
+                    <>Улучшение учебной программы с акцентом на <strong style={{ color: strongC, fontWeight: 600 }}>практические навыки</strong> современной IT-индустрии</>,
                   ]} />
                 </div>
               </ResumeCard>
 
               <ResumeCard isNegative={isNegative} style={{ display: 'flex', flexDirection: 'column' }}>
                 <div className="r-card-header">
-                  <Badge>netease games (китай) · сен 2021 — дек 2023 · 2 г. 4 мес.</Badge>
-                  <CardHeading>Senior Community Manager</CardHeading>
+                  <Badge color={badgeC}>netease games (китай) · сен 2021 — дек 2023 · 2 г. 4 мес.</Badge>
+                  <CardHeading color={headingC}>Senior Community Manager</CardHeading>
                 </div>
                 <div className="r-card-body" style={{ flex: 1 }}>
-                  <Bullets items={[
+                  <Bullets textBody={textBody} badgeC={badgeC} items={[
                     'Управление международным сообществом 50 000+ игроков',
                     'Координация команды модераторов, обучение, контроль качества',
                     'Антикризисное управление и деэскалация конфликтов',
@@ -509,12 +524,12 @@ const ResumeContent: React.FC = () => {
             {/* Premium Studio */}
             <ResumeCard isNegative={isNegative}>
               <div className="r-card-body-full">
-                <Badge>premium studio · июн 2021 — дек 2022 · 1 г. 7 мес. · параллельно с netease</Badge>
-                <CardHeading>Основатель и главный дизайнер</CardHeading>
+                <Badge color={badgeC}>premium studio · июн 2021 — дек 2022 · 1 г. 7 мес. · параллельно с netease</Badge>
+                <CardHeading color={headingC}>Основатель и главный дизайнер</CardHeading>
                 <div className="r-grid-3" style={{ marginTop: '1.4rem' }}>
-                  <CardDesc>Основание и руководство онлайн-студией цифрового дизайна для международных клиентов. Создание баннеров, логотипов, игровых ассетов и маркетинговых материалов.</CardDesc>
-                  <CardDesc>Стратегическое партнёрство с NetEase Games — аватарки и визуальные референсы для контент-криейторов. 30+ успешных проектов.</CardDesc>
-                  <CardDesc>Полный цикл: от брифинга до сдачи. Работа с клиентами из разных стран. Совмещение двух профессиональных ролей с сохранением качества.</CardDesc>
+                  <CardDesc color={textBody}>Основание и руководство онлайн-студией цифрового дизайна для международных клиентов. Создание баннеров, логотипов, игровых ассетов и маркетинговых материалов.</CardDesc>
+                  <CardDesc color={textBody}>Стратегическое партнёрство с NetEase Games — аватарки и визуальные референсы для контент-криейторов. 30+ успешных проектов.</CardDesc>
+                  <CardDesc color={textBody}>Полный цикл: от брифинга до сдачи. Работа с клиентами из разных стран. Совмещение двух профессиональных ролей с сохранением качества.</CardDesc>
                 </div>
               </div>
             </ResumeCard>
@@ -525,7 +540,7 @@ const ResumeContent: React.FC = () => {
       {/* ══ CTA ══════════════════════════════════════════════════════════════ */}
       <section style={{ ...secPad, background: bg }}>
         <div style={{ ...innerPad, paddingTop: 'clamp(5rem, 10vw, 8rem)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-          <SectionLabel>СВЯЗАТЬСЯ</SectionLabel>
+          <SectionLabel color={textMut}>СВЯЗАТЬСЯ</SectionLabel>
 
           <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 500, lineHeight: 1.55, margin: '0 0 1.5rem', color: textMain, fontFamily: 'Inter, sans-serif', maxWidth: 700 }}>
             Рассматриваете мою кандидатуру?
@@ -540,7 +555,6 @@ const ResumeContent: React.FC = () => {
             />
           </p>
 
-          {/* Контакты — горизонтально по центру на пк, вертикально на мобиле */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem 2.5rem', justifyContent: 'center', alignItems: 'center' }}>
             <a href="mailto:opensophy@gmail.com" className="r-contact-link" style={{ color: textMain }}>
               <svg className="r-contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
