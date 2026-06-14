@@ -107,8 +107,17 @@ const Bullet: React.FC<{ children: React.ReactNode; textBody: string; badgeC: st
 );
 
 const Bullets: React.FC<BulletsProps> = ({ items, textBody, badgeC }) => (
-  // NOSONAR: ключи — индексы массива, контент статичный и никогда не переупорядочивается
-  <ul style={{ margin: 0, padding: 0 }}>{items.map((item, i) => <Bullet key={i} textBody={textBody} badgeC={badgeC}>{item}</Bullet>)}</ul>
+  <ul style={{ margin: 0, padding: 0 }}>
+    {items.map((item, i) => (
+      <Bullet
+        key={i} // NOSONAR: ключи — индексы статического массива, контент никогда не переупорядочивается
+        textBody={textBody}
+        badgeC={badgeC}
+      >
+        {item}
+      </Bullet>
+    ))}
+  </ul>
 );
 
 // ─── ResumeContent ────────────────────────────────────────────────────────────
