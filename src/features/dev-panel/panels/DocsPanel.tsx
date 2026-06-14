@@ -204,7 +204,6 @@ function IconPickerModal({ current, onSelect, onClose, t }: {
         boxShadow: t.shadow, fontFamily: t.mono,
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
       }}>
-        {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
           padding: '12px 14px', borderBottom: `1px solid ${t.border}`,
@@ -235,7 +234,6 @@ function IconPickerModal({ current, onSelect, onClose, t }: {
           </button>
         </div>
 
-        {/* Grid */}
         <div style={{
           flex: 1, overflowY: 'auto', padding: 10,
           display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(70px, 1fr))', gap: 4,
@@ -298,7 +296,6 @@ function IconField({ value, onChange, t, placeholder = 'file-text' }: {
   return (
     <>
       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-        {/* Preview */}
         <div style={{
           width: 30, height: 30, borderRadius: 6, flexShrink: 0,
           border: `1px solid ${t.border}`, background: t.surface,
@@ -339,15 +336,6 @@ function IconField({ value, onChange, t, placeholder = 'file-text' }: {
     </>
   );
 }
-
-const COMMON_ICONS = [
-  'book', 'book-open', 'folder', 'folder-tree', 'file-text', 'house', 'boxes', 'blocks', 'layout-grid',
-  'component', 'brain', 'shield', 'siren', 'settings', 'search', 'search-code', 'code', 'code-2',
-  'terminal', 'container', 'layers', 'table-of-contents', 'chart-no-axes-column', 'chart-no-axes-combined',
-  'briefcase-business', 'circle-alert', 'circle-arrow-out-up-right', 'user-round-plus', 'mouse-pointer-2',
-  'signal', 'app-window', 'arrow-down-up', 'folder-code', 'maximize', 'type', 'blend', 'wind',
-  'audio-lines', 'rotate-3d', 'eye', 'tally-1', 'slash', 'waves', 'sparkle', 'gem', 'sun', 'zap', 'flame',
-];
 
 const RE_PN_TYPE = /^\[([NCA])\]/;
 const RE_PN_ICON = /^\[([^\]]{1,60})\]/;
@@ -1028,15 +1016,21 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
     fontSize: 11, outline: 'none', fontFamily: t.mono, boxSizing: 'border-box',
   };
 
-  const toolBtn = (fn: () => void, ico: React.ReactNode, tip: string) => (
+  // ── UPDATED: bigger toolbar buttons with labels below icons ──
+  const toolBtn = (fn: () => void, ico: React.ReactNode, tip: string, label: string) => (
     <button key={tip} onClick={fn} title={tip} style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      width: 26, height: 26, borderRadius: 5, border: 'none',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      gap: 3,
+      width: 36, height: 36, borderRadius: 6, border: 'none',
       background: 'transparent', color: t.fgMuted, cursor: 'pointer', flexShrink: 0,
+      padding: '2px 3px',
     }}
       onMouseEnter={e => { e.currentTarget.style.background = t.surfaceHov; e.currentTarget.style.color = t.fg; }}
       onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = t.fgMuted; }}
-    >{ico}</button>
+    >
+      {ico}
+      <span style={{ fontSize: 9, lineHeight: 1, letterSpacing: '0.01em', whiteSpace: 'nowrap', fontFamily: t.mono }}>{label}</span>
+    </button>
   );
 
   if (loading) return (
@@ -1063,12 +1057,11 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
         </button>
       </div>
 
-      {/* FM collapse */}
+      {/* FM collapse — FIXED: removed title display */}
       <div style={{ borderBottom: `1px solid ${t.border}`, flexShrink: 0 }}>
         <button onClick={() => setFmOpen(v => !v)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', border: 'none', background: t.surface, color: t.fgSub, fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: 'pointer', textAlign: 'left', fontFamily: t.mono }}>
           {fmOpen ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
           Настройки страницы
-          {fm.title && <span style={{ fontWeight: 400, letterSpacing: 0, textTransform: 'none', marginLeft: 4, color: t.fgSub }}>— {fm.title.slice(0, 30)}</span>}
         </button>
         {fmOpen && (
           <div style={{ padding: '12px 14px', background: t.surface }}>
@@ -1140,19 +1133,19 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
         )}
       </div>
 
-      {/* Toolbar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 1, padding: '3px 8px', borderBottom: `1px solid ${t.border}`, background: t.surface, flexShrink: 0 }}>
-        {toolBtn(undoBody, <Undo2 size={13} />, 'Назад')}
-        {toolBtn(redoBody, <Redo2 size={13} />, 'Вперёд')}
-        <div style={{ width: 1, height: 14, background: t.border, margin: '0 3px' }} />
-        {toolBtn(() => handleInsert('**', '**'), <Bold size={13} />, 'Жирный')}
-        {toolBtn(() => handleInsert('_', '_'), <Italic size={13} />, 'Курсив')}
-        {toolBtn(() => handleInsert('`', '`'), <Code size={13} />, 'Код')}
-        {toolBtn(() => handleInsert('\n## ', ''), <Hash size={13} />, 'H2')}
-        {toolBtn(() => handleInsert('\n- ', ''), <List size={13} />, 'Список')}
-        {toolBtn(() => handleInsert('[', '](url)'), <Link size={13} />, 'Ссылка')}
-        {toolBtn(() => handleInsert('\n---\n', ''), <Minus size={13} />, 'HR')}
-        <div style={{ width: 1, height: 14, background: t.border, margin: '0 3px' }} />
+      {/* ── UPDATED Toolbar: bigger buttons with labels ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 1, padding: '2px 6px', borderBottom: `1px solid ${t.border}`, background: t.surface, flexShrink: 0 }}>
+        {toolBtn(undoBody, <Undo2 size={14} />, 'Назад', 'Назад')}
+        {toolBtn(redoBody, <Redo2 size={14} />, 'Вперёд', 'Вперёд')}
+        <div style={{ width: 1, height: 20, background: t.border, margin: '0 2px' }} />
+        {toolBtn(() => handleInsert('**', '**'), <Bold size={14} />, 'Жирный', 'Жирный')}
+        {toolBtn(() => handleInsert('_', '_'), <Italic size={14} />, 'Курсив', 'Курсив')}
+        {toolBtn(() => handleInsert('`', '`'), <Code size={14} />, 'Код', 'Код')}
+        {toolBtn(() => handleInsert('\n## ', ''), <Hash size={14} />, 'H2', 'H2')}
+        {toolBtn(() => handleInsert('\n- ', ''), <List size={14} />, 'Список', 'Список')}
+        {toolBtn(() => handleInsert('[', '](url)'), <Link size={14} />, 'Ссылка', 'Ссылка')}
+        {toolBtn(() => handleInsert('\n---\n', ''), <Minus size={14} />, 'HR', 'HR')}
+        <div style={{ width: 1, height: 20, background: t.border, margin: '0 2px' }} />
         {!fm.custom && <BlockPicker onInsert={insertAtCursor} t={t} />}
         <div style={{ flex: 1 }} />
         <span style={{ fontSize: 12, color: t.fgSub }}>{body.trim().split(/\s+/).filter(Boolean).length} слов</span>
