@@ -14,7 +14,7 @@ import {
   Loader2, Bold, Italic, Code, Link, Hash, List,
   RefreshCw, Minus, Image, BarChart2, Table, Search,
   Columns, AlertCircle, Calculator, Footprints, LayoutGrid, Type,
-  Edit3, Undo2, Redo2,
+  Edit3, Undo2, Redo2, X,
 } from 'lucide-react';
 
 interface FlatEntry { type: 'file' | 'dir'; path: string; name: string; depth: number; title?: string; }
@@ -34,7 +34,6 @@ const EMPTY_FM: FM = {
   priority: '', custom: '',
 };
 
-// Безопасная нормализация строки в slug с транслитерацией RU → latin
 const RU_MAP: Record<string, string> = {
   а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'yo', ж: 'zh', з: 'z', и: 'i', й: 'y',
   к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f',
@@ -44,7 +43,6 @@ const RU_MAP: Record<string, string> = {
 const toSlug = (s: string): string => {
   const chars: string[] = [];
   let prevDash = false;
-
   for (const raw of s.toLowerCase().trim()) {
     const mapped = RU_MAP[raw] ?? raw;
     for (const ch of mapped.normalize('NFKD')) {
@@ -55,21 +53,302 @@ const toSlug = (s: string): string => {
       }
     }
   }
-
   while (chars.at(-1) === '-') chars.pop();
   return chars.join('');
 };
+
+// ─── ALL LUCIDE ICONS ────────────────────────────────────────────────────────
+const ALL_ICONS = [
+  'activity','airplay','alert-circle','alert-octagon','alert-triangle','align-center',
+  'align-justify','align-left','align-right','anchor','aperture','archive','arrow-down',
+  'arrow-down-circle','arrow-down-left','arrow-down-right','arrow-left','arrow-left-circle',
+  'arrow-right','arrow-right-circle','arrow-up','arrow-up-circle','arrow-up-left',
+  'arrow-up-right','at-sign','award','axe','baby','backpack','badge','badge-alert',
+  'badge-check','badge-dollar-sign','badge-help','badge-info','badge-minus','badge-percent',
+  'badge-plus','badge-x','ban','banknote','bar-chart','bar-chart-2','bar-chart-3',
+  'bar-chart-4','bar-chart-big','battery','battery-charging','battery-full','battery-low',
+  'battery-medium','beaker','bell','bell-dot','bell-minus','bell-off','bell-plus','bell-ring',
+  'bike','binary','bitcoin','blend','blocks','bluetooth','bold','book','book-copy',
+  'book-down','book-key','book-lock','book-marked','book-minus','book-open','book-open-check',
+  'book-open-text','book-plus','book-text','book-type','book-up','bookmark','bookmark-check',
+  'bookmark-minus','bookmark-plus','bookmark-x','bot','box','boxes','brain','briefcase',
+  'briefcase-business','briefcase-medical','broadcast','brush','bug','bug-play','building',
+  'building-2','bus','calculator','calendar','calendar-check','calendar-clock','calendar-days',
+  'calendar-fold','calendar-heart','calendar-minus','calendar-plus','calendar-range',
+  'calendar-search','calendar-x','camera','camera-off','candy','car','car-front','card-stack-minus',
+  'castle','cat','chart-area','chart-bar','chart-bar-big','chart-candlestick','chart-column',
+  'chart-gantt','chart-line','chart-no-axes-column','chart-no-axes-combined','chart-pie',
+  'chart-scatter','check','check-check','check-circle','check-circle-2','check-square',
+  'chevron-down','chevron-first','chevron-last','chevron-left','chevron-right','chevron-up',
+  'chevrons-down','chevrons-left','chevrons-right','chevrons-up','chrome','circle',
+  'circle-alert','circle-arrow-down','circle-arrow-left','circle-arrow-out-up-right',
+  'circle-arrow-right','circle-arrow-up','circle-check','circle-chevron-down',
+  'circle-chevron-left','circle-chevron-right','circle-chevron-up','circle-dashed',
+  'circle-dot','circle-ellipsis','circle-equal','circle-fading-plus','circle-gauge',
+  'circle-help','circle-minus','circle-off','circle-parking','circle-pause','circle-percent',
+  'circle-play','circle-plus','circle-power','circle-slash','circle-stop','circle-user',
+  'circle-user-round','circle-x','clipboard','clipboard-check','clipboard-copy','clipboard-list',
+  'clipboard-minus','clipboard-paste','clipboard-pen','clipboard-plus','clipboard-type',
+  'clipboard-x','clock','clock-1','clock-10','clock-11','clock-12','clock-2','clock-3',
+  'cloud','cloud-cog','cloud-download','cloud-drizzle','cloud-fog','cloud-hail','cloud-lightning',
+  'cloud-moon','cloud-moon-rain','cloud-off','cloud-rain','cloud-rain-wind','cloud-snow',
+  'cloud-sun','cloud-sun-rain','cloud-upload','cloudy','code','code-2','code-xml','cog',
+  'coins','columns','combine','command','component','computer','construction','container',
+  'copy','corner-down-left','corner-down-right','corner-left-down','corner-left-up',
+  'corner-right-down','corner-right-up','corner-up-left','corner-up-right','cpu','credit-card',
+  'crop','cross','crosshair','crown','cuboid','currency','database','database-backup',
+  'database-zap','delete','diamond','dice-1','dice-2','dice-3','dice-4','dice-5','dice-6',
+  'disc','divide','divide-circle','divide-square','dna','dock','dog','dollar-sign','download',
+  'drafting-compass','drama','dribbble','droplet','droplets','drum','dumbbell','ear',
+  'earth','edit','edit-2','edit-3','egg','egg-fried','ellipsis','ellipsis-vertical','eraser',
+  'ethernet-port','expand','external-link','eye','eye-off','facebook','factory','fan',
+  'fast-forward','feather','figma','file','file-archive','file-audio','file-badge',
+  'file-check','file-check-2','file-clock','file-code','file-code-2','file-cog','file-diff',
+  'file-digit','file-down','file-heart','file-image','file-input','file-json','file-key',
+  'file-lock','file-minus','file-music','file-output','file-pen','file-plus','file-question',
+  'file-search','file-sliders','file-spreadsheet','file-stack','file-symlink','file-terminal',
+  'file-text','file-type','file-up','file-video','file-volume','file-warning','file-x',
+  'files','filter','fingerprint','fish','flag','flag-off','flame','flashlight','flask-conical',
+  'flip-horizontal','flip-vertical','flower','focus','folder','folder-archive','folder-check',
+  'folder-clock','folder-closed','folder-code','folder-cog','folder-dot','folder-down',
+  'folder-git','folder-git-2','folder-heart','folder-input','folder-key','folder-lock',
+  'folder-minus','folder-open','folder-open-dot','folder-output','folder-pen','folder-plus',
+  'folder-root','folder-search','folder-symlink','folder-sync','folder-tree','folder-up',
+  'folder-video','folder-x','footprints','forklift','forward','frame','framer','frown',
+  'fuel','fullscreen','function-square','gauge','gem','ghost','gift','git-branch',
+  'git-branch-plus','git-commit','git-compare','git-fork','git-graph','git-merge',
+  'git-pull-request','git-pull-request-closed','globe','globe-2','graduation-cap','grid',
+  'grip','grip-horizontal','grip-vertical','hand','hand-coins','hand-heart','hand-helping',
+  'hand-metal','hand-shake','hard-drive','hard-hat','hash','hdmi-port','headphones',
+  'headset','heart','heart-crack','heart-handshake','heart-off','heart-pulse','help-circle',
+  'hexagon','highlighter','history','home','hospital','hotel','hourglass','image','image-down',
+  'image-minus','image-off','image-plus','image-up','import','inbox','indent','infinity',
+  'info','instagram','italic','key','key-round','keyboard','lab','lamp','landmark','languages',
+  'laptop','layers','layout','layout-dashboard','layout-grid','layout-list','layout-panel-left',
+  'layout-panel-top','layout-template','leaf','library','life-buoy','lightbulb','link',
+  'link-2','linkedin','list','list-checks','list-end','list-filter','list-minus','list-music',
+  'list-ordered','list-plus','list-restart','list-start','list-todo','list-tree','list-video',
+  'list-x','loader','lock','lock-keyhole','log-in','log-out','luggage','mail',
+  'mail-check','mail-minus','mail-open','mail-plus','mail-question','mail-search','mail-warning',
+  'mail-x','map','map-pin','map-pinned','maximize','maximize-2','megaphone','menu',
+  'merge','message-circle','message-circle-code','message-circle-heart','message-circle-more',
+  'message-circle-off','message-circle-plus','message-circle-question','message-circle-reply',
+  'message-circle-warning','message-circle-x','message-square','message-square-code',
+  'message-square-dashed','message-square-diff','message-square-dot','message-square-heart',
+  'message-square-lock','message-square-more','message-square-off','message-square-plus',
+  'message-square-quote','message-square-reply','message-square-share','message-square-text',
+  'message-square-warning','message-square-x','mic','mic-off','minimize','minimize-2',
+  'minus','minus-circle','minus-square','monitor','monitor-off','monitor-play','monitor-smartphone',
+  'moon','more-horizontal','more-vertical','mountain','mouse','mouse-pointer','mouse-pointer-2',
+  'move','move-3d','move-diagonal','move-horizontal','move-vertical','music','navigation',
+  'network','newspaper','nfc','notebook','notebook-pen','notebook-tabs','npm','octagon',
+  'orbit','outdent','package','package-check','package-minus','package-open','package-plus',
+  'package-search','package-x','paint-bucket','paintbrush','panel-bottom','panel-left',
+  'panel-right','panel-top','paperclip','pause','pause-circle','pencil','pencil-line',
+  'pencil-ruler','percent','phone','phone-call','phone-forwarded','phone-incoming','phone-missed',
+  'phone-off','phone-outgoing','pie-chart','pin','plane','play','play-circle','plug',
+  'plug-2','plug-zap','pocket','podcast','pointer','power','power-off','presentation',
+  'printer','puzzle','qr-code','quote','radio','rainbow','receipt','redo','redo-2',
+  'refresh-ccw','refresh-cw','regex','remote-control','repeat','repeat-1','replace',
+  'reply','rocket','rotate-3d','route','rss','ruler','save','scan','scissors',
+  'screen-share','scroll','search','server','settings','share','share-2','shield',
+  'shield-alert','shield-check','shield-off','shuffle','signal','siren','skip-back',
+  'skip-forward','skull','slash','sliders','smile','sort-asc','sort-desc','sparkle',
+  'sparkles','speaker','split','spray-can','square','star','star-off','stop-circle',
+  'sun','switch-camera','table','table-of-contents','tablet','tag','tags','target',
+  'terminal','thermometer','thumbs-down','thumbs-up','ticket','timer','timer-off',
+  'toggle-left','toggle-right','tool','tornado','trash','trash-2','trending-down',
+  'trending-up','triangle','triangle-alert','trophy','truck','tv','twitch','twitter',
+  'type','umbrella','underline','undo','undo-2','unlink','upload','user','user-check',
+  'user-cog','user-minus','user-plus','user-round','user-round-check','user-round-minus',
+  'user-round-plus','user-round-search','user-round-x','user-search','user-x',
+  'users','users-round','video','video-off','view','voicemail','volume','volume-1',
+  'volume-2','volume-x','wallet','wand','wand-2','watch','waves','waypoints','wifi',
+  'wifi-off','wind','workflow','wrench','x','x-circle','x-octagon','x-square','youtube',
+  'zap','zap-off','zoom-in','zoom-out',
+];
+
+// ─── IconPickerModal ─────────────────────────────────────────────────────────
+function IconPickerModal({ current, onSelect, onClose, t }: {
+  readonly current: string;
+  readonly onSelect: (icon: string) => void;
+  readonly onClose: () => void;
+  readonly t: TTokens;
+}) {
+  const [q, setQ] = useState('');
+  const [hov, setHov] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 60); }, []);
+
+  const filtered = q.trim()
+    ? ALL_ICONS.filter(n => n.includes(q.toLowerCase().trim()))
+    : ALL_ICONS;
+
+  return createPortal(
+    <dialog open style={{
+      position: 'fixed', inset: 0, zIndex: 100030,
+      border: 'none', padding: 0, margin: 0,
+      maxWidth: '100vw', maxHeight: '100vh', width: '100%', height: '100%',
+      background: 'rgba(0,0,0,0.7)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <button type="button" aria-label="Закрыть" onClick={onClose} style={{
+        position: 'absolute', inset: 0, width: '100%', height: '100%',
+        background: 'transparent', border: 'none', cursor: 'default', padding: 0,
+      }} />
+      <div style={{
+        position: 'relative', zIndex: 1,
+        background: t.bg, border: `1px solid ${t.borderStrong}`,
+        borderRadius: 14, width: 520, maxHeight: '80vh',
+        boxShadow: t.shadow, fontFamily: t.mono,
+        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      }}>
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '12px 14px', borderBottom: `1px solid ${t.border}`,
+          background: t.surface, flexShrink: 0,
+        }}>
+          <Search size={14} style={{ color: t.fgMuted }} />
+          <input
+            ref={inputRef}
+            value={q}
+            onChange={e => setQ(e.target.value)}
+            placeholder="Поиск иконки..."
+            style={{
+              flex: 1, border: 'none', outline: 'none',
+              background: 'transparent', color: t.fg,
+              fontSize: 13, fontFamily: t.mono,
+            }}
+          />
+          <span style={{ fontSize: 11, color: t.fgSub }}>{filtered.length}</span>
+          <button onClick={onClose} style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 24, height: 24, borderRadius: 6, border: 'none',
+            background: 'transparent', color: t.fgMuted, cursor: 'pointer',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.color = t.fg; }}
+            onMouseLeave={e => { e.currentTarget.style.color = t.fgMuted; }}
+          >
+            <X size={13} />
+          </button>
+        </div>
+
+        {/* Grid */}
+        <div style={{
+          flex: 1, overflowY: 'auto', padding: 10,
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(70px, 1fr))', gap: 4,
+        }} className="adm-scroll">
+          {filtered.map(name => {
+            const isActive = name === current;
+            const isHov = hov === name;
+            return (
+              <button
+                key={name}
+                title={name}
+                onClick={() => { onSelect(name); onClose(); }}
+                onMouseEnter={() => setHov(name)}
+                onMouseLeave={() => setHov(null)}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  justifyContent: 'center', gap: 5,
+                  padding: '8px 4px', borderRadius: 8,
+                  border: `1px solid ${isActive ? t.borderStrong : (isHov ? t.border : 'transparent')}`,
+                  background: isActive ? t.accentSoft : (isHov ? t.surfaceHov : 'transparent'),
+                  color: isActive ? t.fg : t.fgMuted,
+                  cursor: 'pointer', fontSize: 9, fontFamily: t.mono,
+                  lineHeight: 1.2, textAlign: 'center', wordBreak: 'break-all',
+                  transition: 'all 0.1s',
+                }}
+              >
+                <LucideIcon name={name} size={18} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', textAlign: 'center', paddingInline: 2 }}>{name}</span>
+              </button>
+            );
+          })}
+          {filtered.length === 0 && (
+            <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 32, color: t.fgSub, fontSize: 13 }}>
+              Ничего не найдено
+            </div>
+          )}
+        </div>
+      </div>
+    </dialog>,
+    document.body
+  );
+}
+
+// ─── IconField ───────────────────────────────────────────────────────────────
+function IconField({ value, onChange, t, placeholder = 'file-text' }: {
+  readonly value: string;
+  readonly onChange: (v: string) => void;
+  readonly t: TTokens;
+  readonly placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const inpS: React.CSSProperties = {
+    flex: 1, padding: '4px 7px', borderRadius: 5,
+    border: `1px solid ${t.border}`, background: t.inpBg, color: t.fg,
+    fontSize: 12, outline: 'none', fontFamily: t.mono, boxSizing: 'border-box',
+    minWidth: 0,
+  };
+
+  return (
+    <>
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        {/* Preview */}
+        <div style={{
+          width: 30, height: 30, borderRadius: 6, flexShrink: 0,
+          border: `1px solid ${t.border}`, background: t.surface,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: t.fgMuted,
+        }}>
+          <LucideIcon name={value || placeholder} size={16} />
+        </div>
+        <input
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          style={inpS}
+        />
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 5,
+            padding: '5px 10px', borderRadius: 6, flexShrink: 0,
+            border: `1px solid ${t.border}`, background: t.surfaceHov,
+            color: t.fgMuted, cursor: 'pointer', fontSize: 11, fontFamily: t.mono,
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = t.fg; }}
+          onMouseLeave={e => { e.currentTarget.style.color = t.fgMuted; }}
+        >
+          <Search size={11} /> Выбрать
+        </button>
+      </div>
+      {open && (
+        <IconPickerModal
+          current={value}
+          onSelect={onChange}
+          onClose={() => setOpen(false)}
+          t={t}
+        />
+      )}
+    </>
+  );
+}
 
 const COMMON_ICONS = [
   'book', 'book-open', 'folder', 'folder-tree', 'file-text', 'house', 'boxes', 'blocks', 'layout-grid',
   'component', 'brain', 'shield', 'siren', 'settings', 'search', 'search-code', 'code', 'code-2',
   'terminal', 'container', 'layers', 'table-of-contents', 'chart-no-axes-column', 'chart-no-axes-combined',
-  'briefcase-business', 'circle-alert', 'circle-arrow-out-up-right', 'user-round-plus', 'mouse-pointer-2-off',
-  'signal', 'app-window', 'shredder', 'arrow-down-up', 'folder-code', 'maximize', 'type', 'blend', 'wind',
+  'briefcase-business', 'circle-alert', 'circle-arrow-out-up-right', 'user-round-plus', 'mouse-pointer-2',
+  'signal', 'app-window', 'arrow-down-up', 'folder-code', 'maximize', 'type', 'blend', 'wind',
   'audio-lines', 'rotate-3d', 'eye', 'tally-1', 'slash', 'waves', 'sparkle', 'gem', 'sun', 'zap', 'flame',
 ];
 
-// Регексы с ограниченной длиной совпадения для защиты от ReDoS
 const RE_PN_TYPE = /^\[([NCA])\]/;
 const RE_PN_ICON = /^\[([^\]]{1,60})\]/;
 const RE_PN_SLUG = /^([^{]{1,300})\{([^{}]{1,200})\}$/;
@@ -327,34 +606,24 @@ function Modal({ onClose, children, width, t }: {
   readonly t: TTokens;
 }) {
   return createPortal(
-    <dialog
-      open
-      style={{
-        position: 'fixed', inset: 0, zIndex: 100020,
-        border: 'none', padding: 0, margin: 0,
-        maxWidth: '100vw', maxHeight: '100vh', width: '100%', height: '100%',
-        background: 'rgba(0,0,0,0.6)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}
-    >
-      <button
-        type="button"
-        aria-label="Закрыть"
-        onClick={onClose}
-        style={{
-          position: 'absolute', inset: 0, width: '100%', height: '100%',
-          background: 'transparent', border: 'none', cursor: 'default', padding: 0,
-        }}
-      />
-      <div
-        style={{
-          position: 'relative', zIndex: 1,
-          background: t.bg, border: `1px solid ${t.borderStrong}`,
-          borderRadius: 12, padding: 22, width: width ?? 360,
-          boxShadow: t.shadow, fontFamily: t.mono,
-          maxHeight: '90vh', overflowY: 'auto',
-        }}
-      >
+    <dialog open style={{
+      position: 'fixed', inset: 0, zIndex: 100020,
+      border: 'none', padding: 0, margin: 0,
+      maxWidth: '100vw', maxHeight: '100vh', width: '100%', height: '100%',
+      background: 'rgba(0,0,0,0.6)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <button type="button" aria-label="Закрыть" onClick={onClose} style={{
+        position: 'absolute', inset: 0, width: '100%', height: '100%',
+        background: 'transparent', border: 'none', cursor: 'default', padding: 0,
+      }} />
+      <div style={{
+        position: 'relative', zIndex: 1,
+        background: t.bg, border: `1px solid ${t.borderStrong}`,
+        borderRadius: 12, padding: 22, width: width ?? 360,
+        boxShadow: t.shadow, fontFamily: t.mono,
+        maxHeight: '90vh', overflowY: 'auto',
+      }}>
         {children}
       </div>
     </dialog>,
@@ -367,11 +636,7 @@ interface CC { parentPath: string; entryType: 'N' | 'C' | 'A'; }
 async function saveRenamedFile(existing: TreeEntry, nm: string, onDone: (fp?: string) => void) {
   const parent = existing.path.split('/').slice(0, -1).join('/');
   const newPath = `${parent}/${nm}.md`;
-  if (newPath === existing.path) {
-    toast.info('Имя не изменилось');
-    onDone();
-    return;
-  }
+  if (newPath === existing.path) { toast.info('Имя не изменилось'); onDone(); return; }
   const { content } = await bridge.readFile(existing.path);
   await bridge.writeFile(newPath, content);
   await bridge.deleteFile(existing.path);
@@ -382,11 +647,7 @@ async function saveRenamedFile(existing: TreeEntry, nm: string, onDone: (fp?: st
 async function saveRenamedDir(existing: TreeEntry, nm: string, onDone: (fp?: string) => void) {
   const parent = existing.path.split('/').slice(0, -1).join('/');
   const newPath = `${parent}/${nm}`;
-  if (newPath === existing.path) {
-    toast.info('Имя не изменилось');
-    onDone();
-    return;
-  }
+  if (newPath === existing.path) { toast.info('Имя не изменилось'); onDone(); return; }
   try {
     await renameDir(existing.path, newPath);
     toast.success('Переименовано');
@@ -427,39 +688,25 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
       const slugSuffix = slug ? `{${slug}}` : '';
       const nm = `[${cfg.entryType}][${ic}]${title.trim()}${slugSuffix}`;
       if (isEdit && existing) {
-        await saveEditEntry(existing, nm);
+        if (existing.type === 'file') await saveRenamedFile(existing, nm, onDone);
+        else await saveRenamedDir(existing, nm, onDone);
       } else {
-        await saveNewEntry(nm);
+        if (isA) {
+          const fp = `${cfg.parentPath}/${nm}.md`;
+          await bridge.writeFile(fp, serializeFM({ ...fm, title: title.trim() }, `# ${title.trim()}\n\nНачните писать здесь...\n`));
+          toast.success('Страница создана');
+          onDone(fp);
+        } else {
+          await bridge.mkdir(`${cfg.parentPath}/${nm}`);
+          toast.success('Создано');
+          onDone();
+        }
       }
       onClose();
     } catch (e: unknown) {
       toast.error((e as Error).message);
     } finally {
       setSaving(false);
-    }
-  };
-
-  const saveEditEntry = async (entry: TreeEntry, nm: string) => {
-    if (entry.type === 'file') {
-      await saveRenamedFile(entry, nm, onDone);
-    } else {
-      await saveRenamedDir(entry, nm, onDone);
-    }
-  };
-
-  const saveNewEntry = async (nm: string) => {
-    if (isA) {
-      const fp = `${cfg.parentPath}/${nm}.md`;
-      await bridge.writeFile(fp, serializeFM(
-        { ...fm, title: title.trim() },
-        `# ${title.trim()}\n\nНачните писать здесь...\n`
-      ));
-      toast.success('Страница создана');
-      onDone(fp);
-    } else {
-      await bridge.mkdir(`${cfg.parentPath}/${nm}`);
-      toast.success('Создано');
-      onDone();
     }
   };
 
@@ -472,11 +719,9 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
     fontSize: 12, color: t.fgSub, textTransform: 'uppercase',
     letterSpacing: '0.07em', marginBottom: 4, display: 'block',
   };
-  const actionLabel = isEdit ? 'Применить' : 'Создать';
-  const saveBtnLabel = saving ? '...' : actionLabel;
 
   return (
-    <Modal onClose={onClose} width={isA && !isEdit ? 440 : 340} t={t}>
+    <Modal onClose={onClose} width={isA && !isEdit ? 460 : 360} t={t}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
         <Badge type={cfg.entryType} />
         <span style={{ fontSize: 13, fontWeight: 700, color: t.fg }}>
@@ -501,28 +746,12 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
         <label htmlFor="entry-slug" style={lbS}>URL Slug</label>
         <div style={{ display: 'flex', gap: 6 }}>
           <input id="entry-slug" value={slug} onChange={e => { setSlug(e.target.value); setAuto(false); }} style={{ ...inp, flex: 1 }} />
-          <button
-            onClick={() => { setAuto(true); setSlug(toSlug(title)); }}
-            style={{ padding: '7px 10px', borderRadius: 7, border: `1px solid ${t.border}`, background: t.surfaceHov, color: t.fgMuted, cursor: 'pointer', fontSize: 13, fontFamily: t.mono }}
-          >↺</button>
+          <button onClick={() => { setAuto(true); setSlug(toSlug(title)); }} style={{ padding: '7px 10px', borderRadius: 7, border: `1px solid ${t.border}`, background: t.surfaceHov, color: t.fgMuted, cursor: 'pointer', fontSize: 13, fontFamily: t.mono }}>↺</button>
         </div>
       </div>
       <div style={{ marginBottom: isA && !isEdit ? 14 : 10 }}>
-        <label htmlFor="entry-icon" style={lbS}>Иконка</label>
-        <input
-          id="entry-icon"
-          list="dev-panel-icons"
-          value={icon}
-          onChange={e => setIcon(e.target.value)}
-          placeholder={dIco[cfg.entryType]}
-          style={inp}
-        />
-        <datalist id="dev-panel-icons">{COMMON_ICONS.map(name => <option key={name} value={name} />)}</datalist>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 8 }}>
-          {COMMON_ICONS.slice(0, 18).map(name => (
-            <button key={name} type="button" onClick={() => setIcon(name)} title={name} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 7px', borderRadius: 6, border: `1px solid ${t.border}`, background: icon === name ? t.surfaceHov : 'transparent', color: t.fgMuted, fontSize: 11, cursor: 'pointer', fontFamily: t.mono }}><LucideIcon name={name} size={13} />{name}</button>
-          ))}
-        </div>
+        <label style={lbS}>Иконка</label>
+        <IconField value={icon} onChange={setIcon} t={t} placeholder={dIco[cfg.entryType]} />
       </div>
       {isA && !isEdit && (
         <div style={{ borderTop: `1px solid ${t.border}`, paddingTop: 12, marginBottom: 10 }}>
@@ -536,13 +765,7 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
             ] as Array<{ k: keyof FM; l: string; sp?: boolean; tp?: string }>).map(f => (
               <div key={f.k} style={{ gridColumn: f.sp ? '1 / -1' : 'auto' }}>
                 <label htmlFor={`fm-${f.k}`} style={lbS}>{f.l}</label>
-                <input
-                  id={`fm-${f.k}`}
-                  type={f.tp ?? 'text'}
-                  value={fm[f.k]}
-                  onChange={e => setFm(prev => ({ ...prev, [f.k]: e.target.value }))}
-                  style={inp}
-                />
+                <input id={`fm-${f.k}`} type={f.tp ?? 'text'} value={fm[f.k]} onChange={e => setFm(prev => ({ ...prev, [f.k]: e.target.value }))} style={inp} />
               </div>
             ))}
           </div>
@@ -551,7 +774,7 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
       <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
         <button onClick={onClose} style={{ flex: 1, padding: '8px', borderRadius: 7, border: `1px solid ${t.border}`, background: 'transparent', color: t.fgMuted, cursor: 'pointer', fontSize: 14, fontFamily: t.mono }}>Отмена</button>
         <button onClick={doSave} disabled={saving} style={{ flex: 1, padding: '8px', borderRadius: 7, border: `1px solid ${t.borderStrong}`, background: t.surfaceHov, color: t.fg, cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: t.mono }}>
-          {saveBtnLabel}
+          {saving ? '...' : (isEdit ? 'Применить' : 'Создать')}
         </button>
       </div>
     </Modal>
@@ -597,27 +820,18 @@ function BlockPicker({ onInsert, t }: { readonly onInsert: (c: string) => void; 
     justifyContent: 'space-between' as const,
   });
 
-  // Вспомогательные обработчики hover для кнопок в меню
-  const onHoverEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.currentTarget.style.background = t.surfaceHov;
-  };
-  const onHoverLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.currentTarget.style.background = 'transparent';
-  };
+  const onHoverEnter = (e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.background = t.surfaceHov; };
+  const onHoverLeave = (e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.background = 'transparent'; };
 
   return (
     <>
-      <button
-        ref={btnRef}
-        onClick={toggle}
-        title="Вставить блок"
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: '3px 8px', height: 22, borderRadius: 5,
-          border: `1px solid ${open ? t.borderStrong : t.border}`,
-          background: open ? t.surfaceHov : 'transparent',
-          color: open ? t.fg : t.fgMuted, cursor: 'pointer', fontSize: 13, fontFamily: t.mono, gap: 4,
-        }}
+      <button ref={btnRef} onClick={toggle} title="Вставить блок" style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '3px 8px', height: 22, borderRadius: 5,
+        border: `1px solid ${open ? t.borderStrong : t.border}`,
+        background: open ? t.surfaceHov : 'transparent',
+        color: open ? t.fg : t.fgMuted, cursor: 'pointer', fontSize: 13, fontFamily: t.mono, gap: 4,
+      }}
         onMouseEnter={e => { if (!open) { e.currentTarget.style.background = t.surfaceHov; e.currentTarget.style.color = t.fg; } }}
         onMouseLeave={e => { if (!open) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = t.fgMuted; } }}
       ><Plus size={11} /> Блок</button>
@@ -651,25 +865,11 @@ function BlockPicker({ onInsert, t }: { readonly onInsert: (c: string) => void; 
                 </button>
                 <div style={{ fontSize: 12, color: t.fgSub, padding: '0 8px 5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{sub.label}</div>
                 {sub.variants?.map((v, vi) => (
-                  <button
-                    key={v.label + vi}
-                    onClick={() => { onInsert(v.code); setOpen(false); }}
-                    style={{ ...rs(), justifyContent: 'flex-start' }}
-                    onMouseEnter={onHoverEnter}
-                    onMouseLeave={onHoverLeave}
-                  >
-                    {v.label}
-                  </button>
+                  <button key={v.label + vi} onClick={() => { onInsert(v.code); setOpen(false); }} style={{ ...rs(), justifyContent: 'flex-start' }} onMouseEnter={onHoverEnter} onMouseLeave={onHoverLeave}>{v.label}</button>
                 ))}
               </>
             ) : BG[grp].items.map((item, ii) => (
-              <button
-                key={item.label + ii}
-                onClick={() => { if (item.variants) { setSub(item); } else { onInsert(item.code ?? ''); setOpen(false); } }}
-                style={rs()}
-                onMouseEnter={onHoverEnter}
-                onMouseLeave={onHoverLeave}
-              >
+              <button key={item.label + ii} onClick={() => { if (item.variants) { setSub(item); } else { onInsert(item.code ?? ''); setOpen(false); } }} style={rs()} onMouseEnter={onHoverEnter} onMouseLeave={onHoverLeave}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ color: t.fgMuted }}>{item.icon}</span>{item.label}</div>
                 {item.variants && <ChevronRight size={9} style={{ color: t.fgSub, flexShrink: 0 }} />}
               </button>
@@ -717,9 +917,7 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
       try {
         const result = await bridge.renderPreview(md);
         bcRef.current?.postMessage({ type: 'preview', html: result.html ?? '', fm: fmRef.current });
-      } catch {
-        // noop
-      }
+      } catch { /* noop */ }
     }, 300);
   }, []);
 
@@ -787,8 +985,6 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
     });
   };
 
-  const handleChange = (v: string) => { commitBody(v); };
-
   const insertAtCursor = useCallback((snippet: string) => {
     const ta = taRef.current;
     if (!ta) { setBody(prev => prev + snippet); setDirty(true); return; }
@@ -835,16 +1031,13 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
   const toolBtn = (fn: () => void, ico: React.ReactNode, tip: string) => (
     <button key={tip} onClick={fn} title={tip} style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      width: 24, height: 22, borderRadius: 4, border: 'none',
+      width: 26, height: 26, borderRadius: 5, border: 'none',
       background: 'transparent', color: t.fgMuted, cursor: 'pointer', flexShrink: 0,
     }}
       onMouseEnter={e => { e.currentTarget.style.background = t.surfaceHov; e.currentTarget.style.color = t.fg; }}
       onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = t.fgMuted; }}
     >{ico}</button>
   );
-
-  const canUndo = history.length > 0;
-  const canRedo = future.length > 0;
 
   if (loading) return (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -854,6 +1047,7 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
+      {/* Header bar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderBottom: `1px solid ${t.border}`, background: t.surface, flexShrink: 0 }}>
         <button onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 9px', borderRadius: 6, border: `1px solid ${t.border}`, background: 'transparent', color: t.fgMuted, cursor: 'pointer', fontSize: 13, fontFamily: t.mono, flexShrink: 0 }}
           onMouseEnter={e => { e.currentTarget.style.background = t.surfaceHov; }}
@@ -869,6 +1063,7 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
         </button>
       </div>
 
+      {/* FM collapse */}
       <div style={{ borderBottom: `1px solid ${t.border}`, flexShrink: 0 }}>
         <button onClick={() => setFmOpen(v => !v)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', border: 'none', background: t.surface, color: t.fgSub, fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: 'pointer', textAlign: 'left', fontFamily: t.mono }}>
           {fmOpen ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
@@ -904,64 +1099,70 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
               </span>
             </label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 12px' }}>
-            {([
-              { k: 'title', l: 'Заголовок', sp: true }, { k: 'description', l: 'Описание', sp: true },
-              { k: 'author', l: 'Автор' }, { k: 'date', l: 'Дата', tp: 'date' },
-              { k: 'updated', l: 'Обновлено', tp: 'date' }, { k: 'tags', l: 'Теги', sp: true },
-              { k: 'icon', l: 'Иконка' }, { k: 'lang', l: 'Язык' },
-              { k: 'robots', l: 'Robots' },
-              { k: 'priority', l: 'Приоритет' },
-            ] as Array<{ k: keyof FM; l: string; sp?: boolean; tp?: string }>).map(f => (
-              <div key={f.k} style={{ gridColumn: f.sp ? '1 / -1' : 'auto' }}>
-                <div style={{ fontSize: 12, color: t.fgSub, marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{f.l}</div>
-                {f.k === 'icon' && fm.icon && <LucideIcon name={fm.icon} size={16} style={{ marginBottom: -2, marginRight: 6 }} />}
-                <input
-                  list={f.k === 'icon' ? 'dev-panel-icons' : undefined}
-                  type={f.tp ?? 'text'}
-                  value={fm[f.k]}
-                  onChange={e => {
-                    const newFm = { ...fm, [f.k]: e.target.value };
-                    setFm(newFm); setDirty(true);
-                    if (liveTimer.current) clearTimeout(liveTimer.current);
-                    liveTimer.current = setTimeout(async () => {
-                      try {
-                        const result = await bridge.renderPreview(bodyRef.current);
-                        bcRef.current?.postMessage({ type: 'preview', html: result.html ?? '', fm: newFm });
-                      } catch {
-                        // noop
-                      }
-                    }, 200);
-                  }}
-                  style={{ ...inpS, fontSize: 13, padding: '8px 10px' }}
+              {([
+                { k: 'title', l: 'Заголовок', sp: true }, { k: 'description', l: 'Описание', sp: true },
+                { k: 'author', l: 'Автор' }, { k: 'date', l: 'Дата', tp: 'date' },
+                { k: 'updated', l: 'Обновлено', tp: 'date' }, { k: 'tags', l: 'Теги', sp: true },
+                { k: 'lang', l: 'Язык' }, { k: 'robots', l: 'Robots' },
+                { k: 'priority', l: 'Приоритет' },
+              ] as Array<{ k: keyof FM; l: string; sp?: boolean; tp?: string }>).map(f => (
+                <div key={f.k} style={{ gridColumn: f.sp ? '1 / -1' : 'auto' }}>
+                  <div style={{ fontSize: 12, color: t.fgSub, marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{f.l}</div>
+                  <input
+                    type={f.tp ?? 'text'}
+                    value={fm[f.k]}
+                    onChange={e => {
+                      const newFm = { ...fm, [f.k]: e.target.value };
+                      setFm(newFm); setDirty(true);
+                      if (liveTimer.current) clearTimeout(liveTimer.current);
+                      liveTimer.current = setTimeout(async () => {
+                        try {
+                          const result = await bridge.renderPreview(bodyRef.current);
+                          bcRef.current?.postMessage({ type: 'preview', html: result.html ?? '', fm: newFm });
+                        } catch { /* noop */ }
+                      }, 200);
+                    }}
+                    style={{ ...inpS, fontSize: 13, padding: '8px 10px' }}
+                  />
+                </div>
+              ))}
+              {/* Icon field special */}
+              <div style={{ gridColumn: '1 / -1' }}>
+                <div style={{ fontSize: 12, color: t.fgSub, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Иконка</div>
+                <IconField
+                  value={fm.icon}
+                  onChange={v => { setFm({ ...fm, icon: v }); setDirty(true); }}
+                  t={t}
                 />
               </div>
-            ))}
             </div>
           </div>
         )}
       </div>
 
+      {/* Toolbar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 1, padding: '3px 8px', borderBottom: `1px solid ${t.border}`, background: t.surface, flexShrink: 0 }}>
-        {toolBtn(undoBody, <Undo2 size={11} />, canUndo ? 'Назад' : 'Назад (нет изменений)')}
-        {toolBtn(redoBody, <Redo2 size={11} />, canRedo ? 'Вперёд' : 'Вперёд (нет изменений)')}
+        {toolBtn(undoBody, <Undo2 size={13} />, 'Назад')}
+        {toolBtn(redoBody, <Redo2 size={13} />, 'Вперёд')}
         <div style={{ width: 1, height: 14, background: t.border, margin: '0 3px' }} />
-        {toolBtn(() => handleInsert('**', '**'), <Bold size={11} />, 'Жирный')}
-        {toolBtn(() => handleInsert('_', '_'), <Italic size={11} />, 'Курсив')}
-        {toolBtn(() => handleInsert('`', '`'), <Code size={11} />, 'Код')}
-        {toolBtn(() => handleInsert('\n## ', ''), <Hash size={11} />, 'H2')}
-        {toolBtn(() => handleInsert('\n- ', ''), <List size={11} />, 'Список')}
-        {toolBtn(() => handleInsert('[', '](url)'), <Link size={11} />, 'Ссылка')}
-        {toolBtn(() => handleInsert('\n---\n', ''), <Minus size={11} />, 'HR')}
+        {toolBtn(() => handleInsert('**', '**'), <Bold size={13} />, 'Жирный')}
+        {toolBtn(() => handleInsert('_', '_'), <Italic size={13} />, 'Курсив')}
+        {toolBtn(() => handleInsert('`', '`'), <Code size={13} />, 'Код')}
+        {toolBtn(() => handleInsert('\n## ', ''), <Hash size={13} />, 'H2')}
+        {toolBtn(() => handleInsert('\n- ', ''), <List size={13} />, 'Список')}
+        {toolBtn(() => handleInsert('[', '](url)'), <Link size={13} />, 'Ссылка')}
+        {toolBtn(() => handleInsert('\n---\n', ''), <Minus size={13} />, 'HR')}
         <div style={{ width: 1, height: 14, background: t.border, margin: '0 3px' }} />
         {!fm.custom && <BlockPicker onInsert={insertAtCursor} t={t} />}
         <div style={{ flex: 1 }} />
         <span style={{ fontSize: 12, color: t.fgSub }}>{body.trim().split(/\s+/).filter(Boolean).length} слов</span>
       </div>
 
+      {/* Editor */}
       <textarea
         ref={taRef}
         value={body}
-        onChange={e => handleChange(e.target.value)}
+        onChange={e => commitBody(e.target.value)}
         onKeyDown={handleTab}
         spellCheck={false}
         disabled={!!fm.custom}
@@ -1022,7 +1223,6 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
 
   const nodeBg = getNodeBackground(isDragOver, isDir, isActive, hov, t);
   const nodeOutline = getNodeOutline(isDragOver, isDir);
-
   const fontWeightMap: Record<string, number> = { N: 600, C: 500, A: 400 };
   const fontWeight = p.type ? (fontWeightMap[p.type] ?? 400) : 400;
   const expandIcon = expanded ? <ChevronDown size={11} /> : <ChevronRight size={11} />;
@@ -1057,12 +1257,7 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
           {p.title || entry.name}
         </span>
         {hov && (
-          <div
-            role="toolbar"
-            style={{ display: 'flex', gap: 6, flexShrink: 0 }}
-            onClick={e => e.stopPropagation()}
-            onKeyDown={e => e.stopPropagation()}
-          >
+          <div role="toolbar" style={{ display: 'flex', gap: 6, flexShrink: 0 }} onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
             {actionBtn(<Edit3 size={13} />, 'Редактировать', () => onEdit(entry))}
             {isDir && p.type === 'N' && actionBtn(<FolderPlus size={13} />, '+ Категория', () => onCreate({ parentPath: entry.path, entryType: 'C' }))}
             {isDir && (p.type === 'N' || p.type === 'C') && actionBtn(<FilePlus size={13} />, '+ Страница', () => onCreate({ parentPath: entry.path, entryType: 'A' }))}
@@ -1087,7 +1282,6 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
 function filterTreeByQuery(entries: TreeEntry[], query: string): TreeEntry[] {
   const q = query.trim().toLowerCase();
   if (!q) return entries;
-
   const walk = (items: TreeEntry[]): TreeEntry[] => items
     .map(item => {
       const title = (item.parsed.title || item.name).toLowerCase();
@@ -1097,7 +1291,6 @@ function filterTreeByQuery(entries: TreeEntry[], query: string): TreeEntry[] {
       return null;
     })
     .filter((x): x is TreeEntry => x !== null);
-
   return walk(entries);
 }
 
@@ -1108,7 +1301,6 @@ function countFiles(entries: TreeEntry[]): number {
   }, 0);
 }
 
-// Итеративный обход дерева — обходит все узлы без рекурсивной вложенности
 function flattenTree(entries: TreeEntry[]): TreeEntry[] {
   const result: TreeEntry[] = [];
   const stack = [...entries];
@@ -1169,7 +1361,6 @@ export default function DocsPanel() {
   }, [load, openEditorForFile]);
 
   const handleEdit = useCallback((entry: TreeEntry) => {
-    // Файл открывается в редакторе напрямую
     if (entry.type === 'file') {
       openEditorForFile(entry.path);
       return;
@@ -1185,22 +1376,18 @@ export default function DocsPanel() {
 
   const handleDrop = useCallback(async (srcPath: string, dstPath: string) => {
     const allEntries = flattenTree(tree);
-
     const src = allEntries.find(e => e.path === srcPath);
     const dst = allEntries.find(e => e.path === dstPath);
     if (!src || !dst) return;
-
     const targetDir = dst.type === 'dir' ? dst.path : dst.path.split('/').slice(0, -1).join('/');
     if (srcPath === targetDir || targetDir.startsWith(srcPath + '/')) {
       toast.error('Нельзя переместить папку внутрь себя');
       return;
     }
-
     const srcName = srcPath.split('/').pop();
     if (!srcName) return;
     const newPath = `${targetDir}/${srcName}`;
     if (newPath === srcPath) return;
-
     setMoving(true);
     try {
       if (src.type === 'dir') {
@@ -1267,12 +1454,7 @@ export default function DocsPanel() {
         <div style={{ flex: 1 }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 220, maxWidth: 340, width: '36%' }}>
           <Search size={12} style={{ color: t.fgSub }} />
-          <input
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="Поиск документа..."
-            style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: `1px solid ${t.border}`, background: t.inpBg, color: t.fg, fontSize: 14, fontFamily: t.mono, outline: 'none' }}
-          />
+          <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Поиск документа..." style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: `1px solid ${t.border}`, background: t.inpBg, color: t.fg, fontSize: 14, fontFamily: t.mono, outline: 'none' }} />
         </div>
         {moving && <Loader2 size={12} style={{ color: t.fgMuted, animation: 'devSpinAnim 1s linear infinite' }} />}
         <button onClick={load} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', borderRadius: 6, border: `1px solid ${t.border}`, background: 'transparent', color: t.fgMuted, cursor: 'pointer', fontSize: 13, fontFamily: t.mono }}
@@ -1287,10 +1469,7 @@ export default function DocsPanel() {
         Перетащи страницу или категорию в другую папку
       </div>
 
-      <section
-        aria-label="Дерево документов"
-        style={{ flex: 1, overflowY: 'auto', padding: '4px' }}
-        className="adm-scroll"
+      <section aria-label="Дерево документов" style={{ flex: 1, overflowY: 'auto', padding: '4px' }} className="adm-scroll"
         onDragOver={e => e.preventDefault()}
         onDrop={e => { e.preventDefault(); const src = e.dataTransfer.getData('text/plain'); if (src) handleDrop(src, 'Docs'); }}
       >
