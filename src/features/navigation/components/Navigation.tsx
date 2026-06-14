@@ -4,10 +4,6 @@
  * Desktop (>1000px): рельс 64px + выдвижная панель + ручка изменения размера
  * Mobile (≤1000px):  нижняя панель + полноэкранные панели (как поиск)
  *
- * Fixes:
- * - Issue 3: Custom pages now correctly highlighted in navigation
- * - Issue 4: Contacts panel works in standard mode on all page types
- * - Issue 5: Navigation scroll position preserved across page transitions
  */
 
 import React, {
@@ -88,16 +84,16 @@ function toCategoryHref(activeNavSlug: string, path: string): string {
 
 // ─── FIX 3: Check if doc is active, including custom pages ───────────────────
 function isDocActive(doc: Doc, currentDocSlug: string | undefined): boolean {
-  if (!currentDocSlug) return false;
-  // Direct slug match
-  if (doc.slug === currentDocSlug) return true;
-  // For custom pages: match by pathname
+  // Always check pathname first — fixes custom pages where currentDocSlug may be wrong/undefined
   if (typeof window !== 'undefined') {
     const pathname = window.location.pathname.replace(/^\/|\/$/g, '');
     if (doc.slug && doc.slug === pathname) return true;
-    // Also check if doc has a custom field matching the slug
-    if (doc.custom && doc.custom === currentDocSlug) return true;
   }
+  if (!currentDocSlug) return false;
+  // Direct slug match
+  if (doc.slug === currentDocSlug) return true;
+  // Custom page: match by custom frontmatter field
+  if (doc.custom && doc.custom === currentDocSlug) return true;
   return false;
 }
 
