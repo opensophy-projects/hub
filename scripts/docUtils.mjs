@@ -170,10 +170,6 @@ function escapeAttr(str) {
     .replaceAll('>', '&gt;');
 }
 
-function escapeRegExp(str) {
-  return String(str).replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
-}
-
 function parseParams(paramStr) {
   const params = {};
   if (!paramStr) return params;
@@ -220,17 +216,33 @@ function collectBlockBody(lines, startAfterIndex) {
 function parseInnerBlocks(bodyStr, innerTag) {
   const lines   = bodyStr.split('\n');
   const results = [];
-  const openRe  = new RegExp(String.raw`^:::${escapeRegExp(innerTag)}(?:\[([^\]]*)\])?(?:\s+(\S.*))?\s*$`);
+  const prefix  = `:::${innerTag}`;
   let i = 0;
 
   while (i < lines.length) {
-    const openMatch = openRe.exec(lines[i].trim());
-    if (!openMatch) { i++; continue; }
+    const trimmed = lines[i].trim();
 
-    const params     = parseParams(openMatch[1] ?? '');
-    const inlineText = openMatch[2] ?? '';
+    if (!trimmed.startsWith(prefix)) { i++; continue; }
+
+    // После префикса допустимо: конец строки, '[' или пробел
+    const afterPrefix = trimmed.slice(prefix.length);
+    if (afterPrefix !== '' && !afterPrefix.startsWith('[') && !/^\s/.test(afterPrefix)) { i++; continue; }
+
+    // Парсим опциональный [...] и inline-текст
+    let params = {};
+    let inlineText = '';
+    let rest = afterPrefix.trimStart();
+
+    if (rest.startsWith('[')) {
+      const closeBracket = rest.indexOf(']');
+      if (closeBracket !== -1) {
+        params = parseParams(rest.slice(1, closeBracket));
+        rest = rest.slice(closeBracket + 1).trimStart();
+      }
+    }
+    inlineText = rest.trim();
+
     i++;
-
     const bodyLines = [];
     while (i < lines.length) {
       if (lines[i].trim() === ':::') { i++; break; }
@@ -404,7 +416,6 @@ function handleChartBlock(trimmed, lines, i, output) {
 
 // ─── Обработчик блока tabs ────────────────────────────────────────────────────
 
-const TAB_OPEN_RE = /^:::tab(?:\[([^\]]*)\])?\s*$/;
 const CODE_BLOCK_RE = /^```([^\n]*)\n([\s\S]*?)```\s*$/;
 
 function parseTabEntry(label, bodyLines, codeBlocks) {
@@ -428,10 +439,19 @@ function parseTabsFromBody(body, codeBlocks) {
   let j = 0;
 
   while (j < tabLines.length) {
-    const openMatch = TAB_OPEN_RE.exec(tabLines[j].trim());
-    if (!openMatch) { j++; continue; }
+    const trimmed = tabLines[j].trim();
 
-    const label = openMatch[1]?.trim() ?? `Вкладка ${tabs.length + 1}`;
+    // Ищем :::tab опционально с [...] без динамического RegExp
+    if (!trimmed.startsWith(':::tab')) { j++; continue; }
+    const afterTag = trimmed.slice(':::tab'.length);
+    if (afterTag !== '' && !afterTag.startsWith('[') && !/^\s/.test(afterTag)) { j++; continue; }
+
+    let label = `Вкладка ${tabs.length + 1}`;
+    const rest = afterTag.trimStart();
+    if (rest.startsWith('[')) {
+      const close = rest.indexOf(']');
+      if (close !== -1) label = rest.slice(1, close).trim() || label;
+    }
     j++;
 
     const bodyLines = [];
@@ -669,14 +689,12 @@ export function parseDoc(rawContent, mdPath, docsDir) {
     priority:     metadata.priority !== undefined && metadata.priority !== ''
                      ? Number(metadata.priority)
                      : 999,
-    // Slug кастомной React-страницы из src/custom/Название{slug}/,
-    // которая должна рендериться вместо markdown-контента.
+    // Slug кастомной React-страницы из src/custom/Название{slug}/.
     // Пустая строка — обычная markdown-страница.
     custom:       metadata.custom?.trim() || '',
     frontmatter:  metadata,
   };
 }
-
 
 function toCategoryDoc(doc) {
   const { content, keywords, robots, ...categoryDoc } = doc;
