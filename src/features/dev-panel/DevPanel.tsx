@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { createPortal } from 'react-dom';
 import { useDevBridge } from './useDevBridge';
 import { ToastContainer } from './components/Toast';
-import { FileText, Users, Image, X, UserCog, WifiOff, Loader2, AlertCircle, Globe } from 'lucide-react';
+import { FileText, Users, Image, X, UserCog, Loader2, Globe } from 'lucide-react';
 import { ThemeTokensContext, makeT, type TTokens, useIsDark } from './theme';
 
 const DocsPanel     = lazy(() => import('./panels/DocsPanel'));
@@ -56,26 +56,13 @@ function clampRect(r: PanelRect): PanelRect {
   return { x, y, w, h };
 }
 
-// ─── Хелперы статуса ─────────────────────────────────────────────────────────
-
-function statusColor(status: string, success: string, warning: string, danger: string): string {
-  if (status === 'connected')  return success;
-  if (status === 'connecting') return warning;
-  return danger;
-}
-
-function statusLabel(status: string): string {
-  if (status === 'connected')  return 'Подключено';
-  if (status === 'connecting') return 'Подключение...';
-  return 'Отключено';
-}
-
 // ─── Кнопка открытия панели ───────────────────────────────────────────────────
 
-function PanelTrigger({ open, onClick, status, t }: Readonly<{
-  open: boolean; onClick: () => void; status: string; t: TTokens;
+
+
+function PanelTrigger({ open, onClick, t }: Readonly<{
+  open: boolean; onClick: () => void; t: TTokens;
 }>) {
-  const hasIssue = status !== 'connected' && status !== 'connecting';
   return (
     <button
       onClick={onClick}
@@ -92,10 +79,7 @@ function PanelTrigger({ open, onClick, status, t }: Readonly<{
       onMouseEnter={e => { e.currentTarget.style.background = t.surfaceHov; e.currentTarget.style.color = t.fg; }}
       onMouseLeave={e => { e.currentTarget.style.background = open ? t.surfaceHov : t.surface; e.currentTarget.style.color = t.fgMuted; }}
     >
-      {hasIssue
-        ? <AlertCircle size={15} style={{ color: t.danger }}/>
-        : <UserCog size={15}/>
-      }
+      <UserCog size={15}/>
       <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.05em', fontFamily: t.mono }}>ADMIN</span>
     </button>
   );
@@ -104,7 +88,7 @@ function PanelTrigger({ open, onClick, status, t }: Readonly<{
 // ─── Главный компонент ────────────────────────────────────────────────────────
 
 export default function DevPanel() {
-  const { status } = useDevBridge();
+  useDevBridge();
   const isDark     = useIsDark();
   const t          = React.useMemo(() => makeT(isDark), [isDark]);
 
@@ -190,8 +174,6 @@ export default function DevPanel() {
 
   if (typeof document === 'undefined') return null;
 
-  const dotClr = statusColor(status, t.success, t.warning, t.danger);
-
   // Хелпер resize-ручки: button со скрытым визуалом, доступный с клавиатуры
   const rh = (style: React.CSSProperties, mode: InteractMode, label: string) => (
     <button
@@ -246,7 +228,6 @@ export default function DevPanel() {
       <PanelTrigger
         open={open}
         onClick={() => open ? setOpen(false) : openPanel()}
-        status={status}
         t={t}
       />
 
@@ -321,15 +302,8 @@ export default function DevPanel() {
                 </span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                <div style={{
-                  width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
-                  background: dotClr,
-                  boxShadow: status === 'connected' ? `0 0 4px ${t.success}` : 'none',
-                  animation: status === 'connecting' ? 'devPulse 1s ease-in-out infinite' : 'none',
-                }}/>
-                <span style={{ fontSize: 9, color: status === 'connected' ? t.success : t.fgSub }}>
-                  {statusLabel(status)}
-                </span>
+                <div style={{ width: 5, height: 5, borderRadius: '50%', flexShrink: 0, background: t.success, boxShadow: `0 0 4px ${t.success}` }}/>
+                <span style={{ fontSize: 9, color: t.success }}>Локальный fetch API · один порт</span>
               </div>
             </div>
 
@@ -380,37 +354,6 @@ export default function DevPanel() {
 
           {/* ── Контент ───────────────────────────────────────────────────── */}
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-            {status !== 'connected' && (
-              <div style={{
-                position: 'absolute', inset: 0, zIndex: 10,
-                background: isDark ? 'rgba(17,17,18,0.93)' : 'rgba(240,239,235,0.93)',
-                display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center', gap: 10,
-              }}>
-                {status === 'connecting' ? (
-                  <>
-                    <Loader2 size={22} style={{ color: t.fgMuted, animation: 'devSpin 1s linear infinite' }}/>
-                    <div style={{ fontSize: 12, color: t.fgMuted }}>Подключение...</div>
-                  </>
-                ) : (
-                  <>
-                    <WifiOff size={22} style={{ color: t.danger }}/>
-                    <div style={{ fontSize: 12, color: t.fgMuted }}>Нет соединения. Запусти `astro dev`</div>
-                    <button
-                      onClick={() => globalThis.location.reload()}
-                      style={{
-                        padding: '6px 14px', borderRadius: 7, cursor: 'pointer',
-                        border: `1px solid ${t.border}`, background: t.surfaceHov,
-                        color: t.fg, fontSize: 11, fontFamily: t.mono,
-                      }}
-                    >
-                      Обновить
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
-
             <Suspense fallback={
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: t.fgSub, fontSize: 12 }}>
                 <Loader2 size={14} style={{ animation: 'devSpin 1s linear infinite' }}/> Загрузка...

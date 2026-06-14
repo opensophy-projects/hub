@@ -1,8 +1,7 @@
 /**
- * Hub Dev Panel — WebSocket Bridge v4
+ * Hub Dev Panel — fetch-only Bridge
  */
 
-import { WebSocketServer } from 'ws';
 import fs   from 'node:fs';
 import path from 'node:path';
 
@@ -14,11 +13,7 @@ const SITEMAP    = path.join(ROOT, 'public/sitemap.xml');
 const SITE_CONFIG_PATH = path.join(ROOT, 'public/data/site-config.json');
 const BASE_URL   = 'https://opensophy.com';
 
-// IPv4-mapped IPv6-адрес для localhost (::ffff:127.0.0.1) — стандартное представление Node.js
-const LOCALHOST_IPV4_MAPPED = '::ffff:127.0.0.1';
-
-// Адреса локального хоста, которым разрешено подключение
-const LOCALHOST_IPS = new Set(['::1', '127.0.0.1', LOCALHOST_IPV4_MAPPED]);
+const LOCALHOST_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
 
 // ─── Разрешённые пути ─────────────────────────────────────────────────────────
 
@@ -38,9 +33,17 @@ const ALLOWED_READ = [
 function relPath(abs) {
   return path.relative(ROOT, abs).replaceAll('\\', '/');
 }
+function resolveInsideRoot(inputPath) {
+  const abs = path.resolve(ROOT, inputPath || '.');
+  const rel = relPath(abs);
+  if (rel.startsWith('..') || path.isAbsolute(rel)) {
+    throw new Error('Path escapes project root');
+  }
+  return abs;
+}
 function canWrite(absPath) {
   const rel = relPath(absPath);
-  return ALLOWED_WRITE.some(p => rel.startsWith(p));
+  return ALLOWED_WRITE.some(p => rel === p.slice(0, -1) || rel.startsWith(p));
 }
 function canRead(absPath) {
   const rel = relPath(absPath);
@@ -148,16 +151,6 @@ async function runGenerate() {
   };
 }
 
-// ─── Отправка полной перезагрузки клиенту ────────────────────────────────────
-
-function sendFullReload(server) {
-  try {
-    server.environments.client.hot.send({ type: 'full-reload', path: '*' });
-  } catch {
-    try { server.ws?.send({ type: 'full-reload', path: '*' }); } catch {}
-  }
-}
-
 // ─── Обработчики команд ───────────────────────────────────────────────────────
 
 async function handlePing() {
@@ -165,7 +158,7 @@ async function handlePing() {
 }
 
 async function handleWriteFile({ filePath, content }) {
-  const abs = path.isAbsolute(filePath) ? filePath : path.join(ROOT, filePath);
+  const abs = resolveInsideRoot(filePath);
   if (!canWrite(abs)) throw new Error(`Write not allowed: ${relPath(abs)}`);
   await fs.promises.mkdir(path.dirname(abs), { recursive: true });
   await fs.promises.writeFile(abs, content, 'utf-8');
@@ -173,14 +166,14 @@ async function handleWriteFile({ filePath, content }) {
 }
 
 async function handleMkdir({ dirPath }) {
-  const abs = path.isAbsolute(dirPath) ? dirPath : path.join(ROOT, dirPath);
+  const abs = resolveInsideRoot(dirPath);
   if (!canWrite(abs)) throw new Error(`Write not allowed: ${relPath(abs)}`);
   await fs.promises.mkdir(abs, { recursive: true });
   return { created: relPath(abs) };
 }
 
 async function handleReadFile({ filePath }) {
-  const abs = path.isAbsolute(filePath) ? filePath : path.join(ROOT, filePath);
+  const abs = resolveInsideRoot(filePath);
   if (!canRead(abs)) throw new Error(`Read not allowed: ${relPath(abs)}`);
   // Если файл не существует — возвращаем пустую строку вместо ошибки
   try {
@@ -192,7 +185,7 @@ async function handleReadFile({ filePath }) {
 }
 
 async function handleDeleteFile({ filePath }) {
-  const abs = path.isAbsolute(filePath) ? filePath : path.join(ROOT, filePath);
+  const abs = resolveInsideRoot(filePath);
   if (!canWrite(abs)) throw new Error(`Delete not allowed: ${relPath(abs)}`);
   await fs.promises.rm(abs, { recursive: true, force: true });
   return { deleted: relPath(abs) };
@@ -326,6 +319,11 @@ const MUTATING = new Set(['writeFile', 'mkdir', 'deleteFile', 'runGenerate']);
 
 // ─── Astro интеграция ─────────────────────────────────────────────────────────
 
+function isLocalDevRequest(req) {
+  const host = (req.headers.host || '').split(':')[0];
+  return LOCALHOST_HOSTS.has(host);
+}
+
 export function devBridgeIntegration() {
   return {
     name: 'hub-dev-bridge',
@@ -363,63 +361,57 @@ export function devBridgeIntegration() {
 
         const suppressReload = () => { suppressReloadUntil = Date.now() + 2000; };
 
-        const wss = new WebSocketServer({ port: 7777, host: '127.0.0.1' });
-        logger.info('[hub-dev] Bridge ready → ws://127.0.0.1:7777 | Press Ctrl+Shift+D in browser');
-
-        wss.on('connection', (ws, req) => {
-          const ip = req.socket.remoteAddress ?? '';
-          if (!LOCALHOST_IPS.has(ip)) {
-            logger.warn(`[hub-dev] Rejected from ${ip}`);
-            ws.close(1008, 'Forbidden');
+        server.middlewares.use('/api/dev-bridge', async (req, res) => {
+          if (!isLocalDevRequest(req)) {
+            res.statusCode = 404;
+            res.end('Not found');
             return;
           }
 
-          logger.info(`[hub-dev] Client connected from ${ip}`);
+          if (req.method !== 'POST') {
+            res.statusCode = 405;
+            res.setHeader('Allow', 'POST');
+            res.end('Method not allowed');
+            return;
+          }
 
-          ws.on('message', async raw => {
-            let msg;
-            try { msg = JSON.parse(raw.toString()); }
-            catch {
-              ws.send(JSON.stringify({ id: null, ok: false, error: 'Invalid JSON' }));
-              return;
-            }
-
+          try {
+            let raw = '';
+            for await (const chunk of req) raw += chunk;
+            const msg = raw ? JSON.parse(raw) : {};
             const { id, action, payload } = msg;
             const handler = HANDLERS[action];
 
             if (!handler) {
-              ws.send(JSON.stringify({ id, ok: false, error: `Unknown action: ${action}` }));
+              res.statusCode = 400;
+              res.setHeader('Content-Type', 'application/json; charset=utf-8');
+              res.end(JSON.stringify({ id, ok: false, error: `Unknown action: ${action}` }));
               return;
             }
 
-            try {
-              const result = await handler(payload ?? {});
-              ws.send(JSON.stringify({ id, ok: true, result }));
+            const result = await handler(payload ?? {});
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.end(JSON.stringify({ id, ok: true, result }));
 
-              if (MUTATING.has(action)) {
-                suppressReload();
-                try {
-                  const gen = await runGenerate();
+            if (MUTATING.has(action)) {
+              suppressReload();
+              runGenerate()
+                .then(gen => {
                   logger.info(`[hub-dev] Regenerated (${gen.count} docs) after ${action}`);
                   if (gen.stderr) logger.warn(`[hub-dev] Generate warnings: ${gen.stderr}`);
-                } catch (err) {
-                  logger.error(`[hub-dev] Generate failed: ${err.message}`);
-                }
-              }
-            } catch (err) {
-              logger.error(`[hub-dev] ${action} error: ${err.message}`);
-              ws.send(JSON.stringify({ id, ok: false, error: err.message }));
+                })
+                .catch(err => logger.error(`[hub-dev] Generate failed: ${err.message}`));
             }
-          });
-
-          ws.on('close', () => logger.info('[hub-dev] Client disconnected'));
-          ws.on('error', err => logger.error(`[hub-dev] WS error: ${err.message}`));
+          } catch (err) {
+            logger.error('[hub-dev] request error: ' + err.message);
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.end(JSON.stringify({ ok: false, error: err.message }));
+          }
         });
 
-        server.httpServer?.on('close', () => {
-          wss.close();
-          logger.info('[hub-dev] Bridge closed');
-        });
+        logger.info('[hub-dev] Bridge ready → /api/dev-bridge (same Astro port) | Press Ctrl+Shift+D in browser');
       },
     },
   };

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useContext, useRef } from 'rea
 import { bridge } from '../useDevBridge';
 import { ThemeTokensContext } from '../theme';
 import { toast } from '../components/toastBus';
-import { Loader2, LayoutTemplate, FileText, RefreshCw, AlertCircle } from 'lucide-react';
+import { Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 import type { SiteConfig } from '../useDevBridge';
 import {
   applyThemeColorOverrides,
@@ -13,65 +13,6 @@ import {
   THEME_COLOR_STORAGE_KEY,
   type ThemeColorKey,
 } from '@/shared/tokens/theme';
-
-// Стили радио-индикатора выбранной опции
-function RadioDot({ active, t }: { readonly active: boolean; readonly t: ReturnType<typeof useContext<typeof ThemeTokensContext>> }) {
-  return (
-    <div style={{
-      width: 16, height: 16, borderRadius: '50%', flexShrink: 0, marginTop: 1,
-      border: `2px solid ${active ? t.fg : t.border}`,
-      background: active ? t.fg : 'transparent',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      {active && <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.bg }} />}
-    </div>
-  );
-}
-
-// Кнопка выбора режима главной страницы
-function ModeButton({
-  active,
-  saving,
-  onClick,
-  icon,
-  label,
-  description,
-  t,
-}: {
-  readonly active: boolean;
-  readonly saving: boolean;
-  readonly onClick: () => void;
-  readonly icon: React.ReactNode;
-  readonly label: string;
-  readonly description: React.ReactNode;
-  readonly t: ReturnType<typeof useContext<typeof ThemeTokensContext>>;
-}) {
-  return (
-    <button
-      disabled={saving}
-      onClick={onClick}
-      style={{
-        display: 'flex', alignItems: 'flex-start', gap: 12,
-        padding: '14px 16px', borderRadius: 9,
-        border: `1px solid ${active ? t.borderStrong : t.border}`,
-        background: active ? t.accentSoft : 'transparent',
-        color: active ? t.fg : t.fgMuted,
-        cursor: saving ? 'not-allowed' : 'pointer',
-        textAlign: 'left', fontFamily: t.mono,
-        opacity: saving ? 0.7 : 1,
-      }}
-    >
-      <RadioDot active={active} t={t} />
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-          {icon}
-          <span style={{ fontSize: 14, fontWeight: 600 }}>{label}</span>
-        </div>
-        <div style={{ fontSize: 12, color: t.fgSub, lineHeight: 1.5 }}>{description}</div>
-      </div>
-    </button>
-  );
-}
 
 export default function SitePanel() {
   const t = useContext(ThemeTokensContext);
@@ -166,12 +107,6 @@ export default function SitePanel() {
     }
   };
 
-  const handleToggleLanding = (value: boolean) =>
-    applyConfigChange(
-      { ...config, useLanding: value },
-      value ? 'Режим: лендинг' : 'Режим: документация',
-    );
-
   const handleToggleDotWave = (value: boolean) =>
     applyConfigChange(
       { ...config, showDotWaveBackground: value },
@@ -191,46 +126,21 @@ export default function SitePanel() {
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '12px', background: t.bg }} className="adm-scroll">
 
-      {/* Заголовок */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 6,
         fontSize: 11, fontWeight: 700, color: t.fgSub,
         textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12,
       }}>
-        ГЛАВНАЯ СТРАНИЦА
+        НАСТРОЙКИ САЙТА
       </div>
 
-      {/* Описание */}
       <div style={{
         fontSize: 13, color: t.fgMuted, lineHeight: 1.55,
-        marginBottom: 16, padding: '10px 12px',
-        borderRadius: 7, border: `1px solid ${t.border}`,
+        marginBottom: 16, padding: '12px 14px',
+        borderRadius: 9, border: `1px solid ${t.border}`,
         background: t.surface,
       }}>
-        Выберите, что отображается на главной странице (<code style={{ fontFamily: t.mono, fontSize: 12 }}>/</code>).
-        Изменение вступит в силу при следующем обращении к странице.
-      </div>
-
-      {/* Переключатель режима главной страницы */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-        <ModeButton
-          active={!config.useLanding}
-          saving={saving}
-          onClick={() => handleToggleLanding(false)}
-          icon={<FileText size={15} style={{ color: config.useLanding ? t.fgMuted : t.fg }} />}
-          label="Welcome.md"
-          description={<>Показывать обычную главную документации из файла <code style={{ fontFamily: t.mono }}>Docs/welcome.md</code>.</>}
-          t={t}
-        />
-        <ModeButton
-          active={config.useLanding}
-          saving={saving}
-          onClick={() => handleToggleLanding(true)}
-          icon={<LayoutTemplate size={15} style={{ color: config.useLanding ? t.fg : t.fgMuted }} />}
-          label="Лендинг"
-          description={<>Показывать лендинг-страницу. В этом режиме <code style={{ fontFamily: t.mono }}>Welcome.md</code> не используется.</>}
-          t={t}
-        />
+        Режим главной страницы больше не переключается здесь. Для кастомной главной используйте Markdown-страницу с frontmatter <code style={{ fontFamily: t.mono }}>custom</code> в редакторе страниц.
       </div>
 
       {/* Статус сохранения */}
@@ -295,7 +205,7 @@ export default function SitePanel() {
       }}>
         <span>
           Сейчас: <strong style={{ color: t.fgMuted }}>
-            {config.useLanding ? 'Лендинг' : 'Документация'} · Фон шапки: {dotWaveEnabled ? 'вкл' : 'выкл'}
+Фон шапки: {dotWaveEnabled ? 'вкл' : 'выкл'}
           </strong>
         </span>
         <button
@@ -317,8 +227,7 @@ export default function SitePanel() {
         border: `1px solid ${t.border}`, background: t.surface,
         fontSize: 12, color: t.fgSub, lineHeight: 1.55,
       }}>
-        💡 После изменения режима обновите страницу сайта (<code style={{ fontFamily: t.mono }}>F5</code>).
-        В production-окружении может понадобиться пересборка.
+💡 Эти настройки применяются локально в dev-режиме. Для production нужен обычный статический build.
       </div>
 
       <div style={{ height: 1, background: t.border, margin: '12px 0' }} />
