@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { createPortal } from 'react-dom';
-import { useDevBridge } from './useDevBridge';
+import { reconnectBridge, useDevBridge } from './useDevBridge';
+import { toast } from './components/toastBus';
 import { ToastContainer } from './components/Toast';
-import { FileText, Users, Image, X, UserCog, WifiOff, Loader2, AlertCircle, Globe } from 'lucide-react';
+import { FileText, Users, Image, X, UserCog, WifiOff, Loader2, AlertCircle, Globe, Map } from 'lucide-react';
 import { ThemeTokensContext, makeT, type TTokens, useIsDark } from './theme';
 
+const NavPanel      = lazy(() => import('./panels/NavPanel'));
 const DocsPanel     = lazy(() => import('./panels/DocsPanel'));
 const ContactsPanel = lazy(() => import('./panels/ContactsPanel'));
 const AssetsPanel   = lazy(() => import('./panels/AssetsPanel'));
@@ -13,6 +15,7 @@ const SitePanel     = lazy(() => import('./panels/SitePanel'));
 // ─── Табы ────────────────────────────────────────────────────────────────────
 
 const TABS = [
+  { id: 'nav',      label: 'Навигация', icon: <Map size={13}/>      },
   { id: 'docs',     label: 'Страницы',  icon: <FileText size={13}/> },
   { id: 'contacts', label: 'Контакты',  icon: <Users size={13}/>    },
   { id: 'assets',   label: 'Ассеты',    icon: <Image size={13}/>    },
@@ -61,12 +64,14 @@ function clampRect(r: PanelRect): PanelRect {
 function statusColor(status: string, success: string, warning: string, danger: string): string {
   if (status === 'connected')  return success;
   if (status === 'connecting') return warning;
+  if (status === 'error') return warning;
   return danger;
 }
 
 function statusLabel(status: string): string {
   if (status === 'connected')  return 'Подключено';
   if (status === 'connecting') return 'Подключение...';
+  if (status === 'error') return 'Ошибка';
   return 'Отключено';
 }
 
@@ -109,7 +114,7 @@ export default function DevPanel() {
   const t          = React.useMemo(() => makeT(isDark), [isDark]);
 
   const [open, setOpen] = useState(false);
-  const [tab,  setTab]  = useState('docs');
+  const [tab,  setTab]  = useState('nav');
   const [rect, setRect] = useState<PanelRect>({ x: 16, y: 40, w: 520, h: 600 });
 
   const interacting = useRef<InteractMode>(null);
@@ -174,6 +179,17 @@ export default function DevPanel() {
       globalThis.removeEventListener('mousemove', onMove);
       globalThis.removeEventListener('mouseup',   onUp);
     };
+  }, []);
+
+
+  useEffect(() => {
+    const onStatus = (event: Event) => {
+      const detail = (event as CustomEvent<{ status: string; previous: string }>).detail;
+      if (detail.status === 'disconnected' && detail.previous === 'connected') toast.warning('Соединение прервано, переподключение...');
+      if (detail.status === 'connected' && detail.previous && detail.previous !== 'connected') toast.success('Соединение восстановлено');
+    };
+    globalThis.addEventListener('hub:bridge-status', onStatus);
+    return () => globalThis.removeEventListener('hub:bridge-status', onStatus);
   }, []);
 
   useEffect(() => {
@@ -397,14 +413,14 @@ export default function DevPanel() {
                     <WifiOff size={22} style={{ color: t.danger }}/>
                     <div style={{ fontSize: 12, color: t.fgMuted }}>Нет соединения. Запусти `astro dev`</div>
                     <button
-                      onClick={() => globalThis.location.reload()}
+                      onClick={() => reconnectBridge()}
                       style={{
                         padding: '6px 14px', borderRadius: 7, cursor: 'pointer',
                         border: `1px solid ${t.border}`, background: t.surfaceHov,
                         color: t.fg, fontSize: 11, fontFamily: t.mono,
                       }}
                     >
-                      Обновить
+Переподключить
                     </button>
                   </>
                 )}
@@ -416,6 +432,7 @@ export default function DevPanel() {
                 <Loader2 size={14} style={{ animation: 'devSpin 1s linear infinite' }}/> Загрузка...
               </div>
             }>
+              {tab === 'nav'      && <NavPanel/>}
               {tab === 'docs'     && <DocsPanel/>}
               {tab === 'contacts' && <ContactsPanel/>}
               {tab === 'assets'   && <AssetsPanel/>}

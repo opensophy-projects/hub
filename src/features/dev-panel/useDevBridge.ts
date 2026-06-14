@@ -1,159 +1,98 @@
-/**
- * useDevBridge v2 — улучшенный WebSocket хук
- * - Экспоненциальный backoff для переподключения
- * - Типизированный API bridge
- * - Heartbeat для детекции обрыва
- */
-
 import { useEffect, useState } from 'react';
-
-const resolveWsUrl = (): string => {
-  if (!('location' in globalThis)) return 'ws://127.0.0.1:7777';
-  const proto = globalThis.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${proto}//${globalThis.location.hostname}:7777`;
-};
 
 export type BridgeStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 
-interface PendingMsg {
-  resolve: (v: unknown) => void;
-  reject: (e: Error) => void;
-  timeout: ReturnType<typeof setTimeout>;
-}
+interface BridgeResponse<T> { id?: string; ok?: boolean; result?: T; error?: string; }
+const BASE = '/api/bridge';
 
-interface BridgeResponse {
-  id?: string;
-  ok?: boolean;
-  result?: unknown;
-  error?: string;
-}
+class RequestQueue {
+  private queue: Array<() => Promise<void>> = [];
+  private running = false;
 
-// ─── Singleton connection manager ──────────────────────────────────────────────
-
-let ws: WebSocket | null = null;
-const pending     = new Map<string, PendingMsg>();
-const listeners   = new Set<(s: BridgeStatus) => void>();
-let status: BridgeStatus = 'disconnected';
-let reconnectDelay = 1000;
-let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
-let connectCalled  = false;
-
-function broadcast(s: BridgeStatus) {
-  status = s;
-  listeners.forEach(fn => fn(s));
-}
-
-function stopHeartbeat() {
-  if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
-}
-
-function startHeartbeat() {
-  stopHeartbeat();
-  heartbeatTimer = setInterval(() => {
-    if (ws?.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ id: '__ping__', action: 'ping' }));
-    }
-  }, 15_000);
-}
-
-function connect() {
-  if (ws?.readyState === WebSocket.OPEN || ws?.readyState === WebSocket.CONNECTING) return;
-
-  broadcast('connecting');
-
-  try {
-    ws = new WebSocket(resolveWsUrl());
-  } catch {
-    broadcast('error');
-    scheduleReconnect();
-    return;
+  async add<T>(fn: () => Promise<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      this.queue.push(async () => {
+        try { resolve(await fn()); } catch (e) { reject(e); }
+      });
+      void this.drain();
+    });
   }
 
-  ws.onopen = () => {
-    reconnectDelay = 1000;
-    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
-    broadcast('connected');
-    startHeartbeat();
-  };
+  private async drain() {
+    if (this.running) return;
+    this.running = true;
+    while (this.queue.length > 0) {
+      const job = this.queue.shift();
+      if (job) await job();
+    }
+    this.running = false;
+  }
+}
 
-  ws.onmessage = ev => {
-    let msg: BridgeResponse;
-    try { msg = JSON.parse(ev.data) as BridgeResponse; } catch { return; }
-    if (msg.id === '__ping__') return;
-    const p = pending.get(msg.id);
-    if (!p) return;
-    clearTimeout(p.timeout);
-    pending.delete(msg.id);
-    if (msg.ok) p.resolve(msg.result ?? null);
-    else p.reject(new Error(msg.error ?? 'Bridge error'));
-  };
+const queue = new RequestQueue();
+const listeners = new Set<(s: BridgeStatus) => void>();
+let currentStatus: BridgeStatus = 'disconnected';
+let es: EventSource | null = null;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let attempts = 0;
 
-  ws.onclose = () => {
-    stopHeartbeat();
-    pending.forEach(({ reject, timeout }) => { clearTimeout(timeout); reject(new Error('Disconnected')); });
-    pending.clear();
+function broadcast(s: BridgeStatus) {
+  const prev = currentStatus;
+  currentStatus = s;
+  listeners.forEach(fn => fn(s));
+  globalThis.dispatchEvent?.(new CustomEvent('hub:bridge-status', { detail: { status: s, previous: prev } }));
+}
+
+export function reconnectBridge() {
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  es?.close(); es = null; attempts = 0;
+  connectSSE();
+}
+
+function connectSSE() {
+  if (es || typeof EventSource === 'undefined') return;
+  broadcast('connecting');
+  es = new EventSource(`${BASE}/stream/`);
+  es.onopen = () => { attempts = 0; broadcast('connected'); };
+  es.onerror = () => {
+    es?.close(); es = null;
     broadcast('disconnected');
-    scheduleReconnect();
+    const delay = Math.min(1000 * 2 ** attempts, 30_000); attempts += 1;
+    reconnectTimer = setTimeout(connectSSE, delay);
   };
-
-  ws.onerror = () => {
-    broadcast('error');
-    if (ws?.readyState === WebSocket.OPEN || ws?.readyState === WebSocket.CONNECTING) {
-      ws.close();
-    }
-  };
+  es.addEventListener('ping', () => undefined);
+  es.addEventListener('reload', () => globalThis.dispatchEvent?.(new CustomEvent('hub:bridge-reload')));
 }
 
-function scheduleReconnect() {
-  if (reconnectTimer) return;
-  reconnectTimer = setTimeout(() => {
-    reconnectTimer = null;
-    reconnectDelay = Math.min(reconnectDelay * 1.5, 10_000);
-    connect();
-  }, reconnectDelay);
-}
-
-function send<T = unknown>(action: string, payload?: unknown): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    if (ws?.readyState !== WebSocket.OPEN) {
-      reject(new Error('Not connected'));
-      return;
+async function send<T>(action: string, payload?: unknown): Promise<T> {
+  return queue.add(async () => {
+    try {
+      const res = await fetch(`${BASE}/cmd/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, payload, id: crypto.randomUUID() }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json() as BridgeResponse<T>;
+      if (!data.ok) throw new Error(data.error ?? 'Bridge error');
+      return data.result as T;
+    } catch (e) {
+      broadcast('error');
+      throw e;
     }
-    // crypto.randomUUID() используется для уникальной идентификации pending-запросов
-    const id = crypto.randomUUID();
-    const timeout = setTimeout(() => {
-      pending.delete(id);
-      reject(new Error(`Timeout: ${action}`));
-    }, 30_000);
-    pending.set(id, { resolve, reject, timeout });
-    ws.send(JSON.stringify({ id, action, payload }));
   });
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
-
 export function useDevBridge() {
-  const [bridgeStatus, setBridgeStatus] = useState<BridgeStatus>(status);
-
+  const [status, setStatus] = useState<BridgeStatus>(currentStatus);
   useEffect(() => {
-    listeners.add(setBridgeStatus);
-    if (connectCalled) {
-      setBridgeStatus(status);
-    } else {
-      connectCalled = true;
-      connect();
-    }
-    return () => { listeners.delete(setBridgeStatus); };
+    listeners.add(setStatus);
+    setStatus(currentStatus);
+    connectSSE();
+    return () => { listeners.delete(setStatus); };
   }, []);
-
-  return {
-    status: bridgeStatus,
-    isConnected: bridgeStatus === 'connected',
-  };
+  return { status, isConnected: status === 'connected' };
 }
-
-// ─── Site config типы ─────────────────────────────────────────────────────────
 
 export interface SiteConfig {
   useLanding: boolean;
@@ -163,49 +102,23 @@ export interface SiteConfig {
   darkLogo?: string;
 }
 
-// ─── Typed bridge API ──────────────────────────────────────────────────────────
-
 export const bridge = {
-  writeFile: (filePath: string, content: string) =>
-    send<{ written: string }>('writeFile', { filePath, content }),
-
-  // Создаёт директорию без placeholder-файлов
-  mkdir: (dirPath: string) =>
-    send<{ created: string }>('mkdir', { dirPath }),
-
-  readFile: (filePath: string) =>
-    send<{ content: string }>('readFile', { filePath }),
-
-  deleteFile: (filePath: string) =>
-    send<{ deleted: string }>('deleteFile', { filePath }),
-
-  listDocs: () =>
-    send<{ entries: Array<{ type: 'file'|'dir'; path: string; name: string; depth: number }> }>('listDocs'),
-
-  readContacts: () =>
-    send<{ content: string }>('readContacts'),
-
-  writeContacts: (content: string) =>
-    send<{ ok: boolean }>('writeContacts', { content }),
-
-  uploadAsset: (filename: string, base64: string, mimeType: string) =>
-    send<{ path: string }>('uploadAsset', { filename, base64, mimeType }),
-
-  uploadFavicon: (base64: string, mimeType: string) =>
-    send<{ path: string }>('uploadFavicon', { base64, mimeType }),
-
-  uploadLogo: (variant: 'light' | 'dark', base64: string, mimeType: string) =>
-    send<{ path: string }>('uploadLogo', { variant, base64, mimeType }),
-
-  runGenerate: () =>
-    send<{ ok: boolean; stdout: string; stderr: string }>('runGenerate'),
-
-  renderPreview: (markdown: string) =>
-    send<{ html: string; error?: string }>('renderPreview', { markdown }),
-
-  readSiteConfig: () =>
-    send<{ config: SiteConfig }>('readSiteConfig'),
-
-  writeSiteConfig: (config: SiteConfig) =>
-    send<{ ok: boolean }>('writeSiteConfig', { config }),
+  writeFile: (filePath: string, content: string) => send<{ written: string }>('writeFile', { filePath, content }),
+  mkdir: (dirPath: string) => send<{ created: string }>('mkdir', { dirPath }),
+  readFile: (filePath: string) => send<{ content: string }>('readFile', { filePath }),
+  deleteFile: (filePath: string) => send<{ deleted: string }>('deleteFile', { filePath }),
+  listDocs: () => send<{ entries: Array<{ type: 'file'|'dir'; path: string; name: string; depth: number }> }>('listDocs'),
+  readContacts: () => send<{ content: string }>('readContacts'),
+  writeContacts: (content: string) => send<{ ok: boolean }>('writeContacts', { content }),
+  uploadAsset: (filename: string, base64: string, mimeType: string) => send<{ path: string }>('uploadAsset', { filename, base64, mimeType }),
+  uploadFavicon: (base64: string, mimeType: string) => send<{ path: string }>('uploadFavicon', { base64, mimeType }),
+  uploadLogo: (variant: 'light' | 'dark', base64: string, mimeType: string) => send<{ path: string }>('uploadLogo', { variant, base64, mimeType }),
+  runGenerate: () => send<{ ok: boolean; stdout: string; stderr: string }>('runGenerate'),
+  renderPreview: (markdown: string) => send<{ html: string; error?: string }>('renderPreview', { markdown }),
+  readSiteConfig: () => send<{ config: SiteConfig }>('readSiteConfig'),
+  writeSiteConfig: (config: SiteConfig) => send<{ ok: boolean }>('writeSiteConfig', { config }),
+  listCustomPages: () => send<{ pages: Array<{ slug: string; folderName: string }> }>('listCustomPages'),
+  readNavStructure: () => send<{ tree: unknown[] }>('readNavStructure'),
+  moveEntry: (srcPath: string, dstPath: string) => send<{ ok: boolean; path?: string }>('moveEntry', { srcPath, dstPath }),
+  renameEntry: (oldPath: string, newName: string) => send<{ ok: boolean; path?: string }>('renameEntry', { oldPath, newName }),
 };

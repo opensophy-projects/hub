@@ -13,7 +13,7 @@ import {
   Loader2, Bold, Italic, Code, Link, Hash, List,
   RefreshCw, Minus, Image, BarChart2, Table, Search,
   Columns, AlertCircle, Calculator, Footprints, LayoutGrid, Type,
-  Edit3,
+  Edit3, Eye,
 } from 'lucide-react';
 
 interface FlatEntry { type: 'file' | 'dir'; path: string; name: string; depth: number; }
@@ -645,14 +645,41 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [fmOpen, setFmOpen] = useState(false);
+  const [splitMode, setSplitModeState] = useState<'editor' | 'split' | 'preview'>(() => {
+    if (typeof sessionStorage === 'undefined') return 'editor';
+    const saved = sessionStorage.getItem('hub:editor:splitMode');
+    return saved === 'split' || saved === 'preview' || saved === 'editor' ? saved : 'editor';
+  });
+  const [previewHtml, setPreviewHtml] = useState('');
   const taRef = useRef<HTMLTextAreaElement>(null);
   const fmRef = useRef(fm);
   const bodyRef = useRef(body);
   useEffect(() => { fmRef.current = fm; }, [fm]);
   useEffect(() => { bodyRef.current = body; }, [body]);
 
+  const setSplitMode = (mode: 'editor' | 'split' | 'preview') => {
+    setSplitModeState(mode);
+    try { sessionStorage.setItem('hub:editor:splitMode', mode); } catch { /* noop */ }
+  };
+
+  useEffect(() => {
+    if (splitMode === 'editor') return;
+    if (previewTimer.current) clearTimeout(previewTimer.current);
+    previewTimer.current = setTimeout(async () => {
+      try {
+        const result = await bridge.renderPreview(bodyRef.current);
+        setPreviewHtml(result.html ?? '');
+      } catch (e) {
+        setPreviewHtml(`<p>${(e as Error).message}</p>`);
+      }
+    }, 400);
+    return () => { if (previewTimer.current) clearTimeout(previewTimer.current); };
+  }, [body, splitMode]);
+
+
   const bcRef = useRef<BroadcastChannel | null>(null);
   const liveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (typeof BroadcastChannel !== 'undefined') {
@@ -843,26 +870,37 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
         <div style={{ width: 1, height: 14, background: t.border, margin: '0 3px' }} />
         <BlockPicker onInsert={insertAtCursor} t={t} />
         <div style={{ flex: 1 }} />
+        {toolBtn(() => setSplitMode('editor'), <Edit3 size={11} />, 'Только редактор')}
+        {toolBtn(() => setSplitMode('split'), <Columns size={11} />, 'Редактор и превью')}
+        {toolBtn(() => setSplitMode('preview'), <Eye size={11} />, 'Только превью')}
         <span style={{ fontSize: 12, color: t.fgSub }}>{body.trim().split(/\s+/).filter(Boolean).length} слов</span>
       </div>
 
-      <textarea
-        ref={taRef}
-        value={body}
-        onChange={e => handleChange(e.target.value)}
-        onKeyDown={handleTab}
-        spellCheck={false}
-        placeholder="Начните писать..."
-        style={{
-          flex: 1, padding: '12px 14px', border: 'none',
-          background: t.inpBg,
-          color: t.editorFg,
-          fontSize: 12,
-          fontFamily: 'ui-monospace, "Cascadia Code", "Fira Code", monospace',
-          lineHeight: 1.75, resize: 'none', outline: 'none',
-          scrollbarWidth: 'thin', width: '100%', boxSizing: 'border-box',
-        } as React.CSSProperties}
-      />
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
+        {splitMode !== 'preview' && (
+          <textarea
+            ref={taRef}
+            value={body}
+            onChange={e => handleChange(e.target.value)}
+            onKeyDown={handleTab}
+            spellCheck={false}
+            placeholder="Начните писать..."
+            style={{
+              flex: 1, padding: '12px 14px', border: 'none',
+              borderRight: splitMode === 'split' ? `1px solid ${t.border}` : 'none',
+              background: t.inpBg,
+              color: t.editorFg,
+              fontSize: 12,
+              fontFamily: 'ui-monospace, "Cascadia Code", "Fira Code", monospace',
+              lineHeight: 1.75, resize: 'none', outline: 'none',
+              scrollbarWidth: 'thin', width: '100%', boxSizing: 'border-box',
+            } as React.CSSProperties}
+          />
+        )}
+        {splitMode !== 'editor' && (
+          <div className="prose dark:prose-invert adm-scroll" style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', background: t.inpBg, color: t.fg, fontSize: 13, lineHeight: 1.7 }} dangerouslySetInnerHTML={{ __html: previewHtml }} />
+        )}
+      </div>
     </div>
   );
 }
