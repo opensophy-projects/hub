@@ -339,7 +339,7 @@ const HLJS_CSS = `
 .uiv-hl .hljs-tag,.uiv-hl .hljs-name { color:#fb7185 }
 `;
 
-// ─── SourceCodeViewer (read-only, copyable) ───────────────────────────────────
+// ─── SourceCodeViewer ─────────────────────────────────────────────────────────
 
 interface SourceCodeViewerProps {
   fileContents: Record<string, string>;
@@ -441,7 +441,7 @@ const SourceCodeViewer: React.FC<SourceCodeViewerProps> = ({ fileContents, t }) 
         </button>
       </div>
 
-      {/* Код — только для чтения, можно выделять и копировать */}
+      {/* Код — только для чтения */}
       <div
         className="uiv-hl"
         style={{
@@ -488,20 +488,13 @@ interface ComponentRenderProps {
   isDark: boolean;
   componentCategory?: string;
   fileContents: Record<string, string>;
-  /**
-   * Режим раскладки контейнера:
-   * - 'fill'    — компонент занимает всю выделенную область (фоны, полноразмерные демо)
-   * - 'content' — компонент центрируется и занимает своё естественное место
-   * По умолчанию определяется по категории.
-   */
   containerMode?: 'fill' | 'content';
 }
 
-const ComponentRender: React.FC<ComponentRenderProps> = ({
+const ComponentRender: React.FC<Omit<ComponentRenderProps, 'fileContents'> & { containerMode: 'fill' | 'content' }> = ({
   Component, universalProps, refreshKey, isDark, containerMode,
 }) => {
-  const resolvedMode = containerMode ?? 'fill';
-  const isFill = resolvedMode === 'fill';
+  const isFill = containerMode === 'fill';
   return (
     <div style={{
       width: '100%',
@@ -509,7 +502,7 @@ const ComponentRender: React.FC<ComponentRenderProps> = ({
       position: 'relative',
       overflow: 'visible',
     }}>
-      <ComponentWrapper {...universalProps} isDark={isDark} layoutMode={resolvedMode} className="w-full h-full">
+      <ComponentWrapper {...universalProps} isDark={isDark} layoutMode={containerMode} className="w-full h-full">
         <Suspense fallback={null}>
           <Component key={refreshKey} />
         </Suspense>
@@ -538,7 +531,6 @@ const FullscreenDesktop: React.FC<ComponentRenderProps & {
 }) => {
   const isBackground = componentCategory === 'backgrounds';
 
-  // overflow: auto позволяет скроллить если компонент большой, но не обрезает
   const previewStyle: React.CSSProperties = isBackground
     ? { flex: 1, position: 'relative', overflow: 'hidden' }
     : { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48, overflow: 'auto', position: 'relative' };
@@ -581,7 +573,6 @@ const FullscreenDesktop: React.FC<ComponentRenderProps & {
           Component={Component}
           universalProps={universalProps} refreshKey={refreshKey}
           isDark={isDark} componentCategory={componentCategory}
-          fileContents={fileContents}
           containerMode={isBackground ? 'fill' : 'content'}
         />
       </div>
@@ -707,7 +698,7 @@ const FullscreenMobile: React.FC<ComponentRenderProps & {
   return (
     <>
       <div style={{ position: 'absolute', inset: 0, bottom: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: isBackground ? 'hidden' : 'visible' }}>
-        <ComponentRender Component={Component} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} componentCategory={componentCategory} fileContents={fileContents} containerMode={isBackground ? 'fill' : 'content'} />
+        <ComponentRender Component={Component} universalProps={universalProps} refreshKey={refreshKey} isDark={isDark} componentCategory={componentCategory} containerMode={isBackground ? 'fill' : 'content'} />
       </div>
 
       {sheet && (
@@ -818,8 +809,6 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
   onOpenFullscreen: () => void; t: T; loading: boolean;
 }> = ({ Component, universalProps, refreshKey, isDark, componentCategory, onOpenFullscreen, t, loading, fileContents }) => {
   const isBackground = componentCategory === 'backgrounds';
-  // Для не-фоновых компонентов используем 'content' режим чтобы flex-центрирование работало
-  const previewContainerMode: 'fill' | 'content' = isBackground ? 'fill' : 'content';
 
   return (
     <div style={{ position: 'relative', width: '100%', overflow: 'visible' }}>
@@ -840,7 +829,6 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
       </button>
       <div style={{
         width: '100%',
-        // Для фонов фиксированная высота, для контентных — минимальная 240px, растёт по контенту
         minHeight: isBackground ? 400 : 240,
         height: isBackground ? 400 : 'auto',
         position: 'relative',
@@ -860,8 +848,7 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
             Component={Component}
             universalProps={universalProps} refreshKey={refreshKey}
             isDark={isDark} componentCategory={componentCategory}
-            fileContents={fileContents}
-            containerMode={previewContainerMode}
+            containerMode={isBackground ? 'fill' : 'content'}
           />
         )}
       </div>
@@ -881,7 +868,6 @@ const DEFAULT_UNIVERSAL_PROPS: UniversalProps = {
   opacity: 1, blur: 0, brightness: 1, contrast: 1, saturate: 1,
 };
 
-// Заглушка — рендерится пока компонент не загружен/не найден
 const PlaceholderComponent: AnyComponent = () => null;
 
 // ─── UIComponentViewer ────────────────────────────────────────────────────────
