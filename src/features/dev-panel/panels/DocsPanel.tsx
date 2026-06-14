@@ -890,7 +890,7 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
               />
               <span style={{ flex: 1 }}>
                 <strong style={{ display: 'block', color: t.fg, fontSize: 13 }}>Кастомная страница</strong>
-                <span style={{ display: 'block', color: t.fgSub, fontSize: 12, lineHeight: 1.45 }}>Включено — будет показан компонент из src/custom. Выключено — будет показан обычный Markdown.</span>
+                <span style={{ display: 'block', color: t.fgSub, fontSize: 12, lineHeight: 1.45 }}>Включено — будет показан код из src/custom. Выключено — будет показан обычный Markdown.</span>
                 {!!fm.custom && (
                   <select
                     value={fm.custom}
