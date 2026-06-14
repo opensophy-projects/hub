@@ -9,6 +9,7 @@ import {
   ChevronDown, ChevronRight, Settings,
 } from 'lucide-react';
 import hljs from 'highlight.js/lib/core';
+import DOMPurify from 'isomorphic-dompurify';
 import { loadComponent } from './loader';
 import { ComponentWrapper } from './ComponentWrapper';
 import { useIsMobile } from '@/shared/hooks/useBreakpoint';
@@ -469,7 +470,7 @@ const SourceCodeViewer: React.FC<SourceCodeViewerProps> = ({ fileContents, t }) 
           }}
         >
           <code
-            dangerouslySetInnerHTML={{ __html: highlighted }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(highlighted) }}
             style={{ userSelect: 'text', WebkitUserSelect: 'text' } as React.CSSProperties}
           />
         </pre>
