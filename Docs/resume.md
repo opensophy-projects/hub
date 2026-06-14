@@ -6,7 +6,9 @@ icon: user
 lang: ru
 robots: "index, follow"
 priority: 3
+custom: general
 ---
+
 
 
 
