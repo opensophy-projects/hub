@@ -2,8 +2,7 @@ import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 
 // ─── Dev Bridge Integration ────────────────────────────────────────────────────
-// Подключается ТОЛЬКО в dev-режиме (process.env.NODE_ENV !== 'production').
-// В `astro build` этот блок не выполняется → WebSocket сервер не стартует.
+// Подключается ТОЛЬКО в dev-режиме и вешает fetch-only API на тот же порт Astro.
 
 const devIntegrations = [];
 
@@ -12,9 +11,7 @@ if (process.env.NODE_ENV !== 'production') {
     const { devBridgeIntegration } = await import('./scripts/devBridge.mjs');
     devIntegrations.push(devBridgeIntegration());
   } catch (e) {
-    // ws не установлен — предупреждаем, но не ломаем дев-сервер
     console.warn('[hub-dev] devBridge not loaded:', e.message);
-    console.warn('[hub-dev] Run: npm install ws');
   }
 }
 

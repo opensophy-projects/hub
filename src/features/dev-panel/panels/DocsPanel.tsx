@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { bridge } from '../useDevBridge';
 import { toast } from '../components/toastBus';
 import { Badge, ConfirmDialog } from '../components/ui';
+import LucideIcon from '@/shared/components/LucideIcon';
 import { ThemeTokensContext } from '../theme';
 import type { TTokens } from '../theme';
 import {
@@ -13,10 +14,10 @@ import {
   Loader2, Bold, Italic, Code, Link, Hash, List,
   RefreshCw, Minus, Image, BarChart2, Table, Search,
   Columns, AlertCircle, Calculator, Footprints, LayoutGrid, Type,
-  Edit3,
+  Edit3, Undo2, Redo2,
 } from 'lucide-react';
 
-interface FlatEntry { type: 'file' | 'dir'; path: string; name: string; depth: number; }
+interface FlatEntry { type: 'file' | 'dir'; path: string; name: string; depth: number; title?: string; }
 interface TreeEntry extends FlatEntry {
   children: TreeEntry[];
   parsed: { type: 'N' | 'C' | 'A' | null; icon: string | null; title: string; slug: string | null; };
@@ -33,29 +34,40 @@ const EMPTY_FM: FM = {
   priority: '', custom: '',
 };
 
-// Безопасная нормализация строки в slug без ReDoS-уязвимостей
+// Безопасная нормализация строки в slug с транслитерацией RU → latin
+const RU_MAP: Record<string, string> = {
+  а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'yo', ж: 'zh', з: 'z', и: 'i', й: 'y',
+  к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f',
+  х: 'h', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya',
+};
+
 const toSlug = (s: string): string => {
   const chars: string[] = [];
   let prevDash = false;
 
-  for (const ch of s.toLowerCase()) {
-    if (/\s/.test(ch)) {
-      if (!prevDash) { chars.push('-'); prevDash = true; }
-    } else if (/\w/.test(ch)) {
-      chars.push(ch);
-      prevDash = ch === '-';
-    } else if (ch === '-') {
-      if (!prevDash) { chars.push('-'); prevDash = true; }
+  for (const raw of s.toLowerCase().trim()) {
+    const mapped = RU_MAP[raw] ?? raw;
+    for (const ch of mapped.normalize('NFKD')) {
+      const isAscii = (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9');
+      if (isAscii) { chars.push(ch); prevDash = false; continue; }
+      if (ch === '-' || ch === '_' || /\s/.test(ch)) {
+        if (!prevDash && chars.length > 0) { chars.push('-'); prevDash = true; }
+      }
     }
   }
 
-  let start = 0;
-  let end = chars.length;
-  while (start < end && chars[start] === '-') start++;
-  while (end > start && chars[end - 1] === '-') end--;
-
-  return chars.slice(start, end).join('');
+  while (chars.at(-1) === '-') chars.pop();
+  return chars.join('');
 };
+
+const COMMON_ICONS = [
+  'book', 'book-open', 'folder', 'folder-tree', 'file-text', 'house', 'boxes', 'blocks', 'layout-grid',
+  'component', 'brain', 'shield', 'siren', 'settings', 'search', 'search-code', 'code', 'code-2',
+  'terminal', 'container', 'layers', 'table-of-contents', 'chart-no-axes-column', 'chart-no-axes-combined',
+  'briefcase-business', 'circle-alert', 'circle-arrow-out-up-right', 'user-round-plus', 'mouse-pointer-2-off',
+  'signal', 'app-window', 'shredder', 'arrow-down-up', 'folder-code', 'maximize', 'type', 'blend', 'wind',
+  'audio-lines', 'rotate-3d', 'eye', 'tally-1', 'slash', 'waves', 'sparkle', 'gem', 'sun', 'zap', 'flame',
+];
 
 // Регексы с ограниченной длиной совпадения для защиты от ReDoS
 const RE_PN_TYPE = /^\[([NCA])\]/;
@@ -83,7 +95,11 @@ const parseName = (name: string) => {
 const buildTree = (flat: FlatEntry[]): TreeEntry[] => {
   const m = new Map<string, TreeEntry>();
   const tree: TreeEntry[] = [];
-  flat.forEach(e => m.set(e.path, { ...e, children: [], parsed: parseName(e.name) }));
+  flat.forEach(e => {
+    const parsed = parseName(e.name);
+    if (e.title) parsed.title = e.title;
+    m.set(e.path, { ...e, children: [], parsed });
+  });
   flat.forEach(e => {
     const node = m.get(e.path);
     if (!node) return;
@@ -91,6 +107,21 @@ const buildTree = (flat: FlatEntry[]): TreeEntry[] => {
     if (parent) parent.children.push(node); else tree.push(node);
   });
   return tree;
+};
+
+const routeFromDocPath = (filePath: string): string => {
+  const parts = filePath.replace(/^Docs\/?/, '').split('/').filter(Boolean);
+  const last = parts.at(-1)?.toLowerCase();
+  if (parts.length === 1 && last === 'welcome.md') return '/';
+  const slugs = parts.map((part) => parseName(part).slug || toSlug(parseName(part).title || part.replace(/\.md$/, ''))).filter(Boolean);
+  return `/${slugs.join('/')}/`;
+};
+
+const openRouteForDoc = (filePath: string) => {
+  if (typeof window === 'undefined') return;
+  const route = routeFromDocPath(filePath);
+  const current = window.location.pathname;
+  if (current !== route) window.history.pushState({}, '', route);
 };
 
 const parseFM = (raw: string): { fm: FM; body: string } => {
@@ -477,8 +508,21 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
         </div>
       </div>
       <div style={{ marginBottom: isA && !isEdit ? 14 : 10 }}>
-        <label htmlFor="entry-icon" style={lbS}>Иконка lucide.dev</label>
-        <input id="entry-icon" value={icon} onChange={e => setIcon(e.target.value)} placeholder={dIco[cfg.entryType]} style={inp} />
+        <label htmlFor="entry-icon" style={lbS}>Иконка</label>
+        <input
+          id="entry-icon"
+          list="dev-panel-icons"
+          value={icon}
+          onChange={e => setIcon(e.target.value)}
+          placeholder={dIco[cfg.entryType]}
+          style={inp}
+        />
+        <datalist id="dev-panel-icons">{COMMON_ICONS.map(name => <option key={name} value={name} />)}</datalist>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 8 }}>
+          {COMMON_ICONS.slice(0, 18).map(name => (
+            <button key={name} type="button" onClick={() => setIcon(name)} title={name} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 7px', borderRadius: 6, border: `1px solid ${t.border}`, background: icon === name ? t.surfaceHov : 'transparent', color: t.fgMuted, fontSize: 11, cursor: 'pointer', fontFamily: t.mono }}><LucideIcon name={name} size={13} />{name}</button>
+          ))}
+        </div>
       </div>
       {isA && !isEdit && (
         <div style={{ borderTop: `1px solid ${t.border}`, paddingTop: 12, marginBottom: 10 }}>
@@ -644,7 +688,10 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [history, setHistory] = useState<string[]>([]);
+  const [future, setFuture] = useState<string[]>([]);
   const [fmOpen, setFmOpen] = useState(false);
+  const [customPages, setCustomPages] = useState<Array<{ slug: string; folderName: string }>>([]);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const fmRef = useRef(fm);
   const bodyRef = useRef(body);
@@ -658,6 +705,9 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
     if (typeof BroadcastChannel !== 'undefined') {
       bcRef.current = new BroadcastChannel('hub-dev-preview');
     }
+    bridge.listCustomPages()
+      .then(({ pages }) => setCustomPages(pages))
+      .catch(() => setCustomPages([]));
     return () => { bcRef.current?.close(); };
   }, []);
 
@@ -683,7 +733,7 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
           const p = parseName(filePath.split('/').pop() ?? '');
           if (p.icon) f.icon = p.icon;
         }
-        setFm(f); setBody(b); setDirty(false);
+        setFm(f); setBody(b); setDirty(false); setHistory([]); setFuture([]);
         broadcastPreview(b);
       })
       .catch(e => toast.error((e as Error).message))
@@ -711,18 +761,46 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
     return () => globalThis.removeEventListener('keydown', h);
   }, [save]);
 
+  const commitBody = useCallback((next: string) => {
+    setHistory(prev => [...prev.slice(-49), bodyRef.current]);
+    setFuture([]);
+    setBody(next); setDirty(true); broadcastPreview(next);
+  }, [broadcastPreview]);
+
+  const undoBody = () => {
+    setHistory(prev => {
+      const last = prev.at(-1);
+      if (last === undefined) return prev;
+      setFuture(f => [bodyRef.current, ...f.slice(0, 49)]);
+      setBody(last); setDirty(true); broadcastPreview(last);
+      return prev.slice(0, -1);
+    });
+  };
+
+  const redoBody = () => {
+    setFuture(prev => {
+      const next = prev[0];
+      if (next === undefined) return prev;
+      setHistory(h => [...h.slice(-49), bodyRef.current]);
+      setBody(next); setDirty(true); broadcastPreview(next);
+      return prev.slice(1);
+    });
+  };
+
+  const handleChange = (v: string) => { commitBody(v); };
+
   const insertAtCursor = useCallback((snippet: string) => {
     const ta = taRef.current;
     if (!ta) { setBody(prev => prev + snippet); setDirty(true); return; }
     const s = ta.selectionStart, e2 = ta.selectionEnd;
     const savedScroll = ta.scrollTop;
     const nv = body.slice(0, s) + snippet + body.slice(e2);
-    setBody(nv); setDirty(true); broadcastPreview(nv);
+    commitBody(nv);
     requestAnimationFrame(() => {
       ta.focus(); ta.scrollTop = savedScroll;
       ta.selectionStart = ta.selectionEnd = s + snippet.length;
     });
-  }, [body, broadcastPreview]);
+  }, [body, commitBody]);
 
   const handleInsert = (before: string, after = '') => {
     const ta = taRef.current;
@@ -730,7 +808,7 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
     const s = ta.selectionStart, e2 = ta.selectionEnd, sel = body.slice(s, e2);
     const savedScroll = ta.scrollTop;
     const nv = body.slice(0, s) + before + sel + after + body.slice(e2);
-    setBody(nv); setDirty(true); broadcastPreview(nv);
+    commitBody(nv);
     requestAnimationFrame(() => {
       ta.focus(); ta.scrollTop = savedScroll;
       ta.selectionStart = s + before.length;
@@ -738,15 +816,13 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
     });
   };
 
-  const handleChange = (v: string) => { setBody(v); setDirty(true); broadcastPreview(v); };
-
   const handleTab = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key !== 'Tab') return;
     e.preventDefault();
     const ta = e.currentTarget, s = ta.selectionStart;
     const savedScroll = ta.scrollTop;
     const nv = body.slice(0, s) + '  ' + body.slice(ta.selectionEnd);
-    setBody(nv); setDirty(true); broadcastPreview(nv);
+    commitBody(nv);
     requestAnimationFrame(() => { ta.scrollTop = savedScroll; ta.selectionStart = ta.selectionEnd = s + 2; });
   };
 
@@ -767,6 +843,9 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
     >{ico}</button>
   );
 
+  const canUndo = history.length > 0;
+  const canRedo = future.length > 0;
+
   if (loading) return (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <Loader2 size={18} style={{ color: t.fgMuted, animation: 'devSpinAnim 1s linear infinite' }} />
@@ -780,8 +859,8 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
           onMouseEnter={e => { e.currentTarget.style.background = t.surfaceHov; }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
         >← Назад</button>
-        <span style={{ flex: 1, fontSize: 11, color: t.fg, fontFamily: t.mono, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {fileName}{dirty && <span style={{ color: t.warning, marginLeft: 5 }}>●</span>}
+        <span style={{ flex: 1, fontSize: 13, color: t.fg, fontFamily: t.mono, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {fm.title || parseName(fileName).title || fileName}{dirty && <span style={{ color: t.warning, marginLeft: 5 }}>●</span>}
         </span>
         <button onClick={save} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 6, border: `1px solid ${dirty ? t.borderStrong : t.border}`, background: dirty ? t.surfaceHov : 'transparent', color: dirty ? t.fg : t.fgMuted, cursor: 'pointer', fontSize: 13, fontFamily: t.mono, flexShrink: 0, fontWeight: dirty ? 600 : 400 }}>
           {saving && <Loader2 size={11} style={{ animation: 'devSpinAnim 1s linear infinite' }} />}
@@ -793,22 +872,51 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
       <div style={{ borderBottom: `1px solid ${t.border}`, flexShrink: 0 }}>
         <button onClick={() => setFmOpen(v => !v)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', border: 'none', background: t.surface, color: t.fgSub, fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: 'pointer', textAlign: 'left', fontFamily: t.mono }}>
           {fmOpen ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
-          Frontmatter
+          Настройки страницы
           {fm.title && <span style={{ fontWeight: 400, letterSpacing: 0, textTransform: 'none', marginLeft: 4, color: t.fgSub }}>— {fm.title.slice(0, 30)}</span>}
         </button>
         {fmOpen && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 8px', padding: '6px 10px 8px', background: t.surface }}>
+          <div style={{ padding: '12px 14px', background: t.surface }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: 12, borderRadius: 8, border: `1px solid ${fm.custom ? t.borderStrong : t.border}`, background: fm.custom ? t.accentSoft : t.inpBg, marginBottom: 12, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={!!fm.custom}
+                onChange={e => {
+                  const fallback = customPages[0]?.slug || 'general';
+                  const newFm = { ...fm, custom: e.target.checked ? (fm.custom || fallback) : '' };
+                  setFm(newFm); setDirty(true);
+                }}
+                style={{ marginTop: 3 }}
+              />
+              <span style={{ flex: 1 }}>
+                <strong style={{ display: 'block', color: t.fg, fontSize: 13 }}>Кастомная страница</strong>
+                <span style={{ display: 'block', color: t.fgSub, fontSize: 12, lineHeight: 1.45 }}>Включено — будет показан React-компонент из src/custom. Выключено — будет показан обычный Markdown.</span>
+                {!!fm.custom && (
+                  <select
+                    value={fm.custom}
+                    onChange={e => { setFm({ ...fm, custom: e.target.value }); setDirty(true); }}
+                    style={{ ...inpS, marginTop: 8, fontSize: 13, padding: '8px 10px' }}
+                  >
+                    {customPages.length === 0 && <option value={fm.custom}>{fm.custom}</option>}
+                    {customPages.map(page => <option key={page.slug} value={page.slug}>{page.slug} — {page.folderName}</option>)}
+                  </select>
+                )}
+              </span>
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 12px' }}>
             {([
-              { k: 'title', l: 'Title', sp: true }, { k: 'description', l: 'Description', sp: true },
-              { k: 'author', l: 'Author' }, { k: 'date', l: 'Date', tp: 'date' },
-              { k: 'updated', l: 'Updated', tp: 'date' }, { k: 'tags', l: 'Tags', sp: true },
-              { k: 'icon', l: 'Icon' }, { k: 'lang', l: 'Lang' },
+              { k: 'title', l: 'Заголовок', sp: true }, { k: 'description', l: 'Описание', sp: true },
+              { k: 'author', l: 'Автор' }, { k: 'date', l: 'Дата', tp: 'date' },
+              { k: 'updated', l: 'Обновлено', tp: 'date' }, { k: 'tags', l: 'Теги', sp: true },
+              { k: 'icon', l: 'Иконка' }, { k: 'lang', l: 'Язык' },
               { k: 'robots', l: 'Robots' },
-              { k: 'priority', l: 'Приоритет' }, { k: 'custom', l: 'Custom (slug)' },
+              { k: 'priority', l: 'Приоритет' },
             ] as Array<{ k: keyof FM; l: string; sp?: boolean; tp?: string }>).map(f => (
               <div key={f.k} style={{ gridColumn: f.sp ? '1 / -1' : 'auto' }}>
                 <div style={{ fontSize: 12, color: t.fgSub, marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{f.l}</div>
+                {f.k === 'icon' && fm.icon && <LucideIcon name={fm.icon} size={16} style={{ marginBottom: -2, marginRight: 6 }} />}
                 <input
+                  list={f.k === 'icon' ? 'dev-panel-icons' : undefined}
                   type={f.tp ?? 'text'}
                   value={fm[f.k]}
                   onChange={e => {
@@ -824,15 +932,19 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
                       }
                     }, 200);
                   }}
-                  style={inpS}
+                  style={{ ...inpS, fontSize: 13, padding: '8px 10px' }}
                 />
               </div>
             ))}
+            </div>
           </div>
         )}
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 1, padding: '3px 8px', borderBottom: `1px solid ${t.border}`, background: t.surface, flexShrink: 0 }}>
+        {toolBtn(undoBody, <Undo2 size={11} />, canUndo ? 'Назад' : 'Назад (нет изменений)')}
+        {toolBtn(redoBody, <Redo2 size={11} />, canRedo ? 'Вперёд' : 'Вперёд (нет изменений)')}
+        <div style={{ width: 1, height: 14, background: t.border, margin: '0 3px' }} />
         {toolBtn(() => handleInsert('**', '**'), <Bold size={11} />, 'Жирный')}
         {toolBtn(() => handleInsert('_', '_'), <Italic size={11} />, 'Курсив')}
         {toolBtn(() => handleInsert('`', '`'), <Code size={11} />, 'Код')}
@@ -841,7 +953,7 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
         {toolBtn(() => handleInsert('[', '](url)'), <Link size={11} />, 'Ссылка')}
         {toolBtn(() => handleInsert('\n---\n', ''), <Minus size={11} />, 'HR')}
         <div style={{ width: 1, height: 14, background: t.border, margin: '0 3px' }} />
-        <BlockPicker onInsert={insertAtCursor} t={t} />
+        {!fm.custom && <BlockPicker onInsert={insertAtCursor} t={t} />}
         <div style={{ flex: 1 }} />
         <span style={{ fontSize: 12, color: t.fgSub }}>{body.trim().split(/\s+/).filter(Boolean).length} слов</span>
       </div>
@@ -852,11 +964,12 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
         onChange={e => handleChange(e.target.value)}
         onKeyDown={handleTab}
         spellCheck={false}
-        placeholder="Начните писать..."
+        disabled={!!fm.custom}
+        placeholder={fm.custom ? 'Markdown заблокирован: включён режим кастомной страницы.' : 'Начните писать...'}
         style={{
           flex: 1, padding: '12px 14px', border: 'none',
-          background: t.inpBg,
-          color: t.editorFg,
+          background: fm.custom ? t.surface : t.inpBg,
+          color: fm.custom ? t.fgSub : t.editorFg,
           fontSize: 12,
           fontFamily: 'ui-monospace, "Cascadia Code", "Fira Code", monospace',
           lineHeight: 1.75, resize: 'none', outline: 'none',
@@ -891,7 +1004,7 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
   readonly setDragOverPath: (p: string | null) => void;
   readonly t: TTokens;
 }) {
-  const [expanded, setExpanded] = useState(entry.depth < 2);
+  const [expanded, setExpanded] = useState(false);
   const [hov, setHov] = useState(false);
   const isDir = entry.type === 'dir';
   const isActive = entry.path === selectedPath;
@@ -1046,14 +1159,19 @@ export default function DocsPanel() {
     }
   };
 
+  const openEditorForFile = useCallback((path: string) => {
+    openRouteForDoc(path);
+    setSelected(path);
+  }, []);
+
   const handleDone = useCallback((fp?: string) => {
-    setTimeout(() => { load(); if (fp) setSelected(fp); }, 400);
-  }, [load]);
+    setTimeout(() => { load(); if (fp) openEditorForFile(fp); }, 400);
+  }, [load, openEditorForFile]);
 
   const handleEdit = useCallback((entry: TreeEntry) => {
     // Файл открывается в редакторе напрямую
     if (entry.type === 'file') {
-      setSelected(entry.path);
+      openEditorForFile(entry.path);
       return;
     }
     const entryType = entry.parsed.type;
@@ -1063,7 +1181,7 @@ export default function DocsPanel() {
       entryType,
     };
     setModalCfg({ cfg, existing: entry });
-  }, []);
+  }, [openEditorForFile]);
 
   const handleDrop = useCallback(async (srcPath: string, dstPath: string) => {
     const allEntries = flattenTree(tree);
@@ -1091,7 +1209,7 @@ export default function DocsPanel() {
         const { content } = await bridge.readFile(srcPath);
         await bridge.writeFile(newPath, content);
         await bridge.deleteFile(srcPath);
-        if (selected === srcPath) setSelected(newPath);
+        if (selected === srcPath) openEditorForFile(newPath);
       }
       toast.success(`Перемещено → ${targetDir.split('/').pop()}`);
       setTimeout(load, 400);
@@ -1100,7 +1218,7 @@ export default function DocsPanel() {
     } finally {
       setMoving(false);
     }
-  }, [tree, selected, load]);
+  }, [tree, selected, load, openEditorForFile]);
 
   const visibleTree = filterTreeByQuery(tree, query);
   const fileCount = countFiles(tree);
@@ -1121,7 +1239,7 @@ export default function DocsPanel() {
     return visibleTree.map(e => (
       <TreeNode key={e.path} entry={e} onCreate={cfg => setModalCfg({ cfg })}
         onDelete={setToDelete} onEdit={handleEdit}
-        onSelect={p => setSelected(p)} onDrop={handleDrop}
+        onSelect={openEditorForFile} onDrop={handleDrop}
         selectedPath={selected ?? ''} dragOverPath={dragOverPath}
         setDragOverPath={setDragOverPath} t={t} />
     ));
