@@ -1,7 +1,7 @@
 import { getCustomPageBySlug } from './index';
 
 interface CustomPageRendererProps {
-  slug: string;
+  readonly slug: string;
 }
 
 export default function CustomPageRenderer({ slug }: CustomPageRendererProps) {
