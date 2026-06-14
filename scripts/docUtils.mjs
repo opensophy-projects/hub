@@ -213,6 +213,34 @@ function collectBlockBody(lines, startAfterIndex) {
 
 // ─── Парсер вложенных блоков ──────────────────────────────────────────────────
 
+function parseBlockOpener(trimmed, prefix) {
+  if (!trimmed.startsWith(prefix)) return null;
+  const afterPrefix = trimmed.slice(prefix.length);
+  if (afterPrefix !== '' && !afterPrefix.startsWith('[') && !/^\s/.test(afterPrefix)) return null;
+
+  let params = {};
+  let rest = afterPrefix.trimStart();
+  if (rest.startsWith('[')) {
+    const closeBracket = rest.indexOf(']');
+    if (closeBracket !== -1) {
+      params = parseParams(rest.slice(1, closeBracket));
+      rest = rest.slice(closeBracket + 1).trimStart();
+    }
+  }
+  return { params, inlineText: rest.trim() };
+}
+
+function collectInnerBody(lines, startIndex) {
+  const bodyLines = [];
+  let i = startIndex;
+  while (i < lines.length) {
+    if (lines[i].trim() === ':::') { i++; break; }
+    bodyLines.push(lines[i]);
+    i++;
+  }
+  return { bodyLines, nextIndex: i };
+}
+
 function parseInnerBlocks(bodyStr, innerTag) {
   const lines   = bodyStr.split('\n');
   const results = [];
@@ -220,37 +248,12 @@ function parseInnerBlocks(bodyStr, innerTag) {
   let i = 0;
 
   while (i < lines.length) {
-    const trimmed = lines[i].trim();
+    const opener = parseBlockOpener(lines[i].trim(), prefix);
+    if (!opener) { i++; continue; }
 
-    if (!trimmed.startsWith(prefix)) { i++; continue; }
-
-    // После префикса допустимо: конец строки, '[' или пробел
-    const afterPrefix = trimmed.slice(prefix.length);
-    if (afterPrefix !== '' && !afterPrefix.startsWith('[') && !/^\s/.test(afterPrefix)) { i++; continue; }
-
-    // Парсим опциональный [...] и inline-текст
-    let params = {};
-    let inlineText = '';
-    let rest = afterPrefix.trimStart();
-
-    if (rest.startsWith('[')) {
-      const closeBracket = rest.indexOf(']');
-      if (closeBracket !== -1) {
-        params = parseParams(rest.slice(1, closeBracket));
-        rest = rest.slice(closeBracket + 1).trimStart();
-      }
-    }
-    inlineText = rest.trim();
-
-    i++;
-    const bodyLines = [];
-    while (i < lines.length) {
-      if (lines[i].trim() === ':::') { i++; break; }
-      bodyLines.push(lines[i]);
-      i++;
-    }
-
-    results.push({ params, inlineText, body: bodyLines.join('\n') });
+    const { bodyLines, nextIndex } = collectInnerBody(lines, i + 1);
+    results.push({ params: opener.params, inlineText: opener.inlineText, body: bodyLines.join('\n') });
+    i = nextIndex;
   }
 
   return results;
@@ -433,6 +436,17 @@ function parseTabEntry(label, bodyLines, codeBlocks) {
   return { label, language: lang, code };
 }
 
+function parseTabLabel(trimmed, fallback) {
+  const afterTag = trimmed.slice(':::tab'.length);
+  if (afterTag !== '' && !afterTag.startsWith('[') && !/^\s/.test(afterTag)) return null;
+  const rest = afterTag.trimStart();
+  if (rest.startsWith('[')) {
+    const close = rest.indexOf(']');
+    if (close !== -1) return rest.slice(1, close).trim() || fallback;
+  }
+  return fallback;
+}
+
 function parseTabsFromBody(body, codeBlocks) {
   const tabLines = body.split('\n');
   const tabs = [];
@@ -440,27 +454,14 @@ function parseTabsFromBody(body, codeBlocks) {
 
   while (j < tabLines.length) {
     const trimmed = tabLines[j].trim();
-
-    // Ищем :::tab опционально с [...] без динамического RegExp
     if (!trimmed.startsWith(':::tab')) { j++; continue; }
-    const afterTag = trimmed.slice(':::tab'.length);
-    if (afterTag !== '' && !afterTag.startsWith('[') && !/^\s/.test(afterTag)) { j++; continue; }
 
-    let label = `Вкладка ${tabs.length + 1}`;
-    const rest = afterTag.trimStart();
-    if (rest.startsWith('[')) {
-      const close = rest.indexOf(']');
-      if (close !== -1) label = rest.slice(1, close).trim() || label;
-    }
+    const label = parseTabLabel(trimmed, `Вкладка ${tabs.length + 1}`);
+    if (label === null) { j++; continue; }
     j++;
 
-    const bodyLines = [];
-    while (j < tabLines.length) {
-      if (tabLines[j].trim() === ':::') { j++; break; }
-      bodyLines.push(tabLines[j]);
-      j++;
-    }
-
+    const { bodyLines, nextIndex } = collectInnerBody(tabLines, j);
+    j = nextIndex;
     tabs.push(parseTabEntry(label, bodyLines, codeBlocks));
   }
 
