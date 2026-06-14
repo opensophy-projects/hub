@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, ChevronRight, FileText, RefreshCw, Tag } from 'lucide-react';
+import { CalendarDays, FileText, RefreshCw, Tag } from 'lucide-react';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import { useTheme } from '@/shared/contexts/useTheme';
 import Navigation from '@/features/navigation/components/Navigation';
