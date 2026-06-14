@@ -5,5 +5,3 @@ icon: user
 priority: 3
 custom: resume
 ---
-
- 
