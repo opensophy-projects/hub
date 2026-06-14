@@ -13,7 +13,7 @@ function toSlug(value: string): string {
 }
 
 export function parseCustomPageFolderName(folderName: string): string {
-  const match = folderName.match(/\{([^}]+)\}$/);
+  const match = /\{([^}]+)\}$/.exec(folderName);
   const rawSlug = match?.[1]?.trim() || folderName.trim();
   return toSlug(rawSlug);
 }
