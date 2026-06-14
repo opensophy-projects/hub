@@ -6,27 +6,14 @@ import CustomPageRenderer from '@/custom/CustomPageRenderer';
 import fs from 'node:fs';
 import path from 'node:path';
 import { buildDocFromPath } from '../../../scripts/docUtils.mjs';
+import { resolveCustomSlug } from '../../../scripts/customUtils.mjs';
 
 export const prerender = true;
 
 const docsDir       = path.join(process.cwd(), 'Docs');
 const welcomeMdPath = path.join(docsDir, 'welcome.md');
-const siteConfigPath = path.join(process.cwd(), 'public/data/site-config.json');
-
-// Читаем конфиг — флаг useLanding
-let useLanding = false;
-try {
-  if (fs.existsSync(siteConfigPath)) {
-    const raw = fs.readFileSync(siteConfigPath, 'utf-8');
-    const cfg = JSON.parse(raw);
-    useLanding = cfg.useLanding === true;
-  }
-} catch {
-  useLanding = false;
-}
-
 let welcomeDoc = null;
-if (!useLanding && fs.existsSync(welcomeMdPath)) {
+if (fs.existsSync(welcomeMdPath)) {
   try {
     welcomeDoc = buildDocFromPath(welcomeMdPath, docsDir);
     welcomeDoc.id   = 'welcome';
@@ -41,10 +28,14 @@ const landingPage = getCustomPageBySlug('general');
 const LANDING_DESCRIPTION = landingPage?.metadata.description || 'Opensophy — open-source проект для IT-специалистов и инициатива открытой философии в IT. Качественные и доступные знания, услуги, инструменты и решения по безопасности, разработке и инфраструктуре — в открытом доступе.';
 const LANDING_KEYWORDS = landingPage?.metadata.keywords || 'opensophy, кибербезопасность, DevSecOps, linux, разработка, инструменты, туториалы, open source, IT, mTLS, SAST, DAST, SCA, zero trust, CI/CD';
 
-const title       = useLanding ? (landingPage?.metadata.title || SITE_NAME) : (welcomeDoc?.title       || SITE_NAME);
-const description = useLanding ? LANDING_DESCRIPTION : (welcomeDoc?.description || LANDING_DESCRIPTION);
-const keywords    = useLanding ? LANDING_KEYWORDS : (welcomeDoc?.keywords || '');
-const lang        = useLanding ? (landingPage?.metadata.lang || 'ru') : (welcomeDoc?.lang || 'ru');
+const welcomeCustomSlug = resolveCustomSlug(welcomeDoc?.frontmatter?.custom);
+const welcomeCustomPage = welcomeCustomSlug ? getCustomPageBySlug(welcomeCustomSlug) : null;
+const useCustomWelcome = !!welcomeCustomPage;
+
+const title       = useCustomWelcome ? (welcomeCustomPage?.metadata.title || SITE_NAME) : (welcomeDoc?.title       || SITE_NAME);
+const description = useCustomWelcome ? (welcomeCustomPage?.metadata.description || LANDING_DESCRIPTION) : (welcomeDoc?.description || LANDING_DESCRIPTION);
+const keywords    = useCustomWelcome ? (welcomeCustomPage?.metadata.keywords || LANDING_KEYWORDS) : (welcomeDoc?.keywords || '');
+const lang        = useCustomWelcome ? (welcomeCustomPage?.metadata.lang || 'ru') : (welcomeDoc?.lang || 'ru');
 ---
 
 <Layout
@@ -56,78 +47,8 @@ const lang        = useLanding ? (landingPage?.metadata.lang || 'ru') : (welcome
   robots="index, follow"
   lang={lang}
 >
-  {useLanding ? (
-    <>
-      <article
-        id="seo-landing-content"
-        aria-hidden="true"
-        style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:normal;border:0;pointer-events:none;"
-      >
-        <header>
-          <h1>Opensophy</h1>
-          <p>{LANDING_DESCRIPTION}</p>
-        </header>
-
-        <section>
-          <h2>О проекте</h2>
-          <p>
-            Opensophy — инициатива открытой философии в IT. Качественные и доступные знания, услуги,
-            инструменты и решения.
-          </p>
-        </section>
-
-        <section>
-          <h2>Чем занимается Opensophy</h2>
-          <p>
-            Учим безопасности, настраиваем защиту, автоматизируем рутину: От образовательных материалов до внедрения DevSecOps и Zero Trust в реальную инфраструктуру.
-          </p>
-          <ul>
-            <li>Открытые знания: статьи и гайды по DevSecOps, безопасности, разработке и инфраструктуре.</li>
-            <li>Интеграция анализа безопасности: SAST, DAST и SCA в CI/CD без лишней рутины.</li>
-            <li>Настройка безопасного доступа: mTLS, VPN, Zero Trust и другие подходы.</li>
-            <li>Проверка защищённости: этичное тестирование сервисов и серверов на уязвимости.</li>
-            <li>Автоматизация: от bash-скриптов до комплексных решений под индивидуальные требования.</li>
-            <li>Подбор стека защиты: WAF, SCA, mTLS, DAST и другие инструменты.</li>
-          </ul>
-        </section>
-
-        <section>
-          <h2>Услуги Opensophy</h2>
-          <p>
-            Доступны услуги по интеграции анализа безопасности, настройке безопасного доступа, проверке
-            защищённости, автоматизации и подбору стека защиты.
-          </p>
-          <p>
-            Чтобы заказать услугу или обсудить сотрудничество, напишите на opensophy@gmail.com.
-            Направление «Знания каждому!» — открытая образовательная инициатива.
-          </p>
-        </section>
-
-        <section>
-          <h2>Что разрабатывает Opensophy</h2>
-          <p>
-            Создаём open-source инструменты для безопасной инфраструктуры и современных IT-команд.
-          </p>
-          <ul>
-            <li>Opensophy Hub (O.Hub): гибридная платформа для документации и публикации контента.</li>
-            <li>Opensophy mTLS (O.mTLS): инструмент для быстрого создания и управления mTLS-сертификатами.</li>
-            <li>Opensophy UI (O.UI): библиотека React-компонентов с живым превью и настройками.</li>
-          </ul>
-        </section>
-
-        <section>
-          <h2>Контакты</h2>
-          <ul>
-            <li>Сайт: opensophy.com</li>
-            <li>GitHub: github.com/opensophy-projects</li>
-            <li>Habr: habr.com/ru/users/opensophy/</li>
-            <li>Email: opensophy@gmail.com</li>
-          </ul>
-        </section>
-      </article>
-
-      {landingPage ? <CustomPageRenderer client:only="react" slug="general" /> : null}
-    </>
+  {useCustomWelcome ? (
+    <CustomPageRenderer client:only="react" slug={welcomeCustomSlug} />
   ) : welcomeDoc ? (
     <DocContent client:only="react" doc={welcomeDoc} />
   ) : (

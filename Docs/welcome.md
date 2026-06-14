@@ -7,7 +7,11 @@ icon: crown
 lang: ru
 robots: "index, follow"
 priority: 0
+custom: general
 ---
+
+
+
 
 
 
