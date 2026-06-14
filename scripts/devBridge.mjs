@@ -432,7 +432,7 @@ export function devBridgeIntegration() {
           }
         });
 
-        logger.info('[hub-dev] Bridge ready → /api/dev-bridge (same Astro port) | Press Ctrl+Shift+D in browser');
+        logger.info('[hub-dev] Bridge ready → /api/dev-bridge');
       },
     },
   };
