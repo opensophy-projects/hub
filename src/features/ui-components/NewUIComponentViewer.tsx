@@ -373,7 +373,7 @@ const SourceCodeViewer: React.FC<SourceCodeViewerProps> = ({ fileContents, t }) 
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      // fallback: select all text in pre
+      // буфер обмена недоступен — игнорируем
     }
   };
 
@@ -488,7 +488,6 @@ interface ComponentRenderProps {
   isDark: boolean;
   componentCategory?: string;
   fileContents: Record<string, string>;
-  containerMode?: 'fill' | 'content';
 }
 
 const ComponentRender: React.FC<Omit<ComponentRenderProps, 'fileContents'> & { containerMode: 'fill' | 'content' }> = ({
