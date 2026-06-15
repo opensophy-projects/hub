@@ -85,8 +85,8 @@ function toCategoryHref(activeNavSlug: string, path: string): string {
 // ─── FIX 3: Check if doc is active, including custom pages ───────────────────
 function isDocActive(doc: Doc, currentDocSlug: string | undefined): boolean {
   // Always check pathname first — fixes custom pages where currentDocSlug may be wrong/undefined
-  if (typeof window !== 'undefined') {
-    const pathname = window.location.pathname.replace(/^\/|\/$/g, '');
+  if (globalThis.window !== undefined) {
+    const pathname = globalThis.window.location.pathname.replace(/^\/|\/$/g, '');
     if (doc.slug && doc.slug === pathname) return true;
   }
   if (!currentDocSlug) return false;
@@ -1362,7 +1362,7 @@ const DesktopNav: React.FC<{
       )}
 
       {!state.railVisible && (
-        <ShowPanelBtn isDark={isDark} chromeGap={chromeGap} chromeTopGap={chromeTopGap} t={t} onClick={() => state.setRailVisible(true)} />
+        <ShowPanelBtn chromeGap={chromeGap} chromeTopGap={chromeTopGap} t={t} onClick={() => state.setRailVisible(true)} />
       )}
 
       {state.railVisible && (
@@ -1386,7 +1386,7 @@ const DesktopNav: React.FC<{
       )}
 
       {isStandardMode && hasToc && !state.standardTocVisible && (
-        <ShowTocBtn isDark={isDark} chromeGap={chromeGap} chromeTopGap={chromeTopGap} t={t} onClick={() => state.setStandardTocVisible(true)} />
+        <ShowTocBtn chromeGap={chromeGap} chromeTopGap={chromeTopGap} t={t} onClick={() => state.setStandardTocVisible(true)} />
       )}
 
       <AnimatePresence>
@@ -1403,7 +1403,7 @@ const DesktopNav: React.FC<{
 // ─── ShowPanelBtn & ShowTocBtn ────────────────────────────────────────────────
 
 const ShowPanelBtn: React.FC<{
-  isDark: boolean; chromeGap: number; chromeTopGap: number;
+  chromeGap: number; chromeTopGap: number;
   t: ReturnType<typeof tk>; onClick: () => void;
 }> = ({ chromeGap, chromeTopGap, t, onClick }) => {
   const [hov, setHov] = useState(false);
@@ -1426,7 +1426,7 @@ const ShowPanelBtn: React.FC<{
 };
 
 const ShowTocBtn: React.FC<{
-  isDark: boolean; chromeGap: number; chromeTopGap: number;
+  chromeGap: number; chromeTopGap: number;
   t: ReturnType<typeof tk>; onClick: () => void;
 }> = ({ chromeGap, chromeTopGap, t, onClick }) => {
   const [hov, setHov] = useState(false);
@@ -1628,7 +1628,12 @@ const Navigation: React.FC<NavigationProps> = ({ currentDocSlug, toc = [], activ
     let alive = true;
     const applyLogoConfig = (cfg: SiteLogoConfig) => {
       const next = { lightLogo: cfg.lightLogo || '', darkLogo: cfg.darkLogo || '' };
-      [next.lightLogo, next.darkLogo].forEach(src => { if (!src) return; const img = new Image(); img.src = src; });
+      [next.lightLogo, next.darkLogo].forEach((src) => {
+        if (src) {
+          const img = new Image();
+          img.src = src;
+        }
+      });
       if (alive) setLogoConfig(next);
     };
     const onLogoChange = (e: Event) => applyLogoConfig((e as CustomEvent<SiteLogoConfig>).detail || {});

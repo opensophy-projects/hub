@@ -471,7 +471,7 @@ const SourceCodeViewer: React.FC<SourceCodeViewerProps> = ({ fileContents, t }) 
         >
           <code
             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(highlighted) }}
-            style={{ userSelect: 'text', WebkitUserSelect: 'text' } as React.CSSProperties}
+            style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
           />
         </pre>
       </div>
@@ -602,8 +602,8 @@ const FullscreenDesktop: React.FC<ComponentRenderProps & {
                 width: 24, height: 24, borderRadius: 6,
                 border: 'none', background: 'transparent', color: t.fgMuted, cursor: 'pointer',
               }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = t.fg; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = t.fgMuted; }}
+              onMouseEnter={e => { e.currentTarget.style.color = t.fg; }}
+              onMouseLeave={e => { e.currentTarget.style.color = t.fgMuted; }}
             >
               <X size={13} />
             </button>
@@ -821,8 +821,8 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
           background: t.railBg, color: t.fg, cursor: 'pointer',
           boxShadow: t.shadow, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
         }}
-        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = t.railBg; }}
+        onMouseEnter={e => { e.currentTarget.style.background = t.btnHov; }}
+        onMouseLeave={e => { e.currentTarget.style.background = t.railBg; }}
       >
         <Settings size={17} />
       </button>

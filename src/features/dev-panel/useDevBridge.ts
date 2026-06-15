@@ -17,7 +17,7 @@ interface BridgeResponse<T = unknown> {
 const ENDPOINT = '/api/dev-bridge/';
 
 class RequestQueue {
-  private queue: Array<() => Promise<void>> = [];
+  private readonly queue: Array<() => Promise<void>> = [];
   private running = false;
 
   add<T>(fn: () => Promise<T>): Promise<T> {
@@ -53,7 +53,7 @@ async function send<T = unknown>(action: string, payload?: unknown): Promise<T> 
     });
 
     let data: BridgeResponse<T>;
-    try { data = await res.json() as BridgeResponse<T>; }
+    try { data = await res.json(); }
     catch { throw new Error(`Bridge HTTP ${res.status}`); }
 
     if (!res.ok || !data.ok) throw new Error(data.error ?? `Bridge HTTP ${res.status}`);

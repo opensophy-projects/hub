@@ -241,6 +241,8 @@ function IconPickerModal({ current, onSelect, onClose, t }: {
           {filtered.map(name => {
             const isActive = name === current;
             const isHov = hov === name;
+            const buttonBorder = isActive ? t.borderStrong : isHov ? t.border : 'transparent';
+            const buttonBg = isActive ? t.accentSoft : isHov ? t.surfaceHov : 'transparent';
             return (
               <button
                 key={name}
@@ -252,8 +254,8 @@ function IconPickerModal({ current, onSelect, onClose, t }: {
                   display: 'flex', flexDirection: 'column', alignItems: 'center',
                   justifyContent: 'center', gap: 5,
                   padding: '8px 4px', borderRadius: 8,
-                  border: `1px solid ${isActive ? t.borderStrong : (isHov ? t.border : 'transparent')}`,
-                  background: isActive ? t.accentSoft : (isHov ? t.surfaceHov : 'transparent'),
+                  border: `1px solid ${buttonBorder}`,
+                  background: buttonBg,
                   color: isActive ? t.fg : t.fgMuted,
                   cursor: 'pointer', fontSize: 9, fontFamily: t.mono,
                   lineHeight: 1.2, textAlign: 'center', wordBreak: 'break-all',
@@ -278,11 +280,12 @@ function IconPickerModal({ current, onSelect, onClose, t }: {
 }
 
 // ─── IconField ───────────────────────────────────────────────────────────────
-function IconField({ value, onChange, t, placeholder = 'file-text' }: {
+function IconField({ value, onChange, t, placeholder = 'file-text', inputId }: {
   readonly value: string;
   readonly onChange: (v: string) => void;
   readonly t: TTokens;
   readonly placeholder?: string;
+  readonly inputId?: string;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -305,6 +308,7 @@ function IconField({ value, onChange, t, placeholder = 'file-text' }: {
           <LucideIcon name={value || placeholder} size={16} />
         </div>
         <input
+          id={inputId}
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder}
@@ -385,10 +389,10 @@ const routeFromDocPath = (filePath: string): string => {
 };
 
 const openRouteForDoc = (filePath: string) => {
-  if (typeof window === 'undefined') return;
+  if (globalThis.window === undefined) return;
   const route = routeFromDocPath(filePath);
-  const current = window.location.pathname;
-  if (current !== route) window.history.pushState({}, '', route);
+  const current = globalThis.window.location.pathname;
+  if (current !== route) globalThis.window.history.pushState({}, '', route);
 };
 
 const parseFM = (raw: string): { fm: FM; body: string } => {
@@ -720,7 +724,7 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
         <label htmlFor="entry-title" style={lbS}>Название *</label>
         <input
           id="entry-title"
-          ref={ref as React.RefObject<HTMLInputElement>}
+          ref={ref}
           value={title}
           onChange={e => setT(e.target.value)}
           onKeyDown={e => {
@@ -738,8 +742,8 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
         </div>
       </div>
       <div style={{ marginBottom: isA && !isEdit ? 14 : 10 }}>
-        <label style={lbS}>Иконка</label>
-        <IconField value={icon} onChange={setIcon} t={t} placeholder={dIco[cfg.entryType]} />
+        <label htmlFor="entry-icon" style={lbS}>Иконка</label>
+        <IconField inputId="entry-icon" value={icon} onChange={setIcon} t={t} placeholder={dIco[cfg.entryType]} />
       </div>
       {isA && !isEdit && (
         <div style={{ borderTop: `1px solid ${t.border}`, paddingTop: 12, marginBottom: 10 }}>
@@ -762,7 +766,7 @@ function EntryModal({ cfg, existing, onClose, onDone, t }: {
       <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
         <button onClick={onClose} style={{ flex: 1, padding: '8px', borderRadius: 7, border: `1px solid ${t.border}`, background: 'transparent', color: t.fgMuted, cursor: 'pointer', fontSize: 14, fontFamily: t.mono }}>Отмена</button>
         <button onClick={doSave} disabled={saving} style={{ flex: 1, padding: '8px', borderRadius: 7, border: `1px solid ${t.borderStrong}`, background: t.surfaceHov, color: t.fg, cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: t.mono }}>
-          {saving ? '...' : (isEdit ? 'Применить' : 'Создать')}
+          {saving ? '...' : isEdit ? 'Применить' : 'Создать'}
         </button>
       </div>
     </Modal>

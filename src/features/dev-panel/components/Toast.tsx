@@ -50,8 +50,8 @@ function Toast({ item, onClose }: { readonly item: ToastItem; readonly onClose: 
           background: 'none', border: 'none', cursor: 'pointer',
           color: T.fgSub, padding: 0, display: 'flex', flexShrink: 0,
         }}
-        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = T.fg; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = T.fgSub; }}
+        onMouseEnter={e => { e.currentTarget.style.color = T.fg; }}
+        onMouseLeave={e => { e.currentTarget.style.color = T.fgSub; }}
       >
         <X size={12} />
       </button>

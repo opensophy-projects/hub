@@ -180,9 +180,14 @@ function parseParams(paramStr) {
   return params;
 }
 
+function markedToHtml(markdown) {
+  const html = marked.parse(markdown, { async: false });
+  return typeof html === 'string' ? html : '';
+}
+
 function markedWithCodeBlocks(str, codeBlocks) {
   const restored = str.replaceAll(/___CODE_BLOCK_(\d+)___/g, (_, i) => codeBlocks[Number.parseInt(i, 10)]);
-  return marked(restored);
+  return markedToHtml(restored);
 }
 
 // ─── Сборщик тела блока ───────────────────────────────────────────────────────
@@ -545,7 +550,7 @@ export function preprocessMarkdownExtensions(content) {
         j++;
       }
       alertOutput.push(
-        `<div class="custom-alert" data-alert-type="${alertType}">\n${marked.parse(bodyLines.join('\n').trim())}\n</div>`
+        `<div class="custom-alert" data-alert-type="${alertType}">\n${markedToHtml(bodyLines.join('\n').trim())}\n</div>`
       );
       j++;
     } else {

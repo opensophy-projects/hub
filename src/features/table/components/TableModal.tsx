@@ -92,8 +92,8 @@ const Pill: React.FC<{
       borderRadius: 8, border: `1px solid ${bdr}`,
       background: bg, color, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s',
     }}
-      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = bg; }}
+      onMouseEnter={e => { e.currentTarget.style.background = t.btnHov; }}
+      onMouseLeave={e => { e.currentTarget.style.background = bg; }}
     >
       {icon}
       <span style={{ fontSize: 10, fontWeight: active ? 600 : 400, lineHeight: 1, whiteSpace: 'nowrap' }}>{label}</span>
@@ -132,8 +132,8 @@ const CopyBtn: React.FC<{ isDark: boolean; tableHtml: string; t: TableUiTokens }
           borderRadius: 8, border: `1px solid ${bdr}`,
           background: bg, color, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s',
         }}
-        onMouseEnter={e => { if (!isCopied) (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
-        onMouseLeave={e => { if (!isCopied) (e.currentTarget as HTMLButtonElement).style.background = bg; }}
+        onMouseEnter={e => { if (!isCopied) e.currentTarget.style.background = t.btnHov; }}
+        onMouseLeave={e => { if (!isCopied) e.currentTarget.style.background = bg; }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           {isCopied ? <Check size={13} strokeWidth={2.5} /> : <Copy size={13} />}
@@ -152,8 +152,8 @@ const CopyBtn: React.FC<{ isDark: boolean; tableHtml: string; t: TableUiTokens }
               border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left',
               color: t.menuClr, transition: 'background 0.1s',
             }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.menuHov; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+              onMouseEnter={e => { e.currentTarget.style.background = t.menuHov; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
             >
               <span style={{ fontSize: 13, fontWeight: 500 }}>{fmt === 'md' ? 'Markdown' : 'Excel / TSV'}</span>
               <span style={{ fontSize: 11, color: t.menuSub }}>{fmt === 'md' ? 'Для документов' : 'Tab-separated'}</span>
