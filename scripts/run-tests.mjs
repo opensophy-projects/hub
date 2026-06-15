@@ -1,15 +1,16 @@
 import { build } from 'esbuild';
+import { mkdir, rm } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
-import { existsSync, globSync } from 'node:fs';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { globSync } from 'node:fs';
 import path from 'node:path';
+import { existsSync } from 'node:fs';
 
 const root = process.cwd();
 const outdir = path.join(root, '.test-build');
 await rm(outdir, { recursive: true, force: true });
 await mkdir(outdir, { recursive: true });
 const uiViewerStub = path.join(outdir, 'NewUIComponentViewer.stub.tsx');
-await writeFile(uiViewerStub, "import React from 'react'; export default function NewUIComponentViewer(){ return React.createElement('div'); }\n");
+await import('node:fs/promises').then(({ writeFile }) => writeFile(uiViewerStub, "import React from 'react'; export default function NewUIComponentViewer(){ return React.createElement('div'); }\n"));
 const tests = globSync('src/**/*.{test,spec}.{ts,tsx}', { cwd: root });
 if (tests.length === 0) process.exit(0);
 
@@ -59,7 +60,7 @@ const res = spawnSync(process.execPath, [
   ...built,
 ], { stdio: 'inherit', env: { ...process.env, NODE_ENV: 'test' } });
 if ((res.status ?? 1) === 0) {
-  await import('./write-lcov.mjs');
+  const coverage = await import('./write-lcov.mjs');
 }
 process.exit(res.status ?? 1);
 

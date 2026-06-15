@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import React, { act } from 'react';
+import React from 'react';
+import { act } from 'react-dom/test-utils';
 import { createRoot } from 'react-dom/client';
 import { JSDOM } from 'jsdom';
 import { useTableControls } from './useTableControls';
 
 const dom = new JSDOM('<!doctype html><div id="root"></div><table><tbody><tr><td>Beta</td><td>2</td></tr><tr><td>Alpha</td><td>1</td></tr></tbody></table>');
-Object.defineProperty(globalThis, 'window', { value: dom.window, configurable: true });
+globalThis.window = dom.window as unknown as Window & typeof globalThis;
 globalThis.document = dom.window.document;
-Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', { value: true, configurable: true });
 globalThis.DOMParser = dom.window.DOMParser;
 
 test('useTableControls exposes filtering, sorting and visibility operations', async () => {

@@ -5,7 +5,7 @@ import { JSDOM } from 'jsdom';
 import { parseHtmlToReact, SANITIZE_ATTR, SANITIZE_TAGS, TableContext } from './htmlParser';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>');
-Object.defineProperty(globalThis, 'window', { value: dom.window, configurable: true });
+globalThis.window = dom.window as unknown as Window & typeof globalThis;
 globalThis.document = dom.window.document;
 globalThis.DOMParser = dom.window.DOMParser;
 globalThis.Node = dom.window.Node;

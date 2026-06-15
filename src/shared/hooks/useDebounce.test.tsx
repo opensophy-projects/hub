@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import React, { act } from 'react';
+import React from 'react';
+import { act } from 'react-dom/test-utils';
 import { createRoot } from 'react-dom/client';
 import { JSDOM } from 'jsdom';
 import { useDebounce } from './useDebounce';
 
 const dom = new JSDOM('<!doctype html><div id="root"></div>');
-Object.defineProperty(globalThis, 'window', { value: dom.window, configurable: true });
+globalThis.window = dom.window as unknown as Window & typeof globalThis;
 globalThis.document = dom.window.document;
-Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', { value: true, configurable: true });
 
 test('useDebounce updates value after the requested delay', async () => {
   const seen: string[] = [];
