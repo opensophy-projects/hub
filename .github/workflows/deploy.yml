@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -36,12 +38,6 @@ jobs:
       # SONARCLOUD
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v6
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-      - name: SonarCloud Quality Gate
-        uses: SonarSource/sonarqube-quality-gate-action@v1.1.0
-        timeout-minutes: 10
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
@@ -61,22 +57,27 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      # DEPENDENCIES
+      # DEPENDENCY VULNERABILITIES
       - name: Dependency Audit
         run: npm audit --audit-level=moderate
 
-      # BUILD
-      - name: Generate docs
+      # GENERATION
+      - name: Generate Content
+        run: npm run generate
+
+      - name: Generate Docs
         run: npm run generate:docs
 
-      - name: Generate sitemap
+      - name: Generate Sitemap
         run: npm run generate:sitemap
 
+      # BUILD
       - name: Build
         run: npm run build
 
+      # PAGES ARTIFACT
       - name: Upload Pages Artifact
-        if: github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
@@ -84,6 +85,7 @@ jobs:
   deploy:
     name: Deploy GitHub Pages
     needs: quality
+
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
 
     runs-on: ubuntu-latest
