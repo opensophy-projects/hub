@@ -10,7 +10,7 @@
 [![ENGLISH](https://img.shields.io/badge/ENGLISH-2ea44f?style=for-the-badge)](.github/workflows/info/readme_eng.md)
 [![Русский](https://img.shields.io/badge/Русский-2ea44f?style=for-the-badge)](.github/workflows/info/readme_ru.md)
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-opensophy.com-8B5CF6?style=flat-square)](https://opensophy.com)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-hub.com-8B5CF6?style=flat-square)](https://hub.com)
 
 </div>
 
@@ -25,7 +25,7 @@
 
 # Security
 
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=opensophy-projects_hub&metric=alert_status)](https://sonarcloud.io/project/overview?id=opensophy-projects_hub)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=hub-projects_hub&metric=alert_status)](https://sonarcloud.io/project/overview?id=hub-projects_hub)
 
 # License
 

@@ -1,0 +1,10 @@
+.git
+.github
+node_modules
+dist
+.astro
+.env
+work
+npm-debug.log*
+Dockerfile
+README.md

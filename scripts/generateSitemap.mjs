@@ -11,7 +11,9 @@ const manifestPath = path.join(__dirname, '../public/data/docs/manifest.json');
 const sitemapPath  = path.join(__dirname, '../public/sitemap.xml');
 const customDir    = path.join(__dirname, '../src/custom');
 
-const BASE_URL = 'https://opensophy.com';
+const siteConfigPath = path.join(__dirname, '../public/data/site-config.json');
+const siteConfig = fs.existsSync(siteConfigPath) ? JSON.parse(fs.readFileSync(siteConfigPath, 'utf-8')) : {};
+const BASE_URL = process.env.PUBLIC_SITE_URL || siteConfig.seo?.url || 'http://localhost:4321';
 
 // ─── Terminal helpers ─────────────────────────────────────────────────────────
 

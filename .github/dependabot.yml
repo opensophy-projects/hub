@@ -1,0 +1,19 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: daily
+    target-branch: dev
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - security
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    target-branch: dev
+    labels:
+      - dependencies
+      - ci

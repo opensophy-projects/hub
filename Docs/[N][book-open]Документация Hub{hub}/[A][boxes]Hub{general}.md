@@ -4,7 +4,7 @@ description: "Обзор проекта Hub: что это за платформ
 author: veilosophy
 date: 2026-06-03
 updated: 2026-06-03
-tags: "hub, opensophy, документация, платформа, markdown, ui, astro, react"
+tags: "hub, hub, документация, платформа, markdown, ui, astro, react"
 icon: boxes
 lang: ru
 robots: "index, follow"
@@ -13,9 +13,9 @@ priority: 0
 
 # Hub
 
-**Hub** — гибридная open-source платформа Opensophy для документации, публикации контента и демонстрации UI-компонентов. Проект объединяет статический сайт на Astro, расширенный Markdown-движок, навигацию на основе файловой структуры, поиск, интерактивные таблицы и библиотеку React-компонентов с живыми примерами — без отдельной CMS.
+**Hub** — гибридная open-source платформа HUB для документации, публикации контента и демонстрации UI-компонентов. Проект объединяет статический сайт на Astro, расширенный Markdown-движок, навигацию на основе файловой структуры, поиск, интерактивные таблицы и библиотеку React-компонентов с живыми примерами — без отдельной CMS.
 
-[Демонстрация форматирования](https://opensophy.com/docs/markdown-guide/) — [GitHub репозиторий](https://github.com/opensophy-projects/hub)
+[Демонстрация форматирования](https://hub.com/docs/markdown-guide/) — [GitHub репозиторий](https://github.com/hub-projects/hub)
 
 ---
 
@@ -42,7 +42,7 @@ priority: 0
 :::
 
 :::card
-[title]Opensophy Style
+[title]HUB Style
 [icon]palette
 Лаконичный и современный дизайн с поддержкой тёмной и светлой темы, плавными переходами и mobile-first навигацией через bottom bar.
 :::
@@ -146,7 +146,7 @@ Docs/
 :::col
 ### Лендинг
 
-Когда `useLanding: true`, главная страница показывает React-лендинг Opensophy: hero-секцию, WebGL-визуал, блок о проекте, карточки направлений и экосистему Opensophy.
+Когда `useLanding: true`, главная страница показывает React-лендинг HUB: hero-секцию, WebGL-визуал, блок о проекте, карточки направлений и экосистему HUB.
 :::
 :::col
 ### welcome.md
@@ -211,4 +211,4 @@ npm run dev
 
 Проект полностью open-source — берите, адаптируйте, публикуйте свой контент.
 
-Перед использованием ознакомьтесь с README и лицензией: [github.com/opensophy-projects/hub](https://github.com/opensophy-projects/hub)
+Перед использованием ознакомьтесь с README и лицензией: [github.com/hub-projects/hub](https://github.com/hub-projects/hub)

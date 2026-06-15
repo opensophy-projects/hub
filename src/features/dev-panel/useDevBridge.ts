@@ -71,6 +71,7 @@ export interface SiteConfig {
   favicon?: string;
   lightLogo?: string;
   darkLogo?: string;
+  seo?: Record<string, string | string[]>;
 }
 
 export const bridge = {

@@ -2,7 +2,7 @@
 title: Журнал изменений
 description: Последние технические новости проекта
 date: 2026-03-06
-tags: "changelog, opensophy"
+tags: "changelog, hub"
 icon: newspaper
 lang: ru
 robots: "index, follow"
@@ -20,17 +20,17 @@ priority: 2
 
 :::step[status=done] 06.03.2026
 **Миграция**
-hub.opensophy.com и ui.opensophy.com мигрировали в opensophy.com
+hub.hub.com и ui.hub.com мигрировали в hub.com
 :::
 
 :::step[status=done] 13.04.2026
 **Обновление Hub до V3.4**
-Финальная доработка проекта и выпуск в релиз стабильной версии. Дальше обновление будет при появлении актива от пользователей в [репозитории](https://github.com/opensophy-projects/hub).
+Финальная доработка проекта и выпуск в релиз стабильной версии. Дальше обновление будет при появлении актива от пользователей в [репозитории](https://github.com/hub-projects/hub).
 :::
 
 :::step[status=done] 24.04.2026
 **Обновление Систем**
-Внутрениий апдейт и обновление систем opensophy.
+Внутрениий апдейт и обновление систем hub.
 :::
 
 :::step[status=done] 20.05.2026

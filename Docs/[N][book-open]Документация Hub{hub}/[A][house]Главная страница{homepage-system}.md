@@ -136,7 +136,7 @@ icon: crown
 ```
 LandingContent
 ├── Navigation              ← Глобальная навигация Hub
-├── Hero (WebGL SingularityShaders + заголовок Opensophy)
+├── Hero (WebGL SingularityShaders + заголовок HUB)
 ├── О проекте (ShinyText)
 ├── SecuritySection (график + карточки FeatureCard)
 └── EcosystemSection (RotatingText + EcoCard × 4)

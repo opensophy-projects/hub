@@ -12,7 +12,21 @@ const MANIFEST   = path.join(OUTPUT_DIR, 'manifest.json');
 const SITEMAP    = path.join(ROOT, 'public/sitemap.xml');
 const SITE_CONFIG_PATH = path.join(ROOT, 'public/data/site-config.json');
 const CUSTOM_DIR = path.join(ROOT, 'src/custom');
-const BASE_URL   = 'https://opensophy.com';
+const DEFAULT_SEO = {
+  name: 'HUB',
+  description: 'HUB — платформа для документации, баз знаний, гайдов, changelog-порталов и продуктовых лендингов на Markdown.',
+  url: 'http://localhost:4321',
+  lang: 'ru',
+  author: 'HUB',
+  keywords: 'hub, documentation, markdown, база знаний, документация, гайды, changelog, SEO, GEO',
+  ogImage: '/og-image.png',
+  ogLocale: 'ru_RU',
+  twitterCard: 'summary_large_image',
+  twitterSite: '',
+  themeColor: '#0a0a0a',
+  publisherSameAs: [],
+};
+const BASE_URL   = process.env.PUBLIC_SITE_URL || DEFAULT_SEO.url;
 
 const LOCALHOST_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
 
@@ -79,6 +93,11 @@ function normalizeSiteConfig(config) {
     favicon: typeof config.favicon === 'string' && config.favicon ? config.favicon : '/favicon.png',
     lightLogo: typeof config.lightLogo === 'string' ? config.lightLogo : '',
     darkLogo: typeof config.darkLogo === 'string' ? config.darkLogo : '',
+    seo: {
+      ...DEFAULT_SEO,
+      ...(config.seo && typeof config.seo === 'object' ? config.seo : {}),
+      publisherSameAs: Array.isArray(config.seo?.publisherSameAs) ? config.seo.publisherSameAs : DEFAULT_SEO.publisherSameAs,
+    },
   };
 }
 

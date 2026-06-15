@@ -23,10 +23,13 @@ if (fs.existsSync(welcomeMdPath)) {
   }
 }
 
-const SITE_NAME = 'Opensophy';
+const siteConfigPath = path.join(process.cwd(), 'public/data/site-config.json');
+const siteConfig = fs.existsSync(siteConfigPath) ? JSON.parse(fs.readFileSync(siteConfigPath, 'utf-8')) : {};
+const siteSeo = siteConfig.seo || {};
+const SITE_NAME = siteSeo.name || 'HUB';
 const landingPage = getCustomPageBySlug('general');
-const LANDING_DESCRIPTION = landingPage?.metadata.description || 'Opensophy — open-source проект для IT-специалистов и инициатива открытой философии в IT. Качественные и доступные знания, услуги, инструменты и решения по безопасности, разработке и инфраструктуре — в открытом доступе.';
-const LANDING_KEYWORDS = landingPage?.metadata.keywords || 'opensophy, кибербезопасность, DevSecOps, linux, разработка, инструменты, туториалы, open source, IT, mTLS, SAST, DAST, SCA, zero trust, CI/CD';
+const LANDING_DESCRIPTION = landingPage?.metadata.description || siteSeo.description || 'HUB — платформа для документации, баз знаний, гайдов, changelog-порталов и продуктовых лендингов на Markdown.';
+const LANDING_KEYWORDS = landingPage?.metadata.keywords || siteSeo.keywords || 'hub, documentation, markdown, база знаний, документация, гайды, changelog, SEO, GEO';
 
 const welcomeCustomSlug = resolveCustomSlug(welcomeDoc?.frontmatter?.custom);
 const welcomeCustomPage = welcomeCustomSlug ? getCustomPageBySlug(welcomeCustomSlug) : null;

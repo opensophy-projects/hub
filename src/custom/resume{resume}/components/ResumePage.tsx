@@ -295,7 +295,7 @@ const ResumeContent: React.FC = () => {
 
         <h1 className="resume-hero-title" style={{ color: textMain }}>
           <SplitText
-            text="Привет, меня зовут Кулешов Даниил, также известен в it-сообществах как глава проекта opensophy или юзернеймов @opensophy."
+            text="Привет, меня зовут Кулешов Даниил, также известен в it-сообществах как глава проекта hub или юзернеймов @hub."
             splitType="words"
             tag="span"
             textAlign="center"
@@ -565,27 +565,27 @@ const ResumeContent: React.FC = () => {
           </p>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem 2.5rem', justifyContent: 'center', alignItems: 'center' }}>
-            <a href="mailto:opensophy@gmail.com" className="r-contact-link" style={{ color: textMain }}>
+            <a href="mailto:hub@gmail.com" className="r-contact-link" style={{ color: textMain }}>
               <svg className="r-contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="2" y="4" width="20" height="16" rx="2"/>
                 <path d="m22 7-10 7L2 7"/>
               </svg>
-              opensophy@gmail.com
+              hub@gmail.com
             </a>
 
-            <a href="https://t.me/opensophy" target="_blank" rel="noopener noreferrer" className="r-contact-link" style={{ color: textMain }}>
+            <a href="https://t.me/hub" target="_blank" rel="noopener noreferrer" className="r-contact-link" style={{ color: textMain }}>
               <svg className="r-contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21.5 4.5 2.5 10.5l7 2.5 2.5 7 3-5 5 4 1.5-14.5z"/>
                 <path d="M9.5 13 15 8"/>
               </svg>
-              @opensophy
+              @hub
             </a>
 
-            <a href="https://github.com/opensophy-projects" target="_blank" rel="noopener noreferrer" className="r-contact-link" style={{ color: textMain }}>
+            <a href="https://github.com/hub-projects" target="_blank" rel="noopener noreferrer" className="r-contact-link" style={{ color: textMain }}>
               <svg className="r-contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
               </svg>
-              github / opensophy-projects
+              github / hub-projects
             </a>
           </div>
         </div>

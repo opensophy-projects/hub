@@ -1224,8 +1224,8 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({ isNegative, navOffset
           }}
         >
           {'Чтобы заказать услугу или обсудить сотрудничество, напишите на '}
-          <a href="mailto:opensophy@gmail.com" style={{ color: textMain, textDecoration: 'none' }}>
-            opensophy@gmail.com
+          <a href="mailto:hub@gmail.com" style={{ color: textMain, textDecoration: 'none' }}>
+            hub@gmail.com
           </a>
           {'. Все карточки с пометкой «услуга» доступны для заказа; «Знания каждому!» — открытая образовательная инициатива.'}
         </p>
@@ -1330,21 +1330,21 @@ const EcosystemSection: React.FC<EcosystemSectionProps> = ({ isNegative, navOffs
         <div className="eco-cards">
           <FeatureCard
             isNegative={isNegative}
-            title="Opensophy Hub (O.Hub)"
+            title="HUB Hub (O.Hub)"
             badge="веб-проект"
             text="Гибридная open-source платформа для документации и публикации контента. Подходит для технических команд, авторов и всех, кто хочет красиво и структурировано делиться знаниями."
           />
           <FeatureCard
             isNegative={isNegative}
-            title="Opensophy mTLS (O.mTLS)"
+            title="HUB mTLS (O.mTLS)"
             badge="скрипт"
             text="Инструмент для быстрого создания и управления mTLS-сертификатами. Для тех, кто хочет надёжно закрыть доступ к своим сервисам и серверам без лишней головной боли."
           />
           <FeatureCard
             isNegative={isNegative}
-            title="Opensophy UI (O.UI)"
+            title="HUB UI (O.UI)"
             badge="веб-проект"
-            text="Библиотека готовых React-компонентов с живым превью и настройками. Анимации, интерактивные блоки, кастомные элементы и фирменные компоненты Opensophy — для разработчиков и дизайнеров."
+            text="Библиотека готовых React-компонентов с живым превью и настройками. Анимации, интерактивные блоки, кастомные элементы и фирменные компоненты HUB — для разработчиков и дизайнеров."
           />
         </div>
 
@@ -1478,7 +1478,7 @@ const LandingContent: React.FC = () => {
             className="hero-title"
             style={{ color: textMain }}
           >
-            Opensophy
+            HUB
           </h1>
         </div>
       </section>
@@ -1510,7 +1510,7 @@ const LandingContent: React.FC = () => {
           fontFamily: 'Inter, sans-serif',
         }}>
           <ShinyText
-            text="Opensophy — инициатива открытой философии в IT. Качественные и доступные знания, услуги, инструменты и решения."
+            text="HUB — инициатива открытой философии в IT. Качественные и доступные знания, услуги, инструменты и решения."
             speed={4}
             color={shinyBase}
             shineColor={shinyGlow}

@@ -3,5 +3,19 @@
   "showDotWaveBackground": true,
   "favicon": "/favicon.png",
   "lightLogo": "/light_logo.png",
-  "darkLogo": "/dark_logo.png"
+  "darkLogo": "/dark_logo.png",
+  "seo": {
+    "name": "HUB",
+    "description": "HUB — платформа для документации, баз знаний, гайдов, changelog-порталов и продуктовых лендингов на Markdown.",
+    "url": "http://localhost:4321",
+    "lang": "ru",
+    "author": "HUB",
+    "keywords": "hub, documentation, markdown, база знаний, документация, гайды, changelog, SEO, GEO",
+    "ogImage": "/og-image.png",
+    "ogLocale": "ru_RU",
+    "twitterCard": "summary_large_image",
+    "twitterSite": "",
+    "themeColor": "#0a0a0a",
+    "publisherSameAs": []
+  }
 }

@@ -22,19 +22,34 @@ interface Props {
   lang?: string;
 }
 
-const SITE = {
-  name:        'Opensophy',
-  description: 'Opensophy — open-source проект для IT-специалистов и инициатива открытой философии в IT. Качественные и доступные знания, услуги, инструменты и решения по безопасности, разработке и инфраструктуре — в открытом доступе.',
-  url:         'https://opensophy.com',
+const DEFAULT_SITE = {
+  name:        'HUB',
+  description: 'HUB — платформа для документации, баз знаний, гайдов, changelog-порталов и продуктовых лендингов на Markdown.',
+  url:         'http://localhost:4321',
   lang:        'ru',
-  author:      'Opensophy',
-  keywords:    'opensophy, кибербезопасность, DevSecOps, linux, разработка, инструменты, туториалы, open source, mTLS, SAST, DAST, SCA, zero trust, CI/CD',
+  author:      'HUB',
+  keywords:    'hub, documentation, markdown, база знаний, документация, гайды, changelog, SEO, GEO',
   ogImage:     '/og-image.png',
   ogLocale:    'ru_RU',
   twitterCard: 'summary_large_image',
-  twitterSite: '@opensophy',
+  twitterSite: '',
   themeColor:  '#0a0a0a',
+  publisherSameAs: [],
 };
+
+let SITE = { ...DEFAULT_SITE };
+let faviconPath = '/favicon.png';
+try {
+  const siteConfigPath = path.join(process.cwd(), 'public/data/site-config.json');
+  if (fs.existsSync(siteConfigPath)) {
+    const cfg = JSON.parse(fs.readFileSync(siteConfigPath, 'utf-8'));
+    SITE = { ...SITE, ...(cfg.seo || {}) };
+    if (typeof cfg.favicon === 'string' && cfg.favicon) faviconPath = cfg.favicon;
+  }
+} catch {
+  SITE = { ...DEFAULT_SITE };
+  faviconPath = '/favicon.png';
+}
 
 const {
   title       = SITE.name,
@@ -56,17 +71,6 @@ const imageUrl     = image ? new URL(image, SITE.url).href : new URL(SITE.ogImag
 const publishedISO = date    ? new Date(date).toISOString()    : undefined;
 const updatedISO   = updated ? new Date(updated).toISOString() : publishedISO;
 const isHomePage   = url === '/';
-
-let faviconPath = '/favicon.png';
-try {
-  const siteConfigPath = path.join(process.cwd(), 'public/data/site-config.json');
-  if (fs.existsSync(siteConfigPath)) {
-    const cfg = JSON.parse(fs.readFileSync(siteConfigPath, 'utf-8'));
-    if (typeof cfg.favicon === 'string' && cfg.favicon) faviconPath = cfg.favicon;
-  }
-} catch {
-  faviconPath = '/favicon.png';
-}
 
 const faviconType = faviconPath.endsWith('.svg')
   ? 'image/svg+xml'
@@ -97,8 +101,7 @@ const websiteJsonLd = JSON.stringify({
     "name": SITE.name,
     "url": SITE.url,
     "sameAs": [
-      "https://github.com/opensophy-projects",
-      "https://habr.com/ru/users/opensophy/"
+      ...SITE.publisherSameAs
     ]
   }
 });

@@ -178,16 +178,16 @@ _Курсивный текст_
 
 ### Ссылки
 
-[Текст ссылки](https://opensophy.com) создается следующим синтаксисом:
+[Текст ссылки](https://hub.com) создается следующим синтаксисом:
 
 ```markdown
-[Текст ссылки](https://opensophy.com)
+[Текст ссылки](https://hub.com)
 ```
 
-Автоматическая ссылка: https://opensophy.com
+Автоматическая ссылка: https://hub.com
 
 ```markdown
-https://opensophy.com
+https://hub.com
 ```
 
 ### Изображения
@@ -924,7 +924,7 @@ Hub поддерживает красивые карточки с иконкой
 
 Скопируйте команду и выполните в терминале:
 
-`git clone https://github.com/opensophy/hub.git`
+`git clone https://github.com/hub/hub.git`
 
 Убедитесь, что у вас установлен Git версии 2.30+.
 :::
@@ -954,7 +954,7 @@ Hub поддерживает красивые карточки с иконкой
 
 Скопируйте команду и выполните в терминале:
 
-`git clone https://github.com/opensophy/hub.git`
+`git clone https://github.com/hub/hub.git`
 
 Убедитесь, что у вас установлен Git версии 2.30+.
 :::

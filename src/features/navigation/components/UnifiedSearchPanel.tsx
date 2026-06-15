@@ -455,12 +455,12 @@ function useSearchDocs(manifestDocs: DocMeta[]): DocMeta[] {
       id: 'landing-home',
       slug: '',
       title: 'Главная страница',
-      description: 'Лендинг Opensophy: быстрый доступ к разделам, материалам и инструментам проекта.',
+      description: 'Лендинг HUB: быстрый доступ к разделам, материалам и инструментам проекта.',
       type: '',
       navSlug: '',
       navTitle: 'Главная',
       icon: 'crown',
-      tags: ['landing', 'главная', 'opensophy'],
+      tags: ['landing', 'главная', 'hub'],
     };
 
     return [landingDoc, ...withoutWelcome];

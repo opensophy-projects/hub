@@ -1,8 +1,8 @@
 ---
 title: Добро пожаловать в Hub
-description: Hub проекта Opensophy - центр знаний
+description: Hub проекта HUB - центр знаний
 date: 2026-02-17
-tags: "welcome, hub, opensophy"
+tags: "welcome, hub, hub"
 icon: crown
 lang: ru
 robots: "index, follow"
@@ -17,11 +17,11 @@ custom: general
 
 ## Кто мы?
 
-**Opensophy** — коллекция open-source решений для IT-специалистов. Проекты, инструменты, гайды и образовательные материалы о безопасности, инфраструктуре и современной разработке.
+**HUB** — коллекция open-source решений для IT-специалистов. Проекты, инструменты, гайды и образовательные материалы о безопасности, инфраструктуре и современной разработке.
 
-В **Hub**е собраны документация, статьи, гайды и новости по ключевым темам, которые написаны автором Opensophy — veilosophy и соавторами. Платформа построена на открытом стеке технологий и доступна как самостоятельное open-source решение для публикации контента.
+В **Hub**е собраны документация, статьи, гайды и новости по ключевым темам, которые написаны автором HUB — veilosophy и соавторами. Платформа построена на открытом стеке технологий и доступна как самостоятельное open-source решение для публикации контента.
 
-[Демонстрация форматирования](https://opensophy.com/docs/markdown-guide/) — [GitHub репозиторий](https://github.com/opensophy-projects/hub)
+[Демонстрация форматирования](https://hub.com/docs/markdown-guide/) — [GitHub репозиторий](https://github.com/hub-projects/hub)
 
 Используйте **Меню** чтобы менять тему сайта и просматривать статьи, или **Поиск** для быстрого поиска нужного материала.
 
@@ -50,7 +50,7 @@ custom: general
 :::
 
 :::card
-[title]Opensophy Style
+[title]HUB Style
 [icon]palette
 Лаконичный и современный дизайн с поддержкой тёмной и светлой темы, плавными переходами и mobile-first навигацией через bottom bar.
 :::
@@ -75,11 +75,11 @@ custom: general
 
 Вы можете создать такой же Hub! Проект полностью open-source — берите, адаптируйте, публикуйте свой контент.
 
-Перед использованием ознакомьтесь с README и лицензией: [github.com/opensophy-projects/hub](https://github.com/opensophy-projects/hub)
+Перед использованием ознакомьтесь с README и лицензией: [github.com/hub-projects/hub](https://github.com/hub-projects/hub)
 
-# Benchmark — Opensophy Hub
+# Benchmark — HUB Hub
 
-| Функция | Opensophy Hub |
+| Функция | HUB Hub |
 |---|---|
 | **Форматирование** | |
 | **Заголовки** | |

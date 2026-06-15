@@ -1,0 +1,25 @@
+services:
+  hub-dev:
+    image: hub-dev
+    build:
+      context: .
+      target: deps
+    working_dir: /app
+    command: sh -c "npm run dev -- --host 127.0.0.1"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "127.0.0.1:4321:4321"
+    environment:
+      NODE_ENV: development
+
+  hub-prod:
+    image: ${DOCKERHUB_IMAGE:-hub}:latest
+    build:
+      context: .
+      target: prod
+    ports:
+      - "${HUB_PROD_PORT:-8080}:80"
+    environment:
+      NODE_ENV: production

@@ -18,6 +18,7 @@ export default function SitePanel() {
   const t = useContext(ThemeTokensContext);
 
   const [config, setConfig]   = useState<SiteConfig>({ useLanding: false, showDotWaveBackground: true });
+  const [seoText, setSeoText] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState('');
@@ -40,7 +41,12 @@ export default function SitePanel() {
       setConfig({
         useLanding: cfg.useLanding === true,
         showDotWaveBackground: cfg.showDotWaveBackground !== false,
+        favicon: cfg.favicon,
+        lightLogo: cfg.lightLogo,
+        darkLogo: cfg.darkLogo,
+        seo: cfg.seo,
       });
+      setSeoText(JSON.stringify(cfg.seo ?? {}, null, 2));
     } catch (e: unknown) {
       setError((e as Error).message);
     } finally {
@@ -112,6 +118,15 @@ export default function SitePanel() {
       { ...config, showDotWaveBackground: value },
       value ? 'Фон шапки включён' : 'Фон шапки отключён',
     );
+
+  const saveSeo = async () => {
+    try {
+      const seo = JSON.parse(seoText);
+      await applyConfigChange({ ...config, seo }, 'SEO настройки сохранены');
+    } catch {
+      setError('SEO должен быть валидным JSON');
+    }
+  };
 
   if (loading) {
     return (
@@ -211,6 +226,29 @@ export default function SitePanel() {
           <RefreshCw size={9} /> Обновить
         </button>
       </div>
+
+
+      <div style={{ height: 1, background: t.border, margin: '12px 0' }} />
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700, color: t.fgSub, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+        SEO / GEO
+      </div>
+      <div style={{ marginBottom: 8, padding: '10px 12px', borderRadius: 7, border: `1px solid ${t.border}`, background: t.surface, fontSize: 12, color: t.fgMuted, lineHeight: 1.55 }}>
+        Все глобальные SEO-поля берутся из <code>public/data/site-config.json</code>: name, description, url, lang, author, keywords, ogImage, ogLocale, twitterCard, twitterSite, themeColor, publisherSameAs.
+      </div>
+      <textarea
+        value={seoText}
+        onChange={e => setSeoText(e.target.value)}
+        spellCheck={false}
+        style={{ width: '100%', minHeight: 190, resize: 'vertical', background: t.bg, color: t.fgMuted, border: `1px solid ${t.border}`, borderRadius: 8, padding: 10, fontSize: 12, fontFamily: t.mono, boxSizing: 'border-box' }}
+      />
+      <button
+        disabled={saving}
+        onClick={saveSeo}
+        style={{ marginTop: 8, width: '100%', borderRadius: 8, padding: '10px 12px', border: `1px solid ${t.borderStrong}`, background: t.accentSoft, color: t.fg, fontSize: 13, fontFamily: t.mono, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}
+      >
+        Сохранить SEO
+      </button>
 
       {/* Подсказка о перезагрузке */}
       <div style={{

@@ -1,10 +1,10 @@
 import type { CustomPageMetadata } from '../types';
 
 const metadata: CustomPageMetadata = {
-  title: 'Резюме @opensophy',
+  title: 'Резюме @hub',
   description:
-    'Резюме Даниила — главы проекта Opensophy. DevSecOps, open-source, безопасная инфраструктура.',
-  keywords: 'opensophy, резюме, даниил, devsecops, open source, безопасность, разработка',
+    'Резюме Даниила — главы проекта HUB. DevSecOps, open-source, безопасная инфраструктура.',
+  keywords: 'hub, резюме, даниил, devsecops, open source, безопасность, разработка',
   robots: 'index, follow',
   lang: 'ru',
   type: 'website',
