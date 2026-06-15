@@ -1,4 +1,4 @@
-# HUB V.3.4
+# HUB V.3.5
 
 > a hybrid platform for documentation and next-generation content.
 
