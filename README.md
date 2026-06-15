@@ -6,10 +6,6 @@
 
 <div align="center">
 
-# README 
-[![ENGLISH](https://img.shields.io/badge/ENGLISH-2ea44f?style=for-the-badge)](.github/workflows/info/readme_eng.md)
-[![Русский](https://img.shields.io/badge/Русский-2ea44f?style=for-the-badge)](.github/workflows/info/readme_ru.md)
-
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-opensophy.com-8B5CF6?style=flat-square)](https://opensophy.com)
 
 </div>
