@@ -12,7 +12,7 @@ import {
 import LucideIcon from '@/shared/components/LucideIcon';
 import { makeTokens } from '@/shared/tokens/theme';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Типы ─────────────────────────────────────────────────────────────────────
 
 export interface UnifiedSearchPanelProps {
   onClose: () => void;
@@ -43,6 +43,7 @@ interface DocMeta {
 
 type DateFilter = 'all' | 'new' | 'updated';
 type SortOrder  = 'date-desc' | 'date-asc';
+
 interface SiteConfig {
   useLanding?: boolean;
 }
@@ -53,7 +54,7 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 const MODULE_NOW_MS = Date.now();
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Вспомогательные функции ──────────────────────────────────────────────────
 
 const RE_SPECIAL = /[.*+?^${}()|[\]\\]/;
 
@@ -99,7 +100,7 @@ function truncate(text: string, max = 140): string {
   return text.slice(0, max) + '…';
 }
 
-// ─── Highlight ────────────────────────────────────────────────────────────────
+// ─── Подсветка совпадений ─────────────────────────────────────────────────────
 
 const Highlight = memo(function Highlight({ text, query }: { text: string; query: string }) {
   if (!query.trim()) return <>{text}</>;
@@ -345,8 +346,6 @@ const ResultItem = memo(function ResultItem({
 // ─── useSearchFilters ─────────────────────────────────────────────────────────
 
 function useSearchFilters(docs: DocMeta[]) {
-  // Тип (typename) удалён — дублирует категорию
-
   const allCategories = useMemo(() => {
     const m = new Map<string, string>();
     docs.forEach(d => {
@@ -432,8 +431,8 @@ function useSearchDocs(manifestDocs: DocMeta[]): DocMeta[] {
     let active = true;
 
     fetch('/data/site-config.json')
-      .then(res => {
-        if (!res.ok) return { useLanding: false } as SiteConfig;
+      .then(async (res): Promise<SiteConfig> => {
+        if (!res.ok) return { useLanding: false };
         return res.json() as Promise<SiteConfig>;
       })
       .then(cfg => {
@@ -462,14 +461,13 @@ function useSearchDocs(manifestDocs: DocMeta[]): DocMeta[] {
       navTitle: 'Главная',
       icon: 'crown',
       tags: ['landing', 'главная', 'opensophy'],
-      lang: 'ru',
     };
 
     return [landingDoc, ...withoutWelcome];
   }, [manifestDocs, useLanding]);
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// ─── Основной компонент ───────────────────────────────────────────────────────
 
 const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
   const { isDark } = useTheme();
@@ -751,7 +749,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
               />
             </FilterSection>
 
-            {/* ── Фильтр по разделу ── */}
             {allSections.length > 0 && (
               <FilterSection icon={<FolderOpen size={10} />} label="Раздел" C={C}>
                 <Pill label="Все" active={filterSection === 'all'} C={C}
@@ -762,8 +759,6 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
                 ))}
               </FilterSection>
             )}
-
-            {/* Тип (typename) удалён — дублирует категорию */}
 
             {allCategories.length > 0 && (
               <FilterSection icon={<FolderOpen size={10} />} label="Категория" C={C}>

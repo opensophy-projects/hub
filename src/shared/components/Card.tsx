@@ -20,21 +20,56 @@ export interface CardGridProps {
   children?: React.ReactNode;
 }
 
-// ─── Card styles ──────────────────────────────────────────────────────────────
+// ─── Card hover class name ────────────────────────────────────────────────────
 
 const CARD_HOVER_CLASS = 'sophy-card';
 
 const cardHoverStyle = `
-  .${CARD_HOVER_CLASS} { transition: transform 0.15s, box-shadow 0.15s; }
-  .${CARD_HOVER_CLASS}:hover { transform: translateY(-2px); }
-  .${CARD_HOVER_CLASS}.card-dark:hover  { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
-  .${CARD_HOVER_CLASS}.card-light:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.09); }
+  .${CARD_HOVER_CLASS} {
+    transition-property: transform, box-shadow, background !important;
+    transition-duration: 0.15s !important;
+    transition-timing-function: ease !important;
+  }
+  .${CARD_HOVER_CLASS}:hover {
+    transform: translateY(-2px);
+  }
+  .${CARD_HOVER_CLASS}.card-dark:hover  { box-shadow: 0 6px 24px rgba(0,0,0,0.5) !important; }
+  .${CARD_HOVER_CLASS}.card-light:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.09) !important; }
 `;
 
+// ─── Token helpers ────────────────────────────────────────────────────────────
+
+function getCardBg(isDark: boolean, accentColor: string | undefined): string {
+  if (isDark) return '#0f0f0f';
+  return 'rgba(0,0,0,0.02)';
+}
+
+function getCardBorder(isDark: boolean, hasAccent: boolean, accentColor: string): string {
+  if (hasAccent) {
+    return `1.5px solid ${accentColor}`;
+  }
+  return isDark
+    ? '1px solid rgba(255,255,255,0.09)'
+    : '1px solid rgba(0,0,0,0.09)';
+}
+
+function getCardBoxShadow(isDark: boolean, hasAccent: boolean, accentColor: string): string {
+  if (hasAccent) {
+    return isDark
+      ? `0 2px 16px rgba(0,0,0,0.4), 0 0 0 1px ${accentColor}18`
+      : `0 1px 6px rgba(0,0,0,0.07), 0 0 0 1px ${accentColor}14`;
+  }
+  return 'none';
+}
+
 function getIconWrapBg(hasAccent: boolean, accentColor: string, isDark: boolean): string {
-  const t = makeTokens(isDark);
   if (hasAccent) return `${accentColor}22`;
-  return isDark ? 'rgba(255,255,255,0.07)' : t.accentSoft;
+  return isDark ? 'rgba(255,255,255,0.07)' : makeTokens(isDark).accentSoft;
+}
+
+function getIconWrapBorder(hasAccent: boolean, accentColor: string, isDark: boolean): string {
+  if (hasAccent) return `1px solid ${accentColor}44`;
+  return isDark ? '1px solid rgba(255,255,255,0.1)' : `1px solid ${makeTokens(isDark).border}`;
 }
 
 function getIconColor(hasAccent: boolean, accentColor: string, isDark: boolean): string {
@@ -42,70 +77,43 @@ function getIconColor(hasAccent: boolean, accentColor: string, isDark: boolean):
   return isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.55)';
 }
 
-function getCardStyles(isDark: boolean, hasAccent: boolean, accentColor: string) {
-  const t = makeTokens(isDark);
-  const card: React.CSSProperties = {
-    position: 'relative',
-    borderRadius: '12px',
-    border: hasAccent
-      ? `1.5px solid ${accentColor}`
-      : `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : t.border}`,
-    background: isDark ? '#0f0f0f' : t.accentSoft,
-    overflow: 'hidden',
-    display: 'flex',
-    flexDirection: 'column',
-    boxShadow: hasAccent
-      ? (isDark
-          ? `0 2px 12px rgba(0,0,0,0.4), 0 0 0 1px ${accentColor}22`
-          : `0 1px 4px rgba(0,0,0,0.05), 0 0 0 1px ${accentColor}18`)
-      : (isDark ? '0 2px 12px rgba(0,0,0,0.4)' : '0 1px 4px rgba(0,0,0,0.05)'),
-  };
-
-  // accentBar больше не используется — граница теперь на самой карточке
-  const accentBar: React.CSSProperties = {};
-
-  const body: React.CSSProperties = {
-    padding: '1.25rem', flex: 1,
-    display: 'flex', flexDirection: 'column', gap: '0.5rem',
-  };
-
-  const iconWrap: React.CSSProperties = {
-    width: '36px', height: '36px', borderRadius: '8px',
-    background: getIconWrapBg(hasAccent, accentColor, isDark),
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    marginBottom: '0.4rem', flexShrink: 0,
-  };
-
-  const title: React.CSSProperties = {
-    fontSize: '0.95rem', fontWeight: 700,
-    color: isDark ? '#fff' : '#0a0a0a',
-    margin: 0, lineHeight: 1.3,
-  };
-
-  const content: React.CSSProperties = {
-    fontSize: '0.85rem',
-    color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)',
-    lineHeight: 1.6, margin: 0,
-  };
-
-  return { card, accentBar, body, iconWrap, title, content };
-}
-
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
 const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark = false }) => {
-  const accentColor = color || (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)');
+  const accentColor = color || '';
   const hasAccent   = !!color;
+
+  const cardBg     = getCardBg(isDark, accentColor || undefined);
+  const cardBorder = getCardBorder(isDark, hasAccent, accentColor);
+  const cardShadow = getCardBoxShadow(isDark, hasAccent, accentColor);
+
+  const iconWrapBg  = getIconWrapBg(hasAccent, accentColor, isDark);
+  const iconWrapBdr = getIconWrapBorder(hasAccent, accentColor, isDark);
   const iconColor   = getIconColor(hasAccent, accentColor, isDark);
-  const s           = getCardStyles(isDark, hasAccent, accentColor);
+
+  const titleColor   = isDark ? 'rgba(255,255,255,0.9)'  : 'rgba(0,0,0,0.88)';
+  const contentColor = isDark ? 'rgba(255,255,255,0.7)'  : 'rgba(0,0,0,0.65)';
+  const imgDivider   = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   return (
     <>
       <style>{cardHoverStyle}</style>
-      <div style={s.card} className={`${CARD_HOVER_CLASS} ${isDark ? 'card-dark' : 'card-light'}`}>
-        {/* ── Изображение карточки — адаптивное, сохраняет пропорции ──────── */}
+      <div
+        style={{
+          position:      'relative',
+          borderRadius:  '16px',
+          border:        cardBorder,
+          background:    cardBg,
+          overflow:      'hidden',
+          display:       'flex',
+          flexDirection: 'column',
+          boxShadow:     cardShadow,
+        }}
+        className={`${CARD_HOVER_CLASS} ${isDark ? 'card-dark' : 'card-light'}`}
+      >
+        {/* Изображение */}
         {image && (
           <>
             <button
@@ -113,32 +121,32 @@ const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark
               onClick={() => setLightboxOpen(true)}
               aria-label="Открыть изображение"
               style={{
-                padding: 0,
-                border: 'none',
-                background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                cursor: 'zoom-in',
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
+                padding:        0,
+                border:         'none',
+                background:     isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                cursor:         'zoom-in',
+                width:          '100%',
+                display:        'flex',
+                alignItems:     'center',
                 justifyContent: 'center',
-                overflow: 'hidden',
-                flexShrink: 0,
-                minHeight: '80px',
-                maxHeight: '300px',
+                overflow:       'hidden',
+                flexShrink:     0,
+                minHeight:      '80px',
+                maxHeight:      '300px',
               }}
             >
               <img
                 src={image}
                 alt={title ?? 'card image'}
                 style={{
-                  display: 'block',
-                  width: '100%',
-                  height: 'auto',
-                  maxHeight: '300px',
-                  objectFit: 'contain',
+                  display:        'block',
+                  width:          '100%',
+                  height:         'auto',
+                  maxHeight:      '300px',
+                  objectFit:      'contain',
                   objectPosition: 'center',
-                  padding: '6px',
-                  boxSizing: 'border-box',
+                  padding:        '6px',
+                  boxSizing:      'border-box',
                 }}
                 onMouseEnter={e => {
                   (e.currentTarget as HTMLImageElement).style.opacity = '0.88';
@@ -150,28 +158,63 @@ const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark
                 }}
               />
             </button>
-
-            {/* Разделитель между изображением и телом карточки */}
-            <div style={{
-              height: '1px',
-              background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)',
-              flexShrink: 0,
-            }} />
+            <div style={{ height: '1px', background: imgDivider, flexShrink: 0 }} />
           </>
         )}
 
-        <div style={s.body}>
+        {/* Тело карточки */}
+        <div style={{
+          padding:       '1.25rem',
+          flex:           1,
+          display:       'flex',
+          flexDirection: 'column',
+          gap:           '0.5rem',
+          fontFamily:    'Inter, system-ui, sans-serif',
+        }}>
           {icon && (
-            <div style={s.iconWrap}>
+            <div style={{
+              width:          '36px',
+              height:         '36px',
+              borderRadius:   '8px',
+              background:     iconWrapBg,
+              border:         iconWrapBdr,
+              display:        'flex',
+              alignItems:     'center',
+              justifyContent: 'center',
+              marginBottom:   '0.25rem',
+              flexShrink:     0,
+            }}>
               <LucideIcon name={icon} size={18} color={iconColor} />
             </div>
           )}
-          {title    && <p   style={s.title}  >{title}   </p>}
-          {children && <div style={s.content}>{children}</div>}
+
+          {title && (
+            <p style={{
+              margin:     '0',
+              fontSize:   'clamp(0.95rem, 1.6vw, 1.1rem)',
+              fontWeight:  700,
+              lineHeight:  1.3,
+              color:       titleColor,
+            }}>
+              {title}
+            </p>
+          )}
+
+          {children && (
+            <div style={{
+              fontSize:   'clamp(0.82rem, 1.2vw, 0.9rem)',
+              lineHeight:  1.65,
+              color:       contentColor,
+              margin:      0,
+              flex:        1,
+            }}>
+              {children}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Лайтбокс для изображения карточки */}
+      {/* Лайтбокс */}
       {lightboxOpen && image && (
         <Overlay onClose={() => setLightboxOpen(false)} backdropCursor="zoom-out">
           <div style={{ position: 'relative' }}>
@@ -179,10 +222,13 @@ const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark
               src={image}
               alt={title ?? 'card image'}
               style={{
-                maxWidth: '90vw', maxHeight: '90vh',
-                objectFit: 'contain', borderRadius: '10px',
-                boxShadow: '0 8px 60px rgba(0,0,0,0.8)',
-                userSelect: 'none', display: 'block',
+                maxWidth:     '90vw',
+                maxHeight:    '90vh',
+                objectFit:    'contain',
+                borderRadius: '10px',
+                boxShadow:    '0 8px 60px rgba(0,0,0,0.8)',
+                userSelect:   'none',
+                display:      'block',
               }}
             />
             <button
@@ -190,13 +236,22 @@ const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark
               onClick={() => setLightboxOpen(false)}
               aria-label="Закрыть"
               style={{
-                position: 'fixed', top: '1.25rem', right: '1.25rem',
-                background: 'rgba(255,255,255,0.12)',
-                border: '1px solid rgba(255,255,255,0.2)',
-                borderRadius: '8px', color: '#fff',
-                width: '36px', height: '36px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', fontSize: '18px', lineHeight: 1, zIndex: 1,
+                position:       'fixed',
+                top:            '1.25rem',
+                right:          '1.25rem',
+                background:     'rgba(255,255,255,0.12)',
+                border:         '1px solid rgba(255,255,255,0.2)',
+                borderRadius:   '8px',
+                color:          '#fff',
+                width:          '36px',
+                height:         '36px',
+                display:        'flex',
+                alignItems:     'center',
+                justifyContent: 'center',
+                cursor:         'pointer',
+                fontSize:       '18px',
+                lineHeight:      1,
+                zIndex:          1,
               }}
             >
               ✕
@@ -214,20 +269,24 @@ const CardGrid: React.FC<CardGridProps> = ({ cols = 2, children }) => {
   const safeCols = Math.min(3, Math.max(1, cols));
 
   const gridStyle: React.CSSProperties = {
-    display: 'grid',
+    display:             'grid',
     gridTemplateColumns: `repeat(${safeCols}, 1fr)`,
-    gap: '1rem',
-    margin: '1.5rem 0',
-    alignItems: 'stretch',
+    gap:                 '1rem',
+    margin:              '1.5rem 0',
+    alignItems:          'stretch',
   };
 
   const styleTag = `
-    .card-grid-${safeCols} { grid-template-columns: repeat(${safeCols}, 1fr); align-items: stretch; }
-    @media (max-width: 640px) {
+    .card-grid-${safeCols} {
+      grid-template-columns: repeat(${safeCols}, 1fr);
+      align-items: stretch;
+    }
+    @media (max-width: 560px) {
       .card-grid-${safeCols} { grid-template-columns: 1fr !important; }
     }
-    @media (min-width: 641px) and (max-width: 900px) {
-      .card-grid-3 { grid-template-columns: repeat(2, 1fr) !important; }
+    @media (min-width: 561px) and (max-width: 900px) {
+      .card-grid-2 { grid-template-columns: repeat(2, 1fr) !important; }
+      .card-grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
     }
   `;
 

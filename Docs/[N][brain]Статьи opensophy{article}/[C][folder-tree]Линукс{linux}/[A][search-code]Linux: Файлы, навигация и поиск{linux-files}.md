@@ -8,6 +8,7 @@ tags: linux, инструменты
 keywords: Linux файловая система, команды Linux, навигация Linux, grep awk sed, bash команды
 robots: index, follow
 lang: ru
+priority: 0
 ---
 
 # Введение

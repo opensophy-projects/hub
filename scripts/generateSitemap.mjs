@@ -1,12 +1,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildCategoryPages } from './docUtils.mjs';
+import { scanCustomPages } from './customUtils.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 
 const manifestPath = path.join(__dirname, '../public/data/docs/manifest.json');
 const sitemapPath  = path.join(__dirname, '../public/sitemap.xml');
+const customDir    = path.join(__dirname, '../src/custom');
 
 const BASE_URL = 'https://opensophy.com';
 
@@ -59,6 +62,42 @@ function generateSitemap() {
     <lastmod>${lastmod}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
+  </url>
+`;
+    urlCount++;
+  }
+
+  for (const category of buildCategoryPages(docs)) {
+    const latestDocDate = category.docs
+      .map((doc) => doc.updated || doc.date)
+      .filter(Boolean)
+      .sort()
+      .at(-1);
+
+    sitemap += `
+  <url>
+    <loc>${BASE_URL}/${category.slug}/</loc>
+    <lastmod>${latestDocDate || today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+`;
+    urlCount++;
+  }
+
+
+  const knownSlugs = new Set(docs.map((doc) => doc.slug).filter(Boolean));
+  for (const category of buildCategoryPages(docs)) knownSlugs.add(category.slug);
+
+  for (const customPage of scanCustomPages(customDir)) {
+    if (knownSlugs.has(customPage.slug)) continue;
+
+    sitemap += `
+  <url>
+    <loc>${BASE_URL}/${customPage.slug}/</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
 `;
     urlCount++;

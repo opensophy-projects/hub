@@ -9,3 +9,13 @@ lang: ru
 ---
 
 [uic:variable-proximity]
+
+| Проп | Type | Обычно | Описание |
+|------|------|---------|-------------|
+| `label` | `string` | `'Наведи курсор'` | Текст для анимации |
+| `fromFontVariationSettings` | `string` | `"'wght' 400, 'wdth' 100"` | Параметры шрифта вдали от курсора |
+| `toFontVariationSettings` | `string` | `"'wght' 900, 'wdth' 125"` | Параметры шрифта под курсором |
+| `containerRef` | `RefObject` | — | Ref контейнера для отслеживания мыши |
+| `radius` | `number` | `100` | Радиус влияния курсора (px) |
+| `falloff` | `string` | `'linear'` | Кривая затухания (`linear`/`exponential`/`gaussian`) |
+| `className` | `string` | `''` | CSS классы |

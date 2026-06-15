@@ -6,6 +6,7 @@ date: 2026-06-02
 tags: linux, devsecops
 lang: ru
 robots: "index, follow"
+priority: 3
 ---
 
 ## 1. Введение

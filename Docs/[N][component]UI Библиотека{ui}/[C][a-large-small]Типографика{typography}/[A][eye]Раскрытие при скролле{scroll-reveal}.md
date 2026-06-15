@@ -9,3 +9,16 @@ lang: ru
 ---
 
 [uic:scroll-reveal]
+
+| Проп | Type | Обычно | Описание |
+|------|------|---------|-------------|
+| `children` | `string` | `'Текст появляется...'` | Текст для анимации |
+| `enableBlur` | `boolean` | `true` | Blur-анимация слов |
+| `baseOpacity` | `number` | `0.1` | Начальная прозрачность слов |
+| `baseRotation` | `number` | `3` | Начальный наклон блока (°) |
+| `blurStrength` | `number` | `4` | Сила размытия (px) |
+| `rotationEnd` | `string` | `'bottom bottom'` | Конец анимации наклона (ScrollTrigger) |
+| `wordAnimationEnd` | `string` | `'bottom bottom'` | Конец анимации слов (ScrollTrigger) |
+| `scrollContainerRef` | `RefObject` | `undefined` | Ref скролл-контейнера |
+| `containerClassName` | `string` | `''` | CSS классы `<h2>` |
+| `textClassName` | `string` | `''` | CSS классы `<p>` |

@@ -3,6 +3,7 @@
  *
  * Desktop (>1000px): рельс 64px + выдвижная панель + ручка изменения размера
  * Mobile (≤1000px):  нижняя панель + полноэкранные панели (как поиск)
+ *
  */
 
 import React, {
@@ -20,7 +21,7 @@ import {
   Search, Sun, Moon, ChevronDown, ChevronRight,
   Mail, X, Home, AlertTriangle,
   FolderOpen, List, PanelLeft, ArrowUp,
-  Crown, BookOpenText,
+  Crown, BookOpenText, PanelRight,
 } from 'lucide-react';
 import { useIsDesktopNav } from '@/shared/hooks/useBreakpoint';
 import { makeTokens } from '@/shared/tokens/theme';
@@ -36,6 +37,9 @@ const DOC_CHROME_GAP      = 10;
 const DOC_CHROME_TOP_GAP  = 14;
 const DOC_CHROME_RADIUS   = 18;
 
+// Key for saving nav scroll position
+const NAV_SCROLL_KEY = 'hub:navScrollTop';
+
 export interface TocItem { id: string; text: string; level: number; }
 interface CategoryPathItem { slug: string; title: string; icon: string | null; }
 interface Doc {
@@ -44,6 +48,8 @@ interface Doc {
   author?: string; date?: string; updated?: string; tags?: string[];
   navSlug?: string; navTitle?: string; navIcon?: string;
   categoryPath?: CategoryPathItem[];
+  priority?: number;
+  custom?: string;
 }
 interface NavNode { title: string; slug: string; icon: string | null; docs: Doc[]; children: Record<string, NavNode>; isCategory: boolean; }
 interface NavSection { navSlug: string; navTitle: string; navIcon: string; }
@@ -71,6 +77,26 @@ function toDocHref(slug?: string): string {
   return `/${slug}/`;
 }
 
+function toCategoryHref(activeNavSlug: string, path: string): string {
+  const slug = [activeNavSlug, path].filter(Boolean).join('/');
+  return toDocHref(slug);
+}
+
+// ─── FIX 3: Check if doc is active, including custom pages ───────────────────
+function isDocActive(doc: Doc, currentDocSlug: string | undefined): boolean {
+  // Always check pathname first — fixes custom pages where currentDocSlug may be wrong/undefined
+  if (typeof window !== 'undefined') {
+    const pathname = window.location.pathname.replace(/^\/|\/$/g, '');
+    if (doc.slug && doc.slug === pathname) return true;
+  }
+  if (!currentDocSlug) return false;
+  // Direct slug match
+  if (doc.slug === currentDocSlug) return true;
+  // Custom page: match by custom frontmatter field
+  if (doc.custom && doc.custom === currentDocSlug) return true;
+  return false;
+}
+
 // ─── Токены темы ──────────────────────────────────────────────────────────────
 
 const THEME_DARK = {
@@ -90,6 +116,7 @@ const THEME_DARK = {
   mobBg:            '#0F0F0F',
   panelFullBg:      '#0F0F0F',
   surface:          '#0F0F0F',
+  placeholderClr:   'rgba(255,255,255,0.35)',
 } as const;
 
 const THEME_LIGHT = {
@@ -109,6 +136,7 @@ const THEME_LIGHT = {
   mobBg:            '#dcdbd7',
   panelFullBg:      '#E0DFDb',
   surface:          '#d5d4d0',
+  placeholderClr:   'rgba(0,0,0,0.45)',
 } as const;
 
 function tk(isDark: boolean) {
@@ -181,6 +209,15 @@ function countDocs(node: NavNode): number {
   return node.docs.length + Object.values(node.children).reduce((s, c) => s + countDocs(c), 0);
 }
 
+function sortDocs(docs: Doc[]): Doc[] {
+  return [...docs].sort((a, b) => {
+    const pa = a.priority ?? 999;
+    const pb = b.priority ?? 999;
+    if (pa !== pb) return pa - pb;
+    return a.title.localeCompare(b.title);
+  });
+}
+
 function formatMetaDate(date?: string): string | null {
   if (!date) return null;
   const parsed = new Date(date);
@@ -210,7 +247,7 @@ const DocLink: React.FC<{
         boxShadow: isActive ? t.elevatedShadowSoft : 'none',
         lineHeight: 1.4,
       }}>
-      {doc.icon && <span style={{ flexShrink: 0, width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fgMuted }}><LucideIcon name={doc.icon} size={14} /></span>}
+      {doc.icon && <span style={{ flexShrink: 0, width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fgMuted }}><LucideIcon name={doc.icon} size={18} /></span>}
       <span style={{ minWidth: 0 }}>
         <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.35 }}>{doc.title}</span>
         {!!doc.description && (
@@ -230,21 +267,17 @@ const HomePageLink: React.FC<{
 }> = ({ isDark, isActive, onClick, mobile }) => {
   const t = tk(isDark);
   return (
-    <a
-      href="/"
-      onClick={onClick}
-      style={{
-        display: 'flex', alignItems: 'center', gap: '0.5rem',
-        padding: mobile ? '10px 14px' : '8px 10px',
-        borderRadius: '8px', fontSize: mobile ? '1rem' : '0.875rem',
-        textDecoration: 'none',
-        border: `1px solid ${isActive ? t.elevatedBorder : 'transparent'}`,
-        color: isActive ? t.accent : t.fg, fontWeight: isActive ? 600 : 400,
-        background: isActive ? t.accentSoft : 'transparent',
-        boxShadow: isActive ? t.elevatedShadowSoft : 'none',
-        lineHeight: 1.4,
-      }}
-    >
+    <a href="/" onClick={onClick} style={{
+      display: 'flex', alignItems: 'center', gap: '0.5rem',
+      padding: mobile ? '10px 14px' : '8px 10px',
+      borderRadius: '8px', fontSize: mobile ? '1rem' : '0.875rem',
+      textDecoration: 'none',
+      border: `1px solid ${isActive ? t.elevatedBorder : 'transparent'}`,
+      color: isActive ? t.accent : t.fg, fontWeight: isActive ? 600 : 400,
+      background: isActive ? t.accentSoft : 'transparent',
+      boxShadow: isActive ? t.elevatedShadowSoft : 'none',
+      lineHeight: 1.4,
+    }}>
       <span style={{ flexShrink: 0, width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fgMuted }}>
         <Crown size={14} />
       </span>
@@ -260,52 +293,75 @@ const HomePageLink: React.FC<{
 // ─── CategoryNode ─────────────────────────────────────────────────────────────
 
 function getCategoryNodeBackground(expanded: boolean, isDark: boolean): string {
-  if (expanded) {
-    return isDark ? '#181818' : 'rgba(0,0,0,0.08)';
-  }
+  if (expanded) return isDark ? '#181818' : 'rgba(0,0,0,0.08)';
   return isDark ? '#0F0F0F' : '#deddd9';
 }
 
 const CategoryNode: React.FC<{
   node: NavNode; path: string; expandedPaths: Set<string>;
   onToggle: (p: string) => void; isDark: boolean; currentDocSlug?: string;
-  onDocClick?: () => void; mobile?: boolean;
+  onDocClick?: () => void; mobile?: boolean; activeNavSlug: string;
   onDocHoverChange?: (payload: { doc: Doc; rect: DOMRect } | null) => void;
-}> = memo(({ node, path, expandedPaths, onToggle, isDark, currentDocSlug, onDocClick, mobile, onDocHoverChange }) => {
+}> = memo(({ node, path, expandedPaths, onToggle, isDark, currentDocSlug, onDocClick, mobile, activeNavSlug, onDocHoverChange }) => {
   const t = tk(isDark);
+  const categorySlug = [activeNavSlug, path].filter(Boolean).join('/');
+  const isActiveCategory = currentDocSlug === categorySlug;
   const expanded = expandedPaths.has(path);
   const total    = countDocs(node);
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
-      <button onClick={() => onToggle(path)} style={{
-        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: mobile ? '10px 14px' : '8px 10px', borderRadius: '8px',
+      <div style={{
+        width: '100%', display: 'flex', alignItems: 'stretch', justifyContent: 'space-between',
+        borderRadius: '8px',
         fontSize: mobile ? '1rem' : '0.875rem', fontWeight: 600,
-        border: `1px solid ${expanded ? t.elevatedBorder : t.border}`,
-        background: getCategoryNodeBackground(expanded, isDark),
-        boxShadow: expanded ? t.elevatedShadowSoft : 'none',
-        color: t.fg, cursor: 'pointer', textAlign: 'left',
+        border: `1px solid ${isActiveCategory || expanded ? t.elevatedBorder : t.border}`,
+        background: isActiveCategory ? t.accentSoft : getCategoryNodeBackground(expanded, isDark),
+        boxShadow: expanded || isActiveCategory ? t.elevatedShadowSoft : 'none',
+        color: isActiveCategory ? t.accent : t.fg,
+        overflow: 'hidden',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: t.fgMuted }}>
-            {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        <button type="button" onClick={() => onToggle(path)}
+          aria-label={expanded ? `Свернуть категорию ${node.title}` : `Развернуть категорию ${node.title}`}
+          style={{
+            width: mobile ? 42 : 36,
+            border: 'none',
+            borderRight: `1px solid ${isActiveCategory || expanded ? t.elevatedBorder : t.border}`,
+            background: 'transparent',
+            color: t.fgMuted,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}>
+          {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        </button>
+        <a href={toCategoryHref(activeNavSlug, path)} onClick={onDocClick}
+          style={{
+            flex: 1, minWidth: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: '0.5rem',
+            padding: mobile ? '10px 14px 10px 10px' : '8px 10px',
+            color: 'inherit', textDecoration: 'none',
+          }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
+            {node.icon && <span style={{ width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: t.fgMuted }}><LucideIcon name={node.icon} size={14} /></span>}
+            <span style={{ wordBreak: 'break-word', lineHeight: 1.35 }}>{node.title}</span>
           </span>
-          {node.icon && <span style={{ width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: t.fgMuted }}><LucideIcon name={node.icon} size={14} /></span>}
-          <span style={{ wordBreak: 'break-word', lineHeight: 1.35 }}>{node.title}</span>
-        </div>
-        {total > 0 && <span style={{ fontSize: '0.72rem', padding: '2px 7px', borderRadius: '5px', background: t.accentSoft, color: t.fgMuted, flexShrink: 0 }}>{total}</span>}
-      </button>
+          {total > 0 && <span style={{ fontSize: '0.72rem', padding: '2px 7px', borderRadius: '5px', background: t.accentSoft, color: t.fgMuted, flexShrink: 0 }}>{total}</span>}
+        </a>
+      </div>
       {expanded && (
         <div style={{
           marginLeft: '0.65rem', paddingLeft: '0.45rem',
           marginTop: '4px', marginBottom: '4px',
           display: 'flex', flexDirection: 'column', gap: '2px',
         }}>
-          {[...node.docs].sort((a, b) => a.title.localeCompare(b.title)).map(doc => (
-            <DocLink key={doc.id} doc={doc} isDark={isDark} isActive={currentDocSlug === doc.slug} onClick={onDocClick} mobile={mobile} onPreviewChange={onDocHoverChange} />
+          {sortDocs(node.docs).map(doc => (
+            <DocLink key={doc.id} doc={doc} isDark={isDark} isActive={isDocActive(doc, currentDocSlug)} onClick={onDocClick} mobile={mobile} onPreviewChange={onDocHoverChange} />
           ))}
           {Object.entries(node.children).sort(([a], [b]) => a.localeCompare(b)).map(([key, child]) => (
-            <CategoryNode key={key} node={child} path={`${path}/${key}`} expandedPaths={expandedPaths} onToggle={onToggle} isDark={isDark} currentDocSlug={currentDocSlug} onDocClick={onDocClick} mobile={mobile} onDocHoverChange={onDocHoverChange} />
+            <CategoryNode key={key} node={child} path={`${path}/${key}`} expandedPaths={expandedPaths} onToggle={onToggle} isDark={isDark} currentDocSlug={currentDocSlug} onDocClick={onDocClick} mobile={mobile} activeNavSlug={activeNavSlug} onDocHoverChange={onDocHoverChange} />
           ))}
         </div>
       )}
@@ -338,16 +394,30 @@ function useActiveNavSlug(sections: NavSection[]): [string, React.Dispatch<React
   return [activeNavSlug, setActiveNavSlug];
 }
 
-function useExpandedPaths(currentDocSlug: string | undefined, activeNavSlug: string): [Set<string>, React.Dispatch<React.SetStateAction<Set<string>>>] {
+function buildCategorySlugSet(docs: Doc[]): Set<string> {
+  const categorySlugs = new Set<string>();
+  for (const doc of docs) {
+    const pathItems = doc.categoryPath ?? [];
+    pathItems.forEach((_, index) => {
+      const slug = [doc.navSlug, ...pathItems.slice(0, index + 1).map((cat) => cat.slug)].filter(Boolean).join('/');
+      if (slug) categorySlugs.add(slug);
+    });
+  }
+  return categorySlugs;
+}
+
+function useExpandedPaths(currentDocSlug: string | undefined, activeNavSlug: string, categorySlugs: Set<string>): [Set<string>, React.Dispatch<React.SetStateAction<Set<string>>>] {
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   useEffect(() => {
     if (!currentDocSlug) return;
     let slug = currentDocSlug;
     if (activeNavSlug && slug.startsWith(activeNavSlug + '/')) slug = slug.slice(activeNavSlug.length + 1);
-    const parts     = slug.split('/');
-    const pathParts = parts.slice(0, -1).map((_, i) => parts.slice(0, i + 1).join('/'));
-    if (pathParts.length) startTransition(() => setExpandedPaths(new Set(pathParts)));
-  }, [currentDocSlug, activeNavSlug]);
+    const parts = slug.split('/').filter(Boolean);
+    const isCategoryPage = categorySlugs.has(currentDocSlug);
+    const pathSource = isCategoryPage ? parts : parts.slice(0, -1);
+    const pathParts = pathSource.map((_, i) => pathSource.slice(0, i + 1).join('/'));
+    startTransition(() => setExpandedPaths(new Set(pathParts)));
+  }, [currentDocSlug, activeNavSlug, categorySlugs]);
   return [expandedPaths, setExpandedPaths];
 }
 
@@ -357,12 +427,13 @@ function useNavPanel(docs: Doc[], currentDocSlug: string | undefined) {
   const sectionRef                    = useRef<HTMLDivElement>(null);
   const sections                          = useNavSections(docs);
   const [activeNavSlug, setActiveNavSlug] = useActiveNavSlug(sections);
-  const [expandedPaths, setExpandedPaths] = useExpandedPaths(currentDocSlug, activeNavSlug);
+  const categorySlugs = useMemo(() => buildCategorySlugSet(docs), [docs]);
+  const [expandedPaths, setExpandedPaths] = useExpandedPaths(currentDocSlug, activeNavSlug, categorySlugs);
 
   useEffect(() => {
     if (!sectionOpen) return;
     const h = (e: MouseEvent) => {
-      if (sectionRef.current && !sectionRef.current.contains(e.target)) {
+      if (sectionRef.current && e.target instanceof Node && !sectionRef.current.contains(e.target)) {
         setSectionOpen(false);
       }
     };
@@ -452,9 +523,7 @@ const SectionItemIcon: React.FC<{
   navSlug: string; navIcon: string; isActive: boolean; mobile: boolean; t: ReturnType<typeof tk>;
 }> = ({ navSlug, navIcon, isActive, mobile, t }) => {
   const size = mobile ? 15 : 13;
-  if (navSlug === '') {
-    return <Home size={size} style={{ color: t.fgMuted }} />;
-  }
+  if (navSlug === '') return <Home size={size} style={{ color: t.fgMuted }} />;
   return (
     <span style={{ color: isActive ? t.accent : t.fgMuted, display: 'flex', alignItems: 'center' }}>
       {navIcon ? <LucideIcon name={navIcon} size={size} /> : <FolderOpen size={size} />}
@@ -483,7 +552,7 @@ const SectionDropdown: React.FC<{
               border: `1px solid ${getSectionItemBorder(isActive, isDark)}`,
               borderRadius: '10px', cursor: 'pointer', textAlign: 'left',
               background: getSectionItemBackground(isActive, isDark),
-              color:      isActive ? t.accent : t.fg,
+              color: isActive ? t.accent : t.fg,
               fontWeight: isActive ? 600 : 400,
               minHeight, height: 'auto',
               gridColumn: isLastOdd(s) ? '1 / -1' : undefined,
@@ -530,13 +599,13 @@ const NavTreeContent: React.FC<{
       )}
       {filteredDocs.length > 0 && (
         <div style={{ marginBottom: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          {[...filteredDocs].sort((a, b) => a.title.localeCompare(b.title)).map(doc => (
-            <DocLink key={doc.id} doc={doc} isDark={isDark} isActive={currentDocSlug === doc.slug} onClick={onDocClick} mobile={mobile} onPreviewChange={onDocHoverChange} />
+          {sortDocs(filteredDocs).map(doc => (
+            <DocLink key={doc.id} doc={doc} isDark={isDark} isActive={isDocActive(doc, currentDocSlug)} onClick={onDocClick} mobile={mobile} onPreviewChange={onDocHoverChange} />
           ))}
         </div>
       )}
       {Object.entries(navTree.children).sort(([a], [b]) => a.localeCompare(b)).map(([key, node]) => (
-        <CategoryNode key={key} node={node} path={key} expandedPaths={expandedPaths} onToggle={onToggle} isDark={isDark} currentDocSlug={currentDocSlug} onDocClick={onDocClick} mobile={mobile} onDocHoverChange={onDocHoverChange} />
+        <CategoryNode key={key} node={node} path={key} expandedPaths={expandedPaths} onToggle={onToggle} isDark={isDark} currentDocSlug={currentDocSlug} onDocClick={onDocClick} mobile={mobile} activeNavSlug={activeNavSlug} onDocHoverChange={onDocHoverChange} />
       ))}
     </nav>
   );
@@ -577,11 +646,63 @@ const DocHoverPreview: React.FC<{ isDark: boolean; payload: { doc: Doc; rect: DO
   );
 };
 
-// ─── NavPanelContent ──────────────────────────────────────────────────────────
+// ─── NavPanelContent ─────────────────────────────────────────────────────────
 
 function getSectionOpenBorder(sectionOpen: boolean, isDark: boolean): string {
   if (!sectionOpen) return tk(isDark).sectionBorder;
   return isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)';
+}
+
+function getUnifiedControlStyle(isDark: boolean, isActive: boolean = false) {
+  const t = tk(isDark);
+  return {
+    border: `1px solid ${isActive ? getSectionOpenBorder(true, isDark) : t.sectionBorder}`,
+    background: t.sectionBg,
+    boxShadow: t.sectionShadow,
+    borderRadius: '8px',
+  };
+}
+
+const PLACEHOLDER_STYLE_ID = 'nav-search-placeholder-style';
+function ensurePlaceholderStyle(isDark: boolean) {
+  const color = isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
+  let el = document.getElementById(PLACEHOLDER_STYLE_ID);
+  if (!el) {
+    el = document.createElement('style');
+    el.id = PLACEHOLDER_STYLE_ID;
+    document.head.appendChild(el);
+  }
+  el.textContent = `.nav-search-input::placeholder { color: ${color}; opacity: 1; }`;
+}
+
+// ─── FIX 5: Nav scroll position hook ────────────────────────────────────────
+function useNavScrollRestore(scrollContainerRef: React.RefObject<HTMLDivElement | null>) {
+  // Save scroll position on scroll
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const handleScroll = () => {
+      try {
+        sessionStorage.setItem(NAV_SCROLL_KEY, String(el.scrollTop));
+      } catch { /* noop */ }
+    };
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, [scrollContainerRef]);
+
+  // Restore scroll position on mount
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    try {
+      const saved = sessionStorage.getItem(NAV_SCROLL_KEY);
+      if (saved) {
+        const top = Number(saved);
+        // Small delay to allow content to render first
+        setTimeout(() => { el.scrollTop = top; }, 50);
+      }
+    } catch { /* noop */ }
+  }, [scrollContainerRef]);
 }
 
 const NavPanelContent: React.FC<{
@@ -592,18 +713,25 @@ const NavPanelContent: React.FC<{
   const { query, setQuery, sectionOpen, setSectionOpen, sectionRef, sections, activeNavSlug, expandedPaths, navTree, activeSection, togglePath, handleSectionSelect } = useNavPanel(docs as Doc[], currentDocSlug);
 
   const inputFontSize = mobile ? '1rem' : '0.855rem';
-  const inputPadding  = mobile ? '0.6rem 0.6rem 0.6rem 2.4rem' : '0.45rem 0.5rem 0.45rem 2.1rem';
+  const inputPadding  = mobile ? '0.6rem 0.6rem 0.6rem 2.4rem' : '0.4rem 0.65rem 0.4rem 2.1rem';
   const iconSize      = mobile ? 15 : 13;
   const [hoverPreview, setHoverPreview] = useState<{ doc: Doc; rect: DOMRect } | null>(null);
   const [focused, setFocused]           = useState(false);
 
+  // FIX 5: scroll restore
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useNavScrollRestore(scrollRef);
+
+  useEffect(() => { ensurePlaceholderStyle(isDark); }, [isDark]);
+
+  const controlStyle        = getUnifiedControlStyle(isDark, false);
+  const controlStyleFocused = getUnifiedControlStyle(isDark, true);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-
-      {/* Строка поиска */}
       <div style={{ flexShrink: 0, padding: mobile ? '12px 14px' : '10px', borderBottom: 'none' }}>
         <div style={{ position: 'relative' }}>
-          <Search size={iconSize} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: t.fgSub, pointerEvents: 'none' }} />
+          <Search size={iconSize} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: t.fg, pointerEvents: 'none' }} />
           <input
             type="text"
             placeholder="Поиск..."
@@ -611,35 +739,30 @@ const NavPanelContent: React.FC<{
             onChange={e => setQuery(e.target.value)}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
+            className="nav-search-input"
             style={{
               width: '100%',
               padding: inputPadding,
-              borderRadius: '8px',
               fontSize: inputFontSize,
-              border: `1px solid ${focused ? t.inputBorderFocus : t.inputBorder}`,
-              background: t.inputBg,
-              color: t.inputClr,
-              boxShadow: focused ? t.inputShadowFocus : t.inputShadow,
+              color: t.fg,
               outline: 'none',
               boxSizing: 'border-box',
+              ...(focused ? controlStyleFocused : controlStyle),
             }}
           />
         </div>
       </div>
 
       {sections.length > 1 && activeSection && (
-        <div
-          ref={sectionRef}
-          style={{ flexShrink: 0, padding: mobile ? '10px 14px' : '8px 10px', borderBottom: 'none', position: 'relative', zIndex: 10 }}
-        >
+        <div ref={sectionRef} style={{ flexShrink: 0, padding: mobile ? '4px 14px 10px' : '2px 10px 8px', borderBottom: 'none', position: 'relative', zIndex: 10 }}>
           <button
             onClick={() => setSectionOpen(v => !v)}
             style={{
               width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: mobile ? '0.55rem 0.85rem' : '0.4rem 0.65rem',
-              borderRadius: '8px', fontSize: mobile ? '1rem' : '0.875rem',
-              border: `1px solid ${getSectionOpenBorder(sectionOpen, isDark)}`,
-              background: t.sectionBg, color: t.fg, cursor: 'pointer', boxShadow: t.sectionShadow,
+              fontSize: mobile ? '1rem' : '0.875rem',
+              color: t.fg, cursor: 'pointer',
+              ...getUnifiedControlStyle(isDark, sectionOpen),
             }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden', minWidth: 0, flex: 1 }}>
               {activeSection.navSlug === ''
@@ -664,8 +787,8 @@ const NavPanelContent: React.FC<{
         </div>
       )}
 
-      {/* Дерево навигации */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: mobile ? '8px 6px 86px' : '6px' }}>
+      {/* FIX 5: attach ref for scroll restore */}
+      <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: mobile ? '8px 6px 86px' : '6px' }}>
         <NavTreeContent
           error={!!error} navTree={navTree}
           currentDocSlug={currentDocSlug} expandedPaths={expandedPaths}
@@ -680,75 +803,60 @@ const NavPanelContent: React.FC<{
   );
 };
 
-// ─── Вспомогательные функции для ToC ─────────────────────────────────────────
+// ─── TocPanelContent ──────────────────────────────────────────────────────────
 
-function tocBorderColor(isActive: boolean, glowOp: number, isDark: boolean, accent: string): string {
-  if (isActive)   return accent;
-  if (glowOp > 0) return isDark ? `rgba(255,255,255,${glowOp})` : `rgba(0,0,0,${glowOp})`;
-  return 'transparent';
+function getTocItemColors(
+  isActive: boolean, isNear: boolean, dist: number, activeIndex: number,
+  isDark: boolean, t: ReturnType<typeof tk>,
+): { color: string; borderLeftColor: string; opacity: number } {
+  if (isActive) return { color: t.accent, borderLeftColor: t.accent, opacity: 1 };
+  if (isNear) {
+    const color           = isDark ? 'rgba(255,255,255,0.50)' : 'rgba(0,0,0,0.48)';
+    const borderLeftColor = t.accent + '55';
+    const opacity         = dist === 1 ? 0.85 : 0.65;
+    return { color, borderLeftColor, opacity };
+  }
+  const color           = t.fgMuted;
+  const borderLeftColor = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)';
+  let opacity = 1;
+  if (activeIndex !== -1) opacity = dist <= 4 ? 0.55 : 0.38;
+  return { color, borderLeftColor, opacity };
 }
 
-function tocShadow(isActive: boolean, glowOp: number, isDark: boolean, accent: string): string {
-  if (isActive)   return `inset 3px 0 10px -2px ${accent}88`;
-  if (glowOp > 0) return isDark ? `inset 3px 0 8px -3px rgba(255,255,255,${glowOp * 0.35})` : `inset 3px 0 8px -3px rgba(0,0,0,${glowOp * 0.35})`;
-  return 'none';
+function getTocItemFontWeight(isActive: boolean, isNear: boolean): number {
+  if (isActive) return 600;
+  if (isNear)   return 500;
+  return 400;
 }
 
-function tocColor(isActive: boolean, opacity: number, isDark: boolean, accent: string): string {
-  if (isActive) return accent;
-  return isDark ? `rgba(255,255,255,${opacity})` : `rgba(0,0,0,${opacity})`;
-}
-
-function getTocItemStyle(item: TocItem, dist: number, activeId: string, isDark: boolean, mobile: boolean) {
+function getTocItemStyle3(item: TocItem, index: number, activeIndex: number, isDark: boolean, mobile: boolean) {
   const t         = tk(isDark);
-  const isActive  = item.id === activeId && activeId !== '';
-  const hasActive = activeId !== '';
-  let opacity: number; let glowOp: number;
-  if (!hasActive)    { opacity = 0.65; glowOp = 0; }
-  else if (isActive) { opacity = 1;    glowOp = 1; }
-  else { opacity = Math.max(0.32, 0.82 - dist * 0.18); glowOp = Math.max(0, 0.5 - dist * 0.16); }
+  const isActive  = index === activeIndex && activeIndex !== -1;
+  const dist      = activeIndex === -1 ? -1 : Math.abs(index - activeIndex);
+  const isNear    = dist === 1 || dist === 2;
   const baseFontSize = mobile ? 1.05 : 0.92;
   const fontSizeStep = mobile ? 0.05 : 0.04;
   const fontSize     = `${baseFontSize - (item.level - 2) * fontSizeStep}rem`;
   const paddingLeft  = mobile ? 14 + (item.level - 2) * 18 : 12 + (item.level - 2) * 14;
-  return {
-    isActive,
-    borderClr: tocBorderColor(isActive, glowOp, isDark, t.accent),
-    shadow:    tocShadow(isActive, glowOp, isDark, t.accent),
-    fontSize, paddingLeft,
-    color: tocColor(isActive, opacity, isDark, t.accent),
-  };
-}
-
-// ─── TocPanelContent ──────────────────────────────────────────────────────────
-
-function getTocItemBackground(isActive: boolean, isDark: boolean): string {
-  if (!isActive) return 'transparent';
-  return isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
-}
-
-function getTocItemFontWeight(isActive: boolean, level: number): number {
-  if (isActive) return 600;
-  return level === 2 ? 500 : 400;
+  const { color, borderLeftColor, opacity } = getTocItemColors(isActive, isNear, dist, activeIndex, isDark, t);
+  const fontWeight = getTocItemFontWeight(isActive, isNear);
+  return { isActive, isNear, fontSize, paddingLeft, color, borderLeftColor, opacity, fontWeight };
 }
 
 const TocPanelContent: React.FC<{
   toc: TocItem[]; activeId: string; isDark: boolean; onItemClick?: () => void; mobile?: boolean;
 }> = ({ toc, activeId, isDark, onItemClick, mobile = false }) => {
   const t = tk(isDark);
+  const activeIndex = activeId ? toc.findIndex(item => item.id === activeId) : -1;
   if (!toc.length) return (
     <div style={{ padding: '2.5rem 1.5rem', textAlign: 'center', fontSize: mobile ? '1rem' : '0.875rem', color: t.fgMuted }}>
       На этой странице нет заголовков
     </div>
   );
-  const activeIndex = toc.findIndex(i => i.id === activeId);
   return (
     <nav style={{ padding: mobile ? '8px 6px' : '6px 4px' }}>
       {toc.map((item, index) => {
-        const dist  = Math.abs(index - activeIndex);
-        const style = getTocItemStyle(item, dist, activeId, isDark, mobile);
-        const bg    = getTocItemBackground(style.isActive, isDark);
-        const fw    = getTocItemFontWeight(style.isActive, item.level);
+        const style = getTocItemStyle3(item, index, activeIndex, isDark, mobile);
         return (
           <button key={item.id}
             onClick={() => { scrollToElement(item.id); onItemClick?.(); }}
@@ -759,12 +867,11 @@ const TocPanelContent: React.FC<{
               paddingRight:  mobile ? '1rem'    : '0.75rem',
               paddingLeft:   `${style.paddingLeft}px`,
               fontSize: style.fontSize, lineHeight: 1.45,
-              background: bg, border: 'none', cursor: 'pointer',
-              borderLeft: '2px solid', borderLeftColor: style.borderClr,
-              boxShadow: style.shadow, borderRadius: '0 8px 8px 0',
-              color: style.color, fontWeight: fw,
-              textShadow: style.isActive ? `0 0 8px ${t.accent}cc, 0 0 18px ${t.accent}88, 0 0 30px ${t.accent}44` : 'none',
-              transition: 'text-shadow 0.18s, color 0.18s',
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              borderLeft: '2px solid', borderLeftColor: style.borderLeftColor,
+              borderRadius: '0 8px 8px 0',
+              color: style.color, opacity: style.opacity, fontWeight: style.fontWeight,
+              transition: 'color 0.15s, border-color 0.15s, opacity 0.15s',
             }}
           >{item.text}</button>
         );
@@ -782,8 +889,8 @@ const ContactsPanelContent: React.FC<{ isDark: boolean; mobile?: boolean }> = ({
       {CONTACTS.map(c => (
         <a key={c.href} href={c.href} target={c.external ? '_blank' : undefined} rel={c.external ? 'noopener noreferrer' : undefined}
           style={{ display: 'flex', flexDirection: 'column', padding: mobile ? '14px 16px' : '10px', borderRadius: '10px', textDecoration: 'none', color: t.fg, fontSize: mobile ? '1rem' : '0.875rem', gap: '3px' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = t.hov; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+          onMouseEnter={e => { e.currentTarget.style.background = t.hov; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
           <div style={{ fontWeight: 600 }}>{c.title}</div>
           <div style={{ fontSize: mobile ? '0.875rem' : '0.75rem', color: t.fgMuted }}>{c.subtitle}</div>
         </a>
@@ -801,8 +908,8 @@ const PanelHeader: React.FC<{ title: string; isDark: boolean; onClose: () => voi
       <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: t.fgMuted }}>{title}</span>
       <button onClick={onClose}
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: '6px', border: 'none', background: 'transparent', color: t.fgMuted, cursor: 'pointer' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = t.fg; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = t.fgMuted; }}>
+        onMouseEnter={e => { e.currentTarget.style.color = t.fg; }}
+        onMouseLeave={e => { e.currentTarget.style.color = t.fgMuted; }}>
         <X size={13} />
       </button>
     </div>
@@ -835,12 +942,8 @@ const RailBtn: React.FC<{
 // ─── Вспомогательные функции для DesktopNav ───────────────────────────────────
 
 function buildCssVars(
-  railVisible: boolean,
-  isDocsPage: boolean,
-  panelOpen: boolean,
-  panelWidth: number,
-  isStandardMode: boolean,
-  standardTocVisible: boolean,
+  railVisible: boolean, isDocsPage: boolean, panelOpen: boolean,
+  panelWidth: number, isStandardMode: boolean, standardTocVisible: boolean,
 ): void {
   const chromeGap     = isDocsPage ? DOC_CHROME_GAP : 0;
   const chromeTopGap  = isDocsPage ? DOC_CHROME_TOP_GAP : 0;
@@ -868,21 +971,11 @@ function clearDocCssVars(): void {
 }
 
 function getReadingModeFromStorage(): ReadingMode {
-  try {
-    const saved = sessionStorage.getItem('hub:readingMode');
-    return saved === 'extended' ? 'extended' : 'standard';
-  } catch {
-    return 'standard';
-  }
+  try { const saved = sessionStorage.getItem('hub:readingMode'); return saved === 'extended' ? 'extended' : 'standard'; } catch { return 'standard'; }
 }
 
 function getTocVisibleFromStorage(): boolean {
-  try {
-    const saved = sessionStorage.getItem('hub:reading:tocVisible');
-    return saved !== 'false';
-  } catch {
-    return true;
-  }
+  try { const saved = sessionStorage.getItem('hub:reading:tocVisible'); return saved !== 'false'; } catch { return true; }
 }
 
 // ─── DesktopNav — вспомогательные компоненты ──────────────────────────────────
@@ -893,12 +986,12 @@ const PANEL_TITLES: Record<Exclude<PanelType, null>, string> = {
   contacts: 'Контакты',
 };
 
+// ─── BrandLogo ────────────────────────────────────────────────────────────────
+
 const BrandLogo: React.FC<{ logoPath: string; size: number }> = ({ logoPath, size }) => {
   if (!logoPath) return <span aria-hidden style={{ width: size, height: size, display: 'inline-block' }} />;
   return (
-    <img
-      src={logoPath}
-      alt="hub"
+    <img src={logoPath} alt="hub"
       onError={e => { e.currentTarget.style.display = 'none'; }}
       style={{ width: size, height: size, objectFit: 'contain' }}
     />
@@ -973,11 +1066,19 @@ function deriveDesktopNavValues(
   const chromeRadius     = isDocsPage ? DOC_CHROME_RADIUS : 0;
   const sidebarBg        = isDark ? 'rgba(15,15,15,0.84)' : 'rgba(224,223,219,0.82)';
   const isStandardMode   = readingModeEnabled && state.readingMode === 'standard';
-  const panelOpen        = isStandardMode
+
+  // FIX 4: In standard mode, panel is open if sidebar is open
+  // (regardless of which specific panel - nav, contacts, toc)
+  const panelOpen = isStandardMode
     ? (state.railVisible && state.standardSidebarOpen)
     : !!state.activePanel;
+
   const sidebarShellWidth = RAIL_W + (panelOpen ? state.panelWidth : 0);
-  const panelTitle: Exclude<PanelType, null> = isStandardMode ? 'nav' : state.activePanel ?? 'nav';
+
+  // FIX 4: panelTitle - in standard mode, show whatever activePanel is set to
+  // (don't force 'nav' when user clicked contacts)
+  const panelTitle: Exclude<PanelType, null> = state.activePanel ?? 'nav';
+
   return { isDocsPage, chromeGap, chromeTopGap, chromeRadius, sidebarBg, isStandardMode, panelOpen, sidebarShellWidth, panelTitle };
 }
 
@@ -989,16 +1090,13 @@ const DesktopSidebarShell: React.FC<{
 }> = ({ enabled, isDocsPage, chromeGap, chromeTopGap, chromeRadius, sidebarShellWidth, sidebarBg }) => {
   if (!enabled || !isDocsPage) return null;
   return (
-    <div
-      aria-hidden
-      style={{
-        position: 'fixed', left: chromeGap, top: chromeTopGap,
-        height: `calc(100vh - ${chromeTopGap + chromeGap}px)`,
-        width: sidebarShellWidth,
-        background: sidebarBg, border: 'none', borderRadius: chromeRadius, zIndex: 47,
-        pointerEvents: 'none', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
-      }}
-    />
+    <div aria-hidden style={{
+      position: 'fixed', left: chromeGap, top: chromeTopGap,
+      height: `calc(100vh - ${chromeTopGap + chromeGap}px)`,
+      width: sidebarShellWidth,
+      background: sidebarBg, border: 'none', borderRadius: chromeRadius, zIndex: 47,
+      pointerEvents: 'none', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+    }} />
   );
 };
 
@@ -1017,16 +1115,10 @@ const DesktopReadingModeMenu: React.FC<{
       background: sidebarBg, boxShadow: 'none', zIndex: 70,
       backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
     }}>
-      <button
-        onClick={() => onSelect('standard')}
-        style={{ width: '100%', textAlign: 'left', border: 'none', borderRadius: '8px', padding: '8px 10px', cursor: 'pointer', background: readingMode === 'standard' ? t.accentSoft : 'transparent', color: t.fg, fontSize: '0.8rem' }}
-      >
+      <button onClick={() => onSelect('standard')} style={{ width: '100%', textAlign: 'left', border: 'none', borderRadius: '8px', padding: '8px 10px', cursor: 'pointer', background: readingMode === 'standard' ? t.accentSoft : 'transparent', color: t.fg, fontSize: '0.8rem' }}>
         Стандартный
       </button>
-      <button
-        onClick={() => onSelect('extended')}
-        style={{ width: '100%', textAlign: 'left', border: 'none', borderRadius: '8px', padding: '8px 10px', cursor: 'pointer', background: readingMode === 'extended' ? t.accentSoft : 'transparent', color: t.fg, fontSize: '0.8rem', marginTop: '4px' }}
-      >
+      <button onClick={() => onSelect('extended')} style={{ width: '100%', textAlign: 'left', border: 'none', borderRadius: '8px', padding: '8px 10px', cursor: 'pointer', background: readingMode === 'extended' ? t.accentSoft : 'transparent', color: t.fg, fontSize: '0.8rem', marginTop: '4px' }}>
         Расширенный
       </button>
     </div>
@@ -1065,41 +1157,40 @@ const DesktopRail: React.FC<{
       backdropFilter: isDocsPage && shellEnabled ? 'none' : 'blur(12px)',
       WebkitBackdropFilter: isDocsPage && shellEnabled ? 'none' : 'blur(12px)',
     }}>
-      <div style={{ width: RAIL_W, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <BrandLogo logoPath={logoPath} size={28} />
+      {/* Логотип */}
+      <div style={{ width: RAIL_W, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <BrandLogo logoPath={logoPath} size={42} />
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: 1, width: '100%', padding: '2px 0' }}>
-        <RailBtn icon={<PanelLeft size={18} />}                         label="Панель"     isDark={isDark} onClick={onHideRail}                                               title="Скрыть" />
-        <RailBtn icon={isDark ? <Sun size={18} /> : <Moon size={18} />} label="Тема"       isDark={isDark} onClick={toggleTheme}                                             title={isDark ? 'Светлая' : 'Тёмная'} />
-        <RailBtn icon={<Search size={18} />}                            label="Поиск"      isDark={isDark} onClick={onOpenSearch}                                            title="Поиск" />
-        <RailBtn icon={<FolderOpen size={18} />}                        label="Разделы"    isDark={isDark} isActive={activePanel === 'nav'} onClick={() => onTogglePanel('nav')} title="Разделы" />
+        <RailBtn icon={<PanelLeft size={18} />}                         label="Скрыть панель" isDark={isDark} onClick={onHideRail}                title="Скрыть панель" />
+        <RailBtn icon={isDark ? <Sun size={18} /> : <Moon size={18} />} label="Тема"          isDark={isDark} onClick={toggleTheme}              title={isDark ? 'Светлая' : 'Тёмная'} />
+        <RailBtn icon={<Search size={18} />}                            label="Поиск"         isDark={isDark} onClick={onOpenSearch}             title="Поиск" />
+        <RailBtn icon={<FolderOpen size={18} />}                        label="Разделы"       isDark={isDark}
+          isActive={isStandardMode ? (state.standardSidebarOpen && activePanel === 'nav') : activePanel === 'nav'}
+          onClick={() => onTogglePanel('nav')}
+          title="Разделы"
+        />
         {readingModeEnabled && (
           <div style={{ position: 'relative' }}>
-            <RailBtn
-              icon={<BookOpenText size={18} />}
-              label="Режим чтения"
-              isDark={isDark}
-              isActive={readingModeMenuOpen}
-              onClick={() => setReadingModeMenuOpen(prev => !prev)}
-              title="Режим чтения"
-            />
-            <DesktopReadingModeMenu
-              readingMode={readingMode}
-              readingModeMenuOpen={readingModeMenuOpen}
-              chromeRadius={chromeRadius}
-              sidebarBg={sidebarBg}
-              t={t}
-              onSelect={mode => { setReadingMode(mode); setReadingModeMenuOpen(false); }}
-            />
+            <RailBtn icon={<BookOpenText size={18} />} label="Режим чтения" isDark={isDark} isActive={readingModeMenuOpen} onClick={() => setReadingModeMenuOpen(prev => !prev)} title="Режим чтения" />
+            <DesktopReadingModeMenu readingMode={readingMode} readingModeMenuOpen={readingModeMenuOpen} chromeRadius={chromeRadius} sidebarBg={sidebarBg} t={t} onSelect={mode => { setReadingMode(mode); setReadingModeMenuOpen(false); }} />
           </div>
         )}
         {!isStandardMode && (
           <>
             {hasToc && <RailBtn icon={<List size={18} />} label="Оглавление" isDark={isDark} isActive={activePanel === 'toc'} onClick={() => onTogglePanel('toc')} title="Оглавление" />}
-            <RailBtn icon={<ArrowUp size={18} />} label="Наверх"     isDark={isDark} onClick={() => globalThis.scrollTo({ top: 0, behavior: 'smooth' })}            title="Наверх" />
+            <RailBtn icon={<ArrowUp size={18} />} label="Наверх" isDark={isDark} onClick={() => globalThis.scrollTo({ top: 0, behavior: 'smooth' })} title="Наверх" />
           </>
         )}
-        <RailBtn icon={<Mail size={18} />} label="Контакты" isDark={isDark} isActive={activePanel === 'contacts'} onClick={() => onTogglePanel('contacts')} title="Контакты" />
+        {isStandardMode && !state.standardTocVisible && (
+          <RailBtn icon={<ArrowUp size={18} />} label="Наверх" isDark={isDark} onClick={() => globalThis.scrollTo({ top: 0, behavior: 'smooth' })} title="Наверх" />
+        )}
+        {/* FIX 4: Contacts always visible and toggleable in both modes */}
+        <RailBtn icon={<Mail size={18} />} label="Контакты" isDark={isDark}
+          isActive={isStandardMode ? (state.standardSidebarOpen && activePanel === 'contacts') : activePanel === 'contacts'}
+          onClick={() => onTogglePanel('contacts')}
+          title="Контакты"
+        />
       </div>
     </aside>
   );
@@ -1114,9 +1205,9 @@ const DesktopSlidingPanel: React.FC<{
   onResizeMouseDown: (e: React.MouseEvent) => void;
   onClose: () => void;
 }> = ({
-  isDocsPage, chromeGap, chromeTopGap, chromeRadius,
-  panelOpen, panelWidth, panelBg,
-  shellEnabled, panelTitle, isStandardMode,
+  isDocsPage, chromeGap, chromeTopGap,
+  chromeRadius, panelOpen, panelWidth,
+  panelBg, shellEnabled, panelTitle, isStandardMode,
   currentDocSlug, toc, activeId, isDark,
   onResizeMouseDown, onClose,
 }) => {
@@ -1139,7 +1230,7 @@ const DesktopSlidingPanel: React.FC<{
           <PanelHeader title={PANEL_TITLES[panelTitle]} isDark={isDark} onClose={onClose} />
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             {panelTitle === 'nav'      && <NavPanelContent isDark={isDark} currentDocSlug={currentDocSlug} />}
-            {!isStandardMode && panelTitle === 'toc' && <div style={{ flex: 1, overflowY: 'auto' }}><TocPanelContent toc={toc} activeId={activeId} isDark={isDark} /></div>}
+            {panelTitle === 'toc'      && <div style={{ flex: 1, overflowY: 'auto' }}><TocPanelContent toc={toc} activeId={activeId} isDark={isDark} /></div>}
             {panelTitle === 'contacts' && <div style={{ overflowY: 'auto' }}><ContactsPanelContent isDark={isDark} /></div>}
           </div>
           <button
@@ -1171,19 +1262,11 @@ const DesktopTocPanel: React.FC<{
     <div style={{ borderBottom: 'none', padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: t.fgMuted }}>Оглавление</span>
       <div style={{ display: 'flex', gap: '6px' }}>
-        <button
-          onClick={() => globalThis.scrollTo({ top: 0, behavior: 'smooth' })}
-          style={{ border: 'none', background: 'transparent', color: t.fgMuted, cursor: 'pointer', padding: '2px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px' }}
-          title="Наверх"
-        >
+        <button onClick={() => globalThis.scrollTo({ top: 0, behavior: 'smooth' })} style={{ border: 'none', background: 'transparent', color: t.fgMuted, cursor: 'pointer', padding: '2px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px' }} title="Наверх">
           <ArrowUp size={12} />
           <span style={{ fontSize: '0.62rem', lineHeight: 1 }}>Наверх</span>
         </button>
-        <button
-          onClick={onHideToc}
-          style={{ border: 'none', background: 'transparent', color: t.fgMuted, cursor: 'pointer', padding: '4px 6px', display: 'flex' }}
-          title="Скрыть оглавление"
-        >
+        <button onClick={onHideToc} style={{ border: 'none', background: 'transparent', color: t.fgMuted, cursor: 'pointer', padding: '4px 6px', display: 'flex' }} title="Скрыть оглавление">
           <X size={12} />
         </button>
       </div>
@@ -1230,18 +1313,23 @@ const DesktopNav: React.FC<{
     return () => { document.documentElement.style.removeProperty('--nav-left'); };
   }, [state.railVisible, panelOpen, state.panelWidth, isStandardMode, state.standardTocVisible, contentIsDocsPage, hasToc]);
 
-  useEffect(() => {
-    return clearDocCssVars;
-  }, []);
+  useEffect(() => { return clearDocCssVars; }, []);
 
   useEffect(() => {
-    if (!hasToc && state.activePanel === 'toc') { state.setActivePanel(null); }
+    if (!hasToc && state.activePanel === 'toc') { state.setActivePanel('nav'); }
   }, [hasToc, state]);
 
+  // FIX 4: Fixed handleTogglePanel - contacts now works in standard mode
   const handleTogglePanel = useCallback((panel: Exclude<PanelType, null>) => {
     if (isStandardMode) {
-      state.setStandardSidebarOpen(true);
-      state.setActivePanel(panel);
+      if (state.activePanel === panel && state.standardSidebarOpen) {
+        // Clicking same button again closes the panel
+        state.setStandardSidebarOpen(false);
+      } else {
+        // Open panel and switch to requested panel type
+        state.setStandardSidebarOpen(true);
+        state.setActivePanel(panel);
+      }
       return;
     }
     state.togglePanel(panel);
@@ -1274,18 +1362,7 @@ const DesktopNav: React.FC<{
       )}
 
       {!state.railVisible && (
-        <button
-          onClick={() => state.setRailVisible(true)}
-          style={{
-            position: 'fixed', left: chromeGap + 8, top: chromeTopGap + 8, zIndex: 55,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: 30, height: 30, borderRadius: '8px',
-            border: `1px solid ${t.border}`, background: t.railBg, color: t.fgMuted, cursor: 'pointer',
-          }}
-          title="Показать"
-        >
-          <PanelLeft size={14} />
-        </button>
+        <ShowPanelBtn isDark={isDark} chromeGap={chromeGap} chromeTopGap={chromeTopGap} t={t} onClick={() => state.setRailVisible(true)} />
       )}
 
       {state.railVisible && (
@@ -1309,16 +1386,7 @@ const DesktopNav: React.FC<{
       )}
 
       {isStandardMode && hasToc && !state.standardTocVisible && (
-        <button
-          onClick={() => state.setStandardTocVisible(true)}
-          style={{
-            position: 'fixed', right: chromeGap + 12, top: chromeTopGap + 12, zIndex: 56,
-            border: `1px solid ${t.border}`, borderRadius: '8px',
-            background: t.panelBg, color: t.fgMuted, padding: '6px 8px', cursor: 'pointer', fontSize: '0.75rem',
-          }}
-        >
-          Показать TOC
-        </button>
+        <ShowTocBtn isDark={isDark} chromeGap={chromeGap} chromeTopGap={chromeTopGap} t={t} onClick={() => state.setStandardTocVisible(true)} />
       )}
 
       <AnimatePresence>
@@ -1329,6 +1397,54 @@ const DesktopNav: React.FC<{
         )}
       </AnimatePresence>
     </>
+  );
+};
+
+// ─── ShowPanelBtn & ShowTocBtn ────────────────────────────────────────────────
+
+const ShowPanelBtn: React.FC<{
+  isDark: boolean; chromeGap: number; chromeTopGap: number;
+  t: ReturnType<typeof tk>; onClick: () => void;
+}> = ({ isDark, chromeGap, chromeTopGap, t, onClick }) => {
+  const [hov, setHov] = useState(false);
+  return (
+    <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{
+        position: 'fixed', left: chromeGap + 8, top: chromeTopGap + 8, zIndex: 55,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px',
+        width: hov ? 52 : 44, height: hov ? 52 : 44,
+        borderRadius: '12px', border: `1px solid ${t.border}`,
+        background: t.railBg, color: hov ? t.fg : t.fgMuted, cursor: 'pointer',
+        transition: 'width 0.15s, height 0.15s, color 0.15s', overflow: 'hidden',
+      }}
+      title="Показать панель"
+    >
+      <PanelLeft size={16} />
+      <span style={{ fontSize: '9px', fontWeight: 500, lineHeight: 1.2, textAlign: 'center', letterSpacing: '0.01em', whiteSpace: 'pre-line', maxHeight: hov ? '24px' : '0px', opacity: hov ? 1 : 0, overflow: 'hidden', transition: 'max-height 0.15s, opacity 0.15s' }}>{'Показать\nпанель'}</span>
+    </button>
+  );
+};
+
+const ShowTocBtn: React.FC<{
+  isDark: boolean; chromeGap: number; chromeTopGap: number;
+  t: ReturnType<typeof tk>; onClick: () => void;
+}> = ({ isDark, chromeGap, chromeTopGap, t, onClick }) => {
+  const [hov, setHov] = useState(false);
+  return (
+    <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{
+        position: 'fixed', right: chromeGap + 8, top: chromeTopGap + 8, zIndex: 56,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px',
+        width: hov ? 52 : 44, height: hov ? 52 : 44,
+        borderRadius: '12px', border: `1px solid ${t.border}`,
+        background: t.panelBg, color: hov ? t.fg : t.fgMuted, cursor: 'pointer',
+        transition: 'width 0.15s, height 0.15s, color 0.15s', overflow: 'hidden',
+      }}
+      title="Показать оглавление"
+    >
+      <PanelRight size={16} />
+      <span style={{ fontSize: '9px', fontWeight: 500, lineHeight: 1.2, textAlign: 'center', letterSpacing: '0.01em', whiteSpace: 'pre-line', maxHeight: hov ? '24px' : '0px', opacity: hov ? 1 : 0, overflow: 'hidden', transition: 'max-height 0.15s, opacity 0.15s' }}>{'Показать\nоглавл.'}</span>
+    </button>
   );
 };
 
@@ -1366,8 +1482,7 @@ const MobilePanel: React.FC<{
           <span style={{ fontSize: '1.25rem', fontWeight: 700, color: t.fg, letterSpacing: '-0.01em' }}>{MOBILE_PANEL_TITLES[type]}</span>
           {type === 'toc' && toc.length > 0 && <span style={{ fontSize: '0.8rem', color: t.fgMuted }}>{toc.length} {tocSectionLabel(toc.length)}</span>}
         </div>
-        <button onClick={onClose}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '10px', border: `1px solid ${t.border}`, background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', color: t.fg, cursor: 'pointer', flexShrink: 0 }}>
+        <button onClick={onClose} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '10px', border: `1px solid ${t.border}`, background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', color: t.fg, cursor: 'pointer', flexShrink: 0 }}>
           <X size={16} />
         </button>
       </div>
@@ -1389,12 +1504,71 @@ const MobBtn: React.FC<{
   const t = tk(isDark);
   return (
     <button onClick={onClick}
-      style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', padding: '0', border: 'none', background: 'transparent', cursor: 'pointer', color: isActive ? t.accent : t.fgMuted, outline: 'none', minWidth: 0 }}>
+      style={{ flex: 1, minWidth: 44, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', padding: '0 4px', border: 'none', background: 'transparent', cursor: 'pointer', color: isActive ? t.accent : t.fgMuted, outline: 'none' }}>
       <span style={{ width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
       <span style={{ fontSize: '10px', fontWeight: 400, lineHeight: 1, marginTop: '1px' }}>{label}</span>
     </button>
   );
 };
+
+interface MobileLeftButtonsProps {
+  readonly isDark: boolean;
+  readonly showDocActions: boolean;
+  readonly toggleTheme: () => void;
+  readonly setSheet: (s: MobileSheet) => void;
+  readonly setSearchOpen: (v: boolean) => void;
+  readonly sheet: MobileSheet;
+}
+
+function MobileLeftButtons({ isDark, showDocActions, toggleTheme, setSheet, setSearchOpen, sheet }: MobileLeftButtonsProps) {
+  const themeBtn = <MobBtn label="Тема" icon={isDark ? <Sun size={22} /> : <Moon size={22} />} isDark={isDark} onClick={toggleTheme} isActive={false} />;
+  const searchBtn = <MobBtn label="Поиск" icon={<Search size={22} />} isDark={isDark} onClick={() => { setSheet(null); setSearchOpen(true); }} isActive={false} />;
+  if (showDocActions) {
+    return (
+      <>
+        {themeBtn}
+        {searchBtn}
+        <MobBtn label="Разделы" icon={<FolderOpen size={22} />} isDark={isDark} onClick={() => setSheet(sheet === 'nav' ? null : 'nav')} isActive={sheet === 'nav'} />
+      </>
+    );
+  }
+  return <>{themeBtn}{searchBtn}</>;
+}
+
+interface MobileRightButtonsProps {
+  readonly isDark: boolean;
+  readonly showDocActions: boolean;
+  readonly hasToc: boolean;
+  readonly sheet: MobileSheet;
+  readonly setSheet: (s: MobileSheet) => void;
+  readonly scrollTop: () => void;
+}
+
+function MobileRightButtons({ isDark, showDocActions, hasToc, sheet, setSheet, scrollTop }: MobileRightButtonsProps) {
+  if (!showDocActions) {
+    return (
+      <>
+        <MobBtn label="Разделы"  icon={<FolderOpen size={22} />} isDark={isDark} onClick={() => setSheet(sheet === 'nav' ? null : 'nav')}           isActive={sheet === 'nav'} />
+        <MobBtn label="Контакты" icon={<Mail size={22} />}       isDark={isDark} onClick={() => setSheet(sheet === 'contacts' ? null : 'contacts')} isActive={sheet === 'contacts'} />
+      </>
+    );
+  }
+  if (hasToc) {
+    return (
+      <>
+        <MobBtn label="Оглавление" icon={<List size={22} />}    isDark={isDark} onClick={() => setSheet(sheet === 'toc' ? null : 'toc')}           isActive={sheet === 'toc'} />
+        <MobBtn label="Наверх"     icon={<ArrowUp size={22} />} isDark={isDark} onClick={scrollTop}                                               isActive={false} />
+        <MobBtn label="Контакты"   icon={<Mail size={22} />}    isDark={isDark} onClick={() => setSheet(sheet === 'contacts' ? null : 'contacts')} isActive={sheet === 'contacts'} />
+      </>
+    );
+  }
+  return (
+    <>
+      <MobBtn label="Наверх"   icon={<ArrowUp size={22} />} isDark={isDark} onClick={scrollTop}                                               isActive={false} />
+      <MobBtn label="Контакты" icon={<Mail size={22} />}    isDark={isDark} onClick={() => setSheet(sheet === 'contacts' ? null : 'contacts')} isActive={sheet === 'contacts'} />
+    </>
+  );
+}
 
 // ─── MobileNav ────────────────────────────────────────────────────────────────
 
@@ -1407,46 +1581,30 @@ const MobileNav: React.FC<{
   const [sheet, setSheet]           = useState<MobileSheet>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const hasToc = toc.length > 0;
-  const toggle = (s: MobileSheet) => setSheet(prev => prev === s ? null : s);
 
-  useEffect(() => {
-    if (!hasToc && sheet === 'toc') { setSheet(null); }
-  }, [hasToc, sheet]);
+  useEffect(() => { if (!hasToc && sheet === 'toc') { setSheet(null); } }, [hasToc, sheet]);
+
+  const scrollTop = () => { setSheet(null); globalThis.scrollTo({ top: 0, behavior: 'smooth' }); };
 
   return (
     <>
       {sheet && <MobilePanel type={sheet} onClose={() => setSheet(null)} isDark={isDark} currentDocSlug={currentDocSlug} toc={toc} activeId={activeId} />}
-
       <nav style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 60, height: '60px',
-        background: t.mobBg, borderTop: `1px solid ${t.border}`, display: 'flex', alignItems: 'stretch',
+        background: t.mobBg, borderTop: `1px solid ${t.border}`,
+        display: 'flex', alignItems: 'stretch',
       }}>
-        <MobBtn label="Тема"  icon={isDark ? <Sun size={22} /> : <Moon size={22} />} isDark={isDark} onClick={toggleTheme} isActive={false} />
-        <MobBtn label="Поиск" icon={<Search size={22} />} isDark={isDark} onClick={() => { setSheet(null); setSearchOpen(true); }} isActive={false} />
-
-        {!showDocActions && (
-          <>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <BrandLogo logoPath={logoPath} size={38} />
-            </div>
-            <MobBtn label="Разделы" icon={<FolderOpen size={22} />} isDark={isDark} onClick={() => toggle('nav')} isActive={sheet === 'nav'} />
-          </>
-        )}
-
-        {showDocActions && (
-          <>
-            <MobBtn label="Разделы" icon={<FolderOpen size={22} />} isDark={isDark} onClick={() => toggle('nav')} isActive={sheet === 'nav'} />
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <BrandLogo logoPath={logoPath} size={38} />
-            </div>
-            {hasToc && <MobBtn label="Оглавление" icon={<List size={22} />} isDark={isDark} onClick={() => toggle('toc')} isActive={sheet === 'toc'} />}
-            <MobBtn label="Наверх"     icon={<ArrowUp size={22} />} isDark={isDark} onClick={() => { setSheet(null); globalThis.scrollTo({ top: 0, behavior: 'smooth' }); }} isActive={false} />
-          </>
-        )}
-
-        <MobBtn label="Контакты" icon={<Mail size={22} />} isDark={isDark} onClick={() => toggle('contacts')} isActive={sheet === 'contacts'} />
+        <div aria-hidden style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 1 }}>
+          <BrandLogo logoPath={logoPath} size={48} />
+        </div>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'stretch', justifyContent: 'flex-end' }}>
+          <MobileLeftButtons isDark={isDark} showDocActions={showDocActions} toggleTheme={toggleTheme} setSheet={setSheet} setSearchOpen={setSearchOpen} sheet={sheet} />
+        </div>
+        <div aria-hidden style={{ width: 56, flexShrink: 0 }} />
+        <div style={{ flex: 1, display: 'flex', alignItems: 'stretch', justifyContent: 'flex-start' }}>
+          <MobileRightButtons isDark={isDark} showDocActions={showDocActions} hasToc={hasToc} sheet={sheet} setSheet={setSheet} scrollTop={scrollTop} />
+        </div>
       </nav>
-
       <AnimatePresence>
         {searchOpen && (
           <Suspense fallback={null}>
@@ -1470,24 +1628,16 @@ const Navigation: React.FC<NavigationProps> = ({ currentDocSlug, toc = [], activ
     let alive = true;
     const applyLogoConfig = (cfg: SiteLogoConfig) => {
       const next = { lightLogo: cfg.lightLogo || '', darkLogo: cfg.darkLogo || '' };
-      [next.lightLogo, next.darkLogo].forEach(src => {
-        if (!src) return;
-        const img = new Image();
-        img.src = src;
-      });
+      [next.lightLogo, next.darkLogo].forEach(src => { if (!src) return; const img = new Image(); img.src = src; });
       if (alive) setLogoConfig(next);
     };
     const onLogoChange = (e: Event) => applyLogoConfig((e as CustomEvent<SiteLogoConfig>).detail || {});
-
     fetch('/data/site-config.json')
       .then(r => (r.ok ? r.json() : {}))
       .then((cfg: SiteLogoConfig) => applyLogoConfig(cfg))
       .catch(() => { if (alive) setLogoConfig({}); });
     globalThis.addEventListener('hub:logo-change', onLogoChange);
-    return () => {
-      alive = false;
-      globalThis.removeEventListener('hub:logo-change', onLogoChange);
-    };
+    return () => { alive = false; globalThis.removeEventListener('hub:logo-change', onLogoChange); };
   }, []);
 
   if (isDesktop === null) return null;

@@ -2,14 +2,14 @@ import React, { useContext, useMemo, useState, useCallback } from 'react';
 import {
   AreaChart, Area,
   BarChart, Bar, Cell,
-  PieChart, Pie,
+  PieChart, Pie, Sector,
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
   XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { TableContext } from '../lib/htmlParser';
 import { makeTokens } from '@/shared/tokens/theme';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Типы ─────────────────────────────────────────────────────────────────────
 
 export type ChartType =
   | 'area' | 'area-stacked'
@@ -17,7 +17,6 @@ export type ChartType =
   | 'pie'  | 'pie-donut'
   | 'radar';
 
-// Строка данных: первый ключ — строковое имя категории, остальные — числовые значения
 export type ChartRow = Record<string, string | number>;
 
 interface ChartBlockProps {
@@ -28,14 +27,14 @@ interface ChartBlockProps {
   isDark: boolean;
 }
 
-// ─── Цветовая палитра по умолчанию ───────────────────────────────────────────
+// ─── Палитра ──────────────────────────────────────────────────────────────────
 
 const DEFAULT_COLORS = [
-  '#7234ff', '#22c55e', '#f59e0b', '#3b82f6',
-  '#ef4444', '#ec4899', '#14b8a6', '#f97316',
+  '#8b5cf6', '#22d3ee', '#f59e0b', '#34d399',
+  '#f472b6', '#60a5fa', '#fb923c', '#a3e635',
 ];
 
-// ─── Токены темы ──────────────────────────────────────────────────────────────
+// ─── Токены ───────────────────────────────────────────────────────────────────
 
 function tk(isDark: boolean) {
   const t = makeTokens(isDark);
@@ -43,22 +42,22 @@ function tk(isDark: boolean) {
     outerBg:     t.bg,
     outerBorder: t.border,
     outerShadow: isDark
-      ? '0 2px 12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)'
-      : '0 1px 6px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.07)',
-    tooltipBg:   isDark ? '#1a1a1a'                : '#ffffff',
-    tooltipBdr:  isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)',
-    tooltipText: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)',
-    axisText:    isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)',
-    titleText:   isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.28)',
-    footerText:  isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.32)',
+      ? '0 2px 20px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05)'
+      : '0 1px 8px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.07)',
+    tooltipBg:   isDark ? '#18181b' : '#ffffff',
+    tooltipBdr:  isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.12)',
+    tooltipText: isDark ? 'rgba(255,255,255,0.88)' : 'rgba(0,0,0,0.85)',
+    axisText:    isDark ? 'rgba(255,255,255,0.32)' : 'rgba(0,0,0,0.32)',
+    titleText:   isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.26)',
+    footerText:  isDark ? 'rgba(255,255,255,0.2)'  : 'rgba(0,0,0,0.3)',
     footerBdr:   isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)',
     legendText:  isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)',
-    legendMuted: isDark ? 'rgba(255,255,255,0.2)'  : 'rgba(0,0,0,0.2)',
+    legendMuted: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.18)',
     gridLine:    isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
   };
 }
 
-// ─── Определение ключей данных ────────────────────────────────────────────────
+// ─── Ключи данных ─────────────────────────────────────────────────────────────
 
 function detectKeys(data: ChartRow[]): { nameKey: string; valueKeys: string[] } {
   if (!data.length) return { nameKey: 'name', valueKeys: [] };
@@ -79,13 +78,16 @@ const CustomTooltip: React.FC<{
     <div style={{
       background: t.tooltipBg, border: `1px solid ${t.tooltipBdr}`,
       borderRadius: 8, padding: '8px 12px', fontSize: 12,
-      color: t.tooltipText, boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+      color: t.tooltipText, boxShadow: '0 4px 20px rgba(0,0,0,0.28)',
       pointerEvents: 'none',
     }}>
       {label && <div style={{ fontWeight: 600, marginBottom: 4, opacity: 0.7 }}>{label}</div>}
       {payload.map(entry => (
         <div key={entry.name} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-          <div style={{ width: 8, height: 8, borderRadius: 2, background: entry.color, flexShrink: 0 }} />
+          <div style={{
+            width: 8, height: 8, borderRadius: 2, background: entry.color, flexShrink: 0,
+            boxShadow: `0 0 6px ${entry.color}99`,
+          }} />
           <span style={{ opacity: 0.7 }}>{entry.name}:</span>
           <span style={{ fontWeight: 600 }}>{entry.value}</span>
         </div>
@@ -105,11 +107,14 @@ const PieTooltip: React.FC<{
     <div style={{
       background: t.tooltipBg, border: `1px solid ${t.tooltipBdr}`,
       borderRadius: 8, padding: '8px 12px', fontSize: 12,
-      color: t.tooltipText, boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+      color: t.tooltipText, boxShadow: '0 4px 20px rgba(0,0,0,0.28)',
       pointerEvents: 'none',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <div style={{ width: 8, height: 8, borderRadius: 2, background: entry.payload.fill, flexShrink: 0 }} />
+        <div style={{
+          width: 8, height: 8, borderRadius: 2, background: entry.payload.fill, flexShrink: 0,
+          boxShadow: `0 0 6px ${entry.payload.fill}99`,
+        }} />
         <span style={{ fontWeight: 600 }}>{entry.name}:</span>
         <span>{entry.value}</span>
       </div>
@@ -121,12 +126,24 @@ const PieTooltip: React.FC<{
 
 interface LegendItem { key: string; color: string; }
 
+function legendItemColor(
+  isHidden: boolean,
+  isDimmed: boolean,
+  t: ReturnType<typeof tk>,
+): string {
+  if (isHidden) return t.legendMuted;
+  if (isDimmed)  return t.legendMuted;
+  return t.legendText;
+}
+
 const CustomLegend: React.FC<{
   items: LegendItem[];
   hidden: Set<string>;
+  hovered: string | null;
   onToggle: (key: string) => void;
+  onHover: (key: string | null) => void;
   t: ReturnType<typeof tk>;
-}> = ({ items, hidden, onToggle, t }) => {
+}> = ({ items, hidden, hovered, onToggle, onHover, t }) => {
   if (items.length <= 1) return null;
   return (
     <div style={{
@@ -135,24 +152,30 @@ const CustomLegend: React.FC<{
     }}>
       {items.map(item => {
         const isHidden = hidden.has(item.key);
+        const isDimmed = hovered !== null && hovered !== item.key && !isHidden;
         return (
           <button
             key={item.key}
             onClick={() => onToggle(item.key)}
+            onMouseEnter={() => onHover(item.key)}
+            onMouseLeave={() => onHover(null)}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               background: 'none', border: 'none', cursor: 'pointer',
               padding: '3px 6px', borderRadius: 5, outline: 'none',
-              color: isHidden ? t.legendMuted : t.legendText,
+              color: legendItemColor(isHidden, isDimmed, t),
               fontSize: 11, fontWeight: isHidden ? 400 : 500,
-              userSelect: 'none', transition: 'color 0.12s',
+              userSelect: 'none',
+              transition: 'color 0.15s, opacity 0.15s',
+              opacity: isDimmed ? 0.45 : 1,
             }}
           >
             <div style={{
               width: 10, height: 10, borderRadius: 3, flexShrink: 0,
               background: isHidden ? 'transparent' : item.color,
               border: `2px solid ${isHidden ? t.legendMuted : item.color}`,
-              transition: 'all 0.12s',
+              boxShadow: isHidden ? 'none' : `0 0 6px ${item.color}88`,
+              transition: 'all 0.15s',
             }} />
             <span style={{ textDecoration: isHidden ? 'line-through' : 'none' }}>
               {item.key}
@@ -164,13 +187,14 @@ const CustomLegend: React.FC<{
   );
 };
 
-// ─── Высота графика ───────────────────────────────────────────────────────────
+// ─── Высота ───────────────────────────────────────────────────────────────────
 
 function chartHeight(type: ChartType, rowCount: number): number {
-  if (type === 'bar-horizontal') return Math.max(100, rowCount * 40 + 36);
-  if (type === 'pie' || type === 'pie-donut') return 240;
-  if (type === 'radar') return 270;
-  return 210;
+  if (type === 'bar-horizontal') return Math.max(120, rowCount * 44 + 40);
+  if (type === 'pie' || type === 'pie-donut') return 248;
+  if (type === 'radar') return 278;
+  if (type === 'bar' || type === 'bar-stacked') return 280;
+  return 220;
 }
 
 // ─── Пропсы осей ─────────────────────────────────────────────────────────────
@@ -179,27 +203,64 @@ function ap(t: ReturnType<typeof tk>) {
   return { tick: { fill: t.axisText, fontSize: 11 }, axisLine: false, tickLine: false };
 }
 
+// ─── Вычисление opacity для серии при hover ───────────────────────────────────
+
+function seriesOpacity(key: string, hovered: string | null, hidden: Set<string>): number {
+  if (hidden.has(key)) return 0;
+  if (hovered === null) return 1;
+  return hovered === key ? 1 : 0.2;
+}
+
 // ─── Area ─────────────────────────────────────────────────────────────────────
 
-function renderArea(
-  data: ChartRow[],
-  nameKey: string, valueKeys: string[], palette: string[],
-  stacked: boolean, hidden: Set<string>, t: ReturnType<typeof tk>
-) {
+interface RenderAreaOptions {
+  data: ChartRow[];
+  nameKey: string;
+  valueKeys: string[];
+  palette: string[];
+  stacked: boolean;
+  hidden: Set<string>;
+  hovered: string | null;
+  t: ReturnType<typeof tk>;
+}
+
+function renderArea({
+  data, nameKey, valueKeys, palette,
+  stacked, hidden, hovered, t,
+}: RenderAreaOptions) {
   const visible = valueKeys.filter(k => !hidden.has(k));
   return (
-    <AreaChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+    <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+      <defs>
+        {visible.map((key) => {
+          const idx = valueKeys.indexOf(key);
+          return (
+            <filter key={`glow-${key}`} id={`area-glow-${idx}`} x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          );
+        })}
+      </defs>
       <XAxis dataKey={nameKey} {...ap(t)} />
       <YAxis {...ap(t)} width={38} />
       <Tooltip content={<CustomTooltip t={t} />} cursor={{ stroke: t.gridLine, strokeWidth: 1 }} />
       {visible.map((key) => {
-        const idx = valueKeys.indexOf(key);
+        const idx   = valueKeys.indexOf(key);
         const color = palette[idx % palette.length];
+        const op    = seriesOpacity(key, hovered, hidden);
         return (
           <Area key={key} type="monotone" dataKey={key}
-            stroke={color} fill={color} fillOpacity={0.1} strokeWidth={2}
+            stroke={color} fill={color}
+            fillOpacity={op * 0.12}
+            strokeWidth={hovered === key ? 2.5 : 2}
+            strokeOpacity={op}
+            style={{ filter: hovered === key ? `drop-shadow(0 0 5px ${color}cc)` : 'none', transition: 'all 0.2s' }}
             stackId={stacked ? 'stack' : undefined}
-            dot={false} activeDot={{ r: 4, strokeWidth: 0 }}
+            dot={false} activeDot={{ r: 4, strokeWidth: 0, filter: `drop-shadow(0 0 4px ${color})` }}
             isAnimationActive={false}
           />
         );
@@ -211,15 +272,15 @@ function renderArea(
 // ─── Bar ──────────────────────────────────────────────────────────────────────
 
 function getMaxBarSize(seriesCount: number): number {
-  if (seriesCount <= 1) return 72;
-  if (seriesCount <= 3) return 56;
-  return 40;
+  if (seriesCount <= 1) return 96;
+  if (seriesCount <= 3) return 72;
+  return 52;
 }
 
 function getCategoryGap(rowCount: number): string {
-  if (rowCount <= 3)  return '15%';
-  if (rowCount <= 6)  return '20%';
-  if (rowCount <= 10) return '25%';
+  if (rowCount <= 3)  return '18%';
+  if (rowCount <= 6)  return '22%';
+  if (rowCount <= 10) return '26%';
   return '30%';
 }
 
@@ -231,6 +292,7 @@ interface RenderBarOptions {
   stacked: boolean;
   horizontal: boolean;
   hidden: Set<string>;
+  hovered: string | null;
   t: ReturnType<typeof tk>;
 }
 
@@ -239,22 +301,33 @@ function getBarRadius(
   horizontal: boolean,
   isLastVisible: boolean
 ): [number, number, number, number] {
-  if (!stacked) {
-    return horizontal ? [0, 3, 3, 0] : [3, 3, 0, 0];
-  }
-  if (isLastVisible) {
-    return horizontal ? [0, 3, 3, 0] : [3, 3, 0, 0];
-  }
+  if (!stacked) return horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0];
+  if (isLastVisible) return horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0];
   return [0, 0, 0, 0];
+}
+
+function getMultiSeriesOpacity(hovered: string | null, key: string): number {
+  if (hovered === null) return 1;
+  return hovered === key ? 1 : 0.22;
+}
+
+function getCellOpacity(
+  useRowColors: boolean,
+  hovered: string | null,
+  rowName: string,
+  multiSeriesOp: number,
+): number {
+  if (!useRowColors) return multiSeriesOp;
+  if (hovered === null) return 1;
+  return hovered === rowName ? 1 : 0.22;
 }
 
 function renderBar({
   data, nameKey, valueKeys, palette,
-  stacked, horizontal, hidden, t,
+  stacked, horizontal, hidden, hovered, t,
 }: RenderBarOptions) {
   const isSingleSeries = valueKeys.length === 1;
 
-  // Для горизонтальных одиночных серий скрываем строки по имени, иначе — по ключу серии
   const visibleData = (isSingleSeries && horizontal)
     ? data.filter(d => !hidden.has(String(d[nameKey])))
     : data;
@@ -265,13 +338,13 @@ function renderBar({
   const useRowColors = isSingleSeries;
   const a = ap(t);
   const maxSize = getMaxBarSize(visible.length);
-  const bGap = visible.length <= 2 ? 3 : 2;
+  const bGap = visible.length <= 2 ? 4 : 2;
 
   return (
     <BarChart
       data={visibleData}
       layout={horizontal ? 'vertical' : 'horizontal'}
-      margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+      margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
       barCategoryGap={getCategoryGap(data.length)}
       barGap={bGap}
     >
@@ -285,17 +358,54 @@ function renderBar({
         const seriesColor = palette[idx % palette.length];
         const isLastVisible = visible.indexOf(key) === visible.length - 1;
         const radius = getBarRadius(stacked, horizontal, isLastVisible);
+        const multiSeriesOp = getMultiSeriesOpacity(hovered, key);
+
         return (
-          <Bar key={key} dataKey={key} fill={seriesColor}
+          <Bar key={key} dataKey={key}
+            fill={seriesColor}
             radius={radius}
             stackId={stacked ? 'stack' : undefined}
-            maxBarSize={maxSize} isAnimationActive={false}
+            maxBarSize={maxSize}
+            isAnimationActive={false}
+            shape={(props: any) => {
+              const glow = !stacked || isLastVisible;
+
+              const rowName = String(props[nameKey] ?? visibleData[props.index]?.[nameKey] ?? '');
+
+              const cellFill = useRowColors
+                ? palette[(data.findIndex(d => String(d[nameKey]) === rowName) + data.length) % palette.length]
+                : seriesColor;
+
+              const cellOp = getCellOpacity(useRowColors, hovered, rowName, multiSeriesOp);
+
+              return (
+                <g opacity={cellOp} style={{ transition: 'opacity 0.18s' }}>
+                  {glow && (
+                    <rect
+                      x={(props.x ?? 0) - 2}
+                      y={(props.y ?? 0) - 2}
+                      width={(props.width ?? 0) + 4}
+                      height={(props.height ?? 0) + 4}
+                      rx={radius[0]}
+                      fill={cellFill}
+                      style={{ filter: 'blur(7px)', opacity: 0.5 }}
+                    />
+                  )}
+                  <rect
+                    x={props.x} y={props.y}
+                    width={props.width} height={props.height}
+                    rx={radius[0]}
+                    fill={cellFill}
+                  />
+                </g>
+              );
+            }}
           >
-            {useRowColors && visibleData.map((_, rowIdx) => {
-              const origIdx = data.indexOf(visibleData[rowIdx]);
+            {useRowColors && visibleData.map((row, rowIdx) => {
+              const origIdx = data.indexOf(row);
               return (
                 <Cell
-                  key={`cell-${String(visibleData[rowIdx][nameKey])}`}
+                  key={`cell-${String(row[nameKey])}`}
                   fill={palette[(origIdx === -1 ? rowIdx : origIdx) % palette.length]}
                 />
               );
@@ -309,31 +419,77 @@ function renderBar({
 
 // ─── Pie ──────────────────────────────────────────────────────────────────────
 
-function renderPie(
-  data: ChartRow[],
-  nameKey: string, valueKeys: string[], palette: string[],
-  donut: boolean, hidden: Set<string>, t: ReturnType<typeof tk>
-) {
+interface PieChartInnerProps {
+  data: ChartRow[];
+  nameKey: string;
+  valueKeys: string[];
+  palette: string[];
+  donut: boolean;
+  hidden: Set<string>;
+  hovered: string | null;
+  t: ReturnType<typeof tk>;
+}
+
+function getPieSectorOpacity(hovered: string | null, rowName: string): number {
+  if (hovered === null) return 1;
+  return hovered === rowName ? 1 : 0.22;
+}
+
+const PieChartInner: React.FC<PieChartInnerProps> = ({
+  data, nameKey, valueKeys, palette, donut, hidden, hovered, t,
+}) => {
   const valueKey = valueKeys[0] ?? 'value';
   const visibleData = data.filter(d => !hidden.has(String(d[nameKey])));
+  const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
+
+  const resolvedActiveIndex = useMemo(() => {
+    if (hovered !== null) {
+      const idx = visibleData.findIndex(d => String(d[nameKey]) === hovered);
+      return idx >= 0 ? idx : activeIndex;
+    }
+    return activeIndex;
+  }, [hovered, visibleData, nameKey, activeIndex]);
+
+  const renderActive = useCallback((props: any) => {
+    const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
+    return (
+      <g>
+        <Sector
+          cx={cx} cy={cy}
+          innerRadius={donut ? innerRadius - 2 : 0}
+          outerRadius={outerRadius + 6}
+          startAngle={startAngle} endAngle={endAngle}
+          fill={fill}
+          style={{ filter: `drop-shadow(0 0 8px ${fill}cc)` }}
+        />
+      </g>
+    );
+  }, [donut]);
+
   return (
     <PieChart margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
       <Pie
         data={visibleData} dataKey={valueKey} nameKey={nameKey}
         cx="50%" cy="50%"
-        innerRadius={donut ? '50%' : '0%'} outerRadius="78%"
-        paddingAngle={2} strokeWidth={0}
+        innerRadius={donut ? '50%' : '0%'} outerRadius="76%"
+        paddingAngle={2.5} strokeWidth={0}
         style={{ outline: 'none' }}
         isAnimationActive={false}
+        activeIndex={resolvedActiveIndex}
+        activeShape={renderActive}
+        onMouseEnter={(_, index) => setActiveIndex(index)}
+        onMouseLeave={() => setActiveIndex(undefined)}
       >
         {visibleData.map((entry) => {
           const rowName = String(entry[nameKey]);
           const origIdx = data.findIndex(d => String(d[nameKey]) === rowName);
+          const op = getPieSectorOpacity(hovered, rowName);
           return (
             <Cell
               key={rowName}
               fill={palette[origIdx % palette.length]}
-              style={{ outline: 'none', cursor: 'default' }}
+              opacity={op}
+              style={{ outline: 'none', cursor: 'default', transition: 'opacity 0.18s' }}
             />
           );
         })}
@@ -341,14 +497,15 @@ function renderPie(
       <Tooltip content={<PieTooltip t={t} />} />
     </PieChart>
   );
-}
+};
 
 // ─── Radar ────────────────────────────────────────────────────────────────────
 
 function renderRadar(
   data: ChartRow[],
   nameKey: string, valueKeys: string[], palette: string[],
-  hidden: Set<string>, t: ReturnType<typeof tk>
+  hidden: Set<string>, hovered: string | null,
+  t: ReturnType<typeof tk>
 ) {
   const visible = valueKeys.filter(k => !hidden.has(k));
   return (
@@ -360,9 +517,14 @@ function renderRadar(
       {visible.map((key) => {
         const idx = valueKeys.indexOf(key);
         const color = palette[idx % palette.length];
+        const op = seriesOpacity(key, hovered, hidden);
         return (
           <Radar key={key} dataKey={key}
-            stroke={color} fill={color} fillOpacity={0.12} strokeWidth={2}
+            stroke={color} fill={color}
+            fillOpacity={op * 0.14}
+            strokeOpacity={op}
+            strokeWidth={hovered === key ? 2.5 : 1.8}
+            style={{ filter: hovered === key ? `drop-shadow(0 0 5px ${color}cc)` : 'none', transition: 'all 0.2s' }}
             isAnimationActive={false}
           />
         );
@@ -371,7 +533,7 @@ function renderRadar(
   );
 }
 
-// ─── Склонение слова "запись" ─────────────────────────────────────────────────
+// ─── Вспомогательные ─────────────────────────────────────────────────────────
 
 function pluralRecords(n: number): string {
   if (n === 1) return 'запись';
@@ -386,7 +548,8 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
   const palette = colors?.length ? colors : DEFAULT_COLORS;
   const { nameKey, valueKeys } = useMemo(() => detectKeys(data), [data]);
 
-  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const [hidden,  setHidden]  = useState<Set<string>>(new Set());
+  const [hovered, setHovered] = useState<string | null>(null);
 
   const toggleHidden = useCallback((key: string) => {
     setHidden(prev => {
@@ -418,21 +581,40 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
   const chart = useMemo(() => {
     if (isEmpty) return null;
     switch (type) {
-      case 'area':           return renderArea(data, nameKey, valueKeys, palette, false, hidden, t);
-      case 'area-stacked':   return renderArea(data, nameKey, valueKeys, palette, true,  hidden, t);
-      case 'bar':            return renderBar({ data, nameKey, valueKeys, palette, stacked: false, horizontal: false, hidden, t });
-      case 'bar-stacked':    return renderBar({ data, nameKey, valueKeys, palette, stacked: true,  horizontal: false, hidden, t });
-      case 'bar-horizontal': return renderBar({ data, nameKey, valueKeys, palette, stacked: false, horizontal: true,  hidden, t });
-      case 'pie':            return renderPie(data, nameKey, valueKeys, palette, false, hidden, t);
-      case 'pie-donut':      return renderPie(data, nameKey, valueKeys, palette, true,  hidden, t);
-      case 'radar':          return renderRadar(data, nameKey, valueKeys, palette, hidden, t);
-      default:               return null;
+      case 'area':
+        return renderArea({ data, nameKey, valueKeys, palette, stacked: false, hidden, hovered, t });
+      case 'area-stacked':
+        return renderArea({ data, nameKey, valueKeys, palette, stacked: true,  hidden, hovered, t });
+      case 'bar':
+        return renderBar({ data, nameKey, valueKeys, palette, stacked: false, horizontal: false, hidden, hovered, t });
+      case 'bar-stacked':
+        return renderBar({ data, nameKey, valueKeys, palette, stacked: true,  horizontal: false, hidden, hovered, t });
+      case 'bar-horizontal':
+        return renderBar({ data, nameKey, valueKeys, palette, stacked: false, horizontal: true,  hidden, hovered, t });
+      case 'pie':
+      case 'pie-donut':
+        return (
+          <PieChartInner
+            data={data}
+            nameKey={nameKey}
+            valueKeys={valueKeys}
+            palette={palette}
+            donut={type === 'pie-donut'}
+            hidden={hidden}
+            hovered={hovered}
+            t={t}
+          />
+        );
+      case 'radar':
+        return renderRadar(data, nameKey, valueKeys, palette, hidden, hovered, t);
+      default:
+        return null;
     }
-  }, [type, data, nameKey, valueKeys, palette, hidden, t, isEmpty]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type, data, nameKey, valueKeys, palette, hidden, hovered, t, isEmpty]);
 
   return (
     <div className="not-prose" style={{ margin: '1.25rem 0' }}>
-      {/* Глобальный сброс outline для всех recharts-элементов */}
       <style>{`
         .recharts-wrapper:focus,
         .recharts-wrapper *:focus,
@@ -482,7 +664,14 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
         </div>
 
         {!isEmpty && (
-          <CustomLegend items={legendItems} hidden={hidden} onToggle={toggleHidden} t={t} />
+          <CustomLegend
+            items={legendItems}
+            hidden={hidden}
+            hovered={hovered}
+            onToggle={toggleHidden}
+            onHover={setHovered}
+            t={t}
+          />
         )}
 
         <div style={{
@@ -500,7 +689,7 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
   );
 };
 
-// ─── Экспорт с контекстом ─────────────────────────────────────────────────────
+// ─── Экспорт ──────────────────────────────────────────────────────────────────
 
 export const ChartBlockWithContext: React.FC<Omit<ChartBlockProps, 'isDark'>> = (props) => {
   const { isDark } = useContext(TableContext);

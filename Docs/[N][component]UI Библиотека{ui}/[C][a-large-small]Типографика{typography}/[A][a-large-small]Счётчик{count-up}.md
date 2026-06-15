@@ -9,3 +9,16 @@ lang: ru
 ---
 
 [uic:count-up]
+
+| Проп | Type | Обычно | Описание |
+|------|------|---------|-------------|
+| `to` | `number` | `100` | Конечное значение |
+| `from` | `number` | `0` | Начальное значение |
+| `direction` | `string` | `'up'` | Направление (`up`/`down`) |
+| `delay` | `number` | `0` | Задержка перед запуском (с) |
+| `duration` | `number` | `2` | Длительность анимации (с) |
+| `separator` | `string` | `''` | Разделитель тысяч |
+| `startWhen` | `boolean` | `true` | Программный старт |
+| `className` | `string` | `''` | CSS классы |
+| `onStart` | `function` | `undefined` | Коллбэк при старте |
+| `onEnd` | `function` | `undefined` | Коллбэк при завершении |

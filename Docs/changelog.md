@@ -6,6 +6,7 @@ tags: "changelog, opensophy"
 icon: newspaper
 lang: ru
 robots: "index, follow"
+priority: 2
 ---
 
 

@@ -170,10 +170,6 @@ function escapeAttr(str) {
     .replaceAll('>', '&gt;');
 }
 
-function escapeRegExp(str) {
-  return String(str).replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
-}
-
 function parseParams(paramStr) {
   const params = {};
   if (!paramStr) return params;
@@ -217,28 +213,47 @@ function collectBlockBody(lines, startAfterIndex) {
 
 // ─── Парсер вложенных блоков ──────────────────────────────────────────────────
 
+function parseBlockOpener(trimmed, prefix) {
+  if (!trimmed.startsWith(prefix)) return null;
+  const afterPrefix = trimmed.slice(prefix.length);
+  if (afterPrefix !== '' && !afterPrefix.startsWith('[') && !/^\s/.test(afterPrefix)) return null;
+
+  let params = {};
+  let rest = afterPrefix.trimStart();
+  if (rest.startsWith('[')) {
+    const closeBracket = rest.indexOf(']');
+    if (closeBracket !== -1) {
+      params = parseParams(rest.slice(1, closeBracket));
+      rest = rest.slice(closeBracket + 1).trimStart();
+    }
+  }
+  return { params, inlineText: rest.trim() };
+}
+
+function collectInnerBody(lines, startIndex) {
+  const bodyLines = [];
+  let i = startIndex;
+  while (i < lines.length) {
+    if (lines[i].trim() === ':::') { i++; break; }
+    bodyLines.push(lines[i]);
+    i++;
+  }
+  return { bodyLines, nextIndex: i };
+}
+
 function parseInnerBlocks(bodyStr, innerTag) {
   const lines   = bodyStr.split('\n');
   const results = [];
-  const openRe  = new RegExp(String.raw`^:::${escapeRegExp(innerTag)}(?:\[([^\]]*)\])?(?:\s+(\S.*))?\s*$`);
+  const prefix  = `:::${innerTag}`;
   let i = 0;
 
   while (i < lines.length) {
-    const openMatch = openRe.exec(lines[i].trim());
-    if (!openMatch) { i++; continue; }
+    const opener = parseBlockOpener(lines[i].trim(), prefix);
+    if (!opener) { i++; continue; }
 
-    const params     = parseParams(openMatch[1] ?? '');
-    const inlineText = openMatch[2] ?? '';
-    i++;
-
-    const bodyLines = [];
-    while (i < lines.length) {
-      if (lines[i].trim() === ':::') { i++; break; }
-      bodyLines.push(lines[i]);
-      i++;
-    }
-
-    results.push({ params, inlineText, body: bodyLines.join('\n') });
+    const { bodyLines, nextIndex } = collectInnerBody(lines, i + 1);
+    results.push({ params: opener.params, inlineText: opener.inlineText, body: bodyLines.join('\n') });
+    i = nextIndex;
   }
 
   return results;
@@ -404,7 +419,6 @@ function handleChartBlock(trimmed, lines, i, output) {
 
 // ─── Обработчик блока tabs ────────────────────────────────────────────────────
 
-const TAB_OPEN_RE = /^:::tab(?:\[([^\]]*)\])?\s*$/;
 const CODE_BLOCK_RE = /^```([^\n]*)\n([\s\S]*?)```\s*$/;
 
 function parseTabEntry(label, bodyLines, codeBlocks) {
@@ -422,25 +436,32 @@ function parseTabEntry(label, bodyLines, codeBlocks) {
   return { label, language: lang, code };
 }
 
+function parseTabLabel(trimmed, fallback) {
+  const afterTag = trimmed.slice(':::tab'.length);
+  if (afterTag !== '' && !afterTag.startsWith('[') && !/^\s/.test(afterTag)) return null;
+  const rest = afterTag.trimStart();
+  if (rest.startsWith('[')) {
+    const close = rest.indexOf(']');
+    if (close !== -1) return rest.slice(1, close).trim() || fallback;
+  }
+  return fallback;
+}
+
 function parseTabsFromBody(body, codeBlocks) {
   const tabLines = body.split('\n');
   const tabs = [];
   let j = 0;
 
   while (j < tabLines.length) {
-    const openMatch = TAB_OPEN_RE.exec(tabLines[j].trim());
-    if (!openMatch) { j++; continue; }
+    const trimmed = tabLines[j].trim();
+    if (!trimmed.startsWith(':::tab')) { j++; continue; }
 
-    const label = openMatch[1]?.trim() ?? `Вкладка ${tabs.length + 1}`;
+    const label = parseTabLabel(trimmed, `Вкладка ${tabs.length + 1}`);
+    if (label === null) { j++; continue; }
     j++;
 
-    const bodyLines = [];
-    while (j < tabLines.length) {
-      if (tabLines[j].trim() === ':::') { j++; break; }
-      bodyLines.push(tabLines[j]);
-      j++;
-    }
-
+    const { bodyLines, nextIndex } = collectInnerBody(tabLines, j);
+    j = nextIndex;
     tabs.push(parseTabEntry(label, bodyLines, codeBlocks));
   }
 
@@ -664,7 +685,50 @@ export function parseDoc(rawContent, mdPath, docsDir) {
     keywords:     metadata.keywords || '',
     robots:       metadata.robots   || 'index, follow',
     icon:         finalIcon,
+    // Приоритет сортировки в навигации/манифесте: меньше — выше в списке.
+    // Поле необязательное, по умолчанию 999 (в конец списка).
+    priority:     metadata.priority !== undefined && metadata.priority !== ''
+                     ? Number(metadata.priority)
+                     : 999,
+    // Slug кастомной React-страницы из src/custom/Название{slug}/.
+    // Пустая строка — обычная markdown-страница.
+    custom:       metadata.custom?.trim() || '',
+    frontmatter:  metadata,
   };
+}
+
+function toCategoryDoc(doc) {
+  const { content, keywords, robots, ...categoryDoc } = doc;
+  return categoryDoc;
+}
+
+export function buildCategoryPages(docs) {
+  const categories = new Map();
+
+  for (const doc of docs) {
+    const pathItems = doc.categoryPath ?? [];
+    pathItems.forEach((item, index) => {
+      const slug = [doc.navSlug, ...pathItems.slice(0, index + 1).map((cat) => cat.slug)].filter(Boolean).join('/');
+      if (!slug) return;
+      const parentPath = pathItems[index - 1] ?? null;
+      const category = categories.get(slug) ?? {
+        id: `category:${slug}`,
+        slug,
+        title: item.title,
+        description: `Статьи в категории «${item.title}»`,
+        icon: item.icon ?? null,
+        navSlug: doc.navSlug,
+        navTitle: doc.navTitle,
+        navIcon: doc.navIcon,
+        parentTitle: parentPath?.title ?? doc.navTitle ?? '',
+        docs: [],
+      };
+      category.docs.push(toCategoryDoc(doc));
+      categories.set(slug, category);
+    });
+  }
+
+  return Array.from(categories.values()).sort((a, b) => a.slug.localeCompare(b.slug));
 }
 
 export function buildDocFromPath(mdPath, docsDir) {

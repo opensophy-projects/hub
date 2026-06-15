@@ -7,6 +7,7 @@ updated: 2026-05-14
 tags: linux, devsecops
 lang: ru
 robots: "index, follow"
+priority: 2
 ---
 
 ## Введение

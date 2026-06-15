@@ -15,10 +15,15 @@ export const PortalMenu: React.FC<{
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const onMouse = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) onClose(); };
+    const onMouse = (e: MouseEvent) => {
+      const target = e.target as unknown as Node;
+      if (!ref.current?.contains(target)) onClose();
+    };
     const onScroll = () => onClose();
+
     document.addEventListener('mousedown', onMouse);
     window.addEventListener('scroll', onScroll, { capture: true, passive: true });
+
     return () => {
       document.removeEventListener('mousedown', onMouse);
       window.removeEventListener('scroll', onScroll, true);
@@ -49,20 +54,25 @@ export const MenuTriggerButton = React.forwardRef<HTMLButtonElement, {
   isDark: boolean;
 }>(({ open, onClick, isDark }, ref) => {
   const t = getTableUiTokens(isDark);
+
   return (
-    <button ref={ref} onClick={onClick} style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      width: 36, height: 36, borderRadius: 8,
-      border: `1px solid ${open ? t.btnActBdr : t.btnBdr}`,
-      background: open ? t.btnActBg : t.btnBg,
-      color: open ? t.btnActClr : t.btnClr,
-      cursor: 'pointer', flexShrink: 0, transition: 'all 0.13s',
-    }}
-      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = open ? t.btnActBg : t.btnBg; }}
+    <button
+      ref={ref}
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width: 36, height: 36, borderRadius: 8,
+        border: `1px solid ${open ? t.btnActBdr : t.btnBdr}`,
+        background: open ? t.btnActBg : t.btnBg,
+        color: open ? t.btnActClr : t.btnClr,
+        cursor: 'pointer', flexShrink: 0, transition: 'all 0.13s',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.background = t.btnHov; }}
+      onMouseLeave={e => { e.currentTarget.style.background = open ? t.btnActBg : t.btnBg; }}
     >
       <MoreHorizontal size={16} />
     </button>
   );
 });
+
 MenuTriggerButton.displayName = 'MenuTriggerButton';

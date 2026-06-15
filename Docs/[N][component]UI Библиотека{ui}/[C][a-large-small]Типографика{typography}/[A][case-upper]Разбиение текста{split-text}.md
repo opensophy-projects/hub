@@ -9,3 +9,19 @@ lang: ru
 ---
 
 [uic:split-text]
+
+| Проп | Type | Обычно | Описание |
+|------|------|---------|-------------|
+| `text` | `string` | `'Привет, это Split Text!'` | Текст для анимации |
+| `splitType` | `string` | `'chars'` | Тип разбивки (`chars`/`words`/`lines`/`words, chars`) |
+| `tag` | `string` | `'p'` | HTML-тег обёртки |
+| `delay` | `number` | `50` | Задержка stagger (мс) |
+| `duration` | `number` | `1.25` | Длительность анимации элемента (с) |
+| `ease` | `string` | `'power3.out'` | GSAP easing |
+| `threshold` | `number` | `0.1` | Порог видимости (0–1) |
+| `rootMargin` | `string` | `'-100px'` | rootMargin ScrollTrigger |
+| `textAlign` | `string` | `'center'` | Выравнивание текста |
+| `from` | `object` | `{opacity:0,y:40}` | Начальное состояние GSAP |
+| `to` | `object` | `{opacity:1,y:0}` | Конечное состояние GSAP |
+| `className` | `string` | `'text-4xl font-bold'` | CSS классы |
+| `onLetterAnimationComplete` | `function` | `undefined` | Коллбэк по завершении |

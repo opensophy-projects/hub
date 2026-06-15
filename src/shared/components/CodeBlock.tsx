@@ -278,8 +278,8 @@ function Pill({ onClick, title, label, icon, t, active, success, btnRef }: {
       background: active ? t.btnHov : bg, color, cursor: 'pointer', flexShrink: 0,
       transition: 'background 0.13s',
     }}
-      onMouseEnter={e => { if (!success) (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
-      onMouseLeave={e => { if (!success) (e.currentTarget as HTMLButtonElement).style.background = active ? t.btnHov : bg; }}
+      onMouseEnter={e => { if (!success) e.currentTarget.style.background = t.btnHov; }}
+      onMouseLeave={e => { if (!success) e.currentTarget.style.background = active ? t.btnHov : bg; }}
     >
       {icon}
       <span style={{ fontSize: 10, fontWeight: active || success ? 600 : 400, whiteSpace: 'nowrap' }}>{label}</span>
@@ -334,6 +334,75 @@ function MobileMenu({ isDark, code, onFullscreen }: {
   );
 }
 
+// ─── Кнопки мобильного модального режима ─────────────────────────────────────
+function MobileModalActions({ isCopied, onCopy, onClose, t }: {
+  readonly isCopied: boolean;
+  readonly onCopy: () => void;
+  readonly onClose: () => void;
+  readonly t: ReturnType<typeof tk>;
+}) {
+  return (
+    <>
+      <button
+        onClick={onCopy}
+        title={isCopied ? 'Скопировано!' : 'Копировать'}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 36, height: 36, borderRadius: 8,
+          border: `1px solid ${isCopied ? 'rgba(34,197,94,0.4)' : t.btnBdr}`,
+          background: isCopied ? 'rgba(34,197,94,0.16)' : t.btnBg,
+          color: isCopied ? '#22c55e' : t.btnClr,
+          cursor: 'pointer', flexShrink: 0, transition: 'all 0.13s',
+        }}
+        onMouseEnter={e => { if (!isCopied) e.currentTarget.style.background = t.btnHov; }}
+        onMouseLeave={e => { if (!isCopied) e.currentTarget.style.background = t.btnBg; }}
+      >
+        {isCopied ? <Check size={16} strokeWidth={2.5} /> : <Copy size={16} />}
+      </button>
+      <button
+        onClick={onClose}
+        title="Закрыть"
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 36, height: 36, borderRadius: 8,
+          border: `1px solid ${t.btnBdr}`,
+          background: t.btnBg, color: t.btnClr,
+          cursor: 'pointer', flexShrink: 0, transition: 'all 0.13s',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = t.btnHov; }}
+        onMouseLeave={e => { e.currentTarget.style.background = t.btnBg; }}
+      >
+        <X size={16} />
+      </button>
+    </>
+  );
+}
+
+// ─── Правая часть тулбара — кнопки действий ──────────────────────────────────
+function ToolbarActions({ isMobile, isModal, isCopied, isDark, code, t, handleCopy, setIsFullscreen }: {
+  readonly isMobile: boolean;
+  readonly isModal: boolean | undefined;
+  readonly isCopied: boolean;
+  readonly isDark: boolean;
+  readonly code: string;
+  readonly t: ReturnType<typeof tk>;
+  readonly handleCopy: () => void;
+  readonly setIsFullscreen: (v: boolean) => void;
+}) {
+  if (!isMobile) {
+    return (
+      <>
+        <Pill onClick={handleCopy} title={isCopied ? 'Скопировано!' : 'Копировать'} label={isCopied ? 'Скопировано' : 'Копировать'} icon={isCopied ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />} t={t} success={isCopied} />
+        <Pill onClick={() => setIsFullscreen(!isModal)} title={isModal ? 'Свернуть' : 'Развернуть'} label={isModal ? 'Свернуть' : 'Развернуть'} icon={isModal ? <Minimize2 size={14} /> : <Maximize2 size={14} />} t={t} />
+      </>
+    );
+  }
+  if (isModal) {
+    return <MobileModalActions isCopied={isCopied} onCopy={handleCopy} onClose={() => setIsFullscreen(false)} t={t} />;
+  }
+  return <MobileMenu isDark={isDark} code={code} onFullscreen={() => setIsFullscreen(true)} />;
+}
+
 interface SingleCodeBlockProps {
   readonly code: string;
   readonly language: string;
@@ -375,7 +444,7 @@ function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuer
     if (!searchQuery) return new Set<number>();
     const lq = searchQuery.toLowerCase();
     return new Set(lines.reduce<number[]>((acc, l, i) => {
-      if (l.toLowerCase().includes(lq)) { acc.push(i); }
+      if (l.toLowerCase().includes(lq)) acc.push(i);
       return acc;
     }, []));
   }, [lines, searchQuery]);
@@ -385,45 +454,6 @@ function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuer
     fg: t.fg, codeBg: t.codeBg, lineNum: t.lineNum, highlightedHtml,
     thumb: t.thumb, track: t.track, thumbHov: t.thumbHov,
   };
-
-  // ─── Кнопки копирования для мобильного модального режима ─────────────────
-  const mobileCopyBtn = (
-    <button
-      onClick={handleCopy}
-      title={isCopied ? 'Скопировано!' : 'Копировать'}
-      style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        width: 36, height: 36, borderRadius: 8,
-        border: `1px solid ${isCopied ? 'rgba(34,197,94,0.4)' : t.btnBdr}`,
-        background: isCopied ? 'rgba(34,197,94,0.16)' : t.btnBg,
-        color: isCopied ? '#22c55e' : t.btnClr,
-        cursor: 'pointer', flexShrink: 0, transition: 'all 0.13s',
-      }}
-      onMouseEnter={e => { if (!isCopied) (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
-      onMouseLeave={e => { if (!isCopied) (e.currentTarget as HTMLButtonElement).style.background = t.btnBg; }}
-    >
-      {isCopied ? <Check size={16} strokeWidth={2.5} /> : <Copy size={16} />}
-    </button>
-  );
-
-  const mobileCloseBtn = (
-    <button
-      onClick={() => setIsFullscreen(false)}
-      title="Закрыть"
-      style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        width: 36, height: 36, borderRadius: 8,
-        border: `1px solid ${t.btnBdr}`,
-        background: t.btnBg,
-        color: t.btnClr,
-        cursor: 'pointer', flexShrink: 0, transition: 'all 0.13s',
-      }}
-      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnBg; }}
-    >
-      <X size={16} />
-    </button>
-  );
 
   const toolbar = (
     <div style={{
@@ -442,8 +472,8 @@ function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuer
             background: t.inpBg, color: t.inpClr, fontSize: 13,
             outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s',
           }}
-          onFocus={e => { (e.target as HTMLInputElement).style.borderColor = t.inpFoc; }}
-          onBlur={e  => { (e.target as HTMLInputElement).style.borderColor = t.inpBdr; }}
+          onFocus={e => { e.target.style.borderColor = t.inpFoc; }}
+          onBlur={e  => { e.target.style.borderColor = t.inpBdr; }}
         />
         {searchQuery && (
           <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: matchedLines.size > 0 ? 56 : 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: t.plhClr, display: 'flex' }}>
@@ -456,18 +486,10 @@ function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuer
           </span>
         )}
       </div>
-
-      {!isMobile && (
-        <>
-          <Pill onClick={handleCopy} title={isCopied ? 'Скопировано!' : 'Копировать'} label={isCopied ? 'Скопировано' : 'Копировать'} icon={isCopied ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />} t={t} success={isCopied} />
-          <Pill onClick={() => isModal ? setIsFullscreen(false) : setIsFullscreen(true)} title={isModal ? 'Свернуть' : 'Развернуть'} label={isModal ? 'Свернуть' : 'Развернуть'} icon={isModal ? <Minimize2 size={14} /> : <Maximize2 size={14} />} t={t} />
-        </>
-      )}
-
-      {isMobile && (isModal
-        ? <>{mobileCopyBtn}{mobileCloseBtn}</>
-        : <MobileMenu isDark={isDark} code={code} onFullscreen={() => setIsFullscreen(true)} />
-      )}
+      <ToolbarActions
+        isMobile={isMobile} isModal={isModal} isCopied={isCopied} isDark={isDark}
+        code={code} t={t} handleCopy={handleCopy} setIsFullscreen={setIsFullscreen}
+      />
     </div>
   );
 
@@ -519,8 +541,8 @@ function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuer
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
             transition: 'background 0.13s',
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = t.btnHov; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = t.barBg; }}
+          onMouseEnter={e => { e.currentTarget.style.background = t.btnHov; }}
+          onMouseLeave={e => { e.currentTarget.style.background = t.barBg; }}
         >
           {isExpanded
             ? <><ChevronUp size={13} /><span>Скрыть</span></>
@@ -577,8 +599,8 @@ function TabBar({ tabs, activeIdx, onSelect, t }: TabBarProps) {
                 fontFamily: 'ui-monospace, monospace',
                 whiteSpace: 'nowrap',
               }}
-              onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = t.tabActive; }}
-              onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = t.tabInactive; }}
+              onMouseEnter={e => { if (!active) e.currentTarget.style.background = t.tabActive; }}
+              onMouseLeave={e => { if (!active) e.currentTarget.style.background = t.tabInactive; }}
             >
               {tab.label}
             </button>

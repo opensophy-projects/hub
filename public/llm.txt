@@ -212,7 +212,7 @@ const x: number = 1;
 ```
 
 - `useLanding: false` — показывает `Docs/welcome.md` как главную страницу
-- `useLanding: true` — показывает лендинг из `src/features/general/GeneralPage.tsx`
+- `useLanding: true` — показывает кастомный лендинг `general` из `src/custom/general{general}/Page.tsx`
 
 В dev-режиме переключается через Admin Panel (Ctrl+Shift+D → вкладка "Сайт").
 
