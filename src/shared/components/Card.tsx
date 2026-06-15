@@ -39,7 +39,7 @@ const cardHoverStyle = `
 
 // ─── Token helpers ────────────────────────────────────────────────────────────
 
-function getCardBg(isDark: boolean, accentColor: string | undefined): string {
+function getCardBg(isDark: boolean): string {
   if (isDark) return '#0f0f0f';
   return 'rgba(0,0,0,0.02)';
 }

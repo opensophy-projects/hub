@@ -806,7 +806,7 @@ const FullscreenModal: React.FC<ComponentRenderProps & {
 
 const PreviewPanel: React.FC<ComponentRenderProps & {
   onOpenFullscreen: () => void; t: T; loading: boolean;
-}> = ({ Component, universalProps, refreshKey, isDark, componentCategory, onOpenFullscreen, t, loading, fileContents }) => {
+}> = ({ Component, universalProps, refreshKey, isDark, componentCategory, onOpenFullscreen, t, loading }) => {
   const isBackground = componentCategory === 'backgrounds';
 
   return (

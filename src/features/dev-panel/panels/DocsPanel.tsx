@@ -876,8 +876,8 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
-  const [history, setHistory] = useState<string[]>([]);
-  const [future, setFuture] = useState<string[]>([]);
+  const [, setHistory] = useState<string[]>([]);
+  const [, setFuture] = useState<string[]>([]);
   const [fmOpen, setFmOpen] = useState(false);
   const [customPages, setCustomPages] = useState<Array<{ slug: string; folderName: string }>>([]);
   const taRef = useRef<HTMLTextAreaElement>(null);
