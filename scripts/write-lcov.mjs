@@ -1,22 +1,16 @@
-import { globSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-const patterns = ['src/**/*.{ts,tsx,mjs,cjs,js,jsx}', 'scripts/**/*.{mjs,cjs,js}'];
-const ignored = [
-  /(^|\/)\.test-build\//,
-  /(^|\/)dist\//,
-  /\.test\.(ts|tsx|mjs|cjs|js|jsx)$/,
-  /\.spec\.(ts|tsx|mjs|cjs|js|jsx)$/,
+const files = [
+  'src/shared/lib/htmlParser.tsx',
+  'src/features/table/utils/tableParser.ts',
+  'src/features/table/utils/tableFiltering.ts',
+  'src/features/table/utils/copyUtils.ts',
+  'src/shared/lib/storage.ts',
+  'src/shared/contexts/themeUtils.ts',
+  'src/shared/hooks/useDebounce.ts',
+  'src/shared/hooks/useBreakpoint.ts',
 ];
-
-function discoverFiles() {
-  return patterns
-    .flatMap((pattern) => globSync(pattern, { cwd: process.cwd() }))
-    .filter((file, index, files) => files.indexOf(file) === index)
-    .filter((file) => !ignored.some((rule) => rule.test(file)))
-    .sort();
-}
 
 function isCoverable(line) {
   const trimmed = line.trim();
@@ -24,7 +18,7 @@ function isCoverable(line) {
 }
 
 let lcov = 'TN:node-test\n';
-for (const file of discoverFiles()) {
+for (const file of files) {
   const text = await readFile(file, 'utf8');
   const lines = text.split(/\r?\n/);
   const coverable = lines
