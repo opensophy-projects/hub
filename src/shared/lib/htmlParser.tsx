@@ -145,14 +145,14 @@ const processLinkElement = (element: Element, key: string, elements: React.React
     return;
   }
 
-  // Элемент приходит из уже санитизированного DOMPurify-документа — innerHTML безопасен
+  // Содержимое ссылки явно санитизируется перед dangerouslySetInnerHTML
   elements.push(
     React.createElement('a', {
       key,
       href:   element.getAttribute('href') || '#',
       target: '_blank',
       rel:    'noopener noreferrer',
-      dangerouslySetInnerHTML: { __html: element.innerHTML },
+      dangerouslySetInnerHTML: { __html: sanitizeHtml(element.innerHTML) },
     }),
   );
 };
