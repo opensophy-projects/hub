@@ -15,6 +15,9 @@ permissions:
   contents: read
   security-events: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   quality:
     name: Security & Quality Gate
@@ -34,6 +37,10 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # Tests
+      - name: Test
+        run: npm test
 
       # SonarCloud
       - name: SonarCloud Scan
