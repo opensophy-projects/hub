@@ -1,4 +1,4 @@
-name: CI & Deploy
+name: Security CI & Deploy
 
 on:
   push:
@@ -7,19 +7,17 @@ on:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 permissions:
   contents: read
   security-events: write
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: false
 
 jobs:
   quality:
-    name: Quality gate
+    name: Security & Quality Gate
     runs-on: ubuntu-latest
 
     steps:
@@ -35,12 +33,39 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # SONARCLOUD
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: SonarCloud Quality Gate
+        uses: SonarSource/sonarqube-quality-gate-action@v1.1.0
+        timeout-minutes: 10
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      # SEMGREP
+      - name: Semgrep Security Scan
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/owasp-top-ten
+            p/security-audit
+            p/javascript
+            p/typescript
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      # ESLINT
       - name: Lint
         run: npm run lint
 
-      - name: Generate content
-        run: npm run generate
+      # DEPENDENCIES
+      - name: Dependency Audit
+        run: npm audit --audit-level=moderate
 
+      # BUILD
       - name: Generate docs
         run: npm run generate:docs
 
@@ -50,46 +75,28 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Dependency vulnerability gate
-        run: npm audit --audit-level=high
-
-      - name: Semgrep critical/high gate
-        uses: semgrep/semgrep-action@v1
-        with:
-          config: >-
-            p/owasp-top-ten
-            p/security-audit
-            p/javascript
-            p/typescript
-          generateSarif: "1"
-        env:
-          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
-          SEMGREP_SEVERITY: ERROR
-
-      - name: Upload Semgrep SARIF
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: semgrep.sarif
-        continue-on-error: true
-
-      - name: Upload Pages artifact
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      - name: Upload Pages Artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
 
   deploy:
-    name: Deploy to GitHub Pages
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    name: Deploy GitHub Pages
     needs: quality
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+
     runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
 
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - name: Deploy to GitHub Pages
+      - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
