@@ -35,13 +35,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # SONARCLOUD
+      # SonarCloud
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      # SEMGREP
+      # Semgrep
       - name: Semgrep Security Scan
         uses: semgrep/semgrep-action@v1
         with:
@@ -50,18 +50,19 @@ jobs:
             p/security-audit
             p/javascript
             p/typescript
+            p/react
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
-      # ESLINT
+      # Lint
       - name: Lint
         run: npm run lint
 
-      # DEPENDENCY VULNERABILITIES
+      # Dependency vulnerabilities
       - name: Dependency Audit
         run: npm audit --audit-level=moderate
 
-      # GENERATION
+      # Generate content
       - name: Generate Content
         run: npm run generate
 
@@ -71,11 +72,11 @@ jobs:
       - name: Generate Sitemap
         run: npm run generate:sitemap
 
-      # BUILD
+      # Build
       - name: Build
         run: npm run build
 
-      # PAGES ARTIFACT
+      # Upload Pages artifact
       - name: Upload Pages Artifact
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
