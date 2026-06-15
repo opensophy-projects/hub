@@ -1200,14 +1200,14 @@ const DesktopSlidingPanel: React.FC<{
   isDocsPage: boolean; chromeGap: number; chromeTopGap: number; chromeRadius: number;
   panelOpen: boolean; panelWidth: number; panelBg: string;
   shellEnabled: boolean;
-  panelTitle: Exclude<PanelType, null>; isStandardMode: boolean;
+  panelTitle: Exclude<PanelType, null>;
   currentDocSlug?: string; toc: TocItem[]; activeId: string; isDark: boolean;
   onResizeMouseDown: (e: React.MouseEvent) => void;
   onClose: () => void;
 }> = ({
   isDocsPage, chromeGap, chromeTopGap,
   chromeRadius, panelOpen, panelWidth,
-  panelBg, shellEnabled, panelTitle, isStandardMode,
+  panelBg, shellEnabled, panelTitle,
   currentDocSlug, toc, activeId, isDark,
   onResizeMouseDown, onClose,
 }) => {
@@ -1405,7 +1405,7 @@ const DesktopNav: React.FC<{
 const ShowPanelBtn: React.FC<{
   isDark: boolean; chromeGap: number; chromeTopGap: number;
   t: ReturnType<typeof tk>; onClick: () => void;
-}> = ({ isDark, chromeGap, chromeTopGap, t, onClick }) => {
+}> = ({ chromeGap, chromeTopGap, t, onClick }) => {
   const [hov, setHov] = useState(false);
   return (
     <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
@@ -1428,7 +1428,7 @@ const ShowPanelBtn: React.FC<{
 const ShowTocBtn: React.FC<{
   isDark: boolean; chromeGap: number; chromeTopGap: number;
   t: ReturnType<typeof tk>; onClick: () => void;
-}> = ({ isDark, chromeGap, chromeTopGap, t, onClick }) => {
+}> = ({ chromeGap, chromeTopGap, t, onClick }) => {
   const [hov, setHov] = useState(false);
   return (
     <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}

@@ -27,6 +27,25 @@ interface ChartBlockProps {
   isDark: boolean;
 }
 
+
+type BarShapeProps = {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  index?: number;
+} & Record<string, string | number | undefined>;
+
+type ActivePieShapeProps = {
+  cx?: number;
+  cy?: number;
+  innerRadius?: number;
+  outerRadius?: number;
+  startAngle?: number;
+  endAngle?: number;
+  fill?: string;
+};
+
 // ─── Палитра ──────────────────────────────────────────────────────────────────
 
 const DEFAULT_COLORS = [
@@ -367,7 +386,7 @@ function renderBar({
             stackId={stacked ? 'stack' : undefined}
             maxBarSize={maxSize}
             isAnimationActive={false}
-            shape={(props: any) => {
+            shape={(props: BarShapeProps) => {
               const glow = !stacked || isLastVisible;
 
               const rowName = String(props[nameKey] ?? visibleData[props.index]?.[nameKey] ?? '');
@@ -450,7 +469,7 @@ const PieChartInner: React.FC<PieChartInnerProps> = ({
     return activeIndex;
   }, [hovered, visibleData, nameKey, activeIndex]);
 
-  const renderActive = useCallback((props: any) => {
+  const renderActive = useCallback((props: ActivePieShapeProps) => {
     const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
     return (
       <g>
@@ -610,7 +629,6 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDa
       default:
         return null;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type, data, nameKey, valueKeys, palette, hidden, hovered, t, isEmpty]);
 
   return (

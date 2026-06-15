@@ -1,5 +1,3 @@
-import type React from 'react';
-
 export type PropValue = string | number | boolean | string[] | undefined;
 
 // ─── Universal Props ──────────────────────────────────────────────────────────
