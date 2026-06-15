@@ -79,8 +79,8 @@ function ContactRow({ contact, index, onChange, onDelete, t }: {
         <button
           onClick={onDelete}
           style={{ display: 'flex', padding: 3, borderRadius: 4, border: 'none', background: 'transparent', color: t.fgSub, cursor: 'pointer' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = t.danger; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = t.fgSub; }}
+          onMouseEnter={e => { e.currentTarget.style.color = t.danger; }}
+          onMouseLeave={e => { e.currentTarget.style.color = t.fgSub; }}
         >
           <Trash2 size={14}/>
         </button>
@@ -170,8 +170,8 @@ export default function ContactsPanel() {
             background: 'transparent', color: t.fgMuted,
             fontSize: 14, cursor: 'pointer', fontFamily: t.mono,
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = t.borderStrong; (e.currentTarget as HTMLButtonElement).style.color = t.fg; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = t.border;       (e.currentTarget as HTMLButtonElement).style.color = t.fgMuted; }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = t.borderStrong; e.currentTarget.style.color = t.fg; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = t.border;       e.currentTarget.style.color = t.fgMuted; }}
         >
           <Plus size={15}/> Добавить контакт
         </button>

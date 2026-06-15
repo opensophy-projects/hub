@@ -39,7 +39,7 @@ const cardHoverStyle = `
 
 // ─── Token helpers ────────────────────────────────────────────────────────────
 
-function getCardBg(isDark: boolean, accentColor: string | undefined): string {
+function getCardBg(isDark: boolean): string {
   if (isDark) return '#0f0f0f';
   return 'rgba(0,0,0,0.02)';
 }
@@ -149,12 +149,12 @@ const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark
                   boxSizing:      'border-box',
                 }}
                 onMouseEnter={e => {
-                  (e.currentTarget as HTMLImageElement).style.opacity = '0.88';
-                  (e.currentTarget as HTMLImageElement).style.transform = 'scale(1.02)';
+                  e.currentTarget.style.opacity = '0.88';
+                  e.currentTarget.style.transform = 'scale(1.02)';
                 }}
                 onMouseLeave={e => {
-                  (e.currentTarget as HTMLImageElement).style.opacity = '1';
-                  (e.currentTarget as HTMLImageElement).style.transform = 'scale(1)';
+                  e.currentTarget.style.opacity = '1';
+                  e.currentTarget.style.transform = 'scale(1)';
                 }}
               />
             </button>

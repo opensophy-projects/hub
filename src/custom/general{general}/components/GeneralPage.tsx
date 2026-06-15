@@ -157,7 +157,7 @@ const GlowingEffectInline = memo(({
         inset:                              0,
         borderRadius:                       'inherit',
         pointerEvents:                      'none',
-      } as React.CSSProperties}
+      }}
     >
       <div style={{
         position:            'absolute',
@@ -174,7 +174,7 @@ const GlowingEffectInline = memo(({
         maskClip:            'padding-box, border-box',
         WebkitMaskComposite: 'intersect',
         maskComposite:       'intersect',
-      } as React.CSSProperties} />
+      }} />
     </div>
   );
 });
