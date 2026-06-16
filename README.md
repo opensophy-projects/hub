@@ -22,10 +22,10 @@
 
 ## Template Availability
 
-Для копирования и использования проекта в качестве шаблона доступны два варианта:
+For those who want to copy and use Hub as a starting point for their own projects, two options are available:
 
-* 🌿 **Ветка `DEV`** — содержит актуальную версию проекта, предназначенную для дальнейшей разработки и кастомизации.
-* 📦 **Релизный пакет `v3.5`** — готовая стабильная сборка, которую можно использовать как основу для быстрого запуска собственного проекта.
+* 🌿 **`DEV` branch** — the latest development version of the project, intended for customization and further development.
+* 📦 **`v3.5` release package** — a stable release ready to be used as a template for quickly launching your own project.
 
 
 ### Documentation
