@@ -1,434 +1,243 @@
 ---
-title: Полное руководство по Frontmatter и системе наименований в Hub
-description: "Справочник по всем доступным полям frontmatter, новой системе [N]/[C]/[A] для именования папок и файлов, с примерами и рекомендациями."
+title: Полное руководство по Frontmatter и системе наименований в Hub V3.5
+description: "Актуальный справочник V3.5 по frontmatter, slug-системе [N]/[C]/[A], категориям, custom-страницам, SEO-полям, приоритетам и генерации manifest/sitemap."
 author: veilosophy
 date: 2026-03-07
-tags: "frontmatter, документация, markdown, руководство, наименование"
+updated: 2026-06-16
+tags: "frontmatter, документация, markdown, руководство, наименование, seo, custom pages, v3.5"
+keywords: "Hub frontmatter, Opensophy Hub, markdown документация, SEO поля, custom pages, sitemap, manifest"
 icon: chart-no-axes-column
 lang: ru
 robots: "index, follow"
+priority: 1
 ---
 
-# Система наименований папок и файлов
+# Frontmatter и имена файлов в Hub V3.5
 
-Hub использует специальный синтаксис для именования папок и файлов в директории `Docs/`. Благодаря префиксам `[N]`, `[C]`, `[A]` сразу понятно что создаётся — nav popover, категория или статья.
+В V3.5 структура `Docs/` стала главным источником правды для навигации, URL, поиска, sitemap, карточек категорий и SEO. Документ можно описать двумя слоями:
 
+1. **Имя папки/файла** — задаёт тип элемента, иконку, человекочитаемое имя и slug.
+2. **Frontmatter** — уточняет SEO, описание, даты, сортировку, теги и поведение страницы.
 
-## Синтаксис
-
-```
-[ТИП][иконка]Название{slug}
-```
-
-| Часть | Обязательно | Описание |
-|-------|-------------|----------|
-| `[ТИП]` | ✅ | `N`, `C` или `A` — тип элемента |
-| `[иконка]` | ❌ | Иконка из [Lucide Icons](https://lucide.dev/icons) |
-| `Название` | ✅ | Отображаемое имя в интерфейсе |
-| `{slug}` | ❌ | URL-slug. Если не указан — генерируется автоматически |
-
-- исключение: welcome.md - это самая главная страница и ее желательно писать через frontmatter.
-
----
-
-## Типы элементов
-
-### `[N]` — Nav Popover
-
-Верхнеуровневая папка. Создаёт **переключатель разделов** в сайдбаре.
-
-```
-[N][brain]Статьи opensophy{article}
-```
-
-- Иконка `brain` отображается в переключателе
-- Название `Статьи opensophy` — подпись раздела
-- Slug `article` — префикс всех URL внутри: `article/...`
-
----
-
-### `[C]` — Категория
-
-Папка внутри Nav Popover. Создаёт **сворачиваемую группу** в сайдбаре.
-
-```
-[C][signal]Инструменты и Сервисы{tools-and-services}
-```
-
-- Иконка `signal` отображается рядом с названием группы
-- Название `Инструменты и Сервисы` — заголовок группы
-- Slug `tools-and-services` — часть URL: `article/tools-and-services/...`
-
----
-
-### `[A]` — Статья (файл)
-
-MD-файл. Задаёт **slug и иконку** для конкретной статьи.
-
-```
-[A][shield]Введение в DevSecOps{devsecops-intro}.md
-```
-
-- Иконка `shield` отображается рядом с названием в сайдбаре
-- Название `Введение в DevSecOps` — используется как title если не задан в frontmatter
-- Slug `devsecops-intro` — итоговый URL: `article/tools-and-services/devsecops-intro`
-
----
-
-## Полный пример структуры
-
-```
+```txt
 Docs/
 ├── welcome.md
-├── [N][brain]Статьи opensophy{article}/
-│   ├── [C][signal]Инструменты и Сервисы{tools-and-services}/
-│   │   ├── [A][shield]Введение в DevSecOps{devsecops-intro}.md
-│   │   └── [A][wrench]Обзор инструментов SAST{sast-overview}.md
-│   └── [C][book-open]Руководства{guides}/
-│       └── [A][file-code]Быстрый старт{quickstart}.md
-└── [N][newspaper]Новости{news}/
-    └── [A][zap]Релиз Hub 3.0{release-3}.md
-```
-
-Результирующие URL:
-
-```
-/article/tools-and-services/devsecops-intro
-/article/tools-and-services/sast-overview
-/article/guides/quickstart
-/news/release-3
+├── resume.md
+└── [N][book-open]Документация Hub{hub}/
+    ├── [A][boxes]Hub{general}.md
+    ├── [A][rocket]Быстрый старт{quickstart}.md
+    └── [C][folder-code]Раздел{section}/
+        └── [A][file-text]Статья{article}.md
 ```
 
 ---
 
-## Правила и рекомендации
+## Система имён `[N]`, `[C]`, `[A]`
 
-- Slug пишется **только латиницей** с дефисами: `my-article`, `tools-and-services`
-- Если `{slug}` не указан — генерируется из названия через транслитерацию кириллицы
-- Вложенность: только `[N]` → `[C]` → `[A].md`. Nav Popover внутри Nav Popover не работает
-- `[иконка]` и `{slug}` можно опускать:
-  - `[C]Руководства` — категория без иконки, slug = `rukovodstva`
-  - `[A]Моя статья` — статья без иконки, slug = `moya-statya`
-- Полный список иконок: [lucide.dev/icons](https://lucide.dev/icons)
+```txt
+[ТИП][lucide-icon]Название{slug}
+```
+
+| Часть | Обязательно | Пример | Зачем нужна |
+|---|---:|---|---|
+| `[ТИП]` | ✅ | `[N]`, `[C]`, `[A]` | Определяет роль элемента. |
+| `[lucide-icon]` | Нет | `[book-open]` | Иконка из Lucide Icons. |
+| `Название` | ✅ | `Документация Hub` | Текст в навигации, breadcrumbs и fallback title. |
+| `{slug}` | Желательно | `{hub}` | Стабильная URL-часть. |
+
+### `[N]` — верхний nav-раздел
+
+Папка первого уровня. Создаёт верхнеуровневый раздел навигации.
+
+```txt
+[N][brain]Статьи opensophy{article}/
+```
+
+URL всех вложенных документов начнётся с `/article/...`.
+
+### `[C]` — категория
+
+Папка внутри nav-раздела. В V3.5 категория создаёт не только группу в сайдбаре, но и отдельную **страницу категории** со списком вложенных документов.
+
+```txt
+[C][shield]Кибербезопасность{security}/
+```
+
+Итоговая страница категории: `/article/security/`.
+
+### `[A]` — статья
+
+Markdown-файл. Создаёт страницу документа.
+
+```txt
+[A][siren]CVSS: как правильно оценивать критичность уязвимостей{cvss-guide}.md
+```
+
+Итоговый URL: `/article/security/cvss-guide/`.
+
+### `welcome.md` и одиночные файлы в корне `Docs/`
+
+- `Docs/welcome.md` — контент главной страницы, когда `useLanding: false`, или SEO/контентный fallback для `/`.
+- Файлы в корне без папок получают URL из имени файла: `Docs/resume.md` → `/resume/`.
+- Если у Markdown-документа указан `custom`, контент файла используется как метаданные/маршрут, а тело страницы рендерит React-страница из `src/custom/`.
 
 ---
 
-# Frontmatter
+## Как строится URL
 
-Frontmatter — блок метаданных в начале `.md` файла, обёрнутый в `---`.
+```txt
+Docs/[N][component]UI Библиотека{ui}/[C][maximize]Фон{background}/[A][stars]Аурора{aurora}.md
+```
+
+Результат:
+
+```txt
+/ui/background/aurora/
+```
+
+Правила:
+
+- slug лучше всегда задавать явно в `{}`;
+- используйте латиницу, цифры и дефисы: `quickstart`, `seo-guide`, `tools-and-services`;
+- не меняйте slug после публикации без редиректа, иначе сломаются ссылки и SEO;
+- избегайте дублей: при конфликте генератор пропустит повторный slug и выведет warning.
+
+---
+
+## Frontmatter: полный справочник V3.5
+
+Frontmatter находится в начале `.md` файла между `---`.
 
 ```yaml
 ---
-title: "Название статьи"
-description: Краткое описание.
+title: "Название страницы"
+description: "Краткое описание для карточек, поиска и SEO."
+date: 2026-06-16
 ---
 ```
 
-## Обязательные поля
+### Основные поля
 
-### `title`
+| Поле | Тип | Обязательно | Где используется |
+|---|---|---:|---|
+| `title` | string | Желательно | Заголовок страницы, `<title>`, OG/Twitter title, карточки, поиск. |
+| `description` | string | Желательно | Hero, карточки категорий, поиск, meta description, OG/Twitter description. |
+| `author` | string | Нет | Шапка статьи, meta author, JSON-LD Article author. |
+| `date` | `YYYY-MM-DD` | Нет | Дата публикации, sitemap, article published_time, JSON-LD. |
+| `updated` | `YYYY-MM-DD` | Нет | Дата обновления, article modified_time, JSON-LD dateModified. |
+| `tags` | string через запятую | Нет | Поиск, карточки, тематическая группировка. |
+| `icon` | string | Нет | Иконка документа; имеет приоритет над иконкой из имени файла. |
+| `typename` | string | Нет | Тип/бейдж документа; по умолчанию берётся последняя категория. |
+| `priority` | number | Нет | Сортировка в навигации/manifest: меньше — выше. По умолчанию `999`. |
 
-**Тип:** `string`
+### SEO-поля
 
-Заголовок статьи. Отображается в шапке, поиске, SEO-метатегах и вкладке браузера.
+| Поле | Тип | По умолчанию | Назначение |
+|---|---|---|---|
+| `keywords` | string | глобальные keywords layout или пусто | `<meta name="keywords">`. |
+| `robots` | string | `index, follow` | Управляет индексацией: `index, follow`, `noindex, follow`, `noindex, nofollow`. |
+| `lang` | string | `ru` | Атрибут `<html lang>`, JSON-LD `inLanguage`. |
+| `image` | string | `/og-image.png` из Layout | OG/Twitter image и JSON-LD image. |
 
-> Если не указан — берётся из имени файла `[A]Название{slug}.md`
+### Поведенческие поля
+
+| Поле | Тип | Что делает |
+|---|---|---|
+| `custom` | string | Подключает React-страницу из `src/custom/<name>{slug}/` вместо обычного Markdown-рендера. |
+
+Пример Markdown-страницы, которая использует кастомный React-рендер:
 
 ```yaml
-title: "Введение в DevSecOps"
+---
+title: "Resume"
+description: "Интерактивное резюме."
+custom: resume
+robots: "index, follow"
+priority: 10
+---
 ```
+
+Если существует `src/custom/resume{resume}/Page.tsx`, маршрут `/resume/` будет создан из Markdown-файла, но тело страницы отрендерит React-компонент.
 
 ---
 
-### `description`
-
-**Тип:** `string`
-
-Краткое описание (1–2 предложения). Используется в поиске, карточках документов и метатеге `<meta name="description">`.
+## Рекомендуемый шаблон статьи
 
 ```yaml
-description: Обзор основных инструментов DevSecOps и их применения в CI/CD.
-```
-
 ---
-
-## Необязательные поля
-
-### `author`
-
-**Тип:** `string`
-
-Имя автора. Отображается в шапке статьи. Несколько авторов — через запятую.
-
-```yaml
+title: "Понятное название страницы"
+description: "Одно-два предложения: что пользователь получит на странице."
 author: veilosophy
-# или
-author: veilosophy, opensophy
-```
-
----
-
-### `date`
-
-**Тип:** `string` | Формат: `YYYY-MM-DD`
-
-Дата публикации. Используется для сортировки, отображения в шапке и генерации `sitemap.xml`.
-
-```yaml
-date: 2026-03-07
-```
-
----
-
-### `updated`
-
-**Тип:** `string` | Формат: `YYYY-MM-DD`
-
-Дата последнего обновления. Если указана — отображается как «Обновлено: {дата}».
-
-```yaml
-updated: 2026-04-01
-```
-
----
-
-### `tags`
-
-**Тип:** `string` (список через запятую)
-
-Теги для поиска и фильтрации.
-
-```yaml
-tags: безопасность, DevSecOps, инструменты, CI/CD
-```
-
----
-
-### `icon`
-
-**Тип:** `string`
-
-Иконка из [Lucide Icons](https://lucide.dev/icons). Отображается рядом с названием в сайдбаре.
-
-> Приоритет: frontmatter `icon` > иконка из имени файла `[A][icon]...`
-
-```yaml
-icon: shield
-```
-
-Популярные иконки:
-
-| Иконка | Применение |
-|--------|-----------|
-| `book` | Документация |
-| `file-code` | Техническая статья |
-| `shield` | Безопасность |
-| `rocket` | Новые функции |
-| `lightbulb` | Советы и идеи |
-| `wrench` | Инструменты |
-| `zap` | Новости / быстрое |
-| `crown` | Важное |
-| `newspaper` | Статьи / новости |
-| `brain` | Исследования |
-| `signal` | Сервисы |
-
----
-
-### `typename`
-
-**Тип:** `string`
-
-Переопределяет название категории из папки `[C]`. Отображается в бейдже над заголовком и в breadcrumbs.
-
-> Обычно не нужен — берётся автоматически из `[C]Название`.
-
-```yaml
-typename: Инструменты безопасности
-```
-
----
-
-### `keywords`
-
-**Тип:** `string` (список через запятую)
-
-SEO-ключевые слова для метатега `<meta name="keywords">`.
-
-```yaml
-keywords: DevSecOps инструменты, SAST DAST, безопасность CI/CD
-```
-
----
-
-### `robots`
-
-**Тип:** `string`
-
-Инструкции для поисковых роботов.
-
-| Значение | Описание |
-|----------|----------|
-| `index, follow` | Индексировать и переходить по ссылкам (по умолчанию) |
-| `noindex, follow` | Не индексировать, но переходить |
-| `index, nofollow` | Индексировать, не переходить |
-| `noindex, nofollow` | Не индексировать и не переходить |
-
-```yaml
-robots: index, follow
-```
-
----
-
-### `lang`
-
-**Тип:** `string` (ISO 639-1)
-
-Язык документа. Влияет на `<html lang="">` и индексацию.
-
-```yaml
+date: 2026-06-16
+updated: 2026-06-16
+tags: "hub, документация, quickstart"
+keywords: "Hub, Opensophy, документация, Astro, React"
+icon: rocket
 lang: ru
-# или
-lang: en
-```
-
----
-
-### `canonical`
-
-**Тип:** `string` (URL) или `null`
-
-Каноническая ссылка на оригинал если контент продублирован на нескольких URL.
-
-```yaml
-canonical: https://opensophy.com/article/original
-# или если дублей нет:
-canonical: null
-```
-
----
-
-# Что больше не нужно в frontmatter
-
-С новой системой `[N]`/`[C]`/`[A]` следующие поля **определяются автоматически из структуры папок** и в frontmatter не нужны:
-
-| Поле | Откуда берётся теперь |
-|------|-----------------------|
-| `type` | Slug nav popover `[N]..{slug}` становится префиксом URL |
-| `typename` | Название папки `[C]Название` |
-| `category` | Структура папок и есть категория |
-| `icon` (опционально) | Из имени файла `[A][icon]...` |
-
----
-
-# Шаблоны frontmatter
-
-## Минимальный
-
-```yaml
----
-title: "Название статьи"
-description: Краткое описание содержимого.
----
-```
-
-## Стандартный
-
-```yaml
----
-title: "Название статьи"
-description: Краткое описание содержимого.
-author: veilosophy
-date: 2026-03-07
-tags: тег1, тег2, тег3
-robots: index, follow
-lang: ru
----
-```
-
-## Полный
-
-```yaml
----
-title: "Название статьи"
-description: Краткое описание содержимого.
-author: veilosophy
-date: 2026-03-07
-updated: 2026-04-01
-tags: тег1, тег2, тег3
-icon: shield
-typename: Переопределённая категория
-keywords: ключевое слово 1, ключевое слово 2
-canonical: null
-robots: index, follow
-lang: ru
----
-```
-
-## Для welcome.md
-
-```yaml
----
-title: "Добро пожаловать в Hub"
-description: Hub проекта Opensophy — центр знаний по ИИ и кибербезопасности.
-author: ""
-date: 2026-03-07
-tags: welcome, hub, opensophy
-keywords: Opensophy, Hub, документация
-canonical: null
-robots: index, follow
-lang: ru
+robots: "index, follow"
+priority: 20
 ---
 ```
 
 ---
 
-# Примеры именования
+## Как генерация использует frontmatter
 
-## Простая статья без категории
+`npm run generate` запускает сборку данных:
 
-```
-Docs/[N][file-text]База знаний{kb}/
-    [A]Глоссарий{glossary}.md
-```
+1. сканирует все `.md` в `Docs/`;
+2. парсит frontmatter;
+3. строит slug из `[N]`, `[C]`, `[A]` и `{slug}`;
+4. генерирует `public/data/docs/manifest.json` для навигации и поиска;
+5. генерирует `public/sitemap.xml`;
+6. обновляет `public/llm.txt` для LLM/AI-потребителей.
 
-URL: `/kb/glossary`
+Динамический маршрут `src/app/pages/[...slug].astro` умеет отдавать три типа страниц:
 
----
-
-## Статья с иконкой в имени файла
-
-```
-Docs/[N][brain]Исследования{research}/
-    [C][flask-conical]Эксперименты{experiments}/
-        [A][microscope]Анализ данных{data-analysis}.md
-```
-
-URL: `/research/experiments/data-analysis`  
-Иконка статьи в сайдбаре: `microscope`
+- обычный Markdown-документ;
+- страницу категории;
+- кастомную React-страницу.
 
 ---
 
-## Без nav popover (прямой URL)
+## Best practices
 
-```
-Docs/
-    [A]Политика конфиденциальности{privacy}.md
-```
+:::cards[cols=2]
 
-URL: `/privacy`
+:::card
+[title]Для SEO
+[icon]search
+Всегда заполняйте `title`, `description`, `date`, `updated`, `robots`, `lang`, `keywords` и при необходимости `image`.
+:::
+
+:::card
+[title]Для навигации
+[icon]list-tree
+Используйте `priority` на важных страницах и явные `{slug}` для стабильных URL.
+:::
+
+:::card
+[title]Для категорий
+[icon]folder-open
+Не кладите слишком много документов в одну категорию: в V3.5 у категорий есть отдельные карточные страницы.
+:::
+
+:::card
+[title]Для custom pages
+[icon]blocks
+Используйте `custom`, когда нужен полноценный React-экран, но маршрут и SEO удобнее держать в `Docs/`.
+:::
+
+:::
 
 ---
 
-## Несколько nav popover разделов
+## Частые ошибки
 
-```
-Docs/
-├── welcome.md
-├── [N][book]Документация{docs}/
-│   └── [C][settings]Настройка{setup}/
-│       └── [A]Установка{install}.md
-└── [N][newspaper]Блог{blog}/
-    └── [A]Первый пост{first-post}.md
-```
-
-В сайдбаре появится переключатель между разделами «Документация» и «Блог».
+| Ошибка | Как исправить |
+|---|---|
+| Русский slug без `{}` | Задайте явный латинский slug: `{quickstart}`. |
+| Дубликат slug | Проверьте путь и `custom`-страницы; slug должен быть уникален. |
+| Нет описания | Добавьте `description`, иначе будет взят первый абзац. |
+| Страница не появилась | Запустите `npm run generate` и проверьте имя файла. |
+| `custom` не работает | Убедитесь, что есть `src/custom/<folder>{slug}/Page.tsx` или `Page.jsx`. |
