@@ -23,10 +23,10 @@ if (fs.existsSync(welcomeMdPath)) {
   }
 }
 
-const SITE_NAME = 'Opensophy';
+const SITE_NAME = 'YOUR-DOMAIN';
 const landingPage = getCustomPageBySlug('general');
-const LANDING_DESCRIPTION = landingPage?.metadata.description || 'Opensophy — open-source проект для IT-специалистов и инициатива открытой философии в IT. Качественные и доступные знания, услуги, инструменты и решения по безопасности, разработке и инфраструктуре — в открытом доступе.';
-const LANDING_KEYWORDS = landingPage?.metadata.keywords || 'opensophy, кибербезопасность, DevSecOps, linux, разработка, инструменты, туториалы, open source, IT, mTLS, SAST, DAST, SCA, zero trust, CI/CD';
+const LANDING_DESCRIPTION = landingPage?.metadata.description || 'YOUR-DESC.';
+const LANDING_KEYWORDS = landingPage?.metadata.keywords || 'KEYWORDS';
 
 const welcomeCustomSlug = resolveCustomSlug(welcomeDoc?.frontmatter?.custom);
 const welcomeCustomPage = welcomeCustomSlug ? getCustomPageBySlug(welcomeCustomSlug) : null;
