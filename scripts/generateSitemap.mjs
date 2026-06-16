@@ -11,7 +11,7 @@ const manifestPath = path.join(__dirname, '../public/data/docs/manifest.json');
 const sitemapPath  = path.join(__dirname, '../public/sitemap.xml');
 const customDir    = path.join(__dirname, '../src/custom');
 
-const BASE_URL = 'https://opensophy.com';
+const BASE_URL = 'https://YOUR-DOMAIN.com';
 
 // ─── Terminal helpers ─────────────────────────────────────────────────────────
 
