@@ -1,6 +1,6 @@
 ---
 title: Добро пожаловать в Hub
-description: Hub проекта Opensophy - центр знаний
+description: Hub проекта - центр знаний
 icon: crown
 lang: ru
 robots: "index, follow"
