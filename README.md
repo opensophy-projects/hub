@@ -27,7 +27,6 @@ For those who want to copy and use Hub as a starting point for their own project
 * 🌿 **`DEV` branch** — the latest development version of the project, intended for customization and further development.
 * 📦 **`v3.5` release package** — a stable release ready to be used as a template for quickly launching your own project.
 
-
 ### Documentation
 
 - 📖 **What is Hub?**  
