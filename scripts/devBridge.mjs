@@ -12,7 +12,7 @@ const MANIFEST   = path.join(OUTPUT_DIR, 'manifest.json');
 const SITEMAP    = path.join(ROOT, 'public/sitemap.xml');
 const SITE_CONFIG_PATH = path.join(ROOT, 'public/data/site-config.json');
 const CUSTOM_DIR = path.join(ROOT, 'src/custom');
-const BASE_URL   = 'https://opensophy.com';
+const BASE_URL   = 'https://YOUR-DOMAIN.com';
 
 const LOCALHOST_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
 
