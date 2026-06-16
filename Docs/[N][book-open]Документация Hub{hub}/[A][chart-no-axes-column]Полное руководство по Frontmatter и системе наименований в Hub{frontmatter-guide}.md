@@ -175,7 +175,7 @@ keywords: "Hub, Opensophy, документация, Astro, React"
 icon: rocket
 lang: ru
 robots: "index, follow"
-priority: 20
+priority: 20 // на ваш выбор как он должен распологаться в навигации
 ---
 ```
 
