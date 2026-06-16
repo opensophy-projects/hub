@@ -1,28 +1,86 @@
-# HUB V.3.5
-
-> a hybrid platform for documentation and next-generation content.
-
----
-
 <div align="center">
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-opensophy.com-8B5CF6?style=flat-square)](https://opensophy.com)
+# HUB v3.5
+
+### WELCOME TO HUB
+
+*A hybrid platform for documentation and next-generation content.*
+
+<br>
+
+[![Open Source](https://img.shields.io/badge/Opensophy_Public_License-v1.1-22C55E?style=for-the-badge)](LICENSE.md)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-opensophy.com-8B5CF6?style=for-the-badge)](https://opensophy.com)
+[![About Hub](https://img.shields.io/badge/About_Hub-Documentation-2563EB?style=for-the-badge)](https://opensophy.com/hub/general/)
+[![Version](https://img.shields.io/badge/Version-3.5-111827?style=for-the-badge)](#)
+
+<br>
+
+[![Security CI & Deploy](https://github.com/opensophy-projects/hub/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/opensophy-projects/hub/actions/workflows/deploy.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=opensophy-projects_hub&metric=alert_status)](https://sonarcloud.io/project/overview?id=opensophy-projects_hub)
 
 </div>
 
----
+### Documentation
 
-# Stack
+- 📖 **What is Hub?**  
+  https://opensophy.com/hub/general/
 
-[![Built with Astro](https://img.shields.io/badge/Built%20with-Astro%206-FF5D01?style=flat-square&logo=astro)](https://astro.build)
-[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
-[![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react)](https://react.dev)
-[![Bundle](https://img.shields.io/badge/bundle-~460KB%20gzip-brightgreen?style=flat-square)](#)
+- ✍️ **Markdown Guide**  
+  https://opensophy.com/hub/markdown-guide/
 
-# Security
+- 🏷️ **Frontmatter Guide**  
+  https://opensophy.com/hub/frontmatter-guide/
+
+# Technology Stack
+
+### Core
+
+![Astro](https://img.shields.io/badge/Astro-6.1.10-FF5D01?style=flat-square&logo=astro)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178C6?style=flat-square&logo=typescript)
+![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react)
+![Node.js](https://img.shields.io/badge/Node.js-22-339933?style=flat-square&logo=node.js)
+
+### Styling
+
+![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4-06B6D4?style=flat-square&logo=tailwindcss)
+![PostCSS](https://img.shields.io/badge/PostCSS-8-DD3A0A?style=flat-square&logo=postcss)
+
+### Content & Rendering
+
+![Marked](https://img.shields.io/badge/Marked-Markdown-black?style=flat-square)
+![KaTeX](https://img.shields.io/badge/KaTeX-Math-25C2A0?style=flat-square)
+![Highlight.js](https://img.shields.io/badge/Highlight.js-Syntax-FF6B6B?style=flat-square)
+
+### Motion & Graphics
+
+![Framer Motion](https://img.shields.io/badge/Framer_Motion-12-0055FF?style=flat-square)
+![GSAP](https://img.shields.io/badge/GSAP-3-88CE02?style=flat-square)
+![Three.js](https://img.shields.io/badge/Three.js-0.184-000000?style=flat-square)
+![OGL](https://img.shields.io/badge/OGL-WebGL-111111?style=flat-square)
+![Postprocessing](https://img.shields.io/badge/Postprocessing-Effects-444444?style=flat-square)
+
+### Data Visualization
+
+![Recharts](https://img.shields.io/badge/Recharts-3.8-8884D8?style=flat-square)
+
+# Security & Quality
+
+Hub uses an automated security and quality pipeline on every push and pull request.
+
+### GitHub Actions
+
+[![Security CI & Deploy](https://github.com/opensophy-projects/hub/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/opensophy-projects/hub/actions/workflows/deploy.yml)
+
+### SonarCloud
 
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=opensophy-projects_hub&metric=alert_status)](https://sonarcloud.io/project/overview?id=opensophy-projects_hub)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=opensophy-projects_hub&metric=security_rating)](https://sonarcloud.io/project/overview?id=opensophy-projects_hub)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=opensophy-projects_hub&metric=reliability_rating)](https://sonarcloud.io/project/overview?id=opensophy-projects_hub)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=opensophy-projects_hub&metric=sqale_rating)](https://sonarcloud.io/project/overview?id=opensophy-projects_hub)
 
-# License
 
-[![License](https://img.shields.io/badge/License-b83228?style=for-the-badge)](LICENSE.md)
+### Contacts
+
+For questions regarding the project, contributions, partnerships, or support, please use the contact information available on the official opensophy website:
+
+https://opensophy.com/
