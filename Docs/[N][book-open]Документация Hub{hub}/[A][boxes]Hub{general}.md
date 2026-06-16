@@ -3,7 +3,7 @@ title: "Hub"
 description: "Обзор проекта Hub: что это за платформа, из каких частей она состоит и для каких задач подходит."
 author: veilosophy
 date: 2026-06-03
-updated: 2026-06-03
+updated: 2026-06-16
 tags: "hub, opensophy, документация, платформа, markdown, ui, astro, react"
 icon: boxes
 lang: ru
@@ -161,16 +161,17 @@ Docs/
 
 ## UI-библиотека
 
-Компонент добавляется как папка с React-файлом и `config.json`. Registry автоматически находит конфиги через `import.meta.glob`, loader подгружает компонент и исходники для просмотра.
+В V3.5 компонент добавляется как папка внутри категории `backgrounds`, `texts` или другой поддерживаемой категории. Registry автоматически ищет React-компоненты через `import.meta.glob`, выбирает `index`, preview-файл или основной файл компонента и подгружает исходники для вкладки «Код».
 
 ```text
 src/features/ui-components/
-└── my-component/
-    ├── my-component.tsx
-    └── config.json
+└── texts/
+    └── my-component/
+        ├── my-component.tsx
+        └── my-component-preview.tsx
 ```
 
-`config.json` описывает название, категорию, props, controls, теги, автора и версию. После этого компонент доступен в документации и в интерактивном viewer с настройками.
+Связь с документацией строится по slug: документ `{my-component}.md` открывает viewer для папки `my-component`. Подробности — в руководстве по UI библиотеке.
 
 ---
 
@@ -198,12 +199,12 @@ npm run dev
 После запуска:
 
 1. Добавьте новую статью в `Docs/`.
-2. Заполните frontmatter.
-3. Выберите иконку и slug в имени файла.
+2. Заполните frontmatter, включая SEO-поля.
+3. Выберите иконку и стабильный slug в имени файла.
 4. Запустите `npm run generate`.
 5. Откройте страницу в браузере.
 
-При необходимости добавьте UI-компонент в `src/features/ui-components/`.
+Для деплоя используйте production build `npm run build`; отдельные инструкции для GitHub Pages, Vercel, Bolt.new и статического хостинга вынесены в Quickstart.
 
 ---
 
