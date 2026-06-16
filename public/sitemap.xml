@@ -14,7 +14,7 @@
 
   <url>
     <loc>https://opensophy.com/hub/general/</loc>
-    <lastmod>2026-06-03</lastmod>
+    <lastmod>2026-06-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -34,6 +34,20 @@
   </url>
 
   <url>
+    <loc>https://opensophy.com/hub/frontmatter-guide/</loc>
+    <lastmod>2026-06-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://opensophy.com/hub/quickstart/</loc>
+    <lastmod>2026-06-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
     <loc>https://opensophy.com/article/linux/file-permissions/</loc>
     <lastmod>2026-05-14</lastmod>
     <changefreq>monthly</changefreq>
@@ -48,6 +62,13 @@
   </url>
 
   <url>
+    <loc>https://opensophy.com/hub/seo/</loc>
+    <lastmod>2026-06-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
     <loc>https://opensophy.com/resume/</loc>
     <lastmod>2026-06-16</lastmod>
     <changefreq>monthly</changefreq>
@@ -57,6 +78,13 @@
   <url>
     <loc>https://opensophy.com/article/linux/linux-processes/</loc>
     <lastmod>2026-06-02</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://opensophy.com/hub/component-guide/</loc>
+    <lastmod>2026-06-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -398,13 +426,6 @@
   </url>
 
   <url>
-    <loc>https://opensophy.com/hub/frontmatter-guide/</loc>
-    <lastmod>2026-03-07</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <url>
     <loc>https://opensophy.com/article/career/ats-hr/</loc>
     <lastmod>2026-03-01</lastmod>
     <changefreq>monthly</changefreq>
@@ -414,13 +435,6 @@
   <url>
     <loc>https://opensophy.com/hub/markdown-guide/</loc>
     <lastmod>2026-03-07</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <url>
-    <loc>https://opensophy.com/hub/component-guide/</loc>
-    <lastmod>2026-02-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
