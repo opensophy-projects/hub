@@ -460,7 +460,7 @@ function useSearchDocs(manifestDocs: DocMeta[]): DocMeta[] {
       navSlug: '',
       navTitle: 'Главная',
       icon: 'crown',
-      tags: ['landing', 'главная', 'opensophy'],
+      tags: ['landing', 'главная', 'YOUR-DOMAIN'],
     };
 
     return [landingDoc, ...withoutWelcome];
