@@ -1,7 +1,6 @@
 ---
 title: "Кастомные страницы: React-страницы из папки custom"
 description: Как создавать полностью кастомные кодовые страницы Hub через папку src/custom и slug в имени папки.
-author: veilosophy
 date: 2026-06-09
 tags: "документация, custom pages, react, astro"
 icon: blocks
