@@ -163,7 +163,7 @@ src/features/ui-components/backgrounds/aurora/
 ---
 title: "Название компонента"
 description: "Что делает компонент и где его использовать."
-author: veilosophy
+author: opensophy
 date: 2026-06-16
 tags: "ui, component, animation"
 icon: sparkles
