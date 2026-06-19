@@ -41,7 +41,7 @@ Hub V3.5 уже содержит базовый SEO-слой в `Layout.astro`: 
 ---
 title: "CVSS: как правильно оценивать критичность уязвимостей"
 description: "Подробное руководство по CVSS: метрики, векторы, примеры оценки и типичные ошибки."
-author: veilosophy
+author: opensophy
 date: 2026-06-16
 updated: 2026-06-16
 tags: "cvss, vulnerability management, security"
