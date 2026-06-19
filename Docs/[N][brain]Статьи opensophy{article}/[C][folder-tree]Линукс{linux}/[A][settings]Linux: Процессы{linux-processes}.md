@@ -1,7 +1,6 @@
 ---
 title: "Linux: Процессы"
 description: "Четвёртая часть серии о Linux для DevOps и DevSecOps — разбираем процессы глубоко: жизненный цикл, состояния, /proc, сигналы, планировщик, ограничения, отладка и диагностика в production."
-author: veilosophy
 date: 2026-06-02
 tags: linux, devsecops
 lang: ru
