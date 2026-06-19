@@ -1,7 +1,6 @@
 ---
 title: "Руководство по UI библиотеке Hub V3.5"
 description: "Актуальное руководство V3.5 по добавлению UI-компонентов: структура backgrounds/texts, auto-discovery registry, preview-файлы, вкладка кода, universal props и Markdown-документация."
-author: veilosophy
 date: 2026-02-12
 updated: 2026-06-16
 tags: "ui-компоненты, react, registry, markdown, документация, v3.5"
