@@ -1,7 +1,7 @@
 {
   "name": "opensophy-center",
   "private": true,
-  "version": "3.5.1",
+  "version": "3.5",
   "type": "module",
   "scripts": {
     "dev": "npm run generate && astro dev",
@@ -58,7 +58,6 @@
     "svgo": "4.0.1",
     "dompurify": "3.4.11",
     "defu": "6.1.5",
-    "postcss": "8.5.10",
     "semver": "7.8.4"
   },
   "packageManager": "npm@10.9.0"
