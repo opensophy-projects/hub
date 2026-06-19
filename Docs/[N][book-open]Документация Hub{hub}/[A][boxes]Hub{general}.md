@@ -1,7 +1,6 @@
 ---
 title: "Hub"
 description: "Обзор проекта Hub: что это за платформа, из каких частей она состоит и для каких задач подходит."
-author: veilosophy
 date: 2026-06-03
 updated: 2026-06-16
 tags: "hub, opensophy, документация, платформа, markdown, ui, astro, react"
