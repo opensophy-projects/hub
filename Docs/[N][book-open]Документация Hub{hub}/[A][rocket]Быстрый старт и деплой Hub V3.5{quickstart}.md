@@ -1,7 +1,6 @@
 ---
 title: "Быстрый старт и деплой Hub V3.5"
 description: "Как запустить Hub локально, добавить контент, собрать production build и задеплоить проект на GitHub Pages, Vercel, Netlify/Cloudflare Pages, Bolt.new и статический хостинг."
-author: veilosophy
 date: 2026-06-16
 updated: 2026-06-16
 tags: "quickstart, deploy, github pages, vercel, bolt.new, astro, hub"
