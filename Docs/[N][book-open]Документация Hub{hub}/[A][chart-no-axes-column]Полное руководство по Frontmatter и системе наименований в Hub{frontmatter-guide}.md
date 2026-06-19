@@ -166,7 +166,7 @@ priority: 10
 ---
 title: "Понятное название страницы"
 description: "Одно-два предложения: что пользователь получит на странице."
-author: veilosophy
+author: opensophy
 date: 2026-06-16
 updated: 2026-06-16
 tags: "hub, документация, quickstart"
