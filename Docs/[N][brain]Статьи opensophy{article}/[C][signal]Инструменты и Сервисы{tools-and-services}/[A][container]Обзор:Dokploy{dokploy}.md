@@ -1,6 +1,7 @@
 ---
 title: "Обзор Dokploy: удобная платформа для деплоя Docker-контейнеров и GitHub-проектов"
 description: В этой статье мы разберём Dokploy — open-source платформу для деплоя приложений. Узнаем, какие задачи она решает, какие функции предлагает и чем отличается от популярного конкурента Coolify.
+author: veilosophy
 date: 2026-01-13
 tags: docker, инструменты
 keywords: dokploy, docker деплой, self-hosted платформа, альтернатива heroku, coolify vs dokploy, автоматический деплой, traefik, docker swarm

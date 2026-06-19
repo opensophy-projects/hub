@@ -1,6 +1,7 @@
 ---
 title: "UI Библиотека"
 description: Обзор UI библиотеки Opensophy Hub — community-компоненты, будущие Opensophy-компоненты и как всё это устроено.
+author: veilosophy
 date: 2026-06-03
 updated: 2026-06-03
 tags: "ui, ui-компоненты, community, opensophy, библиотека, react, анимация"

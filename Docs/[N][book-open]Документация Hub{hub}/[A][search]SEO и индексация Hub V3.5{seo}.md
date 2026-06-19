@@ -1,6 +1,7 @@
 ---
 title: "SEO и индексация Hub V3.5"
 description: "Практическое руководство по SEO в Hub: frontmatter, meta tags, Open Graph, Twitter Cards, canonical, robots.txt, sitemap.xml, JSON-LD, llm.txt и чеклист публикации."
+author: veilosophy
 date: 2026-06-16
 updated: 2026-06-16
 tags: "seo, индексация, sitemap, robots, open graph, json-ld, llm.txt"
@@ -40,7 +41,7 @@ Hub V3.5 уже содержит базовый SEO-слой в `Layout.astro`: 
 ---
 title: "CVSS: как правильно оценивать критичность уязвимостей"
 description: "Подробное руководство по CVSS: метрики, векторы, примеры оценки и типичные ошибки."
-author: opensophy
+author: veilosophy
 date: 2026-06-16
 updated: 2026-06-16
 tags: "cvss, vulnerability management, security"

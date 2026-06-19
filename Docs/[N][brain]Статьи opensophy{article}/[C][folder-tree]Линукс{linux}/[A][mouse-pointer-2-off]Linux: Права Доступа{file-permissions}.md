@@ -1,6 +1,7 @@
 ---
 title: "Linux: Права доступа"
 description: Третья часть серии о Linux для DevOps и DevSecOps – разбираем права доступа, модель UGO, биты rwx, числовое и символьное представление, chmod и chown.
+author: veilosophy
 date: 2026-05-13
 updated: 2026-05-14
 tags: linux, devsecops
