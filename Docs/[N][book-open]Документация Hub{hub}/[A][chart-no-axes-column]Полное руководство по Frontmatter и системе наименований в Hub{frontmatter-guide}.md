@@ -1,7 +1,6 @@
 ---
 title: Полное руководство по Frontmatter и системе наименований в Hub V3.5
 description: "Актуальный справочник V3.5 по frontmatter, slug-системе [N]/[C]/[A], категориям, custom-страницам, SEO-полям, приоритетам и генерации manifest/sitemap."
-author: veilosophy
 date: 2026-03-07
 updated: 2026-06-16
 tags: "frontmatter, документация, markdown, руководство, наименование, seo, custom pages, v3.5"
