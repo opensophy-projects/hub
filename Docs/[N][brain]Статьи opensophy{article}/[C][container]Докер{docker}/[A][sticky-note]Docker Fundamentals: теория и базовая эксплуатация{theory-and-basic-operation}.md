@@ -1,7 +1,6 @@
 ---
 title: "Docker Fundamentals: теория и базовая эксплуатация"
 description: 1 часть серии статей по Docker. Базовая теория по Docker для новичков и практиков — контейнеры, образы, Dockerfile, слои, HEALTHCHECK, multi-stage builds и шпаргалка по командам.
-author: veilosophy
 date: 2026-06-17
 tags: devops, docker
 keywords: Docker, контейнеры, Dockerfile, Docker образы, Docker команды, HEALTHCHECK, multi-stage builds, Docker Compose, Docker для начинающих
