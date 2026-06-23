@@ -992,17 +992,32 @@ const ResizeHandle: React.FC<{
   isDark: boolean;
   label: string;
 }> = ({ edge, onMouseDown, isDark, label }) => {
+  const [hov, setHov] = useState(false);
+  const borderColor = hov
+    ? (isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)')
+    : (isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)');
   return (
     <button
       type="button"
       onMouseDown={onMouseDown}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
       aria-label={label}
       title={label}
       style={{
         position: 'absolute', [edge]: 0, top: 0, bottom: 0, width: '6px',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
         cursor: 'col-resize', zIndex: 20, padding: 0, border: 'none', background: 'transparent',
       }}
-    />
+    >
+      <span aria-hidden style={{
+        position: 'absolute', top: 0, bottom: 0, [edge]: 0,
+        width: hov ? '2px' : '1px',
+        background: borderColor,
+        transition: 'width 0.15s, background 0.15s',
+        pointerEvents: 'none',
+      }} />
+    </button>
   );
 };
 
@@ -1212,11 +1227,6 @@ const DesktopSlidingPanel: React.FC<{
   currentDocSlug, toc, activeId, isDark,
   onResizeMouseDown, onClose,
 }) => {
-  const [edgeHov, setEdgeHov] = useState(false);
-  const t = tk(isDark);
-  const edgeBorderColor = edgeHov
-    ? (isDark ? 'rgba(255,255,255,0.30)' : 'rgba(0,0,0,0.22)')
-    : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)');
   return (
     <aside style={{
       position: 'fixed', left: chromeGap + RAIL_W, top: chromeTopGap,
@@ -1224,15 +1234,12 @@ const DesktopSlidingPanel: React.FC<{
       width: panelOpen ? panelWidth : 0,
       background: isDocsPage && shellEnabled ? 'transparent' : panelBg,
       border: 'none',
-      borderRight: panelOpen ? `1px solid ${edgeBorderColor}` : 'none',
       borderRadius: panelOpen ? `0 ${chromeRadius}px ${chromeRadius}px 0` : 0,
       display: 'flex', flexDirection: 'column', zIndex: 49, overflow: 'hidden',
       pointerEvents: panelOpen ? 'auto' : 'none',
       visibility: panelOpen ? 'visible' : 'hidden',
       backdropFilter: isDocsPage && shellEnabled ? 'none' : 'blur(14px)',
       WebkitBackdropFilter: isDocsPage && shellEnabled ? 'none' : 'blur(14px)',
-      transition: 'border-color 0.15s',
-      boxSizing: 'border-box',
     }}>
       {panelOpen && (
         <>
@@ -1242,9 +1249,7 @@ const DesktopSlidingPanel: React.FC<{
             {panelTitle === 'toc'      && <div style={{ flex: 1, overflowY: 'auto' }}><TocPanelContent toc={toc} activeId={activeId} isDark={isDark} /></div>}
             {panelTitle === 'contacts' && <div style={{ overflowY: 'auto' }}><ContactsPanelContent isDark={isDark} /></div>}
           </div>
-          <ResizeHandle edge="right" onMouseDown={onResizeMouseDown} isDark={isDark} label="Изменить ширину панели"
-            onHoverChange={setEdgeHov}
-          />
+          <ResizeHandle edge="right" onMouseDown={onResizeMouseDown} isDark={isDark} label="Изменить ширину панели" />
         </>
       )}
     </aside>
