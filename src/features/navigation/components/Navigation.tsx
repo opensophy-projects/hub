@@ -993,9 +993,9 @@ const ResizeHandle: React.FC<{
   label: string;
 }> = ({ edge, onMouseDown, isDark, label }) => {
   const [hov, setHov] = useState(false);
-  const dotColor = hov
-    ? (isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.32)')
-    : (isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.16)');
+  const borderColor = hov
+    ? (isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)')
+    : (isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)');
   return (
     <button
       type="button"
@@ -1005,23 +1005,18 @@ const ResizeHandle: React.FC<{
       aria-label={label}
       title={label}
       style={{
-        position: 'absolute', [edge]: 0, top: 0, bottom: 0, width: '14px',
+        position: 'absolute', [edge]: 0, top: 0, bottom: 0, width: '6px',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         cursor: 'col-resize', zIndex: 20, padding: 0, border: 'none', background: 'transparent',
       }}
     >
       <span aria-hidden style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-        pointerEvents: 'none', transition: 'opacity 0.15s',
-      }}>
-        {[0, 1, 2].map(i => (
-          <span key={i} style={{
-            width: '3px', height: '3px', borderRadius: '50%',
-            background: dotColor, transition: 'background 0.15s',
-            display: 'block',
-          }} />
-        ))}
-      </span>
+        position: 'absolute', top: 0, bottom: 0, [edge]: 0,
+        width: hov ? '2px' : '1px',
+        background: borderColor,
+        transition: 'width 0.15s, background 0.15s',
+        pointerEvents: 'none',
+      }} />
     </button>
   );
 };
@@ -1221,13 +1216,14 @@ const DesktopSlidingPanel: React.FC<{
   panelOpen: boolean; panelWidth: number; panelBg: string;
   shellEnabled: boolean;
   panelTitle: Exclude<PanelType, null>;
+  isStandardMode: boolean;
   currentDocSlug?: string; toc: TocItem[]; activeId: string; isDark: boolean;
   onResizeMouseDown: (e: React.MouseEvent) => void;
   onClose: () => void;
 }> = ({
   isDocsPage, chromeGap, chromeTopGap,
   chromeRadius, panelOpen, panelWidth,
-  panelBg, shellEnabled, panelTitle,
+  panelBg, shellEnabled, panelTitle, isStandardMode,
   currentDocSlug, toc, activeId, isDark,
   onResizeMouseDown, onClose,
 }) => {
@@ -1279,13 +1275,31 @@ const DesktopTocPanel: React.FC<{
   }}>
     <ResizeHandle edge="left" onMouseDown={onResizeMouseDown} isDark={isDark} label="Изменить ширину оглавления" />
     <div style={{ padding: '10px 10px 8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: t.fgMuted }}>Оглавление</span>
         <button onClick={() => globalThis.scrollTo({ top: 0, behavior: 'smooth' })}
-          style={{ border: 'none', background: 'transparent', color: t.fgMuted, cursor: 'pointer', padding: '2px 4px', display: 'flex', alignItems: 'center', gap: '2px' }}
-          title="Наверх">
+          style={{
+            border: `1px solid ${t.sectionBorder}`,
+            background: t.sectionBg,
+            boxShadow: t.sectionShadow,
+            color: t.fgMuted,
+            cursor: 'pointer',
+            padding: '0 8px',
+            height: '26px',
+            borderRadius: '8px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '2px',
+            transition: 'color 0.13s',
+          }}
+          title="Наверх"
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = t.fg; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = t.fgMuted; }}
+        >
           <ArrowUp size={11} />
-          <span style={{ fontSize: '0.62rem', lineHeight: 1 }}>Наверх</span>
+          <span style={{ fontSize: '0.58rem', lineHeight: 1, fontWeight: 500 }}>Наверх</span>
         </button>
       </div>
       <UnifiedCloseBtn onClick={onHideToc} isDark={isDark} label="Скрыть оглавление" size="sm" />
