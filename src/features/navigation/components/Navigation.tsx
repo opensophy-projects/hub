@@ -33,6 +33,8 @@ const PANEL_DEFAULT   = 280;
 const PANEL_MIN       = 220;
 const PANEL_MAX       = 500;
 const TOC_PANEL_W     = 300;
+const TOC_PANEL_MIN   = 240;
+const TOC_PANEL_MAX   = 480;
 const DOC_CHROME_GAP      = 10;
 const DOC_CHROME_TOP_GAP  = 14;
 const DOC_CHROME_RADIUS   = 18;
@@ -479,7 +481,26 @@ function useDesktopPanel() {
   return { activePanel, setActivePanel, panelWidth, setPanelWidth, togglePanel };
 }
 
-function usePanelResize(panelWidth: number, setPanelWidth: (w: number) => void) {
+// Хранит и персистит ширину панели оглавления (отдельно от ширины навигационной панели)
+function useTocPanelWidth(): [number, (w: number) => void] {
+  const [width, setWidth] = useState<number>(() => {
+    try {
+      const w = Number(sessionStorage.getItem('hub:tocPanelWidth'));
+      if (w >= TOC_PANEL_MIN && w <= TOC_PANEL_MAX) return w;
+    } catch { /* noop */ }
+    return TOC_PANEL_W;
+  });
+  useEffect(() => { try { sessionStorage.setItem('hub:tocPanelWidth', String(width)); } catch { /* noop */ } }, [width]);
+  return [width, setWidth];
+}
+
+// Универсальный ресайз: direction=1 — ручка на правом краю панели (тащим вправо → шире),
+// direction=-1 — ручка на левом краю панели, которая сама прибита к правому краю экрана
+// (тащим влево → шире).
+function usePanelResize(
+  width: number, setWidth: (w: number) => void,
+  min: number, max: number, direction: 1 | -1 = 1,
+) {
   const isDragging = useRef(false);
   const dragStartX = useRef(0);
   const dragStartW = useRef(0);
@@ -487,12 +508,13 @@ function usePanelResize(panelWidth: number, setPanelWidth: (w: number) => void) 
     e.preventDefault();
     isDragging.current = true;
     dragStartX.current = e.clientX;
-    dragStartW.current = panelWidth;
+    dragStartW.current = width;
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
     const onMove = (ev: MouseEvent) => {
       if (!isDragging.current) return;
-      setPanelWidth(Math.max(PANEL_MIN, Math.min(PANEL_MAX, dragStartW.current + ev.clientX - dragStartX.current)));
+      const delta = (ev.clientX - dragStartX.current) * direction;
+      setWidth(Math.max(min, Math.min(max, dragStartW.current + delta)));
     };
     const onUp = () => {
       isDragging.current = false;
@@ -503,7 +525,7 @@ function usePanelResize(panelWidth: number, setPanelWidth: (w: number) => void) 
     };
     globalThis.addEventListener('mousemove', onMove);
     globalThis.addEventListener('mouseup', onUp);
-  }, [panelWidth, setPanelWidth]);
+  }, [width, setWidth, min, max, direction]);
   return { onResizeMouseDown };
 }
 
@@ -944,12 +966,13 @@ const RailBtn: React.FC<{
 function buildCssVars(
   railVisible: boolean, isDocsPage: boolean, panelOpen: boolean,
   panelWidth: number, isStandardMode: boolean, standardTocVisible: boolean,
+  tocPanelWidth: number,
 ): void {
   const chromeGap     = isDocsPage ? DOC_CHROME_GAP : 0;
   const chromeTopGap  = isDocsPage ? DOC_CHROME_TOP_GAP : 0;
   const panelOffset   = isDocsPage && panelOpen ? panelWidth : 0;
   const left          = railVisible ? chromeGap + RAIL_W + panelOffset + chromeGap : chromeGap;
-  const docRight      = isDocsPage && isStandardMode && standardTocVisible ? chromeGap + TOC_PANEL_W + chromeGap : chromeGap;
+  const docRight      = isDocsPage && isStandardMode && standardTocVisible ? chromeGap + tocPanelWidth + chromeGap : chromeGap;
   const sidebarHidden = isDocsPage && isStandardMode && !railVisible;
   const tocHidden     = isDocsPage && isStandardMode && !standardTocVisible;
   document.documentElement.style.setProperty('--nav-left', `${left}px`);
@@ -998,6 +1021,45 @@ const BrandLogo: React.FC<{ logoPath: string; size: number }> = ({ logoPath, siz
   );
 };
 
+// ─── ResizeHandle ──────────────────────────────────────────────────────────────
+// Видимая "ручка" для изменения ширины панели. edge='right' — ручка на правом
+// краю панели (например, выезжающая слева панель НАВИГАЦИЯ/Оглавление/Контакты),
+// edge='left' — ручка на левом краю панели, прибитой к правому краю экрана
+// (панель ОГЛАВЛЕНИЕ в режиме "Стандартный"). Полоска видна всегда (чтобы было
+// понятно, что край можно тащить), и подсвечивается акцентным цветом при наведении.
+
+const ResizeHandle: React.FC<{
+  edge: 'left' | 'right';
+  onMouseDown: (e: React.MouseEvent) => void;
+  isDark: boolean;
+  label: string;
+}> = ({ edge, onMouseDown, isDark, label }) => {
+  const t = tk(isDark);
+  const [hov, setHov] = useState(false);
+  const barColor = hov ? t.accent : (isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.16)');
+  return (
+    <button
+      type="button"
+      onMouseDown={onMouseDown}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      aria-label={label}
+      title={label}
+      style={{
+        position: 'absolute', [edge]: 0, top: 0, bottom: 0, width: '10px',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: 'col-resize', zIndex: 10, padding: 0, border: 'none', background: 'transparent',
+      }}
+    >
+      <span aria-hidden style={{
+        width: hov ? '4px' : '3px', height: hov ? '56px' : '34px', borderRadius: '4px',
+        background: barColor, transition: 'width 0.15s, height 0.15s, background 0.15s',
+        pointerEvents: 'none',
+      }} />
+    </button>
+  );
+};
+
 // ─── Хук состояния DesktopNav ─────────────────────────────────────────────────
 
 interface DesktopNavState {
@@ -1018,6 +1080,8 @@ interface DesktopNavState {
   panelWidth:           number;
   setPanelWidth:        (w: number) => void;
   togglePanel:          (panel: PanelType) => void;
+  tocPanelWidth:        number;
+  setTocPanelWidth:     (w: number) => void;
 }
 
 function useDesktopNavState(): DesktopNavState {
@@ -1028,6 +1092,7 @@ function useDesktopNavState(): DesktopNavState {
   const [readingMode,          setReadingMode]          = useState<ReadingMode>(getReadingModeFromStorage);
   const [standardTocVisible,   setStandardTocVisible]   = useState<boolean>(getTocVisibleFromStorage);
   const { activePanel, setActivePanel, panelWidth, setPanelWidth, togglePanel } = useDesktopPanel();
+  const [tocPanelWidth, setTocPanelWidth] = useTocPanelWidth();
   return {
     railVisible, setRailVisible,
     searchOpen, setSearchOpen,
@@ -1036,6 +1101,7 @@ function useDesktopNavState(): DesktopNavState {
     readingMode, setReadingMode,
     standardTocVisible, setStandardTocVisible,
     activePanel, setActivePanel, panelWidth, setPanelWidth, togglePanel,
+    tocPanelWidth, setTocPanelWidth,
   };
 }
 
@@ -1233,11 +1299,7 @@ const DesktopSlidingPanel: React.FC<{
             {panelTitle === 'toc'      && <div style={{ flex: 1, overflowY: 'auto' }}><TocPanelContent toc={toc} activeId={activeId} isDark={isDark} /></div>}
             {panelTitle === 'contacts' && <div style={{ overflowY: 'auto' }}><ContactsPanelContent isDark={isDark} /></div>}
           </div>
-          <button
-            onMouseDown={onResizeMouseDown}
-            aria-label="Изменить ширину панели"
-            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '8px', cursor: 'col-resize', zIndex: 10, background: 'transparent', border: 'none', padding: 0 }}
-          />
+          <ResizeHandle edge="right" onMouseDown={onResizeMouseDown} isDark={isDark} label="Изменить ширину панели" />
         </>
       )}
     </aside>
@@ -1248,10 +1310,12 @@ const DesktopTocPanel: React.FC<{
   isDocsPage: boolean; chromeGap: number; chromeTopGap: number; chromeRadius: number;
   panelBg: string; t: ReturnType<typeof tk>;
   toc: TocItem[]; activeId: string; isDark: boolean;
+  width: number;
+  onResizeMouseDown: (e: React.MouseEvent) => void;
   onHideToc: () => void;
-}> = ({ isDocsPage, chromeGap, chromeTopGap, chromeRadius, panelBg, t, toc, activeId, isDark, onHideToc }) => (
+}> = ({ isDocsPage, chromeGap, chromeTopGap, chromeRadius, panelBg, t, toc, activeId, isDark, width, onResizeMouseDown, onHideToc }) => (
   <aside style={{
-    position: 'fixed', right: chromeGap, top: chromeTopGap, width: TOC_PANEL_W,
+    position: 'fixed', right: chromeGap, top: chromeTopGap, width,
     height: isDocsPage ? `calc(100vh - ${chromeTopGap + chromeGap}px)` : '100vh',
     border: 'none', borderLeft: 'none',
     borderRadius: `${chromeRadius}px 0 0 ${chromeRadius}px`,
@@ -1259,6 +1323,7 @@ const DesktopTocPanel: React.FC<{
     display: 'flex', flexDirection: 'column',
     backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
   }}>
+    <ResizeHandle edge="left" onMouseDown={onResizeMouseDown} isDark={isDark} label="Изменить ширину оглавления" />
     <div style={{ borderBottom: 'none', padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: t.fgMuted }}>Оглавление</span>
       <div style={{ display: 'flex', gap: '6px' }}>
@@ -1285,7 +1350,8 @@ const DesktopNav: React.FC<{
 }> = ({ isDark, toggleTheme, currentDocSlug, toc, activeId, showDocActions, logoPath, floatingChrome = false }) => {
   const t   = tk(isDark);
   const state = useDesktopNavState();
-  const { onResizeMouseDown } = usePanelResize(state.panelWidth, state.setPanelWidth);
+  const { onResizeMouseDown } = usePanelResize(state.panelWidth, state.setPanelWidth, PANEL_MIN, PANEL_MAX, 1);
+  const { onResizeMouseDown: onTocResizeMouseDown } = usePanelResize(state.tocPanelWidth, state.setTocPanelWidth, TOC_PANEL_MIN, TOC_PANEL_MAX, -1);
 
   const hasToc = toc.length > 0;
   const readingModeEnabled = showDocActions;
@@ -1309,9 +1375,9 @@ const DesktopNav: React.FC<{
       document.documentElement.style.setProperty('--nav-left', '0px');
       return () => { document.documentElement.style.removeProperty('--nav-left'); };
     }
-    buildCssVars(state.railVisible, contentIsDocsPage, panelOpen, state.panelWidth, isStandardMode, state.standardTocVisible && hasToc);
+    buildCssVars(state.railVisible, contentIsDocsPage, panelOpen, state.panelWidth, isStandardMode, state.standardTocVisible && hasToc, state.tocPanelWidth);
     return () => { document.documentElement.style.removeProperty('--nav-left'); };
-  }, [state.railVisible, panelOpen, state.panelWidth, isStandardMode, state.standardTocVisible, contentIsDocsPage, hasToc]);
+  }, [state.railVisible, panelOpen, state.panelWidth, isStandardMode, state.standardTocVisible, contentIsDocsPage, hasToc, state.tocPanelWidth]);
 
   useEffect(() => { return clearDocCssVars; }, []);
 
@@ -1381,6 +1447,8 @@ const DesktopNav: React.FC<{
           isDocsPage={isDocsPage} chromeGap={chromeGap} chromeTopGap={chromeTopGap}
           chromeRadius={chromeRadius} panelBg={panelBg} t={t}
           toc={toc} activeId={activeId} isDark={isDark}
+          width={state.tocPanelWidth}
+          onResizeMouseDown={onTocResizeMouseDown}
           onHideToc={() => state.setStandardTocVisible(false)}
         />
       )}
