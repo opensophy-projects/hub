@@ -21,10 +21,10 @@ import { makeTokens } from '@/shared/tokens/theme';
 const LazyUnifiedSearchPanel = lazy(() => import('./UnifiedSearchPanel'));
 
 const RAIL_W          = 64;
-const PANEL_DEFAULT   = 240;
+const PANEL_DEFAULT   = 260;
 const PANEL_MIN       = 200;
 const PANEL_MAX       = 500;
-const TOC_PANEL_W     = 240;
+const TOC_PANEL_W     = 260;
 const TOC_PANEL_MIN   = 200;
 const TOC_PANEL_MAX   = 480;
 const DOC_CHROME_GAP      = 10;
@@ -700,12 +700,12 @@ const UnifiedCloseBtn: React.FC<{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         width: dim, height: dim, flexShrink: 0,
         borderRadius: '8px',
-        border: `1px solid ${t.sectionBorder}`,
-        background: t.sectionBg,
+        border: `1px solid ${hov ? getSectionOpenBorder(true, isDark) : t.sectionBorder}`,
+        background: hov ? (isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)') : t.sectionBg,
         boxShadow: t.sectionShadow,
         color: hov ? t.fg : t.fgMuted,
         cursor: 'pointer',
-        transition: 'color 0.13s',
+        transition: 'color 0.13s, border-color 0.13s, background 0.13s',
       }}
     >
       <X size={iconSz} />
@@ -993,9 +993,7 @@ const ResizeHandle: React.FC<{
   label: string;
 }> = ({ edge, onMouseDown, isDark, label }) => {
   const [hov, setHov] = useState(false);
-  const dotColor = hov
-    ? (isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.32)')
-    : (isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.16)');
+  const barColor = hov ? (isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.40)') : (isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.18)');
   return (
     <button
       type="button"
@@ -1005,23 +1003,16 @@ const ResizeHandle: React.FC<{
       aria-label={label}
       title={label}
       style={{
-        position: 'absolute', [edge]: 0, top: 0, bottom: 0, width: '14px',
+        position: 'absolute', [edge]: 0, top: 0, bottom: 0, width: '12px',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         cursor: 'col-resize', zIndex: 20, padding: 0, border: 'none', background: 'transparent',
       }}
     >
       <span aria-hidden style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-        pointerEvents: 'none', transition: 'opacity 0.15s',
-      }}>
-        {[0, 1, 2].map(i => (
-          <span key={i} style={{
-            width: '3px', height: '3px', borderRadius: '50%',
-            background: dotColor, transition: 'background 0.15s',
-            display: 'block',
-          }} />
-        ))}
-      </span>
+        width: hov ? '3px' : '2px', height: hov ? '48px' : '32px', borderRadius: '3px',
+        background: barColor, transition: 'width 0.15s, height 0.15s, background 0.15s',
+        pointerEvents: 'none',
+      }} />
     </button>
   );
 };
