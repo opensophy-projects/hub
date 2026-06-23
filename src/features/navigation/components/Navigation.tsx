@@ -833,6 +833,7 @@ function getTocItemFontWeight(isActive: boolean, isNear: boolean): number {
   return 400;
 }
 
+// FIX 1: reduced paddingLeft base values so the border-left line sits closer to the text
 function getTocItemStyle3(item: TocItem, index: number, activeIndex: number, isDark: boolean, mobile: boolean) {
   const t         = tk(isDark);
   const isActive  = index === activeIndex && activeIndex !== -1;
@@ -841,7 +842,8 @@ function getTocItemStyle3(item: TocItem, index: number, activeIndex: number, isD
   const baseFontSize = mobile ? 1.05 : 0.92;
   const fontSizeStep = mobile ? 0.05 : 0.04;
   const fontSize     = `${baseFontSize - (item.level - 2) * fontSizeStep}rem`;
-  const paddingLeft  = mobile ? 14 + (item.level - 2) * 18 : 12 + (item.level - 2) * 14;
+  // reduced from 14/12 to 6/4 so the left border line is tight against the text
+  const paddingLeft  = mobile ? 8 + (item.level - 2) * 18 : 6 + (item.level - 2) * 14;
   const { color, borderLeftColor, opacity } = getTocItemColors(isActive, isNear, dist, activeIndex, isDark, t);
   const fontWeight = getTocItemFontWeight(isActive, isNear);
   return { isActive, isNear, fontSize, paddingLeft, color, borderLeftColor, opacity, fontWeight };
@@ -1196,6 +1198,9 @@ const DesktopRail: React.FC<{
   );
 };
 
+// FIX 2: removed borderRight from the sliding panel aside — it was creating a second
+// visible line next to the resize handle. The resize handle itself is sufficient.
+// Also removed the non-existent onHoverChange prop from the ResizeHandle call.
 const DesktopSlidingPanel: React.FC<{
   isDocsPage: boolean; chromeGap: number; chromeTopGap: number; chromeRadius: number;
   panelOpen: boolean; panelWidth: number; panelBg: string;
@@ -1212,11 +1217,7 @@ const DesktopSlidingPanel: React.FC<{
   currentDocSlug, toc, activeId, isDark,
   onResizeMouseDown, onClose,
 }) => {
-  const [edgeHov, setEdgeHov] = useState(false);
   const t = tk(isDark);
-  const edgeBorderColor = edgeHov
-    ? (isDark ? 'rgba(255,255,255,0.30)' : 'rgba(0,0,0,0.22)')
-    : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)');
   return (
     <aside style={{
       position: 'fixed', left: chromeGap + RAIL_W, top: chromeTopGap,
@@ -1224,14 +1225,13 @@ const DesktopSlidingPanel: React.FC<{
       width: panelOpen ? panelWidth : 0,
       background: isDocsPage && shellEnabled ? 'transparent' : panelBg,
       border: 'none',
-      borderRight: panelOpen ? `1px solid ${edgeBorderColor}` : 'none',
+      // removed borderRight — was causing the double line visible at the panel edge
       borderRadius: panelOpen ? `0 ${chromeRadius}px ${chromeRadius}px 0` : 0,
       display: 'flex', flexDirection: 'column', zIndex: 49, overflow: 'hidden',
       pointerEvents: panelOpen ? 'auto' : 'none',
       visibility: panelOpen ? 'visible' : 'hidden',
       backdropFilter: isDocsPage && shellEnabled ? 'none' : 'blur(14px)',
       WebkitBackdropFilter: isDocsPage && shellEnabled ? 'none' : 'blur(14px)',
-      transition: 'border-color 0.15s',
       boxSizing: 'border-box',
     }}>
       {panelOpen && (
@@ -1242,9 +1242,7 @@ const DesktopSlidingPanel: React.FC<{
             {panelTitle === 'toc'      && <div style={{ flex: 1, overflowY: 'auto' }}><TocPanelContent toc={toc} activeId={activeId} isDark={isDark} /></div>}
             {panelTitle === 'contacts' && <div style={{ overflowY: 'auto' }}><ContactsPanelContent isDark={isDark} /></div>}
           </div>
-          <ResizeHandle edge="right" onMouseDown={onResizeMouseDown} isDark={isDark} label="Изменить ширину панели"
-            onHoverChange={setEdgeHov}
-          />
+          <ResizeHandle edge="right" onMouseDown={onResizeMouseDown} isDark={isDark} label="Изменить ширину панели" />
         </>
       )}
     </aside>
