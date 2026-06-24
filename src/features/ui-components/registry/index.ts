@@ -79,7 +79,7 @@ function orderCandidates(id: string, candidates: string[]): string[] {
 }
 
 // Категория компонента — определяется по пути (например '.../backgrounds/color-bends/...')
-const KNOWN_CATEGORIES = new Set(['backgrounds', 'texts', 'buttons', 'cards', 'effects', 'loaders', 'inputs']);
+const KNOWN_CATEGORIES = new Set(['backgrounds', 'texts', 'buttons', 'cards', 'effects', 'loaders', 'inputs', 'opensophy-components']);
 
 function categoryFromPath(path: string): string | undefined {
   const parts = path.split('/');
