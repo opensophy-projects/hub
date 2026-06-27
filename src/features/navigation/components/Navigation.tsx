@@ -8,7 +8,7 @@ import { useManifest } from '@/features/docs/hooks/useDocuments';
 import { storageSet } from '@/shared/lib/storage';
 import { CONTACTS } from '@/shared/data/contacts';
 import { scrollToElement } from '@/features/docs/utils/scrollUtils';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion, useSpring, useTransform } from 'framer-motion';
 import {
   Search, Sun, Moon, ChevronDown, ChevronRight,
   Mail, X, Home, AlertTriangle,
@@ -86,9 +86,8 @@ function isDocActive(doc: Doc, currentDocSlug: string | undefined): boolean {
   return false;
 }
 
-// FIX 1: единая логика активности для "Главной", построенная по тому же принципу,
-// что и для кастомных страниц (Резюме и т.п.) — сперва смотрим на currentDocSlug,
-// а не только на window.location, как было раньше (старая функция isHomePage).
+// единая логика активности для "Главной" — та же схема, что и для кастомных страниц
+// (например, Резюме): сперва смотрим на currentDocSlug, а не только на window.location.
 function isHomeDocActive(currentDocSlug: string | undefined): boolean {
   if (currentDocSlug !== undefined) return currentDocSlug === '';
   if (globalThis.window !== undefined) {
@@ -156,10 +155,9 @@ function tk(isDark: boolean) {
   } as const;
 }
 
-// FIX 4: единственный источник стиля "карточки" — используется буквально везде:
+// единственный источник стиля "карточки" — используется буквально везде:
 // поле поиска, переключатель раздела, заголовок категории, активная страница,
-// бейдж-счётчик, пункты модалки выбора раздела. Никаких локальных переопределений
-// border/background/boxShadow/borderRadius за пределами этой функции.
+// бейдж-счётчик, пункты модалки выбора раздела.
 function getSectionOpenBorder(sectionOpen: boolean, isDark: boolean): string {
   if (!sectionOpen) return tk(isDark).sectionBorder;
   return isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)';
@@ -238,8 +236,8 @@ function formatMetaDate(date?: string): string | null {
   return parsed.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-// FIX 2: в списке навигации показываем только заголовок — описание убрано,
-// подробности и так доступны в модалке (DocHoverPreview).
+// в списке навигации показываем только заголовок — описание убрано,
+// подробности доступны в модалке (DocHoverPreview).
 const DocLink: React.FC<{
   doc: Doc; isDark: boolean; isActive: boolean; onClick?: () => void; mobile?: boolean;
   onPreviewChange?: (payload: { doc: Doc; rect: DOMRect } | null) => void;
@@ -269,8 +267,7 @@ const DocLink: React.FC<{
   );
 });
 
-// FIX 1: HomePageLink больше не использует свою отдельную логику стилизации —
-// тот же подход к active-состоянию, что и у DocLink, тот же getUnifiedControlStyle.
+// HomePageLink использует тот же подход к active-состоянию, что и DocLink — тот же getUnifiedControlStyle.
 const HomePageLink: React.FC<{
   isDark: boolean; isActive: boolean; onClick?: () => void; mobile?: boolean;
 }> = ({ isDark, isActive, onClick, mobile }) => {
@@ -298,8 +295,6 @@ const HomePageLink: React.FC<{
   );
 };
 
-// FIX 3: ветки/огоньки полностью убраны. Простой вложенный список с отступом,
-// без вертикальных линий и точек-индикаторов.
 const CategoryNode: React.FC<{
   node: NavNode; path: string; expandedPaths: Set<string>;
   onToggle: (p: string) => void; isDark: boolean; currentDocSlug?: string;
@@ -320,7 +315,6 @@ const CategoryNode: React.FC<{
         fontSize: mobile ? '1rem' : '0.875rem', fontWeight: 600,
         color: isActiveCategory ? t.accent : t.fg,
         overflow: 'hidden',
-        // FIX 4: тот же getUnifiedControlStyle, что и у поиска и переключателя раздела — без каких-либо переопределений
         ...getUnifiedControlStyle(isDark, headerActive),
       }}>
         <button type="button" onClick={() => onToggle(path)}
@@ -354,7 +348,6 @@ const CategoryNode: React.FC<{
           {total > 0 && (
             <span style={{
               fontSize: '0.72rem', padding: '2px 7px', flexShrink: 0, color: t.fgMuted,
-              // FIX 4: без переопределения borderRadius — буквальная копия общего стиля карточек
               ...getUnifiedControlStyle(isDark),
             }}>{total}</span>
           )}
@@ -540,8 +533,7 @@ const SectionItemIcon: React.FC<{
   );
 };
 
-// FIX 5: пункты модалки выбора раздела теперь карточки в том же дизайне,
-// что и поиск/категории — через getUnifiedControlStyle, без отдельной grid-логики.
+// пункты модалки выбора раздела — карточки в том же дизайне, что и поиск/категории.
 const SectionDropdown: React.FC<{
   sections: NavSection[]; activeNavSlug: string; mobile: boolean; isDark: boolean; onSelect: (slug: string) => void;
 }> = ({ sections, activeNavSlug, mobile, isDark, onSelect }) => {
@@ -595,7 +587,6 @@ const NavTreeContent: React.FC<{
   return (
     <nav style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
       {activeNavSlug === '' && (
-        // FIX 1: активность "Главной" теперь определяется через currentDocSlug, как у всех остальных страниц
         <HomePageLink isDark={isDark} isActive={isHomeDocActive(currentDocSlug)} onClick={onDocClick} mobile={mobile} />
       )}
       {filteredDocs.length > 0 && (
@@ -787,8 +778,6 @@ const NavPanelContent: React.FC<{
           </button>
 
           {sectionOpen && (
-            // FIX 5: контейнер модалки разделов — тот же "карточный" дизайн, что у DocHoverPreview
-            // (скругление 12px, elevated-тень), а не отдельный hardcoded dropdownBg/dropdownBorder.
             <div style={{
               position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '6px',
               borderRadius: '12px', border: `1px solid ${t.elevatedBorder}`,
@@ -819,78 +808,197 @@ const NavPanelContent: React.FC<{
   );
 };
 
-function getTocItemColors(
-  isActive: boolean, isNear: boolean, dist: number, activeIndex: number,
-  isDark: boolean, t: ReturnType<typeof tk>,
-): { color: string; borderLeftColor: string; opacity: number } {
-  if (isActive) return { color: t.accent, borderLeftColor: t.accent, opacity: 1 };
-  if (isNear) {
-    const color           = isDark ? 'rgba(255,255,255,0.50)' : 'rgba(0,0,0,0.48)';
-    const borderLeftColor = t.accent + '55';
-    const opacity         = dist === 1 ? 0.85 : 0.65;
-    return { color, borderLeftColor, opacity };
-  }
-  const color           = t.fgMuted;
-  const borderLeftColor = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)';
-  let opacity = 1;
-  if (activeIndex !== -1) opacity = dist <= 4 ? 0.55 : 0.38;
-  return { color, borderLeftColor, opacity };
+// ===== TOC-индикатор: анимированная "дорожка" вдоль заголовков + бегущая точка к активному =====
+// Адаптировано под нашу структуру TocItem (id/text/level) и реальные размеры DOM-узлов,
+// а не на жёстко заданных константах высоты строки — это нужно, потому что заголовки
+// могут быть разной длины и переноситься на несколько строк.
+
+interface TocPathInfo { path: string; totalLength: number; centers: number[]; }
+
+const TOC_ROW_GAP = 6;
+const TOC_INDENT_PER_LEVEL = 14;
+const TOC_SPRING = { stiffness: 180, damping: 22 };
+
+function useTocIndicatorPath(
+  listRef: { current: HTMLDivElement | null },
+  itemRefs: { current: Map<string, HTMLElement> },
+  toc: TocItem[],
+): TocPathInfo {
+  const [info, setInfo] = useState<TocPathInfo>({ path: '', totalLength: 0, centers: [] });
+
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list || toc.length === 0) { setInfo({ path: '', totalLength: 0, centers: [] }); return; }
+
+    const measure = () => {
+      const containerRect = list.getBoundingClientRect();
+      const points: { x: number; y: number }[] = [];
+      for (const item of toc) {
+        const el = itemRefs.current.get(item.id);
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        points.push({ x: Math.round(r.left - containerRect.left + 6), y: r.top - containerRect.top + r.height / 2 });
+      }
+      if (!points.length) return;
+
+      let d = `M ${points[0].x} ${points[0].y - 8}`;
+      let total = 0;
+      let prevX = points[0].x;
+      let prevY = points[0].y - 8;
+      const centers: number[] = [];
+
+      for (const { x, y } of points) {
+        if (x !== prevX) {
+          const bendY = prevY + 6;
+          d += ` L ${prevX} ${bendY} L ${x} ${bendY + 6}`;
+          total += Math.hypot(x - prevX, 6) + 6;
+          prevX = x; prevY = bendY + 6;
+        }
+        d += ` L ${x} ${y}`;
+        total += Math.abs(y - prevY);
+        centers.push(total);
+        prevY = y;
+      }
+
+      setInfo({ path: d, totalLength: total, centers });
+    };
+
+    measure();
+    const raf = requestAnimationFrame(measure);
+    const ro = new ResizeObserver(measure);
+    ro.observe(list);
+    globalThis.addEventListener('resize', measure);
+    return () => { cancelAnimationFrame(raf); ro.disconnect(); globalThis.removeEventListener('resize', measure); };
+  }, [toc, listRef, itemRefs]);
+
+  return info;
 }
 
-function getTocItemFontWeight(isActive: boolean, isNear: boolean): number {
-  if (isActive) return 600;
-  if (isNear)   return 500;
-  return 400;
-}
+const TocIndicator: React.FC<{ pathInfo: TocPathInfo; activeIndex: number; isDark: boolean }> = ({ pathInfo, activeIndex, isDark }) => {
+  const { path, totalLength, centers } = pathInfo;
+  const t = tk(isDark);
+  const reactId = React.useId().replace(/[:]/g, '');
+  const markerId = `toc-end-dot-${reactId}`;
 
-function getTocItemStyle3(item: TocItem, index: number, activeIndex: number, isDark: boolean, mobile: boolean) {
-  const t         = tk(isDark);
-  const isActive  = index === activeIndex && activeIndex !== -1;
-  const dist      = activeIndex === -1 ? -1 : Math.abs(index - activeIndex);
-  const isNear    = dist === 1 || dist === 2;
-  const baseFontSize = mobile ? 1.05 : 0.92;
-  const fontSizeStep = mobile ? 0.05 : 0.04;
-  const fontSize     = `${baseFontSize - (item.level - 2) * fontSizeStep}rem`;
-  const paddingLeft  = mobile ? 8 + (item.level - 2) * 18 : 6 + (item.level - 2) * 14;
-  const { color, borderLeftColor, opacity } = getTocItemColors(isActive, isNear, dist, activeIndex, isDark, t);
-  const fontWeight = getTocItemFontWeight(isActive, isNear);
-  return { isActive, isNear, fontSize, paddingLeft, color, borderLeftColor, opacity, fontWeight };
-}
+  const activeDistance = activeIndex >= 0 && activeIndex < centers.length ? centers[activeIndex] : 0;
+  const isActive = activeDistance > 0;
 
+  const animatedDistance = useSpring(0, TOC_SPRING);
+  const prevIndexRef = useRef(activeIndex);
+  const tailRotate = useSpring(90, TOC_SPRING);
+
+  useEffect(() => {
+    if (activeIndex !== prevIndexRef.current) {
+      tailRotate.set(activeIndex > prevIndexRef.current ? 90 : -90);
+      prevIndexRef.current = activeIndex;
+    }
+    animatedDistance.set(activeDistance);
+  }, [activeDistance, activeIndex, animatedDistance, tailRotate]);
+
+  const offsetDistancePercent = useTransform(animatedDistance, v => (totalLength > 0 ? `${(v / totalLength) * 100}%` : '0%'));
+
+  if (!path) return null;
+  const cssOffsetPath = `path('${path}')`;
+
+  return (
+    <div aria-hidden style={{
+      position: 'absolute', inset: 0, pointerEvents: 'none',
+      maskImage: 'linear-gradient(to bottom, transparent 0px, black 14px, black 100%)',
+      WebkitMaskImage: 'linear-gradient(to bottom, transparent 0px, black 14px, black 100%)',
+    }}>
+      <svg style={{ width: '100%', height: '100%', overflow: 'visible' }}>
+        <defs>
+          <marker id={markerId} markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+            <circle cx="3" cy="3" r="2" fill={t.fgSub} />
+          </marker>
+        </defs>
+        <path d={path} stroke={t.fgSub} strokeWidth="1.5" fill="none" markerEnd={`url(#${markerId})`} />
+      </svg>
+      <motion.div
+        style={{
+          position: 'absolute', top: 0, left: 0, width: 56, height: 56,
+          offsetPath: cssOffsetPath, offsetRotate: '0deg',
+          rotate: tailRotate, marginLeft: -28, marginTop: -28,
+          offsetDistance: offsetDistancePercent,
+          opacity: isActive ? 1 : 0,
+          background: `radial-gradient(circle at 65% 50%, ${t.accent} 0%, transparent 70%)`,
+          filter: 'blur(1px)',
+        }}
+      />
+      <motion.div
+        style={{
+          position: 'absolute', top: 0, left: 0, width: 6, height: 6, borderRadius: 2,
+          offsetPath: cssOffsetPath, offsetRotate: '0deg', rotate: '45deg',
+          marginLeft: -3, marginTop: -3, offsetDistance: offsetDistancePercent,
+          opacity: isActive ? 1 : 0,
+          background: t.accent,
+        }}
+      />
+    </div>
+  );
+};
+
+// Панель сама прокручивается, чтобы активный заголовок оставался в зоне видимости —
+// не нужно листать оглавление руками, пока читаешь страницу.
 const TocPanelContent: React.FC<{
   toc: TocItem[]; activeId: string; isDark: boolean; onItemClick?: () => void; mobile?: boolean;
 }> = ({ toc, activeId, isDark, onItemClick, mobile = false }) => {
   const t = tk(isDark);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<Map<string, HTMLElement>>(new Map());
+
   const activeIndex = activeId ? toc.findIndex(item => item.id === activeId) : -1;
+  const pathInfo = useTocIndicatorPath(listRef, itemRefs, toc);
+
+  useEffect(() => {
+    const container = scrollRef.current;
+    const el = activeId ? itemRefs.current.get(activeId) : undefined;
+    if (!container || !el) return;
+    const target = el.offsetTop - container.clientHeight / 2 + el.offsetHeight / 2;
+    container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+  }, [activeId]);
+
   if (!toc.length) return (
-    <div style={{ padding: '2.5rem 1.5rem', textAlign: 'center', fontSize: mobile ? '1rem' : '0.875rem', color: t.fgMuted }}>
+    <div style={{ flex: 1, padding: '2.5rem 1.5rem', textAlign: 'center', fontSize: mobile ? '1rem' : '0.875rem', color: t.fgMuted }}>
       На этой странице нет заголовков
     </div>
   );
+
+  const minLevel = Math.min(...toc.map(item => item.level));
+
   return (
-    <nav style={{ padding: mobile ? '8px 6px' : '6px 8px 6px 0' }}>
-      {toc.map((item, index) => {
-        const style = getTocItemStyle3(item, index, activeIndex, isDark, mobile);
-        return (
-          <button key={item.id}
-            onClick={() => { scrollToElement(item.id); onItemClick?.(); }}
-            style={{
-              width: '100%', textAlign: 'left',
-              paddingTop:    mobile ? '0.55rem' : '0.42rem',
-              paddingBottom: mobile ? '0.55rem' : '0.42rem',
-              paddingRight:  mobile ? '1rem'    : '0.75rem',
-              paddingLeft:   `${style.paddingLeft}px`,
-              fontSize: style.fontSize, lineHeight: 1.45,
-              background: 'transparent', border: 'none', cursor: 'pointer',
-              borderLeft: '2px solid', borderLeftColor: style.borderLeftColor,
-              borderRadius: '0 8px 8px 0',
-              color: style.color, opacity: style.opacity, fontWeight: style.fontWeight,
-              transition: 'color 0.15s, border-color 0.15s, opacity 0.15s',
-            }}
-          >{item.text}</button>
-        );
-      })}
-    </nav>
+    <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: mobile ? '10px 14px 18px' : '8px 10px 12px' }}>
+      <div ref={listRef} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: `${TOC_ROW_GAP}px` }}>
+        <TocIndicator pathInfo={pathInfo} activeIndex={activeIndex} isDark={isDark} />
+        {toc.map((item, index) => {
+          const isActive = index === activeIndex;
+          const fontSize = mobile
+            ? `${1.02 - (item.level - minLevel) * 0.04}rem`
+            : `${0.86 - (item.level - minLevel) * 0.035}rem`;
+          return (
+            <button
+              key={item.id}
+              ref={el => { if (el) itemRefs.current.set(item.id, el); else itemRefs.current.delete(item.id); }}
+              onClick={() => { scrollToElement(item.id); onItemClick?.(); }}
+              style={{
+                position: 'relative',
+                textAlign: 'left',
+                paddingLeft:  `${18 + (item.level - minLevel) * TOC_INDENT_PER_LEVEL}px`,
+                paddingTop:    mobile ? '6px' : '4px',
+                paddingBottom: mobile ? '6px' : '4px',
+                paddingRight:  mobile ? '12px' : '8px',
+                fontSize, lineHeight: 1.45,
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                color: isActive ? t.fg : t.fgMuted,
+                fontWeight: isActive ? 600 : 400,
+                transition: 'color 0.2s',
+              }}
+            >{item.text}</button>
+          );
+        })}
+      </div>
+    </div>
   );
 };
 
@@ -967,8 +1075,10 @@ function clearDocCssVars(): void {
   document.documentElement.style.removeProperty('--doc-chrome-radius');
 }
 
+// По умолчанию используем расширенный режим чтения, а не стандартный;
+// если пользователь раньше явно выбрал "Стандартный" — уважаем его выбор.
 function getReadingModeFromStorage(): ReadingMode {
-  try { const saved = sessionStorage.getItem('hub:readingMode'); return saved === 'extended' ? 'extended' : 'standard'; } catch { return 'standard'; }
+  try { const saved = sessionStorage.getItem('hub:readingMode'); return saved === 'standard' ? 'standard' : 'extended'; } catch { return 'extended'; }
 }
 
 function getTocVisibleFromStorage(): boolean {
@@ -1237,7 +1347,7 @@ const DesktopSlidingPanel: React.FC<{
           <PanelHeader title={PANEL_TITLES[panelTitle]} isDark={isDark} onClose={onClose} />
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             {panelTitle === 'nav'      && <NavPanelContent isDark={isDark} currentDocSlug={currentDocSlug} />}
-            {panelTitle === 'toc'      && <div style={{ flex: 1, overflowY: 'auto' }}><TocPanelContent toc={toc} activeId={activeId} isDark={isDark} /></div>}
+            {panelTitle === 'toc'      && <TocPanelContent toc={toc} activeId={activeId} isDark={isDark} />}
             {panelTitle === 'contacts' && <div style={{ overflowY: 'auto' }}><ContactsPanelContent isDark={isDark} /></div>}
           </div>
           <ResizeHandle edge="right" onMouseDown={onResizeMouseDown} isDark={isDark} label="Изменить ширину панели" />
@@ -1295,9 +1405,7 @@ const DesktopTocPanel: React.FC<{
       </div>
       <UnifiedCloseBtn onClick={onHideToc} isDark={isDark} label="Скрыть оглавление" size="sm" />
     </div>
-    <div style={{ flex: 1, overflowY: 'auto' }}>
-      <TocPanelContent toc={toc} activeId={activeId} isDark={isDark} />
-    </div>
+    <TocPanelContent toc={toc} activeId={activeId} isDark={isDark} />
   </aside>
 );
 
@@ -1504,7 +1612,7 @@ const MobilePanel: React.FC<{
       </div>
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {type === 'nav'      && <NavPanelContent isDark={isDark} currentDocSlug={currentDocSlug} mobile />}
-        {type === 'toc'      && <div style={{ flex: 1, overflowY: 'auto' }}><TocPanelContent toc={toc} activeId={activeId} isDark={isDark} onItemClick={onClose} mobile /></div>}
+        {type === 'toc'      && <TocPanelContent toc={toc} activeId={activeId} isDark={isDark} onItemClick={onClose} mobile />}
         {type === 'contacts' && <div style={{ overflowY: 'auto' }}><ContactsPanelContent isDark={isDark} mobile /></div>}
       </div>
     </div>,
