@@ -861,12 +861,13 @@ function buildTocDomPath(
     centers.push(len);
     curY = centerY;
 
-    // Идём до нижней границы элемента (конец строки)
+    // Для последнего элемента путь заканчивается в центре — никакого хвоста
     const isLast = i === points.length - 1;
-    const endY   = isLast ? centerY + 4 : bottomY;
-    d += ` L ${x} ${endY}`;
-    len += Math.abs(endY - curY);
-    curY = endY;
+    if (!isLast) {
+      d += ` L ${x} ${bottomY}`;
+      len += Math.abs(bottomY - curY);
+      curY = bottomY;
+    }
   }
 
   return { path: d, totalLength: len, centers, svgH };
@@ -919,15 +920,12 @@ const TocIndicatorSvg: React.FC<{
       {/* SVG трек */}
       <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', overflow: 'visible' }} height={svgH}>
         <defs>
-          <marker id="toc-dot-nav" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
-            <circle cx="3" cy="3" r="2" fill={trackColor} />
-          </marker>
           {/* Маска для хвоста-свечения */}
           <mask id="toc-mask-nav" maskUnits="userSpaceOnUse">
             <path d={path} stroke="white" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
           </mask>
         </defs>
-        <path d={path} stroke={trackColor} strokeWidth="1.5" fill="none" markerEnd="url(#toc-dot-nav)" />
+        <path d={path} stroke={trackColor} strokeWidth="1.5" fill="none" strokeLinecap="round" />
       </svg>
 
       {/* Хвост-свечение — движется по маске трека */}
