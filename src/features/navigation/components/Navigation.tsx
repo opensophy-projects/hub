@@ -799,253 +799,174 @@ const NavPanelContent: React.FC<{
   );
 };
 
-// ===== TOC INDICATOR — точная адаптация оригинала @shadcn/evilcharts =====
-// Адаптировано под TocItem { id, text, level } вместо { url, depth, title }
+// ===== TOC — DOM-измеряемый индикатор (путь адаптируется под реальную высоту строк) =====
 
-const STARTING_MARGIN = 8;
-const ITEM_HEIGHT = 26.28;
-const ITEM_GAP = 8;
-const DEPTH_INDENT = 10;
-const INITIAL_OFFSET = 8;
-const DEPTH_BEND_LENGTH = 8;
-const CENTER_OFFSET = 6.5;
-const SPRING_CONFIG_TOC = { stiffness: 180, damping: 20 };
-const GRADIENT_HEIGHT_TOC = ITEM_HEIGHT * 2.5;
+const TOC_INDENT_PX = 10;
+const TOC_BEND = 8;
+const TOC_SPRING_CFG = { stiffness: 180, damping: 20 };
 
-interface TocPathData {
+interface TocDomPathInfo {
   path: string;
   totalLength: number;
-  itemCenterDistances: number[];
+  centers: number[]; // расстояние от начала пути до центра каждого пункта
+  svgH: number;      // полная высота SVG
 }
 
-function getXForDepth(depth: number, minDepth: number): number {
-  return STARTING_MARGIN + (depth - minDepth) * DEPTH_INDENT;
-}
+// Строим путь по реальным offsetTop/offsetHeight DOM-элементов
+function buildTocDomPath(
+  containerEl: HTMLElement,
+  itemEls: Map<string, HTMLElement>,
+  toc: TocItem[],
+): TocDomPathInfo {
+  if (!toc.length) return { path: '', totalLength: 0, centers: [], svgH: 0 };
 
-function getRowBottomY(index: number, isLast: boolean): number {
-  const baseY = INITIAL_OFFSET + ITEM_HEIGHT * (index + 1) - ITEM_GAP;
-  return isLast ? baseY - 8 : baseY;
-}
+  const minLevel = Math.min(...toc.map(i => i.level));
 
-function getDiagonalDistance(deltaX: number): number {
-  return Math.sqrt(deltaX ** 2 + DEPTH_BEND_LENGTH ** 2);
-}
-
-function getItemCenterY(index: number): number {
-  return INITIAL_OFFSET + ITEM_HEIGHT * index + ITEM_HEIGHT / 2 - ITEM_GAP;
-}
-
-function generateTocPathData(toc: TocItem[]): TocPathData {
-  if (toc.length === 0) return { path: '', totalLength: 0, itemCenterDistances: [] };
-
-  const minDepth = Math.min(...toc.map(item => item.level));
-  const pathParts: string[] = [];
-  const itemCenterDistances: number[] = [];
-
-  let currentX = getXForDepth(toc[0].level, minDepth);
-  let currentY = INITIAL_OFFSET - STARTING_MARGIN;
-  let accumulatedLength = 0;
-
-  pathParts.push(`M ${currentX} ${currentY}`);
-
-  for (let i = 0; i < toc.length; i++) {
-    const isLastItem = i === toc.length - 1;
-    const rowBottomY = getRowBottomY(i, isLastItem);
-    const nextItem = toc[i + 1];
-
-    const itemCenterY = getItemCenterY(i);
-    const distanceToCenter = itemCenterY - currentY;
-    itemCenterDistances.push(accumulatedLength + distanceToCenter + CENTER_OFFSET);
-
-    const verticalLength = rowBottomY - currentY;
-    accumulatedLength += verticalLength;
-    pathParts.push(`L ${currentX} ${rowBottomY}`);
-    currentY = rowBottomY;
-
-    if (nextItem) {
-      const nextX = getXForDepth(nextItem.level, minDepth);
-      if (nextX !== currentX) {
-        const deltaX = nextX - currentX;
-        accumulatedLength += getDiagonalDistance(deltaX);
-        pathParts.push(`L ${nextX} ${currentY + DEPTH_BEND_LENGTH}`);
-        currentX = nextX;
-        currentY += DEPTH_BEND_LENGTH;
-      }
-    }
+  // Собираем y-центры и x для каждого пункта
+  const points: { x: number; centerY: number; bottomY: number }[] = [];
+  for (const item of toc) {
+    const el = itemEls.get(item.id);
+    if (!el) return { path: '', totalLength: 0, centers: [], svgH: 0 };
+    const top = el.offsetTop;
+    const h   = el.offsetHeight;
+    const x   = (item.level - minLevel) * TOC_INDENT_PX + 6;
+    points.push({ x, centerY: top + h / 2, bottomY: top + h });
   }
 
-  return { path: pathParts.join(' '), totalLength: accumulatedLength, itemCenterDistances };
-}
+  const svgH = points[points.length - 1].bottomY + 4;
 
-function useGeneratedTocPathData(toc: TocItem[]): TocPathData {
-  return useMemo(() => generateTocPathData(toc), [toc]);
-}
+  let d = '';
+  let len = 0;
+  const centers: number[] = [];
+  let curX = points[0].x;
+  let curY = Math.max(0, points[0].centerY - 20); // старт немного выше первого
 
-function getActiveDistance(activeIndex: number, itemCenterDistances: number[]): number {
-  const isValidIndex = activeIndex >= 0 && activeIndex < itemCenterDistances.length;
-  return isValidIndex ? itemCenterDistances[activeIndex] : 0;
+  d += `M ${curX} ${curY}`;
+
+  for (let i = 0; i < points.length; i++) {
+    const { x, centerY, bottomY } = points[i];
+
+    // Горизонтальный переход если x изменился
+    if (x !== curX) {
+      const bendY = curY + TOC_BEND;
+      d += ` L ${curX} ${bendY} L ${x} ${bendY + TOC_BEND}`;
+      len += Math.hypot(x - curX, TOC_BEND) + TOC_BEND;
+      curX = x;
+      curY = bendY + TOC_BEND;
+    }
+
+    // Идём до центра элемента (для регистрации расстояния)
+    const toCenter = centerY - curY;
+    len += Math.abs(toCenter);
+    centers.push(len);
+    curY = centerY;
+
+    // Идём до нижней границы элемента (конец строки)
+    const isLast = i === points.length - 1;
+    const endY   = isLast ? centerY + 4 : bottomY;
+    d += ` L ${x} ${endY}`;
+    len += Math.abs(endY - curY);
+    curY = endY;
+  }
+
+  return { path: d, totalLength: len, centers, svgH };
 }
 
 const TocIndicatorSvg: React.FC<{
-  toc: TocItem[];
+  pathInfo: TocDomPathInfo;
   activeIndex: number;
   isDark: boolean;
-}> = ({ toc, activeIndex, isDark }) => {
+}> = ({ pathInfo, activeIndex, isDark }) => {
   const t = tk(isDark);
-  const { path, totalLength, itemCenterDistances } = useGeneratedTocPathData(toc);
+  const { path, totalLength, centers, svgH } = pathInfo;
 
-  const activeDistance = getActiveDistance(activeIndex, itemCenterDistances);
-  const isActive = activeDistance > 0;
+  const activeDistance = (activeIndex >= 0 && activeIndex < centers.length) ? centers[activeIndex] : 0;
+  const isActive = activeIndex >= 0 && activeDistance > 0;
 
-  const animatedDistance = useSpring(0, SPRING_CONFIG_TOC);
-  const prevActiveIndexRef = useRef(activeIndex);
-  const tailRotate = useSpring(90, SPRING_CONFIG_TOC);
-  const tailMarginTop = useSpring(-38, SPRING_CONFIG_TOC);
+  const animDist   = useSpring(0, TOC_SPRING_CFG);
+  const tailRotate = useSpring(90, TOC_SPRING_CFG);
+  const tailMT     = useSpring(-35, TOC_SPRING_CFG);
+  const prevRef    = useRef(activeIndex);
 
   useEffect(() => {
-    if (activeIndex !== prevActiveIndexRef.current) {
-      const movingDown = activeIndex > prevActiveIndexRef.current;
-      tailRotate.set(movingDown ? 90 : -90);
-      tailMarginTop.set(movingDown ? -38 : -38 + 70);
-      prevActiveIndexRef.current = activeIndex;
+    if (activeIndex !== prevRef.current) {
+      const down = activeIndex > prevRef.current;
+      tailRotate.set(down ? 90 : -90);
+      tailMT.set(down ? -35 : -35 + 65);
+      prevRef.current = activeIndex;
     }
-    animatedDistance.set(activeDistance);
-  }, [activeDistance, activeIndex, animatedDistance, tailRotate, tailMarginTop]);
+    animDist.set(activeDistance);
+  }, [activeDistance, activeIndex, animDist, tailRotate, tailMT]);
 
-  const offsetDistancePercent = useTransform(animatedDistance, (v) =>
-    totalLength > 0 ? `${(v / totalLength) * 100}%` : '0%',
-  );
+  const pct = useTransform(animDist, v => totalLength > 0 ? `${(v / totalLength) * 100}%` : '0%');
 
-  const startY = INITIAL_OFFSET - STARTING_MARGIN;
-  const gradientY2 = useTransform(animatedDistance, (v) => startY + v);
-  const gradientY1 = useTransform(gradientY2, (y2) => Math.max(0, y2 - GRADIENT_HEIGHT_TOC));
+  if (!path || svgH === 0) return null;
 
-  if (!path) return null;
+  const css = `path('${path}')`;
 
-  const cssOffsetPath = `path('${path}')`;
-
-  // В тёмной теме линия — чёрная/очень тёмная (почти невидимая подложка), в светлой — тёмно-серая
-  const trackColor = isDark ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.18)';
-  // Активный маркер-ромб — акцент
-  const dotColor = t.accent;
+  // Цвет трека: в тёмной теме — слегка белый (видимый но не яркий), в светлой — тёмно-серый
+  const trackColor = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)';
 
   return (
     <div
+      aria-hidden
       style={{
-        maskImage: 'linear-gradient(to bottom, transparent 0px, black 15px, black 100%)',
-        WebkitMaskImage: 'linear-gradient(to bottom, transparent 0px, black 15px, black 100%)',
-        pointerEvents: 'none',
-        position: 'absolute',
-        height: '100%',
-        width: '100%',
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        maskImage: 'linear-gradient(to bottom, transparent 0px, black 12px, black 100%)',
+        WebkitMaskImage: 'linear-gradient(to bottom, transparent 0px, black 12px, black 100%)',
       }}
     >
-      <svg style={{ height: '100%', width: '100%', overflow: 'visible' }}>
+      {/* SVG трек */}
+      <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', overflow: 'visible' }} height={svgH}>
         <defs>
-          <marker
-            id="toc-end-circle-nav"
-            markerWidth="6"
-            markerHeight="6"
-            refX="3"
-            refY="3"
-            orient="auto"
-          >
+          <marker id="toc-dot-nav" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
             <circle cx="3" cy="3" r="2" fill={trackColor} />
           </marker>
-          <mask id="toc-path-mask-nav" maskUnits="userSpaceOnUse">
-            <path
-              d={path}
-              stroke="white"
-              strokeWidth="2"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+          {/* Маска для хвоста-свечения */}
+          <mask id="toc-mask-nav" maskUnits="userSpaceOnUse">
+            <path d={path} stroke="white" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
           </mask>
-          <motion.linearGradient
-            id="toc-progress-gradient-nav"
-            gradientUnits="userSpaceOnUse"
-            x1="0"
-            x2="0"
-            y1={gradientY1}
-            y2={gradientY2}
-          >
-            <stop offset="0%" stopColor={t.accent} stopOpacity="0" />
-            <stop offset="100%" stopColor={t.accent} stopOpacity="1" />
-          </motion.linearGradient>
         </defs>
-        {/* Базовая линия-трек */}
-        <path
-          d={path}
-          stroke={trackColor}
-          strokeWidth="1.5"
-          fill="none"
-          markerEnd="url(#toc-end-circle-nav)"
-        />
+        <path d={path} stroke={trackColor} strokeWidth="1.5" fill="none" markerEnd="url(#toc-dot-nav)" />
       </svg>
 
-      {/* Светящийся хвост — накладывается через маску поверх трека */}
-      <div
-        style={{
-          pointerEvents: 'none',
-          position: 'absolute',
-          inset: 0,
-          mask: 'url(#toc-path-mask-nav)',
-          WebkitMask: 'url(#toc-path-mask-nav)',
-        }}
-      >
+      {/* Хвост-свечение — движется по маске трека */}
+      <div style={{ position: 'absolute', inset: 0, mask: 'url(#toc-mask-nav)', WebkitMask: 'url(#toc-mask-nav)', overflow: 'hidden', height: svgH }}>
         <motion.div
           style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: 90,
-            height: 90,
-            offsetPath: cssOffsetPath,
-            offsetRotate: '0deg',
+            position: 'absolute', top: 0, left: 0,
+            width: 80, height: 80,
+            offsetPath: css, offsetRotate: '0deg',
             rotate: tailRotate,
-            marginLeft: -1,
-            marginTop: tailMarginTop,
-            offsetDistance: offsetDistancePercent,
+            marginLeft: -1, marginTop: tailMT,
+            offsetDistance: pct,
             opacity: isActive ? 1 : 0,
           }}
         >
-          <svg width="90" height="90" viewBox="0 0 90 90" style={{ overflow: 'visible' }}>
+          <svg width="80" height="80" viewBox="0 0 80 80" style={{ overflow: 'visible' }}>
             <defs>
-              <radialGradient
-                id="toc-glow-radial-nav"
-                cx="0.85"
-                cy="0.5"
-                fx="0.85"
-                gradientUnits="objectBoundingBox"
-              >
-                <stop offset="0%" stopColor={t.accent} stopOpacity="1" />
-                <stop offset="55%" stopColor={t.accent} stopOpacity="0.45" />
+              <radialGradient id="toc-glow-nav" cx="0.82" cy="0.5" fx="0.82" gradientUnits="objectBoundingBox">
+                <stop offset="0%"   stopColor={t.accent} stopOpacity="1" />
+                <stop offset="50%"  stopColor={t.accent} stopOpacity="0.5" />
                 <stop offset="100%" stopColor={t.accent} stopOpacity="0" />
               </radialGradient>
             </defs>
-            <ellipse cx="45" cy="45" rx="45" ry="45" fill="url(#toc-glow-radial-nav)" />
+            <ellipse cx="40" cy="40" rx="40" ry="40" fill="url(#toc-glow-nav)" />
           </svg>
         </motion.div>
       </div>
 
-      {/* Бегущий ромб-маркер */}
+      {/* Ромб-маркер */}
       <motion.div
         style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: 7,
-          height: 7,
+          position: 'absolute', top: 0, left: 0,
+          width: 7, height: 7,
           borderRadius: 1.5,
-          background: dotColor,
-          boxShadow: `0 0 6px 2px ${t.accent}`,
-          offsetPath: cssOffsetPath,
-          offsetRotate: '0deg',
-          rotate: '45deg',
-          marginLeft: -0.5,
-          marginTop: -3.5,
-          offsetDistance: offsetDistancePercent,
+          background: t.accent,
+          boxShadow: `0 0 5px 2px ${t.accent}88`,
+          offsetPath: css, offsetRotate: '0deg', rotate: '45deg',
+          marginLeft: -0.5, marginTop: -3.5,
+          offsetDistance: pct,
           opacity: isActive ? 1 : 0,
         }}
       />
@@ -1053,80 +974,96 @@ const TocIndicatorSvg: React.FC<{
   );
 };
 
-// ===== TOC Panel Content — рендер списка с оригинальным индикатором =====
+// ===== TOC Panel Content — DOM-измерения для адаптивного пути =====
 
 const TocPanelContent: React.FC<{
   toc: TocItem[]; activeId: string; isDark: boolean; onItemClick?: () => void; mobile?: boolean;
 }> = ({ toc, activeId, isDark, onItemClick, mobile = false }) => {
   const t = tk(isDark);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollRef  = useRef<HTMLDivElement>(null);
+  const listRef    = useRef<HTMLDivElement>(null);
+  const itemRefs   = useRef<Map<string, HTMLElement>>(new Map());
+  const [pathInfo, setPathInfo] = useState<TocDomPathInfo>({ path: '', totalLength: 0, centers: [], svgH: 0 });
 
-  const activeIndex = activeId ? toc.findIndex(item => item.id === activeId) : -1;
+  const activeIndex = toc.findIndex(item => item.id === activeId);
+  const minLevel    = toc.length ? Math.min(...toc.map(i => i.level)) : 0;
+  const maxDepth    = toc.length ? Math.max(...toc.map(i => i.level)) - minLevel : 0;
+  const indicatorW  = maxDepth * TOC_INDENT_PX + 6 + 12; // x + радиус маркера
 
+  // Пересчитываем путь при любом изменении размеров
+  useEffect(() => {
+    if (!toc.length) return;
+    const measure = () => {
+      const list = listRef.current;
+      if (!list) return;
+      const info = buildTocDomPath(list, itemRefs.current, toc);
+      if (info.path) setPathInfo(info);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (listRef.current) ro.observe(listRef.current);
+    // Наблюдаем за каждым пунктом тоже (высота может меняться)
+    itemRefs.current.forEach(el => ro.observe(el));
+    return () => ro.disconnect();
+  }, [toc]);
+
+  // Auto-scroll к активному пункту
   useEffect(() => {
     const container = scrollRef.current;
-    if (!container || activeIndex < 0) return;
-    const approxTop = INITIAL_OFFSET + ITEM_HEIGHT * activeIndex - container.clientHeight / 2 + ITEM_HEIGHT / 2;
-    container.scrollTo({ top: Math.max(0, approxTop), behavior: 'smooth' });
-  }, [activeIndex]);
+    const el = activeId ? itemRefs.current.get(activeId) : undefined;
+    if (!container || !el) return;
+    const target = el.offsetTop - container.clientHeight / 2 + el.offsetHeight / 2;
+    container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+  }, [activeId]);
 
   if (!toc.length) return (
-    <div style={{ flex: 1, padding: '2.5rem 1.5rem', textAlign: 'center', fontSize: mobile ? '1rem' : '0.875rem', color: t.fgMuted }}>
+    <div style={{ flex: 1, padding: '2.5rem 1.5rem', textAlign: 'center', fontSize: '0.875rem', color: t.fgMuted }}>
       На этой странице нет заголовков
     </div>
   );
 
-  const minLevel = Math.min(...toc.map(item => item.level));
-  const maxDepth = Math.max(...toc.map(i => i.level)) - minLevel;
-  // Ширина колонки с индикатором — только то, что нужно для пути
-  const indicatorColW = STARTING_MARGIN + maxDepth * DEPTH_INDENT + 14;
-  // Высота SVG-оверлея
-  const svgHeight = INITIAL_OFFSET + ITEM_HEIGHT * toc.length + 20;
-
   return (
-    <div
-      ref={scrollRef}
-      style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: mobile ? '10px 6px 18px 10px' : '8px 6px 12px 6px' }}
-    >
-      <div style={{ position: 'relative', display: 'flex', flexDirection: 'row', minWidth: 0 }}>
-        {/* Колонка с SVG индикатором — фиксированная ширина */}
-        <div style={{ position: 'relative', width: indicatorColW, flexShrink: 0, height: svgHeight }}>
-          <TocIndicatorSvg toc={toc} activeIndex={activeIndex} isDark={isDark} />
+    <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: mobile ? '6px 8px 18px 6px' : '6px 6px 12px 4px' }}>
+      <div ref={listRef} style={{ position: 'relative', display: 'flex', flexDirection: 'row', minWidth: 0 }}>
+
+        {/* Колонка индикатора — фиксированная ширина по максимальному отступу */}
+        <div style={{ position: 'relative', width: indicatorW, flexShrink: 0, height: pathInfo.svgH || '100%' }}>
+          <TocIndicatorSvg pathInfo={pathInfo} activeIndex={activeIndex} isDark={isDark} />
         </div>
 
-        {/* Колонка с текстом — занимает всё оставшееся место, текст переносится */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', paddingTop: `${INITIAL_OFFSET}px` }}>
+        {/* Колонка текста — flex:1 чтобы занимать всё место и не обрезаться */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
           {toc.map((item, index) => {
             const isActive = index === activeIndex;
-            const depthOffset = mobile ? 0 : (item.level - minLevel) * 6;
+            const depth    = item.level - minLevel;
             return (
               <button
                 key={item.id}
+                ref={el => { if (el) itemRefs.current.set(item.id, el); else itemRefs.current.delete(item.id); }}
                 onClick={() => { scrollToElement(item.id); onItemClick?.(); }}
                 style={{
-                  minHeight: `${ITEM_HEIGHT}px`,
                   display: 'flex',
-                  alignItems: 'center',
-                  paddingLeft: `${depthOffset + 2}px`,
-                  paddingRight: mobile ? '8px' : '6px',
-                  paddingTop: '2px',
-                  paddingBottom: '2px',
-                  // Мобилка: читаемый размер без уменьшения по уровню
-                  fontSize: mobile ? '0.95rem' : `${0.825 - (item.level - minLevel) * 0.025}rem`,
+                  alignItems: 'flex-start',
+                  paddingLeft:   `${depth * 6 + 2}px`,
+                  paddingRight:  mobile ? '10px' : '6px',
+                  paddingTop:    '5px',
+                  paddingBottom: '5px',
+                  // Размер как у DocLink в навигации: 0.875rem для десктопа, 1rem для мобилки
+                  fontSize: mobile ? '1rem' : `${0.875 - depth * 0.025}rem`,
                   lineHeight: 1.4,
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  color: isActive ? t.fg : t.fgMuted,
-                  fontWeight: isActive ? 500 : 400,
-                  transition: 'color 0.2s',
-                  // Текст переносится — не обрезается!
-                  whiteSpace: 'normal',
-                  wordBreak: 'break-word',
-                  overflowWrap: 'anywhere',
-                  width: '100%',
-                  boxSizing: 'border-box',
+                  background:    'transparent',
+                  border:        'none',
+                  cursor:        'pointer',
+                  textAlign:     'left',
+                  color:         isActive ? t.fg : t.fgMuted,
+                  fontWeight:    isActive ? 600 : 400,
+                  transition:    'color 0.2s',
+                  // Текст переносится — не обрезается
+                  whiteSpace:    'normal',
+                  wordBreak:     'break-word',
+                  overflowWrap:  'anywhere',
+                  width:         '100%',
+                  boxSizing:     'border-box',
                 }}
               >
                 {item.text}
