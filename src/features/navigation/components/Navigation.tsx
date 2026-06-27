@@ -810,6 +810,8 @@ interface TocDomPathInfo {
   totalLength: number;
   centers: number[]; // расстояние от начала пути до центра каждого пункта
   svgH: number;      // полная высота SVG
+  endX: number;      // x последней точки пути (для кружка-конца)
+  endY: number;      // y последней точки пути
 }
 
 // Строим путь по реальным offsetTop/offsetHeight DOM-элементов
@@ -818,7 +820,7 @@ function buildTocDomPath(
   itemEls: Map<string, HTMLElement>,
   toc: TocItem[],
 ): TocDomPathInfo {
-  if (!toc.length) return { path: '', totalLength: 0, centers: [], svgH: 0 };
+  if (!toc.length) return { path: '', totalLength: 0, centers: [], svgH: 0, endX: 0, endY: 0 };
 
   const minLevel = Math.min(...toc.map(i => i.level));
 
@@ -826,7 +828,7 @@ function buildTocDomPath(
   const points: { x: number; centerY: number; bottomY: number }[] = [];
   for (const item of toc) {
     const el = itemEls.get(item.id);
-    if (!el) return { path: '', totalLength: 0, centers: [], svgH: 0 };
+    if (!el) return { path: '', totalLength: 0, centers: [], svgH: 0, endX: 0, endY: 0 };
     const top = el.offsetTop;
     const h   = el.offsetHeight;
     const x   = (item.level - minLevel) * TOC_INDENT_PX + 6;
@@ -870,7 +872,7 @@ function buildTocDomPath(
     }
   }
 
-  return { path: d, totalLength: len, centers, svgH };
+  return { path: d, totalLength: len, centers, svgH, endX: curX, endY: curY };
 }
 
 const TocIndicatorSvg: React.FC<{
