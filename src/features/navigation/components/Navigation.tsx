@@ -208,11 +208,30 @@ function formatMetaDate(date?: string): string | null {
   return parsed.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+function getSectionOpenBorder(sectionOpen: boolean, isDark: boolean): string {
+  if (!sectionOpen) return tk(isDark).sectionBorder;
+  return isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)';
+}
+
+function getUnifiedControlStyle(isDark: boolean, isActive: boolean = false) {
+  const t = tk(isDark);
+  return {
+    border: `1px solid ${isActive ? getSectionOpenBorder(true, isDark) : t.sectionBorder}`,
+    background: t.sectionBg,
+    boxShadow: t.sectionShadow,
+    borderRadius: '8px',
+  };
+}
+
 const DocLink: React.FC<{
   doc: Doc; isDark: boolean; isActive: boolean; onClick?: () => void; mobile?: boolean;
   onPreviewChange?: (payload: { doc: Doc; rect: DOMRect } | null) => void;
 }> = memo(({ doc, isDark, isActive, onClick, mobile, onPreviewChange }) => {
   const t = tk(isDark);
+  // активная страница получает тот же карточный стиль, что и поиск/переключатель раздела
+  const stateStyle = isActive
+    ? getUnifiedControlStyle(isDark, true)
+    : { border: '1px solid transparent', background: 'transparent', boxShadow: 'none', borderRadius: '8px' };
   return (
     <a href={toDocHref(doc.slug)} onClick={onClick}
       onMouseEnter={e => { if (!mobile) onPreviewChange?.({ doc, rect: e.currentTarget.getBoundingClientRect() }); }}
@@ -220,13 +239,11 @@ const DocLink: React.FC<{
       style={{
         display: 'flex', alignItems: 'center', gap: '0.5rem',
         padding: mobile ? '10px 14px' : '8px 10px',
-        borderRadius: '8px', fontSize: mobile ? '1rem' : '0.875rem',
+        fontSize: mobile ? '1rem' : '0.875rem',
         textDecoration: 'none',
-        border: `1px solid ${isActive ? t.elevatedBorder : 'transparent'}`,
         color: isActive ? t.accent : t.fg, fontWeight: isActive ? 600 : 400,
-        background: isActive ? t.accentSoft : 'transparent',
-        boxShadow: isActive ? t.elevatedShadowSoft : 'none',
         lineHeight: 1.4,
+        ...stateStyle,
       }}>
       {doc.icon && <span style={{ flexShrink: 0, width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fgMuted }}><LucideIcon name={doc.icon} size={18} /></span>}
       <span style={{ minWidth: 0 }}>
@@ -269,10 +286,21 @@ const HomePageLink: React.FC<{
   );
 };
 
-function getCategoryNodeBackground(expanded: boolean, isDark: boolean): string {
-  if (expanded) return isDark ? '#181818' : 'rgba(0,0,0,0.08)';
-  return isDark ? '#0F0F0F' : '#deddd9';
-}
+// точка-индикатор на ветке дерева категорий — горит акцентным цветом, если это текущая страница
+const BranchDot: React.FC<{ isActive: boolean; isDark: boolean }> = ({ isActive, isDark }) => {
+  const t = tk(isDark);
+  const size = isActive ? 8 : 6;
+  return (
+    <span aria-hidden style={{
+      position: 'absolute', left: '-10px', top: '50%',
+      transform: 'translate(-50%, -50%)',
+      width: size, height: size, borderRadius: '50%',
+      background: isActive ? t.accent : t.fgSub,
+      boxShadow: isActive ? `0 0 0 3px ${t.accentSoft}` : 'none',
+      pointerEvents: 'none', zIndex: 1,
+    }} />
+  );
+};
 
 const CategoryNode: React.FC<{
   node: NavNode; path: string; expandedPaths: Set<string>;
@@ -285,24 +313,24 @@ const CategoryNode: React.FC<{
   const isActiveCategory = currentDocSlug === categorySlug;
   const expanded = expandedPaths.has(path);
   const total    = countDocs(node);
+  const headerActive = isActiveCategory || expanded;
+  const headerBorderColor = getSectionOpenBorder(headerActive, isDark);
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
       <div style={{
         width: '100%', display: 'flex', alignItems: 'stretch', justifyContent: 'space-between',
-        borderRadius: '8px',
         fontSize: mobile ? '1rem' : '0.875rem', fontWeight: 600,
-        border: `1px solid ${isActiveCategory || expanded ? t.elevatedBorder : t.border}`,
-        background: isActiveCategory ? t.accentSoft : getCategoryNodeBackground(expanded, isDark),
-        boxShadow: expanded || isActiveCategory ? t.elevatedShadowSoft : 'none',
         color: isActiveCategory ? t.accent : t.fg,
         overflow: 'hidden',
+        // карточный стиль категории — такой же, как у поиска и переключателя раздела
+        ...getUnifiedControlStyle(isDark, headerActive),
       }}>
         <button type="button" onClick={() => onToggle(path)}
           aria-label={expanded ? `Свернуть категорию ${node.title}` : `Развернуть категорию ${node.title}`}
           style={{
             width: mobile ? 42 : 36,
             border: 'none',
-            borderRight: `1px solid ${isActiveCategory || expanded ? t.elevatedBorder : t.border}`,
+            borderRight: `1px solid ${headerBorderColor}`,
             background: 'transparent',
             color: t.fgMuted,
             cursor: 'pointer',
@@ -325,21 +353,42 @@ const CategoryNode: React.FC<{
             {node.icon && <span style={{ width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: t.fgMuted }}><LucideIcon name={node.icon} size={14} /></span>}
             <span style={{ wordBreak: 'break-word', lineHeight: 1.35 }}>{node.title}</span>
           </span>
-          {total > 0 && <span style={{ fontSize: '0.72rem', padding: '2px 7px', borderRadius: '5px', background: t.accentSoft, color: t.fgMuted, flexShrink: 0 }}>{total}</span>}
+          {total > 0 && (
+            <span style={{
+              fontSize: '0.72rem', padding: '2px 7px', flexShrink: 0, color: t.fgMuted,
+              ...getUnifiedControlStyle(isDark),
+              borderRadius: '6px',
+            }}>{total}</span>
+          )}
         </a>
       </div>
       {expanded && (
         <div style={{
-          marginLeft: '0.65rem', paddingLeft: '0.45rem',
+          position: 'relative',
+          marginLeft: '0.65rem', paddingLeft: '16px',
           marginTop: '4px', marginBottom: '4px',
           display: 'flex', flexDirection: 'column', gap: '2px',
         }}>
-          {sortDocs(node.docs).map(doc => (
-            <DocLink key={doc.id} doc={doc} isDark={isDark} isActive={isDocActive(doc, currentDocSlug)} onClick={onDocClick} mobile={mobile} onPreviewChange={onDocHoverChange} />
-          ))}
-          {Object.entries(node.children).sort(([a], [b]) => a.localeCompare(b)).map(([key, child]) => (
-            <CategoryNode key={key} node={child} path={`${path}/${key}`} expandedPaths={expandedPaths} onToggle={onToggle} isDark={isDark} currentDocSlug={currentDocSlug} onDocClick={onDocClick} mobile={mobile} activeNavSlug={activeNavSlug} onDocHoverChange={onDocHoverChange} />
-          ))}
+          {/* вертикальная линия ветки */}
+          <span aria-hidden style={{ position: 'absolute', left: '6px', top: '10px', bottom: '10px', width: '1px', background: t.border }} />
+          {sortDocs(node.docs).map(doc => {
+            const docIsActive = isDocActive(doc, currentDocSlug);
+            return (
+              <div key={doc.id} style={{ position: 'relative' }}>
+                <BranchDot isActive={docIsActive} isDark={isDark} />
+                <DocLink doc={doc} isDark={isDark} isActive={docIsActive} onClick={onDocClick} mobile={mobile} onPreviewChange={onDocHoverChange} />
+              </div>
+            );
+          })}
+          {Object.entries(node.children).sort(([a], [b]) => a.localeCompare(b)).map(([key, child]) => {
+            const childSlug = [activeNavSlug, `${path}/${key}`].filter(Boolean).join('/');
+            return (
+              <div key={key} style={{ position: 'relative' }}>
+                <BranchDot isActive={currentDocSlug === childSlug} isDark={isDark} />
+                <CategoryNode node={child} path={`${path}/${key}`} expandedPaths={expandedPaths} onToggle={onToggle} isDark={isDark} currentDocSlug={currentDocSlug} onDocClick={onDocClick} mobile={mobile} activeNavSlug={activeNavSlug} onDocHoverChange={onDocHoverChange} />
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -629,19 +678,11 @@ const DocHoverPreview: React.FC<{ isDark: boolean; payload: { doc: Doc; rect: DO
   );
 };
 
-function getSectionOpenBorder(sectionOpen: boolean, isDark: boolean): string {
-  if (!sectionOpen) return tk(isDark).sectionBorder;
-  return isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)';
-}
+function getUnifiedControlStyleLegacyAlias() { /* зарезервировано */ }
 
-function getUnifiedControlStyle(isDark: boolean, isActive: boolean = false) {
-  const t = tk(isDark);
-  return {
-    border: `1px solid ${isActive ? getSectionOpenBorder(true, isDark) : t.sectionBorder}`,
-    background: t.sectionBg,
-    boxShadow: t.sectionShadow,
-    borderRadius: '8px',
-  };
+function getRailBtnColor(isActive: boolean | undefined, hov: boolean, t: ReturnType<typeof tk>): string {
+  if (isActive) return t.accent;
+  return hov ? t.fg : t.fgMuted;
 }
 
 const PLACEHOLDER_STYLE_ID = 'nav-search-placeholder-style';
@@ -912,11 +953,6 @@ const PanelHeader: React.FC<{ title: string; isDark: boolean; onClose: () => voi
     </div>
   );
 };
-
-function getRailBtnColor(isActive: boolean | undefined, hov: boolean, t: ReturnType<typeof tk>): string {
-  if (isActive) return t.accent;
-  return hov ? t.fg : t.fgMuted;
-}
 
 const RailBtn: React.FC<{
   icon: React.ReactNode; label: string; isActive?: boolean; isDark: boolean; onClick: () => void; title?: string;
@@ -1225,7 +1261,6 @@ const DesktopSlidingPanel: React.FC<{
       width: panelOpen ? panelWidth : 0,
       background: isDocsPage && shellEnabled ? 'transparent' : panelBg,
       border: 'none',
-      // removed borderRight — was causing the double line visible at the panel edge
       borderRadius: panelOpen ? `0 ${chromeRadius}px ${chromeRadius}px 0` : 0,
       display: 'flex', flexDirection: 'column', zIndex: 49, overflow: 'hidden',
       pointerEvents: panelOpen ? 'auto' : 'none',
