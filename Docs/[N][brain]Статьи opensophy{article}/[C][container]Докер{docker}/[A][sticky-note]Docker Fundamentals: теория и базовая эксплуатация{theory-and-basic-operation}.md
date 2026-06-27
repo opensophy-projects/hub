@@ -384,13 +384,3 @@ docker run -d --restart unless-stopped nginx
 2. [Документация Docker](https://docs.docker.com/)
 
 На этом базовое знакомство с Docker можно считать завершённым. В этой статье мы разобрали, зачем нужен Docker, какие проблемы он решает, как устроены контейнеры и образы, что такое Dockerfile, слои, кэширование, multi-stage builds, HEALTHCHECK и `.dockerignore`, а также рассмотрели основные команды, политики перезапуска и передачу переменных окружения. В серии статей по Docker от opensophy мы также рассмотрим следующие темы:
-
-* **Часть 1 — Теория и базовая эксплуатация:** что такое Docker и зачем он нужен, контейнеры и образы, Docker Engine, Dockerfile и его основные инструкции, слои и кэширование, жизненный цикл контейнера, `.dockerignore`, переменные окружения (`ARG` и `ENV`), `CMD` и `ENTRYPOINT`, HEALTHCHECK, политики перезапуска, запуск контейнеров не от root и основные команды Docker.
-* **Часть 2 — Хранение данных в Docker:** volumes, bind mounts, tmpfs, сравнение подходов, сценарии использования и управление данными контейнеров.
-* **Часть 3 — Сети Docker:** типы сетей (bridge, host, none, overlay), публикация портов, DNS между контейнерами и service discovery.
-* **Часть 4 — Registry и Docker Compose:** push/pull образов, приватные реестры, структура Compose-файла, `depends_on`, `env_file`, переменные окружения и `profiles`.
-* **Часть 5 — Безопасность:** rootless Docker, user namespaces, capabilities, seccomp, secrets и read-only filesystem.
-* **Часть 6 — Docker Swarm:** nodes, services, stacks, overlay-сети, rolling updates и rollback.
-* **Часть 7 — Оптимизация:** углублённый multi-stage, BuildKit cache mounts, `.dockerignore`, уменьшение размера образов, сравнение `alpine`, `distroless` и `scratch`.
-* **Часть 8 — Docker под капотом:** архитектура Docker, `containerd`, `runc`, OCI, cgroups, namespaces и работа BuildKit.
-
