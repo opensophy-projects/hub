@@ -86,8 +86,6 @@ function isDocActive(doc: Doc, currentDocSlug: string | undefined): boolean {
   return false;
 }
 
-// единая логика активности для "Главной" — та же схема, что и для кастомных страниц
-// (например, Резюме): сперва смотрим на currentDocSlug, а не только на window.location.
 function isHomeDocActive(currentDocSlug: string | undefined): boolean {
   if (currentDocSlug !== undefined) return currentDocSlug === '';
   if (globalThis.window !== undefined) {
@@ -155,9 +153,6 @@ function tk(isDark: boolean) {
   } as const;
 }
 
-// единственный источник стиля "карточки" — используется буквально везде:
-// поле поиска, переключатель раздела, заголовок категории, активная страница,
-// бейдж-счётчик, пункты модалки выбора раздела.
 function getSectionOpenBorder(sectionOpen: boolean, isDark: boolean): string {
   if (!sectionOpen) return tk(isDark).sectionBorder;
   return isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)';
@@ -236,8 +231,6 @@ function formatMetaDate(date?: string): string | null {
   return parsed.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-// в списке навигации показываем только заголовок — описание убрано,
-// подробности доступны в модалке (DocHoverPreview).
 const DocLink: React.FC<{
   doc: Doc; isDark: boolean; isActive: boolean; onClick?: () => void; mobile?: boolean;
   onPreviewChange?: (payload: { doc: Doc; rect: DOMRect } | null) => void;
@@ -267,7 +260,6 @@ const DocLink: React.FC<{
   );
 });
 
-// HomePageLink использует тот же подход к active-состоянию, что и DocLink — тот же getUnifiedControlStyle.
 const HomePageLink: React.FC<{
   isDark: boolean; isActive: boolean; onClick?: () => void; mobile?: boolean;
 }> = ({ isDark, isActive, onClick, mobile }) => {
@@ -533,7 +525,6 @@ const SectionItemIcon: React.FC<{
   );
 };
 
-// пункты модалки выбора раздела — карточки в том же дизайне, что и поиск/категории.
 const SectionDropdown: React.FC<{
   sections: NavSection[]; activeNavSlug: string; mobile: boolean; isDark: boolean; onSelect: (slug: string) => void;
 }> = ({ sections, activeNavSlug, mobile, isDark, onSelect }) => {
@@ -808,156 +799,267 @@ const NavPanelContent: React.FC<{
   );
 };
 
-// ===== TOC-индикатор: анимированная "дорожка" вдоль заголовков + бегущая точка к активному =====
-// Адаптировано под нашу структуру TocItem (id/text/level) и реальные размеры DOM-узлов,
-// а не на жёстко заданных константах высоты строки — это нужно, потому что заголовки
-// могут быть разной длины и переноситься на несколько строк.
+// ===== TOC INDICATOR — точная адаптация оригинала @shadcn/evilcharts =====
+// Адаптировано под TocItem { id, text, level } вместо { url, depth, title }
 
-interface TocPathInfo { path: string; totalLength: number; centers: number[]; }
+const STARTING_MARGIN = 8;
+const ITEM_HEIGHT = 26.28;
+const ITEM_GAP = 8;
+const DEPTH_INDENT = 10;
+const INITIAL_OFFSET = 8;
+const DEPTH_BEND_LENGTH = 8;
+const CENTER_OFFSET = 6.5;
+const SPRING_CONFIG_TOC = { stiffness: 180, damping: 20 };
+const GRADIENT_HEIGHT_TOC = ITEM_HEIGHT * 2.5;
 
-const TOC_ROW_GAP = 6;
-const TOC_INDENT_PER_LEVEL = 14;
-const TOC_SPRING = { stiffness: 180, damping: 22 };
-
-function useTocIndicatorPath(
-  listRef: { current: HTMLDivElement | null },
-  itemRefs: { current: Map<string, HTMLElement> },
-  toc: TocItem[],
-): TocPathInfo {
-  const [info, setInfo] = useState<TocPathInfo>({ path: '', totalLength: 0, centers: [] });
-
-  useEffect(() => {
-    const list = listRef.current;
-    if (!list || toc.length === 0) { setInfo({ path: '', totalLength: 0, centers: [] }); return; }
-
-    const measure = () => {
-      const containerRect = list.getBoundingClientRect();
-      const points: { x: number; y: number }[] = [];
-      for (const item of toc) {
-        const el = itemRefs.current.get(item.id);
-        if (!el) return;
-        const r = el.getBoundingClientRect();
-        points.push({ x: Math.round(r.left - containerRect.left + 6), y: r.top - containerRect.top + r.height / 2 });
-      }
-      if (!points.length) return;
-
-      let d = `M ${points[0].x} ${points[0].y - 8}`;
-      let total = 0;
-      let prevX = points[0].x;
-      let prevY = points[0].y - 8;
-      const centers: number[] = [];
-
-      for (const { x, y } of points) {
-        if (x !== prevX) {
-          const bendY = prevY + 6;
-          d += ` L ${prevX} ${bendY} L ${x} ${bendY + 6}`;
-          total += Math.hypot(x - prevX, 6) + 6;
-          prevX = x; prevY = bendY + 6;
-        }
-        d += ` L ${x} ${y}`;
-        total += Math.abs(y - prevY);
-        centers.push(total);
-        prevY = y;
-      }
-
-      setInfo({ path: d, totalLength: total, centers });
-    };
-
-    measure();
-    const raf = requestAnimationFrame(measure);
-    const ro = new ResizeObserver(measure);
-    ro.observe(list);
-    globalThis.addEventListener('resize', measure);
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); globalThis.removeEventListener('resize', measure); };
-  }, [toc, listRef, itemRefs]);
-
-  return info;
+interface TocPathData {
+  path: string;
+  totalLength: number;
+  itemCenterDistances: number[];
 }
 
-const TocIndicator: React.FC<{ pathInfo: TocPathInfo; activeIndex: number; isDark: boolean }> = ({ pathInfo, activeIndex, isDark }) => {
-  const { path, totalLength, centers } = pathInfo;
-  const t = tk(isDark);
-  const reactId = React.useId().replace(/[:]/g, '');
-  const markerId = `toc-end-dot-${reactId}`;
+function getXForDepth(depth: number, minDepth: number): number {
+  return STARTING_MARGIN + (depth - minDepth) * DEPTH_INDENT;
+}
 
-  const activeDistance = activeIndex >= 0 && activeIndex < centers.length ? centers[activeIndex] : 0;
+function getRowBottomY(index: number, isLast: boolean): number {
+  const baseY = INITIAL_OFFSET + ITEM_HEIGHT * (index + 1) - ITEM_GAP;
+  return isLast ? baseY - 8 : baseY;
+}
+
+function getDiagonalDistance(deltaX: number): number {
+  return Math.sqrt(deltaX ** 2 + DEPTH_BEND_LENGTH ** 2);
+}
+
+function getItemCenterY(index: number): number {
+  return INITIAL_OFFSET + ITEM_HEIGHT * index + ITEM_HEIGHT / 2 - ITEM_GAP;
+}
+
+function generateTocPathData(toc: TocItem[]): TocPathData {
+  if (toc.length === 0) return { path: '', totalLength: 0, itemCenterDistances: [] };
+
+  const minDepth = Math.min(...toc.map(item => item.level));
+  const pathParts: string[] = [];
+  const itemCenterDistances: number[] = [];
+
+  let currentX = getXForDepth(toc[0].level, minDepth);
+  let currentY = INITIAL_OFFSET - STARTING_MARGIN;
+  let accumulatedLength = 0;
+
+  pathParts.push(`M ${currentX} ${currentY}`);
+
+  for (let i = 0; i < toc.length; i++) {
+    const isLastItem = i === toc.length - 1;
+    const rowBottomY = getRowBottomY(i, isLastItem);
+    const nextItem = toc[i + 1];
+
+    const itemCenterY = getItemCenterY(i);
+    const distanceToCenter = itemCenterY - currentY;
+    itemCenterDistances.push(accumulatedLength + distanceToCenter + CENTER_OFFSET);
+
+    const verticalLength = rowBottomY - currentY;
+    accumulatedLength += verticalLength;
+    pathParts.push(`L ${currentX} ${rowBottomY}`);
+    currentY = rowBottomY;
+
+    if (nextItem) {
+      const nextX = getXForDepth(nextItem.level, minDepth);
+      if (nextX !== currentX) {
+        const deltaX = nextX - currentX;
+        accumulatedLength += getDiagonalDistance(deltaX);
+        pathParts.push(`L ${nextX} ${currentY + DEPTH_BEND_LENGTH}`);
+        currentX = nextX;
+        currentY += DEPTH_BEND_LENGTH;
+      }
+    }
+  }
+
+  return { path: pathParts.join(' '), totalLength: accumulatedLength, itemCenterDistances };
+}
+
+function useGeneratedTocPathData(toc: TocItem[]): TocPathData {
+  return useMemo(() => generateTocPathData(toc), [toc]);
+}
+
+function getActiveDistance(activeIndex: number, itemCenterDistances: number[]): number {
+  const isValidIndex = activeIndex >= 0 && activeIndex < itemCenterDistances.length;
+  return isValidIndex ? itemCenterDistances[activeIndex] : 0;
+}
+
+const TocIndicatorSvg: React.FC<{
+  toc: TocItem[];
+  activeIndex: number;
+  isDark: boolean;
+}> = ({ toc, activeIndex, isDark }) => {
+  const t = tk(isDark);
+  const { path, totalLength, itemCenterDistances } = useGeneratedTocPathData(toc);
+
+  const activeDistance = getActiveDistance(activeIndex, itemCenterDistances);
   const isActive = activeDistance > 0;
 
-  const animatedDistance = useSpring(0, TOC_SPRING);
-  const prevIndexRef = useRef(activeIndex);
-  const tailRotate = useSpring(90, TOC_SPRING);
+  const animatedDistance = useSpring(0, SPRING_CONFIG_TOC);
+  const prevActiveIndexRef = useRef(activeIndex);
+  const tailRotate = useSpring(90, SPRING_CONFIG_TOC);
+  const tailMarginTop = useSpring(-38, SPRING_CONFIG_TOC);
 
   useEffect(() => {
-    if (activeIndex !== prevIndexRef.current) {
-      tailRotate.set(activeIndex > prevIndexRef.current ? 90 : -90);
-      prevIndexRef.current = activeIndex;
+    if (activeIndex !== prevActiveIndexRef.current) {
+      const movingDown = activeIndex > prevActiveIndexRef.current;
+      tailRotate.set(movingDown ? 90 : -90);
+      tailMarginTop.set(movingDown ? -38 : -38 + 70);
+      prevActiveIndexRef.current = activeIndex;
     }
     animatedDistance.set(activeDistance);
-  }, [activeDistance, activeIndex, animatedDistance, tailRotate]);
+  }, [activeDistance, activeIndex, animatedDistance, tailRotate, tailMarginTop]);
 
-  const offsetDistancePercent = useTransform(animatedDistance, v => (totalLength > 0 ? `${(v / totalLength) * 100}%` : '0%'));
+  const offsetDistancePercent = useTransform(animatedDistance, (v) =>
+    totalLength > 0 ? `${(v / totalLength) * 100}%` : '0%',
+  );
+
+  const startY = INITIAL_OFFSET - STARTING_MARGIN;
+  const gradientY2 = useTransform(animatedDistance, (v) => startY + v);
+  const gradientY1 = useTransform(gradientY2, (y2) => Math.max(0, y2 - GRADIENT_HEIGHT_TOC));
 
   if (!path) return null;
+
   const cssOffsetPath = `path('${path}')`;
 
   return (
-    <div aria-hidden style={{
-      position: 'absolute', inset: 0, pointerEvents: 'none',
-      maskImage: 'linear-gradient(to bottom, transparent 0px, black 14px, black 100%)',
-      WebkitMaskImage: 'linear-gradient(to bottom, transparent 0px, black 14px, black 100%)',
-    }}>
-      <svg style={{ width: '100%', height: '100%', overflow: 'visible' }}>
+    <div
+      style={{
+        maskImage: 'linear-gradient(to bottom, transparent 0px, currentColor 15px, currentColor 100%)',
+        WebkitMaskImage: 'linear-gradient(to bottom, transparent 0px, currentColor 15px, currentColor 100%)',
+        color: t.fgSub,
+        pointerEvents: 'none',
+        position: 'absolute',
+        height: '100%',
+        width: '100%',
+      }}
+    >
+      <svg className="h-full w-full" style={{ height: '100%', width: '100%', overflow: 'visible' }}>
         <defs>
-          <marker id={markerId} markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
-            <circle cx="3" cy="3" r="2" fill={t.fgSub} />
+          <marker
+            id="toc-end-circle-nav"
+            markerWidth="6"
+            markerHeight="6"
+            refX="3"
+            refY="3"
+            orient="auto"
+          >
+            <circle cx="3" cy="3" r="2" fill="currentColor" />
           </marker>
+          <mask id="toc-path-mask-nav" maskUnits="userSpaceOnUse">
+            <path
+              d={path}
+              stroke="white"
+              strokeWidth="1"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </mask>
+          <motion.linearGradient
+            id="toc-progress-gradient-nav"
+            gradientUnits="userSpaceOnUse"
+            x1="0"
+            x2="0"
+            y1={gradientY1}
+            y2={gradientY2}
+          >
+            <stop offset="0%" stopColor={t.accent} stopOpacity="0" />
+            <stop offset="100%" stopColor={t.accent} stopOpacity="1" />
+          </motion.linearGradient>
         </defs>
-        <path d={path} stroke={t.fgSub} strokeWidth="1.5" fill="none" markerEnd={`url(#${markerId})`} />
+        <path
+          d={path}
+          stroke="currentColor"
+          strokeWidth="1"
+          fill="none"
+          markerEnd="url(#toc-end-circle-nav)"
+        />
       </svg>
+      <div
+        style={{
+          pointerEvents: 'none',
+          position: 'absolute',
+          inset: 0,
+          mask: 'url(#toc-path-mask-nav)',
+          WebkitMask: 'url(#toc-path-mask-nav)',
+        }}
+      >
+        <motion.div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: 80,
+            height: 80,
+            offsetPath: cssOffsetPath,
+            offsetRotate: '0deg',
+            rotate: tailRotate,
+            marginLeft: 0.2,
+            marginTop: tailMarginTop,
+            offsetDistance: offsetDistancePercent,
+            opacity: isActive ? 1 : 0,
+          }}
+        >
+          <svg width="80" height="80" viewBox="0 0 80 80" style={{ overflow: 'visible' }}>
+            <defs>
+              <radialGradient
+                id="toc-glow-radial-nav"
+                cx="0.5"
+                cy="0.5"
+                fx="0.9"
+                gradientUnits="objectBoundingBox"
+              >
+                <stop offset="0%" stopColor={t.accent} stopOpacity="1" />
+                <stop offset="100%" stopColor="transparent" stopOpacity="1" />
+              </radialGradient>
+            </defs>
+            <ellipse cx="40" cy="40" rx="40" ry="40" fill="url(#toc-glow-radial-nav)" />
+          </svg>
+        </motion.div>
+      </div>
       <motion.div
         style={{
-          position: 'absolute', top: 0, left: 0, width: 56, height: 56,
-          offsetPath: cssOffsetPath, offsetRotate: '0deg',
-          rotate: tailRotate, marginLeft: -28, marginTop: -28,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: 6,
+          height: 6,
+          borderRadius: 1,
+          background: t.accent,
+          offsetPath: cssOffsetPath,
+          offsetRotate: '0deg',
+          rotate: '45deg',
+          marginLeft: 0.2,
+          marginTop: -3,
           offsetDistance: offsetDistancePercent,
           opacity: isActive ? 1 : 0,
-          background: `radial-gradient(circle at 65% 50%, ${t.accent} 0%, transparent 70%)`,
-          filter: 'blur(1px)',
-        }}
-      />
-      <motion.div
-        style={{
-          position: 'absolute', top: 0, left: 0, width: 6, height: 6, borderRadius: 2,
-          offsetPath: cssOffsetPath, offsetRotate: '0deg', rotate: '45deg',
-          marginLeft: -3, marginTop: -3, offsetDistance: offsetDistancePercent,
-          opacity: isActive ? 1 : 0,
-          background: t.accent,
         }}
       />
     </div>
   );
 };
 
-// Панель сама прокручивается, чтобы активный заголовок оставался в зоне видимости —
-// не нужно листать оглавление руками, пока читаешь страницу.
+// ===== TOC Panel Content — рендер списка с оригинальным индикатором =====
+
 const TocPanelContent: React.FC<{
   toc: TocItem[]; activeId: string; isDark: boolean; onItemClick?: () => void; mobile?: boolean;
 }> = ({ toc, activeId, isDark, onItemClick, mobile = false }) => {
   const t = tk(isDark);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
-  const itemRefs = useRef<Map<string, HTMLElement>>(new Map());
 
   const activeIndex = activeId ? toc.findIndex(item => item.id === activeId) : -1;
-  const pathInfo = useTocIndicatorPath(listRef, itemRefs, toc);
 
+  // Auto-scroll active item into view
   useEffect(() => {
     const container = scrollRef.current;
-    const el = activeId ? itemRefs.current.get(activeId) : undefined;
-    if (!container || !el) return;
-    const target = el.offsetTop - container.clientHeight / 2 + el.offsetHeight / 2;
-    container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
-  }, [activeId]);
+    if (!container || activeIndex < 0) return;
+    // rough position: each item is ~ITEM_HEIGHT px
+    const approxTop = INITIAL_OFFSET + ITEM_HEIGHT * activeIndex - container.clientHeight / 2 + ITEM_HEIGHT / 2;
+    container.scrollTo({ top: Math.max(0, approxTop), behavior: 'smooth' });
+  }, [activeIndex]);
 
   if (!toc.length) return (
     <div style={{ flex: 1, padding: '2.5rem 1.5rem', textAlign: 'center', fontSize: mobile ? '1rem' : '0.875rem', color: t.fgMuted }}>
@@ -967,36 +1069,57 @@ const TocPanelContent: React.FC<{
 
   const minLevel = Math.min(...toc.map(item => item.level));
 
+  // Total height for the SVG overlay: based on number of items
+  const svgHeight = INITIAL_OFFSET + ITEM_HEIGHT * toc.length + 16;
+
   return (
-    <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: mobile ? '10px 14px 18px' : '8px 10px 12px' }}>
-      <div ref={listRef} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: `${TOC_ROW_GAP}px` }}>
-        <TocIndicator pathInfo={pathInfo} activeIndex={activeIndex} isDark={isDark} />
-        {toc.map((item, index) => {
-          const isActive = index === activeIndex;
-          const fontSize = mobile
-            ? `${1.02 - (item.level - minLevel) * 0.04}rem`
-            : `${0.86 - (item.level - minLevel) * 0.035}rem`;
-          return (
-            <button
-              key={item.id}
-              ref={el => { if (el) itemRefs.current.set(item.id, el); else itemRefs.current.delete(item.id); }}
-              onClick={() => { scrollToElement(item.id); onItemClick?.(); }}
-              style={{
-                position: 'relative',
-                textAlign: 'left',
-                paddingLeft:  `${18 + (item.level - minLevel) * TOC_INDENT_PER_LEVEL}px`,
-                paddingTop:    mobile ? '6px' : '4px',
-                paddingBottom: mobile ? '6px' : '4px',
-                paddingRight:  mobile ? '12px' : '8px',
-                fontSize, lineHeight: 1.45,
-                background: 'transparent', border: 'none', cursor: 'pointer',
-                color: isActive ? t.fg : t.fgMuted,
-                fontWeight: isActive ? 600 : 400,
-                transition: 'color 0.2s',
-              }}
-            >{item.text}</button>
-          );
-        })}
+    <div
+      ref={scrollRef}
+      style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: mobile ? '10px 14px 18px' : '8px 10px 12px' }}
+    >
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'row' }}>
+        {/* SVG indicator overlay — fixed width matching the path x positions */}
+        <div style={{ position: 'relative', width: STARTING_MARGIN + (toc.length > 0 ? Math.max(...toc.map(i => i.level)) - minLevel : 0) * DEPTH_INDENT + 16, flexShrink: 0, height: svgHeight }}>
+          <TocIndicatorSvg toc={toc} activeIndex={activeIndex} isDark={isDark} />
+        </div>
+        {/* Items list */}
+        <div style={{ display: 'flex', flexDirection: 'column', paddingTop: `${INITIAL_OFFSET}px` }}>
+          {toc.map((item, index) => {
+            const isActive = index === activeIndex;
+            const depthOffset = (item.level - minLevel) * DEPTH_INDENT;
+            return (
+              <button
+                key={item.id}
+                onClick={() => { scrollToElement(item.id); onItemClick?.(); }}
+                style={{
+                  height: `${ITEM_HEIGHT}px`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  paddingLeft: `${depthOffset + 4}px`,
+                  paddingRight: mobile ? '12px' : '8px',
+                  fontSize: mobile
+                    ? `${1.02 - (item.level - minLevel) * 0.04}rem`
+                    : `${0.86 - (item.level - minLevel) * 0.035}rem`,
+                  lineHeight: 1.45,
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  color: isActive ? t.fg : t.fgMuted,
+                  fontWeight: isActive ? 500 : 400,
+                  transition: 'color 0.2s',
+                  textDecoration: 'none',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: '100%',
+                }}
+              >
+                {item.text}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -1075,8 +1198,6 @@ function clearDocCssVars(): void {
   document.documentElement.style.removeProperty('--doc-chrome-radius');
 }
 
-// По умолчанию используем расширенный режим чтения, а не стандартный;
-// если пользователь раньше явно выбрал "Стандартный" — уважаем его выбор.
 function getReadingModeFromStorage(): ReadingMode {
   try { const saved = sessionStorage.getItem('hub:readingMode'); return saved === 'standard' ? 'standard' : 'extended'; } catch { return 'extended'; }
 }
