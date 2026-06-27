@@ -924,19 +924,23 @@ const TocIndicatorSvg: React.FC<{
 
   const cssOffsetPath = `path('${path}')`;
 
+  // В тёмной теме линия — чёрная/очень тёмная (почти невидимая подложка), в светлой — тёмно-серая
+  const trackColor = isDark ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.18)';
+  // Активный маркер-ромб — акцент
+  const dotColor = t.accent;
+
   return (
     <div
       style={{
-        maskImage: 'linear-gradient(to bottom, transparent 0px, currentColor 15px, currentColor 100%)',
-        WebkitMaskImage: 'linear-gradient(to bottom, transparent 0px, currentColor 15px, currentColor 100%)',
-        color: t.fgSub,
+        maskImage: 'linear-gradient(to bottom, transparent 0px, black 15px, black 100%)',
+        WebkitMaskImage: 'linear-gradient(to bottom, transparent 0px, black 15px, black 100%)',
         pointerEvents: 'none',
         position: 'absolute',
         height: '100%',
         width: '100%',
       }}
     >
-      <svg className="h-full w-full" style={{ height: '100%', width: '100%', overflow: 'visible' }}>
+      <svg style={{ height: '100%', width: '100%', overflow: 'visible' }}>
         <defs>
           <marker
             id="toc-end-circle-nav"
@@ -946,13 +950,13 @@ const TocIndicatorSvg: React.FC<{
             refY="3"
             orient="auto"
           >
-            <circle cx="3" cy="3" r="2" fill="currentColor" />
+            <circle cx="3" cy="3" r="2" fill={trackColor} />
           </marker>
           <mask id="toc-path-mask-nav" maskUnits="userSpaceOnUse">
             <path
               d={path}
               stroke="white"
-              strokeWidth="1"
+              strokeWidth="2"
               fill="none"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -970,14 +974,17 @@ const TocIndicatorSvg: React.FC<{
             <stop offset="100%" stopColor={t.accent} stopOpacity="1" />
           </motion.linearGradient>
         </defs>
+        {/* Базовая линия-трек */}
         <path
           d={path}
-          stroke="currentColor"
-          strokeWidth="1"
+          stroke={trackColor}
+          strokeWidth="1.5"
           fill="none"
           markerEnd="url(#toc-end-circle-nav)"
         />
       </svg>
+
+      {/* Светящийся хвост — накладывается через маску поверх трека */}
       <div
         style={{
           pointerEvents: 'none',
@@ -992,48 +999,52 @@ const TocIndicatorSvg: React.FC<{
             position: 'absolute',
             top: 0,
             left: 0,
-            width: 80,
-            height: 80,
+            width: 90,
+            height: 90,
             offsetPath: cssOffsetPath,
             offsetRotate: '0deg',
             rotate: tailRotate,
-            marginLeft: 0.2,
+            marginLeft: -1,
             marginTop: tailMarginTop,
             offsetDistance: offsetDistancePercent,
             opacity: isActive ? 1 : 0,
           }}
         >
-          <svg width="80" height="80" viewBox="0 0 80 80" style={{ overflow: 'visible' }}>
+          <svg width="90" height="90" viewBox="0 0 90 90" style={{ overflow: 'visible' }}>
             <defs>
               <radialGradient
                 id="toc-glow-radial-nav"
-                cx="0.5"
+                cx="0.85"
                 cy="0.5"
-                fx="0.9"
+                fx="0.85"
                 gradientUnits="objectBoundingBox"
               >
                 <stop offset="0%" stopColor={t.accent} stopOpacity="1" />
-                <stop offset="100%" stopColor="transparent" stopOpacity="1" />
+                <stop offset="55%" stopColor={t.accent} stopOpacity="0.45" />
+                <stop offset="100%" stopColor={t.accent} stopOpacity="0" />
               </radialGradient>
             </defs>
-            <ellipse cx="40" cy="40" rx="40" ry="40" fill="url(#toc-glow-radial-nav)" />
+            <ellipse cx="45" cy="45" rx="45" ry="45" fill="url(#toc-glow-radial-nav)" />
           </svg>
         </motion.div>
       </div>
+
+      {/* Бегущий ромб-маркер */}
       <motion.div
         style={{
           position: 'absolute',
           top: 0,
           left: 0,
-          width: 6,
-          height: 6,
-          borderRadius: 1,
-          background: t.accent,
+          width: 7,
+          height: 7,
+          borderRadius: 1.5,
+          background: dotColor,
+          boxShadow: `0 0 6px 2px ${t.accent}`,
           offsetPath: cssOffsetPath,
           offsetRotate: '0deg',
           rotate: '45deg',
-          marginLeft: 0.2,
-          marginTop: -3,
+          marginLeft: -0.5,
+          marginTop: -3.5,
           offsetDistance: offsetDistancePercent,
           opacity: isActive ? 1 : 0,
         }}
@@ -1052,11 +1063,9 @@ const TocPanelContent: React.FC<{
 
   const activeIndex = activeId ? toc.findIndex(item => item.id === activeId) : -1;
 
-  // Auto-scroll active item into view
   useEffect(() => {
     const container = scrollRef.current;
     if (!container || activeIndex < 0) return;
-    // rough position: each item is ~ITEM_HEIGHT px
     const approxTop = INITIAL_OFFSET + ITEM_HEIGHT * activeIndex - container.clientHeight / 2 + ITEM_HEIGHT / 2;
     container.scrollTo({ top: Math.max(0, approxTop), behavior: 'smooth' });
   }, [activeIndex]);
@@ -1068,39 +1077,43 @@ const TocPanelContent: React.FC<{
   );
 
   const minLevel = Math.min(...toc.map(item => item.level));
-
-  // Total height for the SVG overlay: based on number of items
-  const svgHeight = INITIAL_OFFSET + ITEM_HEIGHT * toc.length + 16;
+  const maxDepth = Math.max(...toc.map(i => i.level)) - minLevel;
+  // Ширина колонки с индикатором — только то, что нужно для пути
+  const indicatorColW = STARTING_MARGIN + maxDepth * DEPTH_INDENT + 14;
+  // Высота SVG-оверлея
+  const svgHeight = INITIAL_OFFSET + ITEM_HEIGHT * toc.length + 20;
 
   return (
     <div
       ref={scrollRef}
-      style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: mobile ? '10px 14px 18px' : '8px 10px 12px' }}
+      style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: mobile ? '10px 6px 18px 10px' : '8px 6px 12px 6px' }}
     >
-      <div style={{ position: 'relative', display: 'flex', flexDirection: 'row' }}>
-        {/* SVG indicator overlay — fixed width matching the path x positions */}
-        <div style={{ position: 'relative', width: STARTING_MARGIN + (toc.length > 0 ? Math.max(...toc.map(i => i.level)) - minLevel : 0) * DEPTH_INDENT + 16, flexShrink: 0, height: svgHeight }}>
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'row', minWidth: 0 }}>
+        {/* Колонка с SVG индикатором — фиксированная ширина */}
+        <div style={{ position: 'relative', width: indicatorColW, flexShrink: 0, height: svgHeight }}>
           <TocIndicatorSvg toc={toc} activeIndex={activeIndex} isDark={isDark} />
         </div>
-        {/* Items list */}
-        <div style={{ display: 'flex', flexDirection: 'column', paddingTop: `${INITIAL_OFFSET}px` }}>
+
+        {/* Колонка с текстом — занимает всё оставшееся место, текст переносится */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', paddingTop: `${INITIAL_OFFSET}px` }}>
           {toc.map((item, index) => {
             const isActive = index === activeIndex;
-            const depthOffset = (item.level - minLevel) * DEPTH_INDENT;
+            const depthOffset = mobile ? 0 : (item.level - minLevel) * 6;
             return (
               <button
                 key={item.id}
                 onClick={() => { scrollToElement(item.id); onItemClick?.(); }}
                 style={{
-                  height: `${ITEM_HEIGHT}px`,
+                  minHeight: `${ITEM_HEIGHT}px`,
                   display: 'flex',
                   alignItems: 'center',
-                  paddingLeft: `${depthOffset + 4}px`,
-                  paddingRight: mobile ? '12px' : '8px',
-                  fontSize: mobile
-                    ? `${1.02 - (item.level - minLevel) * 0.04}rem`
-                    : `${0.86 - (item.level - minLevel) * 0.035}rem`,
-                  lineHeight: 1.45,
+                  paddingLeft: `${depthOffset + 2}px`,
+                  paddingRight: mobile ? '8px' : '6px',
+                  paddingTop: '2px',
+                  paddingBottom: '2px',
+                  // Мобилка: читаемый размер без уменьшения по уровню
+                  fontSize: mobile ? '0.95rem' : `${0.825 - (item.level - minLevel) * 0.025}rem`,
+                  lineHeight: 1.4,
                   background: 'transparent',
                   border: 'none',
                   cursor: 'pointer',
@@ -1108,11 +1121,12 @@ const TocPanelContent: React.FC<{
                   color: isActive ? t.fg : t.fgMuted,
                   fontWeight: isActive ? 500 : 400,
                   transition: 'color 0.2s',
-                  textDecoration: 'none',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  maxWidth: '100%',
+                  // Текст переносится — не обрезается!
+                  whiteSpace: 'normal',
+                  wordBreak: 'break-word',
+                  overflowWrap: 'anywhere',
+                  width: '100%',
+                  boxSizing: 'border-box',
                 }}
               >
                 {item.text}
