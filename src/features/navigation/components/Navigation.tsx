@@ -86,6 +86,17 @@ function isDocActive(doc: Doc, currentDocSlug: string | undefined): boolean {
   return false;
 }
 
+// FIX 1: единая логика активности для "Главной", построенная по тому же принципу,
+// что и для кастомных страниц (Резюме и т.п.) — сперва смотрим на currentDocSlug,
+// а не только на window.location, как было раньше (старая функция isHomePage).
+function isHomeDocActive(currentDocSlug: string | undefined): boolean {
+  if (currentDocSlug !== undefined) return currentDocSlug === '';
+  if (globalThis.window !== undefined) {
+    return globalThis.window.location.pathname.replace(/^\/|\/$/g, '') === '';
+  }
+  return false;
+}
+
 const THEME_DARK = {
   fg:               'rgba(255,255,255,0.85)',
   fgMuted:          'rgba(255,255,255,0.55)',
@@ -143,6 +154,25 @@ function tk(isDark: boolean) {
     elevatedShadowSoft: t.shadowSoft,
     ...mode,
   } as const;
+}
+
+// FIX 4: единственный источник стиля "карточки" — используется буквально везде:
+// поле поиска, переключатель раздела, заголовок категории, активная страница,
+// бейдж-счётчик, пункты модалки выбора раздела. Никаких локальных переопределений
+// border/background/boxShadow/borderRadius за пределами этой функции.
+function getSectionOpenBorder(sectionOpen: boolean, isDark: boolean): string {
+  if (!sectionOpen) return tk(isDark).sectionBorder;
+  return isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)';
+}
+
+function getUnifiedControlStyle(isDark: boolean, isActive: boolean = false) {
+  const t = tk(isDark);
+  return {
+    border: `1px solid ${isActive ? getSectionOpenBorder(true, isDark) : t.sectionBorder}`,
+    background: t.sectionBg,
+    boxShadow: t.sectionShadow,
+    borderRadius: '8px',
+  };
 }
 
 const iconCache = new Map<string, React.FC<{ size?: number }>>();
@@ -208,27 +238,13 @@ function formatMetaDate(date?: string): string | null {
   return parsed.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-function getSectionOpenBorder(sectionOpen: boolean, isDark: boolean): string {
-  if (!sectionOpen) return tk(isDark).sectionBorder;
-  return isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)';
-}
-
-function getUnifiedControlStyle(isDark: boolean, isActive: boolean = false) {
-  const t = tk(isDark);
-  return {
-    border: `1px solid ${isActive ? getSectionOpenBorder(true, isDark) : t.sectionBorder}`,
-    background: t.sectionBg,
-    boxShadow: t.sectionShadow,
-    borderRadius: '8px',
-  };
-}
-
+// FIX 2: в списке навигации показываем только заголовок — описание убрано,
+// подробности и так доступны в модалке (DocHoverPreview).
 const DocLink: React.FC<{
   doc: Doc; isDark: boolean; isActive: boolean; onClick?: () => void; mobile?: boolean;
   onPreviewChange?: (payload: { doc: Doc; rect: DOMRect } | null) => void;
 }> = memo(({ doc, isDark, isActive, onClick, mobile, onPreviewChange }) => {
   const t = tk(isDark);
-  // активная страница получает тот же карточный стиль, что и поиск/переключатель раздела
   const stateStyle = isActive
     ? getUnifiedControlStyle(isDark, true)
     : { border: '1px solid transparent', background: 'transparent', boxShadow: 'none', borderRadius: '8px' };
@@ -246,62 +262,44 @@ const DocLink: React.FC<{
         ...stateStyle,
       }}>
       {doc.icon && <span style={{ flexShrink: 0, width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fgMuted }}><LucideIcon name={doc.icon} size={18} /></span>}
-      <span style={{ minWidth: 0 }}>
-        <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.35 }}>{doc.title}</span>
-        {!!doc.description && (
-          <span style={{ display: 'block', marginTop: '2px', fontSize: mobile ? '0.82rem' : '0.74rem', color: t.fgMuted, lineHeight: 1.35 }}>
-            {doc.description}
-          </span>
-        )}
+      <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.35 }}>
+        {doc.title}
       </span>
     </a>
   );
 });
 
+// FIX 1: HomePageLink больше не использует свою отдельную логику стилизации —
+// тот же подход к active-состоянию, что и у DocLink, тот же getUnifiedControlStyle.
 const HomePageLink: React.FC<{
   isDark: boolean; isActive: boolean; onClick?: () => void; mobile?: boolean;
 }> = ({ isDark, isActive, onClick, mobile }) => {
   const t = tk(isDark);
+  const stateStyle = isActive
+    ? getUnifiedControlStyle(isDark, true)
+    : { border: '1px solid transparent', background: 'transparent', boxShadow: 'none', borderRadius: '8px' };
   return (
     <a href="/" onClick={onClick} style={{
       display: 'flex', alignItems: 'center', gap: '0.5rem',
       padding: mobile ? '10px 14px' : '8px 10px',
-      borderRadius: '8px', fontSize: mobile ? '1rem' : '0.875rem',
+      fontSize: mobile ? '1rem' : '0.875rem',
       textDecoration: 'none',
-      border: `1px solid ${isActive ? t.elevatedBorder : 'transparent'}`,
       color: isActive ? t.accent : t.fg, fontWeight: isActive ? 600 : 400,
-      background: isActive ? t.accentSoft : 'transparent',
-      boxShadow: isActive ? t.elevatedShadowSoft : 'none',
       lineHeight: 1.4,
+      ...stateStyle,
     }}>
       <span style={{ flexShrink: 0, width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fgMuted }}>
         <Crown size={14} />
       </span>
-      <span style={{ minWidth: 0 }}>
-        <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.35 }}>
-          Главная
-        </span>
+      <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.35 }}>
+        Главная
       </span>
     </a>
   );
 };
 
-// точка-индикатор на ветке дерева категорий — горит акцентным цветом, если это текущая страница
-const BranchDot: React.FC<{ isActive: boolean; isDark: boolean }> = ({ isActive, isDark }) => {
-  const t = tk(isDark);
-  const size = isActive ? 8 : 6;
-  return (
-    <span aria-hidden style={{
-      position: 'absolute', left: '-10px', top: '50%',
-      transform: 'translate(-50%, -50%)',
-      width: size, height: size, borderRadius: '50%',
-      background: isActive ? t.accent : t.fgSub,
-      boxShadow: isActive ? `0 0 0 3px ${t.accentSoft}` : 'none',
-      pointerEvents: 'none', zIndex: 1,
-    }} />
-  );
-};
-
+// FIX 3: ветки/огоньки полностью убраны. Простой вложенный список с отступом,
+// без вертикальных линий и точек-индикаторов.
 const CategoryNode: React.FC<{
   node: NavNode; path: string; expandedPaths: Set<string>;
   onToggle: (p: string) => void; isDark: boolean; currentDocSlug?: string;
@@ -322,7 +320,7 @@ const CategoryNode: React.FC<{
         fontSize: mobile ? '1rem' : '0.875rem', fontWeight: 600,
         color: isActiveCategory ? t.accent : t.fg,
         overflow: 'hidden',
-        // карточный стиль категории — такой же, как у поиска и переключателя раздела
+        // FIX 4: тот же getUnifiedControlStyle, что и у поиска и переключателя раздела — без каких-либо переопределений
         ...getUnifiedControlStyle(isDark, headerActive),
       }}>
         <button type="button" onClick={() => onToggle(path)}
@@ -356,39 +354,24 @@ const CategoryNode: React.FC<{
           {total > 0 && (
             <span style={{
               fontSize: '0.72rem', padding: '2px 7px', flexShrink: 0, color: t.fgMuted,
+              // FIX 4: без переопределения borderRadius — буквальная копия общего стиля карточек
               ...getUnifiedControlStyle(isDark),
-              borderRadius: '6px',
             }}>{total}</span>
           )}
         </a>
       </div>
       {expanded && (
         <div style={{
-          position: 'relative',
-          marginLeft: '0.65rem', paddingLeft: '16px',
+          marginLeft: '0.65rem', paddingLeft: '0.45rem',
           marginTop: '4px', marginBottom: '4px',
           display: 'flex', flexDirection: 'column', gap: '2px',
         }}>
-          {/* вертикальная линия ветки */}
-          <span aria-hidden style={{ position: 'absolute', left: '6px', top: '10px', bottom: '10px', width: '1px', background: t.border }} />
-          {sortDocs(node.docs).map(doc => {
-            const docIsActive = isDocActive(doc, currentDocSlug);
-            return (
-              <div key={doc.id} style={{ position: 'relative' }}>
-                <BranchDot isActive={docIsActive} isDark={isDark} />
-                <DocLink doc={doc} isDark={isDark} isActive={docIsActive} onClick={onDocClick} mobile={mobile} onPreviewChange={onDocHoverChange} />
-              </div>
-            );
-          })}
-          {Object.entries(node.children).sort(([a], [b]) => a.localeCompare(b)).map(([key, child]) => {
-            const childSlug = [activeNavSlug, `${path}/${key}`].filter(Boolean).join('/');
-            return (
-              <div key={key} style={{ position: 'relative' }}>
-                <BranchDot isActive={currentDocSlug === childSlug} isDark={isDark} />
-                <CategoryNode node={child} path={`${path}/${key}`} expandedPaths={expandedPaths} onToggle={onToggle} isDark={isDark} currentDocSlug={currentDocSlug} onDocClick={onDocClick} mobile={mobile} activeNavSlug={activeNavSlug} onDocHoverChange={onDocHoverChange} />
-              </div>
-            );
-          })}
+          {sortDocs(node.docs).map(doc => (
+            <DocLink key={doc.id} doc={doc} isDark={isDark} isActive={isDocActive(doc, currentDocSlug)} onClick={onDocClick} mobile={mobile} onPreviewChange={onDocHoverChange} />
+          ))}
+          {Object.entries(node.children).sort(([a], [b]) => a.localeCompare(b)).map(([key, child]) => (
+            <CategoryNode key={key} node={child} path={`${path}/${key}`} expandedPaths={expandedPaths} onToggle={onToggle} isDark={isDark} currentDocSlug={currentDocSlug} onDocClick={onDocClick} mobile={mobile} activeNavSlug={activeNavSlug} onDocHoverChange={onDocHoverChange} />
+          ))}
         </div>
       )}
     </div>
@@ -545,16 +528,6 @@ function usePanelResize(
   return { onResizeMouseDown };
 }
 
-function getSectionItemBorder(isActive: boolean, isDark: boolean): string {
-  if (isActive) return 'var(--elevated-border)';
-  return isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
-}
-
-function getSectionItemBackground(isActive: boolean, isDark: boolean): string {
-  if (!isActive) return isDark ? 'rgba(255,255,255,0.04)' : 'transparent';
-  return isDark ? 'rgba(255,255,255,0.12)' : tk(false).accentSoft;
-}
-
 const SectionItemIcon: React.FC<{
   navSlug: string; navIcon: string; isActive: boolean; mobile: boolean; t: ReturnType<typeof tk>;
 }> = ({ navSlug, navIcon, isActive, mobile, t }) => {
@@ -567,15 +540,14 @@ const SectionItemIcon: React.FC<{
   );
 };
 
+// FIX 5: пункты модалки выбора раздела теперь карточки в том же дизайне,
+// что и поиск/категории — через getUnifiedControlStyle, без отдельной grid-логики.
 const SectionDropdown: React.FC<{
   sections: NavSection[]; activeNavSlug: string; mobile: boolean; isDark: boolean; onSelect: (slug: string) => void;
 }> = ({ sections, activeNavSlug, mobile, isDark, onSelect }) => {
   const t = tk(isDark);
-  const lastSection = sections.at(-1);
-  const isLastOdd = (s: NavSection) => sections.length % 2 === 1 && lastSection?.navSlug === s.navSlug;
-  const padding   = mobile ? '0.7rem 1rem' : '0.55rem 0.75rem';
-  const fontSize  = mobile ? '1rem' : '0.875rem';
-  const minHeight = mobile ? '46px' : '40px';
+  const padding  = mobile ? '0.7rem 0.85rem' : '0.55rem 0.7rem';
+  const fontSize = mobile ? '1rem' : '0.875rem';
   return (
     <>
       {sections.map(s => {
@@ -584,17 +556,13 @@ const SectionDropdown: React.FC<{
           <button key={s.navSlug} onClick={() => onSelect(s.navSlug)}
             style={{
               width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem',
-              padding, fontSize,
-              border: `1px solid ${getSectionItemBorder(isActive, isDark)}`,
-              borderRadius: '10px', cursor: 'pointer', textAlign: 'left',
-              background: getSectionItemBackground(isActive, isDark),
+              padding, fontSize, textAlign: 'left', cursor: 'pointer',
               color: isActive ? t.accent : t.fg,
               fontWeight: isActive ? 600 : 400,
-              minHeight, height: 'auto',
-              gridColumn: isLastOdd(s) ? '1 / -1' : undefined,
+              ...getUnifiedControlStyle(isDark, isActive),
             }}>
             <SectionItemIcon navSlug={s.navSlug} navIcon={s.navIcon} isActive={isActive} mobile={!!mobile} t={t} />
-            <span style={{ wordBreak: 'break-word', lineHeight: 1.3, minWidth: 0 }}>{s.navTitle}</span>
+            <span style={{ wordBreak: 'break-word', lineHeight: 1.3, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.navTitle}</span>
           </button>
         );
       })}
@@ -612,8 +580,6 @@ const NavTreeContent: React.FC<{
 }> = ({ error, navTree, currentDocSlug, expandedPaths, onToggle, isDark, mobile, activeNavSlug, onDocClick, onDocHoverChange }) => {
   const t = tk(isDark);
 
-  const isHomePage = globalThis.window?.location.pathname === '/';
-
   const filteredDocs = useMemo(() => {
     if (activeNavSlug !== '') return navTree.docs;
     return navTree.docs.filter(doc => doc.slug !== '' && doc.slug !== 'welcome');
@@ -629,7 +595,8 @@ const NavTreeContent: React.FC<{
   return (
     <nav style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
       {activeNavSlug === '' && (
-        <HomePageLink isDark={isDark} isActive={isHomePage} onClick={onDocClick} mobile={mobile} />
+        // FIX 1: активность "Главной" теперь определяется через currentDocSlug, как у всех остальных страниц
+        <HomePageLink isDark={isDark} isActive={isHomeDocActive(currentDocSlug)} onClick={onDocClick} mobile={mobile} />
       )}
       {filteredDocs.length > 0 && (
         <div style={{ marginBottom: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -677,8 +644,6 @@ const DocHoverPreview: React.FC<{ isDark: boolean; payload: { doc: Doc; rect: DO
     document.body,
   );
 };
-
-function getUnifiedControlStyleLegacyAlias() { /* зарезервировано */ }
 
 function getRailBtnColor(isActive: boolean | undefined, hov: boolean, t: ReturnType<typeof tk>): string {
   if (isActive) return t.accent;
@@ -822,12 +787,16 @@ const NavPanelContent: React.FC<{
           </button>
 
           {sectionOpen && (
+            // FIX 5: контейнер модалки разделов — тот же "карточный" дизайн, что у DocHoverPreview
+            // (скругление 12px, elevated-тень), а не отдельный hardcoded dropdownBg/dropdownBorder.
             <div style={{
-              position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '2px',
-              borderRadius: '10px', border: `1px solid ${t.dropdownBorder}`,
-              background: t.dropdownBg, zIndex: 100, overflow: 'hidden', boxShadow: 'none',
+              position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '6px',
+              borderRadius: '12px', border: `1px solid ${t.elevatedBorder}`,
+              background: isDark ? '#121212' : '#ECEBE7',
+              boxShadow: t.elevatedShadow,
+              zIndex: 100, overflow: 'hidden',
             }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '8px' }}>
                 <SectionDropdown sections={sections} activeNavSlug={activeNavSlug} mobile={!!mobile} isDark={isDark} onSelect={handleSectionSelect} />
               </div>
             </div>
@@ -874,7 +843,6 @@ function getTocItemFontWeight(isActive: boolean, isNear: boolean): number {
   return 400;
 }
 
-// FIX 1: reduced paddingLeft base values so the border-left line sits closer to the text
 function getTocItemStyle3(item: TocItem, index: number, activeIndex: number, isDark: boolean, mobile: boolean) {
   const t         = tk(isDark);
   const isActive  = index === activeIndex && activeIndex !== -1;
@@ -883,7 +851,6 @@ function getTocItemStyle3(item: TocItem, index: number, activeIndex: number, isD
   const baseFontSize = mobile ? 1.05 : 0.92;
   const fontSizeStep = mobile ? 0.05 : 0.04;
   const fontSize     = `${baseFontSize - (item.level - 2) * fontSizeStep}rem`;
-  // reduced from 14/12 to 6/4 so the left border line is tight against the text
   const paddingLeft  = mobile ? 8 + (item.level - 2) * 18 : 6 + (item.level - 2) * 14;
   const { color, borderLeftColor, opacity } = getTocItemColors(isActive, isNear, dist, activeIndex, isDark, t);
   const fontWeight = getTocItemFontWeight(isActive, isNear);
@@ -1234,9 +1201,6 @@ const DesktopRail: React.FC<{
   );
 };
 
-// FIX 2: removed borderRight from the sliding panel aside — it was creating a second
-// visible line next to the resize handle. The resize handle itself is sufficient.
-// Also removed the non-existent onHoverChange prop from the ResizeHandle call.
 const DesktopSlidingPanel: React.FC<{
   isDocsPage: boolean; chromeGap: number; chromeTopGap: number; chromeRadius: number;
   panelOpen: boolean; panelWidth: number; panelBg: string;
@@ -1253,7 +1217,6 @@ const DesktopSlidingPanel: React.FC<{
   currentDocSlug, toc, activeId, isDark,
   onResizeMouseDown, onClose,
 }) => {
-  const t = tk(isDark);
   return (
     <aside style={{
       position: 'fixed', left: chromeGap + RAIL_W, top: chromeTopGap,
