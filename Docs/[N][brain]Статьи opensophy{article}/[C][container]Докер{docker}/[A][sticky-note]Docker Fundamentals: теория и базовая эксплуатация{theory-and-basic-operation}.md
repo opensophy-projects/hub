@@ -6,6 +6,7 @@ tags: devops, docker
 keywords: Docker, контейнеры, Dockerfile, Docker образы, Docker команды, HEALTHCHECK, multi-stage builds, Docker Compose, Docker для начинающих
 robots: index, follow
 lang: ru
+priority: 0
 ---
 
 ## Введение
