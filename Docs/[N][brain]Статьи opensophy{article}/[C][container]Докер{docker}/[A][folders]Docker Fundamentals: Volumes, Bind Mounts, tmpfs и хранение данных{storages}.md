@@ -8,7 +8,6 @@ robots: index, follow
 lang: ru
 priority: 1
 ---
-![](https://habrastorage.org/webt/83/45/ab/8345aba356136cb3b95b9a1646f9133d.png)
 
 ## Введение
 
