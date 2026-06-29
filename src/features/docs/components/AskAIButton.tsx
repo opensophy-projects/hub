@@ -1,13 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Copy, Check, ChevronDown, Sparkles } from 'lucide-react';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Verbatim copy of THEME_DARK / THEME_LIGHT / tk / getSectionOpenBorder /
-// getUnifiedControlStyle from Navigation.tsx — zero changes.
-// ─────────────────────────────────────────────────────────────────────────────
 import { makeTokens } from '@/shared/tokens/theme';
 
+// Verbatim copy from Navigation.tsx
 const THEME_DARK = {
   fg:               'rgba(255,255,255,0.85)',
   fgMuted:          'rgba(255,255,255,0.55)',
@@ -59,7 +55,7 @@ function tk(isDark: boolean) {
     accentSoft:         t.accentSoft,
     inputBg:            t.bg,
     inputClr:           t.inpClr,
-    sectionBg:          t.bg,       // ← this is what Navigation uses for card backgrounds
+    sectionBg:          t.bg,
     elevatedBorder:     t.borderElevated,
     elevatedShadow:     t.shadowElevated,
     elevatedShadowSoft: t.shadowSoft,
@@ -81,7 +77,6 @@ function getUnifiedControlStyle(isDark: boolean, isActive: boolean = false) {
     borderRadius: '8px',
   };
 }
-// ─────────────────────────────────────────────────────────────────────────────
 
 interface AskAIButtonProps {
   isDark: boolean;
@@ -161,10 +156,15 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({ isDark, pageTitle, markdownCo
     } catch { /* noop */ }
   };
 
+  const copyIsActive = hoveredId === 'copy' && !!markdownContent;
+  const copyColor = markdownContent
+    ? (copyIsActive ? t.accent : t.fg)
+    : t.fgMuted;
+
   return (
     <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
 
-      {/* Trigger: verbatim copy of the nav section selector button */}
+      {/* Trigger — verbatim copy of nav section selector button */}
       <button
         onClick={toggleOpen}
         style={{
@@ -191,24 +191,22 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({ isDark, pageTitle, markdownCo
         />
       </button>
 
-      {/* Popup: verbatim copy of the nav section dropdown container */}
+      {/* Popup — verbatim copy of nav section dropdown */}
       {open && createPortal(
         <div
           ref={popupRef}
           style={{
             position: 'fixed',
-            top:  menuPos.top,
-            left: menuPos.left,
-            width: '210px',
-            // Exact from Navigation NavPanelContent sectionOpen dropdown:
-            position: 'fixed',
+            top:          menuPos.top,
+            left:         menuPos.left,
+            width:        '210px',
             borderRadius: '12px',
-            border: `1px solid ${t.elevatedBorder}`,
-            background: isDark ? '#121212' : '#ECEBE7',
-            boxShadow: t.elevatedShadow,
-            zIndex: 100020,
-            overflow: 'hidden',
-            animation: 'askAiIn 0.13s ease',
+            border:       `1px solid ${t.elevatedBorder}`,
+            background:   isDark ? '#121212' : '#ECEBE7',
+            boxShadow:    t.elevatedShadow,
+            zIndex:       100020,
+            overflow:     'hidden',
+            animation:    'askAiIn 0.13s ease',
           }}
         >
           <style>{`
@@ -218,10 +216,9 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({ isDark, pageTitle, markdownCo
             }
           `}</style>
 
-          {/* Verbatim copy of SectionDropdown wrapper div */}
+          {/* Verbatim copy of SectionDropdown wrapper */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '8px' }}>
 
-            {/* Verbatim copy of SectionDropdown buttons */}
             {PROVIDERS.map(s => {
               const isActive = hoveredId === s.id;
               return (
@@ -231,15 +228,15 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({ isDark, pageTitle, markdownCo
                   onMouseEnter={() => setHoveredId(s.id)}
                   onMouseLeave={() => setHoveredId(null)}
                   style={{
-                    width: '100%',
-                    display: 'flex',
+                    width:      '100%',
+                    display:    'flex',
                     alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.55rem 0.7rem',
-                    fontSize: '0.875rem',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    color: isActive ? t.accent : t.fg,
+                    gap:        '0.5rem',
+                    padding:    '0.55rem 0.7rem',
+                    fontSize:   '0.875rem',
+                    textAlign:  'left',
+                    cursor:     'pointer',
+                    color:      isActive ? t.accent : t.fg,
                     fontWeight: isActive ? 600 : 400,
                     ...getUnifiedControlStyle(isDark, isActive),
                   }}
@@ -251,46 +248,40 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({ isDark, pageTitle, markdownCo
               );
             })}
 
-            {/* Divider */}
             <div style={{
-              height: '1px',
+              height:     '1px',
               background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
-              margin: '0 2px',
+              margin:     '0 2px',
             }} />
 
-            {/* Copy button — same style as provider buttons */}
-            {(() => {
-              const isActive = hoveredId === 'copy' && !!markdownContent;
-              return (
-                <button
-                  onClick={handleCopy}
-                  onMouseEnter={() => setHoveredId('copy')}
-                  onMouseLeave={() => setHoveredId(null)}
-                  disabled={!markdownContent}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.55rem 0.7rem',
-                    fontSize: '0.875rem',
-                    textAlign: 'left',
-                    cursor: markdownContent ? 'pointer' : 'default',
-                    color: markdownContent ? (isActive ? t.accent : t.fg) : t.fgMuted,
-                    fontWeight: isActive ? 600 : 400,
-                    ...getUnifiedControlStyle(isDark, isActive),
-                  }}
-                >
-                  {copied
-                    ? <Check size={13} style={{ color: '#22c55e', flexShrink: 0 }} />
-                    : <Copy  size={13} style={{ opacity: 0.45, flexShrink: 0, color: t.fgMuted }} />
-                  }
-                  <span style={{ wordBreak: 'break-word', lineHeight: 1.3 }}>
-                    {copied ? 'Скопировано!' : 'Копировать HTML'}
-                  </span>
-                </button>
-              );
-            })()}
+            <button
+              onClick={handleCopy}
+              onMouseEnter={() => setHoveredId('copy')}
+              onMouseLeave={() => setHoveredId(null)}
+              disabled={!markdownContent}
+              style={{
+                width:      '100%',
+                display:    'flex',
+                alignItems: 'center',
+                gap:        '0.5rem',
+                padding:    '0.55rem 0.7rem',
+                fontSize:   '0.875rem',
+                textAlign:  'left',
+                cursor:     markdownContent ? 'pointer' : 'default',
+                color:      copyColor,
+                fontWeight: copyIsActive ? 600 : 400,
+                ...getUnifiedControlStyle(isDark, copyIsActive),
+              }}
+            >
+              {copied
+                ? <Check size={13} style={{ color: '#22c55e', flexShrink: 0 }} />
+                : <Copy  size={13} style={{ opacity: 0.45, flexShrink: 0, color: t.fgMuted }} />
+              }
+              <span style={{ wordBreak: 'break-word', lineHeight: 1.3 }}>
+                {copied ? 'Скопировано!' : 'Копировать HTML'}
+              </span>
+            </button>
+
           </div>
         </div>,
         document.body,
