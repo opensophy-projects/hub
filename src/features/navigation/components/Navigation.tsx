@@ -798,9 +798,6 @@ const NavPanelContent: React.FC<{
     </div>
   );
 };
-
-// ===== TOC — DOM-измеряемый индикатор (путь адаптируется под реальную высоту строк) =====
-
 const TOC_INDENT_PX = 10;
 const TOC_BEND = 8;
 const TOC_SPRING_CFG = { stiffness: 180, damping: 20 };
@@ -808,13 +805,12 @@ const TOC_SPRING_CFG = { stiffness: 180, damping: 20 };
 interface TocDomPathInfo {
   path: string;
   totalLength: number;
-  centers: number[]; // расстояние от начала пути до центра каждого пункта
-  svgH: number;      // полная высота SVG
-  endX: number;      // x последней точки пути (для кружка-конца)
-  endY: number;      // y последней точки пути
+  centers: number[]; 
+  svgH: number;      
+  endX: number;      
+  endY: number;      
 }
 
-// Строим путь по реальным offsetTop/offsetHeight DOM-элементов
 function buildTocDomPath(
   containerEl: HTMLElement,
   itemEls: Map<string, HTMLElement>,
@@ -824,7 +820,6 @@ function buildTocDomPath(
 
   const minLevel = Math.min(...toc.map(i => i.level));
 
-  // Собираем y-центры и x для каждого пункта
   const points: { x: number; centerY: number; bottomY: number }[] = [];
   for (const item of toc) {
     const el = itemEls.get(item.id);
@@ -841,14 +836,13 @@ function buildTocDomPath(
   let len = 0;
   const centers: number[] = [];
   let curX = points[0].x;
-  let curY = Math.max(0, points[0].centerY - 20); // старт немного выше первого
+  let curY = Math.max(0, points[0].centerY - 20);
 
   d += `M ${curX} ${curY}`;
 
   for (let i = 0; i < points.length; i++) {
     const { x, centerY, bottomY } = points[i];
 
-    // Горизонтальный переход если x изменился
     if (x !== curX) {
       const bendY = curY + TOC_BEND;
       d += ` L ${curX} ${bendY} L ${x} ${bendY + TOC_BEND}`;
@@ -857,13 +851,11 @@ function buildTocDomPath(
       curY = bendY + TOC_BEND;
     }
 
-    // Идём до центра элемента (для регистрации расстояния)
     const toCenter = centerY - curY;
     len += Math.abs(toCenter);
     centers.push(len);
     curY = centerY;
 
-    // Для последнего элемента путь заканчивается в центре — никакого хвоста
     const isLast = i === points.length - 1;
     if (!isLast) {
       d += ` L ${x} ${bottomY}`;
@@ -907,7 +899,6 @@ const TocIndicatorSvg: React.FC<{
 
   const css = `path('${path}')`;
 
-  // Цвет трека: в тёмной теме — слегка белый (видимый но не яркий), в светлой — тёмно-серый
   const trackColor = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)';
 
   return (
@@ -919,10 +910,8 @@ const TocIndicatorSvg: React.FC<{
         WebkitMaskImage: 'linear-gradient(to bottom, transparent 0px, black 12px, black 100%)',
       }}
     >
-      {/* SVG трек */}
       <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', overflow: 'visible' }} height={svgH}>
         <defs>
-          {/* Маска для хвоста-свечения */}
           <mask id="toc-mask-nav" maskUnits="userSpaceOnUse">
             <path d={path} stroke="white" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
           </mask>
@@ -930,7 +919,6 @@ const TocIndicatorSvg: React.FC<{
         <path d={path} stroke={trackColor} strokeWidth="1.5" fill="none" strokeLinecap="round" />
       </svg>
 
-      {/* Хвост-свечение — движется по маске трека */}
       <div style={{ position: 'absolute', inset: 0, mask: 'url(#toc-mask-nav)', WebkitMask: 'url(#toc-mask-nav)', overflow: 'hidden', height: svgH }}>
         <motion.div
           style={{
@@ -956,7 +944,6 @@ const TocIndicatorSvg: React.FC<{
         </motion.div>
       </div>
 
-      {/* Ромб-маркер */}
       <motion.div
         style={{
           position: 'absolute', top: 0, left: 0,
@@ -974,8 +961,6 @@ const TocIndicatorSvg: React.FC<{
   );
 };
 
-// ===== TOC Panel Content — DOM-измерения для адаптивного пути =====
-
 const TocPanelContent: React.FC<{
   toc: TocItem[]; activeId: string; isDark: boolean; onItemClick?: () => void; mobile?: boolean;
 }> = ({ toc, activeId, isDark, onItemClick, mobile = false }) => {
@@ -988,9 +973,8 @@ const TocPanelContent: React.FC<{
   const activeIndex = toc.findIndex(item => item.id === activeId);
   const minLevel    = toc.length ? Math.min(...toc.map(i => i.level)) : 0;
   const maxDepth    = toc.length ? Math.max(...toc.map(i => i.level)) - minLevel : 0;
-  const indicatorW  = maxDepth * TOC_INDENT_PX + 6 + 12; // x + радиус маркера
+  const indicatorW  = maxDepth * TOC_INDENT_PX + 6 + 12;
 
-  // Пересчитываем путь при любом изменении размеров
   useEffect(() => {
     if (!toc.length) return;
     const measure = () => {
@@ -1002,12 +986,10 @@ const TocPanelContent: React.FC<{
     measure();
     const ro = new ResizeObserver(measure);
     if (listRef.current) ro.observe(listRef.current);
-    // Наблюдаем за каждым пунктом тоже (высота может меняться)
     itemRefs.current.forEach(el => ro.observe(el));
     return () => ro.disconnect();
   }, [toc]);
 
-  // Auto-scroll к активному пункту
   useEffect(() => {
     const container = scrollRef.current;
     const el = activeId ? itemRefs.current.get(activeId) : undefined;
@@ -1026,12 +1008,10 @@ const TocPanelContent: React.FC<{
     <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: mobile ? '6px 8px 18px 6px' : '6px 6px 12px 4px' }}>
       <div ref={listRef} style={{ position: 'relative', display: 'flex', flexDirection: 'row', minWidth: 0 }}>
 
-        {/* Колонка индикатора — фиксированная ширина по максимальному отступу */}
         <div style={{ position: 'relative', width: indicatorW, flexShrink: 0, height: pathInfo.svgH || '100%' }}>
           <TocIndicatorSvg pathInfo={pathInfo} activeIndex={activeIndex} isDark={isDark} />
         </div>
 
-        {/* Колонка текста — flex:1 чтобы занимать всё место и не обрезаться */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
           {toc.map((item, index) => {
             const isActive = index === activeIndex;
@@ -1048,7 +1028,6 @@ const TocPanelContent: React.FC<{
                   paddingRight:  mobile ? '10px' : '6px',
                   paddingTop:    '5px',
                   paddingBottom: '5px',
-                  // Размер как у DocLink в навигации: 0.875rem для десктопа, 1rem для мобилки
                   fontSize: mobile ? '1rem' : `${0.875 - depth * 0.025}rem`,
                   lineHeight: 1.4,
                   background:    'transparent',
@@ -1058,7 +1037,6 @@ const TocPanelContent: React.FC<{
                   color:         isActive ? t.fg : t.fgMuted,
                   fontWeight:    isActive ? 600 : 400,
                   transition:    'color 0.2s',
-                  // Текст переносится — не обрезается
                   whiteSpace:    'normal',
                   wordBreak:     'break-word',
                   overflowWrap:  'anywhere',
@@ -1368,10 +1346,8 @@ const DesktopRail: React.FC<{
               sidebarBg={sidebarBg}
               t={t}
               onSelect={mode => {
-                // ── FIX: закрываем все открытые панели при смене режима чтения ──
                 state.setActivePanel(null);
                 state.setStandardSidebarOpen(false);
-                // ────────────────────────────────────────────────────────────────
                 setReadingMode(mode);
                 setReadingModeMenuOpen(false);
               }}
