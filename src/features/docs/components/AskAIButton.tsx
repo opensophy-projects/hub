@@ -34,26 +34,32 @@ const PROVIDERS = [
   },
 ];
 
+// ── Exact copies from Navigation.tsx ────────────────────────────────────────
+
 const THEME_DARK = {
-  fg:             'rgba(255,255,255,0.85)',
-  fgMuted:        'rgba(255,255,255,0.55)',
-  sectionBorder:  'rgba(255,255,255,0.12)',
-  sectionShadow:  '0 1px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
-  sectionBg:      '#0F0F0F',
-  elevatedBg:     '#121212',
-  elevatedBorder: 'rgba(255,255,255,0.10)',
-  elevatedShadow: '0 8px 32px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.07)',
+  fg:               'rgba(255,255,255,0.85)',
+  fgMuted:          'rgba(255,255,255,0.55)',
+  hov:              'rgba(255,255,255,0.05)',
+  sectionBorder:    'rgba(255,255,255,0.12)',
+  sectionShadow:    '0 1px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
+  dropdownBg:       '#0F0F0F',
+  dropdownBorder:   'rgba(255,255,255,0.10)',
+  dropdownShadow:   '0 8px 32px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.07)',
+  surface:          '#0F0F0F',
+  accentSoft:       'rgba(255,255,255,0.07)',
 } as const;
 
 const THEME_LIGHT = {
-  fg:             'rgba(0,0,0,0.85)',
-  fgMuted:        'rgba(0,0,0,0.55)',
-  sectionBorder:  'rgba(0,0,0,0.15)',
-  sectionShadow:  '0 1px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.55)',
-  sectionBg:      '#d5d4d0',
-  elevatedBg:     '#ECEBE7',
-  elevatedBorder: 'rgba(0,0,0,0.10)',
-  elevatedShadow: '0 8px 24px rgba(0,0,0,0.14)',
+  fg:               'rgba(0,0,0,0.85)',
+  fgMuted:          'rgba(0,0,0,0.55)',
+  hov:              'rgba(0,0,0,0.04)',
+  sectionBorder:    'rgba(0,0,0,0.15)',
+  sectionShadow:    '0 1px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.55)',
+  dropdownBg:       '#dddcd8',   // exact from Navigation THEME_LIGHT
+  dropdownBorder:   'rgba(0,0,0,0.1)',
+  dropdownShadow:   '0 8px 24px rgba(0,0,0,0.14)',
+  surface:          '#d5d4d0',   // exact: sectionBg items sit on top of dropdownBg
+  accentSoft:       'rgba(0,0,0,0.05)',
 } as const;
 
 function tk(isDark: boolean) {
@@ -62,17 +68,24 @@ function tk(isDark: boolean) {
   return { ...base, ...mode };
 }
 
-function getUnifiedControlStyle(isDark: boolean, isActive = false) {
+// Exact copy from Navigation.tsx
+function getSectionOpenBorder(sectionOpen: boolean, isDark: boolean): string {
+  if (!sectionOpen) return tk(isDark).sectionBorder;
+  return isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)';
+}
+
+// Exact copy from Navigation.tsx
+function getUnifiedControlStyle(isDark: boolean, isActive: boolean = false) {
   const t = tk(isDark);
   return {
-    border: `1px solid ${isActive
-      ? (isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)')
-      : t.sectionBorder}`,
-    background: t.sectionBg,
+    border: `1px solid ${isActive ? getSectionOpenBorder(true, isDark) : t.sectionBorder}`,
+    background: t.surface,
     boxShadow: t.sectionShadow,
     borderRadius: '8px',
   };
 }
+
+// ────────────────────────────────────────────────────────────────────────────
 
 const AskAIButton: React.FC<AskAIButtonProps> = ({ isDark, pageTitle, markdownContent }) => {
   const [open,      setOpen]      = useState(false);
@@ -121,42 +134,42 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({ isDark, pageTitle, markdownCo
     } catch { /* noop */ }
   };
 
-  const allItems = [
-    ...PROVIDERS.map(p => ({ id: p.id, label: p.name, onClick: () => handleProviderClick(p), icon: null })),
-    { id: 'copy', label: copied ? 'Скопировано!' : 'Копировать HTML', onClick: handleCopy, icon: copied ? <Check size={13} style={{ color: '#22c55e', flexShrink: 0 }} /> : <Copy size={13} style={{ opacity: 0.45, flexShrink: 0, color: t.fgMuted }} />, disabled: !markdownContent },
-  ];
-
   return (
     <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
-      {/* Trigger — same style as the nav section selector button */}
+
+      {/* ── Trigger button — exact copy of the nav section selector button ── */}
       <button
         onClick={toggleOpen}
         style={{
-          display: 'inline-flex',
+          width: '100%',
+          display: 'flex',
           alignItems: 'center',
-          gap: '0.5rem',
+          justifyContent: 'space-between',
           padding: '0.4rem 0.65rem',
           fontSize: '0.875rem',
-          fontWeight: 500,
-          cursor: 'pointer',
           color: t.fg,
-          userSelect: 'none',
-          lineHeight: 1,
+          cursor: 'pointer',
           ...getUnifiedControlStyle(isDark, open),
         }}
       >
-        <Sparkles size={13} style={{ color: t.fgMuted }} />
-        Спросить у ИИ
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden', minWidth: 0, flex: 1 }}>
+          <Sparkles size={13} style={{ color: t.fgMuted, flexShrink: 0 }} />
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-word', lineHeight: 1.3 }}>
+            Спросить у ИИ
+          </span>
+        </div>
         <ChevronDown
           size={12}
           style={{
             color: t.fgMuted,
-            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+            flexShrink: 0,
+            transform: open ? 'rotate(180deg)' : 'none',
             transition: 'transform 0.15s',
           }}
         />
       </button>
 
+      {/* ── Popup — exact copy of the nav section dropdown ── */}
       {open && createPortal(
         <div
           ref={popupRef}
@@ -165,11 +178,12 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({ isDark, pageTitle, markdownCo
             top:  menuPos.top,
             left: menuPos.left,
             width: '210px',
-            // Exact match: nav section dropdown popup
+            // From Navigation: position absolute, borderRadius 12, border elevatedBorder,
+            // background isDark ? '#121212' : '#ECEBE7', boxShadow elevatedShadow
             borderRadius: '12px',
-            border: `1px solid ${t.elevatedBorder}`,
-            background: t.elevatedBg,
-            boxShadow: t.elevatedShadow,
+            border: `1px solid ${t.dropdownBorder}`,
+            background: isDark ? '#121212' : '#ECEBE7',
+            boxShadow: t.dropdownShadow,
             zIndex: 100020,
             overflow: 'hidden',
             animation: 'askAiIn 0.13s ease',
@@ -182,42 +196,35 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({ isDark, pageTitle, markdownCo
             }
           `}</style>
 
-          {/* Label — exact match: nav panel header label */}
-          <div style={{
-            padding: '9px 12px 4px',
-            fontSize: '0.72rem',
-            fontWeight: 700,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            color: t.fgMuted,
-          }}>
-            Выбери ИИ
-          </div>
+          {/* Items — exact copy of SectionDropdown content wrapper */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '8px' }}>
 
-          {/* Items — exact match: SectionDropdown buttons */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '4px 8px 8px' }}>
-            {PROVIDERS.map(p => {
-              const isActive = hoveredId === p.id;
+            {PROVIDERS.map(s => {
+              const isActive = hoveredId === s.id;
               return (
                 <button
-                  key={p.id}
-                  onClick={() => handleProviderClick(p)}
-                  onMouseEnter={() => setHoveredId(p.id)}
+                  key={s.id}
+                  onClick={() => handleProviderClick(s)}
+                  onMouseEnter={() => setHoveredId(s.id)}
                   onMouseLeave={() => setHoveredId(null)}
                   style={{
                     width: '100%',
                     display: 'flex',
                     alignItems: 'center',
+                    gap: '0.5rem',
                     padding: '0.55rem 0.7rem',
                     fontSize: '0.875rem',
-                    fontWeight: 400,
                     textAlign: 'left',
                     cursor: 'pointer',
                     color: isActive ? t.accent : t.fg,
+                    fontWeight: isActive ? 600 : 400,
+                    // exact: getUnifiedControlStyle from Navigation
                     ...getUnifiedControlStyle(isDark, isActive),
                   }}
                 >
-                  {p.name}
+                  <span style={{ wordBreak: 'break-word', lineHeight: 1.3, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {s.name}
+                  </span>
                 </button>
               );
             })}
@@ -226,7 +233,7 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({ isDark, pageTitle, markdownCo
             <div style={{
               height: '1px',
               background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
-              margin: '2px 2px',
+              margin: '0 2px',
             }} />
 
             {/* Copy row */}
@@ -245,10 +252,10 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({ isDark, pageTitle, markdownCo
                     gap: '0.5rem',
                     padding: '0.55rem 0.7rem',
                     fontSize: '0.875rem',
-                    fontWeight: 400,
                     textAlign: 'left',
                     cursor: markdownContent ? 'pointer' : 'default',
                     color: markdownContent ? (isActive ? t.accent : t.fg) : t.fgMuted,
+                    fontWeight: isActive && markdownContent ? 600 : 400,
                     ...getUnifiedControlStyle(isDark, isActive && !!markdownContent),
                   }}
                 >
@@ -256,7 +263,9 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({ isDark, pageTitle, markdownCo
                     ? <Check size={13} style={{ color: '#22c55e', flexShrink: 0 }} />
                     : <Copy  size={13} style={{ opacity: 0.45, flexShrink: 0, color: t.fgMuted }} />
                   }
-                  {copied ? 'Скопировано!' : 'Копировать HTML'}
+                  <span style={{ wordBreak: 'break-word', lineHeight: 1.3 }}>
+                    {copied ? 'Скопировано!' : 'Копировать HTML'}
+                  </span>
                 </button>
               );
             })()}
