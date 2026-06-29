@@ -1361,7 +1361,21 @@ const DesktopRail: React.FC<{
         {readingModeEnabled && (
           <div style={{ position: 'relative' }}>
             <RailBtn icon={<BookOpenText size={18} />} label="Режим чтения" isDark={isDark} isActive={readingModeMenuOpen} onClick={() => setReadingModeMenuOpen(prev => !prev)} title="Режим чтения" />
-            <DesktopReadingModeMenu readingMode={readingMode} readingModeMenuOpen={readingModeMenuOpen} chromeRadius={chromeRadius} sidebarBg={sidebarBg} t={t} onSelect={mode => { setReadingMode(mode); setReadingModeMenuOpen(false); }} />
+            <DesktopReadingModeMenu
+              readingMode={readingMode}
+              readingModeMenuOpen={readingModeMenuOpen}
+              chromeRadius={chromeRadius}
+              sidebarBg={sidebarBg}
+              t={t}
+              onSelect={mode => {
+                // ── FIX: закрываем все открытые панели при смене режима чтения ──
+                state.setActivePanel(null);
+                state.setStandardSidebarOpen(false);
+                // ────────────────────────────────────────────────────────────────
+                setReadingMode(mode);
+                setReadingModeMenuOpen(false);
+              }}
+            />
           </div>
         )}
         {!isStandardMode && (
