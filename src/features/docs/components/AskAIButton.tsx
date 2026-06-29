@@ -34,31 +34,26 @@ const PROVIDERS = [
   },
 ];
 
-// Mirrors the token helpers from Navigation
 const THEME_DARK = {
-  fg:               'rgba(255,255,255,0.85)',
-  fgMuted:          'rgba(255,255,255,0.55)',
-  hov:              'rgba(255,255,255,0.05)',
-  sectionBorder:    'rgba(255,255,255,0.12)',
-  sectionShadow:    '0 1px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
-  sectionBg:        '#0F0F0F',
-  elevatedBg:       '#121212',
-  elevatedBorder:   'rgba(255,255,255,0.10)',
-  elevatedShadow:   '0 8px 32px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.07)',
-  accentSoft:       'rgba(255,255,255,0.07)',
+  fg:             'rgba(255,255,255,0.85)',
+  fgMuted:        'rgba(255,255,255,0.55)',
+  sectionBorder:  'rgba(255,255,255,0.12)',
+  sectionShadow:  '0 1px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
+  sectionBg:      '#0F0F0F',
+  elevatedBg:     '#121212',
+  elevatedBorder: 'rgba(255,255,255,0.10)',
+  elevatedShadow: '0 8px 32px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.07)',
 } as const;
 
 const THEME_LIGHT = {
-  fg:               'rgba(0,0,0,0.85)',
-  fgMuted:          'rgba(0,0,0,0.55)',
-  hov:              'rgba(0,0,0,0.04)',
-  sectionBorder:    'rgba(0,0,0,0.15)',
-  sectionShadow:    '0 1px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.55)',
-  sectionBg:        '#d5d4d0',
-  elevatedBg:       '#ECEBE7',
-  elevatedBorder:   'rgba(0,0,0,0.10)',
-  elevatedShadow:   '0 8px 24px rgba(0,0,0,0.14)',
-  accentSoft:       'rgba(0,0,0,0.05)',
+  fg:             'rgba(0,0,0,0.85)',
+  fgMuted:        'rgba(0,0,0,0.55)',
+  sectionBorder:  'rgba(0,0,0,0.15)',
+  sectionShadow:  '0 1px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.55)',
+  sectionBg:      '#d5d4d0',
+  elevatedBg:     '#ECEBE7',
+  elevatedBorder: 'rgba(0,0,0,0.10)',
+  elevatedShadow: '0 8px 24px rgba(0,0,0,0.14)',
 } as const;
 
 function tk(isDark: boolean) {
@@ -79,18 +74,13 @@ function getUnifiedControlStyle(isDark: boolean, isActive = false) {
   };
 }
 
-const AskAIButton: React.FC<AskAIButtonProps> = ({
-  isDark,
-  pageTitle,
-  markdownContent,
-}) => {
+const AskAIButton: React.FC<AskAIButtonProps> = ({ isDark, pageTitle, markdownContent }) => {
   const [open,      setOpen]      = useState(false);
   const [copied,    setCopied]    = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const ref      = useRef<HTMLDivElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
-
   const t = tk(isDark);
 
   useEffect(() => {
@@ -104,15 +94,13 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
     return () => document.removeEventListener('mousedown', onDown);
   }, [open]);
 
-  const getPageUrl = () => globalThis.location.href;
-
   const toggleOpen = () => {
     if (open) { setOpen(false); return; }
     const rect = ref.current?.getBoundingClientRect();
     if (rect) {
       const width = 210;
       setMenuPos({
-        top:  rect.bottom + 7,
+        top:  rect.bottom + 6,
         left: Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8)),
       });
     }
@@ -120,7 +108,7 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
   };
 
   const handleProviderClick = (p: typeof PROVIDERS[0]) => {
-    globalThis.open(p.getUrl(pageTitle, getPageUrl()), '_blank', 'noopener,noreferrer');
+    globalThis.open(p.getUrl(pageTitle, globalThis.location.href), '_blank', 'noopener,noreferrer');
     setOpen(false);
   };
 
@@ -130,30 +118,34 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
       await navigator.clipboard.writeText(markdownContent);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // clipboard недоступен
-    }
+    } catch { /* noop */ }
   };
 
-  // Trigger button: same style as nav section selector button
-  const triggerStyle = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '0.35rem',
-    padding: '0.4rem 0.65rem',
-    fontSize: '0.855rem',
-    fontWeight: 500,
-    cursor: 'pointer',
-    color: t.fg,
-    userSelect: 'none' as const,
-    lineHeight: 1,
-    ...getUnifiedControlStyle(isDark, open),
-  };
+  const allItems = [
+    ...PROVIDERS.map(p => ({ id: p.id, label: p.name, onClick: () => handleProviderClick(p), icon: null })),
+    { id: 'copy', label: copied ? 'Скопировано!' : 'Копировать HTML', onClick: handleCopy, icon: copied ? <Check size={13} style={{ color: '#22c55e', flexShrink: 0 }} /> : <Copy size={13} style={{ opacity: 0.45, flexShrink: 0, color: t.fgMuted }} />, disabled: !markdownContent },
+  ];
 
   return (
     <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
-      <button onClick={toggleOpen} style={triggerStyle}>
-        <Sparkles size={13} style={{ opacity: 0.7, color: t.fgMuted }} />
+      {/* Trigger — same style as the nav section selector button */}
+      <button
+        onClick={toggleOpen}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          padding: '0.4rem 0.65rem',
+          fontSize: '0.875rem',
+          fontWeight: 500,
+          cursor: 'pointer',
+          color: t.fg,
+          userSelect: 'none',
+          lineHeight: 1,
+          ...getUnifiedControlStyle(isDark, open),
+        }}
+      >
+        <Sparkles size={13} style={{ color: t.fgMuted }} />
         Спросить у ИИ
         <ChevronDown
           size={12}
@@ -173,7 +165,7 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
             top:  menuPos.top,
             left: menuPos.left,
             width: '210px',
-            // Matches the nav section dropdown popup
+            // Exact match: nav section dropdown popup
             borderRadius: '12px',
             border: `1px solid ${t.elevatedBorder}`,
             background: t.elevatedBg,
@@ -190,9 +182,9 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
             }
           `}</style>
 
-          {/* Label — same style as nav section header label */}
+          {/* Label — exact match: nav panel header label */}
           <div style={{
-            padding: '9px 12px 5px',
+            padding: '9px 12px 4px',
             fontSize: '0.72rem',
             fontWeight: 700,
             letterSpacing: '0.08em',
@@ -202,10 +194,10 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
             Выбери ИИ
           </div>
 
-          {/* Provider rows — use getUnifiedControlStyle on hover */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '2px 8px 4px' }}>
+          {/* Items — exact match: SectionDropdown buttons */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '4px 8px 8px' }}>
             {PROVIDERS.map(p => {
-              const isHov = hoveredId === p.id;
+              const isActive = hoveredId === p.id;
               return (
                 <button
                   key={p.id}
@@ -213,38 +205,33 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
                   onMouseEnter={() => setHoveredId(p.id)}
                   onMouseLeave={() => setHoveredId(null)}
                   style={{
+                    width: '100%',
                     display: 'flex',
                     alignItems: 'center',
-                    width: '100%',
-                    padding: '8px 10px',
-                    color: t.fg,
+                    padding: '0.55rem 0.7rem',
                     fontSize: '0.875rem',
                     fontWeight: 400,
                     textAlign: 'left',
                     cursor: 'pointer',
-                    transition: 'color 0.12s',
-                    ...(isHov
-                      ? getUnifiedControlStyle(isDark, true)
-                      : { border: '1px solid transparent', background: 'transparent', boxShadow: 'none', borderRadius: '8px' }),
+                    color: isActive ? t.accent : t.fg,
+                    ...getUnifiedControlStyle(isDark, isActive),
                   }}
                 >
                   {p.name}
                 </button>
               );
             })}
-          </div>
 
-          {/* Divider — same style as nav */}
-          <div style={{
-            height: '1px',
-            background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
-            margin: '4px 8px',
-          }} />
+            {/* Divider */}
+            <div style={{
+              height: '1px',
+              background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+              margin: '2px 2px',
+            }} />
 
-          {/* Copy row */}
-          <div style={{ padding: '4px 8px 8px' }}>
+            {/* Copy row */}
             {(() => {
-              const isHov = hoveredId === 'copy';
+              const isActive = hoveredId === 'copy';
               return (
                 <button
                   onClick={handleCopy}
@@ -252,19 +239,17 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({
                   onMouseLeave={() => setHoveredId(null)}
                   disabled={!markdownContent}
                   style={{
+                    width: '100%',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.5rem',
-                    width: '100%',
-                    padding: '8px 10px',
-                    color: markdownContent ? t.fg : t.fgMuted,
+                    padding: '0.55rem 0.7rem',
                     fontSize: '0.875rem',
+                    fontWeight: 400,
                     textAlign: 'left',
                     cursor: markdownContent ? 'pointer' : 'default',
-                    transition: 'color 0.12s',
-                    ...(isHov && markdownContent
-                      ? getUnifiedControlStyle(isDark, true)
-                      : { border: '1px solid transparent', background: 'transparent', boxShadow: 'none', borderRadius: '8px' }),
+                    color: markdownContent ? (isActive ? t.accent : t.fg) : t.fgMuted,
+                    ...getUnifiedControlStyle(isDark, isActive && !!markdownContent),
                   }}
                 >
                   {copied
