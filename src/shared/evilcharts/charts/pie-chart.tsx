@@ -35,7 +35,7 @@ import {
   Sector,
   type PieSectorShapeProps,
 } from "recharts";
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 
 // Constants
 const LOADING_SECTORS = 5;
