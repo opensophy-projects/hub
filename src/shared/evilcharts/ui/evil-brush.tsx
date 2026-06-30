@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useMotionValue, useMotionValueEvent, useSpring, useTransform } from "motion/react";
+import { motion, useMotionValue, useMotionValueEvent, useSpring, useTransform } from "framer-motion";
 import { ResponsiveContainer, AreaChart, Area, LineChart, Line, BarChart, Bar } from "recharts";
 import { ChartStyle, getColorsCount, type ChartConfig } from "@/shared/evilcharts/ui/chart";
 import { useCallback, useEffect, type ComponentProps } from "react";
