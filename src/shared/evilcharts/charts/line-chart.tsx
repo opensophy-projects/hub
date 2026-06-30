@@ -29,7 +29,7 @@ import {
   Children,
   createContext,
   isValidElement,
-  use,
+  useContext,
   useCallback,
   useId,
   useMemo,
@@ -88,7 +88,7 @@ const LineChartContext = createContext<LineChartContextValue | null>(null);
 
 // Reads the chart context, throwing a helpful error when used outside <EvilLineChart />
 function useLineChart() {
-  const context = use(LineChartContext);
+  const context = useContext(LineChartContext);
 
   if (!context) {
     throw new Error(

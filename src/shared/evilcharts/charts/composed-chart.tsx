@@ -20,7 +20,7 @@ import {
   Children,
   createContext,
   isValidElement,
-  use,
+  useContext,
   useCallback,
   useId,
   useMemo,
@@ -99,7 +99,7 @@ const ComposedChartContext = createContext<ComposedChartContextValue | null>(nul
 
 // Reads the chart context, throwing a helpful error when used outside <EvilComposedChart />
 function useComposedChart() {
-  const context = use(ComposedChartContext);
+  const context = useContext(ComposedChartContext);
 
   if (!context) {
     throw new Error(

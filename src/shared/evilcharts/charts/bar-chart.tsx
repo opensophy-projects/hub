@@ -18,7 +18,7 @@ import { ChartLegend, ChartLegendContent, type ChartLegendVariant } from "@/shar
 import { ChartBackground, type BackgroundVariant } from "@/shared/evilcharts/ui/background";
 import {
   createContext,
-  use,
+  useContext,
   useCallback,
   useId,
   useMemo,
@@ -90,7 +90,7 @@ const BarChartContext = createContext<BarChartContextValue | null>(null);
 
 // Reads the chart context, throwing a helpful error when used outside <EvilBarChart />
 function useBarChart() {
-  const context = use(BarChartContext);
+  const context = useContext(BarChartContext);
 
   if (!context) {
     throw new Error(

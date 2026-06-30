@@ -16,7 +16,7 @@ import { ChartLegend, ChartLegendContent, type ChartLegendVariant } from "@/shar
 import { ChartBackground, type BackgroundVariant } from "@/shared/evilcharts/ui/background";
 import {
   createContext,
-  use,
+  useContext,
   useCallback,
   useEffect,
   useId,
@@ -71,7 +71,7 @@ const RadialChartContext = createContext<RadialChartContextValue | null>(null);
 
 // Reads the chart context, throwing a helpful error when used outside <EvilRadialChart />
 function useRadialChart() {
-  const context = use(RadialChartContext);
+  const context = useContext(RadialChartContext);
 
   if (!context) {
     throw new Error(

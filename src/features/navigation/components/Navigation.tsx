@@ -1156,7 +1156,7 @@ const ResizeHandle: React.FC<{
   onMouseDown: (e: React.MouseEvent) => void;
   isDark: boolean;
   label: string;
-}> = ({ edge, onMouseDown, isDark, label }) => {
+}> = ({ edge, onMouseDown, label }) => {
   return (
     <button
       type="button"
@@ -1385,7 +1385,7 @@ const DesktopSlidingPanel: React.FC<{
 }> = ({
   isDocsPage, chromeGap, chromeTopGap,
   chromeRadius, panelOpen, panelWidth,
-  panelBg, shellEnabled, panelTitle, isStandardMode,
+  panelBg, shellEnabled, panelTitle,
   currentDocSlug, toc, activeId, isDark,
   onResizeMouseDown, onClose,
 }) => {

@@ -18,7 +18,7 @@ import {
   Children,
   createContext,
   isValidElement,
-  use,
+  useContext,
   useCallback,
   useId,
   useMemo,
@@ -74,7 +74,7 @@ const PieChartContext = createContext<PieChartContextValue | null>(null);
 
 // Reads the chart context, throwing a helpful error when used outside <EvilPieChart />
 function usePieChart() {
-  const context = use(PieChartContext);
+  const context = useContext(PieChartContext);
 
   if (!context) {
     throw new Error(

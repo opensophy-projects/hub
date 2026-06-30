@@ -17,7 +17,7 @@ import {
   Children,
   createContext,
   isValidElement,
-  use,
+  useContext,
   useCallback,
   useId,
   useMemo,
@@ -70,7 +70,7 @@ const SankeyChartContext = createContext<SankeyChartContextValue | null>(null);
 
 // Reads the chart context, throwing a helpful error when used outside <EvilSankeyChart />
 function useSankeyChart() {
-  const context = use(SankeyChartContext);
+  const context = useContext(SankeyChartContext);
 
   if (!context) {
     throw new Error(

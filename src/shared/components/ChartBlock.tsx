@@ -27,7 +27,7 @@ export type ChartType =
 export type ChartRow = Record<string, string | number>;
 export type ChartDesign = 'default' | 'gradient' | 'hatched' | 'duotone' | 'duotone-reverse' | 'stripped' | 'solid' | 'dotted' | 'lines' | 'glowing';
 export type ChartBackground = 'dots' | 'grid' | 'cross-hatch' | 'diagonal-lines' | 'tiny-checkers' | 'plus' | 'bubbles' | 'wiggle-lines' | 'falling-triangles' | 'overlapping-circles' | '4-pointed-star';
-export type ChartTooltip = 'default' | 'glass' | 'frosted' | 'minimal';
+export type ChartTooltip = 'default' | 'glass' | 'frosted' | 'minimal' | 'frosted-glass';
 export type ChartLegend = 'circle' | 'square' | 'rounded-square' | 'circle-outline' | 'rounded-square-outline';
 
 interface ChartBlockProps {
@@ -63,14 +63,30 @@ function normalizeCurve(curve?: ChartBlockProps['curve']) {
   return curve ?? 'linear';
 }
 
-function normalizeTooltip(tooltip?: ChartTooltip) {
-  return tooltip === 'glass' ? 'frosted' : tooltip;
+function normalizeTooltip(tooltip?: ChartTooltip): React.ComponentProps<typeof AreaTooltip>['variant'] {
+  return tooltip === 'glass' || tooltip === 'frosted' ? 'frosted-glass' : 'default';
+}
+
+function normalizeBarVariant(design: ChartDesign): React.ComponentProps<typeof Bar>['variant'] {
+  if (design === 'solid' || design === 'glowing') return 'default';
+  if (design === 'default' || design === 'dotted' || design === 'lines') return 'gradient';
+  return design;
+}
+
+function normalizeAreaVariant(design: ChartDesign): React.ComponentProps<typeof Area>['variant'] {
+  if (design === 'solid' || design === 'glowing') return 'solid';
+  if (design === 'duotone' || design === 'duotone-reverse' || design === 'stripped' || design === 'default') return 'gradient';
+  return design;
+}
+
+function normalizePieVariant(): React.ComponentProps<typeof Pie>['variant'] {
+  return 'gradient';
 }
 
 function renderSeries(valueKeys: string[], kind: 'area' | 'line' | 'bar' | 'radar', design: ChartDesign) {
   return valueKeys.map((key) => {
-    if (kind === 'bar') return <Bar key={key} dataKey={key} variant={design === 'solid' || design === 'glowing' ? 'default' : design as any} glowing={design === 'glowing'} enableHoverHighlight />;
-    if (kind === 'area') return <Area key={key} dataKey={key} variant={design === 'solid' || design === 'glowing' ? 'solid' : design as any} strokeVariant={design === 'dotted' ? 'dotted' : design === 'solid' ? 'solid' : 'dashed'} isClickable />;
+    if (kind === 'bar') return <Bar key={key} dataKey={key} variant={normalizeBarVariant(design)} glowing={design === 'glowing'} enableHoverHighlight />;
+    if (kind === 'area') return <Area key={key} dataKey={key} variant={normalizeAreaVariant(design)} strokeVariant={design === 'solid' ? 'solid' : 'dashed'} isClickable />;
     if (kind === 'line') return <Line key={key} dataKey={key} strokeVariant={design === 'dotted' ? 'dotted' : design === 'solid' ? 'solid' : 'dashed'} glowing={design === 'glowing'} isClickable />;
     return <Radar key={key} dataKey={key} variant={design === 'lines' ? 'lines' : 'filled'} isClickable />;
   });
@@ -88,20 +104,20 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, desi
 
   const commonHeader = title ? <div className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{title}</div> : null;
   const commonClass = `not-prose my-5 rounded-xl border ${isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-white'} p-4 shadow-sm`;
-  const tip = normalizeTooltip(tooltip) as any;
+  const tip = normalizeTooltip(tooltip);
 
   let chart: React.ReactNode;
   if (type.startsWith('area')) {
-    chart = <EvilAreaChart config={config} data={data} stackType={type === 'area-stacked' ? 'stacked' : type === 'area-expanded' ? 'expanded' : 'default'} curveType={normalizeCurve(curve) as any} className="h-[320px]"><AreaXAxis dataKey={nameKey} /><AreaYAxis /><AreaTooltip variant={tip} /><AreaLegend variant={legend as any} isClickable />{renderSeries(valueKeys, 'area', design)}</EvilAreaChart>;
+    chart = <EvilAreaChart config={config} data={data} stackType={type === 'area-stacked' ? 'stacked' : type === 'area-expanded' ? 'expanded' : 'default'} curveType={normalizeCurve(curve)} className="h-[320px]"><AreaXAxis dataKey={nameKey} /><AreaYAxis /><AreaTooltip variant={tip} /><AreaLegend variant={legend} isClickable />{renderSeries(valueKeys, 'area', design)}</EvilAreaChart>;
   } else if (type === 'line') {
-    chart = <EvilLineChart config={config} data={data} curveType={normalizeCurve(curve) as any} backgroundVariant={background as any} className="h-[320px]"><LineXAxis dataKey={nameKey} /><LineYAxis /><LineTooltip variant={tip} /><LineLegend variant={legend as any} isClickable />{renderSeries(valueKeys, 'line', design)}</EvilLineChart>;
+    chart = <EvilLineChart config={config} data={data} curveType={normalizeCurve(curve)} backgroundVariant={background} className="h-[320px]"><LineXAxis dataKey={nameKey} /><LineYAxis /><LineTooltip variant={tip} /><LineLegend variant={legend} isClickable />{renderSeries(valueKeys, 'line', design)}</EvilLineChart>;
   } else if (type.startsWith('bar')) {
-    chart = <EvilBarChart config={config} data={data} stackType={type === 'bar-stacked' ? 'stacked' : type === 'bar-percent' ? 'percent' : 'default'} layout={type === 'bar-horizontal' ? 'horizontal' : 'vertical'} backgroundVariant={background as any} className="h-[320px]"><BarXAxis dataKey={nameKey} /><BarYAxis /><BarTooltip variant={tip} /><BarLegend variant={legend as any} isClickable />{renderSeries(valueKeys, 'bar', design)}</EvilBarChart>;
+    chart = <EvilBarChart config={config} data={data} stackType={type === 'bar-stacked' ? 'stacked' : type === 'bar-percent' ? 'percent' : 'default'} layout={type === 'bar-horizontal' ? 'horizontal' : 'vertical'} backgroundVariant={background} className="h-[320px]"><BarXAxis dataKey={nameKey} /><BarYAxis /><BarTooltip variant={tip} /><BarLegend variant={legend} isClickable />{renderSeries(valueKeys, 'bar', design)}</EvilBarChart>;
   } else if (type.startsWith('pie')) {
     const pieConfig = buildConfig(data.map((row) => String(row[nameKey])), palette);
-    chart = <EvilPieChart config={pieConfig} data={data} nameKey={nameKey} dataKey={valueKeys[0]} className="h-[320px]"><Pie variant={design === 'glowing' ? 'gradient' : design as any} innerRadius={type === 'pie-donut' ? '52%' : 0} isClickable />{background && <PieBackground variant={background as any} />}<PieTooltip variant={tip} /><PieLegend variant={legend as any} isClickable /></EvilPieChart>;
+    chart = <EvilPieChart config={pieConfig} data={data} nameKey={nameKey} dataKey={valueKeys[0]} className="h-[320px]"><Pie variant={normalizePieVariant()} innerRadius={type === 'pie-donut' ? '52%' : 0} isClickable />{background && <PieBackground variant={background} />}<PieTooltip variant={tip} /><PieLegend variant={legend} isClickable /></EvilPieChart>;
   } else {
-    chart = <EvilRadarChart config={config} data={data} backgroundVariant={background as any} className="h-[340px]"><PolarGrid /><PolarAngleAxis dataKey={nameKey} /><RadarTooltip variant={tip} /><RadarLegend variant={legend as any} isClickable />{renderSeries(valueKeys, 'radar', design)}</EvilRadarChart>;
+    chart = <EvilRadarChart config={config} data={data} backgroundVariant={background} className="h-[340px]"><PolarGrid /><PolarAngleAxis dataKey={nameKey} /><RadarTooltip variant={tip} /><RadarLegend variant={legend} isClickable />{renderSeries(valueKeys, 'radar', design)}</EvilRadarChart>;
   }
 
   return <div className={commonClass}>{commonHeader}{chart}<div className="mt-3 flex justify-between border-t pt-2 text-[11px] opacity-50"><span>{data.length} записей</span><span className="font-mono">{type} · {design}</span></div></div>;

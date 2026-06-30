@@ -19,7 +19,7 @@ import {
   Children,
   createContext,
   isValidElement,
-  use,
+  useContext,
   useCallback,
   useEffect,
   useId,
@@ -68,7 +68,7 @@ const RadarChartContext = createContext<RadarChartContextValue | null>(null);
 
 // Reads the chart context, throwing a helpful error when used outside <EvilRadarChart />
 function useRadarChart() {
-  const context = use(RadarChartContext);
+  const context = useContext(RadarChartContext);
 
   if (!context) {
     throw new Error(

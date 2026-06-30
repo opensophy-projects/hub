@@ -4,7 +4,7 @@ import {
   Children,
   createContext,
   isValidElement,
-  use,
+  useContext,
   useCallback,
   useId,
   useMemo,
@@ -92,7 +92,7 @@ const AreaChartContext = createContext<AreaChartContextValue | null>(null);
 
 // Reads the chart context, throwing a helpful error when used outside <EvilAreaChart />
 function useAreaChart() {
-  const context = use(AreaChartContext);
+  const context = useContext(AreaChartContext);
 
   if (!context) {
     throw new Error(
