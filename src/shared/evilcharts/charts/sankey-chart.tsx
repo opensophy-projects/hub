@@ -35,7 +35,7 @@ import {
   type SankeyData,
   type SankeyNode as RechartsSankeyNode,
 } from "recharts";
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 
 // Constants
 const LOADING_ANIMATION_DURATION = 2000; // full loading cycle duration in milliseconds
