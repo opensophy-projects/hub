@@ -1151,262 +1151,793 @@ i\hbar \frac{\partial \Psi}{\partial t} = -\frac{\hbar^2}{2m} \nabla^2 \Psi + V\
 
 ## Графики
 
+Базовый формат:
+
+```md
+:::chart
+[title]Заголовок
+[type]bar
+[colors]#8b5cf6, #22d3ee, #f59e0b
+[design]gradient
+[background]grid
+[tooltip]frosted
+[legend]rounded-square
+[curve]monotoneX
+
+| Период | Значение A | Значение B |
+|--------|------------|------------|
+| Q1     | 120        | 90         |
+| Q2     | 160        | 130        |
+:::
+```
+
+### Поддерживаемые параметры графиков
+
+| Параметр | Значения | Где применяется |
+|----------|----------|-----------------|
+| `[type]` | `area`, `area-stacked`, `area-expanded`, `line`, `bar`, `bar-stacked`, `bar-percent`, `bar-horizontal`, `pie`, `pie-donut`, `radar` | Выбор типа графика |
+| `[design]` | `default`, `gradient`, `hatched`, `duotone`, `duotone-reverse`, `stripped`, `solid`, `dotted`, `lines`, `glowing` | Вариант отрисовки серии |
+| `[style]` или `[variant]` | те же значения, что у `[design]` | Алиасы для `[design]` |
+| `[background]` | `dots`, `grid`, `cross-hatch`, `diagonal-lines`, `tiny-checkers`, `plus`, `bubbles`, `wiggle-lines`, `falling-triangles`, `overlapping-circles`, `4-pointed-star` | Фоновый паттерн |
+| `[tooltip]` | `default`, `glass`, `frosted`, `minimal` | Дизайн tooltip |
+| `[legend]` | `circle`, `square`, `rounded-square`, `circle-outline`, `rounded-square-outline` | Дизайн legend-маркеров |
+| `[curve]` | `linear`, `monotone`, `monotoneX`, `step`, `bump` | Кривая line/area |
+| `[colors]` | список цветов через запятую | Палитра серий |
+
+## Все типы графиков
+
 ### Area
- 
-:::chart
-[title]Посещаемость за год
-[type]area
-[colors]#33b02c, #392cb0, #b02c2c
- 
-| Месяц | Визиты | Уники | Боты |
-|-------|--------|-------|------|
-| Янв   | 4200   | 3100  | 200  |
-| Фев   | 3800   | 2900  | 180  |
-| Мар   | 5100   | 3900  | 240  |
-| Апр   | 4700   | 3500  | 210  |
-| Май   | 6200   | 4800  | 290  |
-| Июн   | 5800   | 4400  | 260  |
-:::
- 
-```markdown
-:::chart
-[title]Посещаемость за год
-[type]area
-[colors]#33b02c, #392cb0, #b02c2c
- 
-| Месяц | Визиты | Уники | Боты |
-|-------|--------|-------|------|
-| Янв   | 4200   | 3100  | 200  |
-| Фев   | 3800   | 2900  | 180  |
-| Мар   | 5100   | 3900  | 240  |
-| Апр   | 4700   | 3500  | 210  |
-| Май   | 6200   | 4800  | 290  |
-| Июн   | 5800   | 4400  | 260  |
-:::
-```
-
-### Area Stacked
 
 :::chart
-[title]Трафик по каналам (накопительно)
+[title]Area · gradient · monotoneX
+[type]area
+[colors]#8b5cf6, #22d3ee
+[design]gradient
+[curve]monotoneX
+[tooltip]frosted
+[legend]rounded-square
+
+| Месяц | Визиты | Уники |
+|-------|--------|-------|
+| Янв   | 4200   | 3100  |
+| Фев   | 5100   | 3600  |
+| Мар   | 4700   | 3350  |
+| Апр   | 6200   | 4100  |
+:::
+
+### Area stacked
+
+:::chart
+[title]Area Stacked · solid
 [type]area-stacked
-[colors]#383838, #51257d, #6b3a9e
+[colors]#8b5cf6, #22d3ee, #f59e0b
+[design]solid
+[curve]linear
+[tooltip]default
+[legend]circle
 
 | Месяц | Органика | Реклама | Прямой |
 |-------|----------|---------|--------|
 | Янв   | 2100     | 800     | 500    |
-| Фев   | 2400     | 950     | 520    |
-| Мар   | 2800     | 1100    | 580    |
-| Апр   | 3100     | 1200    | 610    |
-| Май   | 3600     | 1400    | 700    |
-| Июн   | 3900     | 1500    | 750    |
+| Фев   | 2400     | 920     | 620    |
+| Мар   | 2200     | 1100    | 700    |
+| Апр   | 2800     | 1320    | 810    |
 :::
 
-```markdown
+### Area expanded
+
 :::chart
-[title]Трафик по каналам (накопительно)
-[type]area-stacked
-[colors]#383838, #51257d, #6b3a9e
+[title]Area Expanded · dotted
+[type]area-expanded
+[colors]#8b5cf6, #22d3ee, #f59e0b
+[design]dotted
+[curve]bump
+[tooltip]minimal
+[legend]rounded-square-outline
 
 | Месяц | Органика | Реклама | Прямой |
 |-------|----------|---------|--------|
-| Янв   | 2100     | 800     | 500    |
-| Фев   | 2400     | 950     | 520    |
-| Мар   | 2800     | 1100    | 580    |
-| Апр   | 3100     | 1200    | 610    |
-| Май   | 3600     | 1400    | 700    |
-| Июн   | 3900     | 1500    | 750    |
+| Янв   | 45       | 35      | 20     |
+| Фев   | 50       | 30      | 20     |
+| Мар   | 42       | 38      | 20     |
+| Апр   | 48       | 32      | 20     |
 :::
-```
+
+### Line
+
+:::chart
+[title]Line · glowing · grid
+[type]line
+[colors]#8b5cf6, #22d3ee
+[design]glowing
+[background]grid
+[curve]monotoneX
+[tooltip]frosted
+[legend]circle-outline
+
+| День | Desktop | Mobile |
+|------|---------|--------|
+| Пн   | 120     | 180    |
+| Вт   | 150     | 220    |
+| Ср   | 130     | 260    |
+| Чт   | 190     | 300    |
+| Пт   | 240     | 340    |
+:::
 
 ### Bar
 
 :::chart
-[title]Продажи по кварталам
+[title]Bar · duotone · dots
 [type]bar
-[colors]#383838, #7c9ca1, #33b02c
+[colors]#8b5cf6, #22d3ee
+[design]duotone
+[background]dots
+[tooltip]frosted
+[legend]square
 
-| Квартал | Север | Юг  | Запад |
-|---------|-------|-----|-------|
-| Q1      | 1200  | 900 | 750   |
-| Q2      | 1500  | 1100| 900   |
-| Q3      | 1800  | 1300| 1050  |
-| Q4      | 2100  | 1600| 1300  |
+| Квартал | Север | Юг |
+|---------|-------|----|
+| Q1      | 1200  | 900 |
+| Q2      | 1600  | 1100 |
+| Q3      | 1350  | 1250 |
+| Q4      | 1900  | 1550 |
 :::
 
-```markdown
-:::chart
-[title]Продажи по кварталам
-[type]bar
-[colors]#383838, #7c9ca1, #33b02c
-
-| Квартал | Север | Юг  | Запад |
-|---------|-------|-----|-------|
-| Q1      | 1200  | 900 | 750   |
-| Q2      | 1500  | 1100| 900   |
-| Q3      | 1800  | 1300| 1050  |
-| Q4      | 2100  | 1600| 1300  |
-:::
-```
-
-### Bar Stacked
+### Bar stacked
 
 :::chart
-[title]Расходы по статьям
+[title]Bar Stacked · hatched
 [type]bar-stacked
-[colors]#383838, #51257d, #6b3a9e
+[colors]#8b5cf6, #22d3ee, #f59e0b
+[design]hatched
+[background]cross-hatch
+[tooltip]default
+[legend]rounded-square
 
 | Месяц | Зарплаты | Инфра | Маркетинг |
 |-------|----------|-------|-----------|
-| Янв   | 3200     | 800   | 400       |
-| Фев   | 3200     | 820   | 600       |
-| Мар   | 3400     | 850   | 900       |
-| Апр   | 3400     | 870   | 700       |
-| Май   | 3600     | 900   | 1100      |
-| Июн   | 3600     | 920   | 800       |
+| Янв   | 3200     | 800   | 450       |
+| Фев   | 3400     | 900   | 520       |
+| Мар   | 3300     | 980   | 610       |
 :::
 
-```markdown
-:::chart
-[title]Расходы по статьям
-[type]bar-stacked
-[colors]#383838, #51257d, #6b3a9e
+### Bar percent
 
-| Месяц | Зарплаты | Инфра | Маркетинг |
-|-------|----------|-------|-----------|
-| Янв   | 3200     | 800   | 400       |
-| Фев   | 3200     | 820   | 600       |
-| Мар   | 3400     | 850   | 900       |
-| Апр   | 3400     | 870   | 700       |
-| Май   | 3600     | 900   | 1100      |
-| Июн   | 3600     | 920   | 800       |
+:::chart
+[title]Bar Percent · stripped
+[type]bar-percent
+[colors]#8b5cf6, #22d3ee, #f59e0b
+[design]stripped
+[background]diagonal-lines
+[tooltip]minimal
+[legend]circle
+
+| Канал | Awareness | Consideration | Purchase |
+|-------|-----------|---------------|----------|
+| SEO   | 45        | 35            | 20       |
+| Ads   | 35        | 40            | 25       |
+| Email | 20        | 45            | 35       |
 :::
-```
 
-### Bar Horizontal
+### Bar horizontal
 
 :::chart
-[title]Топ языков программирования
+[title]Bar Horizontal · glowing
 [type]bar-horizontal
-[colors]#7234ff, #22c55e, #f59e0b, #3b82f6, #ef4444
+[colors]#8b5cf6, #22d3ee
+[design]glowing
+[tooltip]frosted
+[legend]circle-outline
 
-| Язык       | Популярность |
-|------------|--------------|
-| Python     | 28           |
-| JavaScript | 24           |
-| TypeScript | 18           |
-| Rust       | 14           |
-| Go         | 10           |
+| Язык       | Доля |
+|------------|------|
+| TypeScript | 42   |
+| Python     | 28   |
+| Go         | 18   |
+| Rust       | 12   |
 :::
-
-```markdown
-:::chart
-[title]Топ языков программирования
-[type]bar-horizontal
-[colors]#7234ff, #22c55e, #f59e0b, #3b82f6, #ef4444
-
-| Язык       | Популярность |
-|------------|--------------|
-| Python     | 28           |
-| JavaScript | 24           |
-| TypeScript | 18           |
-| Rust       | 14           |
-| Go         | 10           |
-:::
-```
 
 ### Pie
 
 :::chart
-[title]Источники трафика
+[title]Pie · gradient · bubbles
 [type]pie
-[colors]#7234ff, #51257d, #383838, #22c55e, #f59e0b
+[colors]#8b5cf6, #22d3ee, #f59e0b, #34d399
+[design]gradient
+[background]bubbles
+[tooltip]frosted
+[legend]rounded-square
 
-| Источник   | Доля |
-|------------|------|
-| Органика   | 42   |
-| Прямой     | 28   |
-| Реклама    | 18   |
-| Соцсети    | 8    |
-| Прочее     | 4    |
+| Источник | Доля |
+|----------|------|
+| Органика | 42   |
+| Прямой   | 28   |
+| Реклама  | 20   |
+| Email    | 10   |
 :::
 
-```markdown
-:::chart
-[title]Источники трафика
-[type]pie
-[colors]#7234ff, #51257d, #383838, #22c55e, #f59e0b
-
-| Источник   | Доля |
-|------------|------|
-| Органика   | 42   |
-| Прямой     | 28   |
-| Реклама    | 18   |
-| Соцсети    | 8    |
-| Прочее     | 4    |
-:::
-```
-
-### Pie Donut
+### Pie donut
 
 :::chart
-[title]Доли рынка браузеров
+[title]Pie Donut · gradient · cross-hatch
 [type]pie-donut
-[colors]#7234ff, #f59e0b, #22c55e, #3b82f6
+[colors]#8b5cf6, #22d3ee, #f59e0b
+[design]gradient
+[background]cross-hatch
+[tooltip]default
+[legend]circle
 
 | Браузер | Доля |
 |---------|------|
 | Chrome  | 63   |
 | Firefox | 10   |
-| Safari  | 20   |
-| Другие  | 7    |
+| Safari  | 27   |
 :::
-
-```markdown
-:::chart
-[title]Доли рынка браузеров
-[type]pie-donut
-[colors]#7234ff, #f59e0b, #22c55e, #3b82f6
-
-| Браузер | Доля |
-|---------|------|
-| Chrome  | 63   |
-| Firefox | 10   |
-| Safari  | 20   |
-| Другие  | 7    |
-:::
-```
 
 ### Radar
 
 :::chart
-[title]Оценка навыков команды
+[title]Radar · lines · dots
 [type]radar
-[colors]#7234ff, #22c55e
+[colors]#8b5cf6, #22d3ee
+[design]lines
+[background]dots
+[tooltip]frosted
+[legend]rounded-square
 
-| Навык      | Фронтенд | Бэкенд |
-|------------|----------|--------|
-| TypeScript | 90       | 60     |
-| Python     | 40       | 95     |
-| SQL        | 55       | 88     |
-| DevOps     | 50       | 75     |
-| UI/UX      | 85       | 30     |
-| Тесты      | 70       | 80     |
+| Навык | Frontend | Backend |
+|-------|----------|---------|
+| TS    | 90       | 60      |
+| Python| 40       | 95      |
+| UI    | 88       | 42      |
+| DB    | 55       | 85      |
 :::
 
-```markdown
+## Все дизайны серий `[design]`
+
+### default
+
 :::chart
-[title]Оценка навыков команды
-[type]radar
-[colors]#7234ff, #22c55e
+[title]Design default
+[type]bar
+[colors]#8b5cf6, #22d3ee
+[design]default
 
-| Навык      | Фронтенд | Бэкенд |
-|------------|----------|--------|
-| TypeScript | 90       | 60     |
-| Python     | 40       | 95     |
-| SQL        | 55       | 88     |
-| DevOps     | 50       | 75     |
-| UI/UX      | 85       | 30     |
-| Тесты      | 70       | 80     |
+| Период | A | B |
+|--------|---|---|
+| Q1     | 32| 24|
+| Q2     | 48| 36|
+| Q3     | 41| 52|
 :::
-```
+
+### gradient
+
+:::chart
+[title]Design gradient
+[type]area
+[colors]#8b5cf6, #22d3ee
+[design]gradient
+[curve]monotoneX
+
+| Период | A | B |
+|--------|---|---|
+| Q1     | 32| 24|
+| Q2     | 48| 36|
+| Q3     | 41| 52|
+:::
+
+### hatched
+
+:::chart
+[title]Design hatched
+[type]bar
+[colors]#8b5cf6, #22d3ee
+[design]hatched
+
+| Период | A | B |
+|--------|---|---|
+| Q1     | 32| 24|
+| Q2     | 48| 36|
+| Q3     | 41| 52|
+:::
+
+### duotone
+
+:::chart
+[title]Design duotone
+[type]bar
+[colors]#8b5cf6, #22d3ee
+[design]duotone
+
+| Период | A | B |
+|--------|---|---|
+| Q1     | 32| 24|
+| Q2     | 48| 36|
+| Q3     | 41| 52|
+:::
+
+### duotone-reverse
+
+:::chart
+[title]Design duotone-reverse
+[type]bar
+[colors]#8b5cf6, #22d3ee
+[design]duotone-reverse
+
+| Период | A | B |
+|--------|---|---|
+| Q1     | 32| 24|
+| Q2     | 48| 36|
+| Q3     | 41| 52|
+:::
+
+### stripped
+
+:::chart
+[title]Design stripped
+[type]bar
+[colors]#8b5cf6, #22d3ee
+[design]stripped
+
+| Период | A | B |
+|--------|---|---|
+| Q1     | 32| 24|
+| Q2     | 48| 36|
+| Q3     | 41| 52|
+:::
+
+### solid
+
+:::chart
+[title]Design solid
+[type]area
+[colors]#8b5cf6, #22d3ee
+[design]solid
+
+| Период | A | B |
+|--------|---|---|
+| Q1     | 32| 24|
+| Q2     | 48| 36|
+| Q3     | 41| 52|
+:::
+
+### dotted
+
+:::chart
+[title]Design dotted
+[type]area
+[colors]#8b5cf6, #22d3ee
+[design]dotted
+
+| Период | A | B |
+|--------|---|---|
+| Q1     | 32| 24|
+| Q2     | 48| 36|
+| Q3     | 41| 52|
+:::
+
+### lines
+
+:::chart
+[title]Design lines
+[type]radar
+[colors]#8b5cf6, #22d3ee
+[design]lines
+
+| Метрика | A | B |
+|---------|---|---|
+| UX      | 82| 76|
+| API     | 68| 88|
+| DX      | 90| 72|
+:::
+
+### glowing
+
+:::chart
+[title]Design glowing
+[type]line
+[colors]#8b5cf6, #22d3ee
+[design]glowing
+[curve]monotoneX
+
+| Период | A | B |
+|--------|---|---|
+| Q1     | 32| 24|
+| Q2     | 48| 36|
+| Q3     | 41| 52|
+:::
+
+## Все фоны `[background]`
+
+### dots
+
+:::chart
+[title]Background dots
+[type]line
+[colors]#8b5cf6, #22d3ee
+[design]glowing
+[background]dots
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 18| 20|
+| Ср   | 15| 24|
+:::
+
+### grid
+
+:::chart
+[title]Background grid
+[type]line
+[colors]#8b5cf6, #22d3ee
+[design]glowing
+[background]grid
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 18| 20|
+| Ср   | 15| 24|
+:::
+
+### cross-hatch
+
+:::chart
+[title]Background cross-hatch
+[type]line
+[colors]#8b5cf6, #22d3ee
+[design]glowing
+[background]cross-hatch
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 18| 20|
+| Ср   | 15| 24|
+:::
+
+### diagonal-lines
+
+:::chart
+[title]Background diagonal-lines
+[type]line
+[colors]#8b5cf6, #22d3ee
+[design]glowing
+[background]diagonal-lines
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 18| 20|
+| Ср   | 15| 24|
+:::
+
+### tiny-checkers
+
+:::chart
+[title]Background tiny-checkers
+[type]line
+[colors]#8b5cf6, #22d3ee
+[design]glowing
+[background]tiny-checkers
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 18| 20|
+| Ср   | 15| 24|
+:::
+
+### plus
+
+:::chart
+[title]Background plus
+[type]line
+[colors]#8b5cf6, #22d3ee
+[design]glowing
+[background]plus
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 18| 20|
+| Ср   | 15| 24|
+:::
+
+### bubbles
+
+:::chart
+[title]Background bubbles
+[type]line
+[colors]#8b5cf6, #22d3ee
+[design]glowing
+[background]bubbles
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 18| 20|
+| Ср   | 15| 24|
+:::
+
+### wiggle-lines
+
+:::chart
+[title]Background wiggle-lines
+[type]line
+[colors]#8b5cf6, #22d3ee
+[design]glowing
+[background]wiggle-lines
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 18| 20|
+| Ср   | 15| 24|
+:::
+
+### falling-triangles
+
+:::chart
+[title]Background falling-triangles
+[type]line
+[colors]#8b5cf6, #22d3ee
+[design]glowing
+[background]falling-triangles
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 18| 20|
+| Ср   | 15| 24|
+:::
+
+### overlapping-circles
+
+:::chart
+[title]Background overlapping-circles
+[type]line
+[colors]#8b5cf6, #22d3ee
+[design]glowing
+[background]overlapping-circles
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 18| 20|
+| Ср   | 15| 24|
+:::
+
+### 4-pointed-star
+
+:::chart
+[title]Background 4-pointed-star
+[type]line
+[colors]#8b5cf6, #22d3ee
+[design]glowing
+[background]4-pointed-star
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 18| 20|
+| Ср   | 15| 24|
+:::
+
+## Tooltip variants
+
+### default
+
+:::chart
+[title]Tooltip default
+[type]bar
+[colors]#8b5cf6, #22d3ee
+[tooltip]default
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 18| 20|
+:::
+
+### glass
+
+:::chart
+[title]Tooltip glass
+[type]bar
+[colors]#8b5cf6, #22d3ee
+[tooltip]glass
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 18| 20|
+:::
+
+### frosted
+
+:::chart
+[title]Tooltip frosted
+[type]bar
+[colors]#8b5cf6, #22d3ee
+[tooltip]frosted
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 18| 20|
+:::
+
+### minimal
+
+:::chart
+[title]Tooltip minimal
+[type]bar
+[colors]#8b5cf6, #22d3ee
+[tooltip]minimal
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 18| 20|
+:::
+
+## Legend variants
+
+### circle
+
+:::chart
+[title]Legend circle
+[type]line
+[colors]#8b5cf6, #22d3ee
+[legend]circle
+[design]glowing
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 18| 20|
+:::
+
+### square
+
+:::chart
+[title]Legend square
+[type]line
+[colors]#8b5cf6, #22d3ee
+[legend]square
+[design]glowing
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 18| 20|
+:::
+
+### rounded-square
+
+:::chart
+[title]Legend rounded-square
+[type]line
+[colors]#8b5cf6, #22d3ee
+[legend]rounded-square
+[design]glowing
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 18| 20|
+:::
+
+### circle-outline
+
+:::chart
+[title]Legend circle-outline
+[type]line
+[colors]#8b5cf6, #22d3ee
+[legend]circle-outline
+[design]glowing
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 18| 20|
+:::
+
+### rounded-square-outline
+
+:::chart
+[title]Legend rounded-square-outline
+[type]line
+[colors]#8b5cf6, #22d3ee
+[legend]rounded-square-outline
+[design]glowing
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 18| 20|
+:::
+
+## Curve variants
+
+### linear
+
+:::chart
+[title]Curve linear
+[type]line
+[colors]#8b5cf6, #22d3ee
+[curve]linear
+[design]default
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 24| 20|
+| Ср   | 16| 28|
+:::
+
+### monotone
+
+:::chart
+[title]Curve monotone
+[type]line
+[colors]#8b5cf6, #22d3ee
+[curve]monotone
+[design]default
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 24| 20|
+| Ср   | 16| 28|
+:::
+
+### monotoneX
+
+:::chart
+[title]Curve monotoneX
+[type]line
+[colors]#8b5cf6, #22d3ee
+[curve]monotoneX
+[design]default
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 24| 20|
+| Ср   | 16| 28|
+:::
+
+### step
+
+:::chart
+[title]Curve step
+[type]line
+[colors]#8b5cf6, #22d3ee
+[curve]step
+[design]default
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 24| 20|
+| Ср   | 16| 28|
+:::
+
+### bump
+
+:::chart
+[title]Curve bump
+[type]line
+[colors]#8b5cf6, #22d3ee
+[curve]bump
+[design]default
+
+| День | A | B |
+|------|---|---|
+| Пн   | 12| 16|
+| Вт   | 24| 20|
+| Ср   | 16| 28|
+:::
