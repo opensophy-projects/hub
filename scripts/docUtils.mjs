@@ -363,16 +363,31 @@ function parseChartMeta(bodyLines) {
   let type   = 'bar';
   let title  = '';
   let colors = '';
+  let design = '';
+  let background = '';
+  let tooltip = '';
+  let legend = '';
+  let curve = '';
   const dataLines = [];
 
   for (const line of bodyLines) {
     const typeMatch  = line.match(/^\[type\](.+)$/);
     const titleMatch = line.match(/^\[title\](.+)$/);
     const colorMatch = line.match(/^\[colors?\](.+)$/);
+    const designMatch = line.match(/^\[(?:design|style|variant)\](.+)$/);
+    const backgroundMatch = line.match(/^\[background\](.+)$/);
+    const tooltipMatch = line.match(/^\[tooltip\](.+)$/);
+    const legendMatch = line.match(/^\[legend\](.+)$/);
+    const curveMatch = line.match(/^\[curve\](.+)$/);
 
     if (typeMatch)  { type   = typeMatch[1].trim();  continue; }
     if (titleMatch) { title  = titleMatch[1].trim();  continue; }
     if (colorMatch) { colors = colorMatch[1].trim();  continue; }
+    if (designMatch) { design = designMatch[1].trim(); continue; }
+    if (backgroundMatch) { background = backgroundMatch[1].trim(); continue; }
+    if (tooltipMatch) { tooltip = tooltipMatch[1].trim(); continue; }
+    if (legendMatch) { legend = legendMatch[1].trim(); continue; }
+    if (curveMatch) { curve = curveMatch[1].trim(); continue; }
 
     const trimmed = line.trim();
     if (!trimmed) continue;
@@ -380,7 +395,7 @@ function parseChartMeta(bodyLines) {
     if (trimmed.startsWith('|') && trimmed.endsWith('|')) dataLines.push(trimmed);
   }
 
-  return { type, title, colors, dataLines };
+  return { type, title, colors, design, background, tooltip, legend, curve, dataLines };
 }
 
 function parseCellValue(raw, isFirstColumn) {
@@ -408,7 +423,7 @@ function handleChartBlock(trimmed, lines, i, output) {
   if (!/^:::chart\s*$/.test(trimmed)) return null;
 
   const { body, endIndex } = collectBlockBody(lines, i + 1);
-  const { type, title, colors, dataLines } = parseChartMeta(body.split('\n'));
+  const { type, title, colors, design, background, tooltip, legend, curve, dataLines } = parseChartMeta(body.split('\n'));
   const data = parseChartTableData(dataLines);
 
   let jsonAttr = '[]';
@@ -417,7 +432,7 @@ function handleChartBlock(trimmed, lines, i, output) {
   } catch { /* оставляем пустой массив */ }
 
   output.push(
-    `<div class="custom-chart" data-type="${escapeAttr(type)}" data-title="${escapeAttr(title)}" data-colors="${escapeAttr(colors)}" data-chart="${jsonAttr}"></div>`
+    `<div class="custom-chart" data-type="${escapeAttr(type)}" data-title="${escapeAttr(title)}" data-colors="${escapeAttr(colors)}" data-design="${escapeAttr(design)}" data-background="${escapeAttr(background)}" data-tooltip="${escapeAttr(tooltip)}" data-legend="${escapeAttr(legend)}" data-curve="${escapeAttr(curve)}" data-chart="${jsonAttr}"></div>`
   );
   return endIndex + 1;
 }
