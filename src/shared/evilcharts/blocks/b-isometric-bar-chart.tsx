@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Bar, BarChart, XAxis, YAxis } from "recharts";
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 import { type ChartConfig, ChartContainer } from "@/shared/evilcharts/ui/chart";
 import { ChartTooltip, ChartTooltipContent } from "@/shared/evilcharts/ui/tooltip";
 
