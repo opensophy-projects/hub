@@ -139,7 +139,7 @@ const articleJsonLd = type === 'article' ? JSON.stringify({
         var d = t !== 'light';
         document.documentElement.classList.toggle('dark', d);
         document.documentElement.style.colorScheme = d ? 'dark' : 'light';
-        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+        document.documentElement.style.backgroundColor = d ? 'var(--hub-theme-dark-layer1, #0a0a0a)' : 'var(--hub-theme-light-layer1, #E8E7E3)';
       })();
     </script>
 
@@ -218,8 +218,8 @@ const articleJsonLd = type === 'article' ? JSON.stringify({
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
       }
-      html:not(.dark) { background-color: #E8E7E3; }
-      html.dark        { background-color: #0a0a0a; }
+      html:not(.dark) { background-color: var(--hub-theme-light-layer1, #E8E7E3); }
+      html.dark        { background-color: var(--hub-theme-dark-layer1, #0a0a0a); }
       body { margin: 0; padding: 0; overflow-x: hidden; }
 
       /* Скрытый SEO-контент — видим для ботов, невидим для пользователей */
@@ -251,7 +251,7 @@ const articleJsonLd = type === 'article' ? JSON.stringify({
         var d = t !== 'light';
         document.documentElement.classList.toggle('dark', d);
         document.documentElement.style.colorScheme = d ? 'dark' : 'light';
-        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+        document.documentElement.style.backgroundColor = d ? 'var(--hub-theme-dark-layer1, #0a0a0a)' : 'var(--hub-theme-light-layer1, #E8E7E3)';
       });
     </script>
   </body>

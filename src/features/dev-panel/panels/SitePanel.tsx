@@ -9,10 +9,19 @@ import {
   DEFAULT_THEME_COLORS,
   makeTokens,
   readThemeColorOverrides,
-  THEME_COLOR_META,
+  THEME_LAYER_META,
   THEME_COLOR_STORAGE_KEY,
-  type ThemeColorKey,
+  type ThemeLayerKey,
 } from '@/shared/tokens/theme';
+
+const getDefaultThemeLayers = () => ({
+  dark: Object.fromEntries(
+    (Object.keys(THEME_LAYER_META) as ThemeLayerKey[]).map(key => [key, DEFAULT_THEME_COLORS.dark[key]])
+  ) as Record<ThemeLayerKey, string>,
+  light: Object.fromEntries(
+    (Object.keys(THEME_LAYER_META) as ThemeLayerKey[]).map(key => [key, DEFAULT_THEME_COLORS.light[key]])
+  ) as Record<ThemeLayerKey, string>,
+});
 
 export default function SitePanel() {
   const t = useContext(ThemeTokensContext);
@@ -24,10 +33,7 @@ export default function SitePanel() {
   const [isDarkTheme, setIsDarkTheme] = useState<boolean>(() =>
     typeof document === 'undefined' ? true : document.documentElement.classList.contains('dark')
   );
-  const [themeColors, setThemeColors] = useState(() => ({
-    dark: { ...DEFAULT_THEME_COLORS.dark },
-    light: { ...DEFAULT_THEME_COLORS.light },
-  }));
+  const [themeColors, setThemeColors] = useState(() => (getDefaultThemeLayers()));
 
   // Хранит предыдущее значение конфига для отката при ошибке сохранения
   const prevConfig = useRef<SiteConfig>(config);
@@ -62,8 +68,8 @@ export default function SitePanel() {
   useEffect(() => {
     const ov = readThemeColorOverrides();
     setThemeColors({
-      dark: { ...DEFAULT_THEME_COLORS.dark, ...ov.dark },
-      light: { ...DEFAULT_THEME_COLORS.light, ...ov.light },
+      dark: { ...getDefaultThemeLayers().dark, ...ov.dark },
+      light: { ...getDefaultThemeLayers().light, ...ov.light },
     });
   }, []);
 
@@ -82,7 +88,7 @@ export default function SitePanel() {
   };
 
   const resetThemeColors = () => {
-    const defaults = { dark: { ...DEFAULT_THEME_COLORS.dark }, light: { ...DEFAULT_THEME_COLORS.light } };
+    const defaults = getDefaultThemeLayers();
     setThemeColors(defaults);
     localStorage.setItem(THEME_COLOR_STORAGE_KEY, JSON.stringify(defaults));
     applyThemeColorOverrides(defaults);
@@ -235,10 +241,10 @@ export default function SitePanel() {
         Здесь можно настроить цвета светлой и тёмной тем. У каждого параметра есть подсказка — где он применяется.
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 330, overflowY: 'auto', paddingRight: 2 }} className="adm-scroll">
-        {(Object.keys(THEME_COLOR_META) as ThemeColorKey[]).map((key) => (
+        {(Object.keys(THEME_LAYER_META) as ThemeLayerKey[]).map((key) => (
           <div key={key} style={{ border: `1px solid ${t.border}`, borderRadius: 8, padding: 8, background: t.surface }}>
-            <div style={{ fontSize: 13, color: t.fg, fontWeight: 600 }}>{THEME_COLOR_META[key].label}</div>
-            <div style={{ fontSize: 12, color: t.fgSub, margin: '2px 0 6px' }}>{THEME_COLOR_META[key].usage}</div>
+            <div style={{ fontSize: 13, color: t.fg, fontWeight: 600 }}>{THEME_LAYER_META[key].label}</div>
+            <div style={{ fontSize: 12, color: t.fgSub, margin: '2px 0 6px' }}>{THEME_LAYER_META[key].usage}</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: t.fgMuted }}>
                 Тёмная тема ({key})

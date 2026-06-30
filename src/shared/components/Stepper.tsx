@@ -50,8 +50,8 @@ const STEP_COLORS: Record<StepStatus, {
     contentColor: { dark: 'rgba(255,255,255,0.55)', light: 'rgba(0,0,0,0.6)'  },
   },
   active: {
-    dotBg:        '#7234ff',
-    dotBorder:    '#7234ff',
+    dotBg:        'var(--nav-accent)',
+    dotBorder:    'var(--nav-accent)',
     dotText:      '#fff',
     lineColor:    { dark: 'rgba(255,255,255,0.12)', light: 'rgba(0,0,0,0.12)' },
     titleColor:   { dark: '#fff',                  light: '#0a0a0a'           },

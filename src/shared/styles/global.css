@@ -6,18 +6,6 @@
 /* ─── CSS переменные темы ─────────────────────────────────────────────────── */
 
 :root {
-  --accent-primary:   #7234ff;
-  --glow-color:       #7234ff;
-  --accent-secondary: #22c55e;
-
-  --bg-primary-dark:  #0a0a0a;
-  --bg-nav-dark:      #0d0d0d;
-  --bg-surface-dark:  #141414;
-
-  --bg-primary-light: #E8E7E3;
-  --bg-nav-light:     #E0DFDb;
-  --bg-surface-light: #d8d7d3;
-
   --font-sans: system-ui, -apple-system, sans-serif;
   --font-mono: ui-monospace, monospace;
 
@@ -25,19 +13,23 @@
 }
 
 html.dark {
-  background-color: var(--bg-primary-dark);
-  --bg-page:    var(--bg-primary-dark);
-  --bg-nav:     var(--bg-nav-dark);
-  --bg-surface: var(--bg-surface-dark);
-  --nav-accent: var(--accent-primary);
+  background-color: var(--hub-theme-dark-layer1, #0a0a0a);
+  --bg-page: var(--hub-theme-dark-layer1, #0a0a0a);
+  --bg-nav: var(--hub-theme-dark-layer2, #111111);
+  --bg-surface: var(--hub-theme-dark-layer2, #111111);
+  --nav-accent: var(--hub-theme-dark-layer4, #ffffff);
+  --accent-primary: var(--hub-theme-dark-layer4, #ffffff);
+  --glow-color: var(--hub-theme-dark-layer4, #ffffff);
 }
 
 html:not(.dark) {
-  background-color: var(--bg-primary-light);
-  --bg-page:    var(--bg-primary-light);
-  --bg-nav:     var(--bg-nav-light);
-  --bg-surface: var(--bg-surface-light);
-  --nav-accent: var(--accent-primary);
+  background-color: var(--hub-theme-light-layer1, #E8E7E3);
+  --bg-page: var(--hub-theme-light-layer1, #E8E7E3);
+  --bg-nav: var(--hub-theme-light-layer2, #d8d7d3);
+  --bg-surface: var(--hub-theme-light-layer2, #d8d7d3);
+  --nav-accent: var(--hub-theme-light-layer4, #000000);
+  --accent-primary: var(--hub-theme-light-layer4, #000000);
+  --glow-color: var(--hub-theme-light-layer4, #000000);
 }
 
 @font-face {
