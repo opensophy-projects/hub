@@ -37,7 +37,7 @@ import {
   YAxis as RechartsYAxis,
 } from "recharts";
 type RectRadius = number | [number, number, number, number];
-import { motion, useReducedMotion } from "motion/react";
+import { motion, useReducedMotion } from "framer-motion";
 
 // Constants
 const DEFAULT_BAR_RADIUS = 2;
