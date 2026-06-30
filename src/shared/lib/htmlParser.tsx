@@ -39,6 +39,7 @@ export const SANITIZE_ATTR = [
   'data-cols', 'data-layout', 'data-status', 'data-title',
   'data-color', 'data-icon', 'data-image',
   'data-chart', 'data-colors', 'data-type',
+  'data-design', 'data-background', 'data-tooltip', 'data-legend', 'data-curve',
   'data-tabs',
   'type', 'checked', 'disabled', 'open', 'style', 'align',
   'xmlns', 'viewBox', 'd', 'fill', 'stroke', 'stroke-width',
@@ -294,6 +295,11 @@ const processChartElement = (element: Element, key: string, elements: React.Reac
   const type   = (element.dataset.type   || 'bar') as import('../components/ChartBlock').ChartType;
   const title  =  element.dataset.title  || undefined;
   const colors =  element.dataset.colors || '';
+  const design = element.dataset.design || undefined;
+  const background = element.dataset.background || undefined;
+  const tooltip = element.dataset.tooltip || undefined;
+  const legend = element.dataset.legend || undefined;
+  const curve = element.dataset.curve || undefined;
 
   const palette = colors
     ? colors.split(',').map((c) => c.trim()).filter(Boolean)
@@ -309,7 +315,7 @@ const processChartElement = (element: Element, key: string, elements: React.Reac
     React.createElement(
       Suspense,
       { key, fallback: React.createElement('div', { style: { height: 320 } }) },
-      React.createElement(LazyChartBlock, { type, data, title, colors: palette }),
+      React.createElement(LazyChartBlock, { type, data, title, colors: palette, design, background, tooltip, legend, curve }),
     ),
   );
 };
