@@ -687,8 +687,9 @@ export function CodeBlock({ code, language = '', tabs }: CodeBlockProps) {
   return (
     <div className="not-prose" style={{ margin: '1.25rem 0' }}>
       <div style={{
-        borderRadius: 12, border: `1px solid ${t.outerBorder}`,
-        background: t.outerBg, boxShadow: t.outerShadow,
+        borderRadius: 10, border: `1px solid ${t.outerBorder}`,
+        background: isDark ? '#0a0a0a' : '#F5F5F5',
+        boxShadow: t.outerShadow, padding: 4,
         overflow: 'clip', display: 'flex', flexDirection: 'column',
         width: '100%', minWidth: 0,
       }}>
