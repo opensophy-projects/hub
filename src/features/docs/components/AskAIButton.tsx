@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import { Copy, Check, ChevronDown, Sparkles } from 'lucide-react';
 import { makeTokens } from '@/shared/tokens/theme';
 
-// Verbatim copy from Navigation.tsx
 const THEME_DARK = {
   fg:               'rgba(255,255,255,0.85)',
   fgMuted:          'rgba(255,255,255,0.55)',
@@ -118,6 +117,7 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({ isDark, pageTitle, markdownCo
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const t = tk(isDark);
 
+  // Закрытие по клику вне
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
@@ -127,6 +127,27 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({ isDark, pageTitle, markdownCo
     };
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
+  }, [open]);
+
+  // Обновление позиции при скролле/ресайзе
+  useEffect(() => {
+    if (!open) return;
+    const update = () => {
+      const rect = ref.current?.getBoundingClientRect();
+      if (rect) {
+        const width = 210;
+        setMenuPos({
+          top:  rect.bottom + 6,
+          left: Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8)),
+        });
+      }
+    };
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
   }, [open]);
 
   const toggleOpen = () => {
@@ -164,7 +185,6 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({ isDark, pageTitle, markdownCo
   return (
     <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
 
-      {/* Trigger — verbatim copy of nav section selector button */}
       <button
         onClick={toggleOpen}
         style={{
@@ -191,7 +211,6 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({ isDark, pageTitle, markdownCo
         />
       </button>
 
-      {/* Popup — verbatim copy of nav section dropdown */}
       {open && createPortal(
         <div
           ref={popupRef}
@@ -216,7 +235,6 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({ isDark, pageTitle, markdownCo
             }
           `}</style>
 
-          {/* Verbatim copy of SectionDropdown wrapper */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '8px' }}>
 
             {PROVIDERS.map(s => {
