@@ -4,6 +4,15 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 
+// Отфильтровываем правила recommended-набора, которых нет в фактически
+// установленной версии плагина (бывает в rc/canary сборках) — иначе ESLint
+// падает с "Definition for rule ... was not found".
+const safeReactHooksRules = Object.fromEntries(
+  Object.entries(reactHooks.configs.recommended.rules).filter(
+    ([ruleName]) => reactHooks.rules[ruleName.replace('react-hooks/', '')] !== undefined,
+  ),
+);
+
 export default tseslint.config(
   { ignores: ['dist', '.astro', '.test-build'] },
   {
@@ -18,7 +27,7 @@ export default tseslint.config(
       'react-refresh': reactRefresh,
     },
     rules: {
-      ...reactHooks.configs.recommended.rules,
+      ...safeReactHooksRules,
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': 'warn',
       '@typescript-eslint/no-unused-expressions': 'warn',
