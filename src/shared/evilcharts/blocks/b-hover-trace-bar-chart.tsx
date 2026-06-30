@@ -11,7 +11,7 @@ import {
   type CartesianViewBox,
 } from "recharts";
 import { type ChartConfig, ChartContainer } from "@/shared/evilcharts/ui/chart";
-import { useMotionValueEvent, useSpring } from "motion/react";
+import { useMotionValueEvent, useSpring } from "framer-motio";
 import NumberFlow from "@number-flow/react";
 import * as React from "react";
 
