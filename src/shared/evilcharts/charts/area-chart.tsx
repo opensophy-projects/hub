@@ -39,7 +39,7 @@ import {
 import { ChartLegend, ChartLegendContent, type ChartLegendVariant } from "@/shared/evilcharts/ui/legend";
 import { EvilBrush, useEvilBrush, type EvilBrushRange } from "@/shared/evilcharts/ui/evil-brush";
 import { ChartDot, type DotVariant } from "@/shared/evilcharts/ui/dot";
-import { motion, useReducedMotion } from "motion/react";
+import { motion, useReducedMotion } from "framer-motion";
 
 // Constants
 const STROKE_WIDTH = 0.8;
