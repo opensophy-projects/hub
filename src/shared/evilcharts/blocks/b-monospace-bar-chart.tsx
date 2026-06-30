@@ -2,7 +2,7 @@
 
 import { type ChartConfig, ChartContainer } from "@/shared/evilcharts/ui/chart";
 import { Bar, BarChart, Rectangle, XAxis } from "recharts";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const chartData = [
   { month: "January", desktop: 342 },
