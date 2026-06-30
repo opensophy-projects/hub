@@ -227,7 +227,7 @@ export function EvilBarChart<
   );
 
   return (
-    <BarChartContext value={contextValue}>
+    <BarChartContext.Provider value={contextValue}>
       <ChartContainer
         className={className}
         config={config}
@@ -273,7 +273,7 @@ export function EvilBarChart<
           {isLoading && <LoadingBar chartId={chartId} onShimmerExit={onShimmerExit} />}
         </RechartsBarChart>
       </ChartContainer>
-    </BarChartContext>
+    </BarChartContext.Provider>
   );
 }
 

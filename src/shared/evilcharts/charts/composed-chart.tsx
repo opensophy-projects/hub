@@ -223,7 +223,7 @@ export function EvilComposedChart<
   );
 
   return (
-    <ComposedChartContext value={contextValue}>
+    <ComposedChartContext.Provider value={contextValue}>
       <ChartContainer
         className={className}
         config={config}
@@ -265,7 +265,7 @@ export function EvilComposedChart<
           )}
         </RechartsComposedChart>
       </ChartContainer>
-    </ComposedChartContext>
+    </ComposedChartContext.Provider>
   );
 }
 

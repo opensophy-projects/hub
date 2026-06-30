@@ -156,7 +156,7 @@ export function EvilSankeyChart({
   );
 
   return (
-    <SankeyChartContext value={contextValue}>
+    <SankeyChartContext.Provider value={contextValue}>
       <ChartContainer className={className} config={config}>
         <LoadingIndicator isLoading={isLoading} />
         {backgroundVariant && <ChartBackground variant={backgroundVariant} />}
@@ -192,7 +192,7 @@ export function EvilSankeyChart({
           </svg>
         )}
       </ChartContainer>
-    </SankeyChartContext>
+    </SankeyChartContext.Provider>
   );
 }
 

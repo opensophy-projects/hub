@@ -164,7 +164,7 @@ export function EvilRadialChart<TData extends Record<string, unknown>>({
   );
 
   return (
-    <RadialChartContext value={contextValue}>
+    <RadialChartContext.Provider value={contextValue}>
       <ChartContainer className={className} config={config}>
         <LoadingIndicator isLoading={isLoading} />
         <RechartsRadialBarChart
@@ -186,7 +186,7 @@ export function EvilRadialChart<TData extends Record<string, unknown>>({
           </defs>
         </RechartsRadialBarChart>
       </ChartContainer>
-    </RadialChartContext>
+    </RadialChartContext.Provider>
   );
 }
 

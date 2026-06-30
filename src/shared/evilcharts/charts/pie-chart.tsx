@@ -155,14 +155,14 @@ export function EvilPieChart<TData extends Record<string, unknown>>({
   );
 
   return (
-    <PieChartContext value={contextValue}>
+    <PieChartContext.Provider value={contextValue}>
       <ChartContainer className={className} config={config}>
         <LoadingIndicator isLoading={isLoading} />
         <RechartsPieChart id="evil-charts-pie-chart" accessibilityLayer {...chartProps}>
           {children}
         </RechartsPieChart>
       </ChartContainer>
-    </PieChartContext>
+    </PieChartContext.Provider>
   );
 }
 

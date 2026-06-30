@@ -154,7 +154,7 @@ export function EvilRadarChart<
   );
 
   return (
-    <RadarChartContext value={contextValue}>
+    <RadarChartContext.Provider value={contextValue}>
       <ChartContainer className={className} config={config}>
         <LoadingIndicator isLoading={isLoading} />
         <RechartsRadarChart id={chartId} data={isLoading ? loadingData : data} {...chartProps}>
@@ -163,7 +163,7 @@ export function EvilRadarChart<
           {isLoading && <LoadingRadar />}
         </RechartsRadarChart>
       </ChartContainer>
-    </RadarChartContext>
+    </RadarChartContext.Provider>
   );
 }
 

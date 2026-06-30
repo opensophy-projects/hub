@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { TableContext } from '../lib/htmlParser';
 import {
   EvilAreaChart, Area, XAxis as AreaXAxis, YAxis as AreaYAxis, Tooltip as AreaTooltip, Legend as AreaLegend,
@@ -85,12 +85,47 @@ function normalizePieVariant(): React.ComponentProps<typeof Pie>['variant'] {
 
 function renderSeries(valueKeys: string[], kind: 'area' | 'line' | 'bar' | 'radar', design: ChartDesign) {
   return valueKeys.map((key) => {
-    if (kind === 'bar') return <Bar key={key} dataKey={key} variant={normalizeBarVariant(design)} glowing={design === 'glowing'} enableHoverHighlight />;
-    if (kind === 'area') return <Area key={key} dataKey={key} variant={normalizeAreaVariant(design)} strokeVariant={design === 'solid' ? 'solid' : 'dashed'} isClickable />;
-    if (kind === 'line') return <Line key={key} dataKey={key} strokeVariant={design === 'dotted' ? 'dotted' : design === 'solid' ? 'solid' : 'dashed'} glowing={design === 'glowing'} isClickable />;
-    return <Radar key={key} dataKey={key} variant={design === 'lines' ? 'lines' : 'filled'} isClickable />;
+    if (kind === 'bar') return <Bar key={key} dataKey={key} variant={normalizeBarVariant(design)} glowing={false} enableHoverHighlight={false} />;
+    if (kind === 'area') return <Area key={key} dataKey={key} variant={normalizeAreaVariant(design)} strokeVariant={design === 'solid' ? 'solid' : 'dashed'} />;
+    if (kind === 'line') return <Line key={key} dataKey={key} strokeVariant={design === 'dotted' ? 'dotted' : design === 'solid' ? 'solid' : 'dashed'} glowing={false} />;
+    return <Radar key={key} dataKey={key} variant={design === 'lines' ? 'lines' : 'filled'} radarProps={{ isAnimationActive: false }} />;
   });
 }
+
+const CHART_PLACEHOLDER_HEIGHT = 420;
+
+const DeferredChart: React.FC<{ readonly children: React.ReactNode; readonly isDark: boolean }> = ({ children, isDark }) => {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [shouldRender, setShouldRender] = useState(false);
+
+  useEffect(() => {
+    if (shouldRender) return;
+    const node = ref.current;
+    if (!node || typeof IntersectionObserver === 'undefined') {
+      setShouldRender(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShouldRender(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '900px 0px' },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [shouldRender]);
+
+  return (
+    <div ref={ref} style={!shouldRender ? { minHeight: CHART_PLACEHOLDER_HEIGHT } : undefined}>
+      {shouldRender ? children : <div className={`not-prose my-5 rounded-xl border ${isDark ? 'border-white/10 bg-[#0a0a0a]' : 'border-black/10 bg-white'} p-4`} style={{ height: 380 }} aria-hidden />}
+    </div>
+  );
+};
 
 const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, design = 'gradient', background, tooltip = 'default', legend = 'rounded-square', curve, isDark }) => {
   const palette = colors?.length ? colors : DEFAULT_COLORS;
@@ -108,19 +143,23 @@ const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, desi
 
   let chart: React.ReactNode;
   if (type.startsWith('area')) {
-    chart = <EvilAreaChart config={config} data={data} stackType={type === 'area-stacked' ? 'stacked' : type === 'area-expanded' ? 'expanded' : 'default'} curveType={normalizeCurve(curve)} className="h-[320px]"><AreaXAxis dataKey={nameKey} /><AreaYAxis /><AreaTooltip variant={tip} /><AreaLegend variant={legend} isClickable />{renderSeries(valueKeys, 'area', design)}</EvilAreaChart>;
+    chart = <EvilAreaChart config={config} data={data} animationType="none" stackType={type === 'area-stacked' ? 'stacked' : type === 'area-expanded' ? 'expanded' : 'default'} curveType={normalizeCurve(curve)} className="h-[320px]"><AreaXAxis dataKey={nameKey} /><AreaYAxis /><AreaTooltip variant={tip} /><AreaLegend variant={legend} />{renderSeries(valueKeys, 'area', design)}</EvilAreaChart>;
   } else if (type === 'line') {
-    chart = <EvilLineChart config={config} data={data} curveType={normalizeCurve(curve)} backgroundVariant={background} className="h-[320px]"><LineXAxis dataKey={nameKey} /><LineYAxis /><LineTooltip variant={tip} /><LineLegend variant={legend} isClickable />{renderSeries(valueKeys, 'line', design)}</EvilLineChart>;
+    chart = <EvilLineChart config={config} data={data} animationType="none" curveType={normalizeCurve(curve)} backgroundVariant={background} className="h-[320px]"><LineXAxis dataKey={nameKey} /><LineYAxis /><LineTooltip variant={tip} /><LineLegend variant={legend} />{renderSeries(valueKeys, 'line', design)}</EvilLineChart>;
   } else if (type.startsWith('bar')) {
-    chart = <EvilBarChart config={config} data={data} stackType={type === 'bar-stacked' ? 'stacked' : type === 'bar-percent' ? 'percent' : 'default'} layout={type === 'bar-horizontal' ? 'horizontal' : 'vertical'} backgroundVariant={background} className="h-[320px]"><BarXAxis dataKey={nameKey} /><BarYAxis /><BarTooltip variant={tip} /><BarLegend variant={legend} isClickable />{renderSeries(valueKeys, 'bar', design)}</EvilBarChart>;
+    chart = <EvilBarChart config={config} data={data} animationType="none" stackType={type === 'bar-stacked' ? 'stacked' : type === 'bar-percent' ? 'percent' : 'default'} layout={type === 'bar-horizontal' ? 'horizontal' : 'vertical'} backgroundVariant={background} className="h-[320px]"><BarXAxis dataKey={nameKey} /><BarYAxis /><BarTooltip variant={tip} /><BarLegend variant={legend} />{renderSeries(valueKeys, 'bar', design)}</EvilBarChart>;
   } else if (type.startsWith('pie')) {
     const pieConfig = buildConfig(data.map((row) => String(row[nameKey])), palette);
-    chart = <EvilPieChart config={pieConfig} data={data} nameKey={nameKey} dataKey={valueKeys[0]} className="h-[320px]"><Pie variant={normalizePieVariant()} innerRadius={type === 'pie-donut' ? '52%' : 0} isClickable />{background && <PieBackground variant={background} />}<PieTooltip variant={tip} /><PieLegend variant={legend} isClickable /></EvilPieChart>;
+    chart = <EvilPieChart config={pieConfig} data={data} nameKey={nameKey} dataKey={valueKeys[0]} className="h-[320px]"><Pie variant={normalizePieVariant()} innerRadius={type === 'pie-donut' ? '52%' : 0} pieProps={{ isAnimationActive: false }} />{background && <PieBackground variant={background} />}<PieTooltip variant={tip} /><PieLegend variant={legend} /></EvilPieChart>;
   } else {
-    chart = <EvilRadarChart config={config} data={data} backgroundVariant={background} className="h-[340px]"><PolarGrid /><PolarAngleAxis dataKey={nameKey} /><RadarTooltip variant={tip} /><RadarLegend variant={legend} isClickable />{renderSeries(valueKeys, 'radar', design)}</EvilRadarChart>;
+    chart = <EvilRadarChart config={config} data={data} backgroundVariant={background} className="h-[340px]"><PolarGrid /><PolarAngleAxis dataKey={nameKey} /><RadarTooltip variant={tip} /><RadarLegend variant={legend} />{renderSeries(valueKeys, 'radar', design)}</EvilRadarChart>;
   }
 
-  return <div className={commonClass}>{commonHeader}{chart}<div className="mt-3 flex justify-between border-t pt-2 text-[11px] opacity-50"><span>{data.length} записей</span><span className="font-mono">{type} · {design}</span></div></div>;
+  return (
+    <DeferredChart isDark={isDark}>
+      <div className={commonClass}>{commonHeader}{chart}<div className="mt-3 flex justify-between border-t pt-2 text-[11px] opacity-50"><span>{data.length} записей</span><span className="font-mono">{type} · {design}</span></div></div>
+    </DeferredChart>
+  );
 };
 
 export const ChartBlockWithContext: React.FC<Omit<ChartBlockProps, 'isDark'>> = (props) => {

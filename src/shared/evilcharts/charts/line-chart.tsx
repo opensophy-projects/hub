@@ -191,7 +191,7 @@ export function EvilLineChart<
   );
 
   return (
-    <LineChartContext value={contextValue}>
+    <LineChartContext.Provider value={contextValue}>
       <ChartContainer
         className={className}
         config={config}
@@ -228,7 +228,7 @@ export function EvilLineChart<
           {isLoading && <LoadingLine chartId={chartId} curveType={curveType} onShimmerExit={onShimmerExit} />}
         </RechartsLineChart>
       </ChartContainer>
-    </LineChartContext>
+    </LineChartContext.Provider>
   );
 }
 

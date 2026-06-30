@@ -210,7 +210,7 @@ export function EvilAreaChart<
   );
 
   return (
-    <AreaChartContext value={contextValue}>
+    <AreaChartContext.Provider value={contextValue}>
       <ChartContainer
         className={className}
         config={config}
@@ -251,7 +251,7 @@ export function EvilAreaChart<
           )}
         </RechartsAreaChart>
       </ChartContainer>
-    </AreaChartContext>
+    </AreaChartContext.Provider>
   );
 }
 
