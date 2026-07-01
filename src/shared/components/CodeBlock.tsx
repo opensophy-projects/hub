@@ -1,24 +1,29 @@
 import React, { useState, useRef, useContext, useMemo, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Copy, Check, Maximize2, Minimize2,
-  ChevronDown, ChevronUp, Search, X,
+  ChevronDown, ChevronUp, Search, X, Menu,
 } from 'lucide-react';
 import { TableContext } from '../lib/htmlParser';
 import Overlay from './Overlay';
 import { useDragScroll } from '@/features/table/hooks/useDragScroll';
 import hljs from 'highlight.js/lib/core';
 import { makeTokens, themed } from '@/shared/tokens/theme';
-import { PortalMenu, MenuTriggerButton } from '@/shared/components/portalMenuShared';
-import { useMenuHelpers } from '@/shared/components/portalMenuHelpers';
+
+// ─── Токены ───────────────────────────────────────────────────────────────────
+//
+// Единый фон блока (тулбар/код/футер/тулбар "открыть полностью") — как у ChartBlock:
+// #0a0a0a в тёмной теме, #e8e7e3 в светлой. Разделительные линии между секциями убраны.
 
 function tk(isDark: boolean) {
   const t = makeTokens(isDark);
-  const shared = {
-    outerBg:     t.bg,
-    barBg:       t.surface,
-    codeBg:      t.codeBg,
+  const unifiedBg = isDark ? '#0a0a0a' : '#e8e7e3';
+  return {
+    outerBg:     unifiedBg,
+    barBg:       unifiedBg,
+    codeBg:      unifiedBg,
     outerBorder: t.border,
-    inpBg:       t.inpBg,
+    inpBg:       unifiedBg,
     inpBdr:      t.inpBdr,
     inpFoc:      t.inpBdrFocus,
     inpClr:      t.inpClr,
@@ -28,10 +33,6 @@ function tk(isDark: boolean) {
     thumbHov:    t.thumbHov,
     track:       t.track,
     tabInactive: 'transparent',
-  };
-  return {
-    ...shared,
-    barBorder:    themed(isDark, 'rgba(255,255,255,0.08)', 'rgba(0,0,0,0.09)'),
     btnBg:        themed(isDark, 'rgba(255,255,255,0.08)', 'rgba(0,0,0,0.07)'),
     btnBdr:       themed(isDark, 'rgba(255,255,255,0.12)', 'rgba(0,0,0,0.12)'),
     btnHov:       themed(isDark, 'rgba(255,255,255,0.14)', 'rgba(0,0,0,0.12)'),
@@ -41,9 +42,12 @@ function tk(isDark: boolean) {
     footerClr:    themed(isDark, 'rgba(255,255,255,0.22)', 'rgba(0,0,0,0.32)'),
     outerShadow:  themed(isDark, '0 2px 12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)', '0 1px 6px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.07)'),
     modalShadow:  themed(isDark, '0 24px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.05)', '0 24px 80px rgba(0,0,0,0.2)'),
-    fadeTo:       themed(isDark, '#0d0d0d', '#ECEAE5'),
+    fadeTo:       unifiedBg,
     tabActive:    themed(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)'),
     tabActiveBdr: themed(isDark, 'rgba(255,255,255,0.2)', 'rgba(0,0,0,0.2)'),
+    elevatedBorder: t.borderElevated,
+    elevatedShadow: t.shadowElevated,
+    dropdownBg:     isDark ? '#121212' : '#ECEBE7',
   };
 }
 
@@ -254,153 +258,181 @@ const CodeBody = React.forwardRef<HTMLDivElement, BodyProps>(
 );
 CodeBody.displayName = 'CodeBody';
 
-function Pill({ onClick, title, label, icon, t, active, success, btnRef }: {
-  readonly onClick: () => void;
-  readonly title: string;
-  readonly label: string;
-  readonly icon: React.ReactNode;
+// ─── Меню-гамбургер (Поиск / Копировать / Развернуть) ────────────────────────
+//
+// Перенос механики из AskAIButton: createPortal, позиционирование по rect
+// триггера, обновление позиции при скролле/ресайзе, закрытие по клику вне,
+// анимация появления. Единственное отличие — список действий и то, что клик
+// на "Поиск" не переходит по ссылке, а просит родителя развернуть инпут
+// прямо в тулбаре и закрывает меню.
+
+interface ToolbarMenuProps {
+  readonly isDark: boolean;
+  readonly isCopied: boolean;
+  readonly isModal: boolean | undefined;
+  readonly onSearch: () => void;
+  readonly onCopy: () => void;
+  readonly onToggleFullscreen: () => void;
   readonly t: ReturnType<typeof tk>;
-  readonly active?: boolean;
-  readonly success?: boolean;
-  readonly btnRef?: React.RefObject<HTMLButtonElement>;
-}) {
-  const bg = success ? 'rgba(34,197,94,0.16)' : t.btnBg;
-  let bdr: string;
-  if (success)      bdr = 'rgba(34,197,94,0.4)';
-  else if (active)  bdr = 'rgba(255,255,255,0.2)';
-  else              bdr = t.btnBdr;
-  const color = success ? '#22c55e' : t.btnClr;
-  return (
-    <button ref={btnRef} onClick={onClick} title={title} style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      gap: 3, padding: '5px 12px', minWidth: 52, height: 44,
-      borderRadius: 8, border: `1px solid ${bdr}`,
-      background: active ? t.btnHov : bg, color, cursor: 'pointer', flexShrink: 0,
-      transition: 'background 0.13s',
-    }}
-      onMouseEnter={e => { if (!success) e.currentTarget.style.background = t.btnHov; }}
-      onMouseLeave={e => { if (!success) e.currentTarget.style.background = active ? t.btnHov : bg; }}
-    >
-      {icon}
-      <span style={{ fontSize: 10, fontWeight: active || success ? 600 : 400, whiteSpace: 'nowrap' }}>{label}</span>
-    </button>
-  );
 }
 
-// ─── Мобильное меню ⋯ ────────────────────────────────────────────────────────
-function MobileMenu({ isDark, code, onFullscreen }: {
-  readonly isDark: boolean;
-  readonly code: string;
-  readonly onFullscreen: () => void;
-}) {
-  const [open, setOpen]     = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [pos, setPos]       = useState({ top: 0, left: 0 });
-  const ref = useRef<HTMLButtonElement>(null);
-  const { sep, sLabel, mRow } = useMenuHelpers(isDark);
+function ToolbarMenu({ isDark, isCopied, isModal, onSearch, onCopy, onToggleFullscreen, t }: ToolbarMenuProps) {
+  const [open, setOpen] = useState(false);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const ref      = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
 
-  const toggle = () => {
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      const target = e.target instanceof Node ? e.target : null;
+      if (ref.current?.contains(target) || popupRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const update = () => {
+      const rect = ref.current?.getBoundingClientRect();
+      if (rect) {
+        const width = 190;
+        setMenuPos({
+          top:  rect.bottom + 6,
+          left: Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8)),
+        });
+      }
+    };
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
+  }, [open]);
+
+  const toggleOpen = () => {
     if (open) { setOpen(false); return; }
-    const r = ref.current?.getBoundingClientRect();
-    if (!r) return;
-    const mw = 220;
-    setPos({ top: r.bottom + 6, left: Math.max(8, Math.min(r.right - mw, window.innerWidth - mw - 8)) });
+    const rect = ref.current?.getBoundingClientRect();
+    if (rect) {
+      const width = 190;
+      setMenuPos({
+        top:  rect.bottom + 6,
+        left: Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8)),
+      });
+    }
     setOpen(true);
   };
 
-  const doCopy = async () => {
-    await navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => { setCopied(false); setOpen(false); }, 1500);
-  };
+  const getUnifiedControlStyle = (isActive: boolean) => ({
+    border: `1px solid ${isActive ? (isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)') : t.btnBdr}`,
+    background: 'transparent',
+    borderRadius: '8px',
+  });
+
+  const items = [
+    {
+      id: 'search',
+      label: 'Поиск',
+      icon: <Search size={13} />,
+      onClick: () => { onSearch(); setOpen(false); },
+    },
+    {
+      id: 'copy',
+      label: isCopied ? 'Скопировано!' : 'Копировать',
+      icon: isCopied ? <Check size={13} style={{ color: '#22c55e' }} /> : <Copy size={13} style={{ opacity: 0.45 }} />,
+      onClick: () => { onCopy(); },
+    },
+    {
+      id: 'fullscreen',
+      label: isModal ? 'Свернуть' : 'Развернуть',
+      icon: isModal ? <Minimize2 size={13} /> : <Maximize2 size={13} />,
+      onClick: () => { onToggleFullscreen(); setOpen(false); },
+    },
+  ];
 
   return (
-    <>
-      <MenuTriggerButton ref={ref} open={open} onClick={toggle} isDark={isDark} />
-      {open && (
-        <PortalMenu pos={pos} isDark={isDark} onClose={() => setOpen(false)} minWidth={220}>
-          {sLabel('Копировать')}
-          {mRow(doCopy,
-            copied ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />,
-            copied ? 'Скопировано!' : 'Код',
-            copied ? undefined : 'Скопировать содержимое',
-            copied)}
-          {sep}
-          {mRow(() => { onFullscreen(); setOpen(false); }, <Maximize2 size={14} />, 'На весь экран')}
-          <div style={{ height: 4 }} />
-        </PortalMenu>
-      )}
-    </>
-  );
-}
-
-// ─── Кнопки мобильного модального режима ─────────────────────────────────────
-function MobileModalActions({ isCopied, onCopy, onClose, t }: {
-  readonly isCopied: boolean;
-  readonly onCopy: () => void;
-  readonly onClose: () => void;
-  readonly t: ReturnType<typeof tk>;
-}) {
-  return (
-    <>
+    <div ref={ref} style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}>
       <button
-        onClick={onCopy}
-        title={isCopied ? 'Скопировано!' : 'Копировать'}
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 36, height: 36, borderRadius: 8,
-          border: `1px solid ${isCopied ? 'rgba(34,197,94,0.4)' : t.btnBdr}`,
-          background: isCopied ? 'rgba(34,197,94,0.16)' : t.btnBg,
-          color: isCopied ? '#22c55e' : t.btnClr,
-          cursor: 'pointer', flexShrink: 0, transition: 'all 0.13s',
-        }}
-        onMouseEnter={e => { if (!isCopied) e.currentTarget.style.background = t.btnHov; }}
-        onMouseLeave={e => { if (!isCopied) e.currentTarget.style.background = t.btnBg; }}
-      >
-        {isCopied ? <Check size={16} strokeWidth={2.5} /> : <Copy size={16} />}
-      </button>
-      <button
-        onClick={onClose}
-        title="Закрыть"
+        onClick={toggleOpen}
+        title="Меню"
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           width: 36, height: 36, borderRadius: 8,
           border: `1px solid ${t.btnBdr}`,
-          background: t.btnBg, color: t.btnClr,
-          cursor: 'pointer', flexShrink: 0, transition: 'all 0.13s',
+          background: open ? t.btnHov : t.btnBg,
+          color: t.btnClr, cursor: 'pointer', flexShrink: 0,
+          transition: 'background 0.13s',
         }}
         onMouseEnter={e => { e.currentTarget.style.background = t.btnHov; }}
-        onMouseLeave={e => { e.currentTarget.style.background = t.btnBg; }}
+        onMouseLeave={e => { e.currentTarget.style.background = open ? t.btnHov : t.btnBg; }}
       >
-        <X size={16} />
+        <Menu size={16} />
       </button>
-    </>
-  );
-}
 
-// ─── Правая часть тулбара — кнопки действий ──────────────────────────────────
-function ToolbarActions({ isMobile, isModal, isCopied, isDark, code, t, handleCopy, setIsFullscreen }: {
-  readonly isMobile: boolean;
-  readonly isModal: boolean | undefined;
-  readonly isCopied: boolean;
-  readonly isDark: boolean;
-  readonly code: string;
-  readonly t: ReturnType<typeof tk>;
-  readonly handleCopy: () => void;
-  readonly setIsFullscreen: (v: boolean) => void;
-}) {
-  if (!isMobile) {
-    return (
-      <>
-        <Pill onClick={handleCopy} title={isCopied ? 'Скопировано!' : 'Копировать'} label={isCopied ? 'Скопировано' : 'Копировать'} icon={isCopied ? <Check size={14} strokeWidth={2.5} /> : <Copy size={14} />} t={t} success={isCopied} />
-        <Pill onClick={() => setIsFullscreen(!isModal)} title={isModal ? 'Свернуть' : 'Развернуть'} label={isModal ? 'Свернуть' : 'Развернуть'} icon={isModal ? <Minimize2 size={14} /> : <Maximize2 size={14} />} t={t} />
-      </>
-    );
-  }
-  if (isModal) {
-    return <MobileModalActions isCopied={isCopied} onCopy={handleCopy} onClose={() => setIsFullscreen(false)} t={t} />;
-  }
-  return <MobileMenu isDark={isDark} code={code} onFullscreen={() => setIsFullscreen(true)} />;
+      {open && createPortal(
+        <div
+          ref={popupRef}
+          style={{
+            position: 'fixed',
+            top:          menuPos.top,
+            left:         menuPos.left,
+            width:        '190px',
+            borderRadius: '12px',
+            border:       `1px solid ${t.elevatedBorder}`,
+            background:   t.dropdownBg,
+            boxShadow:    t.elevatedShadow,
+            zIndex:       100020,
+            overflow:     'hidden',
+            animation:    'cbMenuIn 0.13s ease',
+          }}
+        >
+          <style>{`
+            @keyframes cbMenuIn {
+              from { opacity:0; transform:translateY(-4px) scale(0.98); }
+              to   { opacity:1; transform:translateY(0)   scale(1); }
+            }
+          `}</style>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '8px' }}>
+            {items.map(item => {
+              const isActive = hoveredId === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={item.onClick}
+                  onMouseEnter={() => setHoveredId(item.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                  style={{
+                    width:      '100%',
+                    display:    'flex',
+                    alignItems: 'center',
+                    gap:        '0.5rem',
+                    padding:    '0.55rem 0.7rem',
+                    fontSize:   '0.875rem',
+                    textAlign:  'left',
+                    cursor:     'pointer',
+                    color:      item.id === 'copy' && isCopied ? '#22c55e' : (isActive ? t.fg : t.btnClr),
+                    fontWeight: isActive ? 600 : 400,
+                    ...getUnifiedControlStyle(isActive),
+                  }}
+                >
+                  {item.icon}
+                  <span style={{ wordBreak: 'break-word', lineHeight: 1.3 }}>
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>,
+        document.body,
+      )}
+    </div>
+  );
 }
 
 interface SingleCodeBlockProps {
@@ -424,13 +456,10 @@ const LINE_HEIGHT_PX   = 21;
 const PRE_PADDING      = 10;
 const COLLAPSED_HEIGHT = PRE_PADDING + VISIBLE_LINES * LINE_HEIGHT_PX + PRE_PADDING;
 
-function pluralLines(n: number): string {
-  if (n === 1) return 'строка';
-  if (n < 5)   return 'строки';
-  return 'строк';
-}
+function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuery, isCopied, handleCopy, setIsFullscreen, isExpanded, setIsExpanded, isDark, t }: SingleCodeBlockProps) {
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuery, isCopied, handleCopy, setIsFullscreen, isExpanded, setIsExpanded, isMobile, isDark, t }: SingleCodeBlockProps) {
   const lines = useMemo(() => {
     const raw = code.split('\n');
     if (raw.at(-1) === '') raw.pop();
@@ -449,6 +478,16 @@ function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuer
     }, []));
   }, [lines, searchQuery]);
 
+  const openSearch = useCallback(() => {
+    setSearchOpen(true);
+    requestAnimationFrame(() => searchInputRef.current?.focus());
+  }, []);
+
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    setSearchQuery('');
+  }, [setSearchQuery]);
+
   const bodyProps = {
     lines, matchedLines, searchQuery,
     fg: t.fg, codeBg: t.codeBg, lineNum: t.lineNum, highlightedHtml,
@@ -458,50 +497,46 @@ function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuer
   const toolbar = (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px',
-      borderBottom: `1px solid ${t.barBorder}`,
       background: t.barBg, flexWrap: 'nowrap', minWidth: 0, flexShrink: 0,
     }}>
-      <div style={{ position: 'relative', flex: '1 1 0', minWidth: 0 }}>
-        <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: t.plhClr, pointerEvents: 'none' }} />
-        <input
-          type="text" placeholder="Поиск..." value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          style={{
-            width: '100%', padding: '0 30px 0 30px', height: 36,
-            borderRadius: 8, border: `1px solid ${t.inpBdr}`,
-            background: t.inpBg, color: t.inpClr, fontSize: 13,
-            outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s',
-          }}
-          onFocus={e => { e.target.style.borderColor = t.inpFoc; }}
-          onBlur={e  => { e.target.style.borderColor = t.inpBdr; }}
-        />
-        {searchQuery && (
-          <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: matchedLines.size > 0 ? 56 : 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: t.plhClr, display: 'flex' }}>
+      {searchOpen ? (
+        <div style={{ position: 'relative', flex: '1 1 0', minWidth: 0 }}>
+          <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: t.plhClr, pointerEvents: 'none' }} />
+          <input
+            ref={searchInputRef}
+            type="text" placeholder="Поиск..." value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Escape') closeSearch(); }}
+            style={{
+              width: '100%', padding: '0 30px 0 30px', height: 36,
+              borderRadius: 8, border: `1px solid ${t.inpBdr}`,
+              background: t.inpBg, color: t.inpClr, fontSize: 13,
+              outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s',
+            }}
+            onFocus={e => { e.target.style.borderColor = t.inpFoc; }}
+            onBlur={e  => { e.target.style.borderColor = t.inpBdr; }}
+          />
+          <button onClick={closeSearch} style={{ position: 'absolute', right: matchedLines.size > 0 ? 56 : 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: t.plhClr, display: 'flex' }}>
             <X size={12} />
           </button>
-        )}
-        {matchedLines.size > 0 && (
-          <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: t.fgMuted, whiteSpace: 'nowrap' }}>
-            {matchedLines.size} найдено
-          </span>
-        )}
-      </div>
-      <ToolbarActions
-        isMobile={isMobile} isModal={isModal} isCopied={isCopied} isDark={isDark}
-        code={code} t={t} handleCopy={handleCopy} setIsFullscreen={setIsFullscreen}
+          {matchedLines.size > 0 && (
+            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: t.fgMuted, whiteSpace: 'nowrap' }}>
+              {matchedLines.size} найдено
+            </span>
+          )}
+        </div>
+      ) : (
+        <div style={{ flex: '1 1 0', minWidth: 0 }} />
+      )}
+      <ToolbarMenu
+        isDark={isDark}
+        isCopied={isCopied}
+        isModal={isModal}
+        onSearch={openSearch}
+        onCopy={handleCopy}
+        onToggleFullscreen={() => setIsFullscreen(!isModal)}
+        t={t}
       />
-    </div>
-  );
-
-  const footer = (
-    <div style={{
-      padding: '6px 12px', borderTop: `1px solid ${t.barBorder}`,
-      fontSize: 11, color: t.footerClr,
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      userSelect: 'none', background: t.outerBg, flexShrink: 0,
-    }}>
-      <span>{lines.length} {pluralLines(lines.length)}</span>
-      {language && <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 10, opacity: 0.7 }}>{language}</span>}
     </div>
   );
 
@@ -512,7 +547,6 @@ function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuer
         <div style={{ flex: 1, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           <CodeBody {...bodyProps} maxHeight="none" />
         </div>
-        {footer}
       </>
     );
   }
@@ -536,7 +570,7 @@ function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuer
           onClick={() => setIsExpanded(!isExpanded)}
           style={{
             width: '100%', padding: '7px 12px', background: t.barBg,
-            border: 'none', borderTop: `1px solid ${t.barBorder}`,
+            border: 'none',
             color: t.footerClr, fontSize: 11, cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
             transition: 'background 0.13s',
@@ -550,7 +584,6 @@ function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuer
           }
         </button>
       )}
-      {footer}
     </>
   );
 }
@@ -573,7 +606,6 @@ function TabBar({ tabs, activeIdx, onSelect, t }: TabBarProps) {
     <div style={{
       display: 'flex', alignItems: 'center',
       background: t.barBg,
-      borderBottom: `1px solid ${t.barBorder}`,
       overflowX: 'auto',
       scrollbarWidth: 'none',
       flexShrink: 0,
