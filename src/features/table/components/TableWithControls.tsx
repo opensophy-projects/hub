@@ -34,12 +34,14 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
 
   if (!headers.length) return null;
 
-  const outerBg     = isDark ? '#0a0a0a' : '#E8E7E3';
+  // Единый фон блока — как в CodeBlock/ChartBlock: тулбар, панели фильтров/
+  // колонок, тело таблицы и футер используют одну заливку, без внутренних
+  // разделительных линий между секциями.
+  const outerBg     = isDark ? '#0a0a0a' : '#e8e7e3';
   const outerBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)';
   const outerShadow = isDark
     ? '0 2px 12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)'
     : '0 1px 6px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.07)';
-  const footerBorder = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)';
   const footerClr    = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.32)';
   const radius = 12;
 
@@ -116,7 +118,6 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
 
         <div style={{
           padding: '6px 12px',
-          borderTop: `1px solid ${footerBorder}`,
           fontSize: 11, color: footerClr,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           userSelect: 'none', background: outerBg,
