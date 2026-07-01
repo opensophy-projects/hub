@@ -107,13 +107,11 @@ function tk(isDark: boolean) {
     outerShadow: isDark
       ? '0 2px 20px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05)'
       : '0 1px 8px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.07)',
-    tooltipBg:   isDark ? '#18181b' : '#ffffff',
+    tooltipBg:   isDark ? '#0a0a0a' : '#e8e7e3',
     tooltipBdr:  isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.12)',
     tooltipText: isDark ? 'rgba(255,255,255,0.88)' : 'rgba(0,0,0,0.85)',
     axisText:    isDark ? 'rgba(255,255,255,0.32)' : 'rgba(0,0,0,0.32)',
     titleText:   isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.26)',
-    footerText:  isDark ? 'rgba(255,255,255,0.2)'  : 'rgba(0,0,0,0.3)',
-    footerBdr:   isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)',
     legendText:  isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)',
     legendMuted: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.18)',
     gridLine:    isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
@@ -326,12 +324,20 @@ type AreaFillVariant = 'gradient' | 'gradient-reverse' | 'solid' | 'dotted' | 'l
 
 const AREA_STROKE_WIDTH = 0.8;
 
-// Анимированный пунктир (marching ants), рендерится ребёнком <Area />
+// Анимированный пунктир (marching ants), рендерится ребёнком <Area />.
+//
+// ФИКС: раньше вместе с dashoffset анимировался ещё и сам stroke-dasharray
+// (values="3 3; 0 3; 3 3") — на середине цикла (keyTime 0.5) он становился
+// "0 3", т.е. штрих нулевой длины с зазором 3 — линия целиком пропадала на
+// полкадра. Т.к. у каждой серии свой независимый SMIL-таймер (начинается в
+// момент маунта конкретного <Line>/<Area>), у разных серий фаза "невидимости"
+// не совпадает — на случайном скриншоте/кадре одна серия может быть видна,
+// а другая в этот момент как раз находится в "нулевой" фазе и выглядит
+// полностью пропавшей. Теперь dasharray статичный (задаётся один раз через
+// strokeDasharray на самом <Area>/<Line>), а анимируется только dashoffset —
+// это и даёт эффект "бегущего" пунктира без пропадания линии.
 const AreaAnimatedDashedStroke: React.FC = () => (
-  <>
-    <animate attributeName="stroke-dasharray" values="3 3; 0 3; 3 3" dur="1s" repeatCount="indefinite" keyTimes="0;0.5;1" />
-    <animate attributeName="stroke-dashoffset" values="0; -6" dur="1s" repeatCount="indefinite" keyTimes="0;1" />
-  </>
+  <animate attributeName="stroke-dashoffset" values="0; -6" dur="1s" repeatCount="indefinite" keyTimes="0;1" />
 );
 
 const AreaColorGradient: React.FC<{ id: string; color: string }> = ({ id, color }) => (
@@ -593,11 +599,11 @@ const LINE_STROKE_WIDTH = 1;
 const BUFFER_DASH_SIZE = 4;
 const BUFFER_GAP_SIZE = 3;
 
+// См. комментарий у AreaAnimatedDashedStroke — та же причина "пропадающей"
+// линии (dasharray проходил через нулевую длину штриха), тот же фикс:
+// dasharray статичный, анимируется только dashoffset.
 const LineAnimatedDashedStroke: React.FC = () => (
-  <>
-    <animate attributeName="stroke-dasharray" values="5 5; 0 5; 5 5" dur="1s" repeatCount="indefinite" keyTimes="0;0.5;1" />
-    <animate attributeName="stroke-dashoffset" values="0; -10" dur="1s" repeatCount="indefinite" keyTimes="0;1" />
-  </>
+  <animate attributeName="stroke-dashoffset" values="0; -10" dur="1s" repeatCount="indefinite" keyTimes="0;1" />
 );
 
 const LineColorGradient: React.FC<{ id: string; color: string }> = ({ id, color }) => (
@@ -1235,14 +1241,6 @@ function renderRadar(
   );
 }
 
-// ─── Вспомогательные ─────────────────────────────────────────────────────────
-
-function pluralRecords(n: number): string {
-  if (n === 1) return 'запись';
-  if (n < 5)   return 'записи';
-  return 'записей';
-}
-
 // ─── ChartBlock ───────────────────────────────────────────────────────────────
 
 const ChartBlock: React.FC<ChartBlockProps> = ({
@@ -1419,17 +1417,6 @@ const ChartBlock: React.FC<ChartBlockProps> = ({
             t={t}
           />
         )}
-
-        <div style={{
-          padding: '5px 16px 7px', fontSize: 11, color: t.footerText,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          borderTop: `1px solid ${t.footerBdr}`, userSelect: 'none',
-        }}>
-          <span>{data.length}{' '}{pluralRecords(data.length)}</span>
-          <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 10, opacity: 0.6 }}>
-            {type}
-          </span>
-        </div>
       </div>
     </div>
   );
