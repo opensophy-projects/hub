@@ -29,13 +29,19 @@ export interface TableUiTokens {
   copiedBdr: string;
   footerClr: string;
   elevatedShadow: string;
+  /** Цвет "зебры" (нечётные строки таблицы) — единый для всех мест. */
   zebraBg: string;
 }
 
+// unifiedBg — фон карточки/тулбара/панелей/футера (без изменений).
+// zebraBg  — отдельный, чуть более контрастный оттенок для нечётных строк
+// таблицы (задан явно по ТЗ: #191919 в тёмной теме, #deddd9 в светлой),
+// не привязан математически к unifiedBg, чтобы можно было независимо
+// подстраивать контраст зебры без сдвига общего фона блока.
 export function getTableUiTokens(isDark: boolean): TableUiTokens {
   const t = makeTokens(isDark);
   const unifiedBg = isDark ? '#0a0a0a' : '#e8e7e3';
-  const zebraBg = isDark ? '#191919' : '#deddd9';
+  const zebraBg = isDark ? '#0f0f0f' : '#e1dfdb';
   return {
     unifiedBg,
     modalBg: unifiedBg,
