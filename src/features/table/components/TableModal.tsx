@@ -22,8 +22,8 @@ const tk = getTableUiTokens;
 //
 // Единый фон карточки (#0a0a0a / #e8e7e3) для тулбара/панели фильтров/тела
 // таблицы/футера — без внутренних разделительных линий, как в CodeBlock.
-// Все действия (копировать/фильтры/сброс/закрыть/показать всё) спрятаны в
-// один TableToolbarMenu вместо ряда отдельных пилюль.
+// Все действия (копировать/фильтры/сброс/закрыть) спрятаны в один
+// TableToolbarMenu вместо ряда отдельных пилюль.
 const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onClose }) => {
   const t = tk(isDark);
 
@@ -46,14 +46,10 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
     activeFilterCount,
   } = useTableControls(rows, headers);
 
-  // Режим "показать всю таблицу целиком" — тоггл, доступен только в модалке.
-  const [fitToScreen, setFitToScreen] = useState(false);
-
   // Сброс состояния при открытии новой таблицы
   useEffect(() => {
     resetFilters();
     setShowFilters(false);
-    setFitToScreen(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tableHtml]);
 
@@ -147,8 +143,6 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
             activeFilterCount={activeFilterCount}
             onResetFilters={resetFilters}
             onClose={onClose}
-            fitToScreen={fitToScreen}
-            onToggleFitToScreen={() => setFitToScreen(v => !v)}
           />
         </div>
 
@@ -192,7 +186,6 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
             onSort={handleSort}
             headerAlignments={headerAlignments}
             fullscreen
-            fitToScreen={fitToScreen}
           />
         </div>
 
