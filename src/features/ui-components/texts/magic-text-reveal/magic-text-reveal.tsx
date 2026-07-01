@@ -111,7 +111,6 @@ export const MagicTextReveal: React.FC<MagicTextRevealProps> = ({
     setCanvasSize({ w, h });
   }, [text, fontSize, fontFamily, fontWeight, spread]);
 
-  // Сканирование пикселей для определения границ текста
   const scanTextBounds = useCallback((
     data: Uint8ClampedArray,
     canvasWidth: number,
@@ -132,7 +131,6 @@ export const MagicTextReveal: React.FC<MagicTextRevealProps> = ({
     return { minX, maxX, minY, maxY };
   }, []);
 
-  // Создание частиц из растеризованного текста
   const createParticles = useCallback((
     ctx: CanvasRenderingContext2D,
     canvas: HTMLCanvasElement,
