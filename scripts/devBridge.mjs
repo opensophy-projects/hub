@@ -1,7 +1,3 @@
-/**
- * Hub Dev Panel — fetch-only Bridge
- */
-
 import fs   from 'node:fs';
 import path from 'node:path';
 
@@ -15,8 +11,6 @@ const CUSTOM_DIR = path.join(ROOT, 'src/custom');
 const BASE_URL   = 'https://opensophy.com';
 
 const LOCALHOST_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
-
-// ─── Разрешённые пути ─────────────────────────────────────────────────────────
 
 const ALLOWED_WRITE = [
   'Docs/',
