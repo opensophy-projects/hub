@@ -20,17 +20,15 @@ const tk = getTableUiTokens;
 // ─── Панель управления таблицей ───────────────────────────────────────────────
 //
 // Единый ряд: поиск + одна кнопка-меню (копировать/фильтры/сброс/развернуть),
-// как в CodeBlock. Раньше здесь была отдельная строка пилюль (Copy/Filters/
-// Reset/Fullscreen) для десктопа и отдельное мобильное меню — теперь оба
-// сценария используют один и тот же TableToolbarMenu, ряд никогда не остаётся
-// "пустым" и не переключается между двумя разными UI по брейкпоинту.
+// как в CodeBlock. Режим "показать всю таблицу" здесь не предлагается —
+// он имеет смысл только в развёрнутой модалке (TableModal), где таблице
+// уже отведено максимум места и есть куда её "уменьшать".
 export const TableControlsBar: React.FC<TableControlsBarProps> = ({
   isDark, searchQuery, onSearchChange,
   showFilters, onToggleFilters, activeFilterCount, onResetFilters,
   onFullscreen, tableHtml,
 }) => {
   const t = tk(isDark);
-
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 8,
@@ -60,7 +58,6 @@ export const TableControlsBar: React.FC<TableControlsBarProps> = ({
           </button>
         )}
       </div>
-
       <TableToolbarMenu
         isDark={isDark}
         tableHtml={tableHtml}
