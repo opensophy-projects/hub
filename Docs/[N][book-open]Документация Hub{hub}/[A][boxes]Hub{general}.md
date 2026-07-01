@@ -181,7 +181,7 @@ src/features/ui-components/
 - **TypeScript** — типизация компонентов, конфигов и внутренних API;
 - **Framer Motion / GSAP / Three / OGL** — анимации и визуальные эффекты;
 - **Marked и KaTeX** — обработка Markdown и формул;
-- **Lucide React** — иконки для интерфейса и навигации;
+- **Phosphor Icons React** — duotone-иконки для интерфейса и навигации;
 - **Recharts** — графики внутри контентных блоков;
 - **Tailwind CSS и design tokens** — базовые стили и консистентная тема.
 

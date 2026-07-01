@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useContext, useRef } from 'rea
 import { bridge } from '../useDevBridge';
 import { ThemeTokensContext } from '../theme';
 import { toast } from '../components/toastBus';
-import { Loader2, RefreshCw, AlertCircle } from 'lucide-react';
+import { CircleNotchIcon as Loader2, ArrowClockwiseIcon as RefreshCw, WarningCircleIcon as AlertCircle } from '@phosphor-icons/react';
 import type { SiteConfig } from '../useDevBridge';
 import {
   applyThemeColorOverrides,
@@ -116,7 +116,7 @@ export default function SitePanel() {
   if (loading) {
     return (
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: t.fgSub, fontSize: 14 }}>
-        <Loader2 size={14} style={{ animation: 'devSpin 1s linear infinite' }} /> Загрузка...
+        <Loader2 size={14} style={{ animation: 'devSpin 1s linear infinite' }} weight="duotone" /> Загрузка...
       </div>
     );
   }
@@ -140,7 +140,7 @@ export default function SitePanel() {
           display: 'flex', alignItems: 'center', gap: 6,
           fontSize: 13, color: t.fgMuted, marginBottom: 10,
         }}>
-          <Loader2 size={13} style={{ animation: 'devSpin 1s linear infinite' }} />
+          <Loader2 size={13} style={{ animation: 'devSpin 1s linear infinite' }} weight="duotone" />
           Сохранение...
         </div>
       )}
@@ -154,7 +154,7 @@ export default function SitePanel() {
           display: 'flex', gap: 6, alignItems: 'center',
           marginBottom: 10,
         }}>
-          <AlertCircle size={14} /> {error}
+          <AlertCircle size={14} weight="duotone" /> {error}
         </div>
       )}
 
@@ -208,7 +208,7 @@ export default function SitePanel() {
             color: t.fgMuted, fontSize: 12, cursor: 'pointer', fontFamily: t.mono,
           }}
         >
-          <RefreshCw size={9} /> Обновить
+          <RefreshCw size={9} weight="duotone" /> Обновить
         </button>
       </div>
 

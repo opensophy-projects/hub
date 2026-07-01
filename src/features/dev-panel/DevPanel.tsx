@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { createPortal } from 'react-dom';
 import { useDevBridge } from './useDevBridge';
 import { ToastContainer } from './components/Toast';
-import { FileText, Users, Image, X, UserCog, Loader2, Globe } from 'lucide-react';
+import { FileTextIcon as FileText, UsersIcon as Users, ImageIcon as Image, XIcon as X, UserGearIcon as UserCog, CircleNotchIcon as Loader2, GlobeHemisphereWestIcon as Globe } from '@phosphor-icons/react';
 import { ThemeTokensContext, makeT, type TTokens, useIsDark } from './theme';
 
 const DocsPanel     = lazy(() => import('./panels/DocsPanel'));
@@ -13,10 +13,10 @@ const SitePanel     = lazy(() => import('./panels/SitePanel'));
 // ─── Табы ────────────────────────────────────────────────────────────────────
 
 const TABS = [
-  { id: 'docs',     label: 'Страницы',  icon: <FileText size={13}/> },
-  { id: 'contacts', label: 'Контакты',  icon: <Users size={13}/>    },
-  { id: 'assets',   label: 'Ассеты',    icon: <Image size={13}/>    },
-  { id: 'site',     label: 'Сайт',      icon: <Globe size={13}/>    },
+  { id: 'docs',     label: 'Страницы',  icon: <FileText size={13} weight="duotone" /> },
+  { id: 'contacts', label: 'Контакты',  icon: <Users size={13} weight="duotone" />    },
+  { id: 'assets',   label: 'Ассеты',    icon: <Image size={13} weight="duotone" />    },
+  { id: 'site',     label: 'Сайт',      icon: <Globe size={13} weight="duotone" />    },
 ];
 
 // ─── Размеры панели ───────────────────────────────────────────────────────────
@@ -79,7 +79,7 @@ function PanelTrigger({ open, onClick, t }: Readonly<{
       onMouseEnter={e => { e.currentTarget.style.background = t.surfaceHov; e.currentTarget.style.color = t.fg; }}
       onMouseLeave={e => { e.currentTarget.style.background = open ? t.surfaceHov : t.surface; e.currentTarget.style.color = t.fgMuted; }}
     >
-      <UserCog size={15}/>
+      <UserCog size={15} weight="duotone" />
       <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.05em', fontFamily: t.mono }}>ADMIN</span>
     </button>
   );
@@ -285,7 +285,7 @@ export default function DevPanel() {
               background: t.accentSoft, border: `1px solid ${t.border}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <UserCog size={13} style={{ color: t.fg }}/>
+              <UserCog size={13} style={{ color: t.fg }} weight="duotone" />
             </div>
 
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -318,7 +318,7 @@ export default function DevPanel() {
               onMouseEnter={e => { e.currentTarget.style.background = t.surfaceHov; e.currentTarget.style.color = t.fg; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = t.fgMuted; }}
             >
-              <X size={13}/>
+              <X size={13} weight="duotone" />
             </button>
           </div>
 
@@ -356,7 +356,7 @@ export default function DevPanel() {
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
             <Suspense fallback={
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: t.fgSub, fontSize: 12 }}>
-                <Loader2 size={14} style={{ animation: 'devSpin 1s linear infinite' }}/> Загрузка...
+                <Loader2 size={14} style={{ animation: 'devSpin 1s linear infinite' }} weight="duotone" /> Загрузка...
               </div>
             }>
               {tab === 'docs'     && <DocsPanel/>}

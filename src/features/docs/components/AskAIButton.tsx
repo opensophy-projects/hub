@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Copy, Check, ChevronDown, Sparkles } from 'lucide-react';
+import { CopyIcon as Copy, CheckIcon as Check, CaretDownIcon as ChevronDown, SparkleIcon as Sparkles } from '@phosphor-icons/react';
 import { makeTokens } from '@/shared/tokens/theme';
 
 const THEME_DARK = {
@@ -200,15 +200,14 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({ isDark, pageTitle, markdownCo
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden', minWidth: 0, flex: 1 }}>
-          <Sparkles size={13} style={{ color: t.fgMuted, flexShrink: 0 }} />
+          <Sparkles size={13} style={{ color: t.fgMuted, flexShrink: 0 }} weight="duotone" />
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-word', lineHeight: 1.3 }}>
             Спросить у ИИ
           </span>
         </div>
         <ChevronDown
           size={12}
-          style={{ color: t.fgMuted, flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}
-        />
+          style={{ color: t.fgMuted, flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} weight="duotone" />
       </button>
 
       {open && createPortal(
@@ -292,8 +291,8 @@ const AskAIButton: React.FC<AskAIButtonProps> = ({ isDark, pageTitle, markdownCo
               }}
             >
               {copied
-                ? <Check size={13} style={{ color: '#22c55e', flexShrink: 0 }} />
-                : <Copy  size={13} style={{ opacity: 0.45, flexShrink: 0, color: t.fgMuted }} />
+                ? <Check size={13} style={{ color: '#22c55e', flexShrink: 0 }} weight="duotone" />
+                : <Copy  size={13} style={{ opacity: 0.45, flexShrink: 0, color: t.fgMuted }} weight="duotone" />
               }
               <span style={{ wordBreak: 'break-word', lineHeight: 1.3 }}>
                 {copied ? 'Скопировано!' : 'Копировать HTML'}

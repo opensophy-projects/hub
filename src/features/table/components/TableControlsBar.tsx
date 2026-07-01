@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Search } from 'lucide-react';
+import { XIcon as X, MagnifyingGlassIcon as Search } from '@phosphor-icons/react';
 import { getTableUiTokens } from './tableUiTheme';
 import { TableToolbarMenu } from './TableToolbarMenu';
 
@@ -40,7 +40,7 @@ export const TableControlsBar: React.FC<TableControlsBarProps> = ({
       boxSizing: 'border-box' as const,
     }}>
       <div style={{ position: 'relative', flex: '1 1 0', minWidth: 0 }}>
-        <Search size={13} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: t.plhClr, pointerEvents: 'none' }} />
+        <Search size={13} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: t.plhClr, pointerEvents: 'none' }} weight="duotone" />
         <input type="text" placeholder="Поиск..." value={searchQuery}
           onChange={e => onSearchChange(e.target.value)}
           style={{
@@ -54,7 +54,7 @@ export const TableControlsBar: React.FC<TableControlsBarProps> = ({
         />
         {searchQuery && (
           <button onClick={() => onSearchChange('')} style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: t.plhClr, display: 'flex' }}>
-            <X size={12} />
+            <X size={12} weight="duotone" />
           </button>
         )}
       </div>

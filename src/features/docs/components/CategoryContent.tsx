@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, FileText, RefreshCw, Tag } from 'lucide-react';
+import { CalendarDotsIcon as CalendarDays, FileTextIcon as FileText, ArrowClockwiseIcon as RefreshCw, TagIcon as Tag } from '@phosphor-icons/react';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import { useTheme } from '@/shared/contexts/useTheme';
 import Navigation from '@/features/navigation/components/Navigation';
-import LucideIcon from '@/shared/components/LucideIcon';
+import PhosphorIcon from '@/shared/components/PhosphorIcon';
 import { makeTokens } from '@/shared/tokens/theme';
 
 interface CategoryDoc {
@@ -139,7 +139,7 @@ const CategoryCard: React.FC<{ doc: CategoryDoc; isDark: boolean }> = ({ doc, is
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: tk.iconColor,
           }}>
-            {doc.icon ? <LucideIcon name={doc.icon} size={18} /> : <FileText size={18} />}
+            {doc.icon ? <PhosphorIcon name={doc.icon} size={18} /> : <FileText size={18} weight="duotone" />}
           </div>
 
           {doc.typename && (
@@ -194,7 +194,7 @@ const CategoryCard: React.FC<{ doc: CategoryDoc; isDark: boolean }> = ({ doc, is
                 color: tk.tagClr,
                 fontFamily: 'ui-monospace, monospace',
               }}>
-                <Tag size={9} />{tag}
+                <Tag size={9} weight="duotone" />{tag}
               </span>
             ))}
           </div>
@@ -212,7 +212,7 @@ const CategoryCard: React.FC<{ doc: CategoryDoc; isDark: boolean }> = ({ doc, is
                 display: 'inline-flex', alignItems: 'center', gap: 4,
                 fontSize: '0.68rem', color: tk.metaColor,
               }}>
-                <CalendarDays size={11} />{formattedDate}
+                <CalendarDays size={11} weight="duotone" />{formattedDate}
               </span>
             )}
             {formattedUpdated && (
@@ -220,7 +220,7 @@ const CategoryCard: React.FC<{ doc: CategoryDoc; isDark: boolean }> = ({ doc, is
                 display: 'inline-flex', alignItems: 'center', gap: 4,
                 fontSize: '0.68rem', color: tk.metaColor,
               }}>
-                <RefreshCw size={11} />Обновлено: {formattedUpdated}
+                <RefreshCw size={11} weight="duotone" />Обновлено: {formattedUpdated}
               </span>
             )}
           </div>
@@ -456,7 +456,7 @@ const CategoryContentMain: React.FC<CategoryContentProps> = ({ category }) => {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: pt.iconColor,
             }}>
-              {category.icon ? <LucideIcon name={category.icon} size={22} /> : <FileText size={22} />}
+              {category.icon ? <PhosphorIcon name={category.icon} size={22} /> : <FileText size={22} weight="duotone" />}
             </span>
             <h1 style={{
               fontSize: 'clamp(1.5rem, 4vw, 2.4rem)',

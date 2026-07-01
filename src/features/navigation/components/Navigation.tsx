@@ -9,12 +9,7 @@ import { storageSet } from '@/shared/lib/storage';
 import { CONTACTS } from '@/shared/data/contacts';
 import { scrollToElement } from '@/features/docs/utils/scrollUtils';
 import { AnimatePresence, motion, useSpring, useTransform } from 'framer-motion';
-import {
-  Search, Sun, Moon, ChevronDown, ChevronRight,
-  Mail, X, Home, AlertTriangle,
-  FolderOpen, List, PanelLeft, ArrowUp,
-  Crown, BookOpenText, PanelRight,
-} from 'lucide-react';
+import { MagnifyingGlassIcon as Search, SunIcon as Sun, MoonIcon as Moon, CaretDownIcon as ChevronDown, CaretRightIcon as ChevronRight, EnvelopeSimpleIcon as Mail, XIcon as X, HouseIcon as Home, WarningIcon as AlertTriangle, FolderOpenIcon as FolderOpen, ListIcon as List, SidebarSimpleIcon as PanelLeft, ArrowUpIcon as ArrowUp, CrownIcon as Crown, BookOpenTextIcon as BookOpenText, SidebarSimpleIcon as PanelRight } from '@phosphor-icons/react';
 import { useIsDesktopNav } from '@/shared/hooks/useBreakpoint';
 import { makeTokens } from '@/shared/tokens/theme';
 
@@ -168,20 +163,32 @@ function getUnifiedControlStyle(isDark: boolean, isActive: boolean = false) {
   };
 }
 
-const iconCache = new Map<string, React.FC<{ size?: number }>>();
-const LucideIcon: React.FC<{ name: string; size?: number }> = memo(({ name, size = 15 }) => {
-  const [Icon, setIcon] = useState<React.FC<{ size?: number }> | null>(() => iconCache.get(name) ?? null);
+const ICON_NAME_ALIASES: Record<string, string> = {
+  'alert-circle': 'WarningCircle',
+  'alert-triangle': 'Warning',
+  'bar-chart-2': 'ChartBar',
+  'book-open': 'BookOpen',
+  'chart-no-axes-column': 'ChartBar',
+  'file-text': 'FileText',
+  'folder-open': 'FolderOpen',
+  'refresh-cw': 'ArrowClockwise',
+  'user-cog': 'UserGear',
+};
+
+const iconCache = new Map<string, React.FC<{ size?: number; weight?: 'duotone' }>>();
+const PhosphorIcon: React.FC<{ name: string; size?: number }> = memo(({ name, size = 15 }) => {
+  const [Icon, setIcon] = useState<React.FC<{ size?: number; weight?: 'duotone' }> | null>(() => iconCache.get(name) ?? null);
   useEffect(() => {
     setIcon(() => iconCache.get(name) ?? null);
     if (!name || iconCache.has(name)) return;
-    const pascal = name.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('');
-    import('lucide-react').then(mod => {
-      const ic = (mod as Record<string, unknown>)[pascal] as React.FC<{ size?: number }> | undefined;
+    const pascal = (ICON_NAME_ALIASES[name] ?? name).split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('');
+    import('@phosphor-icons/react').then(mod => {
+      const ic = (mod as Record<string, unknown>)[`${pascal}Icon`] as React.FC<{ size?: number; weight?: 'duotone' }> | undefined;
       if (ic) { iconCache.set(name, ic); setIcon(() => ic); }
     });
   }, [name]);
   if (!Icon) return <span style={{ width: size, height: size, display: 'inline-block' }} />;
-  return <Icon size={size} />;
+  return <Icon size={size} weight="duotone" />;
 });
 
 function buildTree(docs: Doc[], query: string, navSlug: string): NavNode {
@@ -252,7 +259,7 @@ const DocLink: React.FC<{
         lineHeight: 1.4,
         ...stateStyle,
       }}>
-      {doc.icon && <span style={{ flexShrink: 0, width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fgMuted }}><LucideIcon name={doc.icon} size={18} /></span>}
+      {doc.icon && <span style={{ flexShrink: 0, width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fgMuted }}><PhosphorIcon name={doc.icon} size={18} /></span>}
       <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.35 }}>
         {doc.title}
       </span>
@@ -278,7 +285,7 @@ const HomePageLink: React.FC<{
       ...stateStyle,
     }}>
       <span style={{ flexShrink: 0, width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fgMuted }}>
-        <Crown size={14} />
+        <Crown size={14} weight="duotone" />
       </span>
       <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.35 }}>
         Главная
@@ -323,7 +330,7 @@ const CategoryNode: React.FC<{
             justifyContent: 'center',
             flexShrink: 0,
           }}>
-          {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          {expanded ? <ChevronDown size={14} weight="duotone" /> : <ChevronRight size={14} weight="duotone" />}
         </button>
         <a href={toCategoryHref(activeNavSlug, path)} onClick={onDocClick}
           style={{
@@ -334,7 +341,7 @@ const CategoryNode: React.FC<{
             color: 'inherit', textDecoration: 'none',
           }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
-            {node.icon && <span style={{ width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: t.fgMuted }}><LucideIcon name={node.icon} size={14} /></span>}
+            {node.icon && <span style={{ width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: t.fgMuted }}><PhosphorIcon name={node.icon} size={14} /></span>}
             <span style={{ wordBreak: 'break-word', lineHeight: 1.35 }}>{node.title}</span>
           </span>
           {total > 0 && (
@@ -517,10 +524,10 @@ const SectionItemIcon: React.FC<{
   navSlug: string; navIcon: string; isActive: boolean; mobile: boolean; t: ReturnType<typeof tk>;
 }> = ({ navSlug, navIcon, isActive, mobile, t }) => {
   const size = mobile ? 15 : 13;
-  if (navSlug === '') return <Home size={size} style={{ color: t.fgMuted }} />;
+  if (navSlug === '') return <Home size={size} style={{ color: t.fgMuted }} weight="duotone" />;
   return (
     <span style={{ color: isActive ? t.accent : t.fgMuted, display: 'flex', alignItems: 'center' }}>
-      {navIcon ? <LucideIcon name={navIcon} size={size} /> : <FolderOpen size={size} />}
+      {navIcon ? <PhosphorIcon name={navIcon} size={size} /> : <FolderOpen size={size} weight="duotone" />}
     </span>
   );
 };
@@ -570,7 +577,7 @@ const NavTreeContent: React.FC<{
 
   if (error) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', padding: '2rem', textAlign: 'center' }}>
-      <AlertTriangle size={22} style={{ color: 'rgba(251,191,36,0.7)' }} />
+      <AlertTriangle size={22} style={{ color: 'rgba(251,191,36,0.7)' }} weight="duotone" />
       <p style={{ margin: 0, fontSize: mobile ? '0.95rem' : '0.8rem', color: t.fgMuted }}>Не удалось загрузить документы</p>
       <button onClick={() => globalThis.location.reload()} style={{ padding: '0.35rem 0.85rem', borderRadius: '7px', border: `1px solid ${t.border}`, background: 'transparent', color: t.fgMuted, fontSize: mobile ? '0.9rem' : '0.75rem', cursor: 'pointer' }}>Обновить</button>
     </div>
@@ -696,7 +703,7 @@ const UnifiedCloseBtn: React.FC<{
         transition: 'color 0.13s',
       }}
     >
-      <X size={iconSz} />
+      <X size={iconSz} weight="duotone" />
     </button>
   );
 };
@@ -726,7 +733,7 @@ const NavPanelContent: React.FC<{
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <div style={{ flexShrink: 0, padding: mobile ? '12px 14px' : '10px', borderBottom: 'none' }}>
         <div style={{ position: 'relative' }}>
-          <Search size={iconSize} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: t.fg, pointerEvents: 'none' }} />
+          <Search size={iconSize} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: t.fg, pointerEvents: 'none' }} weight="duotone" />
           <input
             type="text"
             placeholder="Поиск..."
@@ -761,11 +768,11 @@ const NavPanelContent: React.FC<{
             }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden', minWidth: 0, flex: 1 }}>
               {activeSection.navSlug === ''
-                ? <Home size={iconSize} style={{ color: t.fgMuted, flexShrink: 0 }} />
-                : <LucideIcon name={activeSection.navIcon} size={iconSize} />}
+                ? <Home size={iconSize} style={{ color: t.fgMuted, flexShrink: 0 }} weight="duotone" />
+                : <PhosphorIcon name={activeSection.navIcon} size={iconSize} />}
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-word', lineHeight: 1.3 }}>{activeSection.navTitle}</span>
             </div>
-            <ChevronDown size={mobile ? 14 : 12} style={{ color: t.fgMuted, flexShrink: 0, transform: sectionOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
+            <ChevronDown size={mobile ? 14 : 12} style={{ color: t.fgMuted, flexShrink: 0, transform: sectionOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} weight="duotone" />
           </button>
 
           {sectionOpen && (
@@ -1327,17 +1334,17 @@ const DesktopRail: React.FC<{
         <BrandLogo logoPath={logoPath} size={42} />
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: 1, width: '100%', padding: '2px 0' }}>
-        <RailBtn icon={<PanelLeft size={18} />}                         label="Скрыть панель" isDark={isDark} onClick={onHideRail}                title="Скрыть панель" />
-        <RailBtn icon={isDark ? <Sun size={18} /> : <Moon size={18} />} label="Тема"          isDark={isDark} onClick={toggleTheme}              title={isDark ? 'Светлая' : 'Тёмная'} />
-        <RailBtn icon={<Search size={18} />}                            label="Поиск"         isDark={isDark} onClick={onOpenSearch}             title="Поиск" />
-        <RailBtn icon={<FolderOpen size={18} />}                        label="Разделы"       isDark={isDark}
+        <RailBtn icon={<PanelLeft size={18} weight="duotone" />}                         label="Скрыть панель" isDark={isDark} onClick={onHideRail}                title="Скрыть панель" />
+        <RailBtn icon={isDark ? <Sun size={18} weight="duotone" /> : <Moon size={18} weight="duotone" />} label="Тема"          isDark={isDark} onClick={toggleTheme}              title={isDark ? 'Светлая' : 'Тёмная'} />
+        <RailBtn icon={<Search size={18} weight="duotone" />}                            label="Поиск"         isDark={isDark} onClick={onOpenSearch}             title="Поиск" />
+        <RailBtn icon={<FolderOpen size={18} weight="duotone" />}                        label="Разделы"       isDark={isDark}
           isActive={isStandardMode ? (state.standardSidebarOpen && activePanel === 'nav') : activePanel === 'nav'}
           onClick={() => onTogglePanel('nav')}
           title="Разделы"
         />
         {readingModeEnabled && (
           <div style={{ position: 'relative' }}>
-            <RailBtn icon={<BookOpenText size={18} />} label="Режим чтения" isDark={isDark} isActive={readingModeMenuOpen} onClick={() => setReadingModeMenuOpen(prev => !prev)} title="Режим чтения" />
+            <RailBtn icon={<BookOpenText size={18} weight="duotone" />} label="Режим чтения" isDark={isDark} isActive={readingModeMenuOpen} onClick={() => setReadingModeMenuOpen(prev => !prev)} title="Режим чтения" />
             <DesktopReadingModeMenu
               readingMode={readingMode}
               readingModeMenuOpen={readingModeMenuOpen}
@@ -1355,14 +1362,14 @@ const DesktopRail: React.FC<{
         )}
         {!isStandardMode && (
           <>
-            {hasToc && <RailBtn icon={<List size={18} />} label="Оглавление" isDark={isDark} isActive={activePanel === 'toc'} onClick={() => onTogglePanel('toc')} title="Оглавление" />}
-            <RailBtn icon={<ArrowUp size={18} />} label="Наверх" isDark={isDark} onClick={() => globalThis.scrollTo({ top: 0, behavior: 'smooth' })} title="Наверх" />
+            {hasToc && <RailBtn icon={<List size={18} weight="duotone" />} label="Оглавление" isDark={isDark} isActive={activePanel === 'toc'} onClick={() => onTogglePanel('toc')} title="Оглавление" />}
+            <RailBtn icon={<ArrowUp size={18} weight="duotone" />} label="Наверх" isDark={isDark} onClick={() => globalThis.scrollTo({ top: 0, behavior: 'smooth' })} title="Наверх" />
           </>
         )}
         {isStandardMode && !state.standardTocVisible && (
-          <RailBtn icon={<ArrowUp size={18} />} label="Наверх" isDark={isDark} onClick={() => globalThis.scrollTo({ top: 0, behavior: 'smooth' })} title="Наверх" />
+          <RailBtn icon={<ArrowUp size={18} weight="duotone" />} label="Наверх" isDark={isDark} onClick={() => globalThis.scrollTo({ top: 0, behavior: 'smooth' })} title="Наверх" />
         )}
-        <RailBtn icon={<Mail size={18} />} label="Контакты" isDark={isDark}
+        <RailBtn icon={<Mail size={18} weight="duotone" />} label="Контакты" isDark={isDark}
           isActive={isStandardMode ? (state.standardSidebarOpen && activePanel === 'contacts') : activePanel === 'contacts'}
           onClick={() => onTogglePanel('contacts')}
           title="Контакты"
@@ -1459,7 +1466,7 @@ const DesktopTocPanel: React.FC<{
           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = t.fg; }}
           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = t.fgMuted; }}
         >
-          <ArrowUp size={11} />
+          <ArrowUp size={11} weight="duotone" />
           <span style={{ fontSize: '0.58rem', lineHeight: 1, fontWeight: 500 }}>Наверх</span>
         </button>
       </div>
@@ -1607,7 +1614,7 @@ const ShowPanelBtn: React.FC<{
       }}
       title="Показать панель"
     >
-      <PanelLeft size={16} />
+      <PanelLeft size={16} weight="duotone" />
       <span style={{ fontSize: '9px', fontWeight: 500, lineHeight: 1.2, textAlign: 'center', letterSpacing: '0.01em', whiteSpace: 'pre-line', maxHeight: hov ? '24px' : '0px', opacity: hov ? 1 : 0, overflow: 'hidden', transition: 'max-height 0.15s, opacity 0.15s' }}>{'Показать\nпанель'}</span>
     </button>
   );
@@ -1630,7 +1637,7 @@ const ShowTocBtn: React.FC<{
       }}
       title="Показать оглавление"
     >
-      <PanelRight size={16} />
+      <PanelRight size={16} weight="duotone" />
       <span style={{ fontSize: '9px', fontWeight: 500, lineHeight: 1.2, textAlign: 'center', letterSpacing: '0.01em', whiteSpace: 'pre-line', maxHeight: hov ? '24px' : '0px', opacity: hov ? 1 : 0, overflow: 'hidden', transition: 'max-height 0.15s, opacity 0.15s' }}>{'Показать\nоглавл.'}</span>
     </button>
   );
@@ -1703,14 +1710,14 @@ interface MobileLeftButtonsProps {
 }
 
 function MobileLeftButtons({ isDark, showDocActions, toggleTheme, setSheet, setSearchOpen, sheet }: MobileLeftButtonsProps) {
-  const themeBtn = <MobBtn label="Тема" icon={isDark ? <Sun size={22} /> : <Moon size={22} />} isDark={isDark} onClick={toggleTheme} isActive={false} />;
-  const searchBtn = <MobBtn label="Поиск" icon={<Search size={22} />} isDark={isDark} onClick={() => { setSheet(null); setSearchOpen(true); }} isActive={false} />;
+  const themeBtn = <MobBtn label="Тема" icon={isDark ? <Sun size={22} weight="duotone" /> : <Moon size={22} weight="duotone" />} isDark={isDark} onClick={toggleTheme} isActive={false} />;
+  const searchBtn = <MobBtn label="Поиск" icon={<Search size={22} weight="duotone" />} isDark={isDark} onClick={() => { setSheet(null); setSearchOpen(true); }} isActive={false} />;
   if (showDocActions) {
     return (
       <>
         {themeBtn}
         {searchBtn}
-        <MobBtn label="Разделы" icon={<FolderOpen size={22} />} isDark={isDark} onClick={() => setSheet(sheet === 'nav' ? null : 'nav')} isActive={sheet === 'nav'} />
+        <MobBtn label="Разделы" icon={<FolderOpen size={22} weight="duotone" />} isDark={isDark} onClick={() => setSheet(sheet === 'nav' ? null : 'nav')} isActive={sheet === 'nav'} />
       </>
     );
   }
@@ -1730,24 +1737,24 @@ function MobileRightButtons({ isDark, showDocActions, hasToc, sheet, setSheet, s
   if (!showDocActions) {
     return (
       <>
-        <MobBtn label="Разделы"  icon={<FolderOpen size={22} />} isDark={isDark} onClick={() => setSheet(sheet === 'nav' ? null : 'nav')}           isActive={sheet === 'nav'} />
-        <MobBtn label="Контакты" icon={<Mail size={22} />}       isDark={isDark} onClick={() => setSheet(sheet === 'contacts' ? null : 'contacts')} isActive={sheet === 'contacts'} />
+        <MobBtn label="Разделы"  icon={<FolderOpen size={22} weight="duotone" />} isDark={isDark} onClick={() => setSheet(sheet === 'nav' ? null : 'nav')}           isActive={sheet === 'nav'} />
+        <MobBtn label="Контакты" icon={<Mail size={22} weight="duotone" />}       isDark={isDark} onClick={() => setSheet(sheet === 'contacts' ? null : 'contacts')} isActive={sheet === 'contacts'} />
       </>
     );
   }
   if (hasToc) {
     return (
       <>
-        <MobBtn label="Оглавление" icon={<List size={22} />}    isDark={isDark} onClick={() => setSheet(sheet === 'toc' ? null : 'toc')}           isActive={sheet === 'toc'} />
-        <MobBtn label="Наверх"     icon={<ArrowUp size={22} />} isDark={isDark} onClick={scrollTop}                                               isActive={false} />
-        <MobBtn label="Контакты"   icon={<Mail size={22} />}    isDark={isDark} onClick={() => setSheet(sheet === 'contacts' ? null : 'contacts')} isActive={sheet === 'contacts'} />
+        <MobBtn label="Оглавление" icon={<List size={22} weight="duotone" />}    isDark={isDark} onClick={() => setSheet(sheet === 'toc' ? null : 'toc')}           isActive={sheet === 'toc'} />
+        <MobBtn label="Наверх"     icon={<ArrowUp size={22} weight="duotone" />} isDark={isDark} onClick={scrollTop}                                               isActive={false} />
+        <MobBtn label="Контакты"   icon={<Mail size={22} weight="duotone" />}    isDark={isDark} onClick={() => setSheet(sheet === 'contacts' ? null : 'contacts')} isActive={sheet === 'contacts'} />
       </>
     );
   }
   return (
     <>
-      <MobBtn label="Наверх"   icon={<ArrowUp size={22} />} isDark={isDark} onClick={scrollTop}                                               isActive={false} />
-      <MobBtn label="Контакты" icon={<Mail size={22} />}    isDark={isDark} onClick={() => setSheet(sheet === 'contacts' ? null : 'contacts')} isActive={sheet === 'contacts'} />
+      <MobBtn label="Наверх"   icon={<ArrowUp size={22} weight="duotone" />} isDark={isDark} onClick={scrollTop}                                               isActive={false} />
+      <MobBtn label="Контакты" icon={<Mail size={22} weight="duotone" />}    isDark={isDark} onClick={() => setSheet(sheet === 'contacts' ? null : 'contacts')} isActive={sheet === 'contacts'} />
     </>
   );
 }

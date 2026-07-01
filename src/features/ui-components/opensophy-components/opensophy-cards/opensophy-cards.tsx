@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, AlertTriangle, CheckCircle2, Info, Lightbulb, OctagonX, Sparkles } from 'lucide-react';
+import { WarningCircleIcon as AlertCircle, WarningIcon as AlertTriangle, CheckCircleIcon as CheckCircle2, InfoIcon as Info, LightbulbIcon as Lightbulb, XCircleIcon as OctagonX, SparkleIcon as Sparkles } from '@phosphor-icons/react';
 import { useTheme } from '@/shared/contexts/useTheme';
 import { makeTokens } from '@/shared/tokens/theme';
 
@@ -62,8 +62,8 @@ export function OpensophyCard({ title, description, icon, radius = 'soft', alert
 
 export default function OpensophyCardsPreview() {
   const cards = [
-    ['Без иконки', undefined, undefined, 'soft'], ['С иконкой', <Sparkles size={18} />, undefined, 'soft'], ['Круглые углы', <Sparkles size={18} />, undefined, 'round'], ['Слегка круглые', <Sparkles size={18} />, undefined, 'soft'], ['Острые углы', <Sparkles size={18} />, undefined, 'sharp'],
-    ['Green alert', <CheckCircle2 size={18} />, 'green', 'soft'], ['Purple alert', <AlertCircle size={18} />, 'purple', 'soft'], ['Yellow alert', <Lightbulb size={18} />, 'yellow', 'soft'], ['Orange alert', <AlertTriangle size={18} />, 'orange', 'soft'], ['Red alert', <OctagonX size={18} />, 'red', 'soft'],
+    ['Без иконки', undefined, undefined, 'soft'], ['С иконкой', <Sparkles size={18} weight="duotone" />, undefined, 'soft'], ['Круглые углы', <Sparkles size={18} weight="duotone" />, undefined, 'round'], ['Слегка круглые', <Sparkles size={18} weight="duotone" />, undefined, 'soft'], ['Острые углы', <Sparkles size={18} weight="duotone" />, undefined, 'sharp'],
+    ['Green alert', <CheckCircle2 size={18} weight="duotone" />, 'green', 'soft'], ['Purple alert', <AlertCircle size={18} weight="duotone" />, 'purple', 'soft'], ['Yellow alert', <Lightbulb size={18} weight="duotone" />, 'yellow', 'soft'], ['Orange alert', <AlertTriangle size={18} weight="duotone" />, 'orange', 'soft'], ['Red alert', <OctagonX size={18} weight="duotone" />, 'red', 'soft'],
   ] as const;
-  return <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14, width: '100%' }}>{cards.map(([title, icon, alert, radius]) => <OpensophyCard key={title} title={title} icon={icon ?? (title === 'Без иконки' ? undefined : <Info size={18} />)} alert={alert} radius={radius} description="Минимальная карточка в стиле Hub с управляемыми пропсами." />)}</div>;
+  return <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14, width: '100%' }}>{cards.map(([title, icon, alert, radius]) => <OpensophyCard key={title} title={title} icon={icon ?? (title === 'Без иконки' ? undefined : <Info size={18} weight="duotone" />)} alert={alert} radius={radius} description="Минимальная карточка в стиле Hub с управляемыми пропсами." />)}</div>;
 }

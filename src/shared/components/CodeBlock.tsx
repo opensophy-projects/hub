@@ -1,9 +1,6 @@
 import React, { useState, useRef, useContext, useMemo, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import {
-  Copy, Check, Maximize2, Minimize2,
-  ChevronDown, ChevronUp, Search, X, Menu,
-} from 'lucide-react';
+import { CopyIcon as Copy, CheckIcon as Check, CornersOutIcon as Maximize2, CornersInIcon as Minimize2, CaretDownIcon as ChevronDown, CaretUpIcon as ChevronUp, MagnifyingGlassIcon as Search, XIcon as X, ListIcon as Menu } from '@phosphor-icons/react';
 import { TableContext } from '../lib/htmlParser';
 import Overlay from './Overlay';
 import { useDragScroll } from '@/features/table/hooks/useDragScroll';
@@ -348,19 +345,19 @@ function ToolbarMenu({ isDark, isCopied, isModal, onSearch, onCopy, onToggleFull
     {
       id: 'search',
       label: 'Поиск',
-      icon: <Search size={13} />,
+      icon: <Search size={13} weight="duotone" />,
       onClick: () => { onSearch(); setOpen(false); },
     },
     {
       id: 'copy',
       label: isCopied ? 'Скопировано!' : 'Копировать',
-      icon: isCopied ? <Check size={13} style={{ color: '#22c55e' }} /> : <Copy size={13} style={{ opacity: 0.45 }} />,
+      icon: isCopied ? <Check size={13} style={{ color: '#22c55e' }} weight="duotone" /> : <Copy size={13} style={{ opacity: 0.45 }} weight="duotone" />,
       onClick: () => { onCopy(); },
     },
     {
       id: 'fullscreen',
       label: isModal ? 'Свернуть' : 'Развернуть',
-      icon: isModal ? <Minimize2 size={13} /> : <Maximize2 size={13} />,
+      icon: isModal ? <Minimize2 size={13} weight="duotone" /> : <Maximize2 size={13} weight="duotone" />,
       onClick: () => { onToggleFullscreen(); setOpen(false); },
     },
   ];
@@ -384,7 +381,7 @@ function ToolbarMenu({ isDark, isCopied, isModal, onSearch, onCopy, onToggleFull
           transition: 'background 0.13s, border-color 0.13s',
         }}
       >
-        <Menu size={16} />
+        <Menu size={16} weight="duotone" />
       </button>
 
       {open && createPortal(
@@ -526,8 +523,8 @@ function SingleCodeContent({ code, language, isModal, searchQuery, isExpanded, s
           onMouseLeave={e => { e.currentTarget.style.background = t.barBg; }}
         >
           {isExpanded
-            ? <><ChevronUp size={13} /><span>Скрыть</span></>
-            : <><ChevronDown size={13} /><span>Открыть полностью ({lines.length} строк)</span></>
+            ? <><ChevronUp size={13} weight="duotone" /><span>Скрыть</span></>
+            : <><ChevronDown size={13} weight="duotone" /><span>Открыть полностью ({lines.length} строк)</span></>
           }
         </button>
       )}
@@ -632,7 +629,7 @@ function TopBar({ tabs, activeIdx, onSelectTab, isDark, isCopied, isModal, searc
 
       {searchOpen ? (
         <div style={{ position: 'relative', flex: '1 1 0', minWidth: 0 }}>
-          <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: t.plhClr, pointerEvents: 'none' }} />
+          <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: t.plhClr, pointerEvents: 'none' }} weight="duotone" />
           <input
             ref={searchInputRef}
             type="text" placeholder="Поиск..." value={searchQuery}
@@ -648,7 +645,7 @@ function TopBar({ tabs, activeIdx, onSelectTab, isDark, isCopied, isModal, searc
             onBlur={e  => { e.target.style.borderColor = t.inpBdr; }}
           />
           <button onClick={closeSearch} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: t.plhClr, display: 'flex' }}>
-            <X size={12} />
+            <X size={12} weight="duotone" />
           </button>
         </div>
       ) : (

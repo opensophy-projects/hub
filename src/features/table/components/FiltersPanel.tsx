@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { MagnifyingGlassIcon as Search, XIcon as X, CaretDownIcon as ChevronDown, CaretUpIcon as ChevronUp } from '@phosphor-icons/react';
 import { makeTokens, themed } from '@/shared/tokens/theme';
 import { getTableUiTokens } from './tableUiTheme';
 
@@ -67,7 +67,7 @@ interface SearchInputProps {
 }
 const SearchInput: React.FC<SearchInputProps> = ({ header, search, onSearch, onClear, inpBg, inpBdr, inpClr, plhClr }) => (
   <div style={{ position: 'relative' }}>
-    <Search size={11} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: plhClr, pointerEvents: 'none' }} />
+    <Search size={11} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: plhClr, pointerEvents: 'none' }} weight="duotone" />
     <input
       type="text"
       placeholder={`Найти в "${header}"...`}
@@ -77,7 +77,7 @@ const SearchInput: React.FC<SearchInputProps> = ({ header, search, onSearch, onC
     />
     {search && (
       <button onClick={onClear} style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: plhClr, display: 'flex' }}>
-        <X size={11} />
+        <X size={11} weight="duotone" />
       </button>
     )}
   </div>
@@ -196,10 +196,10 @@ const FilterAccordion: React.FC<{
               onClick={e => { e.stopPropagation(); handleClearAll(); }}
               style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '1px 3px', color: t.subClr, display: 'flex', alignItems: 'center' }}
             >
-              <X size={12} />
+              <X size={12} weight="duotone" />
             </button>
           )}
-          {open ? <ChevronUp size={13} style={{ color: t.subClr }} /> : <ChevronDown size={13} style={{ color: t.subClr }} />}
+          {open ? <ChevronUp size={13} style={{ color: t.subClr }} weight="duotone" /> : <ChevronDown size={13} style={{ color: t.subClr }} weight="duotone" />}
         </div>
       </button>
 

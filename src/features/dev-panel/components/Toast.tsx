@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckCircle, XCircle, Info, AlertTriangle, X } from 'lucide-react';
+import { CheckCircleIcon as CheckCircle, XCircleIcon as XCircle, InfoIcon as Info, WarningIcon as AlertTriangle, XIcon as X } from '@phosphor-icons/react';
 import { T } from './uiTheme';
 import { removeToast, subscribeToasts, type ToastItem, type ToastType } from './toastBus';
 
@@ -53,7 +53,7 @@ function Toast({ item, onClose }: { readonly item: ToastItem; readonly onClose: 
         onMouseEnter={e => { e.currentTarget.style.color = T.fg; }}
         onMouseLeave={e => { e.currentTarget.style.color = T.fgSub; }}
       >
-        <X size={12} />
+        <X size={12} weight="duotone" />
       </button>
     </div>
   );

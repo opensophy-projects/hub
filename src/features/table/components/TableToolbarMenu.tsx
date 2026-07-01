@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Menu, Copy, Check, Filter, X, Maximize2, Minimize2 } from 'lucide-react';
+import { ListIcon as Menu, CopyIcon as Copy, CheckIcon as Check, FunnelIcon as Filter, XIcon as X, CornersOutIcon as Maximize2, CornersInIcon as Minimize2 } from '@phosphor-icons/react';
 import { parseTableForCopy, toMd, toTsv, type CopyFormat } from '@/features/table/utils/copyUtils';
 import { getTableUiTokens } from './tableUiTheme';
 
@@ -111,40 +111,40 @@ export const TableToolbarMenu: React.FC<TableToolbarMenuProps> = ({
     {
       id: 'copy-md',
       label: copied === 'md' ? 'Скопировано!' : 'Копировать · Markdown',
-      icon: copied === 'md' ? <Check size={13} style={{ color: '#22c55e' }} /> : <Copy size={13} style={{ opacity: 0.6 }} />,
+      icon: copied === 'md' ? <Check size={13} style={{ color: '#22c55e' }} weight="duotone" /> : <Copy size={13} style={{ opacity: 0.6 }} weight="duotone" />,
       onClick: () => doCopy('md'),
       success: copied === 'md',
     },
     {
       id: 'copy-excel',
       label: copied === 'excel' ? 'Скопировано!' : 'Копировать · Excel/TSV',
-      icon: copied === 'excel' ? <Check size={13} style={{ color: '#22c55e' }} /> : <Copy size={13} style={{ opacity: 0.6 }} />,
+      icon: copied === 'excel' ? <Check size={13} style={{ color: '#22c55e' }} weight="duotone" /> : <Copy size={13} style={{ opacity: 0.6 }} weight="duotone" />,
       onClick: () => doCopy('excel'),
       success: copied === 'excel',
     },
     {
       id: 'filters',
       label: filterLabel,
-      icon: <Filter size={13} />,
+      icon: <Filter size={13} weight="duotone" />,
       onClick: () => { onToggleFilters(); setOpen(false); },
     },
     ...(activeFilterCount > 0 ? [{
       id: 'reset-filters',
       label: 'Сбросить фильтры',
-      icon: <X size={13} />,
+      icon: <X size={13} weight="duotone" />,
       onClick: () => { onResetFilters(); setOpen(false); },
       danger: true,
     }] : []),
     ...(onFullscreen ? [{
       id: 'fullscreen',
       label: 'Развернуть',
-      icon: <Maximize2 size={13} />,
+      icon: <Maximize2 size={13} weight="duotone" />,
       onClick: () => { onFullscreen(); setOpen(false); },
     }] : []),
     ...(onClose ? [{
       id: 'close',
       label: 'Закрыть',
-      icon: <Minimize2 size={13} />,
+      icon: <Minimize2 size={13} weight="duotone" />,
       onClick: () => { onClose(); setOpen(false); },
     }] : []),
   ];
@@ -170,7 +170,7 @@ export const TableToolbarMenu: React.FC<TableToolbarMenuProps> = ({
           transition: 'background 0.13s, border-color 0.13s',
         }}
       >
-        <Menu size={16} />
+        <Menu size={16} weight="duotone" />
       </button>
 
       {open && createPortal(

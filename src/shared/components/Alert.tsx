@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTheme } from '../contexts/useTheme';
-import { Info, Lightbulb, AlertCircle, AlertTriangle, OctagonX } from 'lucide-react';
+import { InfoIcon as Info, LightbulbIcon as Lightbulb, WarningCircleIcon as AlertCircle, WarningIcon as AlertTriangle, XCircleIcon as OctagonX } from '@phosphor-icons/react';
 import { makeTokens } from '@/shared/tokens/theme';
 
 interface AlertProps {

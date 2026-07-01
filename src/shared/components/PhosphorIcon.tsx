@@ -5,18 +5,32 @@ type AnyIconProps = {
   className?: string;
   style?: React.CSSProperties;
   color?: string;
+  weight?: 'duotone';
 };
 
 type IconComponent = React.FC<AnyIconProps>;
 
+
+const ICON_NAME_ALIASES: Record<string, string> = {
+  'alert-circle': 'WarningCircle',
+  'alert-triangle': 'Warning',
+  'bar-chart-2': 'ChartBar',
+  'book-open': 'BookOpen',
+  'chart-no-axes-column': 'ChartBar',
+  'file-text': 'FileText',
+  'folder-open': 'FolderOpen',
+  'refresh-cw': 'ArrowClockwise',
+  'user-cog': 'UserGear',
+};
+
 // Single module-level cache shared across all usages
 const iconCache = new Map<string, IconComponent>();
 
-interface LucideIconProps extends AnyIconProps {
+interface PhosphorIconProps extends AnyIconProps {
   name: string;
 }
 
-const LucideIcon: React.FC<LucideIconProps> = memo(({
+const PhosphorIcon: React.FC<PhosphorIconProps> = memo(({
   name,
   size = 16,
   className,
@@ -29,12 +43,12 @@ const LucideIcon: React.FC<LucideIconProps> = memo(({
 
   useEffect(() => {
     if (!name || iconCache.has(name)) return;
-    const pascal = name
+    const pascal = (ICON_NAME_ALIASES[name] ?? name)
       .split('-')
       .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
       .join('');
-    import('lucide-react').then((mod) => {
-      const ic = (mod as Record<string, unknown>)[pascal] as IconComponent | undefined;
+    import('@phosphor-icons/react').then((mod) => {
+      const ic = (mod as Record<string, unknown>)[`${pascal}Icon`] as IconComponent | undefined;
       if (ic) {
         iconCache.set(name, ic);
         setIcon(() => ic);
@@ -51,9 +65,9 @@ const LucideIcon: React.FC<LucideIconProps> = memo(({
     );
   }
 
-  return <Icon size={size} className={className} style={style} color={color} />;
+  return <Icon size={size} className={className} style={style} color={color} weight="duotone" />;
 });
 
-LucideIcon.displayName = 'LucideIcon';
+PhosphorIcon.displayName = 'PhosphorIcon';
 
-export default LucideIcon;
+export default PhosphorIcon;

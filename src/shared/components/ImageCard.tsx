@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ZoomIn, X } from 'lucide-react';
+import { MagnifyingGlassPlusIcon as ZoomIn, XIcon as X } from '@phosphor-icons/react';
 import { TableContext } from '../lib/htmlParser';
 
 interface ImageCardProps {
@@ -87,7 +87,7 @@ const ImageCard: React.FC<ImageCardProps> = ({ src, alt, title, isDark = false }
               boxShadow: isDark ? '0 4px 18px rgba(0,0,0,0.55)' : '0 4px 18px rgba(0,0,0,0.18)',
             }}
           >
-            <ZoomIn size={16} />
+            <ZoomIn size={16} weight="duotone" />
           </span>
         </button>
 
@@ -145,7 +145,7 @@ const ImageCard: React.FC<ImageCardProps> = ({ src, alt, title, isDark = false }
               cursor: 'pointer',
             }}
           >
-            <X size={20} />
+            <X size={20} weight="duotone" />
           </button>
           <img
             src={src}

@@ -5,17 +5,10 @@ import { createPortal } from 'react-dom';
 import { bridge } from '../useDevBridge';
 import { toast } from '../components/toastBus';
 import { Badge, ConfirmDialog } from '../components/ui';
-import LucideIcon from '@/shared/components/LucideIcon';
+import PhosphorIcon from '@/shared/components/PhosphorIcon';
 import { ThemeTokensContext } from '../theme';
 import type { TTokens } from '../theme';
-import {
-  FolderOpen, Plus, Trash2,
-  ChevronRight, ChevronDown, FolderPlus, FilePlus,
-  Loader2, Bold, Italic, Code, Link, Hash, List,
-  RefreshCw, Minus, Image, BarChart2, Table, Search,
-  Columns, AlertCircle, Calculator, Footprints, LayoutGrid, Type,
-  Edit3, Undo2, Redo2, X,
-} from 'lucide-react';
+import { FolderOpenIcon as FolderOpen, PlusIcon as Plus, TrashIcon as Trash2, CaretRightIcon as ChevronRight, CaretDownIcon as ChevronDown, FolderPlusIcon as FolderPlus, FilePlusIcon as FilePlus, CircleNotchIcon as Loader2, TextBIcon as Bold, TextItalicIcon as Italic, CodeIcon as Code, LinkIcon as Link, HashIcon as Hash, ListIcon as List, ArrowClockwiseIcon as RefreshCw, MinusIcon as Minus, ImageIcon as Image, ChartBarIcon as BarChart2, TableIcon as Table, MagnifyingGlassIcon as Search, ColumnsIcon as Columns, WarningCircleIcon as AlertCircle, CalculatorIcon as Calculator, FootprintsIcon as Footprints, SquaresFourIcon as LayoutGrid, TextTIcon as Type, PencilSimpleIcon as Edit3, ArrowCounterClockwiseIcon as Undo2, ArrowClockwiseIcon as Redo2, XIcon as X } from '@phosphor-icons/react';
 
 interface FlatEntry { type: 'file' | 'dir'; path: string; name: string; depth: number; title?: string; }
 interface TreeEntry extends FlatEntry {
@@ -209,7 +202,7 @@ function IconPickerModal({ current, onSelect, onClose, t }: {
           padding: '12px 14px', borderBottom: `1px solid ${t.border}`,
           background: t.surface, flexShrink: 0,
         }}>
-          <Search size={14} style={{ color: t.fgMuted }} />
+          <Search size={14} style={{ color: t.fgMuted }} weight="duotone" />
           <input
             ref={inputRef}
             value={q}
@@ -230,7 +223,7 @@ function IconPickerModal({ current, onSelect, onClose, t }: {
             onMouseEnter={e => { e.currentTarget.style.color = t.fg; }}
             onMouseLeave={e => { e.currentTarget.style.color = t.fgMuted; }}
           >
-            <X size={13} />
+            <X size={13} weight="duotone" />
           </button>
         </div>
 
@@ -262,7 +255,7 @@ function IconPickerModal({ current, onSelect, onClose, t }: {
                   transition: 'all 0.1s',
                 }}
               >
-                <LucideIcon name={name} size={18} />
+                <PhosphorIcon name={name} size={18} />
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', textAlign: 'center', paddingInline: 2 }}>{name}</span>
               </button>
             );
@@ -305,7 +298,7 @@ function IconField({ value, onChange, t, placeholder = 'file-text', inputId }: {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: t.fgMuted,
         }}>
-          <LucideIcon name={value || placeholder} size={16} />
+          <PhosphorIcon name={value || placeholder} size={16} />
         </div>
         <input
           id={inputId}
@@ -326,7 +319,7 @@ function IconField({ value, onChange, t, placeholder = 'file-text', inputId }: {
           onMouseEnter={e => { e.currentTarget.style.color = t.fg; }}
           onMouseLeave={e => { e.currentTarget.style.color = t.fgMuted; }}
         >
-          <Search size={11} /> Выбрать
+          <Search size={11} weight="duotone" /> Выбрать
         </button>
       </div>
       {open && (
@@ -448,15 +441,15 @@ interface BV { label: string; code: string; }
 interface BI { label: string; icon: React.ReactNode; code?: string; variants?: BV[]; }
 const BG: { g: string; icon: React.ReactNode; items: BI[] }[] = [
   {
-    g: 'Текст', icon: <Type size={11} />, items: [
+    g: 'Текст', icon: <Type size={11} weight="duotone" />, items: [
       {
-        label: 'Заголовок', icon: <Hash size={10} />, variants: [
+        label: 'Заголовок', icon: <Hash size={10} weight="duotone" />, variants: [
           { label: 'H1', code: '\n# Заголовок\n' }, { label: 'H2', code: '\n## Заголовок\n' },
           { label: 'H3', code: '\n### Заголовок\n' }, { label: 'H4', code: '\n#### Заголовок\n' },
         ],
       },
       {
-        label: 'Блок кода', icon: <Code size={10} />, variants: [
+        label: 'Блок кода', icon: <Code size={10} weight="duotone" />, variants: [
           { label: 'JavaScript', code: '\n```javascript\nconst x = 1;\n```\n' },
           { label: 'TypeScript', code: '\n```typescript\nconst x: number = 1;\n```\n' },
           { label: 'Python', code: '\n```python\ndef hello():\n    print("Hi")\n```\n' },
@@ -465,35 +458,35 @@ const BG: { g: string; icon: React.ReactNode; items: BI[] }[] = [
         ],
       },
       {
-        label: 'Список', icon: <List size={10} />, variants: [
+        label: 'Список', icon: <List size={10} weight="duotone" />, variants: [
           { label: 'Маркированный', code: '\n- Элемент 1\n- Элемент 2\n- Элемент 3\n' },
           { label: 'Нумерованный', code: '\n1. Элемент 1\n2. Элемент 2\n3. Элемент 3\n' },
           { label: 'Задачи', code: '\n- [x] Выполнено\n- [ ] Не выполнено\n' },
         ],
       },
       {
-        label: 'Цитата', icon: <ChevronRight size={10} />, variants: [
+        label: 'Цитата', icon: <ChevronRight size={10} weight="duotone" />, variants: [
           { label: 'Простая', code: '\n> Текст цитаты.\n' },
           { label: 'Вложенная', code: '\n> Уровень 1\n>> Уровень 2\n' },
         ],
       },
-      { label: 'HR линия', icon: <Minus size={10} />, code: '\n---\n' },
-      { label: 'Детали', icon: <ChevronDown size={10} />, code: '\n<details>\n<summary>Нажмите, чтобы развернуть</summary>\n\nСкрытый контент.\n\n</details>\n' },
+      { label: 'HR линия', icon: <Minus size={10} weight="duotone" />, code: '\n---\n' },
+      { label: 'Детали', icon: <ChevronDown size={10} weight="duotone" />, code: '\n<details>\n<summary>Нажмите, чтобы развернуть</summary>\n\nСкрытый контент.\n\n</details>\n' },
     ],
   },
   {
-    g: 'Алерты', icon: <AlertCircle size={11} />, items: [
-      { label: 'Note', icon: <AlertCircle size={10} />, code: '\n:::note\nПолезная информация.\n:::\n' },
-      { label: 'Tip', icon: <AlertCircle size={10} />, code: '\n:::tip\nПолезный совет.\n:::\n' },
-      { label: 'Important', icon: <AlertCircle size={10} />, code: '\n:::important\nВажная информация.\n:::\n' },
-      { label: 'Warning', icon: <AlertCircle size={10} />, code: '\n:::warning\nПредупреждение.\n:::\n' },
-      { label: 'Caution', icon: <AlertCircle size={10} />, code: '\n:::caution\nОсторожно.\n:::\n' },
+    g: 'Алерты', icon: <AlertCircle size={11} weight="duotone" />, items: [
+      { label: 'Note', icon: <AlertCircle size={10} weight="duotone" />, code: '\n:::note\nПолезная информация.\n:::\n' },
+      { label: 'Tip', icon: <AlertCircle size={10} weight="duotone" />, code: '\n:::tip\nПолезный совет.\n:::\n' },
+      { label: 'Important', icon: <AlertCircle size={10} weight="duotone" />, code: '\n:::important\nВажная информация.\n:::\n' },
+      { label: 'Warning', icon: <AlertCircle size={10} weight="duotone" />, code: '\n:::warning\nПредупреждение.\n:::\n' },
+      { label: 'Caution', icon: <AlertCircle size={10} weight="duotone" />, code: '\n:::caution\nОсторожно.\n:::\n' },
     ],
   },
   {
-    g: 'Таблица', icon: <Table size={11} />, items: [
+    g: 'Таблица', icon: <Table size={11} weight="duotone" />, items: [
       {
-        label: 'Таблица', icon: <Table size={10} />, variants: [
+        label: 'Таблица', icon: <Table size={10} weight="duotone" />, variants: [
           { label: '2 колонки', code: '\n| H1 | H2 |\n|----|----|\n| A  | B  |\n| C  | D  |\n' },
           { label: '3 колонки', code: '\n| H1 | H2 | H3 |\n|----|----|----|  \n| A  | B  | C  |\n' },
           { label: 'Выравнивание', code: '\n| Лево | Центр | Право |\n|:-----|:-----:|------:|\n| A    |   B   |     C |\n' },
@@ -502,9 +495,9 @@ const BG: { g: string; icon: React.ReactNode; items: BI[] }[] = [
     ],
   },
   {
-    g: 'Карточки', icon: <LayoutGrid size={11} />, items: [
+    g: 'Карточки', icon: <LayoutGrid size={11} weight="duotone" />, items: [
       {
-        label: 'Карточка', icon: <LayoutGrid size={10} />, variants: [
+        label: 'Карточка', icon: <LayoutGrid size={10} weight="duotone" />, variants: [
           { label: 'Простая', code: '\n:::card\n[title]Заголовок\nОписание.\n:::\n' },
           { label: 'С иконкой', code: '\n:::card\n[title]Заголовок\n[icon]rocket\nОписание.\n:::\n' },
           { label: 'С картинкой', code: '\n:::card\n[title]Заголовок\n[image]/assets/image.png\nОписание.\n:::\n' },
@@ -513,14 +506,14 @@ const BG: { g: string; icon: React.ReactNode; items: BI[] }[] = [
           { label: 'Красная', code: '\n:::card[color=#ef4444]\n[title]Заголовок\n[icon]shield-alert\nОписание.\n:::\n' },
         ],
       },
-      { label: 'Сетка 2×2', icon: <LayoutGrid size={10} />, code: '\n:::cards[cols=2]\n:::card[color=#3b82f6]\n[title]Первая\n[icon]book-open\nОписание.\n:::\n:::card[color=#22c55e]\n[title]Вторая\n[icon]code-2\nОписание.\n:::\n:::card[color=#f59e0b]\n[title]Третья\n[icon]layers\nОписание.\n:::\n:::card[color=#ef4444]\n[title]Четвёртая\n[icon]shield-check\nОписание.\n:::\n:::\n' },
-      { label: 'Сетка 3×1', icon: <LayoutGrid size={10} />, code: '\n:::cards[cols=3]\n:::card[color=#8b5cf6]\n[title]Первая\n[icon]zap\nОписание.\n:::\n:::card[color=#06b6d4]\n[title]Вторая\n[icon]plug\nОписание.\n:::\n:::card[color=#f43f5e]\n[title]Третья\n[icon]life-buoy\nОписание.\n:::\n:::\n' },
+      { label: 'Сетка 2×2', icon: <LayoutGrid size={10} weight="duotone" />, code: '\n:::cards[cols=2]\n:::card[color=#3b82f6]\n[title]Первая\n[icon]book-open\nОписание.\n:::\n:::card[color=#22c55e]\n[title]Вторая\n[icon]code-2\nОписание.\n:::\n:::card[color=#f59e0b]\n[title]Третья\n[icon]layers\nОписание.\n:::\n:::card[color=#ef4444]\n[title]Четвёртая\n[icon]shield-check\nОписание.\n:::\n:::\n' },
+      { label: 'Сетка 3×1', icon: <LayoutGrid size={10} weight="duotone" />, code: '\n:::cards[cols=3]\n:::card[color=#8b5cf6]\n[title]Первая\n[icon]zap\nОписание.\n:::\n:::card[color=#06b6d4]\n[title]Вторая\n[icon]plug\nОписание.\n:::\n:::card[color=#f43f5e]\n[title]Третья\n[icon]life-buoy\nОписание.\n:::\n:::\n' },
     ],
   },
   {
-    g: 'Колонки', icon: <Columns size={11} />, items: [
+    g: 'Колонки', icon: <Columns size={11} weight="duotone" />, items: [
       {
-        label: 'Колонки', icon: <Columns size={10} />, variants: [
+        label: 'Колонки', icon: <Columns size={10} weight="duotone" />, variants: [
           { label: '50/50', code: '\n:::columns[layout=equal]\n:::col\nЛевая.\n:::\n:::col\nПравая.\n:::\n:::\n' },
           { label: '70/30 лево', code: '\n:::columns[layout=wide-left]\n:::col\n## Заголовок\n\nОсновной текст.\n:::\n:::col\nДоп.\n:::\n:::\n' },
           { label: '30/70 право', code: '\n:::columns[layout=wide-right]\n:::col\nДоп.\n:::\n:::col\n## Заголовок\n\nОсновной текст.\n:::\n:::\n' },
@@ -531,9 +524,9 @@ const BG: { g: string; icon: React.ReactNode; items: BI[] }[] = [
     ],
   },
   {
-    g: 'Steps', icon: <Footprints size={11} />, items: [
+    g: 'Steps', icon: <Footprints size={11} weight="duotone" />, items: [
       {
-        label: 'Шаги', icon: <Footprints size={10} />, variants: [
+        label: 'Шаги', icon: <Footprints size={10} weight="duotone" />, variants: [
           { label: 'Простые', code: '\n:::steps\n:::step Первый шаг\nОписание.\n:::\n\n:::step Второй шаг\nОписание.\n:::\n:::\n' },
           { label: 'Со статусами', code: '\n:::steps\n:::step[status=done] Установка\n`npm install`\n:::\n\n:::step[status=active] Настройка\n`.env`\n:::\n\n:::step[status=pending] Запуск\n`npm run dev`\n:::\n:::\n' },
           { label: 'С цветами', code: '\n:::steps\n:::step[status=done,color=#f59e0b] Подготовка\nДанные.\n:::\n\n:::step[status=active,color=#3b82f6] Обработка\nСкрипт.\n:::\n\n:::step[status=pending,color=#8b5cf6] Публикация\nДеплой.\n:::\n:::\n' },
@@ -542,9 +535,9 @@ const BG: { g: string; icon: React.ReactNode; items: BI[] }[] = [
     ],
   },
   {
-    g: 'Математика', icon: <Calculator size={11} />, items: [
+    g: 'Математика', icon: <Calculator size={11} weight="duotone" />, items: [
       {
-        label: 'Формула', icon: <Calculator size={10} />, variants: [
+        label: 'Формула', icon: <Calculator size={10} weight="duotone" />, variants: [
           { label: 'Инлайн', code: ' $E = mc^2$ ' },
           { label: 'Блок', code: '\n:::math\nE = mc^2\n:::\n' },
           { label: 'Блок с рамкой', code: '\n:::math[display]\nx = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}\n:::\n' },
@@ -555,33 +548,33 @@ const BG: { g: string; icon: React.ReactNode; items: BI[] }[] = [
     ],
   },
   {
-    g: 'Графики', icon: <BarChart2 size={11} />, items: [
+    g: 'Графики', icon: <BarChart2 size={11} weight="duotone" />, items: [
       {
-        label: 'Area', icon: <BarChart2 size={10} />, variants: [
+        label: 'Area', icon: <BarChart2 size={10} weight="duotone" />, variants: [
           { label: 'Area', code: '\n:::chart\n[title]Посещаемость\n[type]area\n[colors]#555, #888\n\n| Месяц | Визиты | Уники |\n|-------|--------|-------|\n| Янв   | 4200   | 3100  |\n| Фев   | 3800   | 2900  |\n:::\n' },
           { label: 'Area Stacked', code: '\n:::chart\n[title]Трафик\n[type]area-stacked\n[colors]#555, #888, #aaa\n\n| Месяц | Орг | Рекл | Прям |\n|-------|-----|------|------|\n| Янв   | 2100| 800  | 500  |\n:::\n' },
         ],
       },
       {
-        label: 'Bar', icon: <BarChart2 size={10} />, variants: [
+        label: 'Bar', icon: <BarChart2 size={10} weight="duotone" />, variants: [
           { label: 'Bar', code: '\n:::chart\n[title]Продажи\n[type]bar\n[colors]#555, #888\n\n| Квартал | Север | Юг  |\n|---------|-------|-----|\n| Q1      | 1200  | 900 |\n:::\n' },
           { label: 'Bar Stacked', code: '\n:::chart\n[title]Расходы\n[type]bar-stacked\n[colors]#555, #888, #aaa\n\n| Месяц | ЗП   | Инфра |\n|-------|------|-------|\n| Янв   | 3200 | 800   |\n:::\n' },
           { label: 'Bar Horizontal', code: '\n:::chart\n[title]Языки\n[type]bar-horizontal\n[colors]#555, #888\n\n| Язык   | % |\n|--------|---|\n| Python | 28|\n| JS     | 24|\n:::\n' },
         ],
       },
       {
-        label: 'Pie', icon: <BarChart2 size={10} />, variants: [
+        label: 'Pie', icon: <BarChart2 size={10} weight="duotone" />, variants: [
           { label: 'Pie', code: '\n:::chart\n[title]Источники\n[type]pie\n[colors]#444, #666, #888\n\n| Источник | Доля |\n|----------|------|\n| Органика | 42   |\n| Прямой   | 28   |\n| Реклама  | 30   |\n:::\n' },
           { label: 'Pie Donut', code: '\n:::chart\n[title]Браузеры\n[type]pie-donut\n[colors]#444, #666, #888\n\n| Браузер | Доля |\n|---------|------|\n| Chrome  | 63   |\n| Firefox | 10   |\n| Safari  | 27   |\n:::\n' },
         ],
       },
-      { label: 'Radar', icon: <BarChart2 size={10} />, code: '\n:::chart\n[title]Навыки\n[type]radar\n[colors]#555, #888\n\n| Навык | Фронт | Бэк |\n|-------|-------|-----|\n| TS    | 90    | 60  |\n| Py    | 40    | 95  |\n:::\n' },
+      { label: 'Radar', icon: <BarChart2 size={10} weight="duotone" />, code: '\n:::chart\n[title]Навыки\n[type]radar\n[colors]#555, #888\n\n| Навык | Фронт | Бэк |\n|-------|-------|-----|\n| TS    | 90    | 60  |\n| Py    | 40    | 95  |\n:::\n' },
     ],
   },
   {
-    g: 'Изображение', icon: <Image size={11} />, items: [
+    g: 'Изображение', icon: <Image size={11} weight="duotone" />, items: [
       {
-        label: 'Изображение', icon: <Image size={10} />, variants: [
+        label: 'Изображение', icon: <Image size={10} weight="duotone" />, variants: [
           { label: 'Простое', code: '[image.png]' },
           { label: 'С описанием', code: '![Текст](/assets/image.png "Заголовок")' },
           { label: 'Кликабельное', code: '[![Текст](/assets/image.png)](https://example.com)' },
@@ -826,7 +819,7 @@ function BlockPicker({ onInsert, t }: { readonly onInsert: (c: string) => void; 
       }}
         onMouseEnter={e => { if (!open) { e.currentTarget.style.background = t.surfaceHov; e.currentTarget.style.color = t.fg; } }}
         onMouseLeave={e => { if (!open) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = t.fgMuted; } }}
-      ><Plus size={11} /> Блок</button>
+      ><Plus size={11} weight="duotone" /> Блок</button>
 
       {open && createPortal(
         <div ref={menuRef} style={{
@@ -853,7 +846,7 @@ function BlockPicker({ onInsert, t }: { readonly onInsert: (c: string) => void; 
             {sub ? (
               <>
                 <button onClick={() => setSub(null)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 8px', border: 'none', background: 'transparent', color: t.fgMuted, cursor: 'pointer', fontSize: 10, fontFamily: t.mono, marginBottom: 3 }}>
-                  <ChevronRight size={9} style={{ transform: 'rotate(180deg)' }} /> Назад
+                  <ChevronRight size={9} style={{ transform: 'rotate(180deg)' }} weight="duotone" /> Назад
                 </button>
                 <div style={{ fontSize: 12, color: t.fgSub, padding: '0 8px 5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{sub.label}</div>
                 {sub.variants?.map((v, vi) => (
@@ -863,7 +856,7 @@ function BlockPicker({ onInsert, t }: { readonly onInsert: (c: string) => void; 
             ) : BG[grp].items.map((item, ii) => (
               <button key={item.label + ii} onClick={() => { if (item.variants) { setSub(item); } else { onInsert(item.code ?? ''); setOpen(false); } }} style={rs()} onMouseEnter={onHoverEnter} onMouseLeave={onHoverLeave}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ color: t.fgMuted }}>{item.icon}</span>{item.label}</div>
-                {item.variants && <ChevronRight size={9} style={{ color: t.fgSub, flexShrink: 0 }} />}
+                {item.variants && <ChevronRight size={9} style={{ color: t.fgSub, flexShrink: 0 }} weight="duotone" />}
               </button>
             ))}
           </div>
@@ -1039,7 +1032,7 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
 
   if (loading) return (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Loader2 size={18} style={{ color: t.fgMuted, animation: 'devSpinAnim 1s linear infinite' }} />
+      <Loader2 size={18} style={{ color: t.fgMuted, animation: 'devSpinAnim 1s linear infinite' }} weight="duotone" />
     </div>
   );
 
@@ -1055,7 +1048,7 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
           {fm.title || parseName(fileName).title || fileName}{dirty && <span style={{ color: t.warning, marginLeft: 5 }}>●</span>}
         </span>
         <button onClick={save} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 6, border: `1px solid ${dirty ? t.borderStrong : t.border}`, background: dirty ? t.surfaceHov : 'transparent', color: dirty ? t.fg : t.fgMuted, cursor: 'pointer', fontSize: 13, fontFamily: t.mono, flexShrink: 0, fontWeight: dirty ? 600 : 400 }}>
-          {saving && <Loader2 size={11} style={{ animation: 'devSpinAnim 1s linear infinite' }} />}
+          {saving && <Loader2 size={11} style={{ animation: 'devSpinAnim 1s linear infinite' }} weight="duotone" />}
           Сохранить
           <span style={{ fontSize: 12, color: t.fgSub, background: t.inpBg, border: `1px solid ${t.border}`, borderRadius: 3, padding: '1px 4px', fontFamily: t.mono }}>Ctrl+S</span>
         </button>
@@ -1064,7 +1057,7 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
       {/* FM collapse — FIXED: removed title display */}
       <div style={{ borderBottom: `1px solid ${t.border}`, flexShrink: 0 }}>
         <button onClick={() => setFmOpen(v => !v)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', border: 'none', background: t.surface, color: t.fgSub, fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: 'pointer', textAlign: 'left', fontFamily: t.mono }}>
-          {fmOpen ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
+          {fmOpen ? <ChevronDown size={10} weight="duotone" /> : <ChevronRight size={10} weight="duotone" />}
           Настройки страницы
         </button>
         {fmOpen && (
@@ -1139,16 +1132,16 @@ function MarkdownEditor({ filePath, onClose, t }: { readonly filePath: string; r
 
       {/* ── UPDATED Toolbar: bigger buttons with labels ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 1, padding: '2px 6px', borderBottom: `1px solid ${t.border}`, background: t.surface, flexShrink: 0 }}>
-        {toolBtn(undoBody, <Undo2 size={14} />, 'Назад', 'Назад')}
-        {toolBtn(redoBody, <Redo2 size={14} />, 'Вперёд', 'Вперёд')}
+        {toolBtn(undoBody, <Undo2 size={14} weight="duotone" />, 'Назад', 'Назад')}
+        {toolBtn(redoBody, <Redo2 size={14} weight="duotone" />, 'Вперёд', 'Вперёд')}
         <div style={{ width: 1, height: 20, background: t.border, margin: '0 2px' }} />
-        {toolBtn(() => handleInsert('**', '**'), <Bold size={14} />, 'Жирный', 'Жирный')}
-        {toolBtn(() => handleInsert('_', '_'), <Italic size={14} />, 'Курсив', 'Курсив')}
-        {toolBtn(() => handleInsert('`', '`'), <Code size={14} />, 'Код', 'Код')}
-        {toolBtn(() => handleInsert('\n## ', ''), <Hash size={14} />, 'H2', 'H2')}
-        {toolBtn(() => handleInsert('\n- ', ''), <List size={14} />, 'Список', 'Список')}
-        {toolBtn(() => handleInsert('[', '](url)'), <Link size={14} />, 'Ссылка', 'Ссылка')}
-        {toolBtn(() => handleInsert('\n---\n', ''), <Minus size={14} />, 'HR', 'HR')}
+        {toolBtn(() => handleInsert('**', '**'), <Bold size={14} weight="duotone" />, 'Жирный', 'Жирный')}
+        {toolBtn(() => handleInsert('_', '_'), <Italic size={14} weight="duotone" />, 'Курсив', 'Курсив')}
+        {toolBtn(() => handleInsert('`', '`'), <Code size={14} weight="duotone" />, 'Код', 'Код')}
+        {toolBtn(() => handleInsert('\n## ', ''), <Hash size={14} weight="duotone" />, 'H2', 'H2')}
+        {toolBtn(() => handleInsert('\n- ', ''), <List size={14} weight="duotone" />, 'Список', 'Список')}
+        {toolBtn(() => handleInsert('[', '](url)'), <Link size={14} weight="duotone" />, 'Ссылка', 'Ссылка')}
+        {toolBtn(() => handleInsert('\n---\n', ''), <Minus size={14} weight="duotone" />, 'HR', 'HR')}
         <div style={{ width: 1, height: 20, background: t.border, margin: '0 2px' }} />
         {!fm.custom && <BlockPicker onInsert={insertAtCursor} t={t} />}
         <div style={{ flex: 1 }} />
@@ -1222,7 +1215,7 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
   const nodeOutline = getNodeOutline(isDragOver, isDir);
   const fontWeightMap: Record<string, number> = { N: 600, C: 500, A: 400 };
   const fontWeight = p.type ? (fontWeightMap[p.type] ?? 400) : 400;
-  const expandIcon = expanded ? <ChevronDown size={11} /> : <ChevronRight size={11} />;
+  const expandIcon = expanded ? <ChevronDown size={11} weight="duotone" /> : <ChevronRight size={11} weight="duotone" />;
   const chevronIcon = isDir ? expandIcon : null;
 
   return (
@@ -1255,10 +1248,10 @@ function TreeNode({ entry, onCreate, onDelete, onEdit, onSelect, onDrop,
         </span>
         {hov && (
           <div role="toolbar" style={{ display: 'flex', gap: 6, flexShrink: 0 }} onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
-            {actionBtn(<Edit3 size={13} />, 'Редактировать', () => onEdit(entry))}
-            {isDir && p.type === 'N' && actionBtn(<FolderPlus size={13} />, '+ Категория', () => onCreate({ parentPath: entry.path, entryType: 'C' }))}
-            {isDir && (p.type === 'N' || p.type === 'C') && actionBtn(<FilePlus size={13} />, '+ Страница', () => onCreate({ parentPath: entry.path, entryType: 'A' }))}
-            {actionBtn(<Trash2 size={13} />, 'Удалить', () => onDelete(entry), true)}
+            {actionBtn(<Edit3 size={13} weight="duotone" />, 'Редактировать', () => onEdit(entry))}
+            {isDir && p.type === 'N' && actionBtn(<FolderPlus size={13} weight="duotone" />, '+ Категория', () => onCreate({ parentPath: entry.path, entryType: 'C' }))}
+            {isDir && (p.type === 'N' || p.type === 'C') && actionBtn(<FilePlus size={13} weight="duotone" />, '+ Страница', () => onCreate({ parentPath: entry.path, entryType: 'A' }))}
+            {actionBtn(<Trash2 size={13} weight="duotone" />, 'Удалить', () => onDelete(entry), true)}
           </div>
         )}
       </button>
@@ -1410,13 +1403,13 @@ export default function DocsPanel() {
   const renderTreeContent = () => {
     if (loading) return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 24, color: t.fgMuted }}>
-        <Loader2 size={14} style={{ animation: 'devSpinAnim 1s linear infinite' }} />
+        <Loader2 size={14} style={{ animation: 'devSpinAnim 1s linear infinite' }} weight="duotone" />
         <span style={{ fontSize: 14 }}>Загрузка...</span>
       </div>
     );
     if (visibleTree.length === 0) return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: 28, color: t.fgMuted, textAlign: 'center' }}>
-        <FolderOpen size={28} style={{ opacity: 0.3 }} />
+        <FolderOpen size={28} style={{ opacity: 0.3 }} weight="duotone" />
         <div style={{ fontSize: 14 }}>{query ? 'Ничего не найдено' : 'Docs/ пуста. Создай Секция'}</div>
       </div>
     );
@@ -1443,22 +1436,22 @@ export default function DocsPanel() {
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderBottom: `1px solid ${t.border}`, flexShrink: 0, background: t.surface }}>
         <button onClick={() => setModalCfg({ cfg: { parentPath: 'Docs', entryType: 'N' } })} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 7, border: `1px solid ${t.borderStrong}`, background: t.surfaceHov, color: t.fg, fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: t.mono }}>
-          <Plus size={13} /> Секция
+          <Plus size={13} weight="duotone" /> Секция
         </button>
         <button onClick={() => setModalCfg({ cfg: { parentPath: 'Docs', entryType: 'A' } })} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 7, border: `1px solid ${t.border}`, background: 'transparent', color: t.fg, fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: t.mono }}>
-          <FilePlus size={13} /> Страница
+          <FilePlus size={13} weight="duotone" /> Страница
         </button>
         <div style={{ flex: 1 }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 220, maxWidth: 340, width: '36%' }}>
-          <Search size={12} style={{ color: t.fgSub }} />
+          <Search size={12} style={{ color: t.fgSub }} weight="duotone" />
           <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Поиск документа..." style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: `1px solid ${t.border}`, background: t.inpBg, color: t.fg, fontSize: 14, fontFamily: t.mono, outline: 'none' }} />
         </div>
-        {moving && <Loader2 size={12} style={{ color: t.fgMuted, animation: 'devSpinAnim 1s linear infinite' }} />}
+        {moving && <Loader2 size={12} style={{ color: t.fgMuted, animation: 'devSpinAnim 1s linear infinite' }} weight="duotone" />}
         <button onClick={load} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', borderRadius: 6, border: `1px solid ${t.border}`, background: 'transparent', color: t.fgMuted, cursor: 'pointer', fontSize: 13, fontFamily: t.mono }}
           onMouseEnter={e => { e.currentTarget.style.background = t.surfaceHov; }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
         >
-          <RefreshCw size={11} /> Обновить
+          <RefreshCw size={11} weight="duotone" /> Обновить
         </button>
       </div>
 

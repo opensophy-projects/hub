@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { bridge } from '../useDevBridge';
 import { ThemeTokensContext } from '../theme';
 import { toast } from '../components/toastBus';
-import { Plus, Trash2, Loader2, AlertCircle } from 'lucide-react';
+import { PlusIcon as Plus, TrashIcon as Trash2, CircleNotchIcon as Loader2, WarningCircleIcon as AlertCircle } from '@phosphor-icons/react';
 
 interface Contact { href: string; title: string; subtitle: string; external: boolean; }
 
@@ -82,7 +82,7 @@ function ContactRow({ contact, index, onChange, onDelete, t }: {
           onMouseEnter={e => { e.currentTarget.style.color = t.danger; }}
           onMouseLeave={e => { e.currentTarget.style.color = t.fgSub; }}
         >
-          <Trash2 size={14}/>
+          <Trash2 size={14} weight="duotone" />
         </button>
       </div>
       <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -141,7 +141,7 @@ export default function ContactsPanel() {
 
   if (loading) return (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.fgSub, gap: 8 }}>
-      <Loader2 size={14} style={{ animation: 'devSpinAnim 1s linear infinite' }}/>
+      <Loader2 size={14} style={{ animation: 'devSpinAnim 1s linear infinite' }} weight="duotone" />
       <span style={{ fontSize: 12 }}>Загрузка...</span>
     </div>
   );
@@ -173,13 +173,13 @@ export default function ContactsPanel() {
           onMouseEnter={e => { e.currentTarget.style.borderColor = t.borderStrong; e.currentTarget.style.color = t.fg; }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = t.border;       e.currentTarget.style.color = t.fgMuted; }}
         >
-          <Plus size={15}/> Добавить контакт
+          <Plus size={15} weight="duotone" /> Добавить контакт
         </button>
       </div>
 
       {error && (
         <div style={{ padding: '8px 12px', color: t.danger, fontSize: 14, display: 'flex', gap: 8 }}>
-          <AlertCircle size={11}/> {error}
+          <AlertCircle size={11} weight="duotone" /> {error}
         </div>
       )}
 
@@ -210,7 +210,7 @@ export default function ContactsPanel() {
             fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: t.mono,
           }}
         >
-          {saving && <Loader2 size={11} style={{ animation: 'devSpinAnim 1s linear infinite' }}/>}
+          {saving && <Loader2 size={11} style={{ animation: 'devSpinAnim 1s linear infinite' }} weight="duotone" />}
           {saved ? 'Сохранено!' : 'Сохранить'}
         </button>
       </div>

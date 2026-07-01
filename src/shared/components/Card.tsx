@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { TableContext } from '../lib/htmlParser';
-import LucideIcon from './LucideIcon';
+import PhosphorIcon from './PhosphorIcon';
 import Overlay from './Overlay';
 import { makeTokens } from '@/shared/tokens/theme';
 
@@ -184,7 +184,7 @@ const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark
               marginBottom:   '0.25rem',
               flexShrink:     0,
             }}>
-              <LucideIcon name={icon} size={18} color={iconColor} />
+              <PhosphorIcon name={icon} size={18} color={iconColor} />
             </div>
           )}
 

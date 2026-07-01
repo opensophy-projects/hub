@@ -6,7 +6,7 @@ import Navigation from '@/features/navigation/components/Navigation';
 import { parseHtmlToReact, TableContext } from '@/shared/lib/htmlParser';
 import { useTableOfContents } from '../hooks/useTableOfContents';
 import { useScrollProgress } from '../hooks/useScrollProgress';
-import { Clock, CalendarDays, ChevronRight, RefreshCw } from 'lucide-react';
+import { ClockIcon as Clock, CalendarDotsIcon as CalendarDays, CaretRightIcon as ChevronRight, ArrowClockwiseIcon as RefreshCw } from '@phosphor-icons/react';
 import DotWaveBackground from './DotWaveBackground';
 import AskAIButton from './AskAIButton';
 import { makeTokens } from '@/shared/tokens/theme';
@@ -110,22 +110,22 @@ const DocHero: React.FC<DocHeroProps> = ({ doc, isDark, readTime, liveFM, showDo
         {doc.typename?.trim() && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap', fontSize: '0.8rem' }}>
             <a href="/" style={{ color: textPrimary, textDecoration: 'none', opacity: 0.7 }}>Главная</a>
-            <ChevronRight size={14} style={{ opacity: 0.4, color: textPrimary }} />
+            <ChevronRight size={14} style={{ opacity: 0.4, color: textPrimary }} weight="duotone" />
             <span style={{ color: textPrimary, fontWeight: 600 }}>{doc.typename}</span>
-            <ChevronRight size={14} style={{ opacity: 0.4, color: textPrimary }} />
+            <ChevronRight size={14} style={{ opacity: 0.4, color: textPrimary }} weight="duotone" />
           </div>
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
           {fmtDate && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: metaClr }}>
-              <CalendarDays size={13} style={{ opacity: 0.7 }} />{fmtDate}
+              <CalendarDays size={13} style={{ opacity: 0.7 }} weight="duotone" />{fmtDate}
             </span>
           )}
           {fmtUpdated && (
             <>
               <span style={{ color: metaClr, fontSize: '0.7rem' }}>·</span>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: metaClr }}>
-                <RefreshCw size={13} style={{ opacity: 0.7 }} />Обновлено: {fmtUpdated}
+                <RefreshCw size={13} style={{ opacity: 0.7 }} weight="duotone" />Обновлено: {fmtUpdated}
               </span>
             </>
           )}
@@ -145,7 +145,7 @@ const DocHero: React.FC<DocHeroProps> = ({ doc, isDark, readTime, liveFM, showDo
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', paddingTop: '1rem' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: metaClr }}>
-            <Clock size={13} style={{ opacity: 0.7 }} />{readTime} мин чтения
+            <Clock size={13} style={{ opacity: 0.7 }} weight="duotone" />{readTime} мин чтения
           </span>
           {authors.length > 0 && (
             <>

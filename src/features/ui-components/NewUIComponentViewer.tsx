@@ -3,11 +3,7 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTheme } from '@/shared/contexts/useTheme';
-import {
-  Minimize2, Play, RefreshCcw, Copy, Check,
-  X, Code2,
-  ChevronDown, ChevronRight, Settings,
-} from 'lucide-react';
+import { CornersInIcon as Minimize2, PlayIcon as Play, ArrowCounterClockwiseIcon as RefreshCcw, CopyIcon as Copy, CheckIcon as Check, XIcon as X, CodeIcon as Code2, CaretDownIcon as ChevronDown, CaretRightIcon as ChevronRight, GearSixIcon as Settings } from '@phosphor-icons/react';
 import hljs from 'highlight.js/lib/core';
 import DOMPurify from 'isomorphic-dompurify';
 import { loadComponent } from './loader';
@@ -134,7 +130,7 @@ const AccordionSection: React.FC<{
         }}
       >
         <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: t.fgMuted }}>{label}</span>
-        {open ? <ChevronDown size={11} style={{ color: t.fgSub }} /> : <ChevronRight size={11} style={{ color: t.fgSub }} />}
+        {open ? <ChevronDown size={11} style={{ color: t.fgSub }} weight="duotone" /> : <ChevronRight size={11} style={{ color: t.fgSub }} weight="duotone" />}
       </button>
       {open && <div>{children}</div>}
     </div>
@@ -436,7 +432,7 @@ const SourceCodeViewer: React.FC<SourceCodeViewerProps> = ({ fileContents, t }) 
             fontSize: 11, cursor: 'pointer', flexShrink: 0,
           }}
         >
-          {copied ? <Check size={11} /> : <Copy size={11} />}
+          {copied ? <Check size={11} weight="duotone" /> : <Copy size={11} weight="duotone" />}
           {copied ? 'Скопировано' : 'Копировать'}
         </button>
       </div>
@@ -545,20 +541,20 @@ const FullscreenDesktop: React.FC<ComponentRenderProps & {
         padding: '8px 0', gap: 2, zIndex: 10,
       }}>
         <div style={{ width: t.railW, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <RailBtn icon={<Minimize2 size={18} />} label="Свернуть" t={t} onClick={onClose} />
+          <RailBtn icon={<Minimize2 size={18} weight="duotone" />} label="Свернуть" t={t} onClick={onClose} />
         </div>
 
-        <RailBtn icon={<Play size={18} />}       label="Запуск"    t={t} onClick={onRefresh} />
-        <RailBtn icon={<RefreshCcw size={18} />} label="Сброс"     t={t} onClick={onReset} />
+        <RailBtn icon={<Play size={18} weight="duotone" />}       label="Запуск"    t={t} onClick={onRefresh} />
+        <RailBtn icon={<RefreshCcw size={18} weight="duotone" />} label="Сброс"     t={t} onClick={onReset} />
         <RailBtn
-          icon={<Settings size={18} />}
+          icon={<Settings size={18} weight="duotone" />}
           label="Настройки"
           isActive={panelOpen && activeTab === 'settings'}
           t={t}
           onClick={() => { onTabSelect('settings'); if (!panelOpen || activeTab === 'settings') onTogglePanel(); }}
         />
         <RailBtn
-          icon={<Code2 size={18} />}
+          icon={<Code2 size={18} weight="duotone" />}
           label="Код"
           isActive={panelOpen && activeTab === 'code'}
           t={t}
@@ -605,7 +601,7 @@ const FullscreenDesktop: React.FC<ComponentRenderProps & {
               onMouseEnter={e => { e.currentTarget.style.color = t.fg; }}
               onMouseLeave={e => { e.currentTarget.style.color = t.fgMuted; }}
             >
-              <X size={13} />
+              <X size={13} weight="duotone" />
             </button>
           </div>
 
@@ -723,7 +719,7 @@ const FullscreenMobile: React.FC<ComponentRenderProps & {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 18px 10px', borderBottom: `1px solid ${t.border}` }}>
               <span style={{ fontSize: '1.1rem', fontWeight: 700, color: t.fg }}>{sheet ? LABELS[sheet] : ''}</span>
               <button onClick={() => setSheet(null)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 10, border: `1px solid ${t.border}`, background: 'transparent', color: t.fg, cursor: 'pointer', flexShrink: 0 }}>
-                <X size={14} />
+                <X size={14} weight="duotone" />
               </button>
             </div>
           </button>
@@ -739,11 +735,11 @@ const FullscreenMobile: React.FC<ComponentRenderProps & {
       </div>
 
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: t.mobBg, borderTop: `1px solid ${t.border}`, display: 'flex', alignItems: 'stretch', zIndex: 30, paddingBottom: 'max(0px, env(safe-area-inset-bottom))' }}>
-        <MobBtn label="Обновить" icon={<Play size={20} />}       t={t} onClick={() => { setSheet(null); onRefresh(); }}                     isActive={false} />
-        <MobBtn label="Сброс"    icon={<RefreshCcw size={20} />} t={t} onClick={() => { setSheet(null); onReset(); }}                       isActive={false} />
-        <MobBtn label="Настройки" icon={<Settings size={20} />}  t={t} onClick={() => setSheet(p => p === 'settings' ? null : 'settings')} isActive={sheet === 'settings'} />
-        <MobBtn label="Код"      icon={<Code2 size={20} />}      t={t} onClick={() => setSheet(p => p === 'code' ? null : 'code')}          isActive={sheet === 'code'} />
-        <MobBtn label="Свернуть" icon={<Minimize2 size={20} />}  t={t} onClick={onClose}                                                   isActive={false} />
+        <MobBtn label="Обновить" icon={<Play size={20} weight="duotone" />}       t={t} onClick={() => { setSheet(null); onRefresh(); }}                     isActive={false} />
+        <MobBtn label="Сброс"    icon={<RefreshCcw size={20} weight="duotone" />} t={t} onClick={() => { setSheet(null); onReset(); }}                       isActive={false} />
+        <MobBtn label="Настройки" icon={<Settings size={20} weight="duotone" />}  t={t} onClick={() => setSheet(p => p === 'settings' ? null : 'settings')} isActive={sheet === 'settings'} />
+        <MobBtn label="Код"      icon={<Code2 size={20} weight="duotone" />}      t={t} onClick={() => setSheet(p => p === 'code' ? null : 'code')}          isActive={sheet === 'code'} />
+        <MobBtn label="Свернуть" icon={<Minimize2 size={20} weight="duotone" />}  t={t} onClick={onClose}                                                   isActive={false} />
       </div>
     </>
   );
@@ -824,7 +820,7 @@ const PreviewPanel: React.FC<ComponentRenderProps & {
         onMouseEnter={e => { e.currentTarget.style.background = t.btnHov; }}
         onMouseLeave={e => { e.currentTarget.style.background = t.railBg; }}
       >
-        <Settings size={17} />
+        <Settings size={17} weight="duotone" />
       </button>
       <div style={{
         width: '100%',

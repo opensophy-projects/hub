@@ -4,12 +4,8 @@ import React, {
 import { useTheme } from '@/shared/contexts/useTheme';
 import { useDebounce } from '@/shared/hooks/useDebounce';
 import { useManifest } from '@/features/docs/hooks/useDocuments';
-import {
-  Search, X, Hash, Clock, ChevronRight,
-  CalendarDays, SlidersHorizontal,
-  ArrowUpDown, Tag, ArrowDown, ArrowUp, FolderOpen,
-} from 'lucide-react';
-import LucideIcon from '@/shared/components/LucideIcon';
+import { MagnifyingGlassIcon as Search, XIcon as X, HashIcon as Hash, ClockIcon as Clock, CaretRightIcon as ChevronRight, CalendarDotsIcon as CalendarDays, SlidersHorizontalIcon as SlidersHorizontal, ArrowsDownUpIcon as ArrowUpDown, TagIcon as Tag, ArrowDownIcon as ArrowDown, ArrowUpIcon as ArrowUp, FolderOpenIcon as FolderOpen } from '@phosphor-icons/react';
+import PhosphorIcon from '@/shared/components/PhosphorIcon';
 import { makeTokens } from '@/shared/tokens/theme';
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
@@ -274,8 +270,8 @@ const ResultItem = memo(function ResultItem({
         marginTop: '1px',
       }}>
         {doc.icon
-          ? <LucideIcon name={doc.icon} size={14} style={{ color: C.fgMuted }} />
-          : <Search size={12} style={{ color: C.fgSub }} />
+          ? <PhosphorIcon name={doc.icon} size={14} style={{ color: C.fgMuted }} />
+          : <Search size={12} style={{ color: C.fgSub }} weight="duotone" />
         }
       </div>
 
@@ -300,7 +296,7 @@ const ResultItem = memo(function ResultItem({
               background: C.pillBg, color: C.fgSub,
               flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: '3px',
             }}>
-              <FolderOpen size={9} />
+              <FolderOpen size={9} weight="duotone" />
               {doc.navTitle}
             </span>
           )}
@@ -322,13 +318,13 @@ const ResultItem = memo(function ResultItem({
                 fontSize: '10px', color: C.fgSub,
                 background: C.tagBg, padding: '1px 6px', borderRadius: '8px',
               }}>
-                <Hash size={8} />{tag}
+                <Hash size={8} weight="duotone" />{tag}
               </span>
             ))}
             <span style={{ flex: 1 }} />
             {doc.date && (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '10px', color: C.fgSub }}>
-                <CalendarDays size={8} />{fmtDate(doc.date)}
+                <CalendarDays size={8} weight="duotone" />{fmtDate(doc.date)}
               </span>
             )}
           </div>
@@ -338,7 +334,7 @@ const ResultItem = memo(function ResultItem({
       <ChevronRight size={13} style={{
         color: isSelected ? C.fgMuted : 'transparent',
         flexShrink: 0, marginTop: '9px', transition: 'color 0.1s',
-      }} />
+      }} weight="duotone" />
     </a>
   );
 });
@@ -637,7 +633,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
           borderBottom: `1px solid ${C.border}`,
           flexShrink: 0,
         }}>
-          <Search size={17} style={{ color: C.fgMuted, flexShrink: 0 }} />
+          <Search size={17} style={{ color: C.fgMuted, flexShrink: 0 }} weight="duotone" />
 
           <input
             ref={inputRef}
@@ -662,7 +658,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
                 display: 'flex', flexShrink: 0,
               }}
             >
-              <X size={15} />
+              <X size={15} weight="duotone" />
             </button>
           )}
 
@@ -680,7 +676,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
               fontWeight: hasActiveFilters ? 600 : 400,
             }}
           >
-            <SlidersHorizontal size={13} />
+            <SlidersHorizontal size={13} weight="duotone" />
             {!isMobile && 'Фильтры'}
             {hasActiveFilters && (
               <span style={{
@@ -704,7 +700,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
             onMouseEnter={e => (e.currentTarget.style.color = C.fg)}
             onMouseLeave={e => (e.currentTarget.style.color = C.fgMuted)}
           >
-            <X size={18} />
+            <X size={18} weight="duotone" />
           </button>
         </div>
 
@@ -720,10 +716,10 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
               flexShrink: 0, overflowY: 'auto', maxHeight: '260px',
             }}
           >
-            <FilterSection icon={<CalendarDays size={10} />} label="Дата публикации" C={C}>
+            <FilterSection icon={<CalendarDays size={10} weight="duotone" />} label="Дата публикации" C={C}>
               <Pill label="Все" active={dateFilter === 'all'} C={C} onClick={() => setDateFilter('all')} />
               <Pill
-                label={<><CalendarDays size={10} />Новые (30д)</>}
+                label={<><CalendarDays size={10} weight="duotone" />Новые (30д)</>}
                 active={dateFilter === 'new'} C={C}
                 onClick={() => setDateFilter(v => v === 'new' ? 'all' : 'new')}
               />
@@ -736,21 +732,21 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
               )}
             </FilterSection>
 
-            <FilterSection icon={<ArrowUpDown size={10} />} label="Сортировка" C={C}>
+            <FilterSection icon={<ArrowUpDown size={10} weight="duotone" />} label="Сортировка" C={C}>
               <Pill
-                label={<><ArrowDown size={10} />Сначала новые</>}
+                label={<><ArrowDown size={10} weight="duotone" />Сначала новые</>}
                 active={sortOrder === 'date-desc'} C={C}
                 onClick={() => setSortOrder('date-desc')}
               />
               <Pill
-                label={<><ArrowUp size={10} />Сначала старые</>}
+                label={<><ArrowUp size={10} weight="duotone" />Сначала старые</>}
                 active={sortOrder === 'date-asc'} C={C}
                 onClick={() => setSortOrder('date-asc')}
               />
             </FilterSection>
 
             {allSections.length > 0 && (
-              <FilterSection icon={<FolderOpen size={10} />} label="Раздел" C={C}>
+              <FilterSection icon={<FolderOpen size={10} weight="duotone" />} label="Раздел" C={C}>
                 <Pill label="Все" active={filterSection === 'all'} C={C}
                   onClick={() => setFilterSection('all')} />
                 {allSections.map(([slug, title]) => (
@@ -761,7 +757,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
             )}
 
             {allCategories.length > 0 && (
-              <FilterSection icon={<FolderOpen size={10} />} label="Категория" C={C}>
+              <FilterSection icon={<FolderOpen size={10} weight="duotone" />} label="Категория" C={C}>
                 <Pill label="Все" active={filterCategory === 'all'} C={C}
                   onClick={() => setFilterCategory('all')} />
                 {allCategories.map(([slug, title]) => (
@@ -772,7 +768,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
             )}
 
             {allTags.length > 0 && (
-              <FilterSection icon={<Tag size={10} />} label="Теги" C={C}>
+              <FilterSection icon={<Tag size={10} weight="duotone" />} label="Теги" C={C}>
                 {allTags.map(tag => (
                   <button
                     key={tag}
@@ -787,7 +783,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
                       cursor: 'pointer', transition: 'all 0.1s', lineHeight: 1.5,
                     }}
                   >
-                    <Hash size={9} />{tag}
+                    <Hash size={9} weight="duotone" />{tag}
                   </button>
                 ))}
               </FilterSection>
@@ -830,13 +826,13 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
                     background: C.pillBg, border: `1px solid ${C.pillBorder}`,
                     borderRadius: '10px', padding: '1px 7px', fontSize: '10px', color: C.fgMuted,
                   }}>
-                    <FolderOpen size={9} />
+                    <FolderOpen size={9} weight="duotone" />
                     {allSections.find(([s]) => s === filterSection)?.[1] ?? filterSection}
                     <button
                       onClick={() => setFilterSection('all')}
                       style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 0 0 2px', color: C.fgSub, display: 'flex', lineHeight: 1 }}
                     >
-                      <X size={9} />
+                      <X size={9} weight="duotone" />
                     </button>
                   </span>
                 )}
@@ -844,7 +840,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
 
               {allResults.length === 0 && (
                 <div style={{ padding: '48px 16px', textAlign: 'center' }}>
-                  <Search size={26} style={{ color: C.fgSub, margin: '0 auto 10px' }} />
+                  <Search size={26} style={{ color: C.fgSub, margin: '0 auto 10px' }} weight="duotone" />
                   <p style={{ color: C.fgMuted, fontSize: '14px', margin: 0 }}>Ничего не найдено</p>
                   <p style={{ color: C.fgSub, fontSize: '12px', margin: '4px 0 0' }}>
                     Попробуйте другой запрос или сбросьте фильтры
@@ -867,7 +863,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
                 textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 700,
                 display: 'flex', alignItems: 'center', gap: '5px',
               }}>
-                <Clock size={10} /> Последние документы
+                <Clock size={10} weight="duotone" /> Последние документы
               </div>
 
               {results.map((doc, i) => (
@@ -897,7 +893,7 @@ const UnifiedSearchPanel: React.FC<UnifiedSearchPanelProps> = ({ onClose }) => {
                   fontFamily: 'inherit',
                 }}
               >
-                <ArrowDown size={12} />
+                <ArrowDown size={12} weight="duotone" />
                 Показать ещё {Math.min(LOAD_MORE_N, remaining)}
               </button>
             </div>

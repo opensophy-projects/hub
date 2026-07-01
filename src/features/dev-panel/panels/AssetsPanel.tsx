@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useContext, useEffect } from 'rea
 import { bridge } from '../useDevBridge';
 import { ThemeTokensContext } from '../theme';
 import { toast } from '../components/toastBus';
-import { Upload, Image, Star, Loader2, Check } from 'lucide-react';
+import { UploadSimpleIcon as Upload, ImageIcon as Image, StarIcon as Star, CircleNotchIcon as Loader2, CheckIcon as Check } from '@phosphor-icons/react';
 
 interface UploadedAsset {
   filename: string;
@@ -85,8 +85,8 @@ function DropZone({ label, accept, onFiles, loading, hint, t }: Readonly<{
           }}
         />
         {loading
-          ? <Loader2 size={22} style={{ color: t.fgMuted, animation: 'devSpin 1s linear infinite', margin: '0 auto 10px' }}/>
-          : <Upload size={22} style={{ color: dragOver ? t.fg : t.fgMuted, margin: '0 auto 10px' }}/>
+          ? <Loader2 size={22} style={{ color: t.fgMuted, animation: 'devSpin 1s linear infinite', margin: '0 auto 10px' }} weight="duotone" />
+          : <Upload size={22} style={{ color: dragOver ? t.fg : t.fgMuted, margin: '0 auto 10px' }} weight="duotone" />
         }
         <div style={{ fontSize: 16, color: dragOver ? t.fg : t.fgMuted, fontWeight: 500, fontFamily: t.mono }}>
           {loading ? 'Загружаем...' : label}
@@ -126,7 +126,7 @@ function AssetItem({ asset, t }: Readonly<{
       {asset.mimeType.startsWith('image/') ? (
         <img src={asset.path} alt="" style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 4, flexShrink: 0 }}/>
       ) : (
-        <Image size={24} style={{ color: t.fgMuted, flexShrink: 0 }}/>
+        <Image size={24} style={{ color: t.fgMuted, flexShrink: 0 }} weight="duotone" />
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, color: t.fg, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: t.mono }}>
@@ -147,7 +147,7 @@ function AssetItem({ asset, t }: Readonly<{
           fontSize: 12, cursor: 'pointer', fontFamily: t.mono, whiteSpace: 'nowrap',
         }}
       >
-        {copied ? <Check size={10}/> : null}
+        {copied ? <Check size={10} weight="duotone" /> : null}
         {copied ? 'Скопировано' : 'Копировать путь'}
       </button>
     </div>
@@ -253,7 +253,7 @@ export default function AssetsPanel() {
         fontSize: 9, fontWeight: 700, color: t.fgSub,
         textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8,
       }}>
-        <Star size={10}/> FAVICON / ЛОГОТИП
+        <Star size={10} weight="duotone" /> FAVICON / ЛОГОТИП
       </div>
 
       <DropZone
@@ -302,7 +302,7 @@ export default function AssetsPanel() {
         fontSize: 9, fontWeight: 700, color: t.fgSub,
         textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8,
       }}>
-        <Image size={10}/> ИЗОБРАЖЕНИЯ (PUBLIC/ASSETS/)
+        <Image size={10} weight="duotone" /> ИЗОБРАЖЕНИЯ (PUBLIC/ASSETS/)
       </div>
 
       <DropZone

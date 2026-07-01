@@ -30,7 +30,7 @@ export default defineConfig({
     },
 
     optimizeDeps: {
-      include: ['react', 'react-dom', 'marked', 'framer-motion', 'lucide-react', 'recharts'],
+      include: ['react', 'react-dom', 'marked', 'framer-motion', '@phosphor-icons/react', 'recharts'],
     },
 
     build: {
@@ -43,7 +43,7 @@ export default defineConfig({
           manualChunks(id) {
             // Dev panel → отдельный чанк (в prod его нет в бандле)
             if (id.includes('dev-panel'))                    return 'dev-panel';
-            if (id.includes('node_modules/lucide-react'))    return 'lucide';
+            if (id.includes('node_modules/@phosphor-icons/react'))    return 'phosphor';
             if (id.includes('node_modules/react-dom'))       return 'vendor-react';
             if (id.includes('node_modules/react/'))          return 'vendor-react';
             if (id.includes('node_modules/framer-motion'))   return 'vendor-motion';

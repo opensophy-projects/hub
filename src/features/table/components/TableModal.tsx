@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { X, Search } from 'lucide-react';
+import { XIcon as X, MagnifyingGlassIcon as Search } from '@phosphor-icons/react';
 import { createPortal } from 'react-dom';
 import { FiltersPanel } from './FiltersPanel';
 import { ColumnsPanel } from './ColumnsPanel';
@@ -112,7 +112,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
           background: t.barBg, flexWrap: 'nowrap', minWidth: 0, flexShrink: 0,
         }}>
           <div style={{ position: 'relative', flex: '1 1 0', minWidth: 0 }}>
-            <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: t.plhClr, pointerEvents: 'none' }} />
+            <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: t.plhClr, pointerEvents: 'none' }} weight="duotone" />
             <input
               type="text" placeholder="Поиск..." value={state.searchQuery}
               onChange={e => setState(p => ({ ...p, searchQuery: e.target.value }))}
@@ -130,7 +130,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
                 onClick={() => setState(p => ({ ...p, searchQuery: '' }))}
                 style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: t.plhClr, display: 'flex' }}
               >
-                <X size={12} />
+                <X size={12} weight="duotone" />
               </button>
             )}
           </div>
