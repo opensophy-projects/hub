@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useState, useCallback } from 'react';
+import React, { useContext, useMemo, useState, useCallback, useId, useRef } from 'react';
 import {
   AreaChart, Area,
   BarChart, Bar, Cell,
@@ -6,6 +6,7 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
   XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
+import { motion, useReducedMotion } from 'motion/react';
 import { TableContext } from '../lib/htmlParser';
 import { makeTokens } from '@/shared/tokens/theme';
 
@@ -230,8 +231,178 @@ function seriesOpacity(key: string, hovered: string | null, hidden: Set<string>)
   return hovered === key ? 1 : 0.2;
 }
 
-// ─── Area (дизайн в стиле evilcharts: горизонтальный цветной градиент по stroke,
-//     вертикальный fade-градиент заливки через маску, пунктирный stroke) ───────
+// ─── Area (полный перенос дизайна evilcharts EvilAreaChart) ──────────────────
+//
+// Портировано 1-в-1 из area-chart.tsx: цветной horizontal linearGradient на
+// stroke/fill, 6 вариантов паттерна заливки (gradient / gradient-reverse /
+// solid / dotted / lines / hatched), motion.dev reveal-маска на маунт,
+// анимированный пунктирный stroke, glow-фильтр и custom dot на активной точке.
+// Состояние "выбрана серия" в оригинале — selectedDataKey/selectDataKey из
+// контекста; здесь роль этого состояния играют hidden/hovered.
+
+type AreaFillVariant = 'gradient' | 'gradient-reverse' | 'solid' | 'dotted' | 'lines' | 'hatched';
+type RevealType = 'left-to-right' | 'right-to-left' | 'center-out' | 'edges-in' | 'none';
+
+const AREA_STROKE_WIDTH = 0.8;
+const AREA_REVEAL_DURATION = 1;
+const AREA_REVEAL_EASE: [number, number, number, number] = [0, 0.7, 0.5, 1];
+
+const AREA_SINGLE_REVEAL_ORIGIN: Record<Exclude<RevealType, 'edges-in' | 'none'>, number> = {
+  'left-to-right': 0,
+  'right-to-left': 1,
+  'center-out': 0.5,
+};
+
+// Wipe-маска, проигрывается один раз при маунте <Area />
+const AreaRevealMask: React.FC<{ id: string; type: RevealType }> = ({ id, type }) => {
+  if (type === 'none') return null;
+  const reveal = {
+    initial: { scaleX: 0 },
+    animate: { scaleX: 1 },
+    transition: { duration: AREA_REVEAL_DURATION, ease: AREA_REVEAL_EASE },
+  };
+  return (
+    <mask id={`${id}-reveal-mask`} maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse"
+      x="0" y="0" width="100%" height="100%">
+      {type === 'edges-in' ? (
+        <>
+          <motion.rect {...reveal} x="0" y="0" width="50%" height="100%" fill="white" style={{ originX: 0 }} />
+          <motion.rect {...reveal} x="50%" y="0" width="50%" height="100%" fill="white" style={{ originX: 1 }} />
+        </>
+      ) : (
+        <motion.rect {...reveal} x="0" y="0" width="100%" height="100%" fill="white"
+          style={{ originX: AREA_SINGLE_REVEAL_ORIGIN[type as Exclude<RevealType, 'edges-in' | 'none'>] }} />
+      )}
+    </mask>
+  );
+};
+
+// Анимированный пунктир (marching ants), рендерится ребёнком <Area />
+const AreaAnimatedDashedStroke: React.FC = () => (
+  <>
+    <animate attributeName="stroke-dasharray" values="3 3; 0 3; 3 3" dur="1s" repeatCount="indefinite" keyTimes="0;0.5;1" />
+    <animate attributeName="stroke-dashoffset" values="0; -6" dur="1s" repeatCount="indefinite" keyTimes="0;1" />
+  </>
+);
+
+// Горизонтальный цветной градиент — красит и stroke, и fill-паттерны серии
+const AreaColorGradient: React.FC<{ id: string; color: string }> = ({ id, color }) => (
+  <linearGradient id={`${id}-colors`} x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stopColor={color} />
+    <stop offset="100%" stopColor={color} />
+  </linearGradient>
+);
+
+// gradient: fade сверху-вниз (видимый → прозрачный)
+const AreaGradientPattern: React.FC<{ id: string }> = ({ id }) => (
+  <>
+    <linearGradient id={`${id}-vertical-fade`} x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stopColor="white" stopOpacity={0.1} />
+      <stop offset="100%" stopColor="white" stopOpacity={0} />
+    </linearGradient>
+    <mask id={`${id}-gradient-mask`}><rect width="100%" height="100%" fill={`url(#${id}-vertical-fade)`} /></mask>
+    <pattern id={`${id}-gradient`} patternUnits="userSpaceOnUse" width="100%" height="100%">
+      <rect width="100%" height="100%" fill={`url(#${id}-colors)`} mask={`url(#${id}-gradient-mask)`} />
+    </pattern>
+  </>
+);
+
+// gradient-reverse: fade снизу-вверх (прозрачный → видимый)
+const AreaReverseGradientPattern: React.FC<{ id: string }> = ({ id }) => (
+  <>
+    <linearGradient id={`${id}-vertical-fade-reverse`} x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stopColor="white" stopOpacity={0} />
+      <stop offset="100%" stopColor="white" stopOpacity={0.1} />
+    </linearGradient>
+    <mask id={`${id}-gradient-reverse-mask`}><rect width="100%" height="100%" fill={`url(#${id}-vertical-fade-reverse)`} /></mask>
+    <pattern id={`${id}-gradient-reverse`} patternUnits="userSpaceOnUse" width="100%" height="100%">
+      <rect width="100%" height="100%" fill={`url(#${id}-colors)`} mask={`url(#${id}-gradient-reverse-mask)`} />
+    </pattern>
+  </>
+);
+
+// solid: равномерная низкая непрозрачность без fade
+const AreaSolidPattern: React.FC<{ id: string }> = ({ id }) => (
+  <>
+    <linearGradient id={`${id}-solid-fade`} x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stopColor="white" stopOpacity={0.1} />
+      <stop offset="100%" stopColor="white" stopOpacity={0.1} />
+    </linearGradient>
+    <mask id={`${id}-solid-mask`}><rect width="100%" height="100%" fill={`url(#${id}-solid-fade)`} /></mask>
+    <pattern id={`${id}-solid`} patternUnits="userSpaceOnUse" width="100%" height="100%">
+      <rect width="100%" height="100%" fill={`url(#${id}-colors)`} mask={`url(#${id}-solid-mask)`} />
+    </pattern>
+  </>
+);
+
+// lines: диагональная штриховка
+const AreaLinesPattern: React.FC<{ id: string }> = ({ id }) => (
+  <>
+    <pattern id={`${id}-lines-texture`} patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="5" stroke="white" strokeWidth="1" />
+    </pattern>
+    <mask id={`${id}-lines-mask`}><rect width="100%" height="100%" fill={`url(#${id}-lines-texture)`} fillOpacity="0.3" /></mask>
+    <pattern id={`${id}-lines`} patternUnits="userSpaceOnUse" width="100%" height="100%">
+      <rect width="100%" height="100%" fill={`url(#${id}-colors)`} mask={`url(#${id}-lines-mask)`} />
+    </pattern>
+  </>
+);
+
+// dotted: точечная текстура
+const AreaDottedPattern: React.FC<{ id: string }> = ({ id }) => (
+  <>
+    <pattern id={`${id}-dotted-texture`} x="0" y="0" width="6" height="6" patternUnits="userSpaceOnUse">
+      <circle cx="4" cy="4" r="0.5" fill="white" />
+    </pattern>
+    <mask id={`${id}-dotted-mask`}><rect width="100%" height="100%" fill={`url(#${id}-dotted-texture)`} fillOpacity="0.5" /></mask>
+    <pattern id={`${id}-dotted`} patternUnits="userSpaceOnUse" width="100%" height="100%">
+      <rect width="100%" height="100%" fill={`url(#${id}-colors)`} mask={`url(#${id}-dotted-mask)`} />
+    </pattern>
+  </>
+);
+
+// hatched: полосы с мягким градиентом внутри каждой полосы
+const AreaHatchedPattern: React.FC<{ id: string }> = ({ id }) => (
+  <>
+    <linearGradient id={`${id}-hatched-stripe`} x1="0" y1="0" x2="1" y2="0">
+      <stop offset="50%" stopColor="white" stopOpacity={0.2} />
+      <stop offset="50%" stopColor="white" stopOpacity={1} />
+    </linearGradient>
+    <pattern id={`${id}-hatched-texture`} x="0" y="0" width="20" height="10"
+      patternUnits="userSpaceOnUse" overflow="visible" patternTransform="rotate(20)">
+      <rect width="20" height="10" fill={`url(#${id}-hatched-stripe)`} />
+    </pattern>
+    <mask id={`${id}-hatched-mask`}><rect width="100%" height="100%" fill={`url(#${id}-hatched-texture)`} fillOpacity="0.2" /></mask>
+    <pattern id={`${id}-hatched`} patternUnits="userSpaceOnUse" width="100%" height="100%">
+      <rect width="100%" height="100%" fill={`url(#${id}-colors)`} mask={`url(#${id}-hatched-mask)`} />
+    </pattern>
+  </>
+);
+
+// Диагональная штриховка для "невыбранной" серии, когда есть hover/selection
+const AreaUnselectedPattern: React.FC<{ id: string }> = ({ id }) => (
+  <>
+    <pattern id={`${id}-unselected-texture`} patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="5" stroke="white" strokeWidth="1" />
+    </pattern>
+    <mask id={`${id}-unselected-mask`}><rect width="100%" height="100%" fill={`url(#${id}-unselected-texture)`} fillOpacity="0.3" /></mask>
+    <pattern id={`${id}-unselected`} patternUnits="userSpaceOnUse" width="100%" height="100%">
+      <rect width="100%" height="100%" fill={`url(#${id}-colors)`} mask={`url(#${id}-unselected-mask)`} />
+    </pattern>
+  </>
+);
+
+function getFillPatternUrl(id: string, variant: AreaFillVariant, showUnselected: boolean): string {
+  if (showUnselected) return `url(#${id}-unselected)`;
+  return `url(#${id}-${variant})`;
+}
+
+// Opacity fill/stroke: как getOpacity в оригинале — дим только когда есть hover
+// на ДРУГОЙ серии (роль selectedDataKey играет hovered)
+function getAreaOpacity(hovered: string | null, key: string): { fill: number; stroke: number } {
+  if (hovered === null) return { fill: 0.8, stroke: 0.8 };
+  return hovered === key ? { fill: 0.8, stroke: 0.8 } : { fill: 0.2, stroke: 0.3 };
+}
 
 interface RenderAreaOptions {
   data: ChartRow[];
@@ -242,87 +413,108 @@ interface RenderAreaOptions {
   hidden: Set<string>;
   hovered: string | null;
   t: ReturnType<typeof tk>;
+  variant?: AreaFillVariant;
+  animatedStroke?: boolean;
+  revealType?: RevealType;
 }
+
+// Одна серия площади — полный аналог <Area /> из evilcharts: сама генерит
+// свои defs под уникальным id, поэтому любое число серий с разными вариантами
+// заливки живёт в одном чарте без коллизий стилей.
+const AreaSeries: React.FC<{
+  dataKey: string;
+  color: string;
+  stacked: boolean;
+  variant: AreaFillVariant;
+  animatedStroke: boolean;
+  revealType: RevealType;
+  hovered: string | null;
+  hidden: Set<string>;
+}> = ({ dataKey, color, stacked, variant, animatedStroke, revealType, hovered, hidden }) => {
+  const rawId = useId().replace(/:/g, '');
+  const id = `area-${rawId}`;
+  const shouldReduceMotion = useReducedMotion();
+  const resolvedReveal: RevealType = shouldReduceMotion ? 'none' : revealType;
+  const maskId = resolvedReveal === 'none' ? undefined : `${id}-reveal-mask`;
+
+  const isHidden = hidden.has(dataKey);
+  if (isHidden) return null;
+
+  const hasHover = hovered !== null;
+  const isHoveredSeries = hovered === dataKey;
+  const showUnselected = hasHover && !isHoveredSeries;
+  const opacity = getAreaOpacity(hovered, dataKey);
+
+  return (
+    <>
+      <Area
+        type="monotone"
+        dataKey={dataKey}
+        connectNulls={false}
+        fillOpacity={opacity.fill}
+        strokeOpacity={opacity.stroke}
+        fill={getFillPatternUrl(id, variant, showUnselected)}
+        stroke={`url(#${id}-colors)`}
+        stackId={stacked ? 'area-stack' : undefined}
+        dot={false}
+        activeDot={{
+          r: 4,
+          strokeWidth: 0,
+          fill: color,
+          filter: `drop-shadow(0 0 4px ${color})`,
+        }}
+        strokeWidth={AREA_STROKE_WIDTH}
+        strokeDasharray={animatedStroke ? '3 3' : undefined}
+        isAnimationActive={false}
+        style={{
+          ...(maskId ? { mask: `url(#${maskId})` } : {}),
+          filter: isHoveredSeries ? `drop-shadow(0 0 5px ${color}cc)` : 'none',
+          transition: 'filter 0.2s',
+        }}
+      >
+        {animatedStroke && !hasHover && <AreaAnimatedDashedStroke />}
+      </Area>
+      <defs>
+        <AreaRevealMask id={id} type={resolvedReveal} />
+        <AreaColorGradient id={id} color={color} />
+        {variant === 'gradient' && <AreaGradientPattern id={id} />}
+        {variant === 'gradient-reverse' && <AreaReverseGradientPattern id={id} />}
+        {variant === 'solid' && <AreaSolidPattern id={id} />}
+        {variant === 'dotted' && <AreaDottedPattern id={id} />}
+        {variant === 'lines' && <AreaLinesPattern id={id} />}
+        {variant === 'hatched' && <AreaHatchedPattern id={id} />}
+        {showUnselected && <AreaUnselectedPattern id={id} />}
+      </defs>
+    </>
+  );
+};
 
 function renderArea({
   data, nameKey, valueKeys, palette,
   stacked, hidden, hovered, t,
+  variant = 'gradient',
+  animatedStroke = true,
+  revealType = 'left-to-right',
 }: RenderAreaOptions) {
-  const visible = valueKeys.filter(k => !hidden.has(k));
-
   return (
     <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-      <defs>
-        {valueKeys.map((key) => {
-          const idx   = valueKeys.indexOf(key);
-          const color = palette[idx % palette.length];
-
-          return (
-            <React.Fragment key={`defs-${key}`}>
-              {/* горизонтальный цветной градиент — красит и stroke, и fill */}
-              <linearGradient id={`area-colors-${idx}`} x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor={color} />
-                <stop offset="100%" stopColor={color} />
-              </linearGradient>
-
-              {/* вертикальный fade: сверху видимый, снизу прозрачный */}
-              <linearGradient id={`area-vertical-fade-${idx}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="white" stopOpacity={0.35} />
-                <stop offset="100%" stopColor="white" stopOpacity={0} />
-              </linearGradient>
-              <mask id={`area-fade-mask-${idx}`}>
-                <rect width="100%" height="100%" fill={`url(#area-vertical-fade-${idx})`} />
-              </mask>
-              <pattern id={`area-fill-${idx}`} patternUnits="userSpaceOnUse" width="100%" height="100%">
-                <rect
-                  width="100%" height="100%"
-                  fill={`url(#area-colors-${idx})`}
-                  mask={`url(#area-fade-mask-${idx})`}
-                />
-              </pattern>
-
-              {/* glow под линией при hover */}
-              <filter id={`area-glow-${idx}`} x="-30%" y="-30%" width="160%" height="160%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </React.Fragment>
-          );
-        })}
-      </defs>
       <XAxis dataKey={nameKey} {...ap(t)} />
       <YAxis {...ap(t)} width={38} />
       <Tooltip content={<CustomTooltip t={t} />} cursor={{ stroke: t.gridLine, strokeWidth: 1 }} />
-      {visible.map((key) => {
-        const idx   = valueKeys.indexOf(key);
+      {valueKeys.map((key) => {
+        const idx = valueKeys.indexOf(key);
         const color = palette[idx % palette.length];
-        const op    = seriesOpacity(key, hovered, hidden);
-        const isActive = hovered === key;
-
         return (
-          <Area key={key} type="monotone" dataKey={key}
-            stroke={`url(#area-colors-${idx})`}
-            fill={`url(#area-fill-${idx})`}
-            fillOpacity={op}
-            strokeWidth={isActive ? 1.6 : 0.8}
-            strokeOpacity={op}
-            strokeDasharray="3 3"
-            style={{
-              filter: isActive ? `url(#area-glow-${idx})` : 'none',
-              transition: 'all 0.2s',
-            }}
-            stackId={stacked ? 'stack' : undefined}
-            dot={false}
-            activeDot={{
-              r: 4,
-              strokeWidth: 0,
-              fill: color,
-              filter: `drop-shadow(0 0 4px ${color})`,
-            }}
-            isAnimationActive={false}
+          <AreaSeries
+            key={key}
+            dataKey={key}
+            color={color}
+            stacked={stacked}
+            variant={variant}
+            animatedStroke={animatedStroke}
+            revealType={revealType}
+            hovered={hovered}
+            hidden={hidden}
           />
         );
       })}
