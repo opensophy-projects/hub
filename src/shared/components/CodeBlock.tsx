@@ -47,7 +47,7 @@ function tk(isDark: boolean) {
     tabActiveBdr: themed(isDark, 'rgba(255,255,255,0.2)', 'rgba(0,0,0,0.2)'),
     elevatedBorder: t.borderElevated,
     elevatedShadow: t.shadowElevated,
-    dropdownBg:     isDark ? '#121212' : '#ECEBE7',
+    dropdownBg:     unifiedBg,
   };
 }
 
@@ -281,7 +281,34 @@ function ToolbarMenu({ isDark, isCopied, isModal, onSearch, onCopy, onToggleFull
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const ref      = useRef<HTMLDivElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+
+  const clearCloseTimer = () => {
+    if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
+  };
+
+  const scheduleClose = () => {
+    clearCloseTimer();
+    closeTimer.current = setTimeout(() => setOpen(false), 180);
+  };
+
+  const positionMenu = () => {
+    const rect = ref.current?.getBoundingClientRect();
+    if (rect) {
+      const width = 190;
+      setMenuPos({
+        top:  rect.bottom + 6,
+        left: Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8)),
+      });
+    }
+  };
+
+  const openMenu = () => {
+    clearCloseTimer();
+    positionMenu();
+    setOpen(true);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -296,35 +323,19 @@ function ToolbarMenu({ isDark, isCopied, isModal, onSearch, onCopy, onToggleFull
 
   useEffect(() => {
     if (!open) return;
-    const update = () => {
-      const rect = ref.current?.getBoundingClientRect();
-      if (rect) {
-        const width = 190;
-        setMenuPos({
-          top:  rect.bottom + 6,
-          left: Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8)),
-        });
-      }
-    };
-    window.addEventListener('scroll', update, true);
-    window.addEventListener('resize', update);
+    window.addEventListener('scroll', positionMenu, true);
+    window.addEventListener('resize', positionMenu);
     return () => {
-      window.removeEventListener('scroll', update, true);
-      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', positionMenu, true);
+      window.removeEventListener('resize', positionMenu);
     };
   }, [open]);
 
+  useEffect(() => () => clearCloseTimer(), []);
+
   const toggleOpen = () => {
     if (open) { setOpen(false); return; }
-    const rect = ref.current?.getBoundingClientRect();
-    if (rect) {
-      const width = 190;
-      setMenuPos({
-        top:  rect.bottom + 6,
-        left: Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8)),
-      });
-    }
-    setOpen(true);
+    openMenu();
   };
 
   const getUnifiedControlStyle = (isActive: boolean) => ({
@@ -355,20 +366,23 @@ function ToolbarMenu({ isDark, isCopied, isModal, onSearch, onCopy, onToggleFull
   ];
 
   return (
-    <div ref={ref} style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}>
+    <div
+      ref={ref}
+      style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}
+      onMouseEnter={openMenu}
+      onMouseLeave={scheduleClose}
+    >
       <button
         onClick={toggleOpen}
         title="Меню"
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           width: 36, height: 36, borderRadius: 8,
-          border: `1px solid ${t.btnBdr}`,
-          background: open ? t.btnHov : t.btnBg,
+          border: `1px solid ${open ? t.btnBdr : 'transparent'}`,
+          background: open ? t.btnBg : 'transparent',
           color: t.btnClr, cursor: 'pointer', flexShrink: 0,
-          transition: 'background 0.13s',
+          transition: 'background 0.13s, border-color 0.13s',
         }}
-        onMouseEnter={e => { e.currentTarget.style.background = t.btnHov; }}
-        onMouseLeave={e => { e.currentTarget.style.background = open ? t.btnHov : t.btnBg; }}
       >
         <Menu size={16} />
       </button>
@@ -376,6 +390,8 @@ function ToolbarMenu({ isDark, isCopied, isModal, onSearch, onCopy, onToggleFull
       {open && createPortal(
         <div
           ref={popupRef}
+          onMouseEnter={clearCloseTimer}
+          onMouseLeave={scheduleClose}
           style={{
             position: 'fixed',
             top:          menuPos.top,
@@ -498,8 +514,9 @@ function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuer
     <div style={{
       display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px',
       background: t.barBg, flexWrap: 'nowrap', minWidth: 0, flexShrink: 0,
+      justifyContent: searchOpen ? 'flex-start' : 'flex-end',
     }}>
-      {searchOpen ? (
+      {searchOpen && (
         <div style={{ position: 'relative', flex: '1 1 0', minWidth: 0 }}>
           <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: t.plhClr, pointerEvents: 'none' }} />
           <input
@@ -525,8 +542,6 @@ function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuer
             </span>
           )}
         </div>
-      ) : (
-        <div style={{ flex: '1 1 0', minWidth: 0 }} />
       )}
       <ToolbarMenu
         isDark={isDark}
@@ -609,9 +624,11 @@ function TabBar({ tabs, activeIdx, onSelect, t }: TabBarProps) {
       overflowX: 'auto',
       scrollbarWidth: 'none',
       flexShrink: 0,
+      padding: '6px 6px 0',
+      gap: 2,
     }}>
       <style>{`.cb-tabs::-webkit-scrollbar{display:none}`}</style>
-      <div className="cb-tabs" style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+      <div className="cb-tabs" style={{ display: 'flex', alignItems: 'center', flex: 1, gap: 2 }}>
         {tabs.map((tab, i) => {
           const active = i === activeIdx;
           return (
@@ -620,19 +637,20 @@ function TabBar({ tabs, activeIdx, onSelect, t }: TabBarProps) {
               onClick={() => onSelect(i)}
               style={{
                 display: 'flex', alignItems: 'center',
-                padding: '9px 16px',
+                padding: '7px 14px',
                 border: 'none',
-                borderBottom: `2px solid ${active ? t.fg : 'transparent'}`,
-                background: active ? t.tabActive : t.tabInactive,
+                borderRadius: '8px 8px 0 0',
+                background: active ? t.tabActive : 'transparent',
                 color: active ? t.fg : t.fgMuted,
                 fontSize: 12, fontWeight: active ? 600 : 400,
                 cursor: 'pointer', flexShrink: 0,
                 outline: 'none',
                 fontFamily: 'ui-monospace, monospace',
                 whiteSpace: 'nowrap',
+                transition: 'background 0.13s, color 0.13s',
               }}
-              onMouseEnter={e => { if (!active) e.currentTarget.style.background = t.tabActive; }}
-              onMouseLeave={e => { if (!active) e.currentTarget.style.background = t.tabInactive; }}
+              onMouseEnter={e => { if (!active) e.currentTarget.style.background = t.btnBg; }}
+              onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
             >
               {tab.label}
             </button>
