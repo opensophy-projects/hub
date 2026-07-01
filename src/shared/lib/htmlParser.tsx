@@ -41,9 +41,12 @@ export const SANITIZE_ATTR = [
   'data-chart', 'data-colors', 'data-type',
   'data-tabs',
   // Стилевые пропсы чарта (см. ChartBlock.tsx): выбор кривой, типа стека,
-  // варианта обводки/заливки area, варианта заливки bar, reveal-анимации, glow
+  // варианта обводки/заливки area, варианта заливки bar, reveal-анимации,
+  // постоянного свечения (bar/line/pie) и "буферной" пунктирной хвостовой
+  // линии для type=line.
   'data-curve', 'data-stack', 'data-stroke',
   'data-area-variant', 'data-bar-variant', 'data-reveal', 'data-glow',
+  'data-buffer-line',
   'type', 'checked', 'disabled', 'open', 'style', 'align',
   'xmlns', 'viewBox', 'd', 'fill', 'stroke', 'stroke-width',
   'width', 'height', 'x', 'y', 'x1', 'y1', 'x2', 'y2',
@@ -299,8 +302,18 @@ const processStepsElement = (element: Element, key: string, elements: React.Reac
 // В markdown/MDX-блоке чарта (<div class="custom-chart" data-...>) можно
 // указывать не только тип/данные/цвета, но и полный набор стилевых пропсов
 // ChartBlock: data-curve, data-stack, data-stroke, data-area-variant,
-// data-bar-variant, data-reveal, data-glow. Любой из них можно опустить —
-// тогда ChartBlock применит собственные дефолты (см. ChartBlock.tsx).
+// data-bar-variant, data-reveal, data-glow, data-buffer-line. Любой из них
+// можно опустить — тогда ChartBlock применит собственные дефолты.
+//
+// ВАЖНО: с добавлением type=line и фиксом Pie, data-glow стал "универсальным"
+// параметром — ChartBlock сам решает, что он означает, в зависимости от type:
+//   bar/bar-stacked/bar-horizontal → свечение столбцов
+//   line                           → свечение линии
+//   pie/pie-donut                  → постоянное свечение всех секторов
+// (раньше проп называлcя barGlowing и был жёстко привязан к барам).
+//
+// data-buffer-line применяется только при type=line: последний отрезок линии
+// рисуется пунктиром (визуальный маркер "прогноз/незавершённые данные").
 //
 // Пример markdown-разметки см. в CHART_EXAMPLES.md.
 
@@ -326,6 +339,10 @@ function pickEnumAttr<T extends string>(value: string | undefined, allowed: Set<
   return value && allowed.has(value) ? (value as T) : undefined;
 }
 
+function parseBoolAttr(value: string | undefined): boolean {
+  return value === 'true' || value === '1';
+}
+
 const processChartElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const type   = (element.dataset.type   || 'bar') as import('../components/ChartBlock').ChartType;
   const title  =  element.dataset.title  || undefined;
@@ -347,7 +364,8 @@ const processChartElement = (element: Element, key: string, elements: React.Reac
   const areaVariant    = pickEnumAttr<import('../components/ChartBlock').AreaFillVariantProp>(element.dataset.areaVariant, AREA_VARIANT_VALUES);
   const barVariant     = pickEnumAttr<import('../components/ChartBlock').BarFillVariantProp>(element.dataset.barVariant, BAR_VARIANT_VALUES);
   const revealType     = pickEnumAttr<import('../components/ChartBlock').RevealTypeProp>(element.dataset.reveal, REVEAL_VALUES);
-  const barGlowing     = element.dataset.glow === 'true' || element.dataset.glow === '1';
+  const glowing        = parseBoolAttr(element.dataset.glow);
+  const bufferLine     = parseBoolAttr(element.dataset.bufferLine);
 
   elements.push(
     React.createElement(
@@ -355,7 +373,8 @@ const processChartElement = (element: Element, key: string, elements: React.Reac
       { key, fallback: React.createElement('div', { style: { height: 320 } }) },
       React.createElement(LazyChartBlock, {
         type, data, title, colors: palette,
-        curveType, stackType, strokeVariant, areaVariant, barVariant, revealType, barGlowing,
+        curveType, stackType, strokeVariant, areaVariant, barVariant, revealType,
+        glowing, bufferLine,
       }),
     ),
   );
