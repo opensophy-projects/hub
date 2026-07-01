@@ -21,6 +21,15 @@ interface TableViewProps {
   onSort: (colIndex: number) => void;
   headerAlignments?: ColumnAlignment[];
   fullscreen?: boolean;
+  /**
+   * Режим "показать всю таблицу целиком" (тоггл из TableModal).
+   * Шаг 1: снимается white-space:nowrap — текст переносится в ячейках.
+   * Шаг 2: измеряется реальная ширина и высота таблицы; если она всё равно
+   * не влезает в доступную область — применяется единый CSS transform:scale
+   * (наименьший из коэффициентов по ширине и по высоте), чтобы таблица
+   * была видна целиком без какого-либо скролла — ни горизонтального,
+   * ни вертикального.
+   */
   fitToScreen?: boolean;
 }
 
@@ -30,6 +39,10 @@ type Tok = {
   fadeTo: string; thumb: string; thumbHov: string; track: string;
 };
 
+// Шапка (thBg) и чётные строки (rowEven) равны unifiedBg — тому же фону,
+// что у тулбара/панелей/футера карточки. Нечётные строки (rowOdd) — это
+// отдельный, явно заданный цвет "зебры" (zebraBg из tableUiTheme):
+// #0f0f0f в тёмной теме, #e1dfdb в светлой.
 function tok(isDark: boolean): Tok {
   const t = makeTokens(isDark);
   const ui = getTableUiTokens(isDark);
@@ -66,7 +79,13 @@ export const TableView: React.FC<TableViewProps> = ({
   const t = useMemo(() => tok(isDark), [isDark]);
   const { scrollRef, dragStyle, dragHandlers } = useDragScroll();
 
-  // ─── Fit-to-screen: измеряем реальную и доступную ширину, считаем scale ────
+  // ─── Fit-to-screen: измеряем реальную ширину И высоту, считаем общий scale ──
+  //
+  // Цель режима — показать таблицу ЦЕЛИКОМ, без вертикального и горизонтального
+  // скролла. Поэтому scale считается по обоим измерениям одновременно (берём
+  // наименьший из двух коэффициентов — по ширине и по высоте), а контейнер
+  // .tb-scroll в этом режиме получает overflow:hidden и фиксированную высоту
+  // доступной области вместо maxHeight/flex со своим скроллом.
   const wrapRef  = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLTableElement>(null);
   const [fitScale, setFitScale] = useState(1);
@@ -78,22 +97,30 @@ export const TableView: React.FC<TableViewProps> = ({
       const wrapEl  = wrapRef.current;
       const tableEl = tableRef.current;
       if (!wrapEl || !tableEl) return;
-      // Сбрасываем масштаб перед измерением, чтобы получить реальную ширину контента
+      // Сбрасываем масштаб перед измерением, чтобы получить реальные размеры контента
       tableEl.style.transform = 'none';
-      const available = wrapEl.clientWidth;
-      const natural = tableEl.scrollWidth;
-      if (natural > available && available > 0) {
-        setFitScale(Math.max(0.5, available / natural));
-      } else {
-        setFitScale(1);
-      }
+      const availableW = wrapEl.clientWidth;
+      const availableH = wrapEl.clientHeight;
+      const naturalW = tableEl.scrollWidth;
+      const naturalH = tableEl.scrollHeight;
+      if (availableW <= 0 || availableH <= 0) return;
+
+      const scaleW = naturalW > availableW ? availableW / naturalW : 1;
+      const scaleH = naturalH > availableH ? availableH / naturalH : 1;
+      const scale = Math.min(scaleW, scaleH);
+      setFitScale(Math.max(0.25, Math.min(1, scale)));
     };
 
-    // Меряем после того, как перенос текста (white-space: normal) уже применился
-    const raf = requestAnimationFrame(measure);
+    // Двойной проход: сначала после переноса текста (white-space:normal),
+    // затем ещё раз через кадр — высота таблицы после переноса меняется,
+    // и первое измерение может быть неточным.
+    const raf1 = requestAnimationFrame(() => {
+      measure();
+      requestAnimationFrame(measure);
+    });
     window.addEventListener('resize', measure);
     return () => {
-      cancelAnimationFrame(raf);
+      cancelAnimationFrame(raf1);
       window.removeEventListener('resize', measure);
     };
   }, [fitToScreen, headers, rows, visibleColumns]);
@@ -104,7 +131,7 @@ export const TableView: React.FC<TableViewProps> = ({
       <style>{`
         .tb-scroll {
           overflow-x: ${fitToScreen ? 'hidden' : 'auto'};
-          overflow-y: auto;
+          overflow-y: ${fitToScreen ? 'hidden' : 'auto'};
           -webkit-overflow-scrolling: touch;
           scrollbar-width: thin;
           scrollbar-color: ${t.thumb} ${t.track};
@@ -139,6 +166,11 @@ export const TableView: React.FC<TableViewProps> = ({
           opacity: 0.8;
           z-index: 1;
         }
+        .tb-fit-table {
+          width: max-content !important;
+          margin-left: auto;
+          margin-right: auto;
+        }
         .tb-fit-table th, .tb-fit-table td {
           white-space: normal !important;
           word-break: break-word;
@@ -153,6 +185,7 @@ export const TableView: React.FC<TableViewProps> = ({
           display:       fullscreen ? 'flex'    : undefined,
           flexDirection: fullscreen ? 'column'  : undefined,
           minHeight: 0,
+          height: fitToScreen && fullscreen ? '100%' : undefined,
           overflow: 'hidden',
         }}
       >
@@ -160,8 +193,8 @@ export const TableView: React.FC<TableViewProps> = ({
           ref={scrollRef}
           className="tb-scroll"
           style={{
-            maxHeight: fullscreen ? undefined : 480,
-            height:    fullscreen ? '100%'    : undefined,
+            maxHeight: fullscreen ? undefined : (fitToScreen ? undefined : 480),
+            height:    fullscreen ? '100%'    : (fitToScreen ? '100%' : undefined),
             flex:      fullscreen ? 1         : undefined,
             ...(fitToScreen ? {} : dragStyle),
           }}
@@ -173,11 +206,11 @@ export const TableView: React.FC<TableViewProps> = ({
             style={{
               borderCollapse: 'separate',
               borderSpacing: 0,
-              width: fitToScreen ? `${100 / fitScale}%` : '100%',
+              width: fitToScreen ? undefined : '100%',
               minWidth: fitToScreen ? undefined : 'max-content',
-              tableLayout: fitToScreen ? 'fixed' : 'auto',
+              tableLayout: 'auto',
               transform: fitToScreen && fitScale < 1 ? `scale(${fitScale})` : undefined,
-              transformOrigin: 'top left',
+              transformOrigin: 'top center',
             }}
           >
             <TableHead
