@@ -89,6 +89,7 @@ export const TableView: React.FC<TableViewProps> = ({
   const wrapRef  = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLTableElement>(null);
   const [fitScale, setFitScale] = useState(1);
+  const [fitNaturalSize, setFitNaturalSize] = useState({ w: 0, h: 0 });
 
   useLayoutEffect(() => {
     if (!fitToScreen) { setFitScale(1); return; }
@@ -98,9 +99,16 @@ export const TableView: React.FC<TableViewProps> = ({
     const measure = () => {
       const wrapEl  = wrapRef.current;
       const tableEl = tableRef.current;
+      const fitWrapEl = tableEl?.parentElement ?? null;
       if (!wrapEl || !tableEl) return;
-      // Сбрасываем масштаб перед измерением, чтобы получить реальные размеры контента
+      // Снимаем ограничение ширины/высоты и трансформацию перед измерением —
+      // иначе scrollWidth/scrollHeight таблицы меряются относительно уже
+      // сжатой обёртки с прошлого прохода и получаются заведомо заниженными.
       tableEl.style.transform = 'none';
+      if (fitWrapEl) {
+        fitWrapEl.style.width = 'max-content';
+        fitWrapEl.style.height = 'auto';
+      }
       const availableW = wrapEl.clientWidth;
       const availableH = wrapEl.clientHeight;
       const naturalW = tableEl.scrollWidth;
@@ -117,6 +125,7 @@ export const TableView: React.FC<TableViewProps> = ({
       const scaleH = naturalH > availableH ? availableH / naturalH : 1;
       const scale = Math.max(0.25, Math.min(1, Math.min(scaleW, scaleH)));
       setFitScale(prev => (Math.abs(prev - scale) > 0.002 ? scale : prev));
+      setFitNaturalSize(prev => (prev.w !== naturalW || prev.h !== naturalH ? { w: naturalW, h: naturalH } : prev));
     };
 
     // ResizeObserver надёжнее одного-двух requestAnimationFrame: он срабатывает
@@ -154,7 +163,9 @@ export const TableView: React.FC<TableViewProps> = ({
         .tb-scroll::-webkit-scrollbar-thumb:hover { background: ${t.thumbHov}; }
         .tb-scroll::-webkit-scrollbar-corner { background: transparent; }
 
-        .tb-scroll-wrap { position: relative; width: 100%; min-width: 0; }
+        .tb-scroll-wrap { position: relative; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
+        .tb-scroll { max-width: 100%; box-sizing: border-box; }
+        .tb-fit-wrap { min-width: 0; max-width: 100%; overflow: hidden; }
         .tb-scroll-wrap::after {
           content: '';
           position: absolute;
@@ -177,8 +188,6 @@ export const TableView: React.FC<TableViewProps> = ({
         }
         .tb-fit-table {
           width: max-content !important;
-          margin-left: auto;
-          margin-right: auto;
         }
         .tb-fit-table th, .tb-fit-table td {
           white-space: normal !important;
@@ -209,50 +218,106 @@ export const TableView: React.FC<TableViewProps> = ({
           }}
           {...(fitToScreen ? {} : dragHandlers)}
         >
-          <table
-            ref={tableRef}
-            className={fitToScreen ? 'tb-fit-table' : undefined}
-            style={{
-              borderCollapse: 'separate',
-              borderSpacing: 0,
-              width: fitToScreen ? undefined : '100%',
-              minWidth: fitToScreen ? undefined : 'max-content',
-              tableLayout: 'auto',
-              transform: fitToScreen && fitScale < 1 ? `scale(${fitScale})` : undefined,
-              transformOrigin: 'top center',
-            }}
-          >
-            <TableHead
-              t={t} isDark={isDark}
-              headers={headers}
-              visibleColumns={visibleColumns}
-              sortColumn={sortColumn}
-              sortDirection={sortDirection}
-              onSort={onSort}
-              headerAlignments={headerAlignments}
-              fitToScreen={fitToScreen}
-            />
-            <tbody>
-              {rows.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={headers.filter((_, i) => visibleColumns.has(i)).length}
-                    style={{ textAlign: 'center', padding: '2.5rem 1rem', color: t.thColor, fontSize: 13, fontStyle: 'italic', background: t.rowEven }}
-                  >
-                    Нет результатов
-                  </td>
-                </tr>
-              ) : rows.map((row, idx) => (
-                <TableRow
-                  key={`r${idx}-${row.cells[0]?.slice(0, 20)}`}
-                  t={t} row={row} rowIndex={idx}
+          {fitToScreen ? (
+            // Внешний div получает ТОЧНУЮ итоговую (уже уменьшенную) ширину/высоту
+            // естественного размера таблицы, умноженного на scale. Это необходимо,
+            // потому что transform:scale не меняет layout-box самого элемента —
+            // без этой обёртки таблица визуально сжимается, но в потоке документа
+            // продолжает занимать полный (немасштабированный) объём и обрезается
+            // соседним overflow:hidden контейнером справа/снизу.
+            <div
+              className="tb-fit-wrap"
+              style={{
+                width:  fitNaturalSize.w > 0 ? fitNaturalSize.w * fitScale : '100%',
+                height: fitNaturalSize.h > 0 ? fitNaturalSize.h * fitScale : undefined,
+                marginInline: 'auto',
+              }}
+            >
+              <table
+                ref={tableRef}
+                className="tb-fit-table"
+                style={{
+                  borderCollapse: 'separate',
+                  borderSpacing: 0,
+                  tableLayout: 'auto',
+                  transform: fitScale < 1 ? `scale(${fitScale})` : undefined,
+                  transformOrigin: 'top left',
+                }}
+              >
+                <TableHead
+                  t={t} isDark={isDark}
                   headers={headers}
                   visibleColumns={visibleColumns}
-                  searchQuery={searchQuery}
+                  sortColumn={sortColumn}
+                  sortDirection={sortDirection}
+                  onSort={onSort}
+                  headerAlignments={headerAlignments}
+                  fitToScreen={fitToScreen}
                 />
-              ))}
-            </tbody>
-          </table>
+                <tbody>
+                  {rows.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={headers.filter((_, i) => visibleColumns.has(i)).length}
+                        style={{ textAlign: 'center', padding: '2.5rem 1rem', color: t.thColor, fontSize: 13, fontStyle: 'italic', background: t.rowEven }}
+                      >
+                        Нет результатов
+                      </td>
+                    </tr>
+                  ) : rows.map((row, idx) => (
+                    <TableRow
+                      key={`r${idx}-${row.cells[0]?.slice(0, 20)}`}
+                      t={t} row={row} rowIndex={idx}
+                      headers={headers}
+                      visibleColumns={visibleColumns}
+                      searchQuery={searchQuery}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <table
+              ref={tableRef}
+              style={{
+                borderCollapse: 'separate',
+                borderSpacing: 0,
+                width: '100%',
+                minWidth: 'max-content',
+                tableLayout: 'auto',
+              }}
+            >
+              <TableHead
+                t={t} isDark={isDark}
+                headers={headers}
+                visibleColumns={visibleColumns}
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={onSort}
+                headerAlignments={headerAlignments}
+              />
+              <tbody>
+                {rows.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={headers.filter((_, i) => visibleColumns.has(i)).length}
+                      style={{ textAlign: 'center', padding: '2.5rem 1rem', color: t.thColor, fontSize: 13, fontStyle: 'italic', background: t.rowEven }}
+                    >
+                      Нет результатов
+                    </td>
+                  </tr>
+                ) : rows.map((row, idx) => (
+                  <TableRow
+                    key={`r${idx}-${row.cells[0]?.slice(0, 20)}`}
+                    t={t} row={row} rowIndex={idx}
+                    headers={headers}
+                    visibleColumns={visibleColumns}
+                    searchQuery={searchQuery}
+                  />
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </>
