@@ -658,8 +658,6 @@ const processElement = (
 export const parseHtmlToReact = (html: string): React.ReactNode[] => {
   const rawDoc = new DOMParser().parseFromString(html, 'text/html');
 
-  // KaTeX-элементы сохраняются до санитизации, т.к. DOMPurify может изменить их разметку.
-  // После санитизации восстанавливаются по индексу через data-katex-idx.
   const katexStore: Array<{ tag: 'div' | 'span'; cls: string; inner: string }> = [];
 
   rawDoc.querySelectorAll('div.katex-block, span.katex-inline').forEach((el) => {
