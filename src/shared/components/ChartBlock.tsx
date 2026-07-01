@@ -4,18 +4,24 @@ import {
   BarChart, Bar, Cell,
   PieChart, Pie, Sector,
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
+  LineChart, Line, Curve,
   XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
+import { motion, useReducedMotion } from 'framer-motion';
 import { TableContext } from '../lib/htmlParser';
 import { makeTokens } from '@/shared/tokens/theme';
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
+//
+// React 18: используем useContext (а не use() из React 19), и framer-motion
+// (а не 'motion/react') — так весь пакет motion-эффектов работает без апгрейда React.
 
 export type ChartType =
   | 'area' | 'area-stacked'
   | 'bar'  | 'bar-stacked' | 'bar-horizontal'
   | 'pie'  | 'pie-donut'
-  | 'radar';
+  | 'radar'
+  | 'line';
 
 export type ChartRow = Record<string, string | number>;
 
@@ -38,22 +44,33 @@ interface ChartBlockProps {
   title?: string;
   colors?: string[];
   isDark: boolean;
-  /** Кривая интерполяции для area/radar. По умолчанию 'monotone'. */
+  /** Кривая интерполяции для area/line. По умолчанию 'monotone'. */
   curveType?: CurveType;
-  /** Как складываются серии: обычные / stacked (100%-friendly) / expanded (в проценты). Переопределяет type='area-stacked'/'bar-stacked' если задан. */
+  /** Как складываются серии area/bar: обычные / stacked / expanded (в проценты). */
   stackType?: StackType;
-  /** Стиль обводки линии area-чарта. По умолчанию 'animated-dashed'. */
+  /** Стиль обводки линии area/line-чарта. По умолчанию 'animated-dashed' (area) / 'solid' (line). */
   strokeVariant?: StrokeVariant;
   /** Стиль заливки area-чарта. По умолчанию 'gradient'. */
   areaVariant?: AreaFillVariantProp;
   /** Стиль заливки bar-чарта. По умолчанию 'default'. */
   barVariant?: BarFillVariantProp;
-  /** Направление wipe-анимации при первом рендере area-чарта. По умолчанию 'left-to-right'. */
+  /** Направление wipe-анимации при первом рендере area/line-чарта. По умолчанию 'left-to-right'. */
   revealType?: RevealTypeProp;
-  /** Soft glow на столбцах bar-чарта. По умолчанию false. */
-  barGlowing?: boolean;
+  /**
+   * Постоянное мягкое свечение — по типу графика применяется по-разному:
+   * bar/bar-stacked/bar-horizontal — свечение на столбцах;
+   * line — свечение на линии;
+   * pie/pie-donut — свечение на всех секторах (не только на hover).
+   * По умолчанию false.
+   */
+  glowing?: boolean;
+  /**
+   * Только для type='line'. Последний отрезок линии рисуется пунктиром —
+   * визуальный маркер "это ещё не подтверждённые/прогнозные данные".
+   * По умолчанию false.
+   */
+  bufferLine?: boolean;
 }
-
 
 type BarShapeProps = {
   x?: number;
@@ -240,7 +257,7 @@ function chartHeight(type: ChartType, rowCount: number): number {
   if (type === 'pie' || type === 'pie-donut') return 248;
   if (type === 'radar') return 278;
   if (type === 'bar' || type === 'bar-stacked') return 280;
-  return 220;
+  return 220; // area / area-stacked / line
 }
 
 // ─── Пропсы осей ─────────────────────────────────────────────────────────────
@@ -257,59 +274,57 @@ function seriesOpacity(key: string, hovered: string | null, hidden: Set<string>)
   return hovered === key ? 1 : 0.2;
 }
 
-// ─── Area (полный перенос дизайна evilcharts EvilAreaChart) ──────────────────
+// ─── Общий wipe-reveal (framer-motion), используется и area, и line ─────────
 //
-// Портировано 1-в-1 из area-chart.tsx: цветной horizontal linearGradient на
-// stroke/fill, 6 вариантов паттерна заливки (gradient / gradient-reverse /
-// solid / dotted / lines / hatched), motion.dev reveal-маска на маунт,
-// анимированный пунктирный stroke, glow-фильтр и custom dot на активной точке.
-// Состояние "выбрана серия" в оригинале — selectedDataKey/selectDataKey из
-// контекста; здесь роль этого состояния играют hidden/hovered.
+// React 18-совместимо: framer-motion (не 'motion/react'), без use().
+// Единая animated SVG-маска: rect со scaleX 0→1, originX задаёт край, от
+// которого идёт "разворот". "edges-in" — два rect, растущие от краёв к центру.
 
-type AreaFillVariant = 'gradient' | 'gradient-reverse' | 'solid' | 'dotted' | 'lines' | 'hatched';
-type RevealType = 'left-to-right' | 'right-to-left' | 'center-out' | 'edges-in' | 'none';
+type RevealAnimationType = Exclude<RevealTypeProp, 'none'>;
 
-const AREA_STROKE_WIDTH = 0.8;
-const AREA_REVEAL_DURATION = 1;
-const AREA_REVEAL_EASE: [number, number, number, number] = [0, 0.7, 0.5, 1];
+const REVEAL_DURATION = 1;
+const REVEAL_EASE: [number, number, number, number] = [0, 0.7, 0.5, 1];
 
-const AREA_SINGLE_REVEAL_ORIGIN: Record<Exclude<RevealType, 'edges-in' | 'none'>, number> = {
+const SINGLE_REVEAL_ORIGIN: Record<Exclude<RevealAnimationType, 'edges-in'>, number> = {
   'left-to-right': 0,
   'right-to-left': 1,
   'center-out': 0.5,
 };
 
-// Wipe-маска, проигрывается один раз при маунте <Area /> — чистый CSS
-// (@keyframes area-reveal-* объявлены глобально в ChartBlock, ниже)
-const AreaRevealMask: React.FC<{ id: string; type: RevealType }> = ({ id, type }) => {
-  if (type === 'none') return null;
-  const animBase: React.CSSProperties = {
-    animationDuration: `${AREA_REVEAL_DURATION}s`,
-    animationTimingFunction: `cubic-bezier(${AREA_REVEAL_EASE.join(',')})`,
-    animationFillMode: 'forwards',
-    transformBox: 'fill-box',
+const RevealMask: React.FC<{ id: string; type: RevealAnimationType }> = ({ id, type }) => {
+  const reveal = {
+    initial: { scaleX: 0 },
+    animate: { scaleX: 1 },
+    transition: { duration: REVEAL_DURATION, ease: REVEAL_EASE },
   };
+
   return (
     <mask id={`${id}-reveal-mask`} maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse"
       x="0" y="0" width="100%" height="100%">
       {type === 'edges-in' ? (
         <>
-          <rect x="0" y="0" width="50%" height="100%" fill="white"
-            style={{ ...animBase, transformOrigin: '0% 50%', animationName: 'area-reveal-scalex' }} />
-          <rect x="50%" y="0" width="50%" height="100%" fill="white"
-            style={{ ...animBase, transformOrigin: '100% 50%', animationName: 'area-reveal-scalex' }} />
+          <motion.rect {...reveal} x="0" y="0" width="50%" height="100%" fill="white" style={{ originX: 0 }} />
+          <motion.rect {...reveal} x="50%" y="0" width="50%" height="100%" fill="white" style={{ originX: 1 }} />
         </>
       ) : (
-        <rect x="0" y="0" width="100%" height="100%" fill="white"
-          style={{
-            ...animBase,
-            transformOrigin: `${AREA_SINGLE_REVEAL_ORIGIN[type as Exclude<RevealType, 'edges-in' | 'none'>] * 100}% 50%`,
-            animationName: 'area-reveal-scalex',
-          }} />
+        <motion.rect {...reveal} x="0" y="0" width="100%" height="100%" fill="white"
+          style={{ originX: SINGLE_REVEAL_ORIGIN[type as Exclude<RevealAnimationType, 'edges-in'>] }} />
       )}
     </mask>
   );
 };
+
+// evilcharts не знает 'bump' у recharts — ближайший визуальный аналог 'natural'
+function toRechartsCurve(curveType: CurveType): 'linear' | 'natural' | 'monotone' | 'monotoneX' | 'monotoneY' | 'step' | 'stepBefore' | 'stepAfter' {
+  if (curveType === 'bump') return 'natural';
+  return curveType;
+}
+
+// ─── Area (перенос дизайна evilcharts EvilAreaChart, на framer-motion) ───────
+
+type AreaFillVariant = 'gradient' | 'gradient-reverse' | 'solid' | 'dotted' | 'lines' | 'hatched';
+
+const AREA_STROKE_WIDTH = 0.8;
 
 // Анимированный пунктир (marching ants), рендерится ребёнком <Area />
 const AreaAnimatedDashedStroke: React.FC = () => (
@@ -319,7 +334,6 @@ const AreaAnimatedDashedStroke: React.FC = () => (
   </>
 );
 
-// Горизонтальный цветной градиент — красит и stroke, и fill-паттерны серии
 const AreaColorGradient: React.FC<{ id: string; color: string }> = ({ id, color }) => (
   <linearGradient id={`${id}-colors`} x1="0" y1="0" x2="1" y2="0">
     <stop offset="0%" stopColor={color} />
@@ -327,7 +341,6 @@ const AreaColorGradient: React.FC<{ id: string; color: string }> = ({ id, color 
   </linearGradient>
 );
 
-// gradient: fade сверху-вниз (видимый → прозрачный)
 const AreaGradientPattern: React.FC<{ id: string }> = ({ id }) => (
   <>
     <linearGradient id={`${id}-vertical-fade`} x1="0" y1="0" x2="0" y2="1">
@@ -341,7 +354,6 @@ const AreaGradientPattern: React.FC<{ id: string }> = ({ id }) => (
   </>
 );
 
-// gradient-reverse: fade снизу-вверх (прозрачный → видимый)
 const AreaReverseGradientPattern: React.FC<{ id: string }> = ({ id }) => (
   <>
     <linearGradient id={`${id}-vertical-fade-reverse`} x1="0" y1="0" x2="0" y2="1">
@@ -355,7 +367,6 @@ const AreaReverseGradientPattern: React.FC<{ id: string }> = ({ id }) => (
   </>
 );
 
-// solid: равномерная низкая непрозрачность без fade
 const AreaSolidPattern: React.FC<{ id: string }> = ({ id }) => (
   <>
     <linearGradient id={`${id}-solid-fade`} x1="0" y1="0" x2="0" y2="1">
@@ -369,7 +380,6 @@ const AreaSolidPattern: React.FC<{ id: string }> = ({ id }) => (
   </>
 );
 
-// lines: диагональная штриховка
 const AreaLinesPattern: React.FC<{ id: string }> = ({ id }) => (
   <>
     <pattern id={`${id}-lines-texture`} patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
@@ -382,7 +392,6 @@ const AreaLinesPattern: React.FC<{ id: string }> = ({ id }) => (
   </>
 );
 
-// dotted: точечная текстура
 const AreaDottedPattern: React.FC<{ id: string }> = ({ id }) => (
   <>
     <pattern id={`${id}-dotted-texture`} x="0" y="0" width="6" height="6" patternUnits="userSpaceOnUse">
@@ -395,7 +404,6 @@ const AreaDottedPattern: React.FC<{ id: string }> = ({ id }) => (
   </>
 );
 
-// hatched: полосы с мягким градиентом внутри каждой полосы
 const AreaHatchedPattern: React.FC<{ id: string }> = ({ id }) => (
   <>
     <linearGradient id={`${id}-hatched-stripe`} x1="0" y1="0" x2="1" y2="0">
@@ -413,7 +421,6 @@ const AreaHatchedPattern: React.FC<{ id: string }> = ({ id }) => (
   </>
 );
 
-// Диагональная штриховка для "невыбранной" серии, когда есть hover/selection
 const AreaUnselectedPattern: React.FC<{ id: string }> = ({ id }) => (
   <>
     <pattern id={`${id}-unselected-texture`} patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
@@ -431,8 +438,6 @@ function getFillPatternUrl(id: string, variant: AreaFillVariant, showUnselected:
   return `url(#${id}-${variant})`;
 }
 
-// Opacity fill/stroke: как getOpacity в оригинале — дим только когда есть hover
-// на ДРУГОЙ серии (роль selectedDataKey играет hovered)
 function getAreaOpacity(hovered: string | null, key: string): { fill: number; stroke: number } {
   if (hovered === null) return { fill: 0.8, stroke: 0.8 };
   return hovered === key ? { fill: 0.8, stroke: 0.8 } : { fill: 0.2, stroke: 0.3 };
@@ -450,33 +455,26 @@ interface RenderAreaOptions {
   t: ReturnType<typeof tk>;
   variant?: AreaFillVariant;
   strokeVariant?: StrokeVariant;
-  revealType?: RevealType;
+  revealType?: RevealTypeProp;
   curveType?: CurveType;
 }
 
-// evilcharts не знает 'bump' у recharts — ближайший визуальный аналог 'natural'
-function toRechartsCurve(curveType: CurveType): 'linear' | 'natural' | 'monotone' | 'monotoneX' | 'monotoneY' | 'step' | 'stepBefore' | 'stepAfter' {
-  if (curveType === 'bump') return 'natural';
-  return curveType;
-}
-
-// Одна серия площади — полный аналог <Area /> из evilcharts: сама генерит
-// свои defs под уникальным id, поэтому любое число серий с разными вариантами
-// заливки живёт в одном чарте без коллизий стилей.
 const AreaSeries: React.FC<{
   dataKey: string;
   color: string;
   stacked: boolean;
   variant: AreaFillVariant;
   strokeVariant: StrokeVariant;
-  revealType: RevealType;
+  revealType: RevealTypeProp;
   curveType: CurveType;
   hovered: string | null;
   hidden: Set<string>;
-}> = ({ dataKey, color, stacked, variant, strokeVariant, revealType, curveType, hovered, hidden }) => {
+  reduceMotion: boolean;
+}> = ({ dataKey, color, stacked, variant, strokeVariant, revealType, curveType, hovered, hidden, reduceMotion }) => {
   const rawId = useId().replace(/:/g, '');
   const id = `area-${rawId}`;
-  const maskId = revealType === 'none' ? undefined : `${id}-reveal-mask`;
+  const effectiveReveal: RevealTypeProp = reduceMotion ? 'none' : revealType;
+  const maskId = effectiveReveal === 'none' ? undefined : `${id}-reveal-mask`;
 
   const isHidden = hidden.has(dataKey);
   if (isHidden) return null;
@@ -519,7 +517,7 @@ const AreaSeries: React.FC<{
         {isAnimatedDashed && !hasHover && <AreaAnimatedDashedStroke />}
       </Area>
       <defs>
-        <AreaRevealMask id={id} type={revealType} />
+        {effectiveReveal !== 'none' && <RevealMask id={id} type={effectiveReveal} />}
         <AreaColorGradient id={id} color={color} />
         {variant === 'gradient' && <AreaGradientPattern id={id} />}
         {variant === 'gradient-reverse' && <AreaReverseGradientPattern id={id} />}
@@ -540,7 +538,8 @@ function renderArea({
   strokeVariant = 'animated-dashed',
   revealType = 'left-to-right',
   curveType = 'monotone',
-}: RenderAreaOptions) {
+  reduceMotion,
+}: RenderAreaOptions & { reduceMotion: boolean }) {
   return (
     <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
       stackOffset={isExpanded ? 'expand' : undefined}>
@@ -563,6 +562,7 @@ function renderArea({
             curveType={curveType}
             hovered={hovered}
             hidden={hidden}
+            reduceMotion={reduceMotion}
           />
         );
       })}
@@ -570,13 +570,188 @@ function renderArea({
   );
 }
 
-// ─── Bar (полный перенос дизайна evilcharts EvilBarChart) ────────────────────
+// ─── Line (новый тип: перенос дизайна evilcharts EvilLineChart) ─────────────
 //
-// Портировано из bar-chart.tsx: 6 вариантов заливки (default / hatched /
-// duotone / duotone-reverse / gradient / stripped), soft glow-filter,
-// stackType default/stacked/percent (percent → stackOffset="expand").
-// Роль selectedDataKey/isClickable в оригинале здесь играют hovered/hidden —
-// как и в area-переносе, у ChartBlock нет отдельного click-select контекста.
+// glow — постоянное мягкое свечение линии (через общий проп `glowing`).
+// bufferLine — последний отрезок рисуется пунктиром: измеряем реальную длину
+// пути через getTotalLength()/getPointAtLength() (тот же приём, что в оригинале
+// evilcharts), поэтому пунктир точно попадает на последний сегмент при любой
+// кривой (linear/monotone/step/...).
+
+const LINE_STROKE_WIDTH = 1;
+const BUFFER_DASH_SIZE = 4;
+const BUFFER_GAP_SIZE = 3;
+
+const LineAnimatedDashedStroke: React.FC = () => (
+  <>
+    <animate attributeName="stroke-dasharray" values="5 5; 0 5; 5 5" dur="1s" repeatCount="indefinite" keyTimes="0;0.5;1" />
+    <animate attributeName="stroke-dashoffset" values="0; -10" dur="1s" repeatCount="indefinite" keyTimes="0;1" />
+  </>
+);
+
+const LineColorGradient: React.FC<{ id: string; color: string }> = ({ id, color }) => (
+  <linearGradient id={`${id}-colors`} x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stopColor={color} />
+    <stop offset="100%" stopColor={color} />
+  </linearGradient>
+);
+
+const LineGlowFilter: React.FC<{ id: string }> = ({ id }) => (
+  <filter id={`${id}-glow`} x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
+    <feColorMatrix in="blur" type="matrix"
+      values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 2 0" result="glow" />
+    <feMerge><feMergeNode in="glow" /><feMergeNode in="SourceGraphic" /></feMerge>
+  </filter>
+);
+
+// Рисует последний отрезок пунктиром, измеряя реальную длину SVG-пути —
+// работает корректно при любой кривой интерполяции.
+function bufferLineShape(props: any) {
+  const { points, ...rest } = props;
+  if (!points || points.length < 2) return <Curve {...props} />;
+
+  const drawable = points.filter((p: any) => typeof p.x === 'number' && typeof p.y === 'number');
+  if (drawable.length < 2) return <Curve {...props} />;
+
+  const splitX = drawable[drawable.length - 2].x;
+
+  const gRef = (g: SVGGElement | null) => {
+    if (!g) return;
+    const path = g.querySelector('path');
+    if (!path) return;
+
+    const totalLength = path.getTotalLength();
+    let lo = 0;
+    let hi = totalLength;
+    while (hi - lo > 0.5) {
+      const mid = (lo + hi) / 2;
+      const pt = path.getPointAtLength(mid);
+      if (pt.x < splitX) lo = mid;
+      else hi = mid;
+    }
+    const solidLength = (lo + hi) / 2;
+    const lastSegmentLength = totalLength - solidLength;
+    const reps = Math.ceil(lastSegmentLength / (BUFFER_DASH_SIZE + BUFFER_GAP_SIZE)) + 1;
+    const dashedPart = Array.from({ length: reps }, () => `${BUFFER_DASH_SIZE} ${BUFFER_GAP_SIZE}`).join(' ');
+
+    path.setAttribute('stroke-dasharray', `${solidLength} 0 ${dashedPart}`);
+  };
+
+  return (
+    <g ref={gRef}>
+      <Curve {...rest} points={drawable} />
+    </g>
+  );
+}
+
+interface RenderLineOptions {
+  data: ChartRow[];
+  nameKey: string;
+  valueKeys: string[];
+  palette: string[];
+  hidden: Set<string>;
+  hovered: string | null;
+  t: ReturnType<typeof tk>;
+  curveType?: CurveType;
+  strokeVariant?: StrokeVariant;
+  revealType?: RevealTypeProp;
+  glowing?: boolean;
+  bufferLine?: boolean;
+  reduceMotion: boolean;
+}
+
+const LineSeries: React.FC<{
+  dataKey: string;
+  color: string;
+  strokeVariant: StrokeVariant;
+  revealType: RevealTypeProp;
+  curveType: CurveType;
+  glowing: boolean;
+  bufferLine: boolean;
+  hovered: string | null;
+  hidden: Set<string>;
+  reduceMotion: boolean;
+}> = ({ dataKey, color, strokeVariant, revealType, curveType, glowing, bufferLine, hovered, hidden, reduceMotion }) => {
+  const rawId = useId().replace(/:/g, '');
+  const id = `line-${rawId}`;
+  const effectiveReveal: RevealTypeProp = reduceMotion ? 'none' : revealType;
+  const maskId = effectiveReveal === 'none' ? undefined : `${id}-reveal-mask`;
+
+  if (hidden.has(dataKey)) return null;
+
+  const hasHover = hovered !== null;
+  const isHoveredSeries = hovered === dataKey;
+  const strokeOpacity = !hasHover ? 1 : (isHoveredSeries ? 1 : 0.3);
+  const isDashed = strokeVariant === 'dashed' || strokeVariant === 'animated-dashed';
+  const isAnimatedDashed = strokeVariant === 'animated-dashed';
+
+  return (
+    <>
+      <Line
+        type={toRechartsCurve(curveType)}
+        dataKey={dataKey}
+        connectNulls={false}
+        strokeOpacity={strokeOpacity}
+        stroke={`url(#${id}-colors)`}
+        filter={glowing ? `url(#${id}-glow)` : undefined}
+        dot={false}
+        activeDot={{ r: 4, strokeWidth: 0, fill: color, filter: `drop-shadow(0 0 4px ${color})` }}
+        strokeWidth={LINE_STROKE_WIDTH}
+        strokeDasharray={bufferLine ? undefined : (isDashed ? '5 5' : undefined)}
+        shape={bufferLine ? bufferLineShape : undefined}
+        isAnimationActive={false}
+        style={{
+          ...(maskId ? { mask: `url(#${maskId})` } : {}),
+          filter: isHoveredSeries ? `drop-shadow(0 0 5px ${color}cc)` : undefined,
+          transition: 'filter 0.2s',
+        }}
+      >
+        {isAnimatedDashed && !hasHover && !bufferLine && <LineAnimatedDashedStroke />}
+      </Line>
+      <defs>
+        {effectiveReveal !== 'none' && <RevealMask id={id} type={effectiveReveal} />}
+        <LineColorGradient id={id} color={color} />
+        {glowing && <LineGlowFilter id={id} />}
+      </defs>
+    </>
+  );
+};
+
+function renderLine({
+  data, nameKey, valueKeys, palette, hidden, hovered, t,
+  curveType = 'monotone', strokeVariant = 'solid', revealType = 'left-to-right',
+  glowing = false, bufferLine = false, reduceMotion,
+}: RenderLineOptions) {
+  return (
+    <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+      <XAxis dataKey={nameKey} {...ap(t)} />
+      <YAxis {...ap(t)} width={38} />
+      <Tooltip content={<CustomTooltip t={t} />} cursor={{ stroke: t.gridLine, strokeWidth: 1 }} />
+      {valueKeys.map((key) => {
+        const idx = valueKeys.indexOf(key);
+        const color = palette[idx % palette.length];
+        return (
+          <LineSeries
+            key={key}
+            dataKey={key}
+            color={color}
+            strokeVariant={strokeVariant}
+            revealType={revealType}
+            curveType={curveType}
+            glowing={glowing}
+            bufferLine={bufferLine}
+            hovered={hovered}
+            hidden={hidden}
+            reduceMotion={reduceMotion}
+          />
+        );
+      })}
+    </LineChart>
+  );
+}
+
+// ─── Bar (без изменений в дизайне, только rename barGlowing → glowing) ──────
 
 type BarFillVariant = 'default' | 'hatched' | 'duotone' | 'duotone-reverse' | 'gradient' | 'stripped';
 export type BarStackType = 'default' | 'stacked' | 'percent';
@@ -634,7 +809,6 @@ function getCellOpacity(
   return hovered === rowName ? 1 : 0.22;
 }
 
-// Вертикальный цветной градиент серии — как ColorGradient из оригинала
 const BarColorGradient: React.FC<{ id: string; color: string }> = ({ id, color }) => (
   <linearGradient id={`${id}-colors`} x1="0" y1="0" x2="0" y2="1">
     <stop offset="0%" stopColor={color} />
@@ -642,7 +816,6 @@ const BarColorGradient: React.FC<{ id: string; color: string }> = ({ id, color }
   </linearGradient>
 );
 
-// hatched: диагональная штриховка
 const BarHatchedPattern: React.FC<{ id: string }> = ({ id }) => (
   <>
     <pattern id={`${id}-hatched-mask-pattern`} x="0" y="0" width="5" height="5"
@@ -657,7 +830,6 @@ const BarHatchedPattern: React.FC<{ id: string }> = ({ id }) => (
   </>
 );
 
-// duotone: половина столбца тусклая, половина насыщенная (по горизонтали)
 const BarDuotonePattern: React.FC<{ id: string; reverse?: boolean }> = ({ id, reverse }) => {
   const key = reverse ? 'duotone-reverse' : 'duotone';
   const [a, b] = reverse ? [1, 0.4] : [0.4, 1];
@@ -677,7 +849,6 @@ const BarDuotonePattern: React.FC<{ id: string; reverse?: boolean }> = ({ id, re
   );
 };
 
-// gradient: fade сверху вниз
 const BarGradientPattern: React.FC<{ id: string }> = ({ id }) => (
   <>
     <linearGradient id={`${id}-gradient-mask-gradient`} x1="0" y1="0" x2="0" y2="1">
@@ -691,7 +862,6 @@ const BarGradientPattern: React.FC<{ id: string }> = ({ id }) => (
   </>
 );
 
-// stripped: тусклое тело + сплошная полоса сверху (полоса рисуется отдельным rect в BarSeries)
 const BarStrippedPattern: React.FC<{ id: string }> = ({ id }) => (
   <>
     <linearGradient id={`${id}-stripped-mask-gradient`} x1="0" y1="0" x2="0" y2="1">
@@ -705,7 +875,6 @@ const BarStrippedPattern: React.FC<{ id: string }> = ({ id }) => (
   </>
 );
 
-// soft outer glow, применяется через SVG filter на последнем сегменте стека
 const BarGlowFilter: React.FC<{ id: string }> = ({ id }) => (
   <filter id={`${id}-glow`} x="-100%" y="-100%" width="300%" height="300%">
     <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
@@ -720,8 +889,6 @@ function getBarVariantFillUrl(id: string, variant: BarFillVariant): string {
   return `url(#${id}-${variant})`;
 }
 
-// Одна серия столбцов — аналог <Bar /> из оригинала: сама генерит свои defs
-// под уникальным id, поэтому разные варианты заливки не сталкиваются стилями.
 const BarSeries: React.FC<{
   dataKey: string;
   color: string;
@@ -881,10 +1048,16 @@ function renderBar({
   );
 }
 
-// ─── Pie (полный перенос дизайна evilcharts EvilPieChart) ────────────────────
+// ─── Pie (ФИКС бага: id градиента больше не строится из текста rowName) ─────
 //
-// Радиальный (диагональный) цветной градиент на каждый сектор вместо плоской
-// заливки, + опциональный glow на выбранном/наведённом секторе.
+// БЫЛО: url(#${id}-colors-${rowName}) — rowName приходит из markdown-таблицы
+// и может содержать пробелы/кириллицу/пунктуацию → невалидная SVG url()-ссылка
+// → сектор рисуется "в никуда" (виден только фон). Секторы без пробелов в
+// названии выглядели нормально, из-за чего баг маскировался под "рандомный".
+//
+// СТАЛО: у каждого сектора свой ASCII-only id вида `sector-{index}`, построенный
+// по позиции строки в исходном `data` (а не по её видимому названию). rowName
+// используется только для поиска нужного индекса — в url(#...) он не попадает.
 
 interface PieChartInnerProps {
   data: ChartRow[];
@@ -896,6 +1069,7 @@ interface PieChartInnerProps {
   hovered: string | null;
   t: ReturnType<typeof tk>;
   glowOnHover?: boolean;
+  alwaysGlow?: boolean;
 }
 
 function getPieSectorOpacity(hovered: string | null, rowName: string): number {
@@ -903,16 +1077,15 @@ function getPieSectorOpacity(hovered: string | null, rowName: string): number {
   return hovered === rowName ? 1 : 0.22;
 }
 
-// Радиальный (диагональный x1y1→x2y2) градиент — как RadialColorGradient
-const PieSectorGradient: React.FC<{ id: string; rowName: string; color: string }> = ({ id, rowName, color }) => (
-  <linearGradient id={`${id}-colors-${rowName}`} x1="0" y1="0" x2="1" y2="1">
+const PieSectorGradient: React.FC<{ id: string; safeId: string; color: string }> = ({ id, safeId, color }) => (
+  <linearGradient id={`${id}-colors-${safeId}`} x1="0" y1="0" x2="1" y2="1">
     <stop offset="0%" stopColor={color} />
     <stop offset="100%" stopColor={color} />
   </linearGradient>
 );
 
-const PieGlowFilter: React.FC<{ id: string; rowName: string }> = ({ id, rowName }) => (
-  <filter id={`${id}-glow-${rowName}`} x="-100%" y="-100%" width="300%" height="300%">
+const PieGlowFilter: React.FC<{ id: string; safeId: string }> = ({ id, safeId }) => (
+  <filter id={`${id}-glow-${safeId}`} x="-100%" y="-100%" width="300%" height="300%">
     <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
     <feColorMatrix in="blur" type="matrix"
       values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.5 0" result="glow" />
@@ -921,13 +1094,23 @@ const PieGlowFilter: React.FC<{ id: string; rowName: string }> = ({ id, rowName 
 );
 
 const PieChartInner: React.FC<PieChartInnerProps> = ({
-  data, nameKey, valueKeys, palette, donut, hidden, hovered, t, glowOnHover = true,
+  data, nameKey, valueKeys, palette, donut, hidden, hovered, t, glowOnHover = true, alwaysGlow = false,
 }) => {
   const valueKey = valueKeys[0] ?? 'value';
   const rawId = useId().replace(/:/g, '');
   const id = `pie-${rawId}`;
   const visibleData = data.filter(d => !hidden.has(String(d[nameKey])));
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
+
+  // ASCII-only id по позиции строки в исходном (не отфильтрованном) data —
+  // так ссылки url(#...) остаются валидными независимо от текста rowName.
+  const rowSafeId = useCallback(
+    (rowName: string) => {
+      const idx = data.findIndex(d => String(d[nameKey]) === rowName);
+      return `sector-${idx === -1 ? 0 : idx}`;
+    },
+    [data, nameKey],
+  );
 
   const resolvedActiveIndex = useMemo(() => {
     if (hovered !== null) {
@@ -939,31 +1122,29 @@ const PieChartInner: React.FC<PieChartInnerProps> = ({
 
   const renderActive = useCallback((props: ActivePieShapeProps) => {
     const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
-    const rowName = hovered ?? '';
+    const safeId = hovered ? rowSafeId(hovered) : 'sector-0';
     return (
-      <g>
-        <Sector
-          cx={cx} cy={cy}
-          innerRadius={donut ? innerRadius - 2 : 0}
-          outerRadius={outerRadius + 6}
-          startAngle={startAngle} endAngle={endAngle}
-          fill={fill}
-          filter={glowOnHover ? `url(#${id}-glow-${rowName})` : undefined}
-          style={glowOnHover ? undefined : { filter: `drop-shadow(0 0 8px ${fill}cc)` }}
-        />
-      </g>
+      <Sector
+        cx={cx} cy={cy}
+        innerRadius={donut ? (innerRadius ?? 0) - 2 : 0}
+        outerRadius={(outerRadius ?? 0) + 6}
+        startAngle={startAngle} endAngle={endAngle}
+        fill={fill}
+        filter={glowOnHover ? `url(#${id}-glow-${safeId})` : undefined}
+        style={glowOnHover ? undefined : { filter: `drop-shadow(0 0 8px ${fill}cc)` }}
+      />
     );
-  }, [donut, glowOnHover, hovered, id]);
+  }, [donut, glowOnHover, hovered, id, rowSafeId]);
 
   return (
     <PieChart margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
       <defs>
         {data.map((entry, i) => {
-          const rowName = String(entry[nameKey]);
+          const safeId = `sector-${i}`;
           return (
-            <React.Fragment key={rowName}>
-              <PieSectorGradient id={id} rowName={rowName} color={palette[i % palette.length]} />
-              {glowOnHover && <PieGlowFilter id={id} rowName={rowName} />}
+            <React.Fragment key={safeId}>
+              <PieSectorGradient id={id} safeId={safeId} color={palette[i % palette.length]} />
+              {(glowOnHover || alwaysGlow) && <PieGlowFilter id={id} safeId={safeId} />}
             </React.Fragment>
           );
         })}
@@ -982,11 +1163,13 @@ const PieChartInner: React.FC<PieChartInnerProps> = ({
       >
         {visibleData.map((entry) => {
           const rowName = String(entry[nameKey]);
+          const safeId = rowSafeId(rowName);
           const op = getPieSectorOpacity(hovered, rowName);
           return (
             <Cell
               key={rowName}
-              fill={`url(#${id}-colors-${rowName})`}
+              fill={`url(#${id}-colors-${safeId})`}
+              filter={alwaysGlow ? `url(#${id}-glow-${safeId})` : undefined}
               opacity={op}
               style={{ outline: 'none', cursor: 'default', transition: 'opacity 0.18s' }}
             />
@@ -998,7 +1181,7 @@ const PieChartInner: React.FC<PieChartInnerProps> = ({
   );
 };
 
-// ─── Radar ────────────────────────────────────────────────────────────────────
+// ─── Radar (без изменений) ────────────────────────────────────────────────────
 
 function renderRadar(
   data: ChartRow[],
@@ -1046,15 +1229,17 @@ const ChartBlock: React.FC<ChartBlockProps> = ({
   type, data, title, colors, isDark,
   curveType = 'monotone',
   stackType,
-  strokeVariant = 'animated-dashed',
+  strokeVariant,
   areaVariant = 'gradient',
   barVariant = 'default',
   revealType = 'left-to-right',
-  barGlowing = false,
+  glowing = false,
+  bufferLine = false,
 }) => {
   const t       = tk(isDark);
   const palette = colors?.length ? colors : DEFAULT_COLORS;
   const { nameKey, valueKeys } = useMemo(() => detectKeys(data), [data]);
+  const reduceMotion = useReducedMotion() ?? false;
 
   const [hidden,  setHidden]  = useState<Set<string>>(new Set());
   const [hovered, setHovered] = useState<string | null>(null);
@@ -1088,7 +1273,6 @@ const ChartBlock: React.FC<ChartBlockProps> = ({
 
   const chart = useMemo(() => {
     if (isEmpty) return null;
-    // stackType (если передан явно) переопределяет 'area-stacked'/'bar-stacked' из type
     const areaStacked = stackType ? stackType !== 'default' : type === 'area-stacked';
     const areaExpanded = stackType === 'expanded';
     const barStackType: BarStackType = stackType === 'expanded' ? 'percent'
@@ -1102,25 +1286,32 @@ const ChartBlock: React.FC<ChartBlockProps> = ({
         return renderArea({
           data, nameKey, valueKeys, palette, hidden, hovered, t,
           stacked: areaStacked, isExpanded: areaExpanded,
-          variant: areaVariant, strokeVariant, revealType, curveType,
+          variant: areaVariant, strokeVariant: strokeVariant ?? 'animated-dashed',
+          revealType, curveType, reduceMotion,
+        });
+      case 'line':
+        return renderLine({
+          data, nameKey, valueKeys, palette, hidden, hovered, t,
+          curveType, strokeVariant: strokeVariant ?? 'solid',
+          revealType, glowing, bufferLine, reduceMotion,
         });
       case 'bar':
         return renderBar({
           data, nameKey, valueKeys, palette, hidden, hovered, t,
           stackType: barStackType, horizontal: false,
-          variant: barVariant, glowing: barGlowing,
+          variant: barVariant, glowing,
         });
       case 'bar-stacked':
         return renderBar({
           data, nameKey, valueKeys, palette, hidden, hovered, t,
           stackType: barStackType === 'default' ? 'stacked' : barStackType, horizontal: false,
-          variant: barVariant, glowing: barGlowing,
+          variant: barVariant, glowing,
         });
       case 'bar-horizontal':
         return renderBar({
           data, nameKey, valueKeys, palette, hidden, hovered, t,
           stackType: barStackType, horizontal: true,
-          variant: barVariant, glowing: barGlowing,
+          variant: barVariant, glowing,
         });
       case 'pie':
       case 'pie-donut':
@@ -1134,6 +1325,7 @@ const ChartBlock: React.FC<ChartBlockProps> = ({
             hidden={hidden}
             hovered={hovered}
             t={t}
+            alwaysGlow={glowing}
           />
         );
       case 'radar':
@@ -1143,7 +1335,8 @@ const ChartBlock: React.FC<ChartBlockProps> = ({
     }
   }, [
     type, data, nameKey, valueKeys, palette, hidden, hovered, t, isEmpty,
-    curveType, stackType, strokeVariant, areaVariant, barVariant, revealType, barGlowing,
+    curveType, stackType, strokeVariant, areaVariant, barVariant, revealType,
+    glowing, bufferLine, reduceMotion,
   ]);
 
   return (
@@ -1159,16 +1352,6 @@ const ChartBlock: React.FC<ChartBlockProps> = ({
         .recharts-layer:focus {
           outline: none !important;
           box-shadow: none !important;
-        }
-        @keyframes area-reveal-scalex {
-          from { transform: scaleX(0); }
-          to   { transform: scaleX(1); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          [style*="area-reveal-scalex"] {
-            animation: none !important;
-            transform: scaleX(1) !important;
-          }
         }
       `}</style>
       <div style={{
