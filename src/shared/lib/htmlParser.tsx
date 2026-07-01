@@ -40,6 +40,10 @@ export const SANITIZE_ATTR = [
   'data-color', 'data-icon', 'data-image',
   'data-chart', 'data-colors', 'data-type',
   'data-tabs',
+  // Стилевые пропсы чарта (см. ChartBlock.tsx): выбор кривой, типа стека,
+  // варианта обводки/заливки area, варианта заливки bar, reveal-анимации, glow
+  'data-curve', 'data-stack', 'data-stroke',
+  'data-area-variant', 'data-bar-variant', 'data-reveal', 'data-glow',
   'type', 'checked', 'disabled', 'open', 'style', 'align',
   'xmlns', 'viewBox', 'd', 'fill', 'stroke', 'stroke-width',
   'width', 'height', 'x', 'y', 'x1', 'y1', 'x2', 'y2',
@@ -290,6 +294,38 @@ const processStepsElement = (element: Element, key: string, elements: React.Reac
   elements.push(React.createElement(StepperWithContext, { key, steps }));
 };
 
+// ─── Chart: разбор data-пропсов стиля ──────────────────────────────────────
+//
+// В markdown/MDX-блоке чарта (<div class="custom-chart" data-...>) можно
+// указывать не только тип/данные/цвета, но и полный набор стилевых пропсов
+// ChartBlock: data-curve, data-stack, data-stroke, data-area-variant,
+// data-bar-variant, data-reveal, data-glow. Любой из них можно опустить —
+// тогда ChartBlock применит собственные дефолты (см. ChartBlock.tsx).
+//
+// Пример markdown-разметки см. в CHART_EXAMPLES.md.
+
+const CURVE_VALUES = new Set([
+  'linear', 'natural', 'monotone', 'monotoneX', 'monotoneY',
+  'step', 'stepBefore', 'stepAfter', 'bump',
+]);
+const STACK_VALUES = new Set(['default', 'stacked', 'expanded']);
+const STROKE_VALUES = new Set(['solid', 'dashed', 'animated-dashed']);
+const AREA_VARIANT_VALUES = new Set([
+  'gradient', 'gradient-reverse', 'solid', 'dotted', 'lines', 'hatched',
+]);
+const BAR_VARIANT_VALUES = new Set([
+  'default', 'hatched', 'duotone', 'duotone-reverse', 'gradient', 'stripped',
+]);
+const REVEAL_VALUES = new Set([
+  'none', 'left-to-right', 'right-to-left', 'center-out', 'edges-in',
+]);
+
+// Достаёт значение data-атрибута только если оно входит в допустимый набор —
+// иначе возвращается undefined и ChartBlock подставит свой дефолт
+function pickEnumAttr<T extends string>(value: string | undefined, allowed: Set<string>): T | undefined {
+  return value && allowed.has(value) ? (value as T) : undefined;
+}
+
 const processChartElement = (element: Element, key: string, elements: React.ReactNode[]) => {
   const type   = (element.dataset.type   || 'bar') as import('../components/ChartBlock').ChartType;
   const title  =  element.dataset.title  || undefined;
@@ -305,11 +341,22 @@ const processChartElement = (element: Element, key: string, elements: React.Reac
     if (Array.isArray(parsed)) data = parsed;
   } catch { /* невалидный JSON — пустой чарт */ }
 
+  const curveType     = pickEnumAttr<import('../components/ChartBlock').CurveType>(element.dataset.curve, CURVE_VALUES);
+  const stackType      = pickEnumAttr<import('../components/ChartBlock').StackType>(element.dataset.stack, STACK_VALUES);
+  const strokeVariant  = pickEnumAttr<import('../components/ChartBlock').StrokeVariant>(element.dataset.stroke, STROKE_VALUES);
+  const areaVariant    = pickEnumAttr<import('../components/ChartBlock').AreaFillVariantProp>(element.dataset.areaVariant, AREA_VARIANT_VALUES);
+  const barVariant     = pickEnumAttr<import('../components/ChartBlock').BarFillVariantProp>(element.dataset.barVariant, BAR_VARIANT_VALUES);
+  const revealType     = pickEnumAttr<import('../components/ChartBlock').RevealTypeProp>(element.dataset.reveal, REVEAL_VALUES);
+  const barGlowing     = element.dataset.glow === 'true' || element.dataset.glow === '1';
+
   elements.push(
     React.createElement(
       Suspense,
       { key, fallback: React.createElement('div', { style: { height: 320 } }) },
-      React.createElement(LazyChartBlock, { type, data, title, colors: palette }),
+      React.createElement(LazyChartBlock, {
+        type, data, title, colors: palette,
+        curveType, stackType, strokeVariant, areaVariant, barVariant, revealType, barGlowing,
+      }),
     ),
   );
 };
