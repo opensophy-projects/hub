@@ -6,7 +6,6 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
   XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
-import { motion, useReducedMotion } from 'motion/react';
 import { TableContext } from '../lib/htmlParser';
 import { makeTokens } from '@/shared/tokens/theme';
 
@@ -253,25 +252,33 @@ const AREA_SINGLE_REVEAL_ORIGIN: Record<Exclude<RevealType, 'edges-in' | 'none'>
   'center-out': 0.5,
 };
 
-// Wipe-маска, проигрывается один раз при маунте <Area />
+// Wipe-маска, проигрывается один раз при маунте <Area /> — чистый CSS
+// (@keyframes area-reveal-* объявлены глобально в ChartBlock, ниже)
 const AreaRevealMask: React.FC<{ id: string; type: RevealType }> = ({ id, type }) => {
   if (type === 'none') return null;
-  const reveal = {
-    initial: { scaleX: 0 },
-    animate: { scaleX: 1 },
-    transition: { duration: AREA_REVEAL_DURATION, ease: AREA_REVEAL_EASE },
+  const animBase: React.CSSProperties = {
+    animationDuration: `${AREA_REVEAL_DURATION}s`,
+    animationTimingFunction: `cubic-bezier(${AREA_REVEAL_EASE.join(',')})`,
+    animationFillMode: 'forwards',
+    transformBox: 'fill-box',
   };
   return (
     <mask id={`${id}-reveal-mask`} maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse"
       x="0" y="0" width="100%" height="100%">
       {type === 'edges-in' ? (
         <>
-          <motion.rect {...reveal} x="0" y="0" width="50%" height="100%" fill="white" style={{ originX: 0 }} />
-          <motion.rect {...reveal} x="50%" y="0" width="50%" height="100%" fill="white" style={{ originX: 1 }} />
+          <rect x="0" y="0" width="50%" height="100%" fill="white"
+            style={{ ...animBase, transformOrigin: '0% 50%', animationName: 'area-reveal-scalex' }} />
+          <rect x="50%" y="0" width="50%" height="100%" fill="white"
+            style={{ ...animBase, transformOrigin: '100% 50%', animationName: 'area-reveal-scalex' }} />
         </>
       ) : (
-        <motion.rect {...reveal} x="0" y="0" width="100%" height="100%" fill="white"
-          style={{ originX: AREA_SINGLE_REVEAL_ORIGIN[type as Exclude<RevealType, 'edges-in' | 'none'>] }} />
+        <rect x="0" y="0" width="100%" height="100%" fill="white"
+          style={{
+            ...animBase,
+            transformOrigin: `${AREA_SINGLE_REVEAL_ORIGIN[type as Exclude<RevealType, 'edges-in' | 'none'>] * 100}% 50%`,
+            animationName: 'area-reveal-scalex',
+          }} />
       )}
     </mask>
   );
@@ -433,9 +440,7 @@ const AreaSeries: React.FC<{
 }> = ({ dataKey, color, stacked, variant, animatedStroke, revealType, hovered, hidden }) => {
   const rawId = useId().replace(/:/g, '');
   const id = `area-${rawId}`;
-  const shouldReduceMotion = useReducedMotion();
-  const resolvedReveal: RevealType = shouldReduceMotion ? 'none' : revealType;
-  const maskId = resolvedReveal === 'none' ? undefined : `${id}-reveal-mask`;
+  const maskId = revealType === 'none' ? undefined : `${id}-reveal-mask`;
 
   const isHidden = hidden.has(dataKey);
   if (isHidden) return null;
@@ -475,7 +480,7 @@ const AreaSeries: React.FC<{
         {animatedStroke && !hasHover && <AreaAnimatedDashedStroke />}
       </Area>
       <defs>
-        <AreaRevealMask id={id} type={resolvedReveal} />
+        <AreaRevealMask id={id} type={revealType} />
         <AreaColorGradient id={id} color={color} />
         {variant === 'gradient' && <AreaGradientPattern id={id} />}
         {variant === 'gradient-reverse' && <AreaReverseGradientPattern id={id} />}
