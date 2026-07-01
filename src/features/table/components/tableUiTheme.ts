@@ -29,11 +29,13 @@ export interface TableUiTokens {
   copiedBdr: string;
   footerClr: string;
   elevatedShadow: string;
+  zebraBg: string;
 }
 
 export function getTableUiTokens(isDark: boolean): TableUiTokens {
   const t = makeTokens(isDark);
   const unifiedBg = isDark ? '#0a0a0a' : '#e8e7e3';
+  const zebraBg = isDark ? '#191919' : '#deddd9';
   return {
     unifiedBg,
     modalBg: unifiedBg,
@@ -63,5 +65,6 @@ export function getTableUiTokens(isDark: boolean): TableUiTokens {
     copiedBdr: themed(isDark, 'rgba(34,197,94,0.4)', 'rgba(34,197,94,0.5)'),
     footerClr: themed(isDark, 'rgba(255,255,255,0.22)', 'rgba(0,0,0,0.32)'),
     elevatedShadow: t.shadowElevated,
+    zebraBg,
   };
 }
