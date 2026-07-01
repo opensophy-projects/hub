@@ -297,26 +297,6 @@ const processStepsElement = (element: Element, key: string, elements: React.Reac
   elements.push(React.createElement(StepperWithContext, { key, steps }));
 };
 
-// ─── Chart: разбор data-пропсов стиля ──────────────────────────────────────
-//
-// В markdown/MDX-блоке чарта (<div class="custom-chart" data-...>) можно
-// указывать не только тип/данные/цвета, но и полный набор стилевых пропсов
-// ChartBlock: data-curve, data-stack, data-stroke, data-area-variant,
-// data-bar-variant, data-reveal, data-glow, data-buffer-line. Любой из них
-// можно опустить — тогда ChartBlock применит собственные дефолты.
-//
-// ВАЖНО: с добавлением type=line и фиксом Pie, data-glow стал "универсальным"
-// параметром — ChartBlock сам решает, что он означает, в зависимости от type:
-//   bar/bar-stacked/bar-horizontal → свечение столбцов
-//   line                           → свечение линии
-//   pie/pie-donut                  → постоянное свечение всех секторов
-// (раньше проп называлcя barGlowing и был жёстко привязан к барам).
-//
-// data-buffer-line применяется только при type=line: последний отрезок линии
-// рисуется пунктиром (визуальный маркер "прогноз/незавершённые данные").
-//
-// Пример markdown-разметки см. в CHART_EXAMPLES.md.
-
 const CURVE_VALUES = new Set([
   'linear', 'natural', 'monotone', 'monotoneX', 'monotoneY',
   'step', 'stepBefore', 'stepAfter', 'bump',
