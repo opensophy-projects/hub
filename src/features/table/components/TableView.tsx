@@ -28,16 +28,21 @@ type Tok = {
   fadeTo: string; thumb: string; thumbHov: string; track: string;
 };
 
+// Шапка (thBg) и чётные строки (rowEven) теперь равны unifiedBg — тому же
+// фону, что у тулбара/панелей/футера карточки. Только нечётные строки
+// (rowOdd) получают лёгкий контраст для читаемости — вместо жёсткой
+// границы между "своей" зоной таблицы и остальным блоком.
 function tok(isDark: boolean): Tok {
   const t = makeTokens(isDark);
+  const unifiedBg = isDark ? '#0a0a0a' : '#e8e7e3';
   return isDark ? {
-    thBg: t.surface, thColor: 'rgba(255,255,255,0.35)', thBorder: 'rgba(255,255,255,0.07)', thActColor: 'rgba(255,255,255,0.82)',
-    rowEven: t.bg, rowOdd: t.surface, rowHover: t.surfaceHov, cellBorder: 'rgba(255,255,255,0.05)', cellColor: 'rgba(255,255,255,0.82)',
-    fadeTo: t.bg, thumb: t.thumb, thumbHov: t.thumbHov, track: t.track,
+    thBg: unifiedBg, thColor: 'rgba(255,255,255,0.35)', thBorder: 'rgba(255,255,255,0.07)', thActColor: 'rgba(255,255,255,0.82)',
+    rowEven: unifiedBg, rowOdd: 'rgba(255,255,255,0.03)', rowHover: t.surfaceHov, cellBorder: 'rgba(255,255,255,0.05)', cellColor: 'rgba(255,255,255,0.82)',
+    fadeTo: unifiedBg, thumb: t.thumb, thumbHov: t.thumbHov, track: t.track,
   } : {
-    thBg: t.surface, thColor: 'rgba(0,0,0,0.38)', thBorder: 'rgba(0,0,0,0.08)', thActColor: 'rgba(0,0,0,0.85)',
-    rowEven: t.bg, rowOdd: t.surface, rowHover: '#cccbc6', cellBorder: 'rgba(0,0,0,0.06)', cellColor: 'rgba(0,0,0,0.85)',
-    fadeTo: t.bg, thumb: t.thumb, thumbHov: t.thumbHov, track: t.track,
+    thBg: unifiedBg, thColor: 'rgba(0,0,0,0.38)', thBorder: 'rgba(0,0,0,0.08)', thActColor: 'rgba(0,0,0,0.85)',
+    rowEven: unifiedBg, rowOdd: 'rgba(0,0,0,0.025)', rowHover: '#cccbc6', cellBorder: 'rgba(0,0,0,0.06)', cellColor: 'rgba(0,0,0,0.85)',
+    fadeTo: unifiedBg, thumb: t.thumb, thumbHov: t.thumbHov, track: t.track,
   };
 }
 
