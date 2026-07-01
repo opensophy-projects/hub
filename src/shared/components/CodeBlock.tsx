@@ -457,13 +457,8 @@ interface SingleCodeBlockProps {
   readonly isModal?: boolean;
   readonly searchQuery: string;
   readonly setSearchQuery: (v: string) => void;
-  readonly isCopied: boolean;
-  readonly handleCopy: () => void;
-  readonly setIsFullscreen: (v: boolean) => void;
   readonly isExpanded: boolean;
   readonly setIsExpanded: (v: boolean) => void;
-  readonly isMobile: boolean;
-  readonly isDark: boolean;
   readonly t: ReturnType<typeof tk>;
 }
 
@@ -472,10 +467,7 @@ const LINE_HEIGHT_PX   = 21;
 const PRE_PADDING      = 10;
 const COLLAPSED_HEIGHT = PRE_PADDING + VISIBLE_LINES * LINE_HEIGHT_PX + PRE_PADDING;
 
-function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuery, isCopied, handleCopy, setIsFullscreen, isExpanded, setIsExpanded, isDark, t }: SingleCodeBlockProps) {
-  const [searchOpen, setSearchOpen] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-
+function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuery, isExpanded, setIsExpanded, t }: SingleCodeBlockProps) {
   const lines = useMemo(() => {
     const raw = code.split('\n');
     if (raw.at(-1) === '') raw.pop();
@@ -494,81 +486,22 @@ function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuer
     }, []));
   }, [lines, searchQuery]);
 
-  const openSearch = useCallback(() => {
-    setSearchOpen(true);
-    requestAnimationFrame(() => searchInputRef.current?.focus());
-  }, []);
-
-  const closeSearch = useCallback(() => {
-    setSearchOpen(false);
-    setSearchQuery('');
-  }, [setSearchQuery]);
-
   const bodyProps = {
     lines, matchedLines, searchQuery,
     fg: t.fg, codeBg: t.codeBg, lineNum: t.lineNum, highlightedHtml,
     thumb: t.thumb, track: t.track, thumbHov: t.thumbHov,
   };
 
-  const toolbar = (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px',
-      background: t.barBg, flexWrap: 'nowrap', minWidth: 0, flexShrink: 0,
-      justifyContent: searchOpen ? 'flex-start' : 'flex-end',
-    }}>
-      {searchOpen && (
-        <div style={{ position: 'relative', flex: '1 1 0', minWidth: 0 }}>
-          <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: t.plhClr, pointerEvents: 'none' }} />
-          <input
-            ref={searchInputRef}
-            type="text" placeholder="Поиск..." value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Escape') closeSearch(); }}
-            style={{
-              width: '100%', padding: '0 30px 0 30px', height: 36,
-              borderRadius: 8, border: `1px solid ${t.inpBdr}`,
-              background: t.inpBg, color: t.inpClr, fontSize: 13,
-              outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s',
-            }}
-            onFocus={e => { e.target.style.borderColor = t.inpFoc; }}
-            onBlur={e  => { e.target.style.borderColor = t.inpBdr; }}
-          />
-          <button onClick={closeSearch} style={{ position: 'absolute', right: matchedLines.size > 0 ? 56 : 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: t.plhClr, display: 'flex' }}>
-            <X size={12} />
-          </button>
-          {matchedLines.size > 0 && (
-            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: t.fgMuted, whiteSpace: 'nowrap' }}>
-              {matchedLines.size} найдено
-            </span>
-          )}
-        </div>
-      )}
-      <ToolbarMenu
-        isDark={isDark}
-        isCopied={isCopied}
-        isModal={isModal}
-        onSearch={openSearch}
-        onCopy={handleCopy}
-        onToggleFullscreen={() => setIsFullscreen(!isModal)}
-        t={t}
-      />
-    </div>
-  );
-
   if (isModal) {
     return (
-      <>
-        {toolbar}
-        <div style={{ flex: 1, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          <CodeBody {...bodyProps} maxHeight="none" />
-        </div>
-      </>
+      <div style={{ flex: 1, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        <CodeBody {...bodyProps} maxHeight="none" />
+      </div>
     );
   }
 
   return (
     <>
-      {toolbar}
       <div style={{ position: 'relative', overflow: 'hidden', maxHeight: isExpanded ? 'none' : COLLAPSED_HEIGHT }}>
         <CodeBody {...bodyProps} />
         {isLong && !isExpanded && (
@@ -618,45 +551,120 @@ interface TabBarProps {
 
 function TabBar({ tabs, activeIdx, onSelect, t }: TabBarProps) {
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center',
-      background: t.barBg,
-      overflowX: 'auto',
-      scrollbarWidth: 'none',
-      flexShrink: 0,
-      padding: '6px 6px 0',
-      gap: 2,
-    }}>
+    <div className="cb-tabs" style={{ display: 'flex', alignItems: 'center', gap: 2, flex: '0 1 auto', minWidth: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
       <style>{`.cb-tabs::-webkit-scrollbar{display:none}`}</style>
-      <div className="cb-tabs" style={{ display: 'flex', alignItems: 'center', flex: 1, gap: 2 }}>
-        {tabs.map((tab, i) => {
-          const active = i === activeIdx;
-          return (
-            <button
-              key={`${tab.label}-${i}`}
-              onClick={() => onSelect(i)}
-              style={{
-                display: 'flex', alignItems: 'center',
-                padding: '7px 14px',
-                border: 'none',
-                borderRadius: '8px 8px 0 0',
-                background: active ? t.tabActive : 'transparent',
-                color: active ? t.fg : t.fgMuted,
-                fontSize: 12, fontWeight: active ? 600 : 400,
-                cursor: 'pointer', flexShrink: 0,
-                outline: 'none',
-                fontFamily: 'ui-monospace, monospace',
-                whiteSpace: 'nowrap',
-                transition: 'background 0.13s, color 0.13s',
-              }}
-              onMouseEnter={e => { if (!active) e.currentTarget.style.background = t.btnBg; }}
-              onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
+      {tabs.map((tab, i) => {
+        const active = i === activeIdx;
+        return (
+          <button
+            key={`${tab.label}-${i}`}
+            onClick={() => onSelect(i)}
+            style={{
+              display: 'flex', alignItems: 'center',
+              padding: '7px 14px',
+              border: 'none',
+              borderRadius: '8px',
+              background: active ? t.tabActive : 'transparent',
+              color: active ? t.fg : t.fgMuted,
+              fontSize: 12, fontWeight: active ? 600 : 400,
+              cursor: 'pointer', flexShrink: 0,
+              outline: 'none',
+              fontFamily: 'ui-monospace, monospace',
+              whiteSpace: 'nowrap',
+              transition: 'background 0.13s, color 0.13s',
+            }}
+            onMouseEnter={e => { if (!active) e.currentTarget.style.background = t.btnBg; }}
+            onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
+          >
+            {tab.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── TopBar ───────────────────────────────────────────────────────────────────
+//
+// Единственный верхний ряд карточки: вкладки (если есть) слева, поиск и
+// кнопка-меню справа. Раньше вкладки (TabBar) и тулбар с меню (внутри
+// SingleCodeContent) рендерились как два отдельных div-ряда друг под другом —
+// из-за этого при закрытом поиске второй ряд выглядел как пустая полоса под
+// вкладками. Теперь это один flex-ряд, который никогда не остаётся пустым:
+// при отсутствии вкладок в нём просто меньше контента слева.
+
+interface TopBarProps {
+  readonly tabs?: CodeTab[];
+  readonly activeIdx: number;
+  readonly onSelectTab: (idx: number) => void;
+  readonly isDark: boolean;
+  readonly isCopied: boolean;
+  readonly isModal: boolean | undefined;
+  readonly searchQuery: string;
+  readonly setSearchQuery: (v: string) => void;
+  readonly handleCopy: () => void;
+  readonly setIsFullscreen: (v: boolean) => void;
+  readonly t: ReturnType<typeof tk>;
+}
+
+function TopBar({ tabs, activeIdx, onSelectTab, isDark, isCopied, isModal, searchQuery, setSearchQuery, handleCopy, setIsFullscreen, t }: TopBarProps) {
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const hasTabs = tabs && tabs.length > 1;
+
+  const openSearch = useCallback(() => {
+    setSearchOpen(true);
+    requestAnimationFrame(() => searchInputRef.current?.focus());
+  }, []);
+
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    setSearchQuery('');
+  }, [setSearchQuery]);
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px',
+      background: t.barBg, flexWrap: 'nowrap', minWidth: 0, flexShrink: 0,
+    }}>
+      {hasTabs && !searchOpen && (
+        <TabBar tabs={tabs} activeIdx={activeIdx} onSelect={onSelectTab} t={t} />
+      )}
+
+      {searchOpen ? (
+        <div style={{ position: 'relative', flex: '1 1 0', minWidth: 0 }}>
+          <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: t.plhClr, pointerEvents: 'none' }} />
+          <input
+            ref={searchInputRef}
+            type="text" placeholder="Поиск..." value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Escape') closeSearch(); }}
+            style={{
+              width: '100%', padding: '0 30px 0 30px', height: 36,
+              borderRadius: 8, border: `1px solid ${t.inpBdr}`,
+              background: t.inpBg, color: t.inpClr, fontSize: 13,
+              outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s',
+            }}
+            onFocus={e => { e.target.style.borderColor = t.inpFoc; }}
+            onBlur={e  => { e.target.style.borderColor = t.inpBdr; }}
+          />
+          <button onClick={closeSearch} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: t.plhClr, display: 'flex' }}>
+            <X size={12} />
+          </button>
+        </div>
+      ) : (
+        <div style={{ flex: '1 1 0', minWidth: 0 }} />
+      )}
+
+      <ToolbarMenu
+        isDark={isDark}
+        isCopied={isCopied}
+        isModal={isModal}
+        onSearch={openSearch}
+        onCopy={handleCopy}
+        onToggleFullscreen={() => setIsFullscreen(!isModal)}
+        t={t}
+      />
     </div>
   );
 }
@@ -676,7 +684,6 @@ export function CodeBlock({ code, language = '', tabs }: CodeBlockProps) {
   const [isCopied,     setIsCopied]     = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchQuery,  setSearchQuery]  = useState('');
-  const [isMobile,     setIsMobile]     = useState(false);
 
   const hasTabs = tabs && tabs.length > 1;
 
@@ -684,13 +691,6 @@ export function CodeBlock({ code, language = '', tabs }: CodeBlockProps) {
     setSearchQuery('');
     setIsExpanded(false);
   }, [activeTab]);
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 580);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
 
   const currentCode     = hasTabs ? tabs[activeTab].code     : code;
   const currentLanguage = hasTabs ? tabs[activeTab].language : language;
@@ -706,13 +706,8 @@ export function CodeBlock({ code, language = '', tabs }: CodeBlockProps) {
     language:        currentLanguage,
     searchQuery,
     setSearchQuery,
-    isCopied,
-    handleCopy,
-    setIsFullscreen,
     isExpanded,
     setIsExpanded,
-    isMobile,
-    isDark,
     t,
   };
 
@@ -725,9 +720,19 @@ export function CodeBlock({ code, language = '', tabs }: CodeBlockProps) {
           background: t.outerBg, boxShadow: t.modalShadow,
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
         }}>
-          {hasTabs && (
-            <TabBar tabs={tabs} activeIdx={activeTab} onSelect={setActiveTab} t={t} />
-          )}
+          <TopBar
+            tabs={tabs}
+            activeIdx={activeTab}
+            onSelectTab={setActiveTab}
+            isDark={isDark}
+            isCopied={isCopied}
+            isModal
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            handleCopy={handleCopy}
+            setIsFullscreen={setIsFullscreen}
+            t={t}
+          />
           <SingleCodeContent {...sharedProps} isModal />
         </div>
       </Overlay>
@@ -742,9 +747,19 @@ export function CodeBlock({ code, language = '', tabs }: CodeBlockProps) {
         overflow: 'clip', display: 'flex', flexDirection: 'column',
         width: '100%', minWidth: 0,
       }}>
-        {hasTabs && (
-          <TabBar tabs={tabs} activeIdx={activeTab} onSelect={setActiveTab} t={t} />
-        )}
+        <TopBar
+          tabs={tabs}
+          activeIdx={activeTab}
+          onSelectTab={setActiveTab}
+          isDark={isDark}
+          isCopied={isCopied}
+          isModal={false}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          handleCopy={handleCopy}
+          setIsFullscreen={setIsFullscreen}
+          t={t}
+        />
         <SingleCodeContent {...sharedProps} />
       </div>
     </div>
