@@ -477,8 +477,6 @@ function handleTabsBlock(trimmed, lines, i, codeBlocks, output) {
   return endIndex + 1;
 }
 
-// ─── Препроцессор кастомных блоков ───────────────────────────────────────────
-
 function preprocessCustomBlocks(content, codeBlocks) {
   const lines  = content.split('\n');
   const output = [];
@@ -501,8 +499,6 @@ function preprocessCustomBlocks(content, codeBlocks) {
 
   return output.join('\n');
 }
-
-// ─── Препроцессор расширений Markdown ────────────────────────────────────────
 
 export function preprocessMarkdownExtensions(content) {
   const codeBlocks = [];
