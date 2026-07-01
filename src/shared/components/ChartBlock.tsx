@@ -230,7 +230,8 @@ function seriesOpacity(key: string, hovered: string | null, hidden: Set<string>)
   return hovered === key ? 1 : 0.2;
 }
 
-// ─── Area ─────────────────────────────────────────────────────────────────────
+// ─── Area (дизайн в стиле evilcharts: горизонтальный цветной градиент по stroke,
+//     вертикальный fade-градиент заливки через маску, пунктирный stroke) ───────
 
 interface RenderAreaOptions {
   data: ChartRow[];
@@ -248,19 +249,47 @@ function renderArea({
   stacked, hidden, hovered, t,
 }: RenderAreaOptions) {
   const visible = valueKeys.filter(k => !hidden.has(k));
+
   return (
     <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
       <defs>
-        {visible.map((key) => {
-          const idx = valueKeys.indexOf(key);
+        {valueKeys.map((key) => {
+          const idx   = valueKeys.indexOf(key);
+          const color = palette[idx % palette.length];
+
           return (
-            <filter key={`glow-${key}`} id={`area-glow-${idx}`} x="-30%" y="-30%" width="160%" height="160%">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
+            <React.Fragment key={`defs-${key}`}>
+              {/* горизонтальный цветной градиент — красит и stroke, и fill */}
+              <linearGradient id={`area-colors-${idx}`} x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor={color} />
+                <stop offset="100%" stopColor={color} />
+              </linearGradient>
+
+              {/* вертикальный fade: сверху видимый, снизу прозрачный */}
+              <linearGradient id={`area-vertical-fade-${idx}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="white" stopOpacity={0.35} />
+                <stop offset="100%" stopColor="white" stopOpacity={0} />
+              </linearGradient>
+              <mask id={`area-fade-mask-${idx}`}>
+                <rect width="100%" height="100%" fill={`url(#area-vertical-fade-${idx})`} />
+              </mask>
+              <pattern id={`area-fill-${idx}`} patternUnits="userSpaceOnUse" width="100%" height="100%">
+                <rect
+                  width="100%" height="100%"
+                  fill={`url(#area-colors-${idx})`}
+                  mask={`url(#area-fade-mask-${idx})`}
+                />
+              </pattern>
+
+              {/* glow под линией при hover */}
+              <filter id={`area-glow-${idx}`} x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </React.Fragment>
           );
         })}
       </defs>
@@ -271,15 +300,28 @@ function renderArea({
         const idx   = valueKeys.indexOf(key);
         const color = palette[idx % palette.length];
         const op    = seriesOpacity(key, hovered, hidden);
+        const isActive = hovered === key;
+
         return (
           <Area key={key} type="monotone" dataKey={key}
-            stroke={color} fill={color}
-            fillOpacity={op * 0.12}
-            strokeWidth={hovered === key ? 2.5 : 2}
+            stroke={`url(#area-colors-${idx})`}
+            fill={`url(#area-fill-${idx})`}
+            fillOpacity={op}
+            strokeWidth={isActive ? 1.6 : 0.8}
             strokeOpacity={op}
-            style={{ filter: hovered === key ? `drop-shadow(0 0 5px ${color}cc)` : 'none', transition: 'all 0.2s' }}
+            strokeDasharray="3 3"
+            style={{
+              filter: isActive ? `url(#area-glow-${idx})` : 'none',
+              transition: 'all 0.2s',
+            }}
             stackId={stacked ? 'stack' : undefined}
-            dot={false} activeDot={{ r: 4, strokeWidth: 0, filter: `drop-shadow(0 0 4px ${color})` }}
+            dot={false}
+            activeDot={{
+              r: 4,
+              strokeWidth: 0,
+              fill: color,
+              filter: `drop-shadow(0 0 4px ${color})`,
+            }}
             isAnimationActive={false}
           />
         );
