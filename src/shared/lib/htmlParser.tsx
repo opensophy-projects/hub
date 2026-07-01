@@ -693,7 +693,6 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       const element = node as Element;
       const tagName = element.tagName.toLowerCase();
 
-      // Восстановление KaTeX-элементов, замещённых плейсхолдерами до санитизации
       const katexIdx = element.dataset.katexIdx;
       if (katexIdx !== undefined) {
         const stored = katexStore[Number.parseInt(katexIdx, 10)];
