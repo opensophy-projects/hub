@@ -1,4 +1,5 @@
 import React from 'react';
+import { getTableUiTokens } from './tableUiTheme';
 
 interface ColumnsPanelProps {
   isDark: boolean;
@@ -7,10 +8,9 @@ interface ColumnsPanelProps {
   onToggleColumn: (colIndex: number) => void;
 }
 
-// Единый фон (совпадает с FiltersPanel/тулбаром) вместо отдельного оттенка —
-// панель колонок больше не выглядит как отдельная плашка со своей границей.
 export const ColumnsPanel: React.FC<ColumnsPanelProps> = ({ isDark, headers, visibleColumns, onToggleColumn }) => {
-  const panelBg  = isDark ? '#0a0a0a'                : '#e8e7e3';
+  const ui = getTableUiTokens(isDark);
+  const panelBg  = ui.unifiedBg;
   const labelClr = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.32)';
   const tagBg    = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
   const tagBdr   = isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
