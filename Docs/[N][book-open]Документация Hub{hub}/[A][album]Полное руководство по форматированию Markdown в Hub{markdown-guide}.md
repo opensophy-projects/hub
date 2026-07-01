@@ -1153,33 +1153,41 @@ i\hbar \frac{\partial \Psi}{\partial t} = -\frac{\hbar^2}{2m} \nabla^2 \Psi + V\
 
 ## Какой параметр работает у какого типа
 
-| Параметр | `area` / `area-stacked` | `bar` / `bar-stacked` / `bar-horizontal` | `pie` / `pie-donut` / `radar` |
-|---|---|---|---|
-| `curve` | ✅ | ❌ | ❌ |
-| `stroke` | ✅ | ❌ | ❌ |
-| `area-variant` | ✅ | ❌ | ❌ |
-| `reveal` | ✅ | ❌ | ❌ |
-| `bar-variant` | ❌ | ✅ | ❌ |
-| `glow` | ❌ | ✅ | ❌ |
-| `stack` | ✅ | ✅ | ❌ |
-| `colors` / `title` / `type` | ✅ | ✅ | ✅ |
+| Параметр | `area` / `area-stacked` | `line` | `bar` / `bar-stacked` / `bar-horizontal` | `pie` / `pie-donut` | `radar` |
+|---|---|---|---|---|---|
+| `curve` | ✅ | ✅ | ❌ | ❌ | ❌ |
+| `stroke` | ✅ | ✅ | ❌ | ❌ | ❌ |
+| `area-variant` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `reveal` | ✅ | ✅ | ❌ | ❌ | ❌ |
+| `bar-variant` | ❌ | ❌ | ✅ | ❌ | ❌ |
+| `glow` | ❌ | ✅ | ✅ | ✅ | ❌ |
+| `buffer-line` | ❌ | ✅ | ❌ | ❌ | ❌ |
+| `stack` | ✅ | ❌ | ✅ | ❌ | ❌ |
+| `colors` / `title` / `type` | ✅ | ✅ | ✅ | ✅ | ✅ |
 
-`pie`, `pie-donut` и `radar` не принимают вообще никаких стилевых параметров кроме `title`, `type`, `colors` — рендерер их даже не читает для этих типов.
+`radar` — единственный тип, который по-прежнему не принимает вообще никаких стилевых параметров кроме `title`, `type`, `colors`.
+
+`pie` / `pie-donut` теперь тоже понимают `glow` — раньше это был проп только для баров (`barGlowing`), теперь это общий `glowing`, и для пирогов он включает **постоянное** свечение всех секторов (не только по ховеру, как было раньше).
 
 ### Значения параметров
 
 | Параметр | Значения |
 |---|---|
 | `curve` | `linear`, `natural`, `monotone` *(по умолчанию)*, `monotoneX`, `monotoneY`, `step`, `stepBefore`, `stepAfter`, `bump` |
-| `stroke` | `solid`, `dashed`, `animated-dashed` *(по умолчанию)* |
+| `stroke` | `solid`, `dashed`, `animated-dashed` *(по умолчанию для area; для line дефолт — `solid`)* |
 | `area-variant` | `gradient` *(по умолчанию)*, `gradient-reverse`, `solid`, `dotted`, `lines`, `hatched` |
 | `reveal` | `none`, `left-to-right` *(по умолчанию)*, `right-to-left`, `center-out`, `edges-in` |
 | `bar-variant` | `default` *(по умолчанию)*, `hatched`, `duotone`, `duotone-reverse`, `gradient`, `stripped` |
-| `glow` | `true` / `false` *(по умолчанию `false`)* |
+| `glow` | `true` / `false` *(по умолчанию `false`)* — значение зависит от типа: бары светятся сами, line светится по всей линии, pie/pie-donut светятся всеми секторами постоянно |
+| `buffer-line` | `true` / `false` *(по умолчанию `false`)* — только `type=line`; последний отрезок рисуется пунктиром как маркер "незавершённых/прогнозных" данных |
 | `stack` | `default`, `stacked`, `expanded` (`expanded` = 100%-накопление, работает и для area, и для bar) |
 
 :::note
-`stack` — единственный параметр, который "шире" названия типа: его можно поставить даже на `type=bar` или `type=area`, и график всё равно станет накопительным. А `stack=expanded` превращает и `area`, и `bar`/`bar-stacked` в 100%-график (проценты вместо абсолютных чисел).
+`stack` — единственный параметр, который "шире" названия типа: его можно поставить даже на `type=bar` или `type=area`, и график всё равно станет накопительным. А `stack=expanded` превращает и `area`, и `bar`/`bar-stacked` в 100%-график (проценты вместо абсолютных чисел). У `line` накопления нет вообще — `stack` на него не действует.
+:::
+
+:::caution
+Раньше был баг: у `pie-donut` секторы с пробелами/кириллицей в названии строки (например "В срок") красились "в никуда", потому что id SVG-градиента строился из текста строки. Сейчас id всегда ASCII (`sector-0`, `sector-1`...), строится по позиции строки в данных, а не по её названию — так что кириллица, пробелы и любые символы в названиях категорий больше не ломают заливку.
 :::
 
 ---
@@ -1360,9 +1368,171 @@ i\hbar \frac{\partial \Psi}{\partial t} = -\frac{\hbar^2}{2m} \nabla^2 \Psi + V\
 
 ---
 
+## Line *(новый тип)*
+
+Работают `curve`, `stroke`, `reveal`, `glow`, `buffer-line`. `area-variant`, `bar-variant` и `stack` на `line` не действуют — у линии нет заливки и накопления.
+
+:::chart
+[title]Динамика выручки
+[type]line
+[colors]#ec4899, #f472b6
+[curve]monotone
+[stroke]solid
+[reveal]left-to-right
+
+| Месяц | План | Факт |
+|-------|------|------|
+| Янв   | 400  | 380  |
+| Фев   | 420  | 410  |
+| Мар   | 450  | 470  |
+| Апр   | 480  | 460  |
+| Май   | 510  | 530  |
+| Июн   | 540  | 560  |
+:::
+
+```markdown
+:::chart
+[title]Динамика выручки
+[type]line
+[colors]#ec4899, #f472b6
+[curve]monotone
+[stroke]solid
+[reveal]left-to-right
+
+| Месяц | План | Факт |
+|-------|------|------|
+| Янв   | 400  | 380  |
+| Фев   | 420  | 410  |
+| Мар   | 450  | 470  |
+| Апр   | 480  | 460  |
+| Май   | 510  | 530  |
+| Июн   | 540  | 560  |
+:::
+```
+
+### Line с постоянным свечением (`glow`)
+
+`glow` на `type=line` даёт мягкое свечение вдоль всей линии (через SVG-фильтр), а не только на активной точке при ховере.
+
+:::chart
+[title]Нагрузка на сервер
+[type]line
+[colors]#db2777
+[curve]natural
+[stroke]solid
+[glow]true
+
+| Час | RPS |
+|-----|-----|
+| 00  | 120 |
+| 04  | 90  |
+| 08  | 340 |
+| 12  | 520 |
+| 16  | 610 |
+| 20  | 380 |
+:::
+
+```markdown
+:::chart
+[title]Нагрузка на сервер
+[type]line
+[colors]#db2777
+[curve]natural
+[stroke]solid
+[glow]true
+
+| Час | RPS |
+|-----|-----|
+| 00  | 120 |
+| 04  | 90  |
+| 08  | 340 |
+| 12  | 520 |
+| 16  | 610 |
+| 20  | 380 |
+:::
+```
+
+### Line с пунктирным "буферным" хвостом (`buffer-line`)
+
+`buffer-line=true` рисует последний отрезок линии пунктиром — удобно показывать, что последняя точка ещё не подтверждена (прогноз, неполные данные за текущий период).
+
+:::chart
+[title]Продажи (последняя точка — прогноз)
+[type]line
+[colors]#9d174d
+[curve]monotone
+[buffer-line]true
+
+| Неделя | Продажи |
+|--------|---------|
+| 1      | 210     |
+| 2      | 240     |
+| 3      | 265     |
+| 4      | 300     |
+| 5 (прогноз) | 330 |
+:::
+
+```markdown
+:::chart
+[title]Продажи (последняя точка — прогноз)
+[type]line
+[colors]#9d174d
+[curve]monotone
+[buffer-line]true
+
+| Неделя | Продажи |
+|--------|---------|
+| 1      | 210     |
+| 2      | 240     |
+| 3      | 265     |
+| 4      | 300     |
+| 5 (прогноз) | 330 |
+:::
+```
+
+### Line — анимированный пунктир и сравнение план/факт
+
+`stroke=animated-dashed` даёт "бегущий" пунктир (marching ants), пока серия не заховерена. Сравнение — зелёный/красный.
+
+:::chart
+[title]Выполнение плана продаж
+[type]line
+[colors]#22c55e, #ef4444
+[curve]step
+[stroke]animated-dashed
+[reveal]center-out
+
+| Квартал | В плане | Отставание |
+|---------|---------|------------|
+| Q1      | 100     | 12         |
+| Q2      | 100     | 8          |
+| Q3      | 100     | 4          |
+| Q4      | 100     | 2          |
+:::
+
+```markdown
+:::chart
+[title]Выполнение плана продаж
+[type]line
+[colors]#22c55e, #ef4444
+[curve]step
+[stroke]animated-dashed
+[reveal]center-out
+
+| Квартал | В плане | Отставание |
+|---------|---------|------------|
+| Q1      | 100     | 12         |
+| Q2      | 100     | 8          |
+| Q3      | 100     | 4          |
+| Q4      | 100     | 2          |
+:::
+```
+
+---
+
 ## Bar
 
-Работают только `bar-variant`, `glow` и `stack` — `curve`/`stroke`/`area-variant`/`reveal` тут не действуют. Сравнение зелёный/красный, свечение на столбцах.
+Работают только `bar-variant`, `glow` и `stack` — `curve`/`stroke`/`area-variant`/`reveal`/`buffer-line` тут не действуют. Сравнение зелёный/красный, свечение на столбцах.
 
 :::chart
 [title]Успешные и неуспешные сделки
@@ -1588,12 +1758,13 @@ i\hbar \frac{\partial \Psi}{\partial t} = -\frac{\hbar^2}{2m} \nabla^2 \Psi + V\
 
 ## Pie
 
-Никаких стилевых параметров, кроме `title`, `type`, `colors` — рендерер их не читает для этого типа.
+Из стилей понимает только `glow` (постоянное свечение всех секторов) — раньше не работал вообще ни один стилевой параметр, теперь `glow` прокидывается и в пироги.
 
 :::chart
 [title]Распределение трафика по устройствам
 [type]pie
 [colors]#831843, #be185d, #ec4899, #f9a8d4
+[glow]true
 
 | Устройство | Доля |
 |------------|------|
@@ -1607,6 +1778,7 @@ i\hbar \frac{\partial \Psi}{\partial t} = -\frac{\hbar^2}{2m} \nabla^2 \Psi + V\
 [title]Распределение трафика по устройствам
 [type]pie
 [colors]#831843, #be185d, #ec4899, #f9a8d4
+[glow]true
 
 | Устройство | Доля |
 |------------|------|
@@ -1620,12 +1792,13 @@ i\hbar \frac{\partial \Psi}{\partial t} = -\frac{\hbar^2}{2m} \nabla^2 \Psi + V\
 
 ## Pie Donut
 
-Сравнение результатов — зелёный (выполнено) и красный (просрочено). Тоже без доп. стилей.
+Сравнение результатов — зелёный (выполнено) и красный (просрочено), плюс `glow`. Категории с пробелами/кириллицей ("В срок", "Просрочено") теперь красятся корректно — это был тот самый исправленный баг с id градиента.
 
 :::chart
 [title]Выполнение задач в срок
 [type]pie-donut
 [colors]#22c55e, #ef4444
+[glow]true
 
 | Статус     | Доля |
 |------------|------|
@@ -1638,6 +1811,7 @@ i\hbar \frac{\partial \Psi}{\partial t} = -\frac{\hbar^2}{2m} \nabla^2 \Psi + V\
 [title]Выполнение задач в срок
 [type]pie-donut
 [colors]#22c55e, #ef4444
+[glow]true
 
 | Статус     | Доля |
 |------------|------|
@@ -1650,7 +1824,7 @@ i\hbar \frac{\partial \Psi}{\partial t} = -\frac{\hbar^2}{2m} \nabla^2 \Psi + V\
 
 ## Radar
 
-Тоже без доп. стилей — только `colors`. Сравнение "до/после" зелёным и красным.
+Без доп. стилей — только `colors`. `glow` на radar не действует. Сравнение "до/после" зелёным и красным.
 
 :::chart
 [title]До и после оптимизации
@@ -1721,5 +1895,5 @@ i\hbar \frac{\partial \Psi}{\partial t} = -\frac{\hbar^2}{2m} \nabla^2 \Psi + V\
 :::
 
 :::caution
-Не указывайте `curve`, `stroke`, `area-variant` или `reveal` для `bar`/`pie`/`radar` — они будут просто проигнорированы рендерером. И наоборот: `bar-variant`/`glow` не действуют на `area`/`pie`/`radar`.
+Не указывайте `curve`, `stroke`, `area-variant`, `reveal` или `buffer-line` для `bar`/`pie`/`radar` — они будут просто проигнорированы рендерером. `bar-variant` не действует на `area`/`line`/`pie`/`radar`. `area-variant` — только для `area`/`area-stacked`. `buffer-line` — только для `line`. `stack` не действует на `line`. `glow` теперь действует шире, чем раньше: bar-типы, `line` и `pie`/`pie-donut` — но не `radar`.
 :::
