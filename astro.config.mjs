@@ -1,9 +1,6 @@
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 
-// ─── Dev Bridge Integration ────────────────────────────────────────────────────
-// Подключается ТОЛЬКО в dev-режиме и вешает fetch-only API на тот же порт Astro.
-
 const devIntegrations = [];
 
 if (process.env.NODE_ENV !== 'production') {
