@@ -7,9 +7,10 @@ interface ColumnsPanelProps {
   onToggleColumn: (colIndex: number) => void;
 }
 
+// Единый фон (совпадает с FiltersPanel/тулбаром) вместо отдельного оттенка —
+// панель колонок больше не выглядит как отдельная плашка со своей границей.
 export const ColumnsPanel: React.FC<ColumnsPanelProps> = ({ isDark, headers, visibleColumns, onToggleColumn }) => {
-  const panelBg  = isDark ? '#111111'                : '#d8d7d3';
-  const border   = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)';
+  const panelBg  = isDark ? '#0a0a0a'                : '#e8e7e3';
   const labelClr = isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.32)';
   const tagBg    = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
   const tagBdr   = isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.1)';
@@ -17,9 +18,8 @@ export const ColumnsPanel: React.FC<ColumnsPanelProps> = ({ isDark, headers, vis
   const actBg    = isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.12)';
   const actBdr   = isDark ? 'rgba(255,255,255,0.24)' : 'rgba(0,0,0,0.22)';
   const actClr   = isDark ? 'rgba(255,255,255,0.9)'  : 'rgba(0,0,0,0.85)';
-
   return (
-    <div style={{ background: panelBg, border: `1px solid ${border}`, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+    <div style={{ background: panelBg, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
       <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: labelClr, flexShrink: 0 }}>
         Колонки
       </span>
