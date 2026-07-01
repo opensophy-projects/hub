@@ -1,16 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Menu, Copy, Check, Filter, X, Maximize2, Minimize2 } from 'lucide-react';
+import { Menu, Copy, Check, Filter, X, Maximize2, Minimize2, Scan, ScanLine } from 'lucide-react';
 import { parseTableForCopy, toMd, toTsv, type CopyFormat } from '@/features/table/utils/copyUtils';
 import { getTableUiTokens } from './tableUiTheme';
 
 // ─── TableToolbarMenu ─────────────────────────────────────────────────────────
 //
 // Единая точка входа для всех действий над таблицей — копирование (md/excel),
-// фильтры (тоггл панели), сброс фильтров, разворот/сворачивание в модалку.
-// Механика (createPortal, позиционирование по rect, hover-open с задержкой
-// закрытия, закрытие по клику вне) перенесена из ToolbarMenu в CodeBlock —
-// единый паттерн для всех "спрятанных" тулбаров в проекте.
+// фильтры (тоггл панели), сброс фильтров, разворот/сворачивание в модалку,
+// и (только внутри модалки) режим "показать всю таблицу целиком" — тоггл,
+// который сначала переносит текст в ячейках, а затем, если всё равно не
+// влезает по ширине, применяет масштаб, чтобы убрать горизонтальный скролл.
 
 export interface TableToolbarMenuProps {
   readonly isDark: boolean;
@@ -23,6 +23,9 @@ export interface TableToolbarMenuProps {
   readonly onFullscreen?: () => void;
   /** Закрыть модалку — передавать только внутри TableModal. */
   readonly onClose?: () => void;
+  /** Режим "показать всю таблицу целиком" — передавать только внутри TableModal. */
+  readonly fitToScreen?: boolean;
+  readonly onToggleFitToScreen?: () => void;
 }
 
 type MenuItem = {
@@ -32,11 +35,13 @@ type MenuItem = {
   onClick: () => void;
   danger?: boolean;
   success?: boolean;
+  active?: boolean;
 };
 
 export const TableToolbarMenu: React.FC<TableToolbarMenuProps> = ({
   isDark, tableHtml, showFilters, onToggleFilters,
   activeFilterCount, onResetFilters, onFullscreen, onClose,
+  fitToScreen, onToggleFitToScreen,
 }) => {
   const t = getTableUiTokens(isDark);
   const [open, setOpen] = useState(false);
@@ -138,6 +143,13 @@ export const TableToolbarMenu: React.FC<TableToolbarMenuProps> = ({
       onClick: () => { onResetFilters(); setOpen(false); },
       danger: true,
     }] : []),
+    ...(onToggleFitToScreen ? [{
+      id: 'fit-to-screen',
+      label: fitToScreen ? 'Обычный скролл' : 'Показать всю таблицу',
+      icon: fitToScreen ? <ScanLine size={13} /> : <Scan size={13} />,
+      onClick: () => { onToggleFitToScreen(); setOpen(false); },
+      active: fitToScreen,
+    }] : []),
     ...(onFullscreen ? [{
       id: 'fullscreen',
       label: 'Развернуть',
@@ -152,6 +164,8 @@ export const TableToolbarMenu: React.FC<TableToolbarMenuProps> = ({
     }] : []),
   ];
 
+  const menuActive = open || showFilters || activeFilterCount > 0 || !!fitToScreen;
+
   return (
     <div
       ref={ref}
@@ -165,8 +179,8 @@ export const TableToolbarMenu: React.FC<TableToolbarMenuProps> = ({
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           width: 36, height: 36, borderRadius: 8,
-          border: `1px solid ${open || showFilters || activeFilterCount > 0 ? t.btnBdr : 'transparent'}`,
-          background: open || showFilters || activeFilterCount > 0 ? t.btnBg : 'transparent',
+          border: `1px solid ${menuActive ? t.btnBdr : 'transparent'}`,
+          background: menuActive ? t.btnBg : 'transparent',
           color: t.btnClr, cursor: 'pointer', flexShrink: 0,
           transition: 'background 0.13s, border-color 0.13s',
         }}
@@ -206,6 +220,7 @@ export const TableToolbarMenu: React.FC<TableToolbarMenuProps> = ({
               let color = isActive ? t.menuClr : t.btnClr;
               if (item.success) color = '#22c55e';
               else if (item.danger) color = t.dangerClr;
+              else if (item.active) color = t.btnActClr;
 
               return (
                 <button
@@ -223,9 +238,9 @@ export const TableToolbarMenu: React.FC<TableToolbarMenuProps> = ({
                     textAlign:  'left',
                     cursor:     'pointer',
                     color,
-                    fontWeight: isActive ? 600 : 400,
-                    border: `1px solid ${isActive ? t.btnBdr : 'transparent'}`,
-                    background: 'transparent',
+                    fontWeight: isActive || item.active ? 600 : 400,
+                    border: `1px solid ${isActive || item.active ? t.btnBdr : 'transparent'}`,
+                    background: item.active && !isActive ? t.btnBg : 'transparent',
                     borderRadius: '8px',
                   }}
                 >
