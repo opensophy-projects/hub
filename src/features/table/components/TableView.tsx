@@ -93,6 +93,8 @@ export const TableView: React.FC<TableViewProps> = ({
   useLayoutEffect(() => {
     if (!fitToScreen) { setFitScale(1); return; }
 
+    let raf = 0;
+
     const measure = () => {
       const wrapEl  = wrapRef.current;
       const tableEl = tableRef.current;
@@ -103,25 +105,32 @@ export const TableView: React.FC<TableViewProps> = ({
       const availableH = wrapEl.clientHeight;
       const naturalW = tableEl.scrollWidth;
       const naturalH = tableEl.scrollHeight;
-      if (availableW <= 0 || availableH <= 0) return;
+      // Если контейнер ещё не получил размеры (0 на первом кадре layout'а),
+      // пробуем ещё раз на следующем кадре вместо того чтобы тихо выйти
+      // и оставить старый (обычно 1) scale навсегда.
+      if (availableW <= 0 || availableH <= 0 || naturalW <= 0 || naturalH <= 0) {
+        raf = requestAnimationFrame(measure);
+        return;
+      }
 
       const scaleW = naturalW > availableW ? availableW / naturalW : 1;
       const scaleH = naturalH > availableH ? availableH / naturalH : 1;
-      const scale = Math.min(scaleW, scaleH);
-      setFitScale(Math.max(0.25, Math.min(1, scale)));
+      const scale = Math.max(0.25, Math.min(1, Math.min(scaleW, scaleH)));
+      setFitScale(prev => (Math.abs(prev - scale) > 0.002 ? scale : prev));
     };
 
-    // Двойной проход: сначала после переноса текста (white-space:normal),
-    // затем ещё раз через кадр — высота таблицы после переноса меняется,
-    // и первое измерение может быть неточным.
-    const raf1 = requestAnimationFrame(() => {
-      measure();
-      requestAnimationFrame(measure);
-    });
-    window.addEventListener('resize', measure);
+    // ResizeObserver надёжнее одного-двух requestAnimationFrame: он срабатывает
+    // на любое реальное изменение размеров wrapEl/tableEl (после переноса
+    // текста, после смены строк/колонок, после ресайза окна) без гонки таймингов.
+    const ro = new ResizeObserver(() => measure());
+    if (wrapRef.current) ro.observe(wrapRef.current);
+    if (tableRef.current) ro.observe(tableRef.current);
+
+    raf = requestAnimationFrame(measure);
+
     return () => {
-      cancelAnimationFrame(raf1);
-      window.removeEventListener('resize', measure);
+      cancelAnimationFrame(raf);
+      ro.disconnect();
     };
   }, [fitToScreen, headers, rows, visibleColumns]);
 
@@ -221,6 +230,7 @@ export const TableView: React.FC<TableViewProps> = ({
               sortDirection={sortDirection}
               onSort={onSort}
               headerAlignments={headerAlignments}
+              fitToScreen={fitToScreen}
             />
             <tbody>
               {rows.length === 0 ? (
@@ -256,8 +266,9 @@ const TableHead: React.FC<{
   headers: string[]; visibleColumns: Set<number>;
   sortColumn: number | null; sortDirection: SortDirection;
   onSort: (i: number) => void; headerAlignments: ColumnAlignment[];
-}> = ({ t, isDark, headers, visibleColumns, sortColumn, sortDirection, onSort, headerAlignments }) => (
-  <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
+  fitToScreen?: boolean;
+}> = ({ t, isDark, headers, visibleColumns, sortColumn, sortDirection, onSort, headerAlignments, fitToScreen }) => (
+  <thead style={{ position: fitToScreen ? 'static' : 'sticky', top: 0, zIndex: 20 }}>
     <tr>
       {headers.map((header, i) => visibleColumns.has(i) ? (
         <th key={header} onClick={() => onSort(i)} style={{
@@ -268,7 +279,7 @@ const TableHead: React.FC<{
           fontSize: '0.69rem', fontWeight: 700,
           letterSpacing: '0.06em', textTransform: 'uppercase',
           cursor: 'pointer', userSelect: 'none',
-          position: 'sticky', top: 0, zIndex: 20,
+          position: fitToScreen ? 'static' : 'sticky', top: 0, zIndex: 20,
           borderBottom: `1px solid ${t.thBorder}`,
           borderTop: 'none', borderLeft: 'none', borderRight: 'none',
           boxShadow: 'none',
