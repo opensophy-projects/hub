@@ -456,7 +456,6 @@ interface SingleCodeBlockProps {
   readonly language: string;
   readonly isModal?: boolean;
   readonly searchQuery: string;
-  readonly setSearchQuery: (v: string) => void;
   readonly isExpanded: boolean;
   readonly setIsExpanded: (v: boolean) => void;
   readonly t: ReturnType<typeof tk>;
@@ -467,7 +466,7 @@ const LINE_HEIGHT_PX   = 21;
 const PRE_PADDING      = 10;
 const COLLAPSED_HEIGHT = PRE_PADDING + VISIBLE_LINES * LINE_HEIGHT_PX + PRE_PADDING;
 
-function SingleCodeContent({ code, language, isModal, searchQuery, setSearchQuery, isExpanded, setIsExpanded, t }: SingleCodeBlockProps) {
+function SingleCodeContent({ code, language, isModal, searchQuery, isExpanded, setIsExpanded, t }: SingleCodeBlockProps) {
   const lines = useMemo(() => {
     const raw = code.split('\n');
     if (raw.at(-1) === '') raw.pop();
@@ -705,7 +704,6 @@ export function CodeBlock({ code, language = '', tabs }: CodeBlockProps) {
     code:            currentCode,
     language:        currentLanguage,
     searchQuery,
-    setSearchQuery,
     isExpanded,
     setIsExpanded,
     t,

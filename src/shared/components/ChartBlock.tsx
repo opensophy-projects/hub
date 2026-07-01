@@ -622,13 +622,22 @@ const LineGlowFilter: React.FC<{ id: string }> = ({ id }) => (
   </filter>
 );
 
+type LinePoint = { x: number; y: number };
+type BufferLineShapeProps = React.ComponentProps<typeof Curve> & {
+  points?: ReadonlyArray<Partial<LinePoint>>;
+};
+
+function isLinePoint(point: Partial<LinePoint>): point is LinePoint {
+  return typeof point.x === 'number' && typeof point.y === 'number';
+}
+
 // Рисует последний отрезок пунктиром, измеряя реальную длину SVG-пути —
 // работает корректно при любой кривой интерполяции.
-function bufferLineShape(props: any) {
+function bufferLineShape(props: BufferLineShapeProps) {
   const { points, ...rest } = props;
   if (!points || points.length < 2) return <Curve {...props} />;
 
-  const drawable = points.filter((p: any) => typeof p.x === 'number' && typeof p.y === 'number');
+  const drawable = points.filter(isLinePoint);
   if (drawable.length < 2) return <Curve {...props} />;
 
   const splitX = drawable[drawable.length - 2].x;

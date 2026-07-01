@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { X, Search } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { FiltersPanel } from './FiltersPanel';

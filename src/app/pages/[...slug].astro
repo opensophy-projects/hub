@@ -19,6 +19,7 @@ export async function getStaticPaths() {
   const docsDir = path.join(process.cwd(), 'Docs');
   const allMdFiles = fs.existsSync(docsDir) ? scanDocsDirectoryRecursive(docsDir) : [];
   const seen = new Map<string, string>();
+  const frontmatterCustomSlugs = new Set<string>();
   const docs: any[] = [];
   const paths: Array<{ params: { slug: string }; props: { doc?: any; category?: any; customPage?: any } }> = [];
 
@@ -30,6 +31,8 @@ export async function getStaticPaths() {
       continue;
     }
     seen.set(doc.slug, mdPath);
+    const customSlug = resolveCustomSlug(doc.frontmatter?.custom);
+    if (customSlug === doc.slug) frontmatterCustomSlugs.add(customSlug);
     docs.push(doc);
     paths.push({ params: { slug: doc.slug }, props: { doc } });
   }
@@ -45,7 +48,9 @@ export async function getStaticPaths() {
 
   for (const customPage of customPages) {
     if (seen.has(customPage.slug)) {
-      console.warn(`[custom page dedup] Custom page slug "${customPage.slug}" conflicts with another page, skipping custom page from ${customPage.folderName}`);
+      if (!frontmatterCustomSlugs.has(customPage.slug)) {
+        console.warn(`[custom page dedup] Custom page slug "${customPage.slug}" conflicts with another page, skipping custom page from ${customPage.folderName}`);
+      }
       continue;
     }
     seen.set(customPage.slug, `<custom:${customPage.folderName}>`);

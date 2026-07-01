@@ -1154,9 +1154,8 @@ const BrandLogo: React.FC<{ logoPath: string; size: number }> = ({ logoPath, siz
 const ResizeHandle: React.FC<{
   edge: 'left' | 'right';
   onMouseDown: (e: React.MouseEvent) => void;
-  isDark: boolean;
   label: string;
-}> = ({ edge, onMouseDown, isDark, label }) => {
+}> = ({ edge, onMouseDown, label }) => {
   return (
     <button
       type="button"
@@ -1378,14 +1377,13 @@ const DesktopSlidingPanel: React.FC<{
   panelOpen: boolean; panelWidth: number; panelBg: string;
   shellEnabled: boolean;
   panelTitle: Exclude<PanelType, null>;
-  isStandardMode: boolean;
   currentDocSlug?: string; toc: TocItem[]; activeId: string; isDark: boolean;
   onResizeMouseDown: (e: React.MouseEvent) => void;
   onClose: () => void;
 }> = ({
   isDocsPage, chromeGap, chromeTopGap,
   chromeRadius, panelOpen, panelWidth,
-  panelBg, shellEnabled, panelTitle, isStandardMode,
+  panelBg, shellEnabled, panelTitle,
   currentDocSlug, toc, activeId, isDark,
   onResizeMouseDown, onClose,
 }) => {
@@ -1412,7 +1410,7 @@ const DesktopSlidingPanel: React.FC<{
             {panelTitle === 'toc'      && <TocPanelContent toc={toc} activeId={activeId} isDark={isDark} />}
             {panelTitle === 'contacts' && <div style={{ overflowY: 'auto' }}><ContactsPanelContent isDark={isDark} /></div>}
           </div>
-          <ResizeHandle edge="right" onMouseDown={onResizeMouseDown} isDark={isDark} label="Изменить ширину панели" />
+          <ResizeHandle edge="right" onMouseDown={onResizeMouseDown} label="Изменить ширину панели" />
         </>
       )}
     </aside>
@@ -1436,7 +1434,7 @@ const DesktopTocPanel: React.FC<{
     display: 'flex', flexDirection: 'column',
     backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
   }}>
-    <ResizeHandle edge="left" onMouseDown={onResizeMouseDown} isDark={isDark} label="Изменить ширину оглавления" />
+    <ResizeHandle edge="left" onMouseDown={onResizeMouseDown} label="Изменить ширину оглавления" />
     <div style={{ padding: '10px 10px 8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: t.fgMuted }}>Оглавление</span>
@@ -1559,7 +1557,7 @@ const DesktopNav: React.FC<{
         <DesktopSlidingPanel
           isDocsPage={isDocsPage} chromeGap={chromeGap} chromeTopGap={chromeTopGap}
           chromeRadius={chromeRadius} panelOpen={panelOpen} panelWidth={state.panelWidth}
-          panelBg={panelBg} shellEnabled={shellEnabled} panelTitle={panelTitle} isStandardMode={isStandardMode}
+          panelBg={panelBg} shellEnabled={shellEnabled} panelTitle={panelTitle}
           currentDocSlug={currentDocSlug} toc={toc} activeId={activeId} isDark={isDark}
           onResizeMouseDown={onResizeMouseDown}
           onClose={handlePanelClose}
