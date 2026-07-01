@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useState, useCallback, useId } from 'react';
+import React, { useContext, useMemo, useState, useCallback, useId, useRef } from 'react';
 import {
   AreaChart, Area,
   BarChart, Bar, Cell,
@@ -19,39 +19,12 @@ export type ChartType =
 
 export type ChartRow = Record<string, string | number>;
 
-export type CurveType =
-  | 'linear' | 'natural' | 'monotone' | 'monotoneX' | 'monotoneY'
-  | 'step' | 'stepBefore' | 'stepAfter' | 'bump';
-
-export type StackType = 'default' | 'stacked' | 'expanded';
-export type StrokeVariant = 'solid' | 'dashed' | 'animated-dashed';
-export type AreaFillVariantProp =
-  | 'gradient' | 'gradient-reverse' | 'solid' | 'dotted' | 'lines' | 'hatched';
-export type BarFillVariantProp =
-  | 'default' | 'hatched' | 'duotone' | 'duotone-reverse' | 'gradient' | 'stripped';
-export type RevealTypeProp =
-  | 'none' | 'left-to-right' | 'right-to-left' | 'center-out' | 'edges-in';
-
 interface ChartBlockProps {
   type: ChartType;
   data: ChartRow[];
   title?: string;
   colors?: string[];
   isDark: boolean;
-  /** Кривая интерполяции для area/radar. По умолчанию 'monotone'. */
-  curveType?: CurveType;
-  /** Как складываются серии: обычные / stacked (100%-friendly) / expanded (в проценты). Переопределяет type='area-stacked'/'bar-stacked' если задан. */
-  stackType?: StackType;
-  /** Стиль обводки линии area-чарта. По умолчанию 'animated-dashed'. */
-  strokeVariant?: StrokeVariant;
-  /** Стиль заливки area-чарта. По умолчанию 'gradient'. */
-  areaVariant?: AreaFillVariantProp;
-  /** Стиль заливки bar-чарта. По умолчанию 'default'. */
-  barVariant?: BarFillVariantProp;
-  /** Направление wipe-анимации при первом рендере area-чарта. По умолчанию 'left-to-right'. */
-  revealType?: RevealTypeProp;
-  /** Soft glow на столбцах bar-чарта. По умолчанию false. */
-  barGlowing?: boolean;
 }
 
 
@@ -444,20 +417,12 @@ interface RenderAreaOptions {
   valueKeys: string[];
   palette: string[];
   stacked: boolean;
-  isExpanded?: boolean;
   hidden: Set<string>;
   hovered: string | null;
   t: ReturnType<typeof tk>;
   variant?: AreaFillVariant;
-  strokeVariant?: StrokeVariant;
+  animatedStroke?: boolean;
   revealType?: RevealType;
-  curveType?: CurveType;
-}
-
-// evilcharts не знает 'bump' у recharts — ближайший визуальный аналог 'natural'
-function toRechartsCurve(curveType: CurveType): 'linear' | 'natural' | 'monotone' | 'monotoneX' | 'monotoneY' | 'step' | 'stepBefore' | 'stepAfter' {
-  if (curveType === 'bump') return 'natural';
-  return curveType;
 }
 
 // Одна серия площади — полный аналог <Area /> из evilcharts: сама генерит
@@ -468,12 +433,11 @@ const AreaSeries: React.FC<{
   color: string;
   stacked: boolean;
   variant: AreaFillVariant;
-  strokeVariant: StrokeVariant;
+  animatedStroke: boolean;
   revealType: RevealType;
-  curveType: CurveType;
   hovered: string | null;
   hidden: Set<string>;
-}> = ({ dataKey, color, stacked, variant, strokeVariant, revealType, curveType, hovered, hidden }) => {
+}> = ({ dataKey, color, stacked, variant, animatedStroke, revealType, hovered, hidden }) => {
   const rawId = useId().replace(/:/g, '');
   const id = `area-${rawId}`;
   const maskId = revealType === 'none' ? undefined : `${id}-reveal-mask`;
@@ -486,13 +450,10 @@ const AreaSeries: React.FC<{
   const showUnselected = hasHover && !isHoveredSeries;
   const opacity = getAreaOpacity(hovered, dataKey);
 
-  const isDashed = strokeVariant === 'dashed' || strokeVariant === 'animated-dashed';
-  const isAnimatedDashed = strokeVariant === 'animated-dashed';
-
   return (
     <>
       <Area
-        type={toRechartsCurve(curveType)}
+        type="monotone"
         dataKey={dataKey}
         connectNulls={false}
         fillOpacity={opacity.fill}
@@ -508,7 +469,7 @@ const AreaSeries: React.FC<{
           filter: `drop-shadow(0 0 4px ${color})`,
         }}
         strokeWidth={AREA_STROKE_WIDTH}
-        strokeDasharray={isDashed ? '3 3' : undefined}
+        strokeDasharray={animatedStroke ? '3 3' : undefined}
         isAnimationActive={false}
         style={{
           ...(maskId ? { mask: `url(#${maskId})` } : {}),
@@ -516,7 +477,7 @@ const AreaSeries: React.FC<{
           transition: 'filter 0.2s',
         }}
       >
-        {isAnimatedDashed && !hasHover && <AreaAnimatedDashedStroke />}
+        {animatedStroke && !hasHover && <AreaAnimatedDashedStroke />}
       </Area>
       <defs>
         <AreaRevealMask id={id} type={revealType} />
@@ -535,18 +496,15 @@ const AreaSeries: React.FC<{
 
 function renderArea({
   data, nameKey, valueKeys, palette,
-  stacked, isExpanded = false, hidden, hovered, t,
+  stacked, hidden, hovered, t,
   variant = 'gradient',
-  strokeVariant = 'animated-dashed',
+  animatedStroke = true,
   revealType = 'left-to-right',
-  curveType = 'monotone',
 }: RenderAreaOptions) {
   return (
-    <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
-      stackOffset={isExpanded ? 'expand' : undefined}>
+    <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
       <XAxis dataKey={nameKey} {...ap(t)} />
-      <YAxis {...ap(t)} width={38}
-        tickFormatter={isExpanded ? (v: number) => `${Math.round(v * 100)}%` : undefined} />
+      <YAxis {...ap(t)} width={38} />
       <Tooltip content={<CustomTooltip t={t} />} cursor={{ stroke: t.gridLine, strokeWidth: 1 }} />
       {valueKeys.map((key) => {
         const idx = valueKeys.indexOf(key);
@@ -556,11 +514,10 @@ function renderArea({
             key={key}
             dataKey={key}
             color={color}
-            stacked={stacked || isExpanded}
+            stacked={stacked}
             variant={variant}
-            strokeVariant={strokeVariant}
+            animatedStroke={animatedStroke}
             revealType={revealType}
-            curveType={curveType}
             hovered={hovered}
             hidden={hidden}
           />
@@ -570,16 +527,7 @@ function renderArea({
   );
 }
 
-// ─── Bar (полный перенос дизайна evilcharts EvilBarChart) ────────────────────
-//
-// Портировано из bar-chart.tsx: 6 вариантов заливки (default / hatched /
-// duotone / duotone-reverse / gradient / stripped), soft glow-filter,
-// stackType default/stacked/percent (percent → stackOffset="expand").
-// Роль selectedDataKey/isClickable в оригинале здесь играют hovered/hidden —
-// как и в area-переносе, у ChartBlock нет отдельного click-select контекста.
-
-type BarFillVariant = 'default' | 'hatched' | 'duotone' | 'duotone-reverse' | 'gradient' | 'stripped';
-export type BarStackType = 'default' | 'stacked' | 'percent';
+// ─── Bar ──────────────────────────────────────────────────────────────────────
 
 function getMaxBarSize(seriesCount: number): number {
   if (seriesCount <= 1) return 96;
@@ -599,13 +547,11 @@ interface RenderBarOptions {
   nameKey: string;
   valueKeys: string[];
   palette: string[];
-  stackType: BarStackType;
+  stacked: boolean;
   horizontal: boolean;
   hidden: Set<string>;
   hovered: string | null;
   t: ReturnType<typeof tk>;
-  variant?: BarFillVariant;
-  glowing?: boolean;
 }
 
 function getBarRadius(
@@ -634,196 +580,9 @@ function getCellOpacity(
   return hovered === rowName ? 1 : 0.22;
 }
 
-// Вертикальный цветной градиент серии — как ColorGradient из оригинала
-const BarColorGradient: React.FC<{ id: string; color: string }> = ({ id, color }) => (
-  <linearGradient id={`${id}-colors`} x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0%" stopColor={color} />
-    <stop offset="100%" stopColor={color} />
-  </linearGradient>
-);
-
-// hatched: диагональная штриховка
-const BarHatchedPattern: React.FC<{ id: string }> = ({ id }) => (
-  <>
-    <pattern id={`${id}-hatched-mask-pattern`} x="0" y="0" width="5" height="5"
-      patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
-      <rect width="5" height="5" fill="white" fillOpacity={0.3} />
-      <rect width="1.5" height="5" fill="white" fillOpacity={1} />
-    </pattern>
-    <mask id={`${id}-hatched-mask`}><rect width="100%" height="100%" fill={`url(#${id}-hatched-mask-pattern)`} /></mask>
-    <pattern id={`${id}-hatched`} patternUnits="userSpaceOnUse" width="100%" height="100%">
-      <rect width="100%" height="100%" fill={`url(#${id}-colors)`} mask={`url(#${id}-hatched-mask)`} />
-    </pattern>
-  </>
-);
-
-// duotone: половина столбца тусклая, половина насыщенная (по горизонтали)
-const BarDuotonePattern: React.FC<{ id: string; reverse?: boolean }> = ({ id, reverse }) => {
-  const key = reverse ? 'duotone-reverse' : 'duotone';
-  const [a, b] = reverse ? [1, 0.4] : [0.4, 1];
-  return (
-    <>
-      <linearGradient id={`${id}-${key}-mask-gradient`} gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="50%" stopColor="white" stopOpacity={a} />
-        <stop offset="50%" stopColor="white" stopOpacity={b} />
-      </linearGradient>
-      <mask id={`${id}-${key}-mask`} maskContentUnits="objectBoundingBox">
-        <rect x="0" y="0" width="1" height="1" fill={`url(#${id}-${key}-mask-gradient)`} />
-      </mask>
-      <pattern id={`${id}-${key}`} patternUnits="objectBoundingBox" patternContentUnits="objectBoundingBox" width="1" height="1">
-        <rect x="0" y="0" width="1" height="1" fill={`url(#${id}-colors)`} mask={`url(#${id}-${key}-mask)`} />
-      </pattern>
-    </>
-  );
-};
-
-// gradient: fade сверху вниз
-const BarGradientPattern: React.FC<{ id: string }> = ({ id }) => (
-  <>
-    <linearGradient id={`${id}-gradient-mask-gradient`} x1="0" y1="0" x2="0" y2="1">
-      <stop offset="20%" stopColor="white" stopOpacity={1} />
-      <stop offset="90%" stopColor="white" stopOpacity={0} />
-    </linearGradient>
-    <mask id={`${id}-gradient-mask`}><rect width="100%" height="100%" fill={`url(#${id}-gradient-mask-gradient)`} /></mask>
-    <pattern id={`${id}-gradient`} patternUnits="userSpaceOnUse" width="100%" height="100%">
-      <rect width="100%" height="100%" fill={`url(#${id}-colors)`} mask={`url(#${id}-gradient-mask)`} />
-    </pattern>
-  </>
-);
-
-// stripped: тусклое тело + сплошная полоса сверху (полоса рисуется отдельным rect в BarSeries)
-const BarStrippedPattern: React.FC<{ id: string }> = ({ id }) => (
-  <>
-    <linearGradient id={`${id}-stripped-mask-gradient`} x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stopColor="white" stopOpacity={0.2} />
-      <stop offset="100%" stopColor="white" stopOpacity={0.2} />
-    </linearGradient>
-    <mask id={`${id}-stripped-mask`}><rect width="100%" height="100%" fill={`url(#${id}-stripped-mask-gradient)`} /></mask>
-    <pattern id={`${id}-stripped`} patternUnits="userSpaceOnUse" width="100%" height="100%">
-      <rect width="100%" height="100%" fill={`url(#${id}-colors)`} mask={`url(#${id}-stripped-mask)`} />
-    </pattern>
-  </>
-);
-
-// soft outer glow, применяется через SVG filter на последнем сегменте стека
-const BarGlowFilter: React.FC<{ id: string }> = ({ id }) => (
-  <filter id={`${id}-glow`} x="-100%" y="-100%" width="300%" height="300%">
-    <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
-    <feColorMatrix in="blur" type="matrix"
-      values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.5 0" result="glow" />
-    <feMerge><feMergeNode in="glow" /><feMergeNode in="SourceGraphic" /></feMerge>
-  </filter>
-);
-
-function getBarVariantFillUrl(id: string, variant: BarFillVariant): string {
-  if (variant === 'default') return `url(#${id}-colors)`;
-  return `url(#${id}-${variant})`;
-}
-
-// Одна серия столбцов — аналог <Bar /> из оригинала: сама генерит свои defs
-// под уникальным id, поэтому разные варианты заливки не сталкиваются стилями.
-const BarSeries: React.FC<{
-  dataKey: string;
-  color: string;
-  stackType: BarStackType;
-  horizontal: boolean;
-  isLastVisible: boolean;
-  variant: BarFillVariant;
-  glowing: boolean;
-  useRowColors: boolean;
-  data: ChartRow[];
-  visibleData: ChartRow[];
-  nameKey: string;
-  palette: string[];
-  hovered: string | null;
-  maxSize: number;
-}> = ({
-  dataKey, color, stackType, horizontal, isLastVisible, variant, glowing,
-  useRowColors, data, visibleData, nameKey, palette, hovered, maxSize,
-}) => {
-  const rawId = useId().replace(/:/g, '');
-  const id = `bar-${rawId}`;
-  const isStacked = stackType !== 'default';
-  const radius = getBarRadius(isStacked, horizontal, isLastVisible);
-  const isStripped = variant === 'stripped';
-  const glow = glowing && (!isStacked || isLastVisible);
-
-  return (
-    <Bar
-      dataKey={dataKey}
-      fill={getBarVariantFillUrl(id, variant)}
-      radius={radius}
-      stackId={isStacked ? 'evil-stack' : undefined}
-      maxBarSize={maxSize}
-      isAnimationActive={false}
-      shape={(props: BarShapeProps) => {
-        const rowName = String(props[nameKey] ?? visibleData[props.index ?? -1]?.[nameKey] ?? '');
-        const multiSeriesOp = getMultiSeriesOpacity(hovered, dataKey);
-        const cellOp = getCellOpacity(useRowColors, hovered, rowName, multiSeriesOp);
-        const cellFill = useRowColors
-          ? palette[(data.findIndex(d => String(d[nameKey]) === rowName) + data.length) % palette.length]
-          : `url(#${id}-${variant === 'default' ? 'colors' : variant})`;
-        const h = Math.max(0, (props.height ?? 0) - 3);
-
-        return (
-          <g opacity={cellOp} style={{ transition: 'opacity 0.18s' }}>
-            <rect x={props.x} y={props.y} width={props.width} height={props.height} fill="transparent" />
-            <rect
-              x={props.x} y={props.y}
-              width={props.width} height={h}
-              rx={radius[0]}
-              fill={cellFill}
-              filter={glow ? `url(#${id}-glow)` : undefined}
-            />
-            {isStripped && (
-              <rect
-                x={props.x} y={(props.y ?? 0) - 4}
-                width={props.width} height={2}
-                rx={1}
-                fill={useRowColors ? cellFill : `url(#${id}-colors)`}
-              />
-            )}
-          </g>
-        );
-      }}
-    >
-      {useRowColors && (
-        <>
-          <defs>
-            <BarColorGradient id={id} color={color} />
-          </defs>
-          {visibleData.map((row, rowIdx) => {
-            const origIdx = data.indexOf(row);
-            const rowName = String(row[nameKey]);
-            return (
-              <Cell
-                key={`cell-${rowName}`}
-                fill={palette[(origIdx === -1 ? rowIdx : origIdx) % palette.length]}
-              />
-            );
-          })}
-        </>
-      )}
-      {!useRowColors && (
-        <defs>
-          <BarColorGradient id={id} color={color} />
-          {variant === 'hatched' && <BarHatchedPattern id={id} />}
-          {variant === 'duotone' && <BarDuotonePattern id={id} />}
-          {variant === 'duotone-reverse' && <BarDuotonePattern id={id} reverse />}
-          {variant === 'gradient' && <BarGradientPattern id={id} />}
-          {variant === 'stripped' && <BarStrippedPattern id={id} />}
-          {glowing && <BarGlowFilter id={id} />}
-        </defs>
-      )}
-    </Bar>
-  );
-};
-
 function renderBar({
   data, nameKey, valueKeys, palette,
-  stackType, horizontal, hidden, hovered, t,
-  variant = 'default',
-  glowing = false,
+  stacked, horizontal, hidden, hovered, t,
 }: RenderBarOptions) {
   const isSingleSeries = valueKeys.length === 1;
 
@@ -846,7 +605,6 @@ function renderBar({
       margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
       barCategoryGap={getCategoryGap(data.length)}
       barGap={bGap}
-      stackOffset={stackType === 'percent' ? 'expand' : undefined}
     >
       {horizontal
         ? <><YAxis dataKey={nameKey} type="category" {...a} width={90} /><XAxis type="number" {...a} /></>
@@ -857,34 +615,67 @@ function renderBar({
         const idx = valueKeys.indexOf(key);
         const seriesColor = palette[idx % palette.length];
         const isLastVisible = visible.indexOf(key) === visible.length - 1;
+        const radius = getBarRadius(stacked, horizontal, isLastVisible);
+        const multiSeriesOp = getMultiSeriesOpacity(hovered, key);
+
         return (
-          <BarSeries
-            key={key}
-            dataKey={key}
-            color={seriesColor}
-            stackType={stackType}
-            horizontal={horizontal}
-            isLastVisible={isLastVisible}
-            variant={variant}
-            glowing={glowing}
-            useRowColors={useRowColors}
-            data={data}
-            visibleData={visibleData}
-            nameKey={nameKey}
-            palette={palette}
-            hovered={hovered}
-            maxSize={maxSize}
-          />
+          <Bar key={key} dataKey={key}
+            fill={seriesColor}
+            radius={radius}
+            stackId={stacked ? 'stack' : undefined}
+            maxBarSize={maxSize}
+            isAnimationActive={false}
+            shape={(props: BarShapeProps) => {
+              const glow = !stacked || isLastVisible;
+
+              const rowName = String(props[nameKey] ?? visibleData[props.index]?.[nameKey] ?? '');
+
+              const cellFill = useRowColors
+                ? palette[(data.findIndex(d => String(d[nameKey]) === rowName) + data.length) % palette.length]
+                : seriesColor;
+
+              const cellOp = getCellOpacity(useRowColors, hovered, rowName, multiSeriesOp);
+
+              return (
+                <g opacity={cellOp} style={{ transition: 'opacity 0.18s' }}>
+                  {glow && (
+                    <rect
+                      x={(props.x ?? 0) - 2}
+                      y={(props.y ?? 0) - 2}
+                      width={(props.width ?? 0) + 4}
+                      height={(props.height ?? 0) + 4}
+                      rx={radius[0]}
+                      fill={cellFill}
+                      style={{ filter: 'blur(7px)', opacity: 0.5 }}
+                    />
+                  )}
+                  <rect
+                    x={props.x} y={props.y}
+                    width={props.width} height={props.height}
+                    rx={radius[0]}
+                    fill={cellFill}
+                  />
+                </g>
+              );
+            }}
+          >
+            {useRowColors && visibleData.map((row, rowIdx) => {
+              const origIdx = data.indexOf(row);
+              return (
+                <Cell
+                  key={`cell-${String(row[nameKey])}`}
+                  fill={palette[(origIdx === -1 ? rowIdx : origIdx) % palette.length]}
+                />
+              );
+            })}
+          </Bar>
         );
       })}
     </BarChart>
   );
 }
 
-// ─── Pie (полный перенос дизайна evilcharts EvilPieChart) ────────────────────
-//
-// Радиальный (диагональный) цветной градиент на каждый сектор вместо плоской
-// заливки, + опциональный glow на выбранном/наведённом секторе.
+// ─── Pie ──────────────────────────────────────────────────────────────────────
 
 interface PieChartInnerProps {
   data: ChartRow[];
@@ -895,7 +686,6 @@ interface PieChartInnerProps {
   hidden: Set<string>;
   hovered: string | null;
   t: ReturnType<typeof tk>;
-  glowOnHover?: boolean;
 }
 
 function getPieSectorOpacity(hovered: string | null, rowName: string): number {
@@ -903,29 +693,10 @@ function getPieSectorOpacity(hovered: string | null, rowName: string): number {
   return hovered === rowName ? 1 : 0.22;
 }
 
-// Радиальный (диагональный x1y1→x2y2) градиент — как RadialColorGradient
-const PieSectorGradient: React.FC<{ id: string; rowName: string; color: string }> = ({ id, rowName, color }) => (
-  <linearGradient id={`${id}-colors-${rowName}`} x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0%" stopColor={color} />
-    <stop offset="100%" stopColor={color} />
-  </linearGradient>
-);
-
-const PieGlowFilter: React.FC<{ id: string; rowName: string }> = ({ id, rowName }) => (
-  <filter id={`${id}-glow-${rowName}`} x="-100%" y="-100%" width="300%" height="300%">
-    <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
-    <feColorMatrix in="blur" type="matrix"
-      values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.5 0" result="glow" />
-    <feMerge><feMergeNode in="glow" /><feMergeNode in="SourceGraphic" /></feMerge>
-  </filter>
-);
-
 const PieChartInner: React.FC<PieChartInnerProps> = ({
-  data, nameKey, valueKeys, palette, donut, hidden, hovered, t, glowOnHover = true,
+  data, nameKey, valueKeys, palette, donut, hidden, hovered, t,
 }) => {
   const valueKey = valueKeys[0] ?? 'value';
-  const rawId = useId().replace(/:/g, '');
-  const id = `pie-${rawId}`;
   const visibleData = data.filter(d => !hidden.has(String(d[nameKey])));
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
 
@@ -939,7 +710,6 @@ const PieChartInner: React.FC<PieChartInnerProps> = ({
 
   const renderActive = useCallback((props: ActivePieShapeProps) => {
     const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
-    const rowName = hovered ?? '';
     return (
       <g>
         <Sector
@@ -948,26 +718,14 @@ const PieChartInner: React.FC<PieChartInnerProps> = ({
           outerRadius={outerRadius + 6}
           startAngle={startAngle} endAngle={endAngle}
           fill={fill}
-          filter={glowOnHover ? `url(#${id}-glow-${rowName})` : undefined}
-          style={glowOnHover ? undefined : { filter: `drop-shadow(0 0 8px ${fill}cc)` }}
+          style={{ filter: `drop-shadow(0 0 8px ${fill}cc)` }}
         />
       </g>
     );
-  }, [donut, glowOnHover, hovered, id]);
+  }, [donut]);
 
   return (
     <PieChart margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
-      <defs>
-        {data.map((entry, i) => {
-          const rowName = String(entry[nameKey]);
-          return (
-            <React.Fragment key={rowName}>
-              <PieSectorGradient id={id} rowName={rowName} color={palette[i % palette.length]} />
-              {glowOnHover && <PieGlowFilter id={id} rowName={rowName} />}
-            </React.Fragment>
-          );
-        })}
-      </defs>
       <Pie
         data={visibleData} dataKey={valueKey} nameKey={nameKey}
         cx="50%" cy="50%"
@@ -982,11 +740,12 @@ const PieChartInner: React.FC<PieChartInnerProps> = ({
       >
         {visibleData.map((entry) => {
           const rowName = String(entry[nameKey]);
+          const origIdx = data.findIndex(d => String(d[nameKey]) === rowName);
           const op = getPieSectorOpacity(hovered, rowName);
           return (
             <Cell
               key={rowName}
-              fill={`url(#${id}-colors-${rowName})`}
+              fill={palette[origIdx % palette.length]}
               opacity={op}
               style={{ outline: 'none', cursor: 'default', transition: 'opacity 0.18s' }}
             />
@@ -1042,16 +801,7 @@ function pluralRecords(n: number): string {
 
 // ─── ChartBlock ───────────────────────────────────────────────────────────────
 
-const ChartBlock: React.FC<ChartBlockProps> = ({
-  type, data, title, colors, isDark,
-  curveType = 'monotone',
-  stackType,
-  strokeVariant = 'animated-dashed',
-  areaVariant = 'gradient',
-  barVariant = 'default',
-  revealType = 'left-to-right',
-  barGlowing = false,
-}) => {
+const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, title, colors, isDark }) => {
   const t       = tk(isDark);
   const palette = colors?.length ? colors : DEFAULT_COLORS;
   const { nameKey, valueKeys } = useMemo(() => detectKeys(data), [data]);
@@ -1088,40 +838,17 @@ const ChartBlock: React.FC<ChartBlockProps> = ({
 
   const chart = useMemo(() => {
     if (isEmpty) return null;
-    // stackType (если передан явно) переопределяет 'area-stacked'/'bar-stacked' из type
-    const areaStacked = stackType ? stackType !== 'default' : type === 'area-stacked';
-    const areaExpanded = stackType === 'expanded';
-    const barStackType: BarStackType = stackType === 'expanded' ? 'percent'
-      : stackType === 'stacked' ? 'stacked'
-      : stackType === 'default' ? 'default'
-      : (type === 'bar-stacked' ? 'stacked' : 'default');
-
     switch (type) {
       case 'area':
+        return renderArea({ data, nameKey, valueKeys, palette, stacked: false, hidden, hovered, t });
       case 'area-stacked':
-        return renderArea({
-          data, nameKey, valueKeys, palette, hidden, hovered, t,
-          stacked: areaStacked, isExpanded: areaExpanded,
-          variant: areaVariant, strokeVariant, revealType, curveType,
-        });
+        return renderArea({ data, nameKey, valueKeys, palette, stacked: true,  hidden, hovered, t });
       case 'bar':
-        return renderBar({
-          data, nameKey, valueKeys, palette, hidden, hovered, t,
-          stackType: barStackType, horizontal: false,
-          variant: barVariant, glowing: barGlowing,
-        });
+        return renderBar({ data, nameKey, valueKeys, palette, stacked: false, horizontal: false, hidden, hovered, t });
       case 'bar-stacked':
-        return renderBar({
-          data, nameKey, valueKeys, palette, hidden, hovered, t,
-          stackType: barStackType === 'default' ? 'stacked' : barStackType, horizontal: false,
-          variant: barVariant, glowing: barGlowing,
-        });
+        return renderBar({ data, nameKey, valueKeys, palette, stacked: true,  horizontal: false, hidden, hovered, t });
       case 'bar-horizontal':
-        return renderBar({
-          data, nameKey, valueKeys, palette, hidden, hovered, t,
-          stackType: barStackType, horizontal: true,
-          variant: barVariant, glowing: barGlowing,
-        });
+        return renderBar({ data, nameKey, valueKeys, palette, stacked: false, horizontal: true,  hidden, hovered, t });
       case 'pie':
       case 'pie-donut':
         return (
@@ -1141,10 +868,7 @@ const ChartBlock: React.FC<ChartBlockProps> = ({
       default:
         return null;
     }
-  }, [
-    type, data, nameKey, valueKeys, palette, hidden, hovered, t, isEmpty,
-    curveType, stackType, strokeVariant, areaVariant, barVariant, revealType, barGlowing,
-  ]);
+  }, [type, data, nameKey, valueKeys, palette, hidden, hovered, t, isEmpty]);
 
   return (
     <div className="not-prose" style={{ margin: '1.25rem 0' }}>
@@ -1159,16 +883,6 @@ const ChartBlock: React.FC<ChartBlockProps> = ({
         .recharts-layer:focus {
           outline: none !important;
           box-shadow: none !important;
-        }
-        @keyframes area-reveal-scalex {
-          from { transform: scaleX(0); }
-          to   { transform: scaleX(1); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          [style*="area-reveal-scalex"] {
-            animation: none !important;
-            transform: scaleX(1) !important;
-          }
         }
       `}</style>
       <div style={{
