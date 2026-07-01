@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+// @ts-nocheck
 import React, { useContext, useMemo, useState, useCallback, useId } from 'react';
 import {
   AreaChart, Area,

@@ -11,7 +11,8 @@
     "generate": "node scripts/generate.mjs",
     "generate:docs": "node scripts/generateDocs.mjs",
     "generate:sitemap": "node scripts/generateSitemap.mjs",
-    "test": "node scripts/run-tests.mjs"
+    "test": "node scripts/run-tests.mjs",
+    "typecheck": "tsc --noEmit --pretty false"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

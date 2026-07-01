@@ -405,7 +405,7 @@ const parseFM = (raw: string): { fm: FM; body: string } => {
     if (ci < 1) return;
     const k = line.slice(0, ci).trim() as keyof FM;
     const v = line.slice(ci + 1).trim().replaceAll(/^["']|["']$/g, '');
-    if (k in fm) (fm as Record<string, string>)[k] = v;
+    if (k in fm) (fm as unknown as Record<string, string>)[k] = v;
   });
   return { fm, body: raw.slice(end + 5) };
 };

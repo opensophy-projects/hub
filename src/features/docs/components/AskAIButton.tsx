@@ -80,6 +80,7 @@ function getUnifiedControlStyle(isDark: boolean, isActive: boolean = false) {
 interface AskAIButtonProps {
   isDark: boolean;
   pageTitle: string;
+  pageSlug?: string;
   markdownContent?: string;
 }
 

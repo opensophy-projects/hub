@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo, type CSSProperties } from 'react';
 import { useMotionValue, useAnimationFrame, useTransform, motion } from 'framer-motion';
 import { SingularityShaders } from './SingularityShaders';
 import { ThemeProvider } from '@/shared/contexts/ThemeContext';
@@ -157,7 +157,7 @@ const GlowingEffectInline = memo(({
         inset:                              0,
         borderRadius:                       'inherit',
         pointerEvents:                      'none',
-      }}
+      } as CSSProperties}
     >
       <div style={{
         position:            'absolute',

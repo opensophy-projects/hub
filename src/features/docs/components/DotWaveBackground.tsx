@@ -180,8 +180,8 @@ const DotWaveBackground: React.FC<DotWaveBackgroundProps> = ({ isDark }) => {
       gl.useProgram(gpu.program);
       gl.uniform1f(gpu.uTime, t);
       gl.uniform3f(gpu.uResolution, canvas.width, canvas.height, 1);
-      gl.uniform3f(gpu.uShadow,    ...preset.shadow);
-      gl.uniform3f(gpu.uHighlight, ...preset.highlight);
+      gl.uniform3f(gpu.uShadow, preset.shadow[0], preset.shadow[1], preset.shadow[2]);
+      gl.uniform3f(gpu.uHighlight, preset.highlight[0], preset.highlight[1], preset.highlight[2]);
 
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);

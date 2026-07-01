@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckCircle, XCircle, Info, AlertTriangle, X } from 'lucide-react';
+import { CheckCircle, XCircle, Info, AlertTriangle, X, type LucideIcon } from 'lucide-react';
 import { T } from './uiTheme';
 import { removeToast, subscribeToasts, type ToastItem, type ToastType } from './toastBus';
 
 const TOAST_CONFIG: Record<ToastType, {
-  icon: React.FC<{ size: number }>;
+  icon: LucideIcon;
   color: string;
   bg: string;
   border: string;
