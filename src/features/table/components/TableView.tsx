@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef, useLayoutEffect } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
 import type { ParsedRow } from '../types/table';
 import { SortIcon } from './SortIcons';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { getTableStyles } from './tableStyles';
 import { makeTokens } from '@/shared/tokens/theme';
+import { getTableUiTokens } from './tableUiTheme';
 
 export type ColumnAlignment = 'left' | 'center' | 'right' | null;
 type SortDirection = 'asc' | 'desc' | 'none';
@@ -20,6 +21,7 @@ interface TableViewProps {
   onSort: (colIndex: number) => void;
   headerAlignments?: ColumnAlignment[];
   fullscreen?: boolean;
+  fitToScreen?: boolean;
 }
 
 type Tok = {
@@ -28,21 +30,17 @@ type Tok = {
   fadeTo: string; thumb: string; thumbHov: string; track: string;
 };
 
-// Шапка (thBg) и чётные строки (rowEven) теперь равны unifiedBg — тому же
-// фону, что у тулбара/панелей/футера карточки. Только нечётные строки
-// (rowOdd) получают лёгкий контраст для читаемости — вместо жёсткой
-// границы между "своей" зоной таблицы и остальным блоком.
 function tok(isDark: boolean): Tok {
   const t = makeTokens(isDark);
-  const unifiedBg = isDark ? '#0a0a0a' : '#e8e7e3';
+  const ui = getTableUiTokens(isDark);
   return isDark ? {
-    thBg: unifiedBg, thColor: 'rgba(255,255,255,0.35)', thBorder: 'rgba(255,255,255,0.07)', thActColor: 'rgba(255,255,255,0.82)',
-    rowEven: unifiedBg, rowOdd: 'rgba(255,255,255,0.03)', rowHover: t.surfaceHov, cellBorder: 'rgba(255,255,255,0.05)', cellColor: 'rgba(255,255,255,0.82)',
-    fadeTo: unifiedBg, thumb: t.thumb, thumbHov: t.thumbHov, track: t.track,
+    thBg: ui.unifiedBg, thColor: 'rgba(255,255,255,0.35)', thBorder: 'rgba(255,255,255,0.07)', thActColor: 'rgba(255,255,255,0.82)',
+    rowEven: ui.unifiedBg, rowOdd: ui.zebraBg, rowHover: t.surfaceHov, cellBorder: 'rgba(255,255,255,0.05)', cellColor: 'rgba(255,255,255,0.82)',
+    fadeTo: ui.unifiedBg, thumb: t.thumb, thumbHov: t.thumbHov, track: t.track,
   } : {
-    thBg: unifiedBg, thColor: 'rgba(0,0,0,0.38)', thBorder: 'rgba(0,0,0,0.08)', thActColor: 'rgba(0,0,0,0.85)',
-    rowEven: unifiedBg, rowOdd: 'rgba(0,0,0,0.025)', rowHover: '#cccbc6', cellBorder: 'rgba(0,0,0,0.06)', cellColor: 'rgba(0,0,0,0.85)',
-    fadeTo: unifiedBg, thumb: t.thumb, thumbHov: t.thumbHov, track: t.track,
+    thBg: ui.unifiedBg, thColor: 'rgba(0,0,0,0.38)', thBorder: 'rgba(0,0,0,0.08)', thActColor: 'rgba(0,0,0,0.85)',
+    rowEven: ui.unifiedBg, rowOdd: ui.zebraBg, rowHover: '#cccbc6', cellBorder: 'rgba(0,0,0,0.06)', cellColor: 'rgba(0,0,0,0.85)',
+    fadeTo: ui.unifiedBg, thumb: t.thumb, thumbHov: t.thumbHov, track: t.track,
   };
 }
 
@@ -63,16 +61,49 @@ function rowBg(t: Tok, hov: boolean, even: boolean): string {
 export const TableView: React.FC<TableViewProps> = ({
   isDark, headers, rows, visibleColumns, searchQuery,
   sortColumn, sortDirection, onSort, headerAlignments = [], fullscreen = false,
+  fitToScreen = false,
 }) => {
   const t = useMemo(() => tok(isDark), [isDark]);
   const { scrollRef, dragStyle, dragHandlers } = useDragScroll();
+
+  // ─── Fit-to-screen: измеряем реальную и доступную ширину, считаем scale ────
+  const wrapRef  = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
+  const [fitScale, setFitScale] = useState(1);
+
+  useLayoutEffect(() => {
+    if (!fitToScreen) { setFitScale(1); return; }
+
+    const measure = () => {
+      const wrapEl  = wrapRef.current;
+      const tableEl = tableRef.current;
+      if (!wrapEl || !tableEl) return;
+      // Сбрасываем масштаб перед измерением, чтобы получить реальную ширину контента
+      tableEl.style.transform = 'none';
+      const available = wrapEl.clientWidth;
+      const natural = tableEl.scrollWidth;
+      if (natural > available && available > 0) {
+        setFitScale(Math.max(0.5, available / natural));
+      } else {
+        setFitScale(1);
+      }
+    };
+
+    // Меряем после того, как перенос текста (white-space: normal) уже применился
+    const raf = requestAnimationFrame(measure);
+    window.addEventListener('resize', measure);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', measure);
+    };
+  }, [fitToScreen, headers, rows, visibleColumns]);
 
   return (
     <>
       <style>{getTableStyles(isDark)}</style>
       <style>{`
         .tb-scroll {
-          overflow-x: auto;
+          overflow-x: ${fitToScreen ? 'hidden' : 'auto'};
           overflow-y: auto;
           -webkit-overflow-scrolling: touch;
           scrollbar-width: thin;
@@ -92,7 +123,7 @@ export const TableView: React.FC<TableViewProps> = ({
           content: '';
           position: absolute;
           top: 0; right: 0; bottom: 0;
-          width: 20px;
+          width: ${fitToScreen ? '0px' : '20px'};
           background: linear-gradient(to right, transparent, ${t.fadeTo});
           pointer-events: none;
           opacity: 0.8;
@@ -102,15 +133,20 @@ export const TableView: React.FC<TableViewProps> = ({
           content: '';
           position: absolute;
           top: 0; left: 0; bottom: 0;
-          width: 20px;
+          width: ${fitToScreen ? '0px' : '20px'};
           background: linear-gradient(to left, transparent, ${t.fadeTo});
           pointer-events: none;
           opacity: 0.8;
           z-index: 1;
         }
+        .tb-fit-table th, .tb-fit-table td {
+          white-space: normal !important;
+          word-break: break-word;
+        }
       `}</style>
 
       <div
+        ref={wrapRef}
         className="tb-scroll-wrap"
         style={{
           flex:          fullscreen ? 1         : undefined,
@@ -127,17 +163,23 @@ export const TableView: React.FC<TableViewProps> = ({
             maxHeight: fullscreen ? undefined : 480,
             height:    fullscreen ? '100%'    : undefined,
             flex:      fullscreen ? 1         : undefined,
-            ...dragStyle,
+            ...(fitToScreen ? {} : dragStyle),
           }}
-          {...dragHandlers}
+          {...(fitToScreen ? {} : dragHandlers)}
         >
-          <table style={{
-            borderCollapse: 'separate',
-            borderSpacing: 0,
-            width: '100%',
-            minWidth: 'max-content',
-            tableLayout: 'auto',
-          }}>
+          <table
+            ref={tableRef}
+            className={fitToScreen ? 'tb-fit-table' : undefined}
+            style={{
+              borderCollapse: 'separate',
+              borderSpacing: 0,
+              width: fitToScreen ? `${100 / fitScale}%` : '100%',
+              minWidth: fitToScreen ? undefined : 'max-content',
+              tableLayout: fitToScreen ? 'fixed' : 'auto',
+              transform: fitToScreen && fitScale < 1 ? `scale(${fitScale})` : undefined,
+              transformOrigin: 'top left',
+            }}
+          >
             <TableHead
               t={t} isDark={isDark}
               headers={headers}
@@ -197,7 +239,6 @@ const TableHead: React.FC<{
           borderBottom: `1px solid ${t.thBorder}`,
           borderTop: 'none', borderLeft: 'none', borderRight: 'none',
           boxShadow: 'none',
-          whiteSpace: 'nowrap',
         }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 5,
