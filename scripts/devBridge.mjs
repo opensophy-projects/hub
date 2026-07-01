@@ -1,7 +1,3 @@
-/**
- * Hub Dev Panel — fetch-only Bridge
- */
-
 import fs   from 'node:fs';
 import path from 'node:path';
 
@@ -15,8 +11,6 @@ const CUSTOM_DIR = path.join(ROOT, 'src/custom');
 const BASE_URL   = 'https://opensophy.com';
 
 const LOCALHOST_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
-
-// ─── Разрешённые пути ─────────────────────────────────────────────────────────
 
 const ALLOWED_WRITE = [
   'Docs/',
@@ -82,8 +76,6 @@ function normalizeSiteConfig(config) {
   };
 }
 
-// ─── Загрузка утилит ──────────────────────────────────────────────────────────
-
 let _utils = null;
 
 async function loadUtils() {
@@ -95,8 +87,6 @@ async function loadUtils() {
 function pathToFileURL(p) {
   return 'file:///' + p.replaceAll('\\', '/').replace(/^\//, '');
 }
-
-// ─── Генерация манифеста и sitemap ────────────────────────────────────────────
 
 async function runGenerate() {
   const { scanDocsDirectoryRecursive, buildDocFromPath } = await loadUtils();
@@ -152,8 +142,6 @@ async function runGenerate() {
   };
 }
 
-// ─── Обработчики команд ───────────────────────────────────────────────────────
-
 async function handlePing() {
   return { pong: true, ts: Date.now() };
 }
@@ -176,7 +164,6 @@ async function handleMkdir({ dirPath }) {
 async function handleReadFile({ filePath }) {
   const abs = resolveInsideRoot(filePath);
   if (!canRead(abs)) throw new Error(`Read not allowed: ${relPath(abs)}`);
-  // Если файл не существует — возвращаем пустую строку вместо ошибки
   try {
     return { content: await fs.promises.readFile(abs, 'utf-8') };
   } catch (err) {
@@ -304,7 +291,6 @@ async function handleRenderPreview({ markdown }) {
   }
 }
 
-// ─── Обработчики site-config ──────────────────────────────────────────────────
 
 async function handleReadSiteConfig() {
   return { config: normalizeSiteConfig(await readSiteConfigFile()) };
@@ -315,7 +301,6 @@ async function handleWriteSiteConfig({ config }) {
   return { ok: true };
 }
 
-// ─── Таблица маршрутизации команд ─────────────────────────────────────────────
 
 const HANDLERS = {
   ping:            handlePing,
@@ -338,7 +323,6 @@ const HANDLERS = {
 
 const MUTATING = new Set(['writeFile', 'mkdir', 'deleteFile', 'runGenerate']);
 
-// ─── Astro интеграция ─────────────────────────────────────────────────────────
 
 function isLocalDevRequest(req) {
   const host = (req.headers.host || '').split(':')[0];

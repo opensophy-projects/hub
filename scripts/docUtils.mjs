@@ -5,7 +5,6 @@ import katex from 'katex';
 
 marked.setOptions({ breaks: true, gfm: true });
 
-// ─── KaTeX ────────────────────────────────────────────────────────────────────
 
 function renderKatex(tex, displayMode) {
   try {
@@ -45,7 +44,6 @@ export function preprocessKatex(content) {
   return result.replaceAll(/___PROTECTED_(\d+)___/g, (_, i) => protected_[Number.parseInt(i, 10)]);
 }
 
-// ─── Slug-генератор ───────────────────────────────────────────────────────────
 
 function toSlug(str) {
   return str
@@ -55,8 +53,6 @@ function toSlug(str) {
     .replaceAll(/-+/g, '-')
     .replaceAll(/^-|-$/g, '');
 }
-
-// ─── Парсер имён записей ──────────────────────────────────────────────────────
 
 export function parseEntryName(name) {
   const typeMatch = name.match(/^\[([NCA])\]/);
@@ -80,8 +76,6 @@ export function parseEntryName(name) {
 
   return { type: entryType, icon, title, slug };
 }
-
-// ─── Парсеры навигации и категорий ───────────────────────────────────────────
 
 export function parseNavPopoverFolder(folderName) {
   const entry = parseEntryName(folderName);
@@ -112,7 +106,6 @@ export function parseCategoryName(folderName) {
   return { title: folderName, slug: toSlug(folderName), icon: null };
 }
 
-// ─── Файловая система ─────────────────────────────────────────────────────────
 
 export function scanDocsDirectoryRecursive(baseDir) {
   const results = [];
@@ -133,7 +126,6 @@ export function scanDocsDirectoryRecursive(baseDir) {
   return results;
 }
 
-// ─── Front matter ─────────────────────────────────────────────────────────────
 
 export function extractFrontMatter(content) {
   if (!content.startsWith('---\n')) return { metadata: {}, content };
@@ -156,11 +148,7 @@ export function extractFrontMatter(content) {
   return { metadata, content: rest };
 }
 
-// ─── Вспомогательные функции ──────────────────────────────────────────────────
 
-// nosemgrep: javascript.browser.security.insufficient-escape-sequence.insufficient-escape-sequence
-// This escapes attribute values in build-time generated HTML from controlled markdown sources.
-// The escape sequence covers all HTML5 attribute-relevant characters in the correct order.
 function escapeAttr(str) {
   return String(str)
     .replaceAll('&', '&amp;')
@@ -489,8 +477,6 @@ function handleTabsBlock(trimmed, lines, i, codeBlocks, output) {
   return endIndex + 1;
 }
 
-// ─── Препроцессор кастомных блоков ───────────────────────────────────────────
-
 function preprocessCustomBlocks(content, codeBlocks) {
   const lines  = content.split('\n');
   const output = [];
@@ -513,8 +499,6 @@ function preprocessCustomBlocks(content, codeBlocks) {
 
   return output.join('\n');
 }
-
-// ─── Препроцессор расширений Markdown ────────────────────────────────────────
 
 export function preprocessMarkdownExtensions(content) {
   const codeBlocks = [];

@@ -14,7 +14,6 @@ interface ScrollFloatProps {
   scrollStart?: string;
   scrollEnd?: string;
   stagger?: number;
-  /** Режим демо: автоматически проигрывает анимацию без скролла */
   demo?: boolean;
 }
 
@@ -47,7 +46,6 @@ const ScrollFloat: React.FC<ScrollFloatProps> = ({
 
     const charElements = el.querySelectorAll('.inline-block');
 
-    // ─── Demo-режим: автоплей через timeline, без ScrollTrigger ──────────────
     if (demo) {
       const tl = gsap.timeline({ repeat: -1, repeatDelay: 1.2 });
 

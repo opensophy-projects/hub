@@ -5,6 +5,7 @@ import { SortIcon } from './SortIcons';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { getTableStyles } from './tableStyles';
 import { makeTokens } from '@/shared/tokens/theme';
+import { getTableUiTokens } from './tableUiTheme';
 
 export type ColumnAlignment = 'left' | 'center' | 'right' | null;
 type SortDirection = 'asc' | 'desc' | 'none';
@@ -28,16 +29,21 @@ type Tok = {
   fadeTo: string; thumb: string; thumbHov: string; track: string;
 };
 
+// Шапка (thBg) и чётные строки (rowEven) равны unifiedBg — тому же фону,
+// что у тулбара/панелей/футера карточки. Нечётные строки (rowOdd) — это
+// отдельный, явно заданный цвет "зебры" (zebraBg из tableUiTheme):
+// #0f0f0f в тёмной теме, #e1dfdb в светлой.
 function tok(isDark: boolean): Tok {
   const t = makeTokens(isDark);
+  const ui = getTableUiTokens(isDark);
   return isDark ? {
-    thBg: t.surface, thColor: 'rgba(255,255,255,0.35)', thBorder: 'rgba(255,255,255,0.07)', thActColor: 'rgba(255,255,255,0.82)',
-    rowEven: t.bg, rowOdd: t.surface, rowHover: t.surfaceHov, cellBorder: 'rgba(255,255,255,0.05)', cellColor: 'rgba(255,255,255,0.82)',
-    fadeTo: t.bg, thumb: t.thumb, thumbHov: t.thumbHov, track: t.track,
+    thBg: ui.unifiedBg, thColor: 'rgba(255,255,255,0.35)', thBorder: 'rgba(255,255,255,0.07)', thActColor: 'rgba(255,255,255,0.82)',
+    rowEven: ui.unifiedBg, rowOdd: ui.zebraBg, rowHover: t.surfaceHov, cellBorder: 'rgba(255,255,255,0.05)', cellColor: 'rgba(255,255,255,0.82)',
+    fadeTo: ui.unifiedBg, thumb: t.thumb, thumbHov: t.thumbHov, track: t.track,
   } : {
-    thBg: t.surface, thColor: 'rgba(0,0,0,0.38)', thBorder: 'rgba(0,0,0,0.08)', thActColor: 'rgba(0,0,0,0.85)',
-    rowEven: t.bg, rowOdd: t.surface, rowHover: '#cccbc6', cellBorder: 'rgba(0,0,0,0.06)', cellColor: 'rgba(0,0,0,0.85)',
-    fadeTo: t.bg, thumb: t.thumb, thumbHov: t.thumbHov, track: t.track,
+    thBg: ui.unifiedBg, thColor: 'rgba(0,0,0,0.38)', thBorder: 'rgba(0,0,0,0.08)', thActColor: 'rgba(0,0,0,0.85)',
+    rowEven: ui.unifiedBg, rowOdd: ui.zebraBg, rowHover: '#cccbc6', cellBorder: 'rgba(0,0,0,0.06)', cellColor: 'rgba(0,0,0,0.85)',
+    fadeTo: ui.unifiedBg, thumb: t.thumb, thumbHov: t.thumbHov, track: t.track,
   };
 }
 
@@ -192,7 +198,6 @@ const TableHead: React.FC<{
           borderBottom: `1px solid ${t.thBorder}`,
           borderTop: 'none', borderLeft: 'none', borderRight: 'none',
           boxShadow: 'none',
-          whiteSpace: 'nowrap',
         }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 5,

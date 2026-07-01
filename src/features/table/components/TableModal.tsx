@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { X, Filter, RotateCcw, Copy, Check, ChevronDown, Search } from 'lucide-react';
+import React, { useEffect, useMemo } from 'react';
+import { X, Search } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { FiltersPanel } from './FiltersPanel';
 import { ColumnsPanel } from './ColumnsPanel';
 import { TableView } from './TableView';
 import { parseTableHtml } from '../utils/tableParser';
 import { useTableControls } from '../hooks/useTableControls';
-import { parseTableForCopy, toMd, toTsv, type CopyFormat } from '../utils/copyUtils';
-import { getTableUiTokens, type TableUiTokens } from './tableUiTheme';
+import { getTableUiTokens } from './tableUiTheme';
+import { TableToolbarMenu } from './TableToolbarMenu';
 
 interface TableModalProps {
   isOpen: boolean;
@@ -18,154 +18,12 @@ interface TableModalProps {
 
 const tk = getTableUiTokens;
 
-// ─── Дропдаун, рендерится в body ──────────────────────────────────────────────
-const BodyDropdown: React.FC<{
-  anchorRef: React.RefObject<HTMLButtonElement>;
-  isDark: boolean;
-  onClose: () => void;
-  children: React.ReactNode;
-}> = ({ anchorRef, isDark, onClose, children }) => {
-  const t = tk(isDark);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState({ top: 0, left: 0 });
-
-  useEffect(() => {
-    const r = anchorRef.current?.getBoundingClientRect();
-    if (!r) return;
-    setPos({ top: r.bottom + 6, left: Math.min(r.left, window.innerWidth - 202) });
-  }, [anchorRef]);
-
-  useEffect(() => {
-    const h = (e: MouseEvent) => {
-      const target = e.target instanceof Node ? e.target : null;
-      if (!menuRef.current?.contains(target) && !anchorRef.current?.contains(target))
-        onClose();
-    };
-    document.addEventListener('mousedown', h, true);
-    return () => document.removeEventListener('mousedown', h, true);
-  }, [anchorRef, onClose]);
-
-  return createPortal(
-    <>
-      <style>{`@keyframes mdIn{from{opacity:0;transform:translateY(-5px) scale(0.97)}to{opacity:1;transform:none}}`}</style>
-      <div ref={menuRef} style={{
-        position: 'fixed',
-        top: pos.top,
-        left: pos.left,
-        minWidth: 192,
-        zIndex: 2147483647,
-        background: t.menuBg,
-        border: `1px solid ${t.menuBdr}`,
-        borderRadius: 10,
-        boxShadow: isDark
-          ? '0 12px 40px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.05)'
-          : '0 12px 32px rgba(0,0,0,0.2)',
-        overflow: 'hidden',
-        animation: 'mdIn 0.13s cubic-bezier(0.2,0,0,1)',
-        isolation: 'isolate',
-      }}>
-        {children}
-      </div>
-    </>,
-    document.body,
-  );
-};
-
-// ─── Кнопка-пилюля: иконка сверху, подпись снизу ─────────────────────────────
-const Pill: React.FC<{
-  onClick: () => void; title: string; label: string;
-  icon: React.ReactNode; t: TableUiTokens;
-  active?: boolean; danger?: boolean;
-}> = ({ onClick, title, label, icon, t, active, danger }) => {
-  const bg  = active ? t.btnActBg  : t.btnBg;
-  const bdr = active ? t.btnActBdr : t.btnBdr;
-  let color: string;
-  if (danger)      color = t.dangerClr;
-  else if (active) color = t.btnActClr;
-  else             color = t.btnClr;
-
-  return (
-    <button onClick={onClick} title={title} style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', gap: 3,
-      padding: '5px 12px', minWidth: 52, height: 44,
-      borderRadius: 8, border: `1px solid ${bdr}`,
-      background: bg, color, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s',
-    }}
-      onMouseEnter={e => { e.currentTarget.style.background = t.btnHov; }}
-      onMouseLeave={e => { e.currentTarget.style.background = bg; }}
-    >
-      {icon}
-      <span style={{ fontSize: 10, fontWeight: active ? 600 : 400, lineHeight: 1, whiteSpace: 'nowrap' }}>{label}</span>
-    </button>
-  );
-};
-
-// ─── Кнопка копирования ───────────────────────────────────────────────────────
-const CopyBtn: React.FC<{ isDark: boolean; tableHtml: string; t: TableUiTokens }> = ({ isDark, tableHtml, t }) => {
-  const [open, setOpen]     = useState(false);
-  const [copied, setCopied] = useState<CopyFormat | null>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const isCopied = !!copied;
-
-  const doCopy = async (fmt: CopyFormat) => {
-    const { headers, rows } = parseTableForCopy(tableHtml);
-    await navigator.clipboard.writeText(fmt === 'md' ? toMd(headers, rows) : toTsv(headers, rows));
-    setCopied(fmt); setOpen(false);
-    setTimeout(() => setCopied(null), 2000);
-  };
-
-  const bg    = isCopied ? t.copiedBg  : t.btnBg;
-  const bdr   = isCopied ? t.copiedBdr : t.btnBdr;
-  const color = isCopied ? '#22c55e'   : t.btnClr;
-
-  return (
-    <>
-      <button
-        ref={btnRef}
-        onClick={() => setOpen(v => !v)}
-        title="Копировать"
-        style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          justifyContent: 'center', gap: 3,
-          padding: '5px 12px', minWidth: 68, height: 44,
-          borderRadius: 8, border: `1px solid ${bdr}`,
-          background: bg, color, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s',
-        }}
-        onMouseEnter={e => { if (!isCopied) e.currentTarget.style.background = t.btnHov; }}
-        onMouseLeave={e => { if (!isCopied) e.currentTarget.style.background = bg; }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          {isCopied ? <Check size={13} strokeWidth={2.5} /> : <Copy size={13} />}
-          <ChevronDown size={10} style={{ opacity: 0.45, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.13s' }} />
-        </div>
-        <span style={{ fontSize: 10, lineHeight: 1, fontWeight: isCopied ? 600 : 400 }}>
-          {isCopied ? 'Скопировано' : 'Копировать'}
-        </span>
-      </button>
-
-      {open && (
-        <BodyDropdown anchorRef={btnRef} isDark={isDark} onClose={() => setOpen(false)}>
-          {(['md', 'excel'] as CopyFormat[]).map(fmt => (
-            <button key={fmt} onClick={() => doCopy(fmt)} style={{
-              width: '100%', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 2,
-              border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left',
-              color: t.menuClr, transition: 'background 0.1s',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.background = t.menuHov; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-            >
-              <span style={{ fontSize: 13, fontWeight: 500 }}>{fmt === 'md' ? 'Markdown' : 'Excel / TSV'}</span>
-              <span style={{ fontSize: 11, color: t.menuSub }}>{fmt === 'md' ? 'Для документов' : 'Tab-separated'}</span>
-            </button>
-          ))}
-        </BodyDropdown>
-      )}
-    </>
-  );
-};
-
 // ─── Модальное окно таблицы ───────────────────────────────────────────────────
+//
+// Единый фон карточки (#0a0a0a / #e8e7e3) для тулбара/панели фильтров/тела
+// таблицы/футера — без внутренних разделительных линий, как в CodeBlock.
+// Все действия (копировать/фильтры/сброс/закрыть) спрятаны в один
+// TableToolbarMenu вместо ряда отдельных пилюль.
 const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onClose }) => {
   const t = tk(isDark);
 
@@ -209,8 +67,6 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
     return () => document.removeEventListener('keydown', h);
   }, [isOpen, onClose]);
 
-  const filterLabel = activeFilterCount > 0 ? `Фильтры · ${activeFilterCount}` : 'Фильтры';
-
   if (!isOpen) return null;
 
   return createPortal(
@@ -252,7 +108,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
         {/* Тулбар */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          padding: '8px 10px', borderBottom: `1px solid ${t.border}`,
+          padding: '8px 10px',
           background: t.barBg, flexWrap: 'nowrap', minWidth: 0, flexShrink: 0,
         }}>
           <div style={{ position: 'relative', flex: '1 1 0', minWidth: 0 }}>
@@ -279,23 +135,15 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
             )}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-            <CopyBtn isDark={isDark} tableHtml={tableHtml} t={t} />
-            <Pill
-              onClick={() => setShowFilters(v => !v)}
-              title="Фильтры" label={filterLabel}
-              icon={<Filter size={14} />} t={t}
-              active={showFilters || activeFilterCount > 0}
-            />
-            {activeFilterCount > 0 && (
-              <Pill
-                onClick={resetFilters}
-                title="Сбросить" label="Сбросить"
-                icon={<RotateCcw size={14} />} t={t} danger
-              />
-            )}
-            <Pill onClick={onClose} title="Закрыть (Esc)" label="Закрыть" icon={<X size={14} />} t={t} />
-          </div>
+          <TableToolbarMenu
+            isDark={isDark}
+            tableHtml={tableHtml}
+            showFilters={showFilters}
+            onToggleFilters={() => setShowFilters(v => !v)}
+            activeFilterCount={activeFilterCount}
+            onResetFilters={resetFilters}
+            onClose={onClose}
+          />
         </div>
 
         {/* Панель фильтров — независимый скролл */}
@@ -324,6 +172,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
           flexDirection: 'column',
           overflow: 'hidden',
           minHeight: 0,
+          minWidth: 0,
           touchAction: 'pan-x pan-y',
         }}>
           <TableView
@@ -343,7 +192,6 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
         {/* Футер со счётчиком строк */}
         <div style={{
           padding: '6px 12px', flexShrink: 0,
-          borderTop: `1px solid ${t.border}`,
           fontSize: 11, color: t.footerClr,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           userSelect: 'none', background: t.modalBg,

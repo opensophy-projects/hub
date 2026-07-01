@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Search, X, ChevronDown, ChevronUp } from 'lucide-react';
-import { makeTokens } from '@/shared/tokens/theme';
+import { makeTokens, themed } from '@/shared/tokens/theme';
+import { getTableUiTokens } from './tableUiTheme';
 
 interface FiltersPanelProps {
   isDark: boolean;
@@ -10,55 +11,36 @@ interface FiltersPanelProps {
   getUniqueValuesForColumn: (colIndex: number) => string[];
 }
 
-// Статические наборы токенов для тёмной и светлой темы
-const DARK_TOKENS = {
-  bg:       '#0a0a0a',
-  panelBg:  '#111111',
-  border:   'rgba(255,255,255,0.07)',
-  rowBg:    '#161616',
-  rowBdr:   'rgba(255,255,255,0.07)',
-  headClr:  'rgba(255,255,255,0.7)',
-  headActC: '#ffffff',
-  subClr:   'rgba(255,255,255,0.28)',
-  tagBg:    'rgba(255,255,255,0.07)',
-  tagBdr:   'rgba(255,255,255,0.1)',
-  tagClr:   'rgba(255,255,255,0.6)',
-  actBg:    'rgba(255,255,255,0.16)',
-  actBdr:   'rgba(255,255,255,0.3)',
-  actClr:   '#ffffff',
-  inpBg:    'rgba(255,255,255,0.06)',
-  inpBdr:   'rgba(255,255,255,0.1)',
-  inpClr:   'rgba(255,255,255,0.8)',
-  plhClr:   'rgba(255,255,255,0.25)',
-};
+// ─── Токены ───────────────────────────────────────────────────────────────────
+//
+// panelBg берётся из getTableUiTokens().unifiedBg — тот же фон, что у
+// карточки/тулбара, чтобы панель фильтров не отделялась визуально.
+// rowBg (аккордеон каждой колонки) сделан слегка контрастнее unifiedBg,
+// чтобы структура оставалась читаемой без явных линий-разделителей.
 
-const LIGHT_TOKENS = {
-  bg:       '#E8E7E3',
-  panelBg:  '#d8d7d3',
-  border:   'rgba(0,0,0,0.08)',
-  rowBg:    '#cbcac6',
-  rowBdr:   'rgba(0,0,0,0.08)',
-  headClr:  'rgba(0,0,0,0.7)',
-  headActC: '#000000',
-  subClr:   'rgba(0,0,0,0.32)',
-  tagBg:    'rgba(0,0,0,0.06)',
-  tagBdr:   'rgba(0,0,0,0.1)',
-  tagClr:   'rgba(0,0,0,0.6)',
-  actBg:    'rgba(0,0,0,0.13)',
-  actBdr:   'rgba(0,0,0,0.25)',
-  actClr:   '#000000',
-  inpBg:    'rgba(0,0,0,0.06)',
-  inpBdr:   'rgba(0,0,0,0.1)',
-  inpClr:   'rgba(0,0,0,0.8)',
-  plhClr:   'rgba(0,0,0,0.3)',
-};
-
-// Возвращает токены для текущей темы
 function useThemeTokens(isDark: boolean) {
   const t = makeTokens(isDark);
-  return isDark
-    ? { ...DARK_TOKENS, bg: t.bg, panelBg: t.surface, border: t.border, inpBg: t.inpBg, inpBdr: t.inpBdr, inpClr: t.inpClr, plhClr: t.plhClr }
-    : { ...LIGHT_TOKENS, bg: t.bg, panelBg: t.surface, border: t.border, inpBg: t.inpBg, inpBdr: t.inpBdr, inpClr: t.inpClr, plhClr: t.plhClr };
+  const ui = getTableUiTokens(isDark);
+  return {
+    bg:       ui.unifiedBg,
+    panelBg:  ui.unifiedBg,
+    border:   t.border,
+    rowBg:    themed(isDark, 'rgba(255,255,255,0.04)', 'rgba(0,0,0,0.035)'),
+    rowBdr:   themed(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.08)'),
+    headClr:  themed(isDark, 'rgba(255,255,255,0.7)', 'rgba(0,0,0,0.7)'),
+    headActC: themed(isDark, '#ffffff', '#000000'),
+    subClr:   themed(isDark, 'rgba(255,255,255,0.28)', 'rgba(0,0,0,0.32)'),
+    tagBg:    themed(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.06)'),
+    tagBdr:   themed(isDark, 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.1)'),
+    tagClr:   themed(isDark, 'rgba(255,255,255,0.6)', 'rgba(0,0,0,0.6)'),
+    actBg:    themed(isDark, 'rgba(255,255,255,0.16)', 'rgba(0,0,0,0.13)'),
+    actBdr:   themed(isDark, 'rgba(255,255,255,0.3)', 'rgba(0,0,0,0.25)'),
+    actClr:   themed(isDark, '#ffffff', '#000000'),
+    inpBg:    ui.unifiedBg,
+    inpBdr:   t.inpBdr,
+    inpClr:   t.inpClr,
+    plhClr:   t.plhClr,
+  };
 }
 
 // ─── Подкомпоненты ────────────────────────────────────────────────────────────
@@ -135,7 +117,7 @@ const FilterTags: React.FC<FilterTagsProps> = ({ filtered, activeFilters, colInd
 export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   isDark, headers, filters, onToggleFilter, getUniqueValuesForColumn,
 }) => {
-  const { panelBg, border, bg } = useThemeTokens(isDark);
+  const { panelBg, bg } = useThemeTokens(isDark);
 
   const columns = useMemo(() =>
     headers.map((header, colIndex) => ({
@@ -149,7 +131,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   const activeLabel: string = totalActive === 0 ? '' : ('· ' + totalActive.toString() + ' активно');
 
   return (
-    <div style={{ background: panelBg, borderBottom: `1px solid ${border}`, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ background: panelBg, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.32)' }}>
         {`Фильтры по колонкам ${activeLabel}`.trimEnd()}
       </div>
@@ -222,7 +204,7 @@ const FilterAccordion: React.FC<{
       </button>
 
       {open && (
-        <div style={{ padding: '10px 12px', borderTop: `1px solid ${t.rowBdr}`, background: bg, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ padding: '10px 12px', background: bg, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {values.length > 6 && (
             <SearchInput
               header={header}
