@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Search, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { makeTokens, themed } from '@/shared/tokens/theme';
+import { getTableUiTokens } from './tableUiTheme';
 
 interface FiltersPanelProps {
   isDark: boolean;
@@ -12,17 +13,17 @@ interface FiltersPanelProps {
 
 // ─── Токены ───────────────────────────────────────────────────────────────────
 //
-// panelBg теперь равен unifiedBg (тот же фон, что у карточки/тулбара) —
-// панель фильтров визуально не отделяется от остального блока. rowBg
-// (аккордеон каждой колонки) сделан слегка контрастнее unifiedBg,
+// panelBg берётся из getTableUiTokens().unifiedBg — тот же фон, что у
+// карточки/тулбара, чтобы панель фильтров не отделялась визуально.
+// rowBg (аккордеон каждой колонки) сделан слегка контрастнее unifiedBg,
 // чтобы структура оставалась читаемой без явных линий-разделителей.
 
 function useThemeTokens(isDark: boolean) {
   const t = makeTokens(isDark);
-  const unifiedBg = isDark ? '#0a0a0a' : '#e8e7e3';
+  const ui = getTableUiTokens(isDark);
   return {
-    bg:       unifiedBg,
-    panelBg:  unifiedBg,
+    bg:       ui.unifiedBg,
+    panelBg:  ui.unifiedBg,
     border:   t.border,
     rowBg:    themed(isDark, 'rgba(255,255,255,0.04)', 'rgba(0,0,0,0.035)'),
     rowBdr:   themed(isDark, 'rgba(255,255,255,0.07)', 'rgba(0,0,0,0.08)'),
@@ -35,7 +36,7 @@ function useThemeTokens(isDark: boolean) {
     actBg:    themed(isDark, 'rgba(255,255,255,0.16)', 'rgba(0,0,0,0.13)'),
     actBdr:   themed(isDark, 'rgba(255,255,255,0.3)', 'rgba(0,0,0,0.25)'),
     actClr:   themed(isDark, '#ffffff', '#000000'),
-    inpBg:    unifiedBg,
+    inpBg:    ui.unifiedBg,
     inpBdr:   t.inpBdr,
     inpClr:   t.inpClr,
     plhClr:   t.plhClr,
