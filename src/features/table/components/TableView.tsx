@@ -109,7 +109,7 @@ export const TableView: React.FC<TableViewProps> = ({
         fitWrapEl.style.width = 'max-content';
         fitWrapEl.style.height = 'auto';
       }
-      const availableW = wrapEl.clientWidth;
+      const availableW = Math.min(wrapEl.clientWidth, window.innerWidth);
       const availableH = wrapEl.clientHeight;
       const naturalW = tableEl.scrollWidth;
       const naturalH = tableEl.scrollHeight;
@@ -203,6 +203,8 @@ export const TableView: React.FC<TableViewProps> = ({
           display:       fullscreen ? 'flex'    : undefined,
           flexDirection: fullscreen ? 'column'  : undefined,
           minHeight: 0,
+          minWidth: 0,
+          maxWidth: '100%',
           height: fitToScreen && fullscreen ? '100%' : undefined,
           overflow: 'hidden',
         }}
