@@ -29,7 +29,7 @@ const SITE = {
   lang:        'ru',
   author:      'Opensophy',
   keywords:    'opensophy, кибербезопасность, DevSecOps, linux, разработка, инструменты, туториалы, open source, mTLS, SAST, DAST, SCA, zero trust, CI/CD',
-  ogImage:     '/og-image.png',
+  ogImage:     '/assets/image.png',
   ogLocale:    'ru_RU',
   twitterCard: 'summary_large_image',
   twitterSite: '@opensophy',
@@ -50,6 +50,9 @@ const {
   lang        = SITE.lang,
 } = Astro.props;
 
+const normalizedAuthor = author?.trim() || SITE.author;
+const normalizedKeywords = keywords?.trim() || SITE.keywords;
+const normalizedRobots = robots?.trim() || 'index, follow';
 const pageTitle    = title === SITE.name ? title : `${title} — ${SITE.name}`;
 const canonicalUrl = new URL(url, SITE.url).href;
 const imageUrl     = image ? new URL(image, SITE.url).href : new URL(SITE.ogImage, SITE.url).href;
@@ -113,7 +116,7 @@ const articleJsonLd = type === 'article' ? JSON.stringify({
   "image": imageUrl,
   "author": {
     "@type": "Person",
-    "name": author
+    "name": normalizedAuthor
   },
   "publisher": {
     "@type": "Organization",
@@ -146,9 +149,9 @@ const articleJsonLd = type === 'article' ? JSON.stringify({
     <!-- Primary SEO -->
     <title>{pageTitle}</title>
     <meta name="description"  content={description} />
-    <meta name="keywords"     content={keywords} />
-    <meta name="author"       content={author} />
-    <meta name="robots"       content={robots} />
+    <meta name="keywords"     content={normalizedKeywords} />
+    <meta name="author"       content={normalizedAuthor} />
+    <meta name="robots"       content={normalizedRobots} />
     <meta name="theme-color"  content={SITE.themeColor} />
     <meta name="color-scheme" content="dark light" />
     <link rel="canonical"     href={canonicalUrl} />
@@ -182,7 +185,7 @@ const articleJsonLd = type === 'article' ? JSON.stringify({
       <meta property="article:modified_time" content={updatedISO} />
     )}
     {type === 'article' && (
-      <meta property="article:author" content={author} />
+      <meta property="article:author" content={normalizedAuthor} />
     )}
 
     <!-- Favicon -->

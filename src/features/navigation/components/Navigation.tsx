@@ -968,7 +968,7 @@ const TocPanelContent: React.FC<{
   const scrollRef  = useRef<HTMLDivElement>(null);
   const listRef    = useRef<HTMLDivElement>(null);
   const itemRefs   = useRef<Map<string, HTMLElement>>(new Map());
-  const [pathInfo, setPathInfo] = useState<TocDomPathInfo>({ path: '', totalLength: 0, centers: [], svgH: 0 });
+  const [pathInfo, setPathInfo] = useState<TocDomPathInfo>({ path: '', totalLength: 0, centers: [], svgH: 0, endX: 0, endY: 0 });
 
   const activeIndex = toc.findIndex(item => item.id === activeId);
   const minLevel    = toc.length ? Math.min(...toc.map(i => i.level)) : 0;

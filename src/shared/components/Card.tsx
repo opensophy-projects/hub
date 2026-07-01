@@ -83,7 +83,7 @@ const Card: React.FC<CardProps> = ({ title, icon, color, image, children, isDark
   const accentColor = color || '';
   const hasAccent   = !!color;
 
-  const cardBg     = getCardBg(isDark, accentColor || undefined);
+  const cardBg     = getCardBg(isDark);
   const cardBorder = getCardBorder(isDark, hasAccent, accentColor);
   const cardShadow = getCardBoxShadow(isDark, hasAccent, accentColor);
 

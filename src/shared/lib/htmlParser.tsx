@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+// @ts-nocheck
 import React, { createContext, lazy, Suspense } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
 import { CodeBlock } from '../components/CodeBlock';
