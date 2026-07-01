@@ -577,6 +577,17 @@ function renderArea({
 // пути через getTotalLength()/getPointAtLength() (тот же приём, что в оригинале
 // evilcharts), поэтому пунктир точно попадает на последний сегмент при любой
 // кривой (linear/monotone/step/...).
+//
+// ФИКС визуального бага: раньше <Tooltip cursor={{ stroke: t.gridLine, ...}}/>
+// как и у area/bar. Но для LineChart recharts рисует встроенный курсор-гид
+// как ПОЛНОВЫСОТНУЮ вертикальную линию через весь plot-area в точке ховера —
+// в отличие от area/bar, где такой курсор уместен и просто подсвечивает фон,
+// у line он визуально накладывается поверх серий и на некоторых кривых
+// (в первую очередь `step`, где сама линия почти плоская у нуля) выглядит как
+// самостоятельный "торчащий" вертикальный отрезок, будто это часть графика.
+// У линий уже есть собственная подсветка hover — activeDot с glow-тенью и
+// затемнение остальных серий — так что встроенный курсор просто отключаем.
+const LINE_TOOLTIP_CURSOR = false;
 
 const LINE_STROKE_WIDTH = 1;
 const BUFFER_DASH_SIZE = 4;
@@ -727,7 +738,7 @@ function renderLine({
     <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
       <XAxis dataKey={nameKey} {...ap(t)} />
       <YAxis {...ap(t)} width={38} />
-      <Tooltip content={<CustomTooltip t={t} />} cursor={{ stroke: t.gridLine, strokeWidth: 1 }} />
+      <Tooltip content={<CustomTooltip t={t} />} cursor={LINE_TOOLTIP_CURSOR} />
       {valueKeys.map((key) => {
         const idx = valueKeys.indexOf(key);
         const color = palette[idx % palette.length];
@@ -1058,6 +1069,15 @@ function renderBar({
 // СТАЛО: у каждого сектора свой ASCII-only id вида `sector-{index}`, построенный
 // по позиции строки в исходном `data` (а не по её видимому названию). rowName
 // используется только для поиска нужного индекса — в url(#...) он не попадает.
+//
+// ФИКС визуального бага "разрезов" между секторами: раньше стоял
+// `paddingAngle={2.5}` на <Pie>, из-за чего между соседними секторами
+// оставался заметный зазор (особенно бросается в глаза на монохромной
+// палитре, где соседние цвета близки — зазор выглядит как "прорезь" до
+// фона). Теперь `paddingAngle={0}` — секторы стыкуются вплотную ("слитно"),
+// а разделение между ними по-прежнему читается за счёт разных цветов и
+// hover-подсветки (opacity/glow), без физического зазора в геометрии.
+const PIE_SECTOR_PADDING_ANGLE = 0;
 
 interface PieChartInnerProps {
   data: ChartRow[];
@@ -1153,7 +1173,7 @@ const PieChartInner: React.FC<PieChartInnerProps> = ({
         data={visibleData} dataKey={valueKey} nameKey={nameKey}
         cx="50%" cy="50%"
         innerRadius={donut ? '50%' : '0%'} outerRadius="76%"
-        paddingAngle={2.5} strokeWidth={0}
+        paddingAngle={PIE_SECTOR_PADDING_ANGLE} strokeWidth={0}
         style={{ outline: 'none' }}
         isAnimationActive={false}
         activeIndex={resolvedActiveIndex}
