@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef, useLayoutEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
 import type { ParsedRow } from '../types/table';
 import { SortIcon } from './SortIcons';
@@ -21,16 +21,6 @@ interface TableViewProps {
   onSort: (colIndex: number) => void;
   headerAlignments?: ColumnAlignment[];
   fullscreen?: boolean;
-  /**
-   * Режим "показать всю таблицу целиком" (тоггл из TableModal).
-   * Шаг 1: снимается white-space:nowrap — текст переносится в ячейках.
-   * Шаг 2: измеряется реальная ширина и высота таблицы; если она всё равно
-   * не влезает в доступную область — применяется единый CSS transform:scale
-   * (наименьший из коэффициентов по ширине и по высоте), чтобы таблица
-   * была видна целиком без какого-либо скролла — ни горизонтального,
-   * ни вертикального.
-   */
-  fitToScreen?: boolean;
 }
 
 type Tok = {
@@ -74,82 +64,17 @@ function rowBg(t: Tok, hov: boolean, even: boolean): string {
 export const TableView: React.FC<TableViewProps> = ({
   isDark, headers, rows, visibleColumns, searchQuery,
   sortColumn, sortDirection, onSort, headerAlignments = [], fullscreen = false,
-  fitToScreen = false,
 }) => {
   const t = useMemo(() => tok(isDark), [isDark]);
   const { scrollRef, dragStyle, dragHandlers } = useDragScroll();
-
-  // ─── Fit-to-screen: измеряем реальную ширину И высоту, считаем общий scale ──
-  //
-  // Цель режима — показать таблицу ЦЕЛИКОМ, без вертикального и горизонтального
-  // скролла. Поэтому scale считается по обоим измерениям одновременно (берём
-  // наименьший из двух коэффициентов — по ширине и по высоте), а контейнер
-  // .tb-scroll в этом режиме получает overflow:hidden и фиксированную высоту
-  // доступной области вместо maxHeight/flex со своим скроллом.
-  const wrapRef  = useRef<HTMLDivElement>(null);
-  const tableRef = useRef<HTMLTableElement>(null);
-  const [fitScale, setFitScale] = useState(1);
-  const [fitNaturalSize, setFitNaturalSize] = useState({ w: 0, h: 0 });
-
-  useLayoutEffect(() => {
-    if (!fitToScreen) { setFitScale(1); return; }
-
-    let raf = 0;
-
-    const measure = () => {
-      const wrapEl  = wrapRef.current;
-      const tableEl = tableRef.current;
-      const fitWrapEl = tableEl?.parentElement ?? null;
-      if (!wrapEl || !tableEl) return;
-      // Снимаем ограничение ширины/высоты и трансформацию перед измерением —
-      // иначе scrollWidth/scrollHeight таблицы меряются относительно уже
-      // сжатой обёртки с прошлого прохода и получаются заведомо заниженными.
-      tableEl.style.transform = 'none';
-      if (fitWrapEl) {
-        fitWrapEl.style.width = 'max-content';
-        fitWrapEl.style.height = 'auto';
-      }
-      const availableW = Math.min(wrapEl.clientWidth, window.innerWidth);
-      const availableH = wrapEl.clientHeight;
-      const naturalW = tableEl.scrollWidth;
-      const naturalH = tableEl.scrollHeight;
-      // Если контейнер ещё не получил размеры (0 на первом кадре layout'а),
-      // пробуем ещё раз на следующем кадре вместо того чтобы тихо выйти
-      // и оставить старый (обычно 1) scale навсегда.
-      if (availableW <= 0 || availableH <= 0 || naturalW <= 0 || naturalH <= 0) {
-        raf = requestAnimationFrame(measure);
-        return;
-      }
-
-      const scaleW = naturalW > availableW ? availableW / naturalW : 1;
-      const scaleH = naturalH > availableH ? availableH / naturalH : 1;
-      const scale = Math.max(0.25, Math.min(1, Math.min(scaleW, scaleH)));
-      setFitScale(prev => (Math.abs(prev - scale) > 0.002 ? scale : prev));
-      setFitNaturalSize(prev => (prev.w !== naturalW || prev.h !== naturalH ? { w: naturalW, h: naturalH } : prev));
-    };
-
-    // ResizeObserver надёжнее одного-двух requestAnimationFrame: он срабатывает
-    // на любое реальное изменение размеров wrapEl/tableEl (после переноса
-    // текста, после смены строк/колонок, после ресайза окна) без гонки таймингов.
-    const ro = new ResizeObserver(() => measure());
-    if (wrapRef.current) ro.observe(wrapRef.current);
-    if (tableRef.current) ro.observe(tableRef.current);
-
-    raf = requestAnimationFrame(measure);
-
-    return () => {
-      cancelAnimationFrame(raf);
-      ro.disconnect();
-    };
-  }, [fitToScreen, headers, rows, visibleColumns]);
 
   return (
     <>
       <style>{getTableStyles(isDark)}</style>
       <style>{`
         .tb-scroll {
-          overflow-x: ${fitToScreen ? 'hidden' : 'auto'};
-          overflow-y: ${fitToScreen ? 'hidden' : 'auto'};
+          overflow-x: auto;
+          overflow-y: auto;
           -webkit-overflow-scrolling: touch;
           scrollbar-width: thin;
           scrollbar-color: ${t.thumb} ${t.track};
@@ -163,14 +88,12 @@ export const TableView: React.FC<TableViewProps> = ({
         .tb-scroll::-webkit-scrollbar-thumb:hover { background: ${t.thumbHov}; }
         .tb-scroll::-webkit-scrollbar-corner { background: transparent; }
 
-        .tb-scroll-wrap { position: relative; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
-        .tb-scroll { max-width: 100%; box-sizing: border-box; }
-        .tb-fit-wrap { min-width: 0; max-width: 100%; overflow: hidden; }
+        .tb-scroll-wrap { position: relative; width: 100%; min-width: 0; }
         .tb-scroll-wrap::after {
           content: '';
           position: absolute;
           top: 0; right: 0; bottom: 0;
-          width: ${fitToScreen ? '0px' : '20px'};
+          width: 20px;
           background: linear-gradient(to right, transparent, ${t.fadeTo});
           pointer-events: none;
           opacity: 0.8;
@@ -180,32 +103,21 @@ export const TableView: React.FC<TableViewProps> = ({
           content: '';
           position: absolute;
           top: 0; left: 0; bottom: 0;
-          width: ${fitToScreen ? '0px' : '20px'};
+          width: 20px;
           background: linear-gradient(to left, transparent, ${t.fadeTo});
           pointer-events: none;
           opacity: 0.8;
           z-index: 1;
         }
-        .tb-fit-table {
-          width: max-content !important;
-        }
-        .tb-fit-table th, .tb-fit-table td {
-          white-space: normal !important;
-          word-break: break-word;
-        }
       `}</style>
 
       <div
-        ref={wrapRef}
         className="tb-scroll-wrap"
         style={{
           flex:          fullscreen ? 1         : undefined,
           display:       fullscreen ? 'flex'    : undefined,
           flexDirection: fullscreen ? 'column'  : undefined,
           minHeight: 0,
-          minWidth: 0,
-          maxWidth: '100%',
-          height: fitToScreen && fullscreen ? '100%' : undefined,
           overflow: 'hidden',
         }}
       >
@@ -213,113 +125,50 @@ export const TableView: React.FC<TableViewProps> = ({
           ref={scrollRef}
           className="tb-scroll"
           style={{
-            maxHeight: fullscreen ? undefined : (fitToScreen ? undefined : 480),
-            height:    fullscreen ? '100%'    : (fitToScreen ? '100%' : undefined),
+            maxHeight: fullscreen ? undefined : 480,
+            height:    fullscreen ? '100%'    : undefined,
             flex:      fullscreen ? 1         : undefined,
-            ...(fitToScreen ? {} : dragStyle),
+            ...dragStyle,
           }}
-          {...(fitToScreen ? {} : dragHandlers)}
+          {...dragHandlers}
         >
-          {fitToScreen ? (
-            // Внешний div получает ТОЧНУЮ итоговую (уже уменьшенную) ширину/высоту
-            // естественного размера таблицы, умноженного на scale. Это необходимо,
-            // потому что transform:scale не меняет layout-box самого элемента —
-            // без этой обёртки таблица визуально сжимается, но в потоке документа
-            // продолжает занимать полный (немасштабированный) объём и обрезается
-            // соседним overflow:hidden контейнером справа/снизу.
-            <div
-              className="tb-fit-wrap"
-              style={{
-                width:  fitNaturalSize.w > 0 ? fitNaturalSize.w * fitScale : '100%',
-                height: fitNaturalSize.h > 0 ? fitNaturalSize.h * fitScale : undefined,
-                marginInline: 'auto',
-              }}
-            >
-              <table
-                ref={tableRef}
-                className="tb-fit-table"
-                style={{
-                  borderCollapse: 'separate',
-                  borderSpacing: 0,
-                  tableLayout: 'auto',
-                  transform: fitScale < 1 ? `scale(${fitScale})` : undefined,
-                  transformOrigin: 'top left',
-                }}
-              >
-                <TableHead
-                  t={t} isDark={isDark}
+          <table style={{
+            borderCollapse: 'separate',
+            borderSpacing: 0,
+            width: '100%',
+            minWidth: 'max-content',
+            tableLayout: 'auto',
+          }}>
+            <TableHead
+              t={t} isDark={isDark}
+              headers={headers}
+              visibleColumns={visibleColumns}
+              sortColumn={sortColumn}
+              sortDirection={sortDirection}
+              onSort={onSort}
+              headerAlignments={headerAlignments}
+            />
+            <tbody>
+              {rows.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={headers.filter((_, i) => visibleColumns.has(i)).length}
+                    style={{ textAlign: 'center', padding: '2.5rem 1rem', color: t.thColor, fontSize: 13, fontStyle: 'italic', background: t.rowEven }}
+                  >
+                    Нет результатов
+                  </td>
+                </tr>
+              ) : rows.map((row, idx) => (
+                <TableRow
+                  key={`r${idx}-${row.cells[0]?.slice(0, 20)}`}
+                  t={t} row={row} rowIndex={idx}
                   headers={headers}
                   visibleColumns={visibleColumns}
-                  sortColumn={sortColumn}
-                  sortDirection={sortDirection}
-                  onSort={onSort}
-                  headerAlignments={headerAlignments}
-                  fitToScreen={fitToScreen}
+                  searchQuery={searchQuery}
                 />
-                <tbody>
-                  {rows.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={headers.filter((_, i) => visibleColumns.has(i)).length}
-                        style={{ textAlign: 'center', padding: '2.5rem 1rem', color: t.thColor, fontSize: 13, fontStyle: 'italic', background: t.rowEven }}
-                      >
-                        Нет результатов
-                      </td>
-                    </tr>
-                  ) : rows.map((row, idx) => (
-                    <TableRow
-                      key={`r${idx}-${row.cells[0]?.slice(0, 20)}`}
-                      t={t} row={row} rowIndex={idx}
-                      headers={headers}
-                      visibleColumns={visibleColumns}
-                      searchQuery={searchQuery}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <table
-              ref={tableRef}
-              style={{
-                borderCollapse: 'separate',
-                borderSpacing: 0,
-                width: '100%',
-                minWidth: 'max-content',
-                tableLayout: 'auto',
-              }}
-            >
-              <TableHead
-                t={t} isDark={isDark}
-                headers={headers}
-                visibleColumns={visibleColumns}
-                sortColumn={sortColumn}
-                sortDirection={sortDirection}
-                onSort={onSort}
-                headerAlignments={headerAlignments}
-              />
-              <tbody>
-                {rows.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={headers.filter((_, i) => visibleColumns.has(i)).length}
-                      style={{ textAlign: 'center', padding: '2.5rem 1rem', color: t.thColor, fontSize: 13, fontStyle: 'italic', background: t.rowEven }}
-                    >
-                      Нет результатов
-                    </td>
-                  </tr>
-                ) : rows.map((row, idx) => (
-                  <TableRow
-                    key={`r${idx}-${row.cells[0]?.slice(0, 20)}`}
-                    t={t} row={row} rowIndex={idx}
-                    headers={headers}
-                    visibleColumns={visibleColumns}
-                    searchQuery={searchQuery}
-                  />
-                ))}
-              </tbody>
-            </table>
-          )}
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </>
@@ -333,9 +182,8 @@ const TableHead: React.FC<{
   headers: string[]; visibleColumns: Set<number>;
   sortColumn: number | null; sortDirection: SortDirection;
   onSort: (i: number) => void; headerAlignments: ColumnAlignment[];
-  fitToScreen?: boolean;
-}> = ({ t, isDark, headers, visibleColumns, sortColumn, sortDirection, onSort, headerAlignments, fitToScreen }) => (
-  <thead style={{ position: fitToScreen ? 'static' : 'sticky', top: 0, zIndex: 20 }}>
+}> = ({ t, isDark, headers, visibleColumns, sortColumn, sortDirection, onSort, headerAlignments }) => (
+  <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
     <tr>
       {headers.map((header, i) => visibleColumns.has(i) ? (
         <th key={header} onClick={() => onSort(i)} style={{
@@ -346,7 +194,7 @@ const TableHead: React.FC<{
           fontSize: '0.69rem', fontWeight: 700,
           letterSpacing: '0.06em', textTransform: 'uppercase',
           cursor: 'pointer', userSelect: 'none',
-          position: fitToScreen ? 'static' : 'sticky', top: 0, zIndex: 20,
+          position: 'sticky', top: 0, zIndex: 20,
           borderBottom: `1px solid ${t.thBorder}`,
           borderTop: 'none', borderLeft: 'none', borderRight: 'none',
           boxShadow: 'none',
