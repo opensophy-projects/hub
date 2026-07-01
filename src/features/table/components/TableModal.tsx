@@ -178,6 +178,7 @@ const TableModal: React.FC<TableModalProps> = ({ isOpen, tableHtml, isDark, onCl
           flexDirection: 'column',
           overflow: 'hidden',
           minHeight: 0,
+          minWidth: 0,
           touchAction: 'pan-x pan-y',
         }}>
           <TableView
