@@ -5,6 +5,7 @@ import { TableControlsBar } from './TableControlsBar';
 import { FiltersPanel } from './FiltersPanel';
 import { ColumnsPanel } from './ColumnsPanel';
 import { TableView } from './TableView';
+import { getTableUiTokens } from './tableUiTheme';
 
 interface TableWithControlsProps {
   tableHtml: string;
@@ -35,14 +36,16 @@ const TableWithControls: React.FC<TableWithControlsProps> = ({ tableHtml, isDark
   if (!headers.length) return null;
 
   // Единый фон блока — как в CodeBlock/ChartBlock: тулбар, панели фильтров/
-  // колонок, тело таблицы и футер используют одну заливку, без внутренних
-  // разделительных линий между секциями.
-  const outerBg     = isDark ? '#0a0a0a' : '#e8e7e3';
+  // колонок, тело таблицы и футер используют одну заливку (unifiedBg), без
+  // внутренних разделительных линий между секциями. Цвета берутся из общего
+  // tableUiTheme, чтобы карточка и модалка (TableModal) всегда совпадали.
+  const ui = getTableUiTokens(isDark);
+  const outerBg     = ui.unifiedBg;
   const outerBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)';
   const outerShadow = isDark
     ? '0 2px 12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)'
     : '0 1px 6px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.07)';
-  const footerClr    = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.32)';
+  const footerClr = ui.footerClr;
   const radius = 12;
 
   return (
