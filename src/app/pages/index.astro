@@ -6,16 +6,31 @@ import CustomPageRenderer from '@/custom/CustomPageRenderer';
 import fs from 'node:fs';
 import path from 'node:path';
 import { buildDocFromPath } from '../../../scripts/docUtils.mjs';
+
+interface WelcomeDoc {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  content?: string;
+  author?: string;
+  date?: string;
+  updated?: string;
+  tags?: string[];
+  lang?: string;
+  keywords?: string;
+  frontmatter?: Record<string, string | undefined>;
+}
 import { resolveCustomSlug } from '../../../scripts/customUtils.mjs';
 
 export const prerender = true;
 
 const docsDir       = path.join(process.cwd(), 'Docs');
 const welcomeMdPath = path.join(docsDir, 'welcome.md');
-let welcomeDoc = null;
+let welcomeDoc: WelcomeDoc | null = null;
 if (fs.existsSync(welcomeMdPath)) {
   try {
-    welcomeDoc = buildDocFromPath(welcomeMdPath, docsDir);
+    welcomeDoc = buildDocFromPath(welcomeMdPath, docsDir) as WelcomeDoc;
     welcomeDoc.id   = 'welcome';
     welcomeDoc.slug = '';
   } catch {
@@ -49,15 +64,10 @@ const lang        = useCustomWelcome ? (welcomeCustomPage?.metadata.lang || 'ru'
 >
   {useCustomWelcome ? (
     <>
-      <main data-llm-fallback style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;">
-        <h1>{title}</h1>
-        <p>{description}</p>
-        <p>Opensophy публикует открытые материалы, статьи, документацию и UI-компоненты для IT-специалистов.</p>
-      </main>
-      <CustomPageRenderer client:only="react" slug={welcomeCustomSlug} />
+      <CustomPageRenderer client:load slug={welcomeCustomSlug} />
     </>
   ) : welcomeDoc ? (
-    <DocContent client:only="react" doc={welcomeDoc} />
+    <DocContent client:load doc={welcomeDoc} />
   ) : (
     <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;">
       <p>Загрузка...</p>

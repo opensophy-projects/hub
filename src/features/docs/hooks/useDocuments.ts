@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import staticManifest from '../../../../public/data/docs/manifest.json';
 
 export interface DocMetadata {
   id: string;
@@ -32,7 +33,9 @@ export interface UseManifestResult {
 
 const MANIFEST_URL = '/data/docs/manifest.json';
 
-let cachedManifest: DocMetadata[] | null = null;
+const embeddedManifest = staticManifest as DocMetadata[];
+
+let cachedManifest: DocMetadata[] | null = embeddedManifest;
 let manifestRequest: Promise<DocMetadata[]> | null = null;
 
 function getErrorMessage(error: unknown): string {

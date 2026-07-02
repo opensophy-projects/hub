@@ -1823,8 +1823,6 @@ const Navigation: React.FC<NavigationProps> = ({ currentDocSlug, toc = [], activ
     return () => { alive = false; globalThis.removeEventListener('hub:logo-change', onLogoChange); };
   }, []);
 
-  if (isDesktop === null) return null;
-
   const logoPath = getThemeLogoPath(logoConfig, isDark);
 
   if (isDesktop) return <DesktopNav isDark={isDark} toggleTheme={toggleTheme} currentDocSlug={currentDocSlug} toc={toc} activeId={activeHeadingId} showDocActions={showDocActions} logoPath={logoPath} floatingChrome={floatingChrome} />;

@@ -14,6 +14,9 @@ import type { ColumnsLayout } from '../components/Columns';
 
 const LazyChartBlock = lazy(() => import('../components/ChartBlock'));
 
+const ELEMENT_NODE = 1;
+const TEXT_NODE = 3;
+
 export const TableContext = createContext<{
   onTableClick?: (tableHtml: string) => void;
   isDark: boolean;
@@ -58,12 +61,14 @@ export const SANITIZE_ATTR = [
 ];
 
 // Санитизация произвольной HTML-строки перед вставкой в DOM
+const stripNulls = (value: string): string => value.replaceAll('\0', '');
+
 const sanitizeHtml = (html: string): string =>
-  DOMPurify.sanitize(html, {
+  stripNulls(DOMPurify.sanitize(stripNulls(html), {
     ALLOWED_TAGS: SANITIZE_TAGS,
     ALLOWED_ATTR: SANITIZE_ATTR,
     ALLOW_DATA_ATTR: true,
-  });
+  }));
 
 function slugifyHeading(text: string): string {
   return text
@@ -136,7 +141,7 @@ const processListElement = (element: HTMLElement, tagName: string, key: string, 
 
 const processLinkElement = (element: HTMLElement, key: string, elements: React.ReactNode[]) => {
   const children = Array.from(element.childNodes).filter(
-    (n) => !(n.nodeType === Node.TEXT_NODE && !n.textContent?.trim()),
+    (n) => !(n.nodeType === TEXT_NODE && !n.textContent?.trim()),
   );
 
   if (children.length === 1 && (children[0] as HTMLElement).tagName?.toLowerCase() === 'img') {
@@ -401,7 +406,7 @@ const processUIComponent = (
 };
 
 const processTextNode = (node: ChildNode, key: string, elements: React.ReactNode[]) => {
-  const text = node.textContent || '';
+  const text = stripNulls(node.textContent || '');
   if (text.trim()) elements.push(React.createElement('span', { key }, text));
 };
 
@@ -476,7 +481,7 @@ const processDivElement = (
 
 function getImgFromLink(el: HTMLElement): HTMLElement | null {
   const nonEmpty = Array.from(el.childNodes).filter(
-    (n) => !(n.nodeType === Node.TEXT_NODE && !n.textContent?.trim()),
+    (n) => !(n.nodeType === TEXT_NODE && !n.textContent?.trim()),
   );
   if (nonEmpty.length === 1 && (nonEmpty[0] as HTMLElement).tagName?.toLowerCase() === 'img') {
     return nonEmpty[0] as HTMLElement;
@@ -485,10 +490,10 @@ function getImgFromLink(el: HTMLElement): HTMLElement | null {
 }
 
 function isBrOrEmpty(node: ChildNode): boolean {
-  if (node.nodeType === Node.ELEMENT_NODE) {
+  if (node.nodeType === ELEMENT_NODE) {
     return (node as HTMLElement).tagName.toLowerCase() === 'br';
   }
-  if (node.nodeType === Node.TEXT_NODE) {
+  if (node.nodeType === TEXT_NODE) {
     return !node.textContent?.trim();
   }
   return false;
@@ -505,7 +510,7 @@ function splitParagraphIntoRuns(element: HTMLElement): ParagraphRun[] {
 
     // Временный узел используется только для очистки пустых br с краёв буфера,
     // не для рендеринга напрямую
-    const tmp = document.createElement('div');
+    const tmp = element.ownerDocument.createElement('div');
     tmp.innerHTML = sanitizeHtml(textBuffer.trim());
     while (tmp.firstChild && isBrOrEmpty(tmp.firstChild)) tmp.firstChild.remove();
     while (tmp.lastChild  && isBrOrEmpty(tmp.lastChild))  tmp.lastChild.remove();
@@ -517,7 +522,7 @@ function splitParagraphIntoRuns(element: HTMLElement): ParagraphRun[] {
   };
 
   for (const node of Array.from(element.childNodes)) {
-    if (node.nodeType === Node.ELEMENT_NODE) {
+    if (node.nodeType === ELEMENT_NODE) {
       const el  = node as HTMLElement;
       const tag = el.tagName.toLowerCase();
 
@@ -529,7 +534,7 @@ function splitParagraphIntoRuns(element: HTMLElement): ParagraphRun[] {
       }
 
       textBuffer += el.outerHTML;
-    } else if (node.nodeType === Node.TEXT_NODE) {
+    } else if (node.nodeType === TEXT_NODE) {
       textBuffer += node.textContent ?? '';
     }
   }
@@ -565,13 +570,13 @@ const processParagraphElement = (
     Array.from(element.childNodes).forEach((child, ci) => {
       const ckey = `${key}-k${ci}`;
 
-      if (child.nodeType === Node.TEXT_NODE) {
+      if (child.nodeType === TEXT_NODE) {
         const text = child.textContent ?? '';
         if (text) kids.push(text);
         return;
       }
 
-      if (child.nodeType === Node.ELEMENT_NODE) {
+      if (child.nodeType === ELEMENT_NODE) {
         const el  = child as HTMLElement;
         const idx = el.dataset.katexIdx;
 
@@ -657,38 +662,41 @@ const processElement = (
   }
 };
 
+function sanitizeToBody(html: string, addAttr: string[] = []): HTMLElement {
+  return DOMPurify.sanitize(stripNulls(html), {
+    ALLOWED_TAGS:    [...SANITIZE_TAGS],
+    ALLOWED_ATTR:    [...SANITIZE_ATTR],
+    ADD_ATTR:        addAttr,
+    ALLOW_DATA_ATTR: true,
+    FORCE_BODY:      false,
+    RETURN_DOM:      true,
+  }) as HTMLElement;
+}
+
 export const parseHtmlToReact = (html: string): React.ReactNode[] => {
-  const rawDoc = new DOMParser().parseFromString(html, 'text/html');
+  const rawBody = sanitizeToBody(stripNulls(html));
 
   const katexStore: Array<{ tag: 'div' | 'span'; cls: string; inner: string }> = [];
 
-  rawDoc.querySelectorAll('div.katex-block, span.katex-inline').forEach((el) => {
+  rawBody.querySelectorAll('div.katex-block, span.katex-inline').forEach((el) => {
     const tag   = el.tagName.toLowerCase() as 'div' | 'span';
     const cls   = el.className;
     const inner = sanitizeHtml(el.innerHTML);
     const idx   = katexStore.push({ tag, cls, inner }) - 1;
-    const placeholder = rawDoc.createElement(tag);
+    const placeholder = rawBody.ownerDocument.createElement(tag);
     placeholder.dataset.katexIdx = String(idx);
     el.replaceWith(placeholder);
   });
 
-  const sanitized = DOMPurify.sanitize(rawDoc.body.innerHTML, {
-    ALLOWED_TAGS:    [...SANITIZE_TAGS],
-    ALLOWED_ATTR:    [...SANITIZE_ATTR],
-    ADD_ATTR:        ['data-katex-idx'],
-    ALLOW_DATA_ATTR: true,
-    FORCE_BODY:      false,
-  });
-
-  const doc      = new DOMParser().parseFromString(sanitized, 'text/html');
+  const doc      = sanitizeToBody(stripNulls(rawBody.innerHTML), ['data-katex-idx']);
   const elements: React.ReactNode[] = [];
 
   const processNodes = (nodes: NodeListOf<ChildNode>, parentKey = '') => {
     Array.from(nodes).forEach((node, index) => {
       const key = `${parentKey}-${index}`;
 
-      if (node.nodeType === Node.TEXT_NODE)    { processTextNode(node, key, elements); return; }
-      if (node.nodeType !== Node.ELEMENT_NODE) return;
+      if (node.nodeType === TEXT_NODE)    { processTextNode(node, key, elements); return; }
+      if (node.nodeType !== ELEMENT_NODE) return;
 
       const element = node as HTMLElement;
       const tagName = element.tagName.toLowerCase();
@@ -715,6 +723,6 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
     });
   };
 
-  processNodes(doc.body.childNodes);
+  processNodes(doc.childNodes as NodeListOf<ChildNode>);
   return elements;
 };

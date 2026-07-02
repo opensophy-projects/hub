@@ -226,9 +226,6 @@ const articleJsonLd = type === 'article' ? JSON.stringify({
       html.dark        { background-color: #0a0a0a; }
       body { margin: 0; padding: 0; overflow-x: hidden; }
 
-      /* Скрытый SEO-контент — видим для ботов, невидим для пользователей */
-      html.js [data-llm-fallback] { display: none; }
-
       #seo-landing-content {
         position: absolute;
         width: 1px;
@@ -248,7 +245,7 @@ const articleJsonLd = type === 'article' ? JSON.stringify({
       </ThemeProvider>
     </ErrorBoundary>
 
-    <DevPanelLoader client:only="react" />
+    {import.meta.env.DEV && <DevPanelLoader client:only="react" />}
 
     <!-- Re-apply theme after SPA navigation -->
     <script is:inline>

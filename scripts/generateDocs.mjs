@@ -4,8 +4,10 @@ import { fileURLToPath } from 'node:url';
 import {
   scanDocsDirectoryRecursive,
   buildDocFromPath,
+  buildCategoryPages,
   extractFrontMatter,
 } from './docUtils.mjs';
+import { scanCustomPages } from './customUtils.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -13,6 +15,8 @@ const __dirname  = path.dirname(__filename);
 const docsDir      = path.join(__dirname, '../Docs');
 const outputDir    = path.join(__dirname, '../public/data/docs');
 const manifestFile = path.join(outputDir, 'manifest.json');
+const customDir    = path.join(__dirname, '../src/custom');
+const VERSION      = 'v3.5.1';
 
 const EXCLUDED_FIELDS = new Set(['content', 'keywords', 'robots']);
 
@@ -165,7 +169,7 @@ function buildDocsStr(okCount, errCount) {
 function generateDocs() {
   const startAll = performance.now();
 
-  process.stdout.write(`\n  ${clr(c.dim, 'hub')}  generate\n`);
+  process.stdout.write(`\n  ${clr(c.bold, 'opensophy hub')} ${clr(c.dim, VERSION)}\n  ${clr(c.dim, 'static generation')}\n`);
 
   if (!fs.existsSync(docsDir)) {
     process.stdout.write(`\n  ${clr(c.red, 'error')}  Docs/ directory not found: ${docsDir}\n\n`);
@@ -185,29 +189,30 @@ function generateDocs() {
   const { manifest, fileErrors } = buildManifest(allMdFiles);
 
   const sorted = manifest.toSorted((a, b) => {
-  const pa = a.priority ?? 999;
-  const pb = b.priority ?? 999;
+    const pa = a.priority ?? 999;
+    const pb = b.priority ?? 999;
 
-  if (pa !== pb) {
-    return pa - pb;
-  }
+    if (pa !== pb) return pa - pb;
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
+  });
 
-  return new Date(b.date).getTime() - new Date(a.date).getTime();
-});
+  fs.writeFileSync(manifestFile, JSON.stringify(sorted));
 
-fs.writeFileSync(manifestFile, JSON.stringify(sorted));
-
-  const docMs    = (performance.now() - docStart).toFixed(0);
-  const allMs    = (performance.now() - startAll).toFixed(0);
-  const okCount  = manifest.length;
-  const errCount = fileErrors.length;
-
-  process.stdout.write(`\n  ${clr(c.dim, 'hub')}  generate\n`);
+  const docMs      = (performance.now() - docStart).toFixed(0);
+  const allMs      = (performance.now() - startAll).toFixed(0);
+  const okCount    = manifest.length;
+  const errCount   = fileErrors.length;
+  const categories = buildCategoryPages(sorted);
+  const customCount = scanCustomPages(customDir).length;
+  const totalPages = 1 + okCount + categories.length + customCount;
 
   if (errCount > 0) printErrors(fileErrors);
 
   process.stdout.write('\n');
-  process.stdout.write(`  ${clr(c.dim, col('docs', 10))}${buildDocsStr(okCount, errCount)}   ${clr(c.dim, docMs + 'ms')}\n`);
+  process.stdout.write(`  ${clr(c.dim, col('markdown', 12))}${buildDocsStr(okCount, errCount)}   ${clr(c.dim, docMs + 'ms')}\n`);
+  process.stdout.write(`  ${clr(c.dim, col('categories', 12))}${clr(c.green, categories.length + ' pages')}\n`);
+  process.stdout.write(`  ${clr(c.dim, col('custom', 12))}${clr(c.green, customCount + ' pages')}\n`);
+  process.stdout.write(`  ${clr(c.dim, col('total', 12))}${clr(c.green, totalPages + ' static pages')}\n`);
   process.stdout.write(`\n  ${clr(c.dim, 'done in')} ${allMs}ms\n\n`);
 
   if (errCount > 0) process.exit(1);

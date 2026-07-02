@@ -1,3 +1,4 @@
+import DOMPurify from 'isomorphic-dompurify';
 import type { ParsedTable } from '../types/table';
 
 function getAlignment(element: Element): 'left' | 'center' | 'right' | null {
@@ -23,8 +24,7 @@ function getAlignment(element: Element): 'left' | 'center' | 'right' | null {
 }
 
 export function parseTableHtml(tableHtml: string): ParsedTable {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(tableHtml, 'text/html');
+  const doc = DOMPurify.sanitize(tableHtml, { RETURN_DOM: true }) as HTMLElement;
   const table = doc.querySelector('table');
 
   if (!table) {

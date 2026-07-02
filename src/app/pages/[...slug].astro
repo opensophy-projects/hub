@@ -3,6 +3,7 @@ import Layout from '@/app/layouts/Layout.astro';
 import DocContent from '@/features/docs/components/DocContent';
 import CategoryContent from '@/features/docs/components/CategoryContent';
 import { customPages, getCustomPageBySlug } from '@/custom';
+import type { CustomPageDefinition } from '@/custom/types';
 import CustomPageRenderer from '@/custom/CustomPageRenderer';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -15,16 +16,64 @@ import { resolveCustomSlug } from '../../../scripts/customUtils.mjs';
 
 export const prerender = import.meta.env.DEV ? false : true;
 
+interface CategoryPathItem { slug: string; title: string; icon: string | null; }
+interface DocPage {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  content?: string;
+  typename?: string;
+  categoryPath?: CategoryPathItem[];
+  navSlug?: string;
+  navTitle?: string;
+  navIcon?: string;
+  author?: string;
+  date?: string;
+  updated?: string;
+  tags?: string[];
+  lang?: string;
+  keywords?: string;
+  robots?: string;
+  icon?: string;
+  priority?: number;
+  custom?: string;
+  image?: string;
+  frontmatter?: Record<string, string | undefined>;
+}
+
+type CategoryDoc = Omit<DocPage, 'content' | 'keywords' | 'robots'>;
+interface CategoryPage {
+  id: string;
+  slug: string;
+  title: string;
+  description?: string;
+  icon?: string | null;
+  navSlug?: string;
+  navTitle?: string;
+  navIcon?: string;
+  parentTitle?: string;
+  docs: CategoryDoc[];
+}
+
+type PageProps =
+  | { doc: DocPage; category?: never; customPage?: never }
+  | { doc?: never; category: CategoryPage; customPage?: never }
+  | { doc?: never; category?: never; customPage: CustomPageDefinition };
+
+type StaticPath = { params: { slug: string }; props: PageProps };
+
+
 export async function getStaticPaths() {
   const docsDir = path.join(process.cwd(), 'Docs');
   const allMdFiles = fs.existsSync(docsDir) ? scanDocsDirectoryRecursive(docsDir) : [];
   const seen = new Map<string, string>();
   const frontmatterCustomSlugs = new Set<string>();
-  const docs: any[] = [];
-  const paths: Array<{ params: { slug: string }; props: { doc?: any; category?: any; customPage?: any } }> = [];
+  const docs: DocPage[] = [];
+  const paths: StaticPath[] = [];
 
   for (const mdPath of allMdFiles) {
-    const doc = buildDocFromPath(mdPath, docsDir);
+    const doc = buildDocFromPath(mdPath, docsDir) as DocPage;
     if (!doc.slug) continue;
     if (seen.has(doc.slug)) {
       console.warn(`[slug dedup] Duplicate slug "${doc.slug}", skipping ${mdPath}`);
@@ -36,7 +85,7 @@ export async function getStaticPaths() {
     docs.push(doc);
     paths.push({ params: { slug: doc.slug }, props: { doc } });
   }
-  const categories = buildCategoryPages(docs);
+  const categories = buildCategoryPages(docs) as CategoryPage[];
   for (const category of categories) {
     if (seen.has(category.slug)) {
       console.warn(`[category dedup] Category slug "${category.slug}" conflicts with a document, skipping category page`);
@@ -62,30 +111,31 @@ export async function getStaticPaths() {
 
 const { slug } = Astro.params;
 const docsDir = path.join(process.cwd(), 'Docs');
-let doc: any = null;
-let category: any = null;
-let customPage: any = null;
+let doc: DocPage | null = null;
+let category: CategoryPage | null = null;
+let customPage: CustomPageDefinition | null = null;
 
 if (import.meta.env.DEV) {
   if (slug && fs.existsSync(docsDir)) {
     const allMdFiles = scanDocsDirectoryRecursive(docsDir);
-    const docs: any[] = [];
+    const docs: DocPage[] = [];
     for (const mdPath of allMdFiles) {
       try {
-        const candidate = buildDocFromPath(mdPath, docsDir);
+        const candidate = buildDocFromPath(mdPath, docsDir) as DocPage;
         docs.push(candidate);
         if (candidate.slug === slug) doc = candidate;
       } catch (e) {
         console.warn(`[slug] Failed to build doc from ${mdPath}:`, e);
       }
     }
-    if (!doc) category = buildCategoryPages(docs).find((candidate) => candidate.slug === slug) ?? null;
+    if (!doc) category = (buildCategoryPages(docs) as CategoryPage[]).find((candidate) => candidate.slug === slug) ?? null;
     if (!doc && !category) customPage = getCustomPageBySlug(slug);
   }
 } else {
-  doc = (Astro.props as any).doc ?? null;
-  category = (Astro.props as any).category ?? null;
-  customPage = (Astro.props as any).customPage ?? null;
+  const props = Astro.props as Partial<PageProps>;
+  doc = props.doc ?? null;
+  category = props.category ?? null;
+  customPage = props.customPage ?? null;
 }
 
 const frontmatterCustomSlug = resolveCustomSlug(doc?.frontmatter?.custom);
@@ -109,35 +159,19 @@ if ((!doc && !category && !customPage) || !slug) return Astro.redirect('/404');
 >
   {doc ? (
     <>
-      <main data-llm-fallback style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;">
-        <article set:html={doc.content ?? ''} />
-      </main>
       {frontmatterCustomPage ? (
-        <CustomPageRenderer client:only="react" slug={frontmatterCustomSlug} />
+        <CustomPageRenderer client:load slug={frontmatterCustomSlug} />
       ) : (
-        <DocContent client:only="react" doc={doc} />
+        <DocContent client:load doc={doc} />
       )}
     </>
   ) : customPage ? (
     <>
-      <main data-llm-fallback style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;">
-        <h1>{customPage.metadata.title}</h1>
-        {customPage.metadata.description && <p>{customPage.metadata.description}</p>}
-      </main>
-      <CustomPageRenderer client:only="react" slug={slug} />
+      <CustomPageRenderer client:load slug={slug} />
     </>
   ) : (
     <>
-      <main data-llm-fallback style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;">
-        <h1>{category.title}</h1>
-        {category.description && <p>{category.description}</p>}
-        <ul>
-          {category.docs?.map((item: any) => (
-            <li><a href={`/${item.slug}/`}>{item.title}</a></li>
-          ))}
-        </ul>
-      </main>
-      <CategoryContent client:only="react" category={category} />
+      <CategoryContent client:load category={category} />
     </>
   )}
 </Layout>

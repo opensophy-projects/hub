@@ -43,13 +43,13 @@ if (existsSync(dist)) {
   const homeHtml = readIfExists(path.join(dist, 'index.html'));
   ok('dist homepage has description meta', /<meta name="description"\s+content="[^"]+"/.test(homeHtml));
   ok('dist homepage has canonical link', /<link rel="canonical"\s+href="https:\/\/opensophy\.com\/"/.test(homeHtml));
-  ok('dist homepage exposes no-JS/LLM fallback content', /data-llm-fallback|seo-landing-content|<noscript/i.test(homeHtml));
+  ok('dist homepage renders static app shell', /<main|<nav|astro-island/i.test(homeHtml));
 
   const manifest = JSON.parse(readIfExists(path.join(root, 'public/data/docs/manifest.json')) || '[]');
   const doc = manifest.find((item) => item.slug && !item.custom);
   if (doc) {
     const docHtml = readIfExists(path.join(dist, doc.slug, 'index.html'));
-    ok(`dist doc page has readable fallback: ${doc.slug}`, /<noscript|data-llm-fallback|<article/i.test(docHtml));
+    ok(`dist doc page renders article content statically: ${doc.slug}`, /<article|data-article-content/i.test(docHtml));
     ok(`dist doc page has non-empty author meta: ${doc.slug}`, /<meta name="author"\s+content="(?!\s*")[^"]+"/.test(docHtml));
     ok(`dist doc page has Article JSON-LD: ${doc.slug}`, /application\/ld\+json/.test(docHtml) && /"@type":"Article"/.test(docHtml));
   }

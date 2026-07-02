@@ -5,11 +5,11 @@ export const BREAKPOINT_MD  = 768;
 /** Для навигации (Navigation.tsx — rail vs bottom bar) */
 export const BREAKPOINT_NAV = 1000;
 
-function useBreakpoint(bp: number): boolean | null {
-  const [above, setAbove] = useState<boolean | null>(() => {
-    // Синхронная инициализация на клиенте — устраняет flash мобильной nav на десктопе.
-    // На сервере (SSR) window недоступен → null, компонент не рендерится до гидратации.
-    if (globalThis.window === undefined) return null;
+function useBreakpoint(bp: number, serverDefault = false): boolean {
+  const [above, setAbove] = useState<boolean>(() => {
+    // Синхронная инициализация на клиенте; на сервере отдаём стабильный
+    // статический вариант, чтобы навигация была в HTML сразу, без пустого этапа.
+    if (globalThis.window === undefined) return serverDefault;
     return globalThis.window.innerWidth >= bp;
   });
 
@@ -32,17 +32,16 @@ function useBreakpoint(bp: number): boolean | null {
 
 /** Desktop для контента (≥768px) */
 export function useIsDesktop(): boolean {
-  const v = useBreakpoint(BREAKPOINT_MD);
-  return v ?? false;
+  return useBreakpoint(BREAKPOINT_MD, false);
 }
 
 /**
  * Desktop для навигации (≥1000px).
- * Возвращает null пока значение не определено (SSR / до гидратации).
- * Navigation.tsx должен рендерить null при null — это устраняет flash мобильной версии.
+ * На сервере возвращает desktop-вариант, чтобы статическая навигация была
+ * в первом HTML и не ждала JS/fetch на медленном соединении.
  */
-export function useIsDesktopNav(): boolean | null {
-  return useBreakpoint(BREAKPOINT_NAV);
+export function useIsDesktopNav(): boolean {
+  return useBreakpoint(BREAKPOINT_NAV, true);
 }
 
 export function useIsMobile(): boolean {
