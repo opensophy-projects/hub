@@ -109,9 +109,11 @@ if ((!doc && !category && !customPage) || !slug) return Astro.redirect('/404');
 >
   {doc ? (
     <>
-      <main data-llm-fallback style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;">
+      <noscript>
+        <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;">
         <article set:html={doc.content ?? ''} />
       </main>
+      </noscript>
       {frontmatterCustomPage ? (
         <CustomPageRenderer client:only="react" slug={frontmatterCustomSlug} />
       ) : (
@@ -120,15 +122,18 @@ if ((!doc && !category && !customPage) || !slug) return Astro.redirect('/404');
     </>
   ) : customPage ? (
     <>
-      <main data-llm-fallback style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;">
+      <noscript>
+        <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;">
         <h1>{customPage.metadata.title}</h1>
         {customPage.metadata.description && <p>{customPage.metadata.description}</p>}
       </main>
+      </noscript>
       <CustomPageRenderer client:only="react" slug={slug} />
     </>
   ) : (
     <>
-      <main data-llm-fallback style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;">
+      <noscript>
+        <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;">
         <h1>{category.title}</h1>
         {category.description && <p>{category.description}</p>}
         <ul>
@@ -137,6 +142,7 @@ if ((!doc && !category && !customPage) || !slug) return Astro.redirect('/404');
           ))}
         </ul>
       </main>
+      </noscript>
       <CategoryContent client:only="react" category={category} />
     </>
   )}
