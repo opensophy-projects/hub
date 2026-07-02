@@ -1,7 +1,7 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useContext, useState } from 'react';
 import { ZoomIn, X } from 'lucide-react';
 import { TableContext } from '../lib/htmlParser';
+import Overlay from './Overlay';
 
 interface ImageCardProps {
   src: string;
@@ -12,20 +12,6 @@ interface ImageCardProps {
 
 const ImageCard: React.FC<ImageCardProps> = ({ src, alt, title, isDark = false }) => {
   const [isZoomed, setIsZoomed] = useState(false);
-
-  useEffect(() => {
-    if (!isZoomed) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setIsZoomed(false);
-    };
-    document.body.style.overflow = 'hidden';
-    window.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.body.style.overflow = '';
-      window.removeEventListener('keydown', onKeyDown);
-    };
-  }, [isZoomed]);
-
   const captionColor = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
 
   return (
@@ -107,62 +93,57 @@ const ImageCard: React.FC<ImageCardProps> = ({ src, alt, title, isDark = false }
         )}
       </figure>
 
-      {isZoomed && typeof document !== 'undefined' && createPortal(
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={title || alt}
-          onClick={() => setIsZoomed(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 'clamp(1rem, 4vw, 3rem)',
-            background: isDark ? 'rgba(0,0,0,0.88)' : 'rgba(15,15,15,0.82)',
-            cursor: 'zoom-out',
-          }}
-        >
-          <button
-            type="button"
-            aria-label="Закрыть увеличенное изображение"
-            onClick={(event) => { event.stopPropagation(); setIsZoomed(false); }}
+      {isZoomed && (
+        <Overlay onClose={() => setIsZoomed(false)} backdropCursor="zoom-out">
+          <figure
+            aria-label={title || alt}
             style={{
-              position: 'fixed',
-              top: 16,
-              right: 16,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 40,
-              height: 40,
-              borderRadius: 999,
-              border: '1px solid rgba(255,255,255,0.18)',
-              background: 'rgba(15,15,15,0.82)',
-              color: '#ffffff',
-              cursor: 'pointer',
-            }}
-          >
-            <X size={20} />
-          </button>
-          <img
-            src={src}
-            alt={alt}
-            onClick={(event) => event.stopPropagation()}
-            style={{
-              display: 'block',
+              position: 'relative',
+              margin: 0,
               maxWidth: '96vw',
               maxHeight: '92vh',
-              width: 'auto',
-              height: 'auto',
-              objectFit: 'contain',
-              background: 'transparent',
             }}
-          />
-        </div>,
-        document.body,
+          >
+            <img
+              src={src}
+              alt={alt}
+              style={{
+                display: 'block',
+                maxWidth: '96vw',
+                maxHeight: '92vh',
+                width: 'auto',
+                height: 'auto',
+                objectFit: 'contain',
+                background: 'transparent',
+                borderRadius: '10px',
+                boxShadow: '0 8px 60px rgba(0,0,0,0.8)',
+                userSelect: 'none',
+              }}
+            />
+            <button
+              type="button"
+              aria-label="Закрыть увеличенное изображение"
+              onClick={() => setIsZoomed(false)}
+              style={{
+                position: 'fixed',
+                top: 16,
+                right: 16,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 40,
+                height: 40,
+                borderRadius: 999,
+                border: '1px solid rgba(255,255,255,0.18)',
+                background: 'rgba(15,15,15,0.82)',
+                color: '#ffffff',
+                cursor: 'pointer',
+              }}
+            >
+              <X size={20} />
+            </button>
+          </figure>
+        </Overlay>
       )}
     </>
   );

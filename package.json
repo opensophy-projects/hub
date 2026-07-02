@@ -12,7 +12,8 @@
     "generate:docs": "node scripts/generateDocs.mjs",
     "generate:sitemap": "node scripts/generateSitemap.mjs",
     "test": "node scripts/run-tests.mjs",
-    "typecheck": "tsc --noEmit --pretty false"
+    "typecheck": "tsc --noEmit --pretty false",
+    "seo:check": "node scripts/checkSeo.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
