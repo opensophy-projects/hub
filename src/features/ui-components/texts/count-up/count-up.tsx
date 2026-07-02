@@ -1,5 +1,5 @@
 import { useInView, useMotionValue, useSpring } from 'framer-motion';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, type CSSProperties } from 'react';
 
 interface CountUpProps {
   to: number;
@@ -8,6 +8,7 @@ interface CountUpProps {
   delay?: number;
   duration?: number;
   className?: string;
+  style?: CSSProperties;
   startWhen?: boolean;
   separator?: string;
   onStart?: () => void;
@@ -21,6 +22,7 @@ export default function CountUp({
   delay = 0,
   duration = 2,
   className = '',
+  style,
   startWhen = true,
   separator = '',
   onStart,
@@ -94,5 +96,5 @@ export default function CountUp({
     return () => unsubscribe();
   }, [springValue, formatValue]);
 
-  return <span className={className} ref={ref} />;
+  return <span className={className} style={style} ref={ref} />;
 }

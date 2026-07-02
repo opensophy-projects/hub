@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-// @ts-nocheck
 import { useEffect, useRef, useMemo, FC } from 'react';
 import * as THREE from 'three';
 

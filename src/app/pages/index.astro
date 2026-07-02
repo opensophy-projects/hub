@@ -49,13 +49,11 @@ const lang        = useCustomWelcome ? (welcomeCustomPage?.metadata.lang || 'ru'
 >
   {useCustomWelcome ? (
     <>
-      <noscript>
-        <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;">
-          <h1>{title}</h1>
-          <p>{description}</p>
-          <p>Opensophy публикует открытые материалы, статьи, документацию и UI-компоненты для IT-специалистов.</p>
-        </main>
-      </noscript>
+      <main data-llm-fallback style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;">
+        <h1>{title}</h1>
+        <p>{description}</p>
+        <p>Opensophy публикует открытые материалы, статьи, документацию и UI-компоненты для IT-специалистов.</p>
+      </main>
       <CustomPageRenderer client:only="react" slug={welcomeCustomSlug} />
     </>
   ) : welcomeDoc ? (

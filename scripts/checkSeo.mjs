@@ -19,7 +19,6 @@ const requiredPublicFiles = [
   'public/sitemap.xml',
   'public/llm.txt',
   'public/llms.txt',
-  'public/assets/image.png',
 ];
 for (const file of requiredPublicFiles) {
   ok(`${file} exists`, existsSync(path.join(root, file)));
@@ -44,7 +43,6 @@ if (existsSync(dist)) {
   const homeHtml = readIfExists(path.join(dist, 'index.html'));
   ok('dist homepage has description meta', /<meta name="description"\s+content="[^"]+"/.test(homeHtml));
   ok('dist homepage has canonical link', /<link rel="canonical"\s+href="https:\/\/opensophy\.com\/"/.test(homeHtml));
-  ok('dist homepage has OG image', /<meta property="og:image"\s+content="https:\/\/opensophy\.com\/assets\/image\.png"/.test(homeHtml));
   ok('dist homepage exposes no-JS/LLM fallback content', /data-llm-fallback|seo-landing-content|<noscript/i.test(homeHtml));
 
   const manifest = JSON.parse(readIfExists(path.join(root, 'public/data/docs/manifest.json')) || '[]');

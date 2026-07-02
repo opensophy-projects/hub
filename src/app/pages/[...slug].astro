@@ -109,11 +109,9 @@ if ((!doc && !category && !customPage) || !slug) return Astro.redirect('/404');
 >
   {doc ? (
     <>
-      <noscript>
-        <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;">
-          <article set:html={doc.content ?? ''} />
-        </main>
-      </noscript>
+      <main data-llm-fallback style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;">
+        <article set:html={doc.content ?? ''} />
+      </main>
       {frontmatterCustomPage ? (
         <CustomPageRenderer client:only="react" slug={frontmatterCustomSlug} />
       ) : (
@@ -122,27 +120,23 @@ if ((!doc && !category && !customPage) || !slug) return Astro.redirect('/404');
     </>
   ) : customPage ? (
     <>
-      <noscript>
-        <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;">
-          <h1>{customPage.metadata.title}</h1>
-          {customPage.metadata.description && <p>{customPage.metadata.description}</p>}
-        </main>
-      </noscript>
+      <main data-llm-fallback style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;">
+        <h1>{customPage.metadata.title}</h1>
+        {customPage.metadata.description && <p>{customPage.metadata.description}</p>}
+      </main>
       <CustomPageRenderer client:only="react" slug={slug} />
     </>
   ) : (
     <>
-      <noscript>
-        <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;">
-          <h1>{category.title}</h1>
-          {category.description && <p>{category.description}</p>}
-          <ul>
-            {category.docs?.map((item: any) => (
-              <li><a href={`/${item.slug}/`}>{item.title}</a></li>
-            ))}
-          </ul>
-        </main>
-      </noscript>
+      <main data-llm-fallback style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;">
+        <h1>{category.title}</h1>
+        {category.description && <p>{category.description}</p>}
+        <ul>
+          {category.docs?.map((item: any) => (
+            <li><a href={`/${item.slug}/`}>{item.title}</a></li>
+          ))}
+        </ul>
+      </main>
       <CategoryContent client:only="react" category={category} />
     </>
   )}

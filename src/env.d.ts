@@ -7,6 +7,3 @@ declare global {
     exit?: (code?: number) => never;
   };
 }
-
-declare module 'three';
-declare module 'jsdom';

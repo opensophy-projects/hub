@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-// @ts-nocheck
 import React, { useContext, useMemo, useState, useCallback, useId } from 'react';
 import {
   AreaChart, Area,
@@ -727,7 +725,7 @@ const LineSeries: React.FC<{
         activeDot={{ r: 4, strokeWidth: 0, fill: color, filter: `drop-shadow(0 0 4px ${color})` }}
         strokeWidth={LINE_STROKE_WIDTH}
         strokeDasharray={bufferLine ? undefined : (isDashed ? '5 5' : undefined)}
-        shape={bufferLine ? bufferLineShape : undefined}
+        shape={bufferLine ? (bufferLineShape as never) : undefined}
         isAnimationActive={false}
         style={{
           ...(maskId ? { mask: `url(#${maskId})` } : {}),
@@ -951,7 +949,7 @@ const BarSeries: React.FC<{
       stackId={isStacked ? 'evil-stack' : undefined}
       maxBarSize={maxSize}
       isAnimationActive={false}
-      shape={(props: BarShapeProps) => {
+      shape={((props: BarShapeProps) => {
         const rowName = String(props[nameKey] ?? visibleData[props.index ?? -1]?.[nameKey] ?? '');
         const multiSeriesOp = getMultiSeriesOpacity(hovered, dataKey);
         const cellOp = getCellOpacity(useRowColors, hovered, rowName, multiSeriesOp);
@@ -980,7 +978,7 @@ const BarSeries: React.FC<{
             )}
           </g>
         );
-      }}
+      }) as never}
     >
       {useRowColors && (
         <>
@@ -1193,8 +1191,7 @@ const PieChartInner: React.FC<PieChartInnerProps> = ({
         paddingAngle={PIE_SECTOR_PADDING_ANGLE} strokeWidth={0}
         style={{ outline: 'none' }}
         isAnimationActive={false}
-        activeIndex={resolvedActiveIndex}
-        activeShape={renderActive}
+        {...({ activeIndex: resolvedActiveIndex, activeShape: renderActive } as Record<string, unknown>)}
         onMouseEnter={(_, index) => setActiveIndex(index)}
         onMouseLeave={() => setActiveIndex(undefined)}
       >

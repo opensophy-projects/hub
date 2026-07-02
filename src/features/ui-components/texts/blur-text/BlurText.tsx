@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-// @ts-nocheck
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { motion, type Transition, type Easing } from 'framer-motion';
 import type { BlurTextProps } from './types';

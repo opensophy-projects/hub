@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-// @ts-nocheck
 import React, { createContext, lazy, Suspense } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
 import { CodeBlock } from '../components/CodeBlock';
@@ -85,7 +83,7 @@ const TAG_STYLES: Record<number, React.CSSProperties> = {
   6: { fontSize: '0.875rem',                      fontWeight: 700, marginTop: '1rem',    marginBottom: '0.5rem',  textTransform: 'uppercase', letterSpacing: '0.05em', scrollMarginTop: '5rem' },
 };
 
-const processPreElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+const processPreElement = (element: HTMLElement, key: string, elements: React.ReactNode[]) => {
   const codeElement = element.querySelector('code');
   if (!codeElement) return;
   const code = codeElement.textContent || '';
@@ -97,7 +95,7 @@ const processPreElement = (element: Element, key: string, elements: React.ReactN
   elements.push(React.createElement(CodeBlock, { key, code: code.trim(), language }));
 };
 
-const processCodeElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+const processCodeElement = (element: HTMLElement, key: string, elements: React.ReactNode[]) => {
   if (element.parentElement?.tagName.toLowerCase() === 'pre') return;
   elements.push(
     React.createElement(
@@ -109,7 +107,7 @@ const processCodeElement = (element: Element, key: string, elements: React.React
 };
 
 // Элементы приходят из уже санитизированного DOMPurify-документа — innerHTML безопасен
-const processHeadingElement = (element: Element, tagName: string, key: string, elements: React.ReactNode[]) => {
+const processHeadingElement = (element: HTMLElement, tagName: string, key: string, elements: React.ReactNode[]) => {
   const text  = element.textContent || '';
   const id    = element.id || slugifyHeading(text);
   const level = Number.parseInt(tagName[1], 10);
@@ -125,7 +123,7 @@ const processHeadingElement = (element: Element, tagName: string, key: string, e
   );
 };
 
-const processListElement = (element: Element, tagName: string, key: string, elements: React.ReactNode[]) => {
+const processListElement = (element: HTMLElement, tagName: string, key: string, elements: React.ReactNode[]) => {
   const hasTaskList = element.querySelector('input[type="checkbox"]');
   elements.push(
     React.createElement(tagName, {
@@ -136,13 +134,13 @@ const processListElement = (element: Element, tagName: string, key: string, elem
   );
 };
 
-const processLinkElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+const processLinkElement = (element: HTMLElement, key: string, elements: React.ReactNode[]) => {
   const children = Array.from(element.childNodes).filter(
     (n) => !(n.nodeType === Node.TEXT_NODE && !n.textContent?.trim()),
   );
 
-  if (children.length === 1 && (children[0] as Element).tagName?.toLowerCase() === 'img') {
-    const img = children[0] as Element;
+  if (children.length === 1 && (children[0] as HTMLElement).tagName?.toLowerCase() === 'img') {
+    const img = children[0] as HTMLElement;
     elements.push(
       React.createElement(ImageCard, {
         key,
@@ -166,7 +164,7 @@ const processLinkElement = (element: Element, key: string, elements: React.React
   );
 };
 
-const processImageElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+const processImageElement = (element: HTMLElement, key: string, elements: React.ReactNode[]) => {
   elements.push(
     React.createElement(ImageCard, {
       key,
@@ -177,7 +175,7 @@ const processImageElement = (element: Element, key: string, elements: React.Reac
   );
 };
 
-const processBlockquoteElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+const processBlockquoteElement = (element: HTMLElement, key: string, elements: React.ReactNode[]) => {
   elements.push(
     React.createElement('blockquote', {
       key,
@@ -186,24 +184,24 @@ const processBlockquoteElement = (element: Element, key: string, elements: React
   );
 };
 
-const processTableElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+const processTableElement = (element: HTMLElement, key: string, elements: React.ReactNode[]) => {
   // outerHTML дополнительно санитизируется перед передачей в компонент
   const tableHtml = sanitizeHtml(element.outerHTML);
   elements.push(
     React.createElement(
       TableContext.Consumer,
-      { key },
-      ({ onTableClick, isDark }: { onTableClick?: (html: string) => void; isDark: boolean }) =>
+      { key, children: ({ onTableClick, isDark }: { onTableClick?: (html: string) => void; isDark: boolean }) =>
         React.createElement(TableWithControls, {
           tableHtml,
           isDark,
           onFullscreen: (html: string) => onTableClick?.(sanitizeHtml(html)),
         }),
+      },
     ),
   );
 };
 
-const processInlineElement = (tag: string, element: Element, key: string, elements: React.ReactNode[]) => {
+const processInlineElement = (tag: string, element: HTMLElement, key: string, elements: React.ReactNode[]) => {
   elements.push(
     React.createElement(tag, {
       key,
@@ -212,7 +210,7 @@ const processInlineElement = (tag: string, element: Element, key: string, elemen
   );
 };
 
-const processDetailsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+const processDetailsElement = (element: HTMLElement, key: string, elements: React.ReactNode[]) => {
   const summary     = element.querySelector('summary');
   const summaryText = summary?.textContent || 'Подробности';
   const contentHTML = summary
@@ -230,14 +228,14 @@ const processDetailsElement = (element: Element, key: string, elements: React.Re
   );
 };
 
-const processAlertElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+const processAlertElement = (element: HTMLElement, key: string, elements: React.ReactNode[]) => {
   const alertType = element.dataset.alertType as 'note' | 'tip' | 'important' | 'warning' | 'caution';
   if (!alertType) return;
   const contentElements = parseHtmlToReact(element.innerHTML);
-  elements.push(React.createElement(Alert, { key, type: alertType }, ...contentElements));
+  elements.push(React.createElement(Alert as React.ComponentType<{ type: typeof alertType; children?: React.ReactNode }>, { key, type: alertType }, ...contentElements));
 };
 
-const processCardElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+const processCardElement = (element: HTMLElement, key: string, elements: React.ReactNode[]) => {
   const contentElements = parseHtmlToReact(element.innerHTML);
   elements.push(
     React.createElement(
@@ -254,26 +252,27 @@ const processCardElement = (element: Element, key: string, elements: React.React
   );
 };
 
-const processCardGridElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+const processCardGridElement = (element: HTMLElement, key: string, elements: React.ReactNode[]) => {
   const cols        = Number.parseInt(element.dataset.cols || '2', 10);
   const cardElements: React.ReactNode[] = [];
 
   for (const [i, child] of Array.from(element.children).entries()) {
     if (child.classList.contains('custom-card')) {
-      processCardElement(child, `${key}-card-${i}`, cardElements);
+      processCardElement(child as HTMLElement, `${key}-card-${i}`, cardElements);
     }
   }
 
   elements.push(React.createElement(CardGridWithContext, { key, cols }, ...cardElements));
 };
 
-const processColumnsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+const processColumnsElement = (element: HTMLElement, key: string, elements: React.ReactNode[]) => {
   const layout     = (element.dataset.layout || 'equal') as ColumnsLayout;
   const colElements: React.ReactNode[] = [];
 
   for (const [i, col] of Array.from(element.children).entries()) {
     if (col.classList.contains('custom-col')) {
-      const colContent = parseHtmlToReact(col.innerHTML);
+      const colElement = col as HTMLElement;
+      const colContent = parseHtmlToReact(colElement.innerHTML);
       colElements.push(React.createElement('div', { key: `${key}-col-${i}` }, ...colContent));
     }
   }
@@ -281,16 +280,17 @@ const processColumnsElement = (element: Element, key: string, elements: React.Re
   elements.push(React.createElement(ColumnsWithContext, { key, layout }, ...colElements));
 };
 
-const processStepsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+const processStepsElement = (element: HTMLElement, key: string, elements: React.ReactNode[]) => {
   const steps: StepData[] = [];
 
   for (const stepEl of Array.from(element.children)) {
     if (stepEl.classList.contains('custom-step')) {
-      const contentNodes = parseHtmlToReact(stepEl.innerHTML);
+      const stepElement = stepEl as HTMLElement;
+      const contentNodes = parseHtmlToReact(stepElement.innerHTML);
       steps.push({
-        title:   stepEl.dataset.title || '',
-        status:  (stepEl.dataset.status || 'default') as StepStatus,
-        color:   stepEl.dataset.color || undefined,
+        title:   stepElement.dataset.title || '',
+        status:  (stepElement.dataset.status || 'default') as StepStatus,
+        color:   stepElement.dataset.color || undefined,
         content: React.createElement(React.Fragment, null, ...contentNodes),
       });
     }
@@ -325,7 +325,7 @@ function parseBoolAttr(value: string | undefined): boolean {
   return value === 'true' || value === '1';
 }
 
-const processChartElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+const processChartElement = (element: HTMLElement, key: string, elements: React.ReactNode[]) => {
   const type   = (element.dataset.type   || 'bar') as import('../components/ChartBlock').ChartType;
   const title  =  element.dataset.title  || undefined;
   const colors =  element.dataset.colors || '';
@@ -334,10 +334,10 @@ const processChartElement = (element: Element, key: string, elements: React.Reac
     ? colors.split(',').map((c) => c.trim()).filter(Boolean)
     : undefined;
 
-  let data: Record<string, unknown>[] = [];
+  let data: import('../components/ChartBlock').ChartRow[] = [];
   try {
     const parsed = JSON.parse(element.dataset.chart || '[]');
-    if (Array.isArray(parsed)) data = parsed;
+    if (Array.isArray(parsed)) data = parsed as import('../components/ChartBlock').ChartRow[];
   } catch { /* невалидный JSON — пустой чарт */ }
 
   const curveType     = pickEnumAttr<import('../components/ChartBlock').CurveType>(element.dataset.curve, CURVE_VALUES);
@@ -362,7 +362,7 @@ const processChartElement = (element: Element, key: string, elements: React.Reac
   );
 };
 
-const processTabsElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+const processTabsElement = (element: HTMLElement, key: string, elements: React.ReactNode[]) => {
   let tabs: CodeTab[] = [];
   try {
     const parsed = JSON.parse(element.dataset.tabs || '[]');
@@ -382,7 +382,7 @@ const processTabsElement = (element: Element, key: string, elements: React.React
 };
 
 const processUIComponent = (
-  element: Element,
+  element: HTMLElement,
   key: string,
   textContent: string,
   elements: React.ReactNode[],
@@ -405,7 +405,7 @@ const processTextNode = (node: ChildNode, key: string, elements: React.ReactNode
   if (text.trim()) elements.push(React.createElement('span', { key }, text));
 };
 
-const processFigureElement = (element: Element, key: string, elements: React.ReactNode[]) => {
+const processFigureElement = (element: HTMLElement, key: string, elements: React.ReactNode[]) => {
   const img        = element.querySelector('img');
   const figcaption = element.querySelector('figcaption');
 
@@ -427,7 +427,7 @@ const processFigureElement = (element: Element, key: string, elements: React.Rea
 
 // KaTeX-разметка формируется рендерером, не из пользовательского ввода напрямую.
 // Содержимое проходит через DOMPurify выше по потоку перед попаданием сюда.
-const processKatexBlock = (element: Element, key: string, elements: React.ReactNode[]) => {
+const processKatexBlock = (element: HTMLElement, key: string, elements: React.ReactNode[]) => {
   elements.push(
     React.createElement('div', {
       key,
@@ -437,7 +437,7 @@ const processKatexBlock = (element: Element, key: string, elements: React.ReactN
   );
 };
 
-const processKatexInline = (element: Element, key: string, elements: React.ReactNode[]) => {
+const processKatexInline = (element: HTMLElement, key: string, elements: React.ReactNode[]) => {
   elements.push(
     React.createElement('span', {
       key,
@@ -447,7 +447,7 @@ const processKatexInline = (element: Element, key: string, elements: React.React
   );
 };
 
-const DIV_CLASS_HANDLERS: Array<[string, (el: Element, key: string, els: React.ReactNode[]) => void]> = [
+const DIV_CLASS_HANDLERS: Array<[string, (el: HTMLElement, key: string, els: React.ReactNode[]) => void]> = [
   ['katex-block',     processKatexBlock],
   ['katex-inline',    processKatexInline],
   ['custom-alert',    processAlertElement],
@@ -460,7 +460,7 @@ const DIV_CLASS_HANDLERS: Array<[string, (el: Element, key: string, els: React.R
 ];
 
 const processDivElement = (
-  element: Element,
+  element: HTMLElement,
   key: string,
   elements: React.ReactNode[],
   processNodes: (nodes: NodeListOf<ChildNode>, parentKey: string) => void,
@@ -474,19 +474,19 @@ const processDivElement = (
   if (element.childNodes.length > 0) processNodes(element.childNodes, key);
 };
 
-function getImgFromLink(el: Element): Element | null {
+function getImgFromLink(el: HTMLElement): HTMLElement | null {
   const nonEmpty = Array.from(el.childNodes).filter(
     (n) => !(n.nodeType === Node.TEXT_NODE && !n.textContent?.trim()),
   );
-  if (nonEmpty.length === 1 && (nonEmpty[0] as Element).tagName?.toLowerCase() === 'img') {
-    return nonEmpty[0] as Element;
+  if (nonEmpty.length === 1 && (nonEmpty[0] as HTMLElement).tagName?.toLowerCase() === 'img') {
+    return nonEmpty[0] as HTMLElement;
   }
   return null;
 }
 
 function isBrOrEmpty(node: ChildNode): boolean {
   if (node.nodeType === Node.ELEMENT_NODE) {
-    return (node as Element).tagName.toLowerCase() === 'br';
+    return (node as HTMLElement).tagName.toLowerCase() === 'br';
   }
   if (node.nodeType === Node.TEXT_NODE) {
     return !node.textContent?.trim();
@@ -494,9 +494,9 @@ function isBrOrEmpty(node: ChildNode): boolean {
   return false;
 }
 
-type ParagraphRun = { type: 'img'; el: Element } | { type: 'text'; html: string };
+type ParagraphRun = { type: 'img'; el: HTMLElement } | { type: 'text'; html: string };
 
-function splitParagraphIntoRuns(element: Element): ParagraphRun[] {
+function splitParagraphIntoRuns(element: HTMLElement): ParagraphRun[] {
   const result: ParagraphRun[] = [];
   let textBuffer = '';
 
@@ -518,7 +518,7 @@ function splitParagraphIntoRuns(element: Element): ParagraphRun[] {
 
   for (const node of Array.from(element.childNodes)) {
     if (node.nodeType === Node.ELEMENT_NODE) {
-      const el  = node as Element;
+      const el  = node as HTMLElement;
       const tag = el.tagName.toLowerCase();
 
       if (tag === 'img') { flushText(); result.push({ type: 'img', el }); continue; }
@@ -539,7 +539,7 @@ function splitParagraphIntoRuns(element: Element): ParagraphRun[] {
 }
 
 const processParagraphElement = (
-  element: Element,
+  element: HTMLElement,
   key: string,
   elements: React.ReactNode[],
   katexStore: Array<{ tag: 'div' | 'span'; cls: string; inner: string }>,
@@ -572,7 +572,7 @@ const processParagraphElement = (
       }
 
       if (child.nodeType === Node.ELEMENT_NODE) {
-        const el  = child as Element;
+        const el  = child as HTMLElement;
         const idx = el.dataset.katexIdx;
 
         if (idx !== undefined) {
@@ -631,7 +631,7 @@ const HEADING_TAGS = new Set(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']);
 const INLINE_TAGS  = new Set(['strong', 'em', 'u', 'del', 'sub', 'sup']);
 
 const processElement = (
-  element: Element,
+  element: HTMLElement,
   tagName: string,
   key: string,
   elements: React.ReactNode[],
@@ -690,7 +690,7 @@ export const parseHtmlToReact = (html: string): React.ReactNode[] => {
       if (node.nodeType === Node.TEXT_NODE)    { processTextNode(node, key, elements); return; }
       if (node.nodeType !== Node.ELEMENT_NODE) return;
 
-      const element = node as Element;
+      const element = node as HTMLElement;
       const tagName = element.tagName.toLowerCase();
 
       const katexIdx = element.dataset.katexIdx;

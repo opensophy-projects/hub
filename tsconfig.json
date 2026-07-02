@@ -18,15 +18,6 @@
     "src/**/*.spec.ts",
     "src/**/*.spec.tsx",
     ".test-build",
-    "dist",
-    "src/features/ui-components/backgrounds/beams/beams.tsx",
-    "src/features/ui-components/backgrounds/color-bends/color-bends.tsx",
-    "src/features/ui-components/backgrounds/floating-lines/floating-lines.tsx",
-    "src/features/ui-components/backgrounds/light-pillar/light-pillar.tsx",
-    "src/features/ui-components/backgrounds/pixel-blast/pixel-blast.tsx",
-    "src/features/ui-components/texts/blur-text/BlurText.tsx",
-    "src/features/ui-components/texts/count-up/count-up-preview.tsx",
-    "src/shared/components/ChartBlock.tsx",
-    "src/shared/lib/htmlParser.tsx"
+    "dist"
   ]
 }
