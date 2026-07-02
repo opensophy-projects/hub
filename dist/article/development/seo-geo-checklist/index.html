@@ -1,0 +1,1092 @@
+<!DOCTYPE html><html lang="ru"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- Theme: runs before paint, prevents flash --><script>
+      (function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.add('js');
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      })();
+    </script><!-- Primary SEO --><title>SEO &amp; GEO: Чеклист оптимизации сайта — Opensophy</title><meta name="description" content="Полный чеклист по SEO и GEO-оптимизации сайта — от технического аудита и E-E-A-T до структуры контента под RAG-архитектуру, llms.txt и мониторинга AI Share of Voice."><meta name="keywords" content="SEO чеклист, GEO оптимизация, Generative Engine Optimization, E-E-A-T, RAG контент, llms.txt, Schema.org, AI Share of Voice, нейровыдача, Яндекс Нейро"><meta name="author" content="Opensophy"><meta name="robots" content="index, follow"><meta name="theme-color" content="#0a0a0a"><meta name="color-scheme" content="dark light"><link rel="canonical" href="https://opensophy.com/article/development/seo-geo-checklist/"><!-- Sitemap discovery --><link rel="sitemap" type="application/xml" href="/sitemap.xml"><!-- Open Graph --><meta property="og:site_name" content="Opensophy"><meta property="og:title" content="SEO &amp; GEO: Чеклист оптимизации сайта — Opensophy"><meta property="og:description" content="Полный чеклист по SEO и GEO-оптимизации сайта — от технического аудита и E-E-A-T до структуры контента под RAG-архитектуру, llms.txt и мониторинга AI Share of Voice."><meta property="og:type" content="article"><meta property="og:url" content="https://opensophy.com/article/development/seo-geo-checklist/"><meta property="og:image" content="https://opensophy.com/assets/image.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ru_RU"><!-- Twitter / X --><meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@opensophy"><meta name="twitter:title" content="SEO &amp; GEO: Чеклист оптимизации сайта — Opensophy"><meta name="twitter:description" content="Полный чеклист по SEO и GEO-оптимизации сайта — от технического аудита и E-E-A-T до структуры контента под RAG-архитектуру, llms.txt и мониторинга AI Share of Voice."><meta name="twitter:image" content="https://opensophy.com/assets/image.png"><!-- Article-specific --><meta property="article:published_time" content="2026-04-13T00:00:00.000Z"><meta property="article:modified_time" content="2026-04-13T00:00:00.000Z"><meta property="article:author" content="Opensophy"><!-- Favicon --><link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/favicon.png"><!-- Astro SPA transitions --><meta name="astro-view-transitions-enabled" content="true"><meta name="astro-view-transitions-fallback" content="animate"><script type="module" src="/assets/ClientRouter.astro_astro_type_script_index_0_lang.CAqDO0tx.js"></script><!-- Structured Data JSON-LD --><script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"SEO & GEO: Чеклист оптимизации сайта","description":"Полный чеклист по SEO и GEO-оптимизации сайта — от технического аудита и E-E-A-T до структуры контента под RAG-архитектуру, llms.txt и мониторинга AI Share of Voice.","url":"https://opensophy.com/article/development/seo-geo-checklist/","image":"https://opensophy.com/assets/image.png","author":{"@type":"Person","name":"Opensophy"},"publisher":{"@type":"Organization","name":"Opensophy","url":"https://opensophy.com"},"datePublished":"2026-04-13T00:00:00.000Z","dateModified":"2026-04-13T00:00:00.000Z","inLanguage":"ru"}</script><link rel="stylesheet" href="/assets/Layout.BzjEPNLe.css"></head> <body> <style>astro-island,astro-slot,astro-static-slot{display:contents}</style><script>(()=>{var e=async t=>{await(await t())()};(self.Astro||(self.Astro={})).only=e;window.dispatchEvent(new Event("astro:only"));})();</script><script>(()=>{var g=Object.defineProperty;var w=(c,s,d)=>s in c?g(c,s,{enumerable:!0,configurable:!0,writable:!0,value:d}):c[s]=d;var l=(c,s,d)=>w(c,typeof s!="symbol"?s+"":s,d);var E=new Set(["__proto__","constructor","prototype"]);{let c={0:t=>y(t),1:t=>d(t),2:t=>new RegExp(t),3:t=>new Date(t),4:t=>new Map(d(t)),5:t=>new Set(d(t)),6:t=>BigInt(t),7:t=>new URL(t),8:t=>new Uint8Array(t),9:t=>new Uint16Array(t),10:t=>new Uint32Array(t),11:t=>Number.POSITIVE_INFINITY*t},s=t=>{let[p,e]=t;return p in c?c[p](e):void 0},d=t=>t.map(s),y=t=>typeof t!="object"||t===null?t:Object.fromEntries(Object.entries(t).map(([p,e])=>[p,s(e)]));class f extends HTMLElement{constructor(){super(...arguments);l(this,"Component");l(this,"hydrator");l(this,"hydrate",async()=>{var b;if(!this.hydrator||!this.isConnected)return;let e=(b=this.parentElement)==null?void 0:b.closest("astro-island[ssr]");if(e){e.addEventListener("astro:hydrate",this.hydrate,{once:!0});return}let n=this.querySelectorAll("astro-slot"),r={},i=this.querySelectorAll("template[data-astro-template]");for(let o of i){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("data-astro-template")||"default"]=o.innerHTML,o.remove())}for(let o of n){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("name")||"default"]=o.innerHTML)}let u;try{u=this.hasAttribute("props")?y(JSON.parse(this.getAttribute("props"))):{}}catch(o){let a=this.getAttribute("component-url")||"<unknown>",v=this.getAttribute("component-export");throw v&&(a+=` (export ${v})`),console.error(`[hydrate] Error parsing props for component ${a}`,this.getAttribute("props"),o),o}let h;await this.hydrator(this)(this.Component,u,r,{client:this.getAttribute("client")}),this.removeAttribute("ssr"),this.dispatchEvent(new CustomEvent("astro:hydrate"))});l(this,"unmount",()=>{this.isConnected||this.dispatchEvent(new CustomEvent("astro:unmount"))})}disconnectedCallback(){document.removeEventListener("astro:after-swap",this.unmount),document.addEventListener("astro:after-swap",this.unmount,{once:!0})}connectedCallback(){if(!this.hasAttribute("await-children")||document.readyState==="interactive"||document.readyState==="complete")this.childrenConnectedCallback();else{let e=()=>{document.removeEventListener("DOMContentLoaded",e),n.disconnect(),this.childrenConnectedCallback()},n=new MutationObserver(()=>{var r;((r=this.lastChild)==null?void 0:r.nodeType)===Node.COMMENT_NODE&&this.lastChild.nodeValue==="astro:end"&&(this.lastChild.remove(),e())});n.observe(this,{childList:!0}),document.addEventListener("DOMContentLoaded",e)}}async childrenConnectedCallback(){let e=this.getAttribute("before-hydration-url");e&&await import(e),this.start()}getRetryImportUrl(e){let n=new URL(e,document.baseURI),r=`astro-retry=${Date.now()}`,i=n.hash.replace(/^#/,"");return n.hash=i?`${i}&${r}`:r,n.toString()}async importWithRetry(e){try{return await import(e)}catch(n){return await new Promise(r=>setTimeout(r,1e3)),import(this.getRetryImportUrl(e))}}handleHydrationError(e){let n=this.getAttribute("component-url"),r=new CustomEvent("astro:hydration-error",{cancelable:!0,bubbles:!0,composed:!0,detail:{error:e,componentUrl:n}});this.dispatchEvent(r)&&console.error(`[astro-island] Error hydrating ${n}`,e)}async start(){let e=JSON.parse(this.getAttribute("opts")),n=this.getAttribute("client");if(Astro[n]===void 0){window.addEventListener(`astro:${n}`,()=>this.start(),{once:!0});return}try{await Astro[n](async()=>{let r=this.getAttribute("renderer-url");try{let[i,{default:u}]=await Promise.all([this.importWithRetry(this.getAttribute("component-url")),r?this.importWithRetry(r):Promise.resolve({default:()=>()=>{}})]),h=this.getAttribute("component-export")||"default";if(h.includes(".")){this.Component=i;for(let m of h.split(".")){if(E.has(m)||!this.Component||typeof this.Component!="object"&&typeof this.Component!="function"||!Object.hasOwn(this.Component,m))throw new Error(`Invalid component export path: ${h}`);this.Component=this.Component[m]}}else{if(E.has(h))throw new Error(`Invalid component export path: ${h}`);this.Component=i[h]}return this.hydrator=u,this.hydrate}catch(i){return this.handleHydrationError(i),()=>{}}},e,this)}catch(r){this.handleHydrationError(r)}}attributeChangedCallback(){this.hydrate()}}l(f,"observedAttributes",["props"]),customElements.get("astro-island")||customElements.define("astro-island",f)}})();</script>   <noscript> <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;"> <article><h1>Введение</h1>
+<p>Вместо объёмной теории, которой в интернете и так достаточно, держите чеклисты!<br>Ниже представлены чеклисты по оптимизации сайта под SEO и GEO (AI-режим поиска) в виде таблиц: поэтапно, без воды, с приоритетами и инструментами проверки.</p>
+<h2>1. SEO — Техническая оптимизация</h2>
+<table>
+<thead>
+<tr>
+<th>№</th>
+<th>Задача</th>
+<th>Приоритет</th>
+<th>Инструмент проверки</th>
+<th>Комментарий</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1.1</td>
+<td>HTTPS / SSL-сертификат активен и не просрочен</td>
+<td>🔴 Критично</td>
+<td>браузер</td>
+<td>Без HTTPS — потеря позиций и доверия</td>
+</tr>
+<tr>
+<td>1.2</td>
+<td>Файл robots.txt корректно настроен, не закрывает важные разделы</td>
+<td>🔴 Критично</td>
+<td>Яндекс.Вебмастер, GSC</td>
+<td>Проверить, не заблокированы ли JS/CSS</td>
+</tr>
+<tr>
+<td>1.3</td>
+<td>Sitemap.xml актуален, отправлен в Яндекс.Вебмастер и GSC</td>
+<td>🔴 Критично</td>
+<td>Яндекс.Вебмастер, GSC</td>
+<td>Обновлять при каждом добавлении страниц</td>
+</tr>
+<tr>
+<td>1.4</td>
+<td>Все ключевые страницы проиндексированы</td>
+<td>🔴 Критично</td>
+<td>Яндекс.Вебмастер, GSC</td>
+<td>Проверять раздел «Страницы в индексе»</td>
+</tr>
+<tr>
+<td>1.5</td>
+<td>Нет 404-ошибок на внутренних ссылках</td>
+<td>🔴 Критично</td>
+<td>GSC, Яндекс.Вебмастер</td>
+<td>Настроить 301-редиректы</td>
+</tr>
+<tr>
+<td>1.6</td>
+<td>Нет циклических и цепочечных 301-редиректов</td>
+<td>🟡 Важно</td>
+<td>ручная проверка</td>
+<td>Максимум один редирект в цепочке</td>
+</tr>
+<tr>
+<td>1.7</td>
+<td>Канонические теги (rel=canonical) настроены корректно</td>
+<td>🟡 Важно</td>
+<td>ручная проверка</td>
+<td>Нет ли конфликтов с rel=canonical</td>
+</tr>
+<tr>
+<td>1.8</td>
+<td>Hreflang настроен для мультиязычных версий</td>
+<td>🟡 Важно</td>
+<td>GSC</td>
+<td>Только для сайтов с несколькими языками</td>
+</tr>
+<tr>
+<td>1.9</td>
+<td>Core Web Vitals: LCP &lt; 2.5 сек</td>
+<td>🔴 Критично</td>
+<td>PageSpeed Insights</td>
+<td>Основной конкурентный фактор</td>
+</tr>
+<tr>
+<td>1.10</td>
+<td>Core Web Vitals: CLS &lt; 0.1</td>
+<td>🟡 Важно</td>
+<td>PageSpeed Insights</td>
+<td>Стабильность макета при загрузке</td>
+</tr>
+<tr>
+<td>1.11</td>
+<td>Core Web Vitals: INP &lt; 200 мс</td>
+<td>🟡 Важно</td>
+<td>PageSpeed Insights</td>
+<td>Заменил FID с марта 2024</td>
+</tr>
+<tr>
+<td>1.12</td>
+<td>PageSpeed Mobile Score &gt; 70</td>
+<td>🟡 Важно</td>
+<td>PageSpeed Insights</td>
+<td>Google индексирует mobile-first</td>
+</tr>
+<tr>
+<td>1.13</td>
+<td>Сайт корректно отображается на мобильных устройствах</td>
+<td>🔴 Критично</td>
+<td>Google Mobile-Friendly Test</td>
+<td>Нет горизонтальной прокрутки, шрифт читаемый</td>
+</tr>
+<tr>
+<td>1.14</td>
+<td>Структура URL: короткие, понятные, без технического мусора</td>
+<td>🟡 Важно</td>
+<td>ручная проверка</td>
+<td>/blog/seo-checklist а не /p?id=1234</td>
+</tr>
+<tr>
+<td>1.15</td>
+<td>Нет параметров сессии и UTM в индексируемых URL</td>
+<td>🟡 Важно</td>
+<td>GSC</td>
+<td>Добавить в robots.txt или canonical</td>
+</tr>
+<tr>
+<td>1.16</td>
+<td>Правильная структура заголовков H1–H6 на каждой странице</td>
+<td>🔴 Критично</td>
+<td>ручная проверка</td>
+<td>Один H1, логичная вложенность</td>
+</tr>
+<tr>
+<td>1.17</td>
+<td>Мета-теги title и description заполнены, уникальны</td>
+<td>🔴 Критично</td>
+<td>ручная проверка</td>
+<td>Title: 50–60 символов, Description: 150–160</td>
+</tr>
+<tr>
+<td>1.18</td>
+<td>Нет дублированных title и description</td>
+<td>🟡 Важно</td>
+<td>GSC</td>
+<td>Дубли снижают CTR и позиции</td>
+</tr>
+<tr>
+<td>1.19</td>
+<td>Alt-теги заполнены на всех изображениях</td>
+<td>🟡 Важно</td>
+<td>ручная проверка</td>
+<td>Содержат смысловое описание, не keyword-стаффинг</td>
+</tr>
+<tr>
+<td>1.20</td>
+<td>Изображения оптимизированы (WebP/AVIF, сжатие)</td>
+<td>🟡 Важно</td>
+<td>PageSpeed Insights</td>
+<td>Вес &lt; 100–200 КБ на среднее изображение</td>
+</tr>
+<tr>
+<td>1.21</td>
+<td>Внутренняя перелинковка: нет страниц-сирот</td>
+<td>🔴 Критично</td>
+<td>GSC, ручная проверка</td>
+<td>Каждая важная страница получает внутренние ссылки</td>
+</tr>
+<tr>
+<td>1.22</td>
+<td>Глубина вложенности ключевых страниц ≤ 3 кликов от главной</td>
+<td>🟡 Важно</td>
+<td>ручная проверка</td>
+<td>Чем глубже — тем хуже для сканирования</td>
+</tr>
+<tr>
+<td>1.23</td>
+<td>Нет broken outbound links (внешних битых ссылок)</td>
+<td>🟡 Важно</td>
+<td>ручная проверка</td>
+<td>Проверять ежеквартально</td>
+</tr>
+<tr>
+<td>1.24</td>
+<td>Размечены хлебные крошки (BreadcrumbList Schema)</td>
+<td>🟢 Желательно</td>
+<td>Google Rich Results Test</td>
+<td>Улучшает вид в SERP</td>
+</tr>
+<tr>
+<td>1.25</td>
+<td>Сайт работает на HTTPS без mixed content</td>
+<td>🔴 Критично</td>
+<td>браузер (DevTools)</td>
+<td>HTTP-ресурсы на HTTPS-странице</td>
+</tr>
+<tr>
+<td>1.26</td>
+<td>Логи сервера не закрывают доступ для Googlebot и Яндекс-бота</td>
+<td>🔴 Критично</td>
+<td>Яндекс.Вебмастер, GSC</td>
+<td>Проверить User-Agent боты</td>
+</tr>
+<tr>
+<td>1.27</td>
+<td>Нет дублирования контента между www и без-www</td>
+<td>🔴 Критично</td>
+<td>ручная проверка</td>
+<td>Настроить редирект на одну версию</td>
+</tr>
+<tr>
+<td>1.28</td>
+<td>Структурированные данные Schema.org не вызывают ошибок</td>
+<td>🟡 Важно</td>
+<td>Google Rich Results Test</td>
+<td>Только корректная разметка</td>
+</tr>
+</tbody></table>
+<h2>2. SEO — Контент и семантика</h2>
+<table>
+<thead>
+<tr>
+<th>№</th>
+<th>Задача</th>
+<th>Приоритет</th>
+<th>Инструмент</th>
+<th>Комментарий</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>2.1</td>
+<td>Собрано и кластеризовано семантическое ядро</td>
+<td>🔴 Критично</td>
+<td>Яндекс Wordstat</td>
+<td>Разбить на кластеры по интенту</td>
+</tr>
+<tr>
+<td>2.2</td>
+<td>Для каждого кластера есть целевая посадочная страница</td>
+<td>🔴 Критично</td>
+<td>ручной аудит</td>
+<td>Один кластер = одна страница</td>
+</tr>
+<tr>
+<td>2.3</td>
+<td>Каждая страница отвечает на доминирующий интент запроса</td>
+<td>🔴 Критично</td>
+<td>ручной аудит</td>
+<td>Информационный / транзакционный / навигационный</td>
+</tr>
+<tr>
+<td>2.4</td>
+<td>Контент покрывает семантику полно (LSI-слова, синонимы)</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>Сравнить с ТОП-5 конкурентов вручную</td>
+</tr>
+<tr>
+<td>2.5</td>
+<td>Текст структурирован: H2, H3, списки, таблицы</td>
+<td>🔴 Критично</td>
+<td>ручной аудит</td>
+<td>Нет «простыней» текста без разбивки</td>
+</tr>
+<tr>
+<td>2.6</td>
+<td>Уникальность контента ≥ 90%</td>
+<td>🔴 Критично</td>
+<td>ручной аудит</td>
+<td>Не копипаст с конкурентов</td>
+</tr>
+<tr>
+<td>2.7</td>
+<td>Нет переоптимизации (keyword stuffing)</td>
+<td>🔴 Критично</td>
+<td>ручной аудит</td>
+<td>Тошнотность по ключу &lt; 3–4%</td>
+</tr>
+<tr>
+<td>2.8</td>
+<td>Контент актуален: указана дата публикации/обновления</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>Обновлять устаревшие статьи раз в 6–12 мес.</td>
+</tr>
+<tr>
+<td>2.9</td>
+<td>Есть блок FAQ на информационных страницах</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>Закрывает длинный хвост, попадает в SERP</td>
+</tr>
+<tr>
+<td>2.10</td>
+<td>Используются ссылки на авторитетные первоисточники</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>Росстат, отраслевые исследования, первичные данные</td>
+</tr>
+<tr>
+<td>2.11</td>
+<td>Медиаконтент: изображения, видео, инфографика там, где уместно</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>Повышает время на странице</td>
+</tr>
+<tr>
+<td>2.12</td>
+<td>Читабельность: средняя длина предложения ≤ 20 слов</td>
+<td>🟢 Желательно</td>
+<td>ручной аудит</td>
+<td>Особенно важно для GEO</td>
+</tr>
+<tr>
+<td>2.13</td>
+<td>Контент отвечает на вопрос в первом абзаце</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>«Answer-first» принцип</td>
+</tr>
+<tr>
+<td>2.14</td>
+<td>Нет тонких страниц с контентом &lt; 300 слов (кроме карточек товаров)</td>
+<td>🟡 Важно</td>
+<td>GSC</td>
+<td>Thin content — фактор пессимизации</td>
+</tr>
+<tr>
+<td>2.15</td>
+<td>Есть раздел блога / экспертные статьи</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>Закрывает информационный трафик</td>
+</tr>
+<tr>
+<td>2.16</td>
+<td>Контент-план: регулярность публикаций ≥ 2 раза в месяц</td>
+<td>🟢 Желательно</td>
+<td>ручной аудит</td>
+<td>Сигнал актуальности для краулеров</td>
+</tr>
+</tbody></table>
+<h2>3. SEO — Ссылочный профиль и авторитет</h2>
+<table>
+<thead>
+<tr>
+<th>№</th>
+<th>Задача</th>
+<th>Приоритет</th>
+<th>Инструмент</th>
+<th>Комментарий</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>3.1</td>
+<td>Нет спамных и токсичных ссылок в профиле</td>
+<td>🔴 Критично</td>
+<td>Яндекс.Вебмастер, GSC</td>
+<td>Использовать Disavow при необходимости</td>
+</tr>
+<tr>
+<td>3.2</td>
+<td>Есть ссылки с тематически близких авторитетных сайтов</td>
+<td>🔴 Критично</td>
+<td>ручной мониторинг</td>
+<td>Качество &gt; количество</td>
+</tr>
+<tr>
+<td>3.3</td>
+<td>Анкорный текст ссылок разнообразен (не только точные ключи)</td>
+<td>🟡 Важно</td>
+<td>ручной мониторинг</td>
+<td>30–40% — брендовые, URL-анкоры</td>
+</tr>
+<tr>
+<td>3.4</td>
+<td>Регулярный прирост ссылочной массы (не резкие скачки)</td>
+<td>🟡 Важно</td>
+<td>GSC</td>
+<td>Естественный рост без накрутки</td>
+</tr>
+<tr>
+<td>3.5</td>
+<td>Упоминания бренда без ссылки отслеживаются и конвертируются</td>
+<td>🟡 Важно</td>
+<td>Google Alerts</td>
+<td>Outreach для получения ссылки</td>
+</tr>
+<tr>
+<td>3.6</td>
+<td>Гостевые публикации на авторитетных отраслевых ресурсах</td>
+<td>🟡 Важно</td>
+<td>ручной поиск</td>
+<td>VC.ru, отраслевые СМИ</td>
+</tr>
+<tr>
+<td>3.7</td>
+<td>Бренд упоминается в Яндекс.Справочнике и Google Business</td>
+<td>🟡 Важно</td>
+<td>Яндекс.Справочник, Google Business</td>
+<td>NAP-консистентность</td>
+</tr>
+<tr>
+<td>3.8</td>
+<td>Краудссылки с форумов, Q&amp;A, профессиональных сообществ</td>
+<td>🟢 Желательно</td>
+<td>ручной поиск</td>
+<td>Только там, где уместно и органично</td>
+</tr>
+</tbody></table>
+<h2>4. SEO — E-E-A-T и репутация</h2>
+<table>
+<thead>
+<tr>
+<th>№</th>
+<th>Задача</th>
+<th>Приоритет</th>
+<th>Инструмент</th>
+<th>Комментарий</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>4.1</td>
+<td>Указана информация о компании: реквизиты, ИНН, ОГРН</td>
+<td>🔴 Критично</td>
+<td>ручной аудит</td>
+<td>Особенно критично для YMYL-тематик</td>
+</tr>
+<tr>
+<td>4.2</td>
+<td>Есть реальные контакты: адрес, телефон, email</td>
+<td>🔴 Критично</td>
+<td>ручной аудит</td>
+<td>Не скрытый WHOIS</td>
+</tr>
+<tr>
+<td>4.3</td>
+<td>Указаны авторы статей с биографиями и ссылками на экспертизу</td>
+<td>🔴 Критично</td>
+<td>ручной аудит</td>
+<td>Имя + должность + опыт + соцсети</td>
+</tr>
+<tr>
+<td>4.4</td>
+<td>Страница автора: специализация, профессиональный опыт, публикации</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>Отдельная страница /about/author</td>
+</tr>
+<tr>
+<td>4.5</td>
+<td>Экспертный контент подкреплён ссылками на первоисточники</td>
+<td>🔴 Критично</td>
+<td>ручной аудит</td>
+<td>Без «по данным из интернета»</td>
+</tr>
+<tr>
+<td>4.6</td>
+<td>Политика конфиденциальности и оферта актуальны</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>Соответствие 152-ФЗ</td>
+</tr>
+<tr>
+<td>4.7</td>
+<td>Отзывы клиентов: реальные, с именами, регулярные</td>
+<td>🟡 Важно</td>
+<td>Яндекс.Карты, 2ГИС</td>
+<td>Средняя оценка ≥ 4.0</td>
+</tr>
+<tr>
+<td>4.8</td>
+<td>Бренд упоминается в авторитетных СМИ</td>
+<td>🟡 Важно</td>
+<td>Google Alerts</td>
+<td>KP.ru, RBC, отраслевые медиа</td>
+</tr>
+<tr>
+<td>4.9</td>
+<td>Нет негативных репутационных материалов в ТОП-20 по брендовому запросу</td>
+<td>🟡 Важно</td>
+<td>ручной поиск</td>
+<td>SERM при необходимости</td>
+</tr>
+<tr>
+<td>4.10</td>
+<td>Кейсы и результаты работы с конкретными метриками</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>Не «мы лучшие», а «клиент вырос на X%»</td>
+</tr>
+</tbody></table>
+<h2>5. GEO — Техническая оптимизация под ИИ</h2>
+<table>
+<thead>
+<tr>
+<th>№</th>
+<th>Задача</th>
+<th>Приоритет</th>
+<th>Инструмент</th>
+<th>Комментарий</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>5.1</td>
+<td>Создан файл llms.txt в корне сайта</td>
+<td>🔴 Критично</td>
+<td>ручная настройка</td>
+<td>Аналог robots.txt для LLM-краулеров</td>
+</tr>
+<tr>
+<td>5.2</td>
+<td>В llms.txt разрешён доступ GPTBot, Google-Extended, PerplexityBot</td>
+<td>🔴 Критично</td>
+<td>ручная настройка</td>
+<td>User-Agent: GPTBot / Allow: /</td>
+</tr>
+<tr>
+<td>5.3</td>
+<td>В llms.txt указаны контакты ответственного и политика использования</td>
+<td>🟡 Важно</td>
+<td>ручная настройка</td>
+<td>Contact: <a href="mailto:tech@site.ru">tech@site.ru</a></td>
+</tr>
+<tr>
+<td>5.4</td>
+<td>Разметка Schema.org: Article с author + datePublished</td>
+<td>🔴 Критично</td>
+<td>Google Rich Results Test</td>
+<td>Подтверждает авторство и актуальность</td>
+</tr>
+<tr>
+<td>5.5</td>
+<td>Разметка Schema.org: FAQPage на страницах с FAQ</td>
+<td>🔴 Критично</td>
+<td>Google Rich Results Test</td>
+<td>Наиболее цитируемый формат в ИИ</td>
+</tr>
+<tr>
+<td>5.6</td>
+<td>Разметка Schema.org: HowTo на инструкциях и гайдах</td>
+<td>🟡 Важно</td>
+<td>Google Rich Results Test</td>
+<td>+47% к частоте цитирования</td>
+</tr>
+<tr>
+<td>5.7</td>
+<td>Разметка Schema.org: Organization на главной / About</td>
+<td>🟡 Важно</td>
+<td>Google Rich Results Test</td>
+<td>Подтверждает сущность бренда</td>
+</tr>
+<tr>
+<td>5.8</td>
+<td>Разметка Schema.org: Person для авторов</td>
+<td>🟡 Важно</td>
+<td>Google Rich Results Test</td>
+<td>Экспертный статус автора</td>
+</tr>
+<tr>
+<td>5.9</td>
+<td>Разметка Schema.org: Product для товаров (name, price, description)</td>
+<td>🟡 Важно</td>
+<td>Google Rich Results Test</td>
+<td>Для транзакционных запросов</td>
+</tr>
+<tr>
+<td>5.10</td>
+<td>Разметка Schema.org: BreadcrumbList на всех страницах</td>
+<td>🟢 Желательно</td>
+<td>Google Rich Results Test</td>
+<td>Контекстуализация страницы для LLM</td>
+</tr>
+<tr>
+<td>5.11</td>
+<td>Нет ошибок в структурированных данных</td>
+<td>🔴 Критично</td>
+<td>Google Rich Results Test</td>
+<td>Только корректная разметка</td>
+</tr>
+<tr>
+<td>5.12</td>
+<td>LCP &lt; 2.5 сек (ИИ-боты предпочитают быстрые источники)</td>
+<td>🟡 Важно</td>
+<td>PageSpeed Insights</td>
+<td>Медленные страницы хуже сканируются</td>
+</tr>
+<tr>
+<td>5.13</td>
+<td>Страницы корректно сканируются без JavaScript (SSR/SSG)</td>
+<td>🟡 Важно</td>
+<td>Google Mobile-Friendly Test</td>
+<td>LLM-краулеры могут не рендерить JS</td>
+</tr>
+<tr>
+<td>5.14</td>
+<td>Дата публикации и последнего обновления указана в разметке</td>
+<td>🔴 Критично</td>
+<td>ручная настройка</td>
+<td>Актуальность — ключевой сигнал для ИИ</td>
+</tr>
+</tbody></table>
+<h2>6. GEO — Структура и формат контента под RAG</h2>
+<table>
+<thead>
+<tr>
+<th>№</th>
+<th>Задача</th>
+<th>Приоритет</th>
+<th>Инструмент</th>
+<th>Комментарий</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>6.1</td>
+<td>Каждая страница даёт прямой ответ в первых 1–3 предложениях</td>
+<td>🔴 Критично</td>
+<td>ручной аудит</td>
+<td>«Answer-first» = легко извлечь чанк</td>
+</tr>
+<tr>
+<td>6.2</td>
+<td>Контент разбит на атомарные блоки: один абзац = одна мысль</td>
+<td>🔴 Критично</td>
+<td>ручной аудит</td>
+<td>Принцип чанкинга для RAG-архитектуры</td>
+</tr>
+<tr>
+<td>6.3</td>
+<td>Используется чёткая иерархия: H2 → H3 → H4</td>
+<td>🔴 Критично</td>
+<td>ручной аудит</td>
+<td>ИИ извлекает контекст через заголовки</td>
+</tr>
+<tr>
+<td>6.4</td>
+<td>Есть блоки FAQ с парами «вопрос — прямой ответ»</td>
+<td>🔴 Критично</td>
+<td>ручной аудит</td>
+<td>+35–70% к видимости в ИИ по исследованиям</td>
+</tr>
+<tr>
+<td>6.5</td>
+<td>Есть сравнительные таблицы там, где уместно</td>
+<td>🔴 Критично</td>
+<td>ручной аудит</td>
+<td>ИИ извлекает данные из таблиц напрямую</td>
+</tr>
+<tr>
+<td>6.6</td>
+<td>Инструкции оформлены в формате HowTo: нумерованный список шагов</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>Пошаговость = лёгкая декомпозиция для ИИ</td>
+</tr>
+<tr>
+<td>6.7</td>
+<td>В статьях есть блоки «Коротко: …» или «Вывод:» с резюме</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>ИИ часто цитирует summary-блоки</td>
+</tr>
+<tr>
+<td>6.8</td>
+<td>Контент охватывает смежные подзапросы (Query Fan-Out)</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>Если тема «A», добавь разделы про B, C, D</td>
+</tr>
+<tr>
+<td>6.9</td>
+<td>Утверждения подкреплены статистикой с указанием источника и года</td>
+<td>🔴 Критично</td>
+<td>ручной аудит</td>
+<td>+40–85% к видимости в ИИ по GEO-bench</td>
+</tr>
+<tr>
+<td>6.10</td>
+<td>Есть цитаты экспертов с именем, должностью, организацией</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>+25–60% к видимости в ИИ</td>
+</tr>
+<tr>
+<td>6.11</td>
+<td>Нет абзацев длиннее 4–5 строк без разбивки</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>RAG плохо обрабатывает «простыни»</td>
+</tr>
+<tr>
+<td>6.12</td>
+<td>Формат «ТОП-N / Рейтинг» используется для подборок</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>Структурирован, покрывает много подзапросов</td>
+</tr>
+<tr>
+<td>6.13</td>
+<td>Оригинальные данные: собственные исследования, опросы, метрики</td>
+<td>🔴 Критично</td>
+<td>ручной аудит</td>
+<td>ИИ приоритизирует уникальный контент</td>
+</tr>
+<tr>
+<td>6.14</td>
+<td>Простой язык: избегать канцелярита и номинализаций</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>+10–30% к видимости в технических темах</td>
+</tr>
+<tr>
+<td>6.15</td>
+<td>Кейсы с конкретными числами и описанием процесса (не только результат)</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>Факты + верифицируемость = Citation Authority</td>
+</tr>
+<tr>
+<td>6.16</td>
+<td>Контент содержит неочевидные детали из реального опыта</td>
+<td>🔴 Критично</td>
+<td>ручной аудит</td>
+<td>ИИ не может воспроизвести прожитый опыт</td>
+</tr>
+</tbody></table>
+<h2>7. GEO — E-E-A-T для ИИ-систем</h2>
+<table>
+<thead>
+<tr>
+<th>№</th>
+<th>Задача</th>
+<th>Приоритет</th>
+<th>Инструмент</th>
+<th>Комментарий</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>7.1</td>
+<td>Полные данные о компании: название, история, ОГРН, миссия</td>
+<td>🔴 Критично</td>
+<td>ручной аудит</td>
+<td>ИИ оценивает прозрачность источника</td>
+</tr>
+<tr>
+<td>7.2</td>
+<td>Автор каждой статьи идентифицирован: имя, фото, опыт, ссылки</td>
+<td>🔴 Критично</td>
+<td>ручной аудит</td>
+<td>LLM отдаёт приоритет верифицированным авторам</td>
+</tr>
+<tr>
+<td>7.3</td>
+<td>Страница автора: LinkedIn, публикации, регалии — всё связано</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>Внешние подтверждения экспертизы</td>
+</tr>
+<tr>
+<td>7.4</td>
+<td>Для YMYL-контента: указана квалификация (врач, юрист, финансист)</td>
+<td>🔴 Критично</td>
+<td>ручной аудит</td>
+<td>Без этого — высокий риск игнорирования ИИ</td>
+</tr>
+<tr>
+<td>7.5</td>
+<td>Контент показывает процесс принятия решений, а не только итог</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>Признак реального опыта, не рерайта</td>
+</tr>
+<tr>
+<td>7.6</td>
+<td>Указаны ограничения и случаи, когда рекомендация не работает</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>Признак экспертного, не рекламного контента</td>
+</tr>
+<tr>
+<td>7.7</td>
+<td>Дата публикации видна на странице + в meta + в Schema.org</td>
+<td>🔴 Критично</td>
+<td>ручной аудит</td>
+<td>ИИ отдаёт приоритет актуальным источникам</td>
+</tr>
+<tr>
+<td>7.8</td>
+<td>Устаревший контент помечен или обновлён</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>«Актуально на: [дата]» в начале статьи</td>
+</tr>
+<tr>
+<td>7.9</td>
+<td>Контент перекрёстно проверен: ссылки на исследования, не на «по данным»</td>
+<td>🔴 Критично</td>
+<td>ручной аудит</td>
+<td>ИИ кросс-проверяет факты по нескольким источникам</td>
+</tr>
+<tr>
+<td>7.10</td>
+<td>Политика конфиденциальности и оферта доступны из любой страницы</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>Сигнал trustworthiness для ИИ</td>
+</tr>
+</tbody></table>
+<h2>8. GEO — Дистрибуция и внешнее присутствие</h2>
+<table>
+<thead>
+<tr>
+<th>№</th>
+<th>Задача</th>
+<th>Приоритет</th>
+<th>Инструмент</th>
+<th>Комментарий</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>8.1</td>
+<td>Экспертный контент размещён на топ-цитируемых площадках ниши</td>
+<td>🔴 Критично</td>
+<td>ручной парсинг нейровыдачи</td>
+<td>Определяется парсингом источников в ИИ-ответах</td>
+</tr>
+<tr>
+<td>8.2</td>
+<td>Бренд упомянут в медиа-изданиях (не только в виде рекламы)</td>
+<td>🔴 Критично</td>
+<td>Google Alerts</td>
+<td>KP.ru, mail.ru, отраслевые СМИ</td>
+</tr>
+<tr>
+<td>8.3</td>
+<td>Карточки товаров / описания на маркетплейсах содержат экспертный контент</td>
+<td>🔴 Критично</td>
+<td>ручной аудит</td>
+<td>OZON, ЯМ — цитируются ИИ напрямую</td>
+</tr>
+<tr>
+<td>8.4</td>
+<td>Q&amp;A-разделы маркетплейсов заполнены ответами бренда</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>ИИ цитирует Q&amp;A как источник экспертизы</td>
+</tr>
+<tr>
+<td>8.5</td>
+<td>Отзывы на маркетплейсах содержат ключевые сценарии использования</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>«Помог при чувствительности», «лучше для десен»</td>
+</tr>
+<tr>
+<td>8.6</td>
+<td>Публикации на VC.ru, Хабре, T-J с экспертным контентом бренда</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>VC.ru цитируется в ИИ в 2.5× чаще рядового блога</td>
+</tr>
+<tr>
+<td>8.7</td>
+<td>Присутствие в специализированных магазинах / агрегаторах ниши</td>
+<td>🔴 Критично</td>
+<td>ручной парсинг нейровыдачи</td>
+<td>Они доминируют в источниках нейровыдачи (28%)</td>
+</tr>
+<tr>
+<td>8.8</td>
+<td>Гостевые статьи на медицинских / профильных порталах</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>E-E-A-T-сигнал для ИИ</td>
+</tr>
+<tr>
+<td>8.9</td>
+<td>Видеоконтент с транскриптами / субтитрами</td>
+<td>🟢 Желательно</td>
+<td>ручной аудит</td>
+<td>Транскрипты индексируются и цитируются ИИ</td>
+</tr>
+<tr>
+<td>8.10</td>
+<td>Активность в профессиональных сообществах (форумы, Telegram)</td>
+<td>🟢 Желательно</td>
+<td>ручной аудит</td>
+<td>UGC-сигналы для ИИ</td>
+</tr>
+<tr>
+<td>8.11</td>
+<td>LinkedIn: профили ключевых экспертов с публикациями</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>Ссылки с LinkedIn ≈ в 3× сильнее обычного блога для ИИ</td>
+</tr>
+<tr>
+<td>8.12</td>
+<td>Упоминания бренда в отраслевых рейтингах и подборках</td>
+<td>🟡 Важно</td>
+<td>ручной поиск</td>
+<td>ИИ сканирует такие списки при ответах «лучшие X»</td>
+</tr>
+</tbody></table>
+<h2>9. GEO — Мониторинг и аналитика</h2>
+<table>
+<thead>
+<tr>
+<th>№</th>
+<th>Задача</th>
+<th>Приоритет</th>
+<th>Инструмент</th>
+<th>Комментарий</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>9.1</td>
+<td>Настроен трекинг трафика из ИИ-источников в Яндекс.Метрике</td>
+<td>🔴 Критично</td>
+<td>Яндекс.Метрика</td>
+<td>alice.yandex.ru, chatgpt.com, perplexity.ai</td>
+</tr>
+<tr>
+<td>9.2</td>
+<td>Настроен трекинг в GA4 по реферерам ИИ-платформ</td>
+<td>🟡 Важно</td>
+<td>GA4</td>
+<td>claude.ai, gemini.google.com, deepseek.com</td>
+</tr>
+<tr>
+<td>9.3</td>
+<td>Еженедельная ручная проверка нейровыдачи по приоритетным запросам</td>
+<td>🔴 Критично</td>
+<td>Яндекс Нейро, ChatGPT</td>
+<td>Высокая волатильность — нельзя проверять раз в месяц</td>
+</tr>
+<tr>
+<td>9.4</td>
+<td>Фиксируются источники, которые цитирует ИИ по вашей теме</td>
+<td>🔴 Критично</td>
+<td>ручной парсинг</td>
+<td>Основа для приоритизации площадок дистрибуции</td>
+</tr>
+<tr>
+<td>9.5</td>
+<td>Отслеживается AI Share of Voice (% запросов с упоминанием бренда)</td>
+<td>🔴 Критично</td>
+<td>ручной подсчёт</td>
+<td>Кол-во упоминаний / общее кол-во запросов × 100%</td>
+</tr>
+<tr>
+<td>9.6</td>
+<td>Отслеживается Citation Rate (сколько раз ИИ сослался на ваш сайт)</td>
+<td>🟡 Важно</td>
+<td>ручной парсинг</td>
+<td>Считать по секции «Оценить ответ» в Яндекс Нейро</td>
+</tr>
+<tr>
+<td>9.7</td>
+<td>Мониторинг брендовых упоминаний в сети</td>
+<td>🟡 Важно</td>
+<td>Google Alerts</td>
+<td>Сигнал авторитетности для ИИ</td>
+</tr>
+<tr>
+<td>9.8</td>
+<td>Контроль тональности упоминаний: &gt;80% нейтральных/позитивных</td>
+<td>🟡 Важно</td>
+<td>ручной мониторинг</td>
+<td>Негатив снижает Citation Authority</td>
+</tr>
+<tr>
+<td>9.9</td>
+<td>Аудит нейровыдачи после каждого крупного обновления контента</td>
+<td>🟡 Важно</td>
+<td>ручной аудит</td>
+<td>Сдвиги в источниках происходят за дни</td>
+</tr>
+<tr>
+<td>9.10</td>
+<td>A/B-тест: страницы с FAQ vs без — сравнение частоты цитирования</td>
+<td>🟢 Желательно</td>
+<td>ручной эксперимент</td>
+<td>Доказывает ROI структурирования контента</td>
+</tr>
+<tr>
+<td>9.11</td>
+<td>Регулярный анализ: какой контент конкурентов цитируется ИИ</td>
+<td>🟡 Важно</td>
+<td>ручной парсинг</td>
+<td>Gap-анализ для выявления пробелов</td>
+</tr>
+<tr>
+<td>9.12</td>
+<td>Отслеживание Zero-Click Presence Rate</td>
+<td>🟢 Желательно</td>
+<td>ручной подсчёт</td>
+<td>Доля ответов, где ИИ даёт всё без перехода — признак силы бренда</td>
+</tr>
+</tbody></table>
+<h2>10. GEO — Стратегические инициативы</h2>
+<table>
+<thead>
+<tr>
+<th>№</th>
+<th>Задача</th>
+<th>Приоритет</th>
+<th>Срок</th>
+<th>Комментарий</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>10.1</td>
+<td>Провести парсинг нейровыдачи по 20–50 ключевым запросам ниши</td>
+<td>🔴 Критично</td>
+<td>раз в квартал</td>
+<td>База для всей GEO-стратегии</td>
+</tr>
+<tr>
+<td>10.2</td>
+<td>Построить скоринговую модель площадок по 5 факторам (AI Freq, Relevance, E-E-A-T, Format, Access)</td>
+<td>🔴 Критично</td>
+<td>одноразово</td>
+<td>Определяет приоритеты размещения бюджета</td>
+</tr>
+<tr>
+<td>10.3</td>
+<td>Создать контент под каждый критический пробел (запросы, где бренда нет)</td>
+<td>🔴 Критично</td>
+<td>1–3 мес.</td>
+<td>Приоритет: объём × отсутствие в нейровыдаче</td>
+</tr>
+<tr>
+<td>10.4</td>
+<td>Разработать «контр-нарратив» там, где у бренда нет продукта-ответа</td>
+<td>🟡 Важно</td>
+<td>2–4 мес.</td>
+<td>Пример: «почему ротация лучше ультразвука»</td>
+</tr>
+<tr>
+<td>10.5</td>
+<td>Внедрить цикл GEAR: Generate → Establish → Align → Reinforce</td>
+<td>🟡 Важно</td>
+<td>постоянно</td>
+<td>Итерационный процесс без конечной точки</td>
+</tr>
+<tr>
+<td>10.6</td>
+<td>Запустить работу с UGC: стимулировать тематические отзывы</td>
+<td>🟡 Важно</td>
+<td>1–2 мес.</td>
+<td>Отзывы с конкретными проблемами = GEO-сигнал</td>
+</tr>
+<tr>
+<td>10.7</td>
+<td>Для брендов YMYL: подключить реальных экспертов как авторов</td>
+<td>🔴 Критично</td>
+<td>1–3 мес.</td>
+<td>Без этого ИИ игнорирует контент по медзапросам</td>
+</tr>
+<tr>
+<td>10.8</td>
+<td>Проверить и устранить галлюцинации ИИ о продуктах бренда</td>
+<td>🟡 Важно</td>
+<td>ежемесячно</td>
+<td>Исправлять через Schema.org и официальный контент</td>
+</tr>
+<tr>
+<td>10.9</td>
+<td>Создать API или data-feed с актуальными данными о продуктах</td>
+<td>🟢 Желательно</td>
+<td>6–12 мес.</td>
+<td>Продвинутый уровень: прямое подключение к ИИ</td>
+</tr>
+<tr>
+<td>10.10</td>
+<td>Масштабировать метод с пилотной категории на весь портфель</td>
+<td>🟡 Важно</td>
+<td>6–12 мес.</td>
+<td>Один алгоритм — разные ниши</td>
+</tr>
+</tbody></table>
+</article> </main> </noscript> <astro-island uid="ZVitJO" component-url="/assets/DocContent.CoKfap2Q.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{&quot;doc&quot;:[0,{&quot;id&quot;:[0,&quot;article/development/seo-geo-checklist&quot;],&quot;title&quot;:[0,&quot;SEO &amp; GEO: Чеклист оптимизации сайта&quot;],&quot;slug&quot;:[0,&quot;article/development/seo-geo-checklist&quot;],&quot;description&quot;:[0,&quot;Полный чеклист по SEO и GEO-оптимизации сайта — от технического аудита и E-E-A-T до структуры контента под RAG-архитектуру, llms.txt и мониторинга AI Share of Voice.&quot;],&quot;content&quot;:[0,&quot;&lt;h1&gt;Введение&lt;/h1&gt;\n&lt;p&gt;Вместо объёмной теории, которой в интернете и так достаточно, держите чеклисты!&lt;br&gt;Ниже представлены чеклисты по оптимизации сайта под SEO и GEO (AI-режим поиска) в виде таблиц: поэтапно, без воды, с приоритетами и инструментами проверки.&lt;/p&gt;\n&lt;h2&gt;1. SEO — Техническая оптимизация&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;№&lt;/th&gt;\n&lt;th&gt;Задача&lt;/th&gt;\n&lt;th&gt;Приоритет&lt;/th&gt;\n&lt;th&gt;Инструмент проверки&lt;/th&gt;\n&lt;th&gt;Комментарий&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;1.1&lt;/td&gt;\n&lt;td&gt;HTTPS / SSL-сертификат активен и не просрочен&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;браузер&lt;/td&gt;\n&lt;td&gt;Без HTTPS — потеря позиций и доверия&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.2&lt;/td&gt;\n&lt;td&gt;Файл robots.txt корректно настроен, не закрывает важные разделы&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;Яндекс.Вебмастер, GSC&lt;/td&gt;\n&lt;td&gt;Проверить, не заблокированы ли JS/CSS&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.3&lt;/td&gt;\n&lt;td&gt;Sitemap.xml актуален, отправлен в Яндекс.Вебмастер и GSC&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;Яндекс.Вебмастер, GSC&lt;/td&gt;\n&lt;td&gt;Обновлять при каждом добавлении страниц&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.4&lt;/td&gt;\n&lt;td&gt;Все ключевые страницы проиндексированы&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;Яндекс.Вебмастер, GSC&lt;/td&gt;\n&lt;td&gt;Проверять раздел «Страницы в индексе»&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.5&lt;/td&gt;\n&lt;td&gt;Нет 404-ошибок на внутренних ссылках&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;GSC, Яндекс.Вебмастер&lt;/td&gt;\n&lt;td&gt;Настроить 301-редиректы&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.6&lt;/td&gt;\n&lt;td&gt;Нет циклических и цепочечных 301-редиректов&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручная проверка&lt;/td&gt;\n&lt;td&gt;Максимум один редирект в цепочке&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.7&lt;/td&gt;\n&lt;td&gt;Канонические теги (rel=canonical) настроены корректно&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручная проверка&lt;/td&gt;\n&lt;td&gt;Нет ли конфликтов с rel=canonical&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.8&lt;/td&gt;\n&lt;td&gt;Hreflang настроен для мультиязычных версий&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;GSC&lt;/td&gt;\n&lt;td&gt;Только для сайтов с несколькими языками&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.9&lt;/td&gt;\n&lt;td&gt;Core Web Vitals: LCP &amp;lt; 2.5 сек&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;PageSpeed Insights&lt;/td&gt;\n&lt;td&gt;Основной конкурентный фактор&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.10&lt;/td&gt;\n&lt;td&gt;Core Web Vitals: CLS &amp;lt; 0.1&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;PageSpeed Insights&lt;/td&gt;\n&lt;td&gt;Стабильность макета при загрузке&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.11&lt;/td&gt;\n&lt;td&gt;Core Web Vitals: INP &amp;lt; 200 мс&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;PageSpeed Insights&lt;/td&gt;\n&lt;td&gt;Заменил FID с марта 2024&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.12&lt;/td&gt;\n&lt;td&gt;PageSpeed Mobile Score &amp;gt; 70&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;PageSpeed Insights&lt;/td&gt;\n&lt;td&gt;Google индексирует mobile-first&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.13&lt;/td&gt;\n&lt;td&gt;Сайт корректно отображается на мобильных устройствах&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;Google Mobile-Friendly Test&lt;/td&gt;\n&lt;td&gt;Нет горизонтальной прокрутки, шрифт читаемый&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.14&lt;/td&gt;\n&lt;td&gt;Структура URL: короткие, понятные, без технического мусора&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручная проверка&lt;/td&gt;\n&lt;td&gt;/blog/seo-checklist а не /p?id=1234&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.15&lt;/td&gt;\n&lt;td&gt;Нет параметров сессии и UTM в индексируемых URL&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;GSC&lt;/td&gt;\n&lt;td&gt;Добавить в robots.txt или canonical&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.16&lt;/td&gt;\n&lt;td&gt;Правильная структура заголовков H1–H6 на каждой странице&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручная проверка&lt;/td&gt;\n&lt;td&gt;Один H1, логичная вложенность&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.17&lt;/td&gt;\n&lt;td&gt;Мета-теги title и description заполнены, уникальны&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручная проверка&lt;/td&gt;\n&lt;td&gt;Title: 50–60 символов, Description: 150–160&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.18&lt;/td&gt;\n&lt;td&gt;Нет дублированных title и description&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;GSC&lt;/td&gt;\n&lt;td&gt;Дубли снижают CTR и позиции&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.19&lt;/td&gt;\n&lt;td&gt;Alt-теги заполнены на всех изображениях&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручная проверка&lt;/td&gt;\n&lt;td&gt;Содержат смысловое описание, не keyword-стаффинг&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.20&lt;/td&gt;\n&lt;td&gt;Изображения оптимизированы (WebP/AVIF, сжатие)&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;PageSpeed Insights&lt;/td&gt;\n&lt;td&gt;Вес &amp;lt; 100–200 КБ на среднее изображение&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.21&lt;/td&gt;\n&lt;td&gt;Внутренняя перелинковка: нет страниц-сирот&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;GSC, ручная проверка&lt;/td&gt;\n&lt;td&gt;Каждая важная страница получает внутренние ссылки&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.22&lt;/td&gt;\n&lt;td&gt;Глубина вложенности ключевых страниц ≤ 3 кликов от главной&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручная проверка&lt;/td&gt;\n&lt;td&gt;Чем глубже — тем хуже для сканирования&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.23&lt;/td&gt;\n&lt;td&gt;Нет broken outbound links (внешних битых ссылок)&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручная проверка&lt;/td&gt;\n&lt;td&gt;Проверять ежеквартально&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.24&lt;/td&gt;\n&lt;td&gt;Размечены хлебные крошки (BreadcrumbList Schema)&lt;/td&gt;\n&lt;td&gt;🟢 Желательно&lt;/td&gt;\n&lt;td&gt;Google Rich Results Test&lt;/td&gt;\n&lt;td&gt;Улучшает вид в SERP&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.25&lt;/td&gt;\n&lt;td&gt;Сайт работает на HTTPS без mixed content&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;браузер (DevTools)&lt;/td&gt;\n&lt;td&gt;HTTP-ресурсы на HTTPS-странице&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.26&lt;/td&gt;\n&lt;td&gt;Логи сервера не закрывают доступ для Googlebot и Яндекс-бота&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;Яндекс.Вебмастер, GSC&lt;/td&gt;\n&lt;td&gt;Проверить User-Agent боты&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.27&lt;/td&gt;\n&lt;td&gt;Нет дублирования контента между www и без-www&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручная проверка&lt;/td&gt;\n&lt;td&gt;Настроить редирект на одну версию&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;1.28&lt;/td&gt;\n&lt;td&gt;Структурированные данные Schema.org не вызывают ошибок&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;Google Rich Results Test&lt;/td&gt;\n&lt;td&gt;Только корректная разметка&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h2&gt;2. SEO — Контент и семантика&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;№&lt;/th&gt;\n&lt;th&gt;Задача&lt;/th&gt;\n&lt;th&gt;Приоритет&lt;/th&gt;\n&lt;th&gt;Инструмент&lt;/th&gt;\n&lt;th&gt;Комментарий&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;2.1&lt;/td&gt;\n&lt;td&gt;Собрано и кластеризовано семантическое ядро&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;Яндекс Wordstat&lt;/td&gt;\n&lt;td&gt;Разбить на кластеры по интенту&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;2.2&lt;/td&gt;\n&lt;td&gt;Для каждого кластера есть целевая посадочная страница&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Один кластер = одна страница&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;2.3&lt;/td&gt;\n&lt;td&gt;Каждая страница отвечает на доминирующий интент запроса&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Информационный / транзакционный / навигационный&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;2.4&lt;/td&gt;\n&lt;td&gt;Контент покрывает семантику полно (LSI-слова, синонимы)&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Сравнить с ТОП-5 конкурентов вручную&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;2.5&lt;/td&gt;\n&lt;td&gt;Текст структурирован: H2, H3, списки, таблицы&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Нет «простыней» текста без разбивки&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;2.6&lt;/td&gt;\n&lt;td&gt;Уникальность контента ≥ 90%&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Не копипаст с конкурентов&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;2.7&lt;/td&gt;\n&lt;td&gt;Нет переоптимизации (keyword stuffing)&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Тошнотность по ключу &amp;lt; 3–4%&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;2.8&lt;/td&gt;\n&lt;td&gt;Контент актуален: указана дата публикации/обновления&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Обновлять устаревшие статьи раз в 6–12 мес.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;2.9&lt;/td&gt;\n&lt;td&gt;Есть блок FAQ на информационных страницах&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Закрывает длинный хвост, попадает в SERP&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;2.10&lt;/td&gt;\n&lt;td&gt;Используются ссылки на авторитетные первоисточники&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Росстат, отраслевые исследования, первичные данные&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;2.11&lt;/td&gt;\n&lt;td&gt;Медиаконтент: изображения, видео, инфографика там, где уместно&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Повышает время на странице&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;2.12&lt;/td&gt;\n&lt;td&gt;Читабельность: средняя длина предложения ≤ 20 слов&lt;/td&gt;\n&lt;td&gt;🟢 Желательно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Особенно важно для GEO&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;2.13&lt;/td&gt;\n&lt;td&gt;Контент отвечает на вопрос в первом абзаце&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;«Answer-first» принцип&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;2.14&lt;/td&gt;\n&lt;td&gt;Нет тонких страниц с контентом &amp;lt; 300 слов (кроме карточек товаров)&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;GSC&lt;/td&gt;\n&lt;td&gt;Thin content — фактор пессимизации&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;2.15&lt;/td&gt;\n&lt;td&gt;Есть раздел блога / экспертные статьи&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Закрывает информационный трафик&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;2.16&lt;/td&gt;\n&lt;td&gt;Контент-план: регулярность публикаций ≥ 2 раза в месяц&lt;/td&gt;\n&lt;td&gt;🟢 Желательно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Сигнал актуальности для краулеров&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h2&gt;3. SEO — Ссылочный профиль и авторитет&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;№&lt;/th&gt;\n&lt;th&gt;Задача&lt;/th&gt;\n&lt;th&gt;Приоритет&lt;/th&gt;\n&lt;th&gt;Инструмент&lt;/th&gt;\n&lt;th&gt;Комментарий&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;3.1&lt;/td&gt;\n&lt;td&gt;Нет спамных и токсичных ссылок в профиле&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;Яндекс.Вебмастер, GSC&lt;/td&gt;\n&lt;td&gt;Использовать Disavow при необходимости&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;3.2&lt;/td&gt;\n&lt;td&gt;Есть ссылки с тематически близких авторитетных сайтов&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной мониторинг&lt;/td&gt;\n&lt;td&gt;Качество &amp;gt; количество&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;3.3&lt;/td&gt;\n&lt;td&gt;Анкорный текст ссылок разнообразен (не только точные ключи)&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной мониторинг&lt;/td&gt;\n&lt;td&gt;30–40% — брендовые, URL-анкоры&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;3.4&lt;/td&gt;\n&lt;td&gt;Регулярный прирост ссылочной массы (не резкие скачки)&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;GSC&lt;/td&gt;\n&lt;td&gt;Естественный рост без накрутки&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;3.5&lt;/td&gt;\n&lt;td&gt;Упоминания бренда без ссылки отслеживаются и конвертируются&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;Google Alerts&lt;/td&gt;\n&lt;td&gt;Outreach для получения ссылки&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;3.6&lt;/td&gt;\n&lt;td&gt;Гостевые публикации на авторитетных отраслевых ресурсах&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной поиск&lt;/td&gt;\n&lt;td&gt;VC.ru, отраслевые СМИ&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;3.7&lt;/td&gt;\n&lt;td&gt;Бренд упоминается в Яндекс.Справочнике и Google Business&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;Яндекс.Справочник, Google Business&lt;/td&gt;\n&lt;td&gt;NAP-консистентность&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;3.8&lt;/td&gt;\n&lt;td&gt;Краудссылки с форумов, Q&amp;amp;A, профессиональных сообществ&lt;/td&gt;\n&lt;td&gt;🟢 Желательно&lt;/td&gt;\n&lt;td&gt;ручной поиск&lt;/td&gt;\n&lt;td&gt;Только там, где уместно и органично&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h2&gt;4. SEO — E-E-A-T и репутация&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;№&lt;/th&gt;\n&lt;th&gt;Задача&lt;/th&gt;\n&lt;th&gt;Приоритет&lt;/th&gt;\n&lt;th&gt;Инструмент&lt;/th&gt;\n&lt;th&gt;Комментарий&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;4.1&lt;/td&gt;\n&lt;td&gt;Указана информация о компании: реквизиты, ИНН, ОГРН&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Особенно критично для YMYL-тематик&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;4.2&lt;/td&gt;\n&lt;td&gt;Есть реальные контакты: адрес, телефон, email&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Не скрытый WHOIS&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;4.3&lt;/td&gt;\n&lt;td&gt;Указаны авторы статей с биографиями и ссылками на экспертизу&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Имя + должность + опыт + соцсети&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;4.4&lt;/td&gt;\n&lt;td&gt;Страница автора: специализация, профессиональный опыт, публикации&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Отдельная страница /about/author&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;4.5&lt;/td&gt;\n&lt;td&gt;Экспертный контент подкреплён ссылками на первоисточники&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Без «по данным из интернета»&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;4.6&lt;/td&gt;\n&lt;td&gt;Политика конфиденциальности и оферта актуальны&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Соответствие 152-ФЗ&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;4.7&lt;/td&gt;\n&lt;td&gt;Отзывы клиентов: реальные, с именами, регулярные&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;Яндекс.Карты, 2ГИС&lt;/td&gt;\n&lt;td&gt;Средняя оценка ≥ 4.0&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;4.8&lt;/td&gt;\n&lt;td&gt;Бренд упоминается в авторитетных СМИ&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;Google Alerts&lt;/td&gt;\n&lt;td&gt;KP.ru, RBC, отраслевые медиа&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;4.9&lt;/td&gt;\n&lt;td&gt;Нет негативных репутационных материалов в ТОП-20 по брендовому запросу&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной поиск&lt;/td&gt;\n&lt;td&gt;SERM при необходимости&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;4.10&lt;/td&gt;\n&lt;td&gt;Кейсы и результаты работы с конкретными метриками&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Не «мы лучшие», а «клиент вырос на X%»&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h2&gt;5. GEO — Техническая оптимизация под ИИ&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;№&lt;/th&gt;\n&lt;th&gt;Задача&lt;/th&gt;\n&lt;th&gt;Приоритет&lt;/th&gt;\n&lt;th&gt;Инструмент&lt;/th&gt;\n&lt;th&gt;Комментарий&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;5.1&lt;/td&gt;\n&lt;td&gt;Создан файл llms.txt в корне сайта&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручная настройка&lt;/td&gt;\n&lt;td&gt;Аналог robots.txt для LLM-краулеров&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;5.2&lt;/td&gt;\n&lt;td&gt;В llms.txt разрешён доступ GPTBot, Google-Extended, PerplexityBot&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручная настройка&lt;/td&gt;\n&lt;td&gt;User-Agent: GPTBot / Allow: /&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;5.3&lt;/td&gt;\n&lt;td&gt;В llms.txt указаны контакты ответственного и политика использования&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручная настройка&lt;/td&gt;\n&lt;td&gt;Contact: &lt;a href=\&quot;mailto:tech@site.ru\&quot;&gt;tech@site.ru&lt;/a&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;5.4&lt;/td&gt;\n&lt;td&gt;Разметка Schema.org: Article с author + datePublished&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;Google Rich Results Test&lt;/td&gt;\n&lt;td&gt;Подтверждает авторство и актуальность&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;5.5&lt;/td&gt;\n&lt;td&gt;Разметка Schema.org: FAQPage на страницах с FAQ&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;Google Rich Results Test&lt;/td&gt;\n&lt;td&gt;Наиболее цитируемый формат в ИИ&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;5.6&lt;/td&gt;\n&lt;td&gt;Разметка Schema.org: HowTo на инструкциях и гайдах&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;Google Rich Results Test&lt;/td&gt;\n&lt;td&gt;+47% к частоте цитирования&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;5.7&lt;/td&gt;\n&lt;td&gt;Разметка Schema.org: Organization на главной / About&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;Google Rich Results Test&lt;/td&gt;\n&lt;td&gt;Подтверждает сущность бренда&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;5.8&lt;/td&gt;\n&lt;td&gt;Разметка Schema.org: Person для авторов&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;Google Rich Results Test&lt;/td&gt;\n&lt;td&gt;Экспертный статус автора&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;5.9&lt;/td&gt;\n&lt;td&gt;Разметка Schema.org: Product для товаров (name, price, description)&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;Google Rich Results Test&lt;/td&gt;\n&lt;td&gt;Для транзакционных запросов&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;5.10&lt;/td&gt;\n&lt;td&gt;Разметка Schema.org: BreadcrumbList на всех страницах&lt;/td&gt;\n&lt;td&gt;🟢 Желательно&lt;/td&gt;\n&lt;td&gt;Google Rich Results Test&lt;/td&gt;\n&lt;td&gt;Контекстуализация страницы для LLM&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;5.11&lt;/td&gt;\n&lt;td&gt;Нет ошибок в структурированных данных&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;Google Rich Results Test&lt;/td&gt;\n&lt;td&gt;Только корректная разметка&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;5.12&lt;/td&gt;\n&lt;td&gt;LCP &amp;lt; 2.5 сек (ИИ-боты предпочитают быстрые источники)&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;PageSpeed Insights&lt;/td&gt;\n&lt;td&gt;Медленные страницы хуже сканируются&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;5.13&lt;/td&gt;\n&lt;td&gt;Страницы корректно сканируются без JavaScript (SSR/SSG)&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;Google Mobile-Friendly Test&lt;/td&gt;\n&lt;td&gt;LLM-краулеры могут не рендерить JS&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;5.14&lt;/td&gt;\n&lt;td&gt;Дата публикации и последнего обновления указана в разметке&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручная настройка&lt;/td&gt;\n&lt;td&gt;Актуальность — ключевой сигнал для ИИ&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h2&gt;6. GEO — Структура и формат контента под RAG&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;№&lt;/th&gt;\n&lt;th&gt;Задача&lt;/th&gt;\n&lt;th&gt;Приоритет&lt;/th&gt;\n&lt;th&gt;Инструмент&lt;/th&gt;\n&lt;th&gt;Комментарий&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;6.1&lt;/td&gt;\n&lt;td&gt;Каждая страница даёт прямой ответ в первых 1–3 предложениях&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;«Answer-first» = легко извлечь чанк&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;6.2&lt;/td&gt;\n&lt;td&gt;Контент разбит на атомарные блоки: один абзац = одна мысль&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Принцип чанкинга для RAG-архитектуры&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;6.3&lt;/td&gt;\n&lt;td&gt;Используется чёткая иерархия: H2 → H3 → H4&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;ИИ извлекает контекст через заголовки&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;6.4&lt;/td&gt;\n&lt;td&gt;Есть блоки FAQ с парами «вопрос — прямой ответ»&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;+35–70% к видимости в ИИ по исследованиям&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;6.5&lt;/td&gt;\n&lt;td&gt;Есть сравнительные таблицы там, где уместно&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;ИИ извлекает данные из таблиц напрямую&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;6.6&lt;/td&gt;\n&lt;td&gt;Инструкции оформлены в формате HowTo: нумерованный список шагов&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Пошаговость = лёгкая декомпозиция для ИИ&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;6.7&lt;/td&gt;\n&lt;td&gt;В статьях есть блоки «Коротко: …» или «Вывод:» с резюме&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;ИИ часто цитирует summary-блоки&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;6.8&lt;/td&gt;\n&lt;td&gt;Контент охватывает смежные подзапросы (Query Fan-Out)&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Если тема «A», добавь разделы про B, C, D&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;6.9&lt;/td&gt;\n&lt;td&gt;Утверждения подкреплены статистикой с указанием источника и года&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;+40–85% к видимости в ИИ по GEO-bench&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;6.10&lt;/td&gt;\n&lt;td&gt;Есть цитаты экспертов с именем, должностью, организацией&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;+25–60% к видимости в ИИ&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;6.11&lt;/td&gt;\n&lt;td&gt;Нет абзацев длиннее 4–5 строк без разбивки&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;RAG плохо обрабатывает «простыни»&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;6.12&lt;/td&gt;\n&lt;td&gt;Формат «ТОП-N / Рейтинг» используется для подборок&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Структурирован, покрывает много подзапросов&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;6.13&lt;/td&gt;\n&lt;td&gt;Оригинальные данные: собственные исследования, опросы, метрики&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;ИИ приоритизирует уникальный контент&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;6.14&lt;/td&gt;\n&lt;td&gt;Простой язык: избегать канцелярита и номинализаций&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;+10–30% к видимости в технических темах&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;6.15&lt;/td&gt;\n&lt;td&gt;Кейсы с конкретными числами и описанием процесса (не только результат)&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Факты + верифицируемость = Citation Authority&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;6.16&lt;/td&gt;\n&lt;td&gt;Контент содержит неочевидные детали из реального опыта&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;ИИ не может воспроизвести прожитый опыт&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h2&gt;7. GEO — E-E-A-T для ИИ-систем&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;№&lt;/th&gt;\n&lt;th&gt;Задача&lt;/th&gt;\n&lt;th&gt;Приоритет&lt;/th&gt;\n&lt;th&gt;Инструмент&lt;/th&gt;\n&lt;th&gt;Комментарий&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;7.1&lt;/td&gt;\n&lt;td&gt;Полные данные о компании: название, история, ОГРН, миссия&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;ИИ оценивает прозрачность источника&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;7.2&lt;/td&gt;\n&lt;td&gt;Автор каждой статьи идентифицирован: имя, фото, опыт, ссылки&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;LLM отдаёт приоритет верифицированным авторам&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;7.3&lt;/td&gt;\n&lt;td&gt;Страница автора: LinkedIn, публикации, регалии — всё связано&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Внешние подтверждения экспертизы&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;7.4&lt;/td&gt;\n&lt;td&gt;Для YMYL-контента: указана квалификация (врач, юрист, финансист)&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Без этого — высокий риск игнорирования ИИ&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;7.5&lt;/td&gt;\n&lt;td&gt;Контент показывает процесс принятия решений, а не только итог&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Признак реального опыта, не рерайта&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;7.6&lt;/td&gt;\n&lt;td&gt;Указаны ограничения и случаи, когда рекомендация не работает&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Признак экспертного, не рекламного контента&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;7.7&lt;/td&gt;\n&lt;td&gt;Дата публикации видна на странице + в meta + в Schema.org&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;ИИ отдаёт приоритет актуальным источникам&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;7.8&lt;/td&gt;\n&lt;td&gt;Устаревший контент помечен или обновлён&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;«Актуально на: [дата]» в начале статьи&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;7.9&lt;/td&gt;\n&lt;td&gt;Контент перекрёстно проверен: ссылки на исследования, не на «по данным»&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;ИИ кросс-проверяет факты по нескольким источникам&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;7.10&lt;/td&gt;\n&lt;td&gt;Политика конфиденциальности и оферта доступны из любой страницы&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Сигнал trustworthiness для ИИ&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h2&gt;8. GEO — Дистрибуция и внешнее присутствие&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;№&lt;/th&gt;\n&lt;th&gt;Задача&lt;/th&gt;\n&lt;th&gt;Приоритет&lt;/th&gt;\n&lt;th&gt;Инструмент&lt;/th&gt;\n&lt;th&gt;Комментарий&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;8.1&lt;/td&gt;\n&lt;td&gt;Экспертный контент размещён на топ-цитируемых площадках ниши&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной парсинг нейровыдачи&lt;/td&gt;\n&lt;td&gt;Определяется парсингом источников в ИИ-ответах&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;8.2&lt;/td&gt;\n&lt;td&gt;Бренд упомянут в медиа-изданиях (не только в виде рекламы)&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;Google Alerts&lt;/td&gt;\n&lt;td&gt;KP.ru, mail.ru, отраслевые СМИ&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;8.3&lt;/td&gt;\n&lt;td&gt;Карточки товаров / описания на маркетплейсах содержат экспертный контент&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;OZON, ЯМ — цитируются ИИ напрямую&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;8.4&lt;/td&gt;\n&lt;td&gt;Q&amp;amp;A-разделы маркетплейсов заполнены ответами бренда&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;ИИ цитирует Q&amp;amp;A как источник экспертизы&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;8.5&lt;/td&gt;\n&lt;td&gt;Отзывы на маркетплейсах содержат ключевые сценарии использования&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;«Помог при чувствительности», «лучше для десен»&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;8.6&lt;/td&gt;\n&lt;td&gt;Публикации на VC.ru, Хабре, T-J с экспертным контентом бренда&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;VC.ru цитируется в ИИ в 2.5× чаще рядового блога&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;8.7&lt;/td&gt;\n&lt;td&gt;Присутствие в специализированных магазинах / агрегаторах ниши&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной парсинг нейровыдачи&lt;/td&gt;\n&lt;td&gt;Они доминируют в источниках нейровыдачи (28%)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;8.8&lt;/td&gt;\n&lt;td&gt;Гостевые статьи на медицинских / профильных порталах&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;E-E-A-T-сигнал для ИИ&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;8.9&lt;/td&gt;\n&lt;td&gt;Видеоконтент с транскриптами / субтитрами&lt;/td&gt;\n&lt;td&gt;🟢 Желательно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Транскрипты индексируются и цитируются ИИ&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;8.10&lt;/td&gt;\n&lt;td&gt;Активность в профессиональных сообществах (форумы, Telegram)&lt;/td&gt;\n&lt;td&gt;🟢 Желательно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;UGC-сигналы для ИИ&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;8.11&lt;/td&gt;\n&lt;td&gt;LinkedIn: профили ключевых экспертов с публикациями&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Ссылки с LinkedIn ≈ в 3× сильнее обычного блога для ИИ&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;8.12&lt;/td&gt;\n&lt;td&gt;Упоминания бренда в отраслевых рейтингах и подборках&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной поиск&lt;/td&gt;\n&lt;td&gt;ИИ сканирует такие списки при ответах «лучшие X»&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h2&gt;9. GEO — Мониторинг и аналитика&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;№&lt;/th&gt;\n&lt;th&gt;Задача&lt;/th&gt;\n&lt;th&gt;Приоритет&lt;/th&gt;\n&lt;th&gt;Инструмент&lt;/th&gt;\n&lt;th&gt;Комментарий&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;9.1&lt;/td&gt;\n&lt;td&gt;Настроен трекинг трафика из ИИ-источников в Яндекс.Метрике&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;Яндекс.Метрика&lt;/td&gt;\n&lt;td&gt;alice.yandex.ru, chatgpt.com, perplexity.ai&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;9.2&lt;/td&gt;\n&lt;td&gt;Настроен трекинг в GA4 по реферерам ИИ-платформ&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;GA4&lt;/td&gt;\n&lt;td&gt;claude.ai, gemini.google.com, deepseek.com&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;9.3&lt;/td&gt;\n&lt;td&gt;Еженедельная ручная проверка нейровыдачи по приоритетным запросам&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;Яндекс Нейро, ChatGPT&lt;/td&gt;\n&lt;td&gt;Высокая волатильность — нельзя проверять раз в месяц&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;9.4&lt;/td&gt;\n&lt;td&gt;Фиксируются источники, которые цитирует ИИ по вашей теме&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной парсинг&lt;/td&gt;\n&lt;td&gt;Основа для приоритизации площадок дистрибуции&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;9.5&lt;/td&gt;\n&lt;td&gt;Отслеживается AI Share of Voice (% запросов с упоминанием бренда)&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;ручной подсчёт&lt;/td&gt;\n&lt;td&gt;Кол-во упоминаний / общее кол-во запросов × 100%&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;9.6&lt;/td&gt;\n&lt;td&gt;Отслеживается Citation Rate (сколько раз ИИ сослался на ваш сайт)&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной парсинг&lt;/td&gt;\n&lt;td&gt;Считать по секции «Оценить ответ» в Яндекс Нейро&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;9.7&lt;/td&gt;\n&lt;td&gt;Мониторинг брендовых упоминаний в сети&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;Google Alerts&lt;/td&gt;\n&lt;td&gt;Сигнал авторитетности для ИИ&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;9.8&lt;/td&gt;\n&lt;td&gt;Контроль тональности упоминаний: &amp;gt;80% нейтральных/позитивных&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной мониторинг&lt;/td&gt;\n&lt;td&gt;Негатив снижает Citation Authority&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;9.9&lt;/td&gt;\n&lt;td&gt;Аудит нейровыдачи после каждого крупного обновления контента&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной аудит&lt;/td&gt;\n&lt;td&gt;Сдвиги в источниках происходят за дни&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;9.10&lt;/td&gt;\n&lt;td&gt;A/B-тест: страницы с FAQ vs без — сравнение частоты цитирования&lt;/td&gt;\n&lt;td&gt;🟢 Желательно&lt;/td&gt;\n&lt;td&gt;ручной эксперимент&lt;/td&gt;\n&lt;td&gt;Доказывает ROI структурирования контента&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;9.11&lt;/td&gt;\n&lt;td&gt;Регулярный анализ: какой контент конкурентов цитируется ИИ&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ручной парсинг&lt;/td&gt;\n&lt;td&gt;Gap-анализ для выявления пробелов&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;9.12&lt;/td&gt;\n&lt;td&gt;Отслеживание Zero-Click Presence Rate&lt;/td&gt;\n&lt;td&gt;🟢 Желательно&lt;/td&gt;\n&lt;td&gt;ручной подсчёт&lt;/td&gt;\n&lt;td&gt;Доля ответов, где ИИ даёт всё без перехода — признак силы бренда&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h2&gt;10. GEO — Стратегические инициативы&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;№&lt;/th&gt;\n&lt;th&gt;Задача&lt;/th&gt;\n&lt;th&gt;Приоритет&lt;/th&gt;\n&lt;th&gt;Срок&lt;/th&gt;\n&lt;th&gt;Комментарий&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;10.1&lt;/td&gt;\n&lt;td&gt;Провести парсинг нейровыдачи по 20–50 ключевым запросам ниши&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;раз в квартал&lt;/td&gt;\n&lt;td&gt;База для всей GEO-стратегии&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;10.2&lt;/td&gt;\n&lt;td&gt;Построить скоринговую модель площадок по 5 факторам (AI Freq, Relevance, E-E-A-T, Format, Access)&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;одноразово&lt;/td&gt;\n&lt;td&gt;Определяет приоритеты размещения бюджета&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;10.3&lt;/td&gt;\n&lt;td&gt;Создать контент под каждый критический пробел (запросы, где бренда нет)&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;1–3 мес.&lt;/td&gt;\n&lt;td&gt;Приоритет: объём × отсутствие в нейровыдаче&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;10.4&lt;/td&gt;\n&lt;td&gt;Разработать «контр-нарратив» там, где у бренда нет продукта-ответа&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;2–4 мес.&lt;/td&gt;\n&lt;td&gt;Пример: «почему ротация лучше ультразвука»&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;10.5&lt;/td&gt;\n&lt;td&gt;Внедрить цикл GEAR: Generate → Establish → Align → Reinforce&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;постоянно&lt;/td&gt;\n&lt;td&gt;Итерационный процесс без конечной точки&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;10.6&lt;/td&gt;\n&lt;td&gt;Запустить работу с UGC: стимулировать тематические отзывы&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;1–2 мес.&lt;/td&gt;\n&lt;td&gt;Отзывы с конкретными проблемами = GEO-сигнал&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;10.7&lt;/td&gt;\n&lt;td&gt;Для брендов YMYL: подключить реальных экспертов как авторов&lt;/td&gt;\n&lt;td&gt;🔴 Критично&lt;/td&gt;\n&lt;td&gt;1–3 мес.&lt;/td&gt;\n&lt;td&gt;Без этого ИИ игнорирует контент по медзапросам&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;10.8&lt;/td&gt;\n&lt;td&gt;Проверить и устранить галлюцинации ИИ о продуктах бренда&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;ежемесячно&lt;/td&gt;\n&lt;td&gt;Исправлять через Schema.org и официальный контент&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;10.9&lt;/td&gt;\n&lt;td&gt;Создать API или data-feed с актуальными данными о продуктах&lt;/td&gt;\n&lt;td&gt;🟢 Желательно&lt;/td&gt;\n&lt;td&gt;6–12 мес.&lt;/td&gt;\n&lt;td&gt;Продвинутый уровень: прямое подключение к ИИ&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;10.10&lt;/td&gt;\n&lt;td&gt;Масштабировать метод с пилотной категории на весь портфель&lt;/td&gt;\n&lt;td&gt;🟡 Важно&lt;/td&gt;\n&lt;td&gt;6–12 мес.&lt;/td&gt;\n&lt;td&gt;Один алгоритм — разные ниши&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&quot;],&quot;typename&quot;:[0,&quot;Разработка&quot;],&quot;categoryPath&quot;:[1,[[0,{&quot;slug&quot;:[0,&quot;development&quot;],&quot;title&quot;:[0,&quot;Разработка&quot;],&quot;icon&quot;:[0,&quot;folder-code&quot;]}]]],&quot;navSlug&quot;:[0,&quot;article&quot;],&quot;navTitle&quot;:[0,&quot;Статьи opensophy&quot;],&quot;navIcon&quot;:[0,&quot;brain&quot;],&quot;author&quot;:[0,&quot;&quot;],&quot;date&quot;:[0,&quot;2026-04-13&quot;],&quot;updated&quot;:[0,&quot;&quot;],&quot;tags&quot;:[1,[[0,&quot;разработка&quot;],[0,&quot;seo&amp;geo&quot;]]],&quot;lang&quot;:[0,&quot;ru&quot;],&quot;keywords&quot;:[0,&quot;SEO чеклист, GEO оптимизация, Generative Engine Optimization, E-E-A-T, RAG контент, llms.txt, Schema.org, AI Share of Voice, нейровыдача, Яндекс Нейро&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;icon&quot;:[0,&quot;chart-no-axes-combined&quot;],&quot;priority&quot;:[0,999],&quot;custom&quot;:[0,&quot;&quot;],&quot;frontmatter&quot;:[0,{&quot;title&quot;:[0,&quot;SEO &amp; GEO: Чеклист оптимизации сайта&quot;],&quot;description&quot;:[0,&quot;Полный чеклист по SEO и GEO-оптимизации сайта — от технического аудита и E-E-A-T до структуры контента под RAG-архитектуру, llms.txt и мониторинга AI Share of Voice.&quot;],&quot;date&quot;:[0,&quot;2026-04-13&quot;],&quot;tags&quot;:[0,&quot;разработка, seo&amp;geo&quot;],&quot;keywords&quot;:[0,&quot;SEO чеклист, GEO оптимизация, Generative Engine Optimization, E-E-A-T, RAG контент, llms.txt, Schema.org, AI Share of Voice, нейровыдача, Яндекс Нейро&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;lang&quot;:[0,&quot;ru&quot;]}]}]}" ssr client="only" opts="{&quot;name&quot;:&quot;DocContent&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island>   <astro-island uid="Z1Ix9sf" component-url="/assets/DevPanelLoader.6ELCzLIu.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{}" ssr client="only" opts="{&quot;name&quot;:&quot;DevPanelLoader&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island> <!-- Re-apply theme after SPA navigation --> <script>
+      document.addEventListener('astro:after-swap', function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      });
+    </script> </body> </html>

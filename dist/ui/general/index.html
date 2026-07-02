@@ -1,0 +1,264 @@
+<!DOCTYPE html><html lang="ru"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- Theme: runs before paint, prevents flash --><script>
+      (function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.add('js');
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      })();
+    </script><!-- Primary SEO --><title>UI Библиотека — Opensophy</title><meta name="description" content="Обзор UI библиотеки Opensophy Hub — community-компоненты, будущие Opensophy-компоненты и как всё это устроено."><meta name="keywords" content="opensophy, кибербезопасность, DevSecOps, linux, разработка, инструменты, туториалы, open source, mTLS, SAST, DAST, SCA, zero trust, CI/CD"><meta name="author" content="Opensophy"><meta name="robots" content="index, follow"><meta name="theme-color" content="#0a0a0a"><meta name="color-scheme" content="dark light"><link rel="canonical" href="https://opensophy.com/ui/general/"><!-- Sitemap discovery --><link rel="sitemap" type="application/xml" href="/sitemap.xml"><!-- Open Graph --><meta property="og:site_name" content="Opensophy"><meta property="og:title" content="UI Библиотека — Opensophy"><meta property="og:description" content="Обзор UI библиотеки Opensophy Hub — community-компоненты, будущие Opensophy-компоненты и как всё это устроено."><meta property="og:type" content="article"><meta property="og:url" content="https://opensophy.com/ui/general/"><meta property="og:image" content="https://opensophy.com/assets/image.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ru_RU"><!-- Twitter / X --><meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@opensophy"><meta name="twitter:title" content="UI Библиотека — Opensophy"><meta name="twitter:description" content="Обзор UI библиотеки Opensophy Hub — community-компоненты, будущие Opensophy-компоненты и как всё это устроено."><meta name="twitter:image" content="https://opensophy.com/assets/image.png"><!-- Article-specific --><meta property="article:published_time" content="2026-06-03T00:00:00.000Z"><meta property="article:modified_time" content="2026-06-03T00:00:00.000Z"><meta property="article:author" content="Opensophy"><!-- Favicon --><link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/favicon.png"><!-- Astro SPA transitions --><meta name="astro-view-transitions-enabled" content="true"><meta name="astro-view-transitions-fallback" content="animate"><script type="module" src="/assets/ClientRouter.astro_astro_type_script_index_0_lang.CAqDO0tx.js"></script><!-- Structured Data JSON-LD --><script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"UI Библиотека","description":"Обзор UI библиотеки Opensophy Hub — community-компоненты, будущие Opensophy-компоненты и как всё это устроено.","url":"https://opensophy.com/ui/general/","image":"https://opensophy.com/assets/image.png","author":{"@type":"Person","name":"Opensophy"},"publisher":{"@type":"Organization","name":"Opensophy","url":"https://opensophy.com"},"datePublished":"2026-06-03T00:00:00.000Z","dateModified":"2026-06-03T00:00:00.000Z","inLanguage":"ru"}</script><link rel="stylesheet" href="/assets/Layout.BzjEPNLe.css"></head> <body> <style>astro-island,astro-slot,astro-static-slot{display:contents}</style><script>(()=>{var e=async t=>{await(await t())()};(self.Astro||(self.Astro={})).only=e;window.dispatchEvent(new Event("astro:only"));})();</script><script>(()=>{var g=Object.defineProperty;var w=(c,s,d)=>s in c?g(c,s,{enumerable:!0,configurable:!0,writable:!0,value:d}):c[s]=d;var l=(c,s,d)=>w(c,typeof s!="symbol"?s+"":s,d);var E=new Set(["__proto__","constructor","prototype"]);{let c={0:t=>y(t),1:t=>d(t),2:t=>new RegExp(t),3:t=>new Date(t),4:t=>new Map(d(t)),5:t=>new Set(d(t)),6:t=>BigInt(t),7:t=>new URL(t),8:t=>new Uint8Array(t),9:t=>new Uint16Array(t),10:t=>new Uint32Array(t),11:t=>Number.POSITIVE_INFINITY*t},s=t=>{let[p,e]=t;return p in c?c[p](e):void 0},d=t=>t.map(s),y=t=>typeof t!="object"||t===null?t:Object.fromEntries(Object.entries(t).map(([p,e])=>[p,s(e)]));class f extends HTMLElement{constructor(){super(...arguments);l(this,"Component");l(this,"hydrator");l(this,"hydrate",async()=>{var b;if(!this.hydrator||!this.isConnected)return;let e=(b=this.parentElement)==null?void 0:b.closest("astro-island[ssr]");if(e){e.addEventListener("astro:hydrate",this.hydrate,{once:!0});return}let n=this.querySelectorAll("astro-slot"),r={},i=this.querySelectorAll("template[data-astro-template]");for(let o of i){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("data-astro-template")||"default"]=o.innerHTML,o.remove())}for(let o of n){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("name")||"default"]=o.innerHTML)}let u;try{u=this.hasAttribute("props")?y(JSON.parse(this.getAttribute("props"))):{}}catch(o){let a=this.getAttribute("component-url")||"<unknown>",v=this.getAttribute("component-export");throw v&&(a+=` (export ${v})`),console.error(`[hydrate] Error parsing props for component ${a}`,this.getAttribute("props"),o),o}let h;await this.hydrator(this)(this.Component,u,r,{client:this.getAttribute("client")}),this.removeAttribute("ssr"),this.dispatchEvent(new CustomEvent("astro:hydrate"))});l(this,"unmount",()=>{this.isConnected||this.dispatchEvent(new CustomEvent("astro:unmount"))})}disconnectedCallback(){document.removeEventListener("astro:after-swap",this.unmount),document.addEventListener("astro:after-swap",this.unmount,{once:!0})}connectedCallback(){if(!this.hasAttribute("await-children")||document.readyState==="interactive"||document.readyState==="complete")this.childrenConnectedCallback();else{let e=()=>{document.removeEventListener("DOMContentLoaded",e),n.disconnect(),this.childrenConnectedCallback()},n=new MutationObserver(()=>{var r;((r=this.lastChild)==null?void 0:r.nodeType)===Node.COMMENT_NODE&&this.lastChild.nodeValue==="astro:end"&&(this.lastChild.remove(),e())});n.observe(this,{childList:!0}),document.addEventListener("DOMContentLoaded",e)}}async childrenConnectedCallback(){let e=this.getAttribute("before-hydration-url");e&&await import(e),this.start()}getRetryImportUrl(e){let n=new URL(e,document.baseURI),r=`astro-retry=${Date.now()}`,i=n.hash.replace(/^#/,"");return n.hash=i?`${i}&${r}`:r,n.toString()}async importWithRetry(e){try{return await import(e)}catch(n){return await new Promise(r=>setTimeout(r,1e3)),import(this.getRetryImportUrl(e))}}handleHydrationError(e){let n=this.getAttribute("component-url"),r=new CustomEvent("astro:hydration-error",{cancelable:!0,bubbles:!0,composed:!0,detail:{error:e,componentUrl:n}});this.dispatchEvent(r)&&console.error(`[astro-island] Error hydrating ${n}`,e)}async start(){let e=JSON.parse(this.getAttribute("opts")),n=this.getAttribute("client");if(Astro[n]===void 0){window.addEventListener(`astro:${n}`,()=>this.start(),{once:!0});return}try{await Astro[n](async()=>{let r=this.getAttribute("renderer-url");try{let[i,{default:u}]=await Promise.all([this.importWithRetry(this.getAttribute("component-url")),r?this.importWithRetry(r):Promise.resolve({default:()=>()=>{}})]),h=this.getAttribute("component-export")||"default";if(h.includes(".")){this.Component=i;for(let m of h.split(".")){if(E.has(m)||!this.Component||typeof this.Component!="object"&&typeof this.Component!="function"||!Object.hasOwn(this.Component,m))throw new Error(`Invalid component export path: ${h}`);this.Component=this.Component[m]}}else{if(E.has(h))throw new Error(`Invalid component export path: ${h}`);this.Component=i[h]}return this.hydrator=u,this.hydrate}catch(i){return this.handleHydrationError(i),()=>{}}},e,this)}catch(r){this.handleHydrationError(r)}}attributeChangedCallback(){this.hydrate()}}l(f,"observedAttributes",["props"]),customElements.get("astro-island")||customElements.define("astro-island",f)}})();</script>   <noscript> <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;"> <article><h1>UI Библиотека</h1>
+<p><strong>UI Библиотека</strong> — каталог интерактивных React-компонентов для Opensophy Hub. Анимированные тексты, декоративные фоны, визуальные эффекты — каждый компонент представлен с живым превью и интерактивным настройщиком прямо в документации.</p>
+<hr>
+<h2>Два направления</h2>
+<p>Библиотека развивается в двух направлениях — они отличаются не качеством, а происхождением.</p>
+<div class="custom-cardgrid" data-cols="2"><div class="custom-card" data-color="" data-title="Community компоненты" data-icon="users" data-image=""><p>Подборка на основе открытых UI-паттернов и популярных решений сообщества. Готовы к использованию уже сейчас: эффекты для текста, WebGL-фоны, Canvas-анимации. Быстро пополняются.</p>
+</div><div class="custom-card" data-color="" data-title="Opensophy компоненты" data-icon="sparkles" data-image=""><p>Авторские компоненты с визуальным языком Opensophy. Разрабатываются под конкретные задачи экосистемы — Hub, документация, лендинги. Появятся позже.</p>
+</div></div>
+
+<hr>
+<h2>Community компоненты</h2>
+<p>Это основа текущей библиотеки. Компоненты вдохновлены открытыми источниками и адаптированы под Hub: переработаны под TypeScript, получили универсальные пропсы для управления масштабом, цветом, анимацией и другими параметрами через интерактивный viewer.</p>
+<p>Сейчас доступны две категории:</p>
+<h3>Типографика</h3>
+<p>Компоненты для выразительной работы с текстом.</p>
+<table>
+<thead>
+<tr>
+<th>Компонент</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Блюрный текст</strong></td>
+<td>Появление по словам или буквам с эффектом размытия</td>
+</tr>
+<tr>
+<td><strong>Размытый текст</strong></td>
+<td>Случайный фаззинг строк через Canvas, глитч-режим</td>
+</tr>
+<tr>
+<td><strong>Морфинг текста</strong></td>
+<td>Плавный переход между словами через SVG blur-фильтр</td>
+</tr>
+<tr>
+<td><strong>Дешифрованный текст</strong></td>
+<td>Эффект дешифровки — символы раскрываются из шума</td>
+</tr>
+<tr>
+<td><strong>Градиентный текст</strong></td>
+<td>Анимированный градиент с yoyo, горизонт., верт., диагональю</td>
+</tr>
+<tr>
+<td><strong>Сияющий текст</strong></td>
+<td>Световой блик скользит по тексту</td>
+</tr>
+<tr>
+<td><strong>Линейная тень текста</strong></td>
+<td>Анимированная диагональная штриховка как тень</td>
+</tr>
+<tr>
+<td><strong>Волновой текст</strong></td>
+<td>Буквы покачиваются волной в бесконечном цикле</td>
+</tr>
+<tr>
+<td><strong>Перекатывающийся текст</strong></td>
+<td>Буквы «перекатываются» через 3D-вращение по оси X</td>
+</tr>
+<tr>
+<td><strong>Чередующийся текст</strong></td>
+<td>Автосмена строк с stagger и spring-переходами</td>
+</tr>
+<tr>
+<td><strong>Круговой текст</strong></td>
+<td>Текст по кругу с реакцией на ховер</td>
+</tr>
+<tr>
+<td><strong>Зацикленный изогнутый текст</strong></td>
+<td>Marquee по SVG-кривой, управляется перетаскиванием</td>
+</tr>
+<tr>
+<td><strong>Разбиение текста</strong></td>
+<td>GSAP-анимация по символам, словам или строкам при скролле</td>
+</tr>
+<tr>
+<td><strong>Раскрытие при скролле</strong></td>
+<td>Слова появляются с opacity и blur при прокрутке</td>
+</tr>
+<tr>
+<td><strong>Всплывающий текст</strong></td>
+<td>Буквы всплывают снизу при скролле через GSAP ScrollTrigger</td>
+</tr>
+<tr>
+<td><strong>Скорость скролла</strong></td>
+<td>Бегущая строка, скорость которой зависит от прокрутки</td>
+</tr>
+<tr>
+<td><strong>Вариативная близость</strong></td>
+<td>Буквы меняют параметры вариативного шрифта рядом с курсором</td>
+</tr>
+<tr>
+<td><strong>Скрытый текст</strong></td>
+<td>Текст скрыт частицами, проявляется при наведении</td>
+</tr>
+<tr>
+<td><strong>Счётчик</strong></td>
+<td>Анимированный числовой счётчик с пружинной анимацией</td>
+</tr>
+<tr>
+<td><strong>Печатание текста</strong></td>
+<td>Эффект печатающей машинки с удалением и курсором</td>
+</tr>
+</tbody></table>
+<h3>Фон</h3>
+<p>Декоративные и интерактивные фоны на WebGL, Canvas и CSS.</p>
+<table>
+<thead>
+<tr>
+<th>Компонент</th>
+<th>Технология</th>
+<th>Особенности</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Аурора</strong></td>
+<td>OGL / WebGL</td>
+<td>Шумовой шейдер с настраиваемыми цветовыми стопами</td>
+</tr>
+<tr>
+<td><strong>Мягкая аурора</strong></td>
+<td>OGL / WebGL</td>
+<td>Перлин-шум, реакция на мышь</td>
+</tr>
+<tr>
+<td><strong>Шелк</strong></td>
+<td>Three.js</td>
+<td>Волновой паттерн, вращение, шум</td>
+</tr>
+<tr>
+<td><strong>Иридесценция</strong></td>
+<td>OGL / WebGL</td>
+<td>Переливающиеся цвета, реакция на мышь</td>
+</tr>
+<tr>
+<td><strong>Плазма</strong></td>
+<td>OGL / WebGL</td>
+<td>Объёмная анимация, режимы forward / reverse / pingpong</td>
+</tr>
+<tr>
+<td><strong>Плазменная волна</strong></td>
+<td>OGL / WebGL</td>
+<td>Ray-marching в 3D, двухцветный градиент</td>
+</tr>
+<tr>
+<td><strong>Грейниент</strong></td>
+<td>OGL / WebGL</td>
+<td>Анимированный градиент с зерном, варп, ротация</td>
+</tr>
+<tr>
+<td><strong>Цветовые изгибы</strong></td>
+<td>Three.js</td>
+<td>Искажения цветовых полос, интерактив с мышью</td>
+</tr>
+<tr>
+<td><strong>Темная вуаль</strong></td>
+<td>OGL / WebGL</td>
+<td>Генеративный CPPN-шейдер, сканлайны, деформация</td>
+</tr>
+<tr>
+<td><strong>Столп света</strong></td>
+<td>Three.js</td>
+<td>Ray marching, интерактивный, настройка качества</td>
+</tr>
+<tr>
+<td><strong>Световые лучи</strong></td>
+<td>OGL / WebGL</td>
+<td>Лучи из заданной точки, анимация за мышью</td>
+</tr>
+<tr>
+<td><strong>Лучи</strong></td>
+<td>Three.js</td>
+<td>Анимированные объёмные лучи, модифицированный MeshStandard</td>
+</tr>
+<tr>
+<td><strong>Молния</strong></td>
+<td>WebGL</td>
+<td>Турбулентные молнии, настройка цвета через HSV</td>
+</tr>
+<tr>
+<td><strong>Плавающие линии</strong></td>
+<td>Three.js</td>
+<td>Волновые линии с реакцией на мышь и параллакс</td>
+</tr>
+<tr>
+<td><strong>Поле точек</strong></td>
+<td>Canvas 2D</td>
+<td>Интерактивная сетка точек, bulge-эффект</td>
+</tr>
+<tr>
+<td><strong>Призма</strong></td>
+<td>OGL / WebGL</td>
+<td>3D-призма с вращением, свечением, шейдерным цветом</td>
+</tr>
+<tr>
+<td><strong>Пиксельный взрыв</strong></td>
+<td>Three.js + postprocessing</td>
+<td>Пикселизация с рябью по клику, liquid distortion</td>
+</tr>
+<tr>
+<td><strong>Призматический всплеск</strong></td>
+<td>OGL / WebGL</td>
+<td>Спектральные лучи из центра, несколько режимов анимации</td>
+</tr>
+<tr>
+<td><strong>Градиентные жалюзи</strong></td>
+<td>OGL / WebGL</td>
+<td>Полосатый градиент с spotlight и distort</td>
+</tr>
+<tr>
+<td><strong>Плазма (волны)</strong></td>
+<td>OGL / WebGL</td>
+<td>Цветовые волны-«жгуты» с 3D-деформацией</td>
+</tr>
+<tr>
+<td><strong>Грейниент</strong></td>
+<td>OGL / WebGL</td>
+<td>Шумный градиент с полным контролем цвета и варпа</td>
+</tr>
+<tr>
+<td><strong>Цветовые изгибы</strong></td>
+<td>Three.js</td>
+<td>Анимированные полосы с warp-деформацией</td>
+</tr>
+<tr>
+<td><strong>Мягкая аурора</strong></td>
+<td>OGL / WebGL</td>
+<td>Перлин-шум, слоистая аурора</td>
+</tr>
+<tr>
+<td><strong>Око Саурона</strong></td>
+<td>OGL / WebGL</td>
+<td>Анимированное «Око Саурона», следит за мышью</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Opensophy компоненты</h2>
+<p>Вторая линейка сейчас в разработке. В отличие от community-компонентов, Opensophy-компоненты будут создаваться под конкретные задачи экосистемы: элементы навигации, блоки документации, промо-секции, UI-паттерны лендинга Opensophy.</p>
+<p>Их отличие — не в визуальных эффектах, а в <strong>функциональной интеграции</strong> с Hub: они будут знать о структуре документации, теме, навигации и других деталях платформы.</p>
+<hr>
+<h2>Как добавить компонент</h2>
+<div class="custom-steps"><div class="custom-step" data-status="done" data-title="Создайте папку" data-color=""><p>Разместите компонент в <code>src/features/ui-components/my-component/</code>.</p>
+</div><div class="custom-step" data-status="done" data-title="Добавьте config.json" data-color=""><p>Опишите <code>id</code>, <code>name</code>, <code>category</code>, <code>props</code> и <code>specificProps</code>. Registry найдёт компонент автоматически.</p>
+</div><div class="custom-step" data-status="done" data-title="Запустите проект" data-color=""><p><code>npm run dev</code> — компонент появится в UI библиотеке с живым превью и настройщиком.</p>
+</div></div>
+
+<p>Подробнее о добавлении компонентов — в <a href="https://opensophy.com/hub/component-guide/">руководстве по компонентам</a>.</p>
+</article> </main> </noscript> <astro-island uid="VAYwT" component-url="/assets/DocContent.CoKfap2Q.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{&quot;doc&quot;:[0,{&quot;id&quot;:[0,&quot;ui/general&quot;],&quot;title&quot;:[0,&quot;UI Библиотека&quot;],&quot;slug&quot;:[0,&quot;ui/general&quot;],&quot;description&quot;:[0,&quot;Обзор UI библиотеки Opensophy Hub — community-компоненты, будущие Opensophy-компоненты и как всё это устроено.&quot;],&quot;content&quot;:[0,&quot;&lt;h1&gt;UI Библиотека&lt;/h1&gt;\n&lt;p&gt;&lt;strong&gt;UI Библиотека&lt;/strong&gt; — каталог интерактивных React-компонентов для Opensophy Hub. Анимированные тексты, декоративные фоны, визуальные эффекты — каждый компонент представлен с живым превью и интерактивным настройщиком прямо в документации.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;Два направления&lt;/h2&gt;\n&lt;p&gt;Библиотека развивается в двух направлениях — они отличаются не качеством, а происхождением.&lt;/p&gt;\n&lt;div class=\&quot;custom-cardgrid\&quot; data-cols=\&quot;2\&quot;&gt;&lt;div class=\&quot;custom-card\&quot; data-color=\&quot;\&quot; data-title=\&quot;Community компоненты\&quot; data-icon=\&quot;users\&quot; data-image=\&quot;\&quot;&gt;&lt;p&gt;Подборка на основе открытых UI-паттернов и популярных решений сообщества. Готовы к использованию уже сейчас: эффекты для текста, WebGL-фоны, Canvas-анимации. Быстро пополняются.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-card\&quot; data-color=\&quot;\&quot; data-title=\&quot;Opensophy компоненты\&quot; data-icon=\&quot;sparkles\&quot; data-image=\&quot;\&quot;&gt;&lt;p&gt;Авторские компоненты с визуальным языком Opensophy. Разрабатываются под конкретные задачи экосистемы — Hub, документация, лендинги. Появятся позже.&lt;/p&gt;\n&lt;/div&gt;&lt;/div&gt;\n\n&lt;hr&gt;\n&lt;h2&gt;Community компоненты&lt;/h2&gt;\n&lt;p&gt;Это основа текущей библиотеки. Компоненты вдохновлены открытыми источниками и адаптированы под Hub: переработаны под TypeScript, получили универсальные пропсы для управления масштабом, цветом, анимацией и другими параметрами через интерактивный viewer.&lt;/p&gt;\n&lt;p&gt;Сейчас доступны две категории:&lt;/p&gt;\n&lt;h3&gt;Типографика&lt;/h3&gt;\n&lt;p&gt;Компоненты для выразительной работы с текстом.&lt;/p&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Компонент&lt;/th&gt;\n&lt;th&gt;Описание&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Блюрный текст&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Появление по словам или буквам с эффектом размытия&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Размытый текст&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Случайный фаззинг строк через Canvas, глитч-режим&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Морфинг текста&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Плавный переход между словами через SVG blur-фильтр&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Дешифрованный текст&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Эффект дешифровки — символы раскрываются из шума&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Градиентный текст&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Анимированный градиент с yoyo, горизонт., верт., диагональю&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Сияющий текст&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Световой блик скользит по тексту&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Линейная тень текста&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Анимированная диагональная штриховка как тень&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Волновой текст&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Буквы покачиваются волной в бесконечном цикле&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Перекатывающийся текст&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Буквы «перекатываются» через 3D-вращение по оси X&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Чередующийся текст&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Автосмена строк с stagger и spring-переходами&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Круговой текст&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Текст по кругу с реакцией на ховер&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Зацикленный изогнутый текст&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Marquee по SVG-кривой, управляется перетаскиванием&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Разбиение текста&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;GSAP-анимация по символам, словам или строкам при скролле&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Раскрытие при скролле&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Слова появляются с opacity и blur при прокрутке&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Всплывающий текст&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Буквы всплывают снизу при скролле через GSAP ScrollTrigger&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Скорость скролла&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Бегущая строка, скорость которой зависит от прокрутки&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Вариативная близость&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Буквы меняют параметры вариативного шрифта рядом с курсором&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Скрытый текст&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Текст скрыт частицами, проявляется при наведении&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Счётчик&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Анимированный числовой счётчик с пружинной анимацией&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Печатание текста&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Эффект печатающей машинки с удалением и курсором&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h3&gt;Фон&lt;/h3&gt;\n&lt;p&gt;Декоративные и интерактивные фоны на WebGL, Canvas и CSS.&lt;/p&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Компонент&lt;/th&gt;\n&lt;th&gt;Технология&lt;/th&gt;\n&lt;th&gt;Особенности&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Аурора&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;OGL / WebGL&lt;/td&gt;\n&lt;td&gt;Шумовой шейдер с настраиваемыми цветовыми стопами&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Мягкая аурора&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;OGL / WebGL&lt;/td&gt;\n&lt;td&gt;Перлин-шум, реакция на мышь&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Шелк&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Three.js&lt;/td&gt;\n&lt;td&gt;Волновой паттерн, вращение, шум&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Иридесценция&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;OGL / WebGL&lt;/td&gt;\n&lt;td&gt;Переливающиеся цвета, реакция на мышь&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Плазма&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;OGL / WebGL&lt;/td&gt;\n&lt;td&gt;Объёмная анимация, режимы forward / reverse / pingpong&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Плазменная волна&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;OGL / WebGL&lt;/td&gt;\n&lt;td&gt;Ray-marching в 3D, двухцветный градиент&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Грейниент&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;OGL / WebGL&lt;/td&gt;\n&lt;td&gt;Анимированный градиент с зерном, варп, ротация&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Цветовые изгибы&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Three.js&lt;/td&gt;\n&lt;td&gt;Искажения цветовых полос, интерактив с мышью&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Темная вуаль&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;OGL / WebGL&lt;/td&gt;\n&lt;td&gt;Генеративный CPPN-шейдер, сканлайны, деформация&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Столп света&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Three.js&lt;/td&gt;\n&lt;td&gt;Ray marching, интерактивный, настройка качества&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Световые лучи&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;OGL / WebGL&lt;/td&gt;\n&lt;td&gt;Лучи из заданной точки, анимация за мышью&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Лучи&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Three.js&lt;/td&gt;\n&lt;td&gt;Анимированные объёмные лучи, модифицированный MeshStandard&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Молния&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;WebGL&lt;/td&gt;\n&lt;td&gt;Турбулентные молнии, настройка цвета через HSV&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Плавающие линии&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Three.js&lt;/td&gt;\n&lt;td&gt;Волновые линии с реакцией на мышь и параллакс&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Поле точек&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Canvas 2D&lt;/td&gt;\n&lt;td&gt;Интерактивная сетка точек, bulge-эффект&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Призма&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;OGL / WebGL&lt;/td&gt;\n&lt;td&gt;3D-призма с вращением, свечением, шейдерным цветом&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Пиксельный взрыв&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Three.js + postprocessing&lt;/td&gt;\n&lt;td&gt;Пикселизация с рябью по клику, liquid distortion&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Призматический всплеск&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;OGL / WebGL&lt;/td&gt;\n&lt;td&gt;Спектральные лучи из центра, несколько режимов анимации&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Градиентные жалюзи&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;OGL / WebGL&lt;/td&gt;\n&lt;td&gt;Полосатый градиент с spotlight и distort&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Плазма (волны)&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;OGL / WebGL&lt;/td&gt;\n&lt;td&gt;Цветовые волны-«жгуты» с 3D-деформацией&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Грейниент&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;OGL / WebGL&lt;/td&gt;\n&lt;td&gt;Шумный градиент с полным контролем цвета и варпа&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Цветовые изгибы&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;Three.js&lt;/td&gt;\n&lt;td&gt;Анимированные полосы с warp-деформацией&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Мягкая аурора&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;OGL / WebGL&lt;/td&gt;\n&lt;td&gt;Перлин-шум, слоистая аурора&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;strong&gt;Око Саурона&lt;/strong&gt;&lt;/td&gt;\n&lt;td&gt;OGL / WebGL&lt;/td&gt;\n&lt;td&gt;Анимированное «Око Саурона», следит за мышью&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;hr&gt;\n&lt;h2&gt;Opensophy компоненты&lt;/h2&gt;\n&lt;p&gt;Вторая линейка сейчас в разработке. В отличие от community-компонентов, Opensophy-компоненты будут создаваться под конкретные задачи экосистемы: элементы навигации, блоки документации, промо-секции, UI-паттерны лендинга Opensophy.&lt;/p&gt;\n&lt;p&gt;Их отличие — не в визуальных эффектах, а в &lt;strong&gt;функциональной интеграции&lt;/strong&gt; с Hub: они будут знать о структуре документации, теме, навигации и других деталях платформы.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;Как добавить компонент&lt;/h2&gt;\n&lt;div class=\&quot;custom-steps\&quot;&gt;&lt;div class=\&quot;custom-step\&quot; data-status=\&quot;done\&quot; data-title=\&quot;Создайте папку\&quot; data-color=\&quot;\&quot;&gt;&lt;p&gt;Разместите компонент в &lt;code&gt;src/features/ui-components/my-component/&lt;/code&gt;.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-step\&quot; data-status=\&quot;done\&quot; data-title=\&quot;Добавьте config.json\&quot; data-color=\&quot;\&quot;&gt;&lt;p&gt;Опишите &lt;code&gt;id&lt;/code&gt;, &lt;code&gt;name&lt;/code&gt;, &lt;code&gt;category&lt;/code&gt;, &lt;code&gt;props&lt;/code&gt; и &lt;code&gt;specificProps&lt;/code&gt;. Registry найдёт компонент автоматически.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-step\&quot; data-status=\&quot;done\&quot; data-title=\&quot;Запустите проект\&quot; data-color=\&quot;\&quot;&gt;&lt;p&gt;&lt;code&gt;npm run dev&lt;/code&gt; — компонент появится в UI библиотеке с живым превью и настройщиком.&lt;/p&gt;\n&lt;/div&gt;&lt;/div&gt;\n\n&lt;p&gt;Подробнее о добавлении компонентов — в &lt;a href=\&quot;https://opensophy.com/hub/component-guide/\&quot;&gt;руководстве по компонентам&lt;/a&gt;.&lt;/p&gt;\n&quot;],&quot;typename&quot;:[0,&quot;&quot;],&quot;categoryPath&quot;:[1,[]],&quot;navSlug&quot;:[0,&quot;ui&quot;],&quot;navTitle&quot;:[0,&quot;UI Библиотека&quot;],&quot;navIcon&quot;:[0,&quot;component&quot;],&quot;author&quot;:[0,&quot;&quot;],&quot;date&quot;:[0,&quot;2026-06-03&quot;],&quot;updated&quot;:[0,&quot;2026-06-03&quot;],&quot;tags&quot;:[1,[[0,&quot;ui&quot;],[0,&quot;ui-компоненты&quot;],[0,&quot;community&quot;],[0,&quot;opensophy&quot;],[0,&quot;библиотека&quot;],[0,&quot;react&quot;],[0,&quot;анимация&quot;]]],&quot;lang&quot;:[0,&quot;ru&quot;],&quot;keywords&quot;:[0,&quot;&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;icon&quot;:[0,&quot;component&quot;],&quot;priority&quot;:[0,999],&quot;custom&quot;:[0,&quot;&quot;],&quot;frontmatter&quot;:[0,{&quot;title&quot;:[0,&quot;UI Библиотека&quot;],&quot;description&quot;:[0,&quot;Обзор UI библиотеки Opensophy Hub — community-компоненты, будущие Opensophy-компоненты и как всё это устроено.&quot;],&quot;date&quot;:[0,&quot;2026-06-03&quot;],&quot;updated&quot;:[0,&quot;2026-06-03&quot;],&quot;tags&quot;:[0,&quot;ui, ui-компоненты, community, opensophy, библиотека, react, анимация&quot;],&quot;icon&quot;:[0,&quot;component&quot;],&quot;lang&quot;:[0,&quot;ru&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;]}]}]}" ssr client="only" opts="{&quot;name&quot;:&quot;DocContent&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island>   <astro-island uid="Z1Ix9sf" component-url="/assets/DevPanelLoader.6ELCzLIu.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{}" ssr client="only" opts="{&quot;name&quot;:&quot;DevPanelLoader&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island> <!-- Re-apply theme after SPA navigation --> <script>
+      document.addEventListener('astro:after-swap', function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      });
+    </script> </body> </html>

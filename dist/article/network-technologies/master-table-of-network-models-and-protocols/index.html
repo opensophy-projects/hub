@@ -1,0 +1,317 @@
+<!DOCTYPE html><html lang="ru"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- Theme: runs before paint, prevents flash --><script>
+      (function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.add('js');
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      })();
+    </script><!-- Primary SEO --><title>Мастер таблица по сетевым моделям и протоколам — Opensophy</title><meta name="description" content="Руководство объединяет две методологически корректные таблицы — одну для концептуальных моделей (OSI и TCP/IP) и одну для конкретных протоколов и технологий."><meta name="keywords" content="сетевые модели, OSI, TCP/IP, протоколы, сетевые технологии, networking"><meta name="author" content="Opensophy"><meta name="robots" content="index, follow"><meta name="theme-color" content="#0a0a0a"><meta name="color-scheme" content="dark light"><link rel="canonical" href="https://opensophy.com/article/network-technologies/master-table-of-network-models-and-protocols/"><!-- Sitemap discovery --><link rel="sitemap" type="application/xml" href="/sitemap.xml"><!-- Open Graph --><meta property="og:site_name" content="Opensophy"><meta property="og:title" content="Мастер таблица по сетевым моделям и протоколам — Opensophy"><meta property="og:description" content="Руководство объединяет две методологически корректные таблицы — одну для концептуальных моделей (OSI и TCP/IP) и одну для конкретных протоколов и технологий."><meta property="og:type" content="article"><meta property="og:url" content="https://opensophy.com/article/network-technologies/master-table-of-network-models-and-protocols/"><meta property="og:image" content="https://opensophy.com/assets/image.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ru_RU"><!-- Twitter / X --><meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@opensophy"><meta name="twitter:title" content="Мастер таблица по сетевым моделям и протоколам — Opensophy"><meta name="twitter:description" content="Руководство объединяет две методологически корректные таблицы — одну для концептуальных моделей (OSI и TCP/IP) и одну для конкретных протоколов и технологий."><meta name="twitter:image" content="https://opensophy.com/assets/image.png"><!-- Article-specific --><meta property="article:published_time" content="2025-12-25T00:00:00.000Z"><meta property="article:modified_time" content="2025-12-25T00:00:00.000Z"><meta property="article:author" content="Opensophy"><!-- Favicon --><link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/favicon.png"><!-- Astro SPA transitions --><meta name="astro-view-transitions-enabled" content="true"><meta name="astro-view-transitions-fallback" content="animate"><script type="module" src="/assets/ClientRouter.astro_astro_type_script_index_0_lang.CAqDO0tx.js"></script><!-- Structured Data JSON-LD --><script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Мастер таблица по сетевым моделям и протоколам","description":"Руководство объединяет две методологически корректные таблицы — одну для концептуальных моделей (OSI и TCP/IP) и одну для конкретных протоколов и технологий.","url":"https://opensophy.com/article/network-technologies/master-table-of-network-models-and-protocols/","image":"https://opensophy.com/assets/image.png","author":{"@type":"Person","name":"Opensophy"},"publisher":{"@type":"Organization","name":"Opensophy","url":"https://opensophy.com"},"datePublished":"2025-12-25T00:00:00.000Z","dateModified":"2025-12-25T00:00:00.000Z","inLanguage":"ru"}</script><link rel="stylesheet" href="/assets/Layout.BzjEPNLe.css"></head> <body> <style>astro-island,astro-slot,astro-static-slot{display:contents}</style><script>(()=>{var e=async t=>{await(await t())()};(self.Astro||(self.Astro={})).only=e;window.dispatchEvent(new Event("astro:only"));})();</script><script>(()=>{var g=Object.defineProperty;var w=(c,s,d)=>s in c?g(c,s,{enumerable:!0,configurable:!0,writable:!0,value:d}):c[s]=d;var l=(c,s,d)=>w(c,typeof s!="symbol"?s+"":s,d);var E=new Set(["__proto__","constructor","prototype"]);{let c={0:t=>y(t),1:t=>d(t),2:t=>new RegExp(t),3:t=>new Date(t),4:t=>new Map(d(t)),5:t=>new Set(d(t)),6:t=>BigInt(t),7:t=>new URL(t),8:t=>new Uint8Array(t),9:t=>new Uint16Array(t),10:t=>new Uint32Array(t),11:t=>Number.POSITIVE_INFINITY*t},s=t=>{let[p,e]=t;return p in c?c[p](e):void 0},d=t=>t.map(s),y=t=>typeof t!="object"||t===null?t:Object.fromEntries(Object.entries(t).map(([p,e])=>[p,s(e)]));class f extends HTMLElement{constructor(){super(...arguments);l(this,"Component");l(this,"hydrator");l(this,"hydrate",async()=>{var b;if(!this.hydrator||!this.isConnected)return;let e=(b=this.parentElement)==null?void 0:b.closest("astro-island[ssr]");if(e){e.addEventListener("astro:hydrate",this.hydrate,{once:!0});return}let n=this.querySelectorAll("astro-slot"),r={},i=this.querySelectorAll("template[data-astro-template]");for(let o of i){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("data-astro-template")||"default"]=o.innerHTML,o.remove())}for(let o of n){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("name")||"default"]=o.innerHTML)}let u;try{u=this.hasAttribute("props")?y(JSON.parse(this.getAttribute("props"))):{}}catch(o){let a=this.getAttribute("component-url")||"<unknown>",v=this.getAttribute("component-export");throw v&&(a+=` (export ${v})`),console.error(`[hydrate] Error parsing props for component ${a}`,this.getAttribute("props"),o),o}let h;await this.hydrator(this)(this.Component,u,r,{client:this.getAttribute("client")}),this.removeAttribute("ssr"),this.dispatchEvent(new CustomEvent("astro:hydrate"))});l(this,"unmount",()=>{this.isConnected||this.dispatchEvent(new CustomEvent("astro:unmount"))})}disconnectedCallback(){document.removeEventListener("astro:after-swap",this.unmount),document.addEventListener("astro:after-swap",this.unmount,{once:!0})}connectedCallback(){if(!this.hasAttribute("await-children")||document.readyState==="interactive"||document.readyState==="complete")this.childrenConnectedCallback();else{let e=()=>{document.removeEventListener("DOMContentLoaded",e),n.disconnect(),this.childrenConnectedCallback()},n=new MutationObserver(()=>{var r;((r=this.lastChild)==null?void 0:r.nodeType)===Node.COMMENT_NODE&&this.lastChild.nodeValue==="astro:end"&&(this.lastChild.remove(),e())});n.observe(this,{childList:!0}),document.addEventListener("DOMContentLoaded",e)}}async childrenConnectedCallback(){let e=this.getAttribute("before-hydration-url");e&&await import(e),this.start()}getRetryImportUrl(e){let n=new URL(e,document.baseURI),r=`astro-retry=${Date.now()}`,i=n.hash.replace(/^#/,"");return n.hash=i?`${i}&${r}`:r,n.toString()}async importWithRetry(e){try{return await import(e)}catch(n){return await new Promise(r=>setTimeout(r,1e3)),import(this.getRetryImportUrl(e))}}handleHydrationError(e){let n=this.getAttribute("component-url"),r=new CustomEvent("astro:hydration-error",{cancelable:!0,bubbles:!0,composed:!0,detail:{error:e,componentUrl:n}});this.dispatchEvent(r)&&console.error(`[astro-island] Error hydrating ${n}`,e)}async start(){let e=JSON.parse(this.getAttribute("opts")),n=this.getAttribute("client");if(Astro[n]===void 0){window.addEventListener(`astro:${n}`,()=>this.start(),{once:!0});return}try{await Astro[n](async()=>{let r=this.getAttribute("renderer-url");try{let[i,{default:u}]=await Promise.all([this.importWithRetry(this.getAttribute("component-url")),r?this.importWithRetry(r):Promise.resolve({default:()=>()=>{}})]),h=this.getAttribute("component-export")||"default";if(h.includes(".")){this.Component=i;for(let m of h.split(".")){if(E.has(m)||!this.Component||typeof this.Component!="object"&&typeof this.Component!="function"||!Object.hasOwn(this.Component,m))throw new Error(`Invalid component export path: ${h}`);this.Component=this.Component[m]}}else{if(E.has(h))throw new Error(`Invalid component export path: ${h}`);this.Component=i[h]}return this.hydrator=u,this.hydrate}catch(i){return this.handleHydrationError(i),()=>{}}},e,this)}catch(r){this.handleHydrationError(r)}}attributeChangedCallback(){this.hydrate()}}l(f,"observedAttributes",["props"]),customElements.get("astro-island")||customElements.define("astro-island",f)}})();</script>   <noscript> <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;"> <article><h2>1. Сравнительная Таблица Сетевых Моделей (OSI и TCP/IP)</h2>
+<table>
+<thead>
+<tr>
+<th align="left">Уровень OSI (7 уровней)</th>
+<th align="left">Уровень TCP/IP (4 уровня)</th>
+<th align="left">Единица Данных (PDU)</th>
+<th align="left">Назначение</th>
+<th align="left">Примеры Протоколов</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>7. Прикладной</strong> (Application)</td>
+<td align="left"><strong>4. Прикладной</strong> (Application)</td>
+<td align="left">Данные (Data)</td>
+<td align="left"><strong>То, что видит пользователь.</strong> Здесь работают программы и сервисы.</td>
+<td align="left">HTTP, HTTPS, FTP, SMTP, DNS, SSH, IMAP, POP3, TFTP, NTP, DHCP, SNMP, <strong>BGP, RIP</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>6. Представления</strong> (Presentation)</td>
+<td align="left"><strong>Функции объединены в Прикладном уровне TCP/IP</strong></td>
+<td align="left">Данные (Data)</td>
+<td align="left"><strong>Переводчик и шифровальщик.</strong> Обеспечивает понятность данных (шифрование, сжатие, кодировка).</td>
+<td align="left">TLS/SSL, ASN.1, XDR, MIME</td>
+</tr>
+<tr>
+<td align="left"><strong>5. Сеансовый</strong> (Session)</td>
+<td align="left"><strong>Функции объединены в Прикладном уровне TCP/IP</strong></td>
+<td align="left">Данные (Data)</td>
+<td align="left"><strong>Организатор сеанса.</strong> Устанавливает, поддерживает и завершает сеанс связи.</td>
+<td align="left">NetBIOS, RPC, PPTP, SOCKS, SDP</td>
+</tr>
+<tr>
+<td align="left"><strong>4. Транспортный</strong> (Transport)</td>
+<td align="left"><strong>3. Транспортный</strong> (Transport)</td>
+<td align="left">Сегмент (Segment) / Датаграмма (Datagram)</td>
+<td align="left"><strong>Почтальон.</strong> Отвечает за доставку данных от одного приложения к другому. Решает, нужна ли надежность (TCP) или скорость (UDP).</td>
+<td align="left">TCP, UDP, SCTP, <strong>QUIC</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>3. Сетевой</strong> (Network)</td>
+<td align="left"><strong>2. Межсетевой</strong> (Internet)</td>
+<td align="left">Пакет (Packet)</td>
+<td align="left"><strong>Навигатор.</strong> Отвечает за маршрутизацию — находит лучший путь для данных через разные сети.</td>
+<td align="left">IP (IPv4, IPv6), <strong>ICMP</strong> (служебный), OSPF, EIGRP, IPsec, GRE, IGMP</td>
+</tr>
+<tr>
+<td align="left"><strong>2. Канальный</strong> (Data Link)</td>
+<td align="left"><strong>1. Доступа к Сети</strong> (Network Access)</td>
+<td align="left">Кадр (Frame)</td>
+<td align="left"><strong>Дорожный инспектор.</strong> Отвечает за доставку данных в пределах одной локальной сети. Использует MAC-адреса.</td>
+<td align="left">Ethernet, Wi-Fi, PPP, HDLC, Frame Relay, STP, LACP, PPPoE</td>
+</tr>
+<tr>
+<td align="left"><strong>1. Физический</strong> (Physical)</td>
+<td align="left"><strong>Входит в уровень Доступа к Сети</strong></td>
+<td align="left">Бит (Bit)</td>
+<td align="left"><strong>Среда передачи и сигналы.</strong> Отвечает за физическую передачу битов по проводным или беспроводным каналам.</td>
+<td align="left">Кабели (медные, оптоволокно), Радиоволны, Хабы, USB, RS-232</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>2. Таблица Сетевых Протоколов и Технологий</h2>
+<table>
+<thead>
+<tr>
+<th align="left">Протокол / Технология</th>
+<th align="left">Уровень OSI / TCP-IP</th>
+<th align="left">Основное Назначение</th>
+<th align="left">Как Работает (Ключевые Детали)</th>
+<th align="left">Риски Безопасности / Уязвимости</th>
+<th align="left">Инструменты и Команды</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Ethernet</strong> (IEEE 802.3)</td>
+<td align="left">L1 (Физ.) / L2 (Кан.)</td>
+<td align="left">Проводная передача данных в локальной сети (LAN).</td>
+<td align="left">Определяет формат кадров (Frames) и MAC-адресацию. <strong>Примечание:</strong> Наиболее распространенный формат кадра — <strong>Ethernet II (DIX)</strong>.</td>
+<td align="left">VLAN Hopping, ARP Spoofing, MAC Flooding.</td>
+<td align="left"><code>ip link</code>, <code>ethtool</code>, <code>wireshark</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Wi-Fi</strong> (IEEE 802.11)</td>
+<td align="left">L1 (Физ.) / L2 (Кан.)</td>
+<td align="left">Беспроводная передача данных в локальной сети.</td>
+<td align="left">Использует радиоволны (2.4/5/6 ГГц) для передачи данных.</td>
+<td align="left">WPA2/WPA3 Cracking, Evil Twin, Deauthentication Attacks.</td>
+<td align="left"><code>aircrack-ng</code>, <code>iw</code>, <code>iwconfig</code></td>
+</tr>
+<tr>
+<td align="left"><strong>WPA2/WPA3</strong></td>
+<td align="left">L2 (Канальный)</td>
+<td align="left">Протоколы безопасности для защиты Wi-Fi сетей.</td>
+<td align="left">WPA2: шифрование AES (CCMP). WPA3: улучшенная защита (SAE), защита от брутфорса.</td>
+<td align="left">WPA2: KRACK Attack, PMF Bypass. WPA3: Dragonblood, Downgrade Attacks.</td>
+<td align="left"><code>aircrack-ng</code>, <code>wpa_supplicant</code></td>
+</tr>
+<tr>
+<td align="left"><strong>VLAN</strong> (IEEE 802.1Q)</td>
+<td align="left">L2 (Канальный)</td>
+<td align="left">Логическое разделение одной физической сети на несколько изолированных сегментов.</td>
+<td align="left">Добавляет 4-байтовый тег (Tag) в заголовок Ethernet-кадра для идентификации сети.</td>
+<td align="left">VLAN Hopping, Double Tagging.</td>
+<td align="left"><code>ip link add link ... type vlan</code>, Switch CLI</td>
+</tr>
+<tr>
+<td align="left"><strong>ARP</strong> (Address Resolution Protocol)</td>
+<td align="left">L2 (Канальный)</td>
+<td align="left">Находит физический адрес (MAC) устройства по его логическому адресу (IP) в локальной сети.</td>
+<td align="left">Broadcast-запрос (кто имеет IP X, скажи свой MAC) и Unicast-ответ.</td>
+<td align="left">ARP Spoofing (MITM), ARP Cache Poisoning.</td>
+<td align="left"><code>arp -a</code>, <code>arping</code>, <code>wireshark</code></td>
+</tr>
+<tr>
+<td align="left"><strong>PPP</strong> (Point-to-Point Protocol)</td>
+<td align="left">L2 (Канальный)</td>
+<td align="left">Прямая связь между двумя узлами с поддержкой авторизации и сжатия.</td>
+<td align="left">Использует LCP для настройки канала и NCP для выбора сетевых протоколов. Поддерживает PAP/CHAP.</td>
+<td align="left">Credential Theft (PAP), Weak Authentication.</td>
+<td align="left"><code>pppd</code>, <code>pon/poff</code></td>
+</tr>
+<tr>
+<td align="left"><strong>STP/RSTP/MSTP</strong> (Spanning Tree Protocol)</td>
+<td align="left">L2 (Канальный)</td>
+<td align="left">Предотвращает петли в сетях с избыточными путями (коммутаторы).</td>
+<td align="left">Строит древовидную топологию, блокируя избыточные порты. RSTP — быстрая конвергенция.</td>
+<td align="left">Root Bridge Hijacking, BPDU Flooding, DoS.</td>
+<td align="left">Switch CLI, <code>tcpdump</code></td>
+</tr>
+<tr>
+<td align="left"><strong>LACP</strong> (Link Aggregation Control Protocol)</td>
+<td align="left">L2 (Канальный)</td>
+<td align="left">Объединяет несколько физических каналов в один логический для увеличения пропускной способности.</td>
+<td align="left">Динамическое управление агрегацией каналов (802.3ad).</td>
+<td align="left">Misconfiguration, Hash Collision.</td>
+<td align="left"><code>ip link</code>, Switch CLI</td>
+</tr>
+<tr>
+<td align="left"><strong>LLDP / CDP</strong></td>
+<td align="left">L2 (Канальный)</td>
+<td align="left">Протоколы обнаружения соседних сетевых устройств.</td>
+<td align="left">Рассылают информацию о себе (имя, порт, возможности) соседям. CDP — проприетарный (Cisco), LLDP — стандарт.</td>
+<td align="left">Information Disclosure (разведка сети).</td>
+<td align="left"><code>lldpctl</code>, <code>show cdp neighbors</code></td>
+</tr>
+<tr>
+<td align="left"><strong>PPPoE</strong> (PPP over Ethernet)</td>
+<td align="left">L2 (Канальный)</td>
+<td align="left">Инкапсуляция PPP-кадров в Ethernet для подключения к провайдеру (WAN).</td>
+<td align="left">Добавляет аутентификацию и управление сессией поверх Ethernet. Используется в <strong>DSL, FTTx</strong> и других широкополосных подключениях.</td>
+<td align="left">Session Hijacking, Credential Theft.</td>
+<td align="left"><code>pppoeconf</code>, <code>pppd</code></td>
+</tr>
+<tr>
+<td align="left"><strong>IPv4 / IPv6</strong></td>
+<td align="left">L3 (Сетевой)</td>
+<td align="left">Доставка данных между разными сетями (маршрутизация).</td>
+<td align="left">IPv4: 32-битные адреса. IPv6: 128-битные адреса, автоконфигурация (SLAAC).</td>
+<td align="left">IP Spoofing, Fragmentation Attacks, NDP Spoofing (IPv6).</td>
+<td align="left"><code>ping</code>, <code>traceroute</code>, <code>ip route</code>, <code>ndp</code> (для IPv6)</td>
+</tr>
+<tr>
+<td align="left"><strong>NAT / PAT</strong></td>
+<td align="left">L3 / L4</td>
+<td align="left">Трансляция сетевых адресов и портов.</td>
+<td align="left">Позволяет множеству устройств в локальной сети выходить в интернет через один публичный IP.</td>
+<td align="left">End-to-end connectivity break, NAT Traversal issues.</td>
+<td align="left"><code>iptables -t nat</code>, <code>ip nat</code> (Cisco)</td>
+</tr>
+<tr>
+<td align="left"><strong>ICMP</strong> (Internet Control Message Protocol)</td>
+<td align="left">L3 (Сетевой)</td>
+<td align="left">Диагностика и передача служебных сообщений об ошибках.</td>
+<td align="left">Использует команды <code>ping</code> и <code>traceroute</code>. Не имеет портов.</td>
+<td align="left">ICMP Flood (DoS), ICMP Tunneling (передача данных через ICMP).</td>
+<td align="left"><code>ping</code>, <code>traceroute</code>, <code>hping3</code></td>
+</tr>
+<tr>
+<td align="left"><strong>BGP</strong> (Border Gateway Protocol)</td>
+<td align="left"><strong>L7 (Прикладной)</strong></td>
+<td align="left">Протокол динамической маршрутизации между автономными системами (Интернетом).</td>
+<td align="left">Использует <strong>TCP (порт 179)</strong>. <strong>Анонсирует</strong> пути к сетям и <strong>выбирает</strong> лучший путь на основе политик и атрибутов.</td>
+<td align="left">BGP Hijacking, Route Leaks.</td>
+<td align="left"><code>show ip bgp</code>, <code>bird</code>, <code>quagga</code></td>
+</tr>
+<tr>
+<td align="left"><strong>RIP</strong> (Routing Information Protocol)</td>
+<td align="left"><strong>L7 (Прикладной)</strong></td>
+<td align="left">Протокол динамической маршрутизации внутри автономной системы (IGP).</td>
+<td align="left">Использует <strong>UDP (порт 520)</strong>. Простой алгоритм на основе счетчика переходов.</td>
+<td align="left">Route Poisoning, Authentication Bypass.</td>
+<td align="left"><code>show ip rip</code>, <code>frr</code></td>
+</tr>
+<tr>
+<td align="left"><strong>OSPF</strong> (Open Shortest Path First)</td>
+<td align="left">L3 (Сетевой)</td>
+<td align="left">Протокол динамической маршрутизации внутри автономной системы (IGP).</td>
+<td align="left">Использует алгоритм Дейкстры (SPF). Работает поверх IP (протокол 89).</td>
+<td align="left">LSA Spoofing, Authentication Bypass.</td>
+<td align="left"><code>show ip ospf</code>, <code>frr</code></td>
+</tr>
+<tr>
+<td align="left"><strong>IPsec</strong> (Internet Protocol Security)</td>
+<td align="left">L3 (Сетевой)</td>
+<td align="left">Набор протоколов для защиты IP-трафика (шифрование, аутентификация).</td>
+<td align="left">Режимы: Транспортный и Туннельный. Протоколы: AH и ESP.</td>
+<td align="left">Weak IKE Config, Side-channel Attacks.</td>
+<td align="left"><code>strongswan</code>, <code>ipsec status</code></td>
+</tr>
+<tr>
+<td align="left"><strong>TCP</strong> (Transmission Control Protocol)</td>
+<td align="left">L4 (Транспортный)</td>
+<td align="left">Надежная доставка данных с установкой соединения.</td>
+<td align="left">3-way handshake (SYN, SYN-ACK, ACK). Контроль потока и ошибок.</td>
+<td align="left">SYN Flood, Session Hijacking, Sequence Number Prediction.</td>
+<td align="left"><code>netstat</code>, <code>ss</code>, <code>tcpdump</code></td>
+</tr>
+<tr>
+<td align="left"><strong>UDP</strong> (User Datagram Protocol)</td>
+<td align="left">L4 (Транспортный)</td>
+<td align="left">Быстрая доставка данных без установки соединения и гарантий.</td>
+<td align="left">Минимальный заголовок. Нет подтверждения доставки.</td>
+<td align="left">UDP Flood, Amplification Attacks (DNS/NTP).</td>
+<td align="left"><code>nc -u</code>, <code>iperf3</code></td>
+</tr>
+<tr>
+<td align="left"><strong>QUIC</strong></td>
+<td align="left"><strong>L4/L7 (Гибридный)</strong></td>
+<td align="left">Современный протокол поверх UDP для ускорения веба (HTTP/3).</td>
+<td align="left">Объединяет функции TCP и TLS. Уменьшает задержки (0-RTT).</td>
+<td align="left">Amplification Attacks, Connection ID Tracking.</td>
+<td align="left"><code>wireshark</code>, <code>curl --http3</code></td>
+</tr>
+<tr>
+<td align="left"><strong>HTTP / HTTPS</strong></td>
+<td align="left">L7 (Прикладной)</td>
+<td align="left">Передача гипертекста (веб-страниц). HTTPS — защищенная версия.</td>
+<td align="left">HTTP: порт 80. HTTPS: порт 443 (TLS). Методы: GET, POST, PUT, DELETE.</td>
+<td align="left">SQL Injection, XSS, CSRF, Insecure TLS Config.</td>
+<td align="left"><code>curl</code>, <code>httpie</code>, <code>burp suite</code></td>
+</tr>
+<tr>
+<td align="left"><strong>DNS</strong> (Domain Name System)</td>
+<td align="left">L7 (Прикладной)</td>
+<td align="left">Преобразует доменные имена (google.com) в IP-адреса.</td>
+<td align="left">Использует UDP/TCP (порт 53). <strong>TCP/53</strong> используется для передачи зон, <strong>больших ответов (&gt;512 байт)</strong> и DNS-over-TCP.</td>
+<td align="left">DNS Cache Poisoning, DNS Tunneling, DDoS (Amplification).</td>
+<td align="left"><code>dig</code>, <code>nslookup</code>, <code>host</code></td>
+</tr>
+<tr>
+<td align="left"><strong>DHCP</strong> (Dynamic Host Configuration Protocol)</td>
+<td align="left">L7 (Прикладной)</td>
+<td align="left">Автоматическое назначение IP-адресов и настроек сети устройствам.</td>
+<td align="left">Процесс DORA (Discover, Offer, Request, Acknowledge). Порты 67/68.</td>
+<td align="left">DHCP Starvation, Rogue DHCP Server.</td>
+<td align="left"><code>dhclient</code>, <code>nmap --script discovery</code></td>
+</tr>
+<tr>
+<td align="left"><strong>SSH</strong> (Secure Shell)</td>
+<td align="left">L7 (Прикладной)</td>
+<td align="left">Безопасный удаленный доступ к устройствам и передача файлов.</td>
+<td align="left">Порт 22. Шифрование трафика, аутентификация по ключам.</td>
+<td align="left">Brute-force, Man-in-the-Middle (если не проверен Fingerprint).</td>
+<td align="left"><code>ssh</code>, <code>scp</code>, <code>sftp</code></td>
+</tr>
+<tr>
+<td align="left"><strong>FTP / SFTP</strong></td>
+<td align="left">L7 (Прикладной)</td>
+<td align="left">Передача файлов. FTP — небезопасный, SFTP — через SSH.</td>
+<td align="left">FTP: порты 20/21. SFTP: порт 22.</td>
+<td align="left">FTP: Cleartext Credentials, Bounce Attack.</td>
+<td align="left"><code>ftp</code>, <code>sftp</code>, <code>filezilla</code></td>
+</tr>
+<tr>
+<td align="left"><strong>SMTP / IMAP / POP3</strong></td>
+<td align="left">L7 (Прикладной)</td>
+<td align="left">Протоколы электронной почты (отправка и получение).</td>
+<td align="left">SMTP (25/465/587), IMAP (143/993), POP3 (110/995).</td>
+<td align="left">Email Spoofing, Open Relay, Credential Theft.</td>
+<td align="left"><code>telnet</code>, <code>openssl s_client</code></td>
+</tr>
+<tr>
+<td align="left"><strong>SNMP</strong> (Simple Network Management Protocol)</td>
+<td align="left">L7 (Прикладной)</td>
+<td align="left">Мониторинг и управление сетевыми устройствами.</td>
+<td align="left">Использует UDP (порты 161/162). Версии: v1, v2c, v3 (безопасная).</td>
+<td align="left">SNMP Brute-force (Community Strings), Amplification Attacks.</td>
+<td align="left"><code>snmpwalk</code>, <code>snmpget</code></td>
+</tr>
+<tr>
+<td align="left"><strong>NTP</strong> (Network Time Protocol)</td>
+<td align="left">L7 (Прикладной)</td>
+<td align="left">Синхронизация времени между устройствами.</td>
+<td align="left">Использует UDP (порт 123). Высокая точность.</td>
+<td align="left">NTP Amplification (DDoS), Time Spoofing.</td>
+<td align="left"><code>ntpdate</code>, <code>chronyc</code></td>
+</tr>
+</tbody></table>
+</article> </main> </noscript> <astro-island uid="Z1GJllG" component-url="/assets/DocContent.CoKfap2Q.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{&quot;doc&quot;:[0,{&quot;id&quot;:[0,&quot;article/network-technologies/master-table-of-network-models-and-protocols&quot;],&quot;title&quot;:[0,&quot;Мастер таблица по сетевым моделям и протоколам&quot;],&quot;slug&quot;:[0,&quot;article/network-technologies/master-table-of-network-models-and-protocols&quot;],&quot;description&quot;:[0,&quot;Руководство объединяет две методологически корректные таблицы — одну для концептуальных моделей (OSI и TCP/IP) и одну для конкретных протоколов и технологий.&quot;],&quot;content&quot;:[0,&quot;&lt;h2&gt;1. Сравнительная Таблица Сетевых Моделей (OSI и TCP/IP)&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th align=\&quot;left\&quot;&gt;Уровень OSI (7 уровней)&lt;/th&gt;\n&lt;th align=\&quot;left\&quot;&gt;Уровень TCP/IP (4 уровня)&lt;/th&gt;\n&lt;th align=\&quot;left\&quot;&gt;Единица Данных (PDU)&lt;/th&gt;\n&lt;th align=\&quot;left\&quot;&gt;Назначение&lt;/th&gt;\n&lt;th align=\&quot;left\&quot;&gt;Примеры Протоколов&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;7. Прикладной&lt;/strong&gt; (Application)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;4. Прикладной&lt;/strong&gt; (Application)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Данные (Data)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;То, что видит пользователь.&lt;/strong&gt; Здесь работают программы и сервисы.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;HTTP, HTTPS, FTP, SMTP, DNS, SSH, IMAP, POP3, TFTP, NTP, DHCP, SNMP, &lt;strong&gt;BGP, RIP&lt;/strong&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;6. Представления&lt;/strong&gt; (Presentation)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;Функции объединены в Прикладном уровне TCP/IP&lt;/strong&gt;&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Данные (Data)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;Переводчик и шифровальщик.&lt;/strong&gt; Обеспечивает понятность данных (шифрование, сжатие, кодировка).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;TLS/SSL, ASN.1, XDR, MIME&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;5. Сеансовый&lt;/strong&gt; (Session)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;Функции объединены в Прикладном уровне TCP/IP&lt;/strong&gt;&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Данные (Data)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;Организатор сеанса.&lt;/strong&gt; Устанавливает, поддерживает и завершает сеанс связи.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;NetBIOS, RPC, PPTP, SOCKS, SDP&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;4. Транспортный&lt;/strong&gt; (Transport)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;3. Транспортный&lt;/strong&gt; (Transport)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Сегмент (Segment) / Датаграмма (Datagram)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;Почтальон.&lt;/strong&gt; Отвечает за доставку данных от одного приложения к другому. Решает, нужна ли надежность (TCP) или скорость (UDP).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;TCP, UDP, SCTP, &lt;strong&gt;QUIC&lt;/strong&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;3. Сетевой&lt;/strong&gt; (Network)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;2. Межсетевой&lt;/strong&gt; (Internet)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Пакет (Packet)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;Навигатор.&lt;/strong&gt; Отвечает за маршрутизацию — находит лучший путь для данных через разные сети.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;IP (IPv4, IPv6), &lt;strong&gt;ICMP&lt;/strong&gt; (служебный), OSPF, EIGRP, IPsec, GRE, IGMP&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;2. Канальный&lt;/strong&gt; (Data Link)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;1. Доступа к Сети&lt;/strong&gt; (Network Access)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Кадр (Frame)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;Дорожный инспектор.&lt;/strong&gt; Отвечает за доставку данных в пределах одной локальной сети. Использует MAC-адреса.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Ethernet, Wi-Fi, PPP, HDLC, Frame Relay, STP, LACP, PPPoE&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;1. Физический&lt;/strong&gt; (Physical)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;Входит в уровень Доступа к Сети&lt;/strong&gt;&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Бит (Bit)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;Среда передачи и сигналы.&lt;/strong&gt; Отвечает за физическую передачу битов по проводным или беспроводным каналам.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Кабели (медные, оптоволокно), Радиоволны, Хабы, USB, RS-232&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;hr&gt;\n&lt;h2&gt;2. Таблица Сетевых Протоколов и Технологий&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th align=\&quot;left\&quot;&gt;Протокол / Технология&lt;/th&gt;\n&lt;th align=\&quot;left\&quot;&gt;Уровень OSI / TCP-IP&lt;/th&gt;\n&lt;th align=\&quot;left\&quot;&gt;Основное Назначение&lt;/th&gt;\n&lt;th align=\&quot;left\&quot;&gt;Как Работает (Ключевые Детали)&lt;/th&gt;\n&lt;th align=\&quot;left\&quot;&gt;Риски Безопасности / Уязвимости&lt;/th&gt;\n&lt;th align=\&quot;left\&quot;&gt;Инструменты и Команды&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;Ethernet&lt;/strong&gt; (IEEE 802.3)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L1 (Физ.) / L2 (Кан.)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Проводная передача данных в локальной сети (LAN).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Определяет формат кадров (Frames) и MAC-адресацию. &lt;strong&gt;Примечание:&lt;/strong&gt; Наиболее распространенный формат кадра — &lt;strong&gt;Ethernet II (DIX)&lt;/strong&gt;.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;VLAN Hopping, ARP Spoofing, MAC Flooding.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;ip link&lt;/code&gt;, &lt;code&gt;ethtool&lt;/code&gt;, &lt;code&gt;wireshark&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;Wi-Fi&lt;/strong&gt; (IEEE 802.11)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L1 (Физ.) / L2 (Кан.)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Беспроводная передача данных в локальной сети.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Использует радиоволны (2.4/5/6 ГГц) для передачи данных.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;WPA2/WPA3 Cracking, Evil Twin, Deauthentication Attacks.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;aircrack-ng&lt;/code&gt;, &lt;code&gt;iw&lt;/code&gt;, &lt;code&gt;iwconfig&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;WPA2/WPA3&lt;/strong&gt;&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L2 (Канальный)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Протоколы безопасности для защиты Wi-Fi сетей.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;WPA2: шифрование AES (CCMP). WPA3: улучшенная защита (SAE), защита от брутфорса.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;WPA2: KRACK Attack, PMF Bypass. WPA3: Dragonblood, Downgrade Attacks.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;aircrack-ng&lt;/code&gt;, &lt;code&gt;wpa_supplicant&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;VLAN&lt;/strong&gt; (IEEE 802.1Q)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L2 (Канальный)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Логическое разделение одной физической сети на несколько изолированных сегментов.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Добавляет 4-байтовый тег (Tag) в заголовок Ethernet-кадра для идентификации сети.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;VLAN Hopping, Double Tagging.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;ip link add link ... type vlan&lt;/code&gt;, Switch CLI&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;ARP&lt;/strong&gt; (Address Resolution Protocol)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L2 (Канальный)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Находит физический адрес (MAC) устройства по его логическому адресу (IP) в локальной сети.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Broadcast-запрос (кто имеет IP X, скажи свой MAC) и Unicast-ответ.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;ARP Spoofing (MITM), ARP Cache Poisoning.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;arp -a&lt;/code&gt;, &lt;code&gt;arping&lt;/code&gt;, &lt;code&gt;wireshark&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;PPP&lt;/strong&gt; (Point-to-Point Protocol)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L2 (Канальный)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Прямая связь между двумя узлами с поддержкой авторизации и сжатия.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Использует LCP для настройки канала и NCP для выбора сетевых протоколов. Поддерживает PAP/CHAP.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Credential Theft (PAP), Weak Authentication.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;pppd&lt;/code&gt;, &lt;code&gt;pon/poff&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;STP/RSTP/MSTP&lt;/strong&gt; (Spanning Tree Protocol)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L2 (Канальный)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Предотвращает петли в сетях с избыточными путями (коммутаторы).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Строит древовидную топологию, блокируя избыточные порты. RSTP — быстрая конвергенция.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Root Bridge Hijacking, BPDU Flooding, DoS.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Switch CLI, &lt;code&gt;tcpdump&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;LACP&lt;/strong&gt; (Link Aggregation Control Protocol)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L2 (Канальный)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Объединяет несколько физических каналов в один логический для увеличения пропускной способности.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Динамическое управление агрегацией каналов (802.3ad).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Misconfiguration, Hash Collision.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;ip link&lt;/code&gt;, Switch CLI&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;LLDP / CDP&lt;/strong&gt;&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L2 (Канальный)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Протоколы обнаружения соседних сетевых устройств.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Рассылают информацию о себе (имя, порт, возможности) соседям. CDP — проприетарный (Cisco), LLDP — стандарт.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Information Disclosure (разведка сети).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;lldpctl&lt;/code&gt;, &lt;code&gt;show cdp neighbors&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;PPPoE&lt;/strong&gt; (PPP over Ethernet)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L2 (Канальный)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Инкапсуляция PPP-кадров в Ethernet для подключения к провайдеру (WAN).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Добавляет аутентификацию и управление сессией поверх Ethernet. Используется в &lt;strong&gt;DSL, FTTx&lt;/strong&gt; и других широкополосных подключениях.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Session Hijacking, Credential Theft.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;pppoeconf&lt;/code&gt;, &lt;code&gt;pppd&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;IPv4 / IPv6&lt;/strong&gt;&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L3 (Сетевой)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Доставка данных между разными сетями (маршрутизация).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;IPv4: 32-битные адреса. IPv6: 128-битные адреса, автоконфигурация (SLAAC).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;IP Spoofing, Fragmentation Attacks, NDP Spoofing (IPv6).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;ping&lt;/code&gt;, &lt;code&gt;traceroute&lt;/code&gt;, &lt;code&gt;ip route&lt;/code&gt;, &lt;code&gt;ndp&lt;/code&gt; (для IPv6)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;NAT / PAT&lt;/strong&gt;&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L3 / L4&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Трансляция сетевых адресов и портов.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Позволяет множеству устройств в локальной сети выходить в интернет через один публичный IP.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;End-to-end connectivity break, NAT Traversal issues.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;iptables -t nat&lt;/code&gt;, &lt;code&gt;ip nat&lt;/code&gt; (Cisco)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;ICMP&lt;/strong&gt; (Internet Control Message Protocol)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L3 (Сетевой)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Диагностика и передача служебных сообщений об ошибках.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Использует команды &lt;code&gt;ping&lt;/code&gt; и &lt;code&gt;traceroute&lt;/code&gt;. Не имеет портов.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;ICMP Flood (DoS), ICMP Tunneling (передача данных через ICMP).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;ping&lt;/code&gt;, &lt;code&gt;traceroute&lt;/code&gt;, &lt;code&gt;hping3&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;BGP&lt;/strong&gt; (Border Gateway Protocol)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;L7 (Прикладной)&lt;/strong&gt;&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Протокол динамической маршрутизации между автономными системами (Интернетом).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Использует &lt;strong&gt;TCP (порт 179)&lt;/strong&gt;. &lt;strong&gt;Анонсирует&lt;/strong&gt; пути к сетям и &lt;strong&gt;выбирает&lt;/strong&gt; лучший путь на основе политик и атрибутов.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;BGP Hijacking, Route Leaks.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;show ip bgp&lt;/code&gt;, &lt;code&gt;bird&lt;/code&gt;, &lt;code&gt;quagga&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;RIP&lt;/strong&gt; (Routing Information Protocol)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;L7 (Прикладной)&lt;/strong&gt;&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Протокол динамической маршрутизации внутри автономной системы (IGP).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Использует &lt;strong&gt;UDP (порт 520)&lt;/strong&gt;. Простой алгоритм на основе счетчика переходов.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Route Poisoning, Authentication Bypass.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;show ip rip&lt;/code&gt;, &lt;code&gt;frr&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;OSPF&lt;/strong&gt; (Open Shortest Path First)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L3 (Сетевой)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Протокол динамической маршрутизации внутри автономной системы (IGP).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Использует алгоритм Дейкстры (SPF). Работает поверх IP (протокол 89).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;LSA Spoofing, Authentication Bypass.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;show ip ospf&lt;/code&gt;, &lt;code&gt;frr&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;IPsec&lt;/strong&gt; (Internet Protocol Security)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L3 (Сетевой)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Набор протоколов для защиты IP-трафика (шифрование, аутентификация).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Режимы: Транспортный и Туннельный. Протоколы: AH и ESP.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Weak IKE Config, Side-channel Attacks.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;strongswan&lt;/code&gt;, &lt;code&gt;ipsec status&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;TCP&lt;/strong&gt; (Transmission Control Protocol)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L4 (Транспортный)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Надежная доставка данных с установкой соединения.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;3-way handshake (SYN, SYN-ACK, ACK). Контроль потока и ошибок.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;SYN Flood, Session Hijacking, Sequence Number Prediction.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;netstat&lt;/code&gt;, &lt;code&gt;ss&lt;/code&gt;, &lt;code&gt;tcpdump&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;UDP&lt;/strong&gt; (User Datagram Protocol)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L4 (Транспортный)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Быстрая доставка данных без установки соединения и гарантий.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Минимальный заголовок. Нет подтверждения доставки.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;UDP Flood, Amplification Attacks (DNS/NTP).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;nc -u&lt;/code&gt;, &lt;code&gt;iperf3&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;QUIC&lt;/strong&gt;&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;L4/L7 (Гибридный)&lt;/strong&gt;&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Современный протокол поверх UDP для ускорения веба (HTTP/3).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Объединяет функции TCP и TLS. Уменьшает задержки (0-RTT).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Amplification Attacks, Connection ID Tracking.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;wireshark&lt;/code&gt;, &lt;code&gt;curl --http3&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;HTTP / HTTPS&lt;/strong&gt;&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L7 (Прикладной)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Передача гипертекста (веб-страниц). HTTPS — защищенная версия.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;HTTP: порт 80. HTTPS: порт 443 (TLS). Методы: GET, POST, PUT, DELETE.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;SQL Injection, XSS, CSRF, Insecure TLS Config.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;curl&lt;/code&gt;, &lt;code&gt;httpie&lt;/code&gt;, &lt;code&gt;burp suite&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;DNS&lt;/strong&gt; (Domain Name System)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L7 (Прикладной)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Преобразует доменные имена (google.com) в IP-адреса.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Использует UDP/TCP (порт 53). &lt;strong&gt;TCP/53&lt;/strong&gt; используется для передачи зон, &lt;strong&gt;больших ответов (&amp;gt;512 байт)&lt;/strong&gt; и DNS-over-TCP.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;DNS Cache Poisoning, DNS Tunneling, DDoS (Amplification).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;dig&lt;/code&gt;, &lt;code&gt;nslookup&lt;/code&gt;, &lt;code&gt;host&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;DHCP&lt;/strong&gt; (Dynamic Host Configuration Protocol)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L7 (Прикладной)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Автоматическое назначение IP-адресов и настроек сети устройствам.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Процесс DORA (Discover, Offer, Request, Acknowledge). Порты 67/68.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;DHCP Starvation, Rogue DHCP Server.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;dhclient&lt;/code&gt;, &lt;code&gt;nmap --script discovery&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;SSH&lt;/strong&gt; (Secure Shell)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L7 (Прикладной)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Безопасный удаленный доступ к устройствам и передача файлов.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Порт 22. Шифрование трафика, аутентификация по ключам.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Brute-force, Man-in-the-Middle (если не проверен Fingerprint).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;ssh&lt;/code&gt;, &lt;code&gt;scp&lt;/code&gt;, &lt;code&gt;sftp&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;FTP / SFTP&lt;/strong&gt;&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L7 (Прикладной)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Передача файлов. FTP — небезопасный, SFTP — через SSH.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;FTP: порты 20/21. SFTP: порт 22.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;FTP: Cleartext Credentials, Bounce Attack.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;ftp&lt;/code&gt;, &lt;code&gt;sftp&lt;/code&gt;, &lt;code&gt;filezilla&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;SMTP / IMAP / POP3&lt;/strong&gt;&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L7 (Прикладной)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Протоколы электронной почты (отправка и получение).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;SMTP (25/465/587), IMAP (143/993), POP3 (110/995).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Email Spoofing, Open Relay, Credential Theft.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;telnet&lt;/code&gt;, &lt;code&gt;openssl s_client&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;SNMP&lt;/strong&gt; (Simple Network Management Protocol)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L7 (Прикладной)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Мониторинг и управление сетевыми устройствами.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Использует UDP (порты 161/162). Версии: v1, v2c, v3 (безопасная).&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;SNMP Brute-force (Community Strings), Amplification Attacks.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;snmpwalk&lt;/code&gt;, &lt;code&gt;snmpget&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;strong&gt;NTP&lt;/strong&gt; (Network Time Protocol)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;L7 (Прикладной)&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Синхронизация времени между устройствами.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;Использует UDP (порт 123). Высокая точность.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;NTP Amplification (DDoS), Time Spoofing.&lt;/td&gt;\n&lt;td align=\&quot;left\&quot;&gt;&lt;code&gt;ntpdate&lt;/code&gt;, &lt;code&gt;chronyc&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&quot;],&quot;typename&quot;:[0,&quot;Сетевые технологии&quot;],&quot;categoryPath&quot;:[1,[[0,{&quot;slug&quot;:[0,&quot;network-technologies&quot;],&quot;title&quot;:[0,&quot;Сетевые технологии&quot;],&quot;icon&quot;:[0,&quot;arrow-down-up&quot;]}]]],&quot;navSlug&quot;:[0,&quot;article&quot;],&quot;navTitle&quot;:[0,&quot;Статьи opensophy&quot;],&quot;navIcon&quot;:[0,&quot;brain&quot;],&quot;author&quot;:[0,&quot;&quot;],&quot;date&quot;:[0,&quot;2025-12-25&quot;],&quot;updated&quot;:[0,&quot;2026-01-20&quot;],&quot;tags&quot;:[1,[[0,&quot;сети&quot;],[0,&quot;инструменты&quot;]]],&quot;lang&quot;:[0,&quot;ru&quot;],&quot;keywords&quot;:[0,&quot;сетевые модели, OSI, TCP/IP, протоколы, сетевые технологии, networking&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;icon&quot;:[0,&quot;table-of-contents&quot;],&quot;priority&quot;:[0,999],&quot;custom&quot;:[0,&quot;&quot;],&quot;frontmatter&quot;:[0,{&quot;title&quot;:[0,&quot;Мастер таблица по сетевым моделям и протоколам&quot;],&quot;description&quot;:[0,&quot;Руководство объединяет две методологически корректные таблицы — одну для концептуальных моделей (OSI и TCP/IP) и одну для конкретных протоколов и технологий.&quot;],&quot;date&quot;:[0,&quot;2025-12-25&quot;],&quot;updated&quot;:[0,&quot;2026-01-20&quot;],&quot;tags&quot;:[0,&quot;сети, инструменты&quot;],&quot;keywords&quot;:[0,&quot;сетевые модели, OSI, TCP/IP, протоколы, сетевые технологии, networking&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;lang&quot;:[0,&quot;ru&quot;]}]}]}" ssr client="only" opts="{&quot;name&quot;:&quot;DocContent&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island>   <astro-island uid="Z1Ix9sf" component-url="/assets/DevPanelLoader.6ELCzLIu.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{}" ssr client="only" opts="{&quot;name&quot;:&quot;DevPanelLoader&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island> <!-- Re-apply theme after SPA navigation --> <script>
+      document.addEventListener('astro:after-swap', function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      });
+    </script> </body> </html>

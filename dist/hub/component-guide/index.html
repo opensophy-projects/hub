@@ -1,0 +1,259 @@
+<!DOCTYPE html><html lang="ru"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- Theme: runs before paint, prevents flash --><script>
+      (function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.add('js');
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      })();
+    </script><!-- Primary SEO --><title>Руководство по UI библиотеке Hub V3.5 — Opensophy</title><meta name="description" content="Актуальное руководство V3.5 по добавлению UI-компонентов: структура backgrounds/texts, auto-discovery registry, preview-файлы, вкладка кода, universal props и Markdown-документация."><meta name="keywords" content="Hub UI library, React компоненты, import.meta.glob, UI registry, documentation components"><meta name="author" content="Opensophy"><meta name="robots" content="index, follow"><meta name="theme-color" content="#0a0a0a"><meta name="color-scheme" content="dark light"><link rel="canonical" href="https://opensophy.com/hub/component-guide/"><!-- Sitemap discovery --><link rel="sitemap" type="application/xml" href="/sitemap.xml"><!-- Open Graph --><meta property="og:site_name" content="Opensophy"><meta property="og:title" content="Руководство по UI библиотеке Hub V3.5 — Opensophy"><meta property="og:description" content="Актуальное руководство V3.5 по добавлению UI-компонентов: структура backgrounds/texts, auto-discovery registry, preview-файлы, вкладка кода, universal props и Markdown-документация."><meta property="og:type" content="article"><meta property="og:url" content="https://opensophy.com/hub/component-guide/"><meta property="og:image" content="https://opensophy.com/assets/image.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ru_RU"><!-- Twitter / X --><meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@opensophy"><meta name="twitter:title" content="Руководство по UI библиотеке Hub V3.5 — Opensophy"><meta name="twitter:description" content="Актуальное руководство V3.5 по добавлению UI-компонентов: структура backgrounds/texts, auto-discovery registry, preview-файлы, вкладка кода, universal props и Markdown-документация."><meta name="twitter:image" content="https://opensophy.com/assets/image.png"><!-- Article-specific --><meta property="article:published_time" content="2026-02-12T00:00:00.000Z"><meta property="article:modified_time" content="2026-02-12T00:00:00.000Z"><meta property="article:author" content="Opensophy"><!-- Favicon --><link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/favicon.png"><!-- Astro SPA transitions --><meta name="astro-view-transitions-enabled" content="true"><meta name="astro-view-transitions-fallback" content="animate"><script type="module" src="/assets/ClientRouter.astro_astro_type_script_index_0_lang.CAqDO0tx.js"></script><!-- Structured Data JSON-LD --><script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Руководство по UI библиотеке Hub V3.5","description":"Актуальное руководство V3.5 по добавлению UI-компонентов: структура backgrounds/texts, auto-discovery registry, preview-файлы, вкладка кода, universal props и Markdown-документация.","url":"https://opensophy.com/hub/component-guide/","image":"https://opensophy.com/assets/image.png","author":{"@type":"Person","name":"Opensophy"},"publisher":{"@type":"Organization","name":"Opensophy","url":"https://opensophy.com"},"datePublished":"2026-02-12T00:00:00.000Z","dateModified":"2026-02-12T00:00:00.000Z","inLanguage":"ru"}</script><link rel="stylesheet" href="/assets/Layout.BzjEPNLe.css"></head> <body> <style>astro-island,astro-slot,astro-static-slot{display:contents}</style><script>(()=>{var e=async t=>{await(await t())()};(self.Astro||(self.Astro={})).only=e;window.dispatchEvent(new Event("astro:only"));})();</script><script>(()=>{var g=Object.defineProperty;var w=(c,s,d)=>s in c?g(c,s,{enumerable:!0,configurable:!0,writable:!0,value:d}):c[s]=d;var l=(c,s,d)=>w(c,typeof s!="symbol"?s+"":s,d);var E=new Set(["__proto__","constructor","prototype"]);{let c={0:t=>y(t),1:t=>d(t),2:t=>new RegExp(t),3:t=>new Date(t),4:t=>new Map(d(t)),5:t=>new Set(d(t)),6:t=>BigInt(t),7:t=>new URL(t),8:t=>new Uint8Array(t),9:t=>new Uint16Array(t),10:t=>new Uint32Array(t),11:t=>Number.POSITIVE_INFINITY*t},s=t=>{let[p,e]=t;return p in c?c[p](e):void 0},d=t=>t.map(s),y=t=>typeof t!="object"||t===null?t:Object.fromEntries(Object.entries(t).map(([p,e])=>[p,s(e)]));class f extends HTMLElement{constructor(){super(...arguments);l(this,"Component");l(this,"hydrator");l(this,"hydrate",async()=>{var b;if(!this.hydrator||!this.isConnected)return;let e=(b=this.parentElement)==null?void 0:b.closest("astro-island[ssr]");if(e){e.addEventListener("astro:hydrate",this.hydrate,{once:!0});return}let n=this.querySelectorAll("astro-slot"),r={},i=this.querySelectorAll("template[data-astro-template]");for(let o of i){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("data-astro-template")||"default"]=o.innerHTML,o.remove())}for(let o of n){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("name")||"default"]=o.innerHTML)}let u;try{u=this.hasAttribute("props")?y(JSON.parse(this.getAttribute("props"))):{}}catch(o){let a=this.getAttribute("component-url")||"<unknown>",v=this.getAttribute("component-export");throw v&&(a+=` (export ${v})`),console.error(`[hydrate] Error parsing props for component ${a}`,this.getAttribute("props"),o),o}let h;await this.hydrator(this)(this.Component,u,r,{client:this.getAttribute("client")}),this.removeAttribute("ssr"),this.dispatchEvent(new CustomEvent("astro:hydrate"))});l(this,"unmount",()=>{this.isConnected||this.dispatchEvent(new CustomEvent("astro:unmount"))})}disconnectedCallback(){document.removeEventListener("astro:after-swap",this.unmount),document.addEventListener("astro:after-swap",this.unmount,{once:!0})}connectedCallback(){if(!this.hasAttribute("await-children")||document.readyState==="interactive"||document.readyState==="complete")this.childrenConnectedCallback();else{let e=()=>{document.removeEventListener("DOMContentLoaded",e),n.disconnect(),this.childrenConnectedCallback()},n=new MutationObserver(()=>{var r;((r=this.lastChild)==null?void 0:r.nodeType)===Node.COMMENT_NODE&&this.lastChild.nodeValue==="astro:end"&&(this.lastChild.remove(),e())});n.observe(this,{childList:!0}),document.addEventListener("DOMContentLoaded",e)}}async childrenConnectedCallback(){let e=this.getAttribute("before-hydration-url");e&&await import(e),this.start()}getRetryImportUrl(e){let n=new URL(e,document.baseURI),r=`astro-retry=${Date.now()}`,i=n.hash.replace(/^#/,"");return n.hash=i?`${i}&${r}`:r,n.toString()}async importWithRetry(e){try{return await import(e)}catch(n){return await new Promise(r=>setTimeout(r,1e3)),import(this.getRetryImportUrl(e))}}handleHydrationError(e){let n=this.getAttribute("component-url"),r=new CustomEvent("astro:hydration-error",{cancelable:!0,bubbles:!0,composed:!0,detail:{error:e,componentUrl:n}});this.dispatchEvent(r)&&console.error(`[astro-island] Error hydrating ${n}`,e)}async start(){let e=JSON.parse(this.getAttribute("opts")),n=this.getAttribute("client");if(Astro[n]===void 0){window.addEventListener(`astro:${n}`,()=>this.start(),{once:!0});return}try{await Astro[n](async()=>{let r=this.getAttribute("renderer-url");try{let[i,{default:u}]=await Promise.all([this.importWithRetry(this.getAttribute("component-url")),r?this.importWithRetry(r):Promise.resolve({default:()=>()=>{}})]),h=this.getAttribute("component-export")||"default";if(h.includes(".")){this.Component=i;for(let m of h.split(".")){if(E.has(m)||!this.Component||typeof this.Component!="object"&&typeof this.Component!="function"||!Object.hasOwn(this.Component,m))throw new Error(`Invalid component export path: ${h}`);this.Component=this.Component[m]}}else{if(E.has(h))throw new Error(`Invalid component export path: ${h}`);this.Component=i[h]}return this.hydrator=u,this.hydrate}catch(i){return this.handleHydrationError(i),()=>{}}},e,this)}catch(r){this.handleHydrationError(r)}}attributeChangedCallback(){this.hydrate()}}l(f,"observedAttributes",["props"]),customElements.get("astro-island")||customElements.define("astro-island",f)}})();</script>   <noscript> <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;"> <article><h1>UI библиотека Hub V3.5</h1>
+<p>В V3.5 UI-библиотека больше не работает через обязательные <code>config.json</code>. Компоненты обнаруживаются автоматически через <code>import.meta.glob</code> в <code>src/features/ui-components/registry/index.ts</code>.</p>
+<p>Минимальная идея:</p>
+<ol>
+<li>создать папку компонента в категории;</li>
+<li>положить <code>.tsx</code> компонент или preview-файл;</li>
+<li>создать Markdown-документацию в <code>Docs/[N][component]UI Библиотека{ui}/...</code>;</li>
+<li>запустить <code>npm run generate</code>.</li>
+</ol>
+<hr>
+<h2>Где лежат компоненты</h2>
+<pre><code class="language-txt">src/features/ui-components/
+├── backgrounds/
+│   ├── aurora/aurora.tsx
+│   ├── beams/beams.tsx
+│   └── soft-aurora/soft-aurora.tsx
+├── texts/
+│   ├── count-up/count-up.tsx
+│   ├── count-up/count-up-preview.tsx
+│   └── wave-text/wave-text.tsx
+├── registry/index.ts       # auto-discovery
+├── loader.ts               # кеш загрузки компонента + исходников
+├── NewUIComponentViewer.tsx
+├── ComponentWrapper.tsx
+└── types.ts                # UniversalProps
+</code></pre>
+<p>Поддерживаемые категории registry:</p>
+<pre><code class="language-ts">backgrounds, texts, buttons, cards, effects, loaders, inputs
+</code></pre>
+<p>Сейчас в V3.5 активно используются <code>backgrounds</code> и <code>texts</code>.</p>
+<hr>
+<h2>Как registry выбирает компонент</h2>
+<p>Для id <code>count-up</code> registry ищет папку с таким именем на любой глубине:</p>
+<pre><code class="language-txt">src/features/ui-components/texts/count-up/
+</code></pre>
+<p>Затем выбирает файл в порядке приоритета:</p>
+<ol>
+<li><code>index.tsx</code> или <code>index.ts</code>;</li>
+<li><code>&lt;id&gt;-preview.tsx</code> или <code>&lt;id&gt;-preview.ts</code>;</li>
+<li><code>&lt;id&gt;.tsx</code> или <code>&lt;id&gt;.ts</code>;</li>
+<li>любой другой файл с React-компонентом.</li>
+</ol>
+<p>Preview-файл нужен, когда основной компонент требует props, а документации нужен готовый демо-экран с дефолтными значениями.</p>
+<hr>
+<h2>Минимальный компонент</h2>
+<pre><code class="language-txt">src/features/ui-components/texts/my-text/
+└── my-text.tsx
+</code></pre>
+<pre><code class="language-tsx">import React from &#39;react&#39;;
+
+export default function MyText() {
+  return &lt;span style={{ fontSize: 48 }}&gt;Hello Hub&lt;/span&gt;;
+}
+</code></pre>
+<p>Документация:</p>
+<pre><code class="language-txt">Docs/[N][component]UI Библиотека{ui}/[C][a-large-small]Типографика{typography}/[A][sparkles]Мой текст{my-text}.md
+</code></pre>
+<p>Ключевое правило: slug документа <code>{my-text}</code> должен совпадать с именем папки компонента <code>my-text</code>, если вы хотите, чтобы viewer загрузил компонент автоматически.</p>
+<hr>
+<h2>Компонент с preview-файлом</h2>
+<pre><code class="language-txt">src/features/ui-components/texts/my-effect/
+├── my-effect.tsx
+└── my-effect-preview.tsx
+</code></pre>
+<pre><code class="language-tsx">// my-effect.tsx
+export default function MyEffect({ text = &#39;Opensophy&#39; }: { text?: string }) {
+  return &lt;strong&gt;{text}&lt;/strong&gt;;
+}
+</code></pre>
+<pre><code class="language-tsx">// my-effect-preview.tsx
+import MyEffect from &#39;./my-effect&#39;;
+
+export default function MyEffectPreview() {
+  return &lt;MyEffect text=&quot;Live preview&quot; /&gt;;
+}
+</code></pre>
+<p>Viewer сначала возьмёт preview и покажет готовый пример.</p>
+<hr>
+<h2>Universal Props</h2>
+<p><code>ComponentWrapper</code> и viewer умеют применять универсальные настройки внешнего вида:</p>
+<table>
+<thead>
+<tr>
+<th>Группа</th>
+<th>Props</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Цвет</td>
+<td><code>color</code>, <code>colorMode</code>, <code>gradientFrom</code>, <code>gradientTo</code>, <code>gradientAngle</code></td>
+</tr>
+<tr>
+<td>Размер и позиция</td>
+<td><code>scale</code>, <code>width</code>, <code>height</code>, <code>offsetX</code>, <code>offsetY</code></td>
+</tr>
+<tr>
+<td>Выравнивание</td>
+<td><code>justifyContent</code>, <code>alignItems</code></td>
+</tr>
+<tr>
+<td>Анимация</td>
+<td><code>animationSpeed</code></td>
+</tr>
+<tr>
+<td>Фильтры</td>
+<td><code>opacity</code>, <code>blur</code>, <code>brightness</code>, <code>contrast</code>, <code>saturate</code></td>
+</tr>
+<tr>
+<td>Поведение</td>
+<td><code>enableUniversalProps</code></td>
+</tr>
+</tbody></table>
+<p>Компонент не обязан принимать все эти props. Wrapper применяет большую часть эффектов на контейнере.</p>
+<hr>
+<h2>Вкладка «Код»</h2>
+<p>Registry загружает raw-содержимое файлов из папки компонента:</p>
+<pre><code class="language-txt">src/features/ui-components/backgrounds/aurora/
+└── aurora.tsx
+</code></pre>
+<p>В viewer пользователь увидит исходники файлов компонента. Поэтому держите рядом только те файлы, которые действительно относятся к компоненту: <code>.ts</code>, <code>.tsx</code>, <code>.js</code>, <code>.jsx</code>, <code>.css</code>, <code>.html</code>, <code>.json</code>.</p>
+<hr>
+<h2>Документационный Markdown для компонента</h2>
+<p>Рекомендуемый frontmatter:</p>
+<pre><code class="language-yaml">---
+title: &quot;Название компонента&quot;
+description: &quot;Что делает компонент и где его использовать.&quot;
+author: opensophy
+date: 2026-06-16
+tags: &quot;ui, component, animation&quot;
+icon: sparkles
+lang: ru
+robots: &quot;index, follow&quot;
+priority: 30
+---
+</code></pre>
+<p>В теле документа добавьте:</p>
+<ul>
+<li>короткое описание;</li>
+<li>пример использования;</li>
+<li>props/API;</li>
+<li>рекомендации по производительности;</li>
+<li>ограничения для mobile;</li>
+<li>заметки по accessibility.</li>
+</ul>
+<hr>
+<h2>Добавить новый background-компонент</h2>
+<div class="custom-steps"><div class="custom-step" data-status="done" data-title="Создайте папку" data-color=""><p><code>src/features/ui-components/backgrounds/my-background/</code>.</p>
+</div><div class="custom-step" data-status="done" data-title="Добавьте компонент" data-color=""><p><code>my-background.tsx</code> или <code>my-background-preview.tsx</code> с default export React-компонента.</p>
+</div><div class="custom-step" data-status="done" data-title="Добавьте документацию" data-color=""><p><code>Docs/[N][component]UI Библиотека{ui}/[C][maximize]Фон{background}/[A][sparkles]Мой фон{my-background}.md</code>.</p>
+</div><div class="custom-step" data-status="done" data-title="Сгенерируйте данные" data-color=""><p>Запустите <code>npm run generate</code>, затем <code>npm run dev</code>.</p>
+</div></div>
+
+<hr>
+<h2>Добавить новый typography-компонент</h2>
+<pre><code class="language-txt">src/features/ui-components/texts/typewriter/
+├── typewriter.tsx
+└── typewriter-preview.tsx
+
+Docs/[N][component]UI Библиотека{ui}/[C][a-large-small]Типографика{typography}/[A][type]Печатная строка{typewriter}.md
+</code></pre>
+<p>Если компонент использует browser-only API (<code>window</code>, <code>document</code>, canvas, WebGL), обращайтесь к ним внутри <code>useEffect</code> или после проверки окружения, чтобы не ломать SSR/dev-сборку.</p>
+<hr>
+<h2>Требования к компонентам</h2>
+<table>
+<thead>
+<tr>
+<th>Требование</th>
+<th>Почему важно</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>default export</code> или экспорт React-компонента</td>
+<td>Registry ищет React-компонент в default или среди named exports.</td>
+</tr>
+<tr>
+<td>Уникальная папка-id в kebab-case</td>
+<td>По имени папки строится связь с Markdown slug.</td>
+</tr>
+<tr>
+<td>Preview для сложных компонентов</td>
+<td>Документация должна открываться без ручной настройки props.</td>
+</tr>
+<tr>
+<td>Без тяжёлых глобальных side effects</td>
+<td>Компоненты грузятся лениво и должны безопасно размонтироваться.</td>
+</tr>
+<tr>
+<td>Cleanup в <code>useEffect</code></td>
+<td>Canvas/WebGL/таймеры/RAF должны освобождаться.</td>
+</tr>
+<tr>
+<td>Mobile fallback</td>
+<td>Viewer используется на мобильных экранах.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Частые проблемы</h2>
+<table>
+<thead>
+<tr>
+<th>Симптом</th>
+<th>Причина</th>
+<th>Решение</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Viewer пишет, что компонент не найден</td>
+<td>Slug документа не совпадает с папкой</td>
+<td>Сделайте <code>{my-component}</code> и папку <code>my-component</code>.</td>
+</tr>
+<tr>
+<td>Загружается не тот файл</td>
+<td>Есть несколько <code>.tsx</code></td>
+<td>Добавьте <code>&lt;id&gt;-preview.tsx</code> или <code>index.tsx</code>.</td>
+</tr>
+<tr>
+<td>Вкладка «Код» пустая</td>
+<td>Нет raw-файлов в папке компонента</td>
+<td>Проверьте расширения и расположение файлов.</td>
+</tr>
+<tr>
+<td>Ошибка SSR</td>
+<td>Используется <code>window</code> на верхнем уровне</td>
+<td>Перенесите browser API в <code>useEffect</code>.</td>
+</tr>
+<tr>
+<td>Слишком тяжёлая страница</td>
+<td>WebGL/анимация без cleanup</td>
+<td>Остановите RAF, dispose geometry/material/renderer.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Что изменилось относительно V3.4</h2>
+<ul>
+<li>Компоненты разложены по категориям <code>backgrounds</code> и <code>texts</code>.</li>
+<li>Добавлена автоматическая загрузка исходников во вкладку «Код».</li>
+<li>Registry стал искать компонент по имени папки, а не по ручному списку конфигов.</li>
+<li>Preview-файлы получили приоритет над основными файлами.</li>
+<li>Добавлены <code>three</code> и <code>postprocessing</code> для сложных визуалов.</li>
+<li>Viewer получил панель настроек, fullscreen/preview controls и общий стиль через theme tokens.</li>
+</ul>
+</article> </main> </noscript> <astro-island uid="1078aX" component-url="/assets/DocContent.CoKfap2Q.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{&quot;doc&quot;:[0,{&quot;id&quot;:[0,&quot;hub/component-guide&quot;],&quot;title&quot;:[0,&quot;Руководство по UI библиотеке Hub V3.5&quot;],&quot;slug&quot;:[0,&quot;hub/component-guide&quot;],&quot;description&quot;:[0,&quot;Актуальное руководство V3.5 по добавлению UI-компонентов: структура backgrounds/texts, auto-discovery registry, preview-файлы, вкладка кода, universal props и Markdown-документация.&quot;],&quot;content&quot;:[0,&quot;&lt;h1&gt;UI библиотека Hub V3.5&lt;/h1&gt;\n&lt;p&gt;В V3.5 UI-библиотека больше не работает через обязательные &lt;code&gt;config.json&lt;/code&gt;. Компоненты обнаруживаются автоматически через &lt;code&gt;import.meta.glob&lt;/code&gt; в &lt;code&gt;src/features/ui-components/registry/index.ts&lt;/code&gt;.&lt;/p&gt;\n&lt;p&gt;Минимальная идея:&lt;/p&gt;\n&lt;ol&gt;\n&lt;li&gt;создать папку компонента в категории;&lt;/li&gt;\n&lt;li&gt;положить &lt;code&gt;.tsx&lt;/code&gt; компонент или preview-файл;&lt;/li&gt;\n&lt;li&gt;создать Markdown-документацию в &lt;code&gt;Docs/[N][component]UI Библиотека{ui}/...&lt;/code&gt;;&lt;/li&gt;\n&lt;li&gt;запустить &lt;code&gt;npm run generate&lt;/code&gt;.&lt;/li&gt;\n&lt;/ol&gt;\n&lt;hr&gt;\n&lt;h2&gt;Где лежат компоненты&lt;/h2&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-txt\&quot;&gt;src/features/ui-components/\n├── backgrounds/\n│   ├── aurora/aurora.tsx\n│   ├── beams/beams.tsx\n│   └── soft-aurora/soft-aurora.tsx\n├── texts/\n│   ├── count-up/count-up.tsx\n│   ├── count-up/count-up-preview.tsx\n│   └── wave-text/wave-text.tsx\n├── registry/index.ts       # auto-discovery\n├── loader.ts               # кеш загрузки компонента + исходников\n├── NewUIComponentViewer.tsx\n├── ComponentWrapper.tsx\n└── types.ts                # UniversalProps\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Поддерживаемые категории registry:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-ts\&quot;&gt;backgrounds, texts, buttons, cards, effects, loaders, inputs\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Сейчас в V3.5 активно используются &lt;code&gt;backgrounds&lt;/code&gt; и &lt;code&gt;texts&lt;/code&gt;.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;Как registry выбирает компонент&lt;/h2&gt;\n&lt;p&gt;Для id &lt;code&gt;count-up&lt;/code&gt; registry ищет папку с таким именем на любой глубине:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-txt\&quot;&gt;src/features/ui-components/texts/count-up/\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Затем выбирает файл в порядке приоритета:&lt;/p&gt;\n&lt;ol&gt;\n&lt;li&gt;&lt;code&gt;index.tsx&lt;/code&gt; или &lt;code&gt;index.ts&lt;/code&gt;;&lt;/li&gt;\n&lt;li&gt;&lt;code&gt;&amp;lt;id&amp;gt;-preview.tsx&lt;/code&gt; или &lt;code&gt;&amp;lt;id&amp;gt;-preview.ts&lt;/code&gt;;&lt;/li&gt;\n&lt;li&gt;&lt;code&gt;&amp;lt;id&amp;gt;.tsx&lt;/code&gt; или &lt;code&gt;&amp;lt;id&amp;gt;.ts&lt;/code&gt;;&lt;/li&gt;\n&lt;li&gt;любой другой файл с React-компонентом.&lt;/li&gt;\n&lt;/ol&gt;\n&lt;p&gt;Preview-файл нужен, когда основной компонент требует props, а документации нужен готовый демо-экран с дефолтными значениями.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;Минимальный компонент&lt;/h2&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-txt\&quot;&gt;src/features/ui-components/texts/my-text/\n└── my-text.tsx\n&lt;/code&gt;&lt;/pre&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-tsx\&quot;&gt;import React from &amp;#39;react&amp;#39;;\n\nexport default function MyText() {\n  return &amp;lt;span style={{ fontSize: 48 }}&amp;gt;Hello Hub&amp;lt;/span&amp;gt;;\n}\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Документация:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-txt\&quot;&gt;Docs/[N][component]UI Библиотека{ui}/[C][a-large-small]Типографика{typography}/[A][sparkles]Мой текст{my-text}.md\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Ключевое правило: slug документа &lt;code&gt;{my-text}&lt;/code&gt; должен совпадать с именем папки компонента &lt;code&gt;my-text&lt;/code&gt;, если вы хотите, чтобы viewer загрузил компонент автоматически.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;Компонент с preview-файлом&lt;/h2&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-txt\&quot;&gt;src/features/ui-components/texts/my-effect/\n├── my-effect.tsx\n└── my-effect-preview.tsx\n&lt;/code&gt;&lt;/pre&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-tsx\&quot;&gt;// my-effect.tsx\nexport default function MyEffect({ text = &amp;#39;Opensophy&amp;#39; }: { text?: string }) {\n  return &amp;lt;strong&amp;gt;{text}&amp;lt;/strong&amp;gt;;\n}\n&lt;/code&gt;&lt;/pre&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-tsx\&quot;&gt;// my-effect-preview.tsx\nimport MyEffect from &amp;#39;./my-effect&amp;#39;;\n\nexport default function MyEffectPreview() {\n  return &amp;lt;MyEffect text=&amp;quot;Live preview&amp;quot; /&amp;gt;;\n}\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Viewer сначала возьмёт preview и покажет готовый пример.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;Universal Props&lt;/h2&gt;\n&lt;p&gt;&lt;code&gt;ComponentWrapper&lt;/code&gt; и viewer умеют применять универсальные настройки внешнего вида:&lt;/p&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Группа&lt;/th&gt;\n&lt;th&gt;Props&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;Цвет&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;color&lt;/code&gt;, &lt;code&gt;colorMode&lt;/code&gt;, &lt;code&gt;gradientFrom&lt;/code&gt;, &lt;code&gt;gradientTo&lt;/code&gt;, &lt;code&gt;gradientAngle&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Размер и позиция&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;scale&lt;/code&gt;, &lt;code&gt;width&lt;/code&gt;, &lt;code&gt;height&lt;/code&gt;, &lt;code&gt;offsetX&lt;/code&gt;, &lt;code&gt;offsetY&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Выравнивание&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;justifyContent&lt;/code&gt;, &lt;code&gt;alignItems&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Анимация&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;animationSpeed&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Фильтры&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;opacity&lt;/code&gt;, &lt;code&gt;blur&lt;/code&gt;, &lt;code&gt;brightness&lt;/code&gt;, &lt;code&gt;contrast&lt;/code&gt;, &lt;code&gt;saturate&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Поведение&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;enableUniversalProps&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;p&gt;Компонент не обязан принимать все эти props. Wrapper применяет большую часть эффектов на контейнере.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;Вкладка «Код»&lt;/h2&gt;\n&lt;p&gt;Registry загружает raw-содержимое файлов из папки компонента:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-txt\&quot;&gt;src/features/ui-components/backgrounds/aurora/\n└── aurora.tsx\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;В viewer пользователь увидит исходники файлов компонента. Поэтому держите рядом только те файлы, которые действительно относятся к компоненту: &lt;code&gt;.ts&lt;/code&gt;, &lt;code&gt;.tsx&lt;/code&gt;, &lt;code&gt;.js&lt;/code&gt;, &lt;code&gt;.jsx&lt;/code&gt;, &lt;code&gt;.css&lt;/code&gt;, &lt;code&gt;.html&lt;/code&gt;, &lt;code&gt;.json&lt;/code&gt;.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;Документационный Markdown для компонента&lt;/h2&gt;\n&lt;p&gt;Рекомендуемый frontmatter:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-yaml\&quot;&gt;---\ntitle: &amp;quot;Название компонента&amp;quot;\ndescription: &amp;quot;Что делает компонент и где его использовать.&amp;quot;\nauthor: opensophy\ndate: 2026-06-16\ntags: &amp;quot;ui, component, animation&amp;quot;\nicon: sparkles\nlang: ru\nrobots: &amp;quot;index, follow&amp;quot;\npriority: 30\n---\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;В теле документа добавьте:&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;короткое описание;&lt;/li&gt;\n&lt;li&gt;пример использования;&lt;/li&gt;\n&lt;li&gt;props/API;&lt;/li&gt;\n&lt;li&gt;рекомендации по производительности;&lt;/li&gt;\n&lt;li&gt;ограничения для mobile;&lt;/li&gt;\n&lt;li&gt;заметки по accessibility.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;hr&gt;\n&lt;h2&gt;Добавить новый background-компонент&lt;/h2&gt;\n&lt;div class=\&quot;custom-steps\&quot;&gt;&lt;div class=\&quot;custom-step\&quot; data-status=\&quot;done\&quot; data-title=\&quot;Создайте папку\&quot; data-color=\&quot;\&quot;&gt;&lt;p&gt;&lt;code&gt;src/features/ui-components/backgrounds/my-background/&lt;/code&gt;.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-step\&quot; data-status=\&quot;done\&quot; data-title=\&quot;Добавьте компонент\&quot; data-color=\&quot;\&quot;&gt;&lt;p&gt;&lt;code&gt;my-background.tsx&lt;/code&gt; или &lt;code&gt;my-background-preview.tsx&lt;/code&gt; с default export React-компонента.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-step\&quot; data-status=\&quot;done\&quot; data-title=\&quot;Добавьте документацию\&quot; data-color=\&quot;\&quot;&gt;&lt;p&gt;&lt;code&gt;Docs/[N][component]UI Библиотека{ui}/[C][maximize]Фон{background}/[A][sparkles]Мой фон{my-background}.md&lt;/code&gt;.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-step\&quot; data-status=\&quot;done\&quot; data-title=\&quot;Сгенерируйте данные\&quot; data-color=\&quot;\&quot;&gt;&lt;p&gt;Запустите &lt;code&gt;npm run generate&lt;/code&gt;, затем &lt;code&gt;npm run dev&lt;/code&gt;.&lt;/p&gt;\n&lt;/div&gt;&lt;/div&gt;\n\n&lt;hr&gt;\n&lt;h2&gt;Добавить новый typography-компонент&lt;/h2&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-txt\&quot;&gt;src/features/ui-components/texts/typewriter/\n├── typewriter.tsx\n└── typewriter-preview.tsx\n\nDocs/[N][component]UI Библиотека{ui}/[C][a-large-small]Типографика{typography}/[A][type]Печатная строка{typewriter}.md\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Если компонент использует browser-only API (&lt;code&gt;window&lt;/code&gt;, &lt;code&gt;document&lt;/code&gt;, canvas, WebGL), обращайтесь к ним внутри &lt;code&gt;useEffect&lt;/code&gt; или после проверки окружения, чтобы не ломать SSR/dev-сборку.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;Требования к компонентам&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Требование&lt;/th&gt;\n&lt;th&gt;Почему важно&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;default export&lt;/code&gt; или экспорт React-компонента&lt;/td&gt;\n&lt;td&gt;Registry ищет React-компонент в default или среди named exports.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Уникальная папка-id в kebab-case&lt;/td&gt;\n&lt;td&gt;По имени папки строится связь с Markdown slug.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Preview для сложных компонентов&lt;/td&gt;\n&lt;td&gt;Документация должна открываться без ручной настройки props.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Без тяжёлых глобальных side effects&lt;/td&gt;\n&lt;td&gt;Компоненты грузятся лениво и должны безопасно размонтироваться.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Cleanup в &lt;code&gt;useEffect&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Canvas/WebGL/таймеры/RAF должны освобождаться.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Mobile fallback&lt;/td&gt;\n&lt;td&gt;Viewer используется на мобильных экранах.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;hr&gt;\n&lt;h2&gt;Частые проблемы&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Симптом&lt;/th&gt;\n&lt;th&gt;Причина&lt;/th&gt;\n&lt;th&gt;Решение&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;Viewer пишет, что компонент не найден&lt;/td&gt;\n&lt;td&gt;Slug документа не совпадает с папкой&lt;/td&gt;\n&lt;td&gt;Сделайте &lt;code&gt;{my-component}&lt;/code&gt; и папку &lt;code&gt;my-component&lt;/code&gt;.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Загружается не тот файл&lt;/td&gt;\n&lt;td&gt;Есть несколько &lt;code&gt;.tsx&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Добавьте &lt;code&gt;&amp;lt;id&amp;gt;-preview.tsx&lt;/code&gt; или &lt;code&gt;index.tsx&lt;/code&gt;.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Вкладка «Код» пустая&lt;/td&gt;\n&lt;td&gt;Нет raw-файлов в папке компонента&lt;/td&gt;\n&lt;td&gt;Проверьте расширения и расположение файлов.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Ошибка SSR&lt;/td&gt;\n&lt;td&gt;Используется &lt;code&gt;window&lt;/code&gt; на верхнем уровне&lt;/td&gt;\n&lt;td&gt;Перенесите browser API в &lt;code&gt;useEffect&lt;/code&gt;.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Слишком тяжёлая страница&lt;/td&gt;\n&lt;td&gt;WebGL/анимация без cleanup&lt;/td&gt;\n&lt;td&gt;Остановите RAF, dispose geometry/material/renderer.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;hr&gt;\n&lt;h2&gt;Что изменилось относительно V3.4&lt;/h2&gt;\n&lt;ul&gt;\n&lt;li&gt;Компоненты разложены по категориям &lt;code&gt;backgrounds&lt;/code&gt; и &lt;code&gt;texts&lt;/code&gt;.&lt;/li&gt;\n&lt;li&gt;Добавлена автоматическая загрузка исходников во вкладку «Код».&lt;/li&gt;\n&lt;li&gt;Registry стал искать компонент по имени папки, а не по ручному списку конфигов.&lt;/li&gt;\n&lt;li&gt;Preview-файлы получили приоритет над основными файлами.&lt;/li&gt;\n&lt;li&gt;Добавлены &lt;code&gt;three&lt;/code&gt; и &lt;code&gt;postprocessing&lt;/code&gt; для сложных визуалов.&lt;/li&gt;\n&lt;li&gt;Viewer получил панель настроек, fullscreen/preview controls и общий стиль через theme tokens.&lt;/li&gt;\n&lt;/ul&gt;\n&quot;],&quot;typename&quot;:[0,&quot;&quot;],&quot;categoryPath&quot;:[1,[]],&quot;navSlug&quot;:[0,&quot;hub&quot;],&quot;navTitle&quot;:[0,&quot;Документация Hub&quot;],&quot;navIcon&quot;:[0,&quot;book-open&quot;],&quot;author&quot;:[0,&quot;&quot;],&quot;date&quot;:[0,&quot;2026-02-12&quot;],&quot;updated&quot;:[0,&quot;2026-06-16&quot;],&quot;tags&quot;:[1,[[0,&quot;ui-компоненты&quot;],[0,&quot;react&quot;],[0,&quot;registry&quot;],[0,&quot;markdown&quot;],[0,&quot;документация&quot;],[0,&quot;v3.5&quot;]]],&quot;lang&quot;:[0,&quot;ru&quot;],&quot;keywords&quot;:[0,&quot;Hub UI library, React компоненты, import.meta.glob, UI registry, documentation components&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;icon&quot;:[0,&quot;layout-grid&quot;],&quot;priority&quot;:[0,4],&quot;custom&quot;:[0,&quot;&quot;],&quot;frontmatter&quot;:[0,{&quot;title&quot;:[0,&quot;Руководство по UI библиотеке Hub V3.5&quot;],&quot;description&quot;:[0,&quot;Актуальное руководство V3.5 по добавлению UI-компонентов: структура backgrounds/texts, auto-discovery registry, preview-файлы, вкладка кода, universal props и Markdown-документация.&quot;],&quot;date&quot;:[0,&quot;2026-02-12&quot;],&quot;updated&quot;:[0,&quot;2026-06-16&quot;],&quot;tags&quot;:[0,&quot;ui-компоненты, react, registry, markdown, документация, v3.5&quot;],&quot;keywords&quot;:[0,&quot;Hub UI library, React компоненты, import.meta.glob, UI registry, documentation components&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;lang&quot;:[0,&quot;ru&quot;],&quot;icon&quot;:[0,&quot;layout-grid&quot;],&quot;priority&quot;:[0,&quot;4&quot;]}]}]}" ssr client="only" opts="{&quot;name&quot;:&quot;DocContent&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island>   <astro-island uid="Z1Ix9sf" component-url="/assets/DevPanelLoader.6ELCzLIu.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{}" ssr client="only" opts="{&quot;name&quot;:&quot;DevPanelLoader&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island> <!-- Re-apply theme after SPA navigation --> <script>
+      document.addEventListener('astro:after-swap', function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      });
+    </script> </body> </html>

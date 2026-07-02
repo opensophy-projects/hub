@@ -1,0 +1,1 @@
+import{G as r}from"./Mesh.uU8OXhrh.js";class t extends r{constructor(e,{attributes:a={}}={}){Object.assign(a,{position:{size:2,data:new Float32Array([-1,-1,3,-1,-1,3])},uv:{size:2,data:new Float32Array([0,0,2,0,0,2])}}),super(e,a)}}export{t as T};

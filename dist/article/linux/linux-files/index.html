@@ -1,0 +1,884 @@
+<!DOCTYPE html><html lang="ru"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- Theme: runs before paint, prevents flash --><script>
+      (function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.add('js');
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      })();
+    </script><!-- Primary SEO --><title>Linux: Файлы, навигация и поиск — Opensophy</title><meta name="description" content="Первая часть серии о Linux для DevOps и DevSecOps - разбираем структуру файловой системы, навигацию, работу с файлами, просмотр содержимого и поиск внутри файлов."><meta name="keywords" content="Linux файловая система, команды Linux, навигация Linux, grep awk sed, bash команды"><meta name="author" content="Opensophy"><meta name="robots" content="index, follow"><meta name="theme-color" content="#0a0a0a"><meta name="color-scheme" content="dark light"><link rel="canonical" href="https://opensophy.com/article/linux/linux-files/"><!-- Sitemap discovery --><link rel="sitemap" type="application/xml" href="/sitemap.xml"><!-- Open Graph --><meta property="og:site_name" content="Opensophy"><meta property="og:title" content="Linux: Файлы, навигация и поиск — Opensophy"><meta property="og:description" content="Первая часть серии о Linux для DevOps и DevSecOps - разбираем структуру файловой системы, навигацию, работу с файлами, просмотр содержимого и поиск внутри файлов."><meta property="og:type" content="article"><meta property="og:url" content="https://opensophy.com/article/linux/linux-files/"><meta property="og:image" content="https://opensophy.com/assets/image.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ru_RU"><!-- Twitter / X --><meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@opensophy"><meta name="twitter:title" content="Linux: Файлы, навигация и поиск — Opensophy"><meta name="twitter:description" content="Первая часть серии о Linux для DevOps и DevSecOps - разбираем структуру файловой системы, навигацию, работу с файлами, просмотр содержимого и поиск внутри файлов."><meta name="twitter:image" content="https://opensophy.com/assets/image.png"><!-- Article-specific --><meta property="article:published_time" content="2026-02-25T00:00:00.000Z"><meta property="article:modified_time" content="2026-02-25T00:00:00.000Z"><meta property="article:author" content="Opensophy"><!-- Favicon --><link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/favicon.png"><!-- Astro SPA transitions --><meta name="astro-view-transitions-enabled" content="true"><meta name="astro-view-transitions-fallback" content="animate"><script type="module" src="/assets/ClientRouter.astro_astro_type_script_index_0_lang.CAqDO0tx.js"></script><!-- Structured Data JSON-LD --><script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Linux: Файлы, навигация и поиск","description":"Первая часть серии о Linux для DevOps и DevSecOps - разбираем структуру файловой системы, навигацию, работу с файлами, просмотр содержимого и поиск внутри файлов.","url":"https://opensophy.com/article/linux/linux-files/","image":"https://opensophy.com/assets/image.png","author":{"@type":"Person","name":"Opensophy"},"publisher":{"@type":"Organization","name":"Opensophy","url":"https://opensophy.com"},"datePublished":"2026-02-25T00:00:00.000Z","dateModified":"2026-02-25T00:00:00.000Z","inLanguage":"ru"}</script><link rel="stylesheet" href="/assets/Layout.BzjEPNLe.css"></head> <body> <style>astro-island,astro-slot,astro-static-slot{display:contents}</style><script>(()=>{var e=async t=>{await(await t())()};(self.Astro||(self.Astro={})).only=e;window.dispatchEvent(new Event("astro:only"));})();</script><script>(()=>{var g=Object.defineProperty;var w=(c,s,d)=>s in c?g(c,s,{enumerable:!0,configurable:!0,writable:!0,value:d}):c[s]=d;var l=(c,s,d)=>w(c,typeof s!="symbol"?s+"":s,d);var E=new Set(["__proto__","constructor","prototype"]);{let c={0:t=>y(t),1:t=>d(t),2:t=>new RegExp(t),3:t=>new Date(t),4:t=>new Map(d(t)),5:t=>new Set(d(t)),6:t=>BigInt(t),7:t=>new URL(t),8:t=>new Uint8Array(t),9:t=>new Uint16Array(t),10:t=>new Uint32Array(t),11:t=>Number.POSITIVE_INFINITY*t},s=t=>{let[p,e]=t;return p in c?c[p](e):void 0},d=t=>t.map(s),y=t=>typeof t!="object"||t===null?t:Object.fromEntries(Object.entries(t).map(([p,e])=>[p,s(e)]));class f extends HTMLElement{constructor(){super(...arguments);l(this,"Component");l(this,"hydrator");l(this,"hydrate",async()=>{var b;if(!this.hydrator||!this.isConnected)return;let e=(b=this.parentElement)==null?void 0:b.closest("astro-island[ssr]");if(e){e.addEventListener("astro:hydrate",this.hydrate,{once:!0});return}let n=this.querySelectorAll("astro-slot"),r={},i=this.querySelectorAll("template[data-astro-template]");for(let o of i){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("data-astro-template")||"default"]=o.innerHTML,o.remove())}for(let o of n){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("name")||"default"]=o.innerHTML)}let u;try{u=this.hasAttribute("props")?y(JSON.parse(this.getAttribute("props"))):{}}catch(o){let a=this.getAttribute("component-url")||"<unknown>",v=this.getAttribute("component-export");throw v&&(a+=` (export ${v})`),console.error(`[hydrate] Error parsing props for component ${a}`,this.getAttribute("props"),o),o}let h;await this.hydrator(this)(this.Component,u,r,{client:this.getAttribute("client")}),this.removeAttribute("ssr"),this.dispatchEvent(new CustomEvent("astro:hydrate"))});l(this,"unmount",()=>{this.isConnected||this.dispatchEvent(new CustomEvent("astro:unmount"))})}disconnectedCallback(){document.removeEventListener("astro:after-swap",this.unmount),document.addEventListener("astro:after-swap",this.unmount,{once:!0})}connectedCallback(){if(!this.hasAttribute("await-children")||document.readyState==="interactive"||document.readyState==="complete")this.childrenConnectedCallback();else{let e=()=>{document.removeEventListener("DOMContentLoaded",e),n.disconnect(),this.childrenConnectedCallback()},n=new MutationObserver(()=>{var r;((r=this.lastChild)==null?void 0:r.nodeType)===Node.COMMENT_NODE&&this.lastChild.nodeValue==="astro:end"&&(this.lastChild.remove(),e())});n.observe(this,{childList:!0}),document.addEventListener("DOMContentLoaded",e)}}async childrenConnectedCallback(){let e=this.getAttribute("before-hydration-url");e&&await import(e),this.start()}getRetryImportUrl(e){let n=new URL(e,document.baseURI),r=`astro-retry=${Date.now()}`,i=n.hash.replace(/^#/,"");return n.hash=i?`${i}&${r}`:r,n.toString()}async importWithRetry(e){try{return await import(e)}catch(n){return await new Promise(r=>setTimeout(r,1e3)),import(this.getRetryImportUrl(e))}}handleHydrationError(e){let n=this.getAttribute("component-url"),r=new CustomEvent("astro:hydration-error",{cancelable:!0,bubbles:!0,composed:!0,detail:{error:e,componentUrl:n}});this.dispatchEvent(r)&&console.error(`[astro-island] Error hydrating ${n}`,e)}async start(){let e=JSON.parse(this.getAttribute("opts")),n=this.getAttribute("client");if(Astro[n]===void 0){window.addEventListener(`astro:${n}`,()=>this.start(),{once:!0});return}try{await Astro[n](async()=>{let r=this.getAttribute("renderer-url");try{let[i,{default:u}]=await Promise.all([this.importWithRetry(this.getAttribute("component-url")),r?this.importWithRetry(r):Promise.resolve({default:()=>()=>{}})]),h=this.getAttribute("component-export")||"default";if(h.includes(".")){this.Component=i;for(let m of h.split(".")){if(E.has(m)||!this.Component||typeof this.Component!="object"&&typeof this.Component!="function"||!Object.hasOwn(this.Component,m))throw new Error(`Invalid component export path: ${h}`);this.Component=this.Component[m]}}else{if(E.has(h))throw new Error(`Invalid component export path: ${h}`);this.Component=i[h]}return this.hydrator=u,this.hydrate}catch(i){return this.handleHydrationError(i),()=>{}}},e,this)}catch(r){this.handleHydrationError(r)}}attributeChangedCallback(){this.hydrate()}}l(f,"observedAttributes",["props"]),customElements.get("astro-island")||customElements.define("astro-island",f)}})();</script>   <noscript> <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;"> <article><h1>Введение</h1>
+<p> Давайте не будем вдаваться в элементарные подробности терминологии — что такое файловая система и тому подобное. Скажу лишь, что статья подготовлена для новичков и специалистов, желающих обновить свои знания. Я постарался написать коротко и по сути. Всего частей будет 11.</p>
+<hr>
+<h2>Структура файловой системы</h2>
+<pre><code>/
+├── etc        # конфигурации системы и приложений
+├── var        # переменные данные: логи, кэш, очереди
+├── proc       # состояние ядра и процессов
+├── sys        # устройства и драйверы
+├── tmp        # временные файлы
+├── home       # домашние директории пользователей
+├── root       # домашняя директория суперпользователя
+├── dev        # файлы устройств
+├── usr        # программы и библиотеки
+├── bin        # базовые утилиты (symlink на /usr/bin)
+├── sbin       # команды администрирования (symlink на /usr/sbin)
+├── opt        # сторонний софт
+├── run        # runtime-данные процессов
+├── mnt        # точки ручного монтирования
+└── boot       # файлы загрузчика и ядро
+</code></pre>
+<p>Корневой каталог <code>/</code> - вершина всей иерархии. Всё остальное монтируется внутрь него. Рассмотрим ключевые каталоги подробнее.</p>
+<h3>/etc</h3>
+<p>От <em>et cetera</em> или <em>Editable Text Configuration</em> - здесь хранятся конфигурационные файлы всей системы. Настройки служб, сетевых параметров, пользователей - всё сюда. Важные файлы: <code>/etc/passwd</code> (пользователи), <code>/etc/fstab</code> (монтирование файловых систем), <code>/etc/hosts</code> (локальный DNS), <code>/etc/ssh/sshd_config</code> (настройки SSH-сервера).</p>
+<h3>/var</h3>
+<p>От <em>variable</em> - данные, которые постоянно меняются в процессе работы: логи (<code>/var/log</code>), почтовые очереди (<code>/var/mail</code>), спулеры (<code>/var/spool</code>), данные веб-серверов (<code>/var/www</code>). Именно сюда смотреть в первую очередь при диагностике проблем.</p>
+<h3>/proc</h3>
+<p>Виртуальная файловая система - файлы здесь не хранятся на диске, а генерируются ядром в реальном времени. Предоставляет информацию о запущенных процессах и состоянии ядра. Примеры: <code>/proc/cpuinfo</code> - информация о процессоре, <code>/proc/meminfo</code> - память, <code>/proc/1/</code> - данные процесса с PID 1.</p>
+<h3>/sys</h3>
+<p>Ещё одна виртуальная ФС - интерфейс к устройствам и драйверам ядра. Позволяет читать и изменять параметры ядра и оборудования на лету. Широко используется при работе с сетевыми интерфейсами, дисками и другим железом.</p>
+<h3>/tmp</h3>
+<p>Временные файлы. Любой пользователь может создавать файлы здесь. Содержимое обычно очищается при перезагрузке или по таймеру (через <code>systemd-tmpfiles</code>). Не храните здесь ничего важного.</p>
+<h3>/home</h3>
+<p>Домашние каталоги обычных пользователей. Каждый пользователь получает свой подкаталог - <code>/home/username</code>. Здесь хранятся личные файлы, конфиги программ (скрытые папки вида <code>.config</code>, <code>.ssh</code>), документы.</p>
+<h3>/root</h3>
+<p>Домашний каталог суперпользователя. Намеренно вынесен отдельно от <code>/home</code> - для безопасности и доступности даже при проблемах с монтированием <code>/home</code>.</p>
+<h3>/dev</h3>
+<p>Файлы устройств - интерфейсы к аппаратному обеспечению. <code>/dev/sda</code> - первый жёсткий диск, <code>/dev/sda1</code> - его первый раздел, <code>/dev/null</code> - «чёрная дыра» для ненужного вывода, <code>/dev/zero</code> - источник нулевых байт, <code>/dev/random</code> и <code>/dev/urandom</code> - генераторы случайных данных.</p>
+<hr>
+<h2>Навигация по файловой системе</h2>
+<h3>ls - просмотр содержимого каталога</h3>
+<p><code>ls</code> (от <em>list</em>) выводит список файлов и подкаталогов. Без аргументов показывает текущий каталог.</p>
+<pre><code class="language-bash">ls                    # Содержимое текущего каталога
+ls /etc               # Содержимое /etc
+ls -l                 # Подробный список: права, владелец, размер, дата
+ls -a                 # Все файлы, включая скрытые (начинающиеся с точки)
+ls -lh                # Подробный список с читаемым размером (KB, MB, GB)
+ls -lt                # Сортировка по времени изменения (новые сверху)
+ls -lS                # Сортировка по размеру (большие сверху)
+ls -R                 # Рекурсивный вывод всех вложенных каталогов
+ls -ld /etc           # Информация о самом каталоге, а не его содержимом
+</code></pre>
+<p>Флаги можно комбинировать. <code>ls -lah</code> - пожалуй, самая частая комбинация в работе: подробный список, скрытые файлы, читаемые размеры.</p>
+<h3>cd - смена текущего каталога</h3>
+<p><code>cd</code> (от <em>change directory</em>) - основа навигации.</p>
+<pre><code class="language-bash">cd /etc               # Перейти в /etc (абсолютный путь)
+cd logs               # Перейти в подкаталог logs (относительный путь)
+cd ..                 # На уровень вверх
+cd ../..              # На два уровня вверх
+cd ~                  # В домашний каталог текущего пользователя
+cd                    # То же самое, что cd ~
+cd -                  # В предыдущий каталог (удобно для переключения между двумя)
+cd /var/log           # Абсолютный путь от корня
+</code></pre>
+<div class="custom-alert" data-alert-type="tip">
+<p><code>cd -</code> - очень удобная команда когда нужно быстро переключаться между двумя каталогами.</p>
+
+</div>
+
+<h3>pwd - текущий рабочий каталог</h3>
+<p><code>pwd</code> (от <em>print working directory</em>) выводит абсолютный путь к тому месту, где вы сейчас находитесь.</p>
+<pre><code class="language-bash">pwd
+# Вывод: /home/username/projects
+</code></pre>
+<pre><code class="language-bash">pwd -P    # Показать реальный путь без symlink&#39;ов
+pwd -L    # Показать логический путь (по умолчанию)
+</code></pre>
+<h3>find - поиск файлов и каталогов</h3>
+<p><code>find</code> - мощный инструмент для поиска по имени, типу, размеру, правам, времени изменения и многому другому. Ищет рекурсивно в указанной директории.</p>
+<pre><code class="language-bash"># Поиск по имени
+find . -name &quot;*.log&quot;              # Все .log файлы в текущем каталоге
+find /etc -name &quot;hosts&quot;           # Файл hosts в /etc
+find / -name &quot;*.conf&quot; 2&gt;/dev/null # Все .conf файлы на всей системе, без ошибок
+
+# Поиск по типу
+find /var -type f                 # Только файлы (не каталоги)
+find /etc -type d                 # Только каталоги
+find /dev -type l                 # Только символические ссылки
+
+# Поиск по размеру
+find / -size +100M                # Файлы больше 100 MB
+find /tmp -size -1k               # Файлы меньше 1 KB
+
+# Поиск по времени
+find /var/log -mtime -1           # Изменялись за последние 24 часа
+find /tmp -atime +7               # Не открывались более 7 дней
+
+# Поиск по правам и владельцу
+find / -perm 777                  # Файлы с правами 777
+find /home -user username         # Файлы конкретного пользователя
+
+# Поиск + действие
+find /tmp -name &quot;*.tmp&quot; -delete          # Найти и удалить
+find /var/log -name &quot;*.log&quot; -exec ls -lh {} \;  # Найти и выполнить команду
+</code></pre>
+<h3>locate - быстрый поиск по базе данных</h3>
+<p><code>locate</code> ищет не на диске в реальном времени, а по заранее собранной базе данных - поэтому работает значительно быстрее <code>find</code>. Минус: база не знает о файлах, созданных после последнего обновления.</p>
+<pre><code class="language-bash">locate passwd                  # Найти все пути, содержащие &quot;passwd&quot;
+locate -i readme               # Поиск без учёта регистра
+locate -c &quot;*.conf&quot;             # Подсчитать количество совпадений
+locate -l 10 &quot;*.log&quot;           # Вывести максимум 10 результатов
+
+sudo updatedb                  # Обновить базу данных вручную
+</code></pre>
+<div class="custom-alert" data-alert-type="note">
+<p>В Ubuntu/Debian locate устанавливается отдельно. Начиная с Ubuntu 22.04 рекомендуется plocate вместо устаревшего mlocate — он быстрее за счёт более эффективного формата индекса: sudo apt install plocate. Команда locate при этом остаётся той же. База обновляется автоматически через cron/systemd-timer, обычно раз в сутки.</p>
+
+</div>
+
+<h3>tree - дерево каталогов</h3>
+<p><code>tree</code> визуализирует структуру каталогов в виде дерева - удобно для быстрого обзора проекта или системной директории.</p>
+<pre><code class="language-bash">tree                      # Дерево текущего каталога
+tree /etc                 # Дерево /etc
+tree -L 2                 # Ограничить глубину 2 уровнями
+tree -L 3 /var            # /var на 3 уровня вглубь
+tree -a                   # Включая скрытые файлы
+tree -d                   # Только каталоги, без файлов
+tree -f                   # Показывать полные пути
+tree -h                   # Показывать размер файлов
+tree -I &quot;node_modules&quot;    # Исключить каталог из вывода
+</code></pre>
+<div class="custom-alert" data-alert-type="note">
+<p>Установка: <code>sudo apt install tree</code></p>
+
+</div>
+
+<hr>
+<h2>Работа с файлами и каталогами</h2>
+<h3>cp - копирование</h3>
+<p><code>cp</code> (от <em>copy</em>) копирует файлы и каталоги.</p>
+<pre><code class="language-bash">cp file.txt copy.txt              # Копировать файл
+cp file.txt /tmp/                 # Скопировать в другой каталог
+cp file1.txt file2.txt /tmp/      # Скопировать несколько файлов
+cp -r dir1 dir2                   # Копировать каталог рекурсивно
+cp -r dir1/ /backup/              # Копировать содержимое dir1 в /backup
+cp -p file.txt copy.txt           # Сохранить права, владельца и временные метки
+cp -u source.txt dest.txt         # Копировать только если source новее dest
+cp -v file.txt /tmp/              # Подробный вывод (verbose)
+cp -i file.txt existing.txt       # Спросить перед перезаписью
+</code></pre>
+<h3>mv - перемещение и переименование</h3>
+<p><code>mv</code> (от <em>move</em>) - и перемещение, и переименование делается одной командой.</p>
+<pre><code class="language-bash">mv old.txt new.txt                # Переименовать файл
+mv file.txt /tmp/                 # Переместить файл в /tmp
+mv file.txt /tmp/newname.txt      # Переместить и переименовать одновременно
+mv dir1 dir2                      # Переименовать каталог
+mv *.log /var/archive/            # Переместить все .log файлы
+mv -i file.txt existing.txt       # Спросить перед перезаписью
+mv -u source.txt dest.txt         # Переместить только если source новее
+mv -v file.txt /tmp/              # Verbose-режим
+</code></pre>
+<h3>rm - удаление</h3>
+<p><code>rm</code> (от <em>remove</em>) удаляет файлы и каталоги.</p>
+<div class="custom-alert" data-alert-type="caution">
+<p>Удалённые через <code>rm</code> файлы не попадают в корзину. Восстановление возможно, но сложно и не гарантировано. <code>rm -rf</code> - особо опасная команда, требует максимального внимания.</p>
+
+</div>
+
+<pre><code class="language-bash">rm file.txt                   # Удалить файл
+rm file1.txt file2.txt        # Удалить несколько файлов
+rm *.tmp                      # Удалить все .tmp файлы
+rm -i file.txt                # Запросить подтверждение
+rm -r directory/              # Удалить каталог рекурсивно
+rm -rf directory/             # Принудительное рекурсивное удаление без запроса
+rm -v file.txt                # Verbose-режим - показывать что удаляется
+</code></pre>
+<h3>mkdir - создание каталогов</h3>
+<p><code>mkdir</code> (от <em>make directory</em>) создаёт новые каталоги.</p>
+<pre><code class="language-bash">mkdir new_dir                        # Создать каталог
+mkdir dir1 dir2 dir3                 # Создать несколько каталогов
+mkdir -p parent/child/grandchild     # Создать всю цепочку, если не существует
+mkdir -m 755 secure_dir              # Создать с указанными правами
+mkdir -v new_dir                     # Verbose-режим
+</code></pre>
+<blockquote>
+<p>mkdir -p незаменим в скриптах: без него команда упадёт с ошибкой при повторном запуске, если каталог уже существует. Флаг решает обе задачи сразу — «если каталог уже есть, всё в порядке; иначе создай его и все промежуточные».</p>
+</blockquote>
+<h3>touch - создание файлов и обновление временных меток</h3>
+<p><code>touch</code> создаёт пустой файл, если он не существует, или обновляет временные метки у существующего.</p>
+<pre><code class="language-bash">touch file.txt                    # Создать пустой файл
+touch file1.txt file2.txt         # Создать несколько файлов
+touch -m file.txt                 # Обновить только время модификации
+touch -a file.txt                 # Обновить только время доступа
+touch -t 202501011200 file.txt    # Установить конкретное время (YYYYMMDDhhmm)
+</code></pre>
+<h3>ln - создание ссылок</h3>
+<p><code>ln</code> (от <em>link</em>) создаёт жёсткие или символические ссылки.</p>
+<p><strong>Жёсткая ссылка (hard link)</strong> указывает на тот же inode, что и оригинал. Удаление исходного файла не уничтожает данные - они доступны через ссылку. Не работает между разными файловыми системами и не может ссылаться на каталоги.</p>
+<p><strong>Символическая ссылка (symlink)</strong> - указатель на путь к файлу или каталогу. Аналог ярлыка в Windows. Работает между ФС и с каталогами. При удалении оригинала ссылка становится битой.</p>
+<pre><code class="language-bash">ln file.txt hardlink.txt              # Жёсткая ссылка
+ln -s file.txt symlink.txt            # Символическая ссылка на файл
+ln -s /etc/nginx/nginx.conf ~/nginx.conf  # Symlink с абсолютным путём
+ln -s /var/www /srv/web               # Символическая ссылка на каталог
+ln -sf new_target.txt existing_link.txt   # Перезаписать существующий symlink
+
+ls -la symlink.txt                    # Видно что это ссылка и куда ведёт
+</code></pre>
+<h3>stat - подробная информация о файле</h3>
+<p><code>stat</code> выводит полную информацию о файле: размер, тип, inode, права доступа, владелец, три временные метки.</p>
+<pre><code class="language-bash">stat file.txt
+# Вывод:
+#   File: file.txt
+#   Size: 1024       Blocks: 8    IO Block: 4096  regular file
+#   Device: 8,1      Inode: 131074    Links: 1
+#   Access: (0644/-rw-r--r--)  Uid: (1000/username)   Gid: (1000/username)
+#   Access: 2026-02-25 10:00:00
+#   Modify: 2026-02-24 15:30:00
+#   Change: 2026-02-24 15:30:00
+
+stat /etc                        # Информация о каталоге
+stat -f file.txt                 # Информация о файловой системе, на которой лежит файл
+stat --format=&quot;%n %s %U&quot;        # Форматированный вывод: имя, размер, владелец
+</code></pre>
+<p>Три временные метки:</p>
+<ul>
+<li><strong>Access</strong> - последнее чтение файла</li>
+<li><strong>Modify</strong> - последнее изменение содержимого</li>
+<li><strong>Change</strong> - последнее изменение метаданных (права, владелец)</li>
+</ul>
+<h3>file - определение типа файла</h3>
+<p><code>file</code> анализирует содержимое файла и определяет его тип - независимо от расширения.</p>
+<pre><code class="language-bash">file document.pdf          # Выведет: PDF document, version 1.6
+file /bin/bash             # Выведет: ELF 64-bit LSB executable...
+file archive.tar.gz        # Выведет: gzip compressed data...
+file image.png             # Выведет: PNG image data, 1920 x 1080...
+file script.sh             # Выведет: Bourne-Again shell script...
+file unknown_file          # Полезно когда расширение неизвестно или отсутствует
+
+file *                     # Определить тип всех файлов в текущем каталоге
+file -i document.pdf       # MIME-тип вместо текстового описания
+</code></pre>
+<hr>
+<h2>Просмотр содержимого файлов</h2>
+<h3>cat - вывод содержимого файла</h3>
+<p><code>cat</code> (от <em>concatenate</em>) выводит содержимое одного или нескольких файлов. Лучше всего подходит для коротких файлов.</p>
+<pre><code class="language-bash">cat file.txt                      # Вывести содержимое файла
+cat file1.txt file2.txt           # Объединить и вывести два файла
+cat -n file.txt                   # С номерами строк
+cat -A file.txt                   # Показать спецсимволы ($ в конце строк, ^I для табуляции)
+cat -s file.txt                   # Сжать несколько пустых строк в одну
+cat /dev/null &gt; file.txt          # Очистить файл (обнулить)
+cat &gt; newfile.txt                 # Создать файл и писать в него вручную (Ctrl+D для завершения)
+</code></pre>
+<h3>less - постраничный просмотр</h3>
+<p><code>less</code> - интерактивный просмотрщик для больших файлов. Не загружает весь файл в память, поэтому отлично работает с гигантскими логами.</p>
+<pre><code class="language-bash">less /var/log/syslog
+less +F /var/log/syslog          # Открыть в режиме отслеживания (как tail -f)
+less -N file.txt                 # С номерами строк
+less -S file.txt                 # Без переноса длинных строк
+</code></pre>
+<p>Управление внутри <code>less</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Клавиша</th>
+<th>Действие</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Space</code> / <code>f</code></td>
+<td>Следующая страница</td>
+</tr>
+<tr>
+<td><code>b</code></td>
+<td>Предыдущая страница</td>
+</tr>
+<tr>
+<td><code>g</code></td>
+<td>Начало файла</td>
+</tr>
+<tr>
+<td><code>G</code></td>
+<td>Конец файла</td>
+</tr>
+<tr>
+<td><code>/текст</code></td>
+<td>Поиск вперёд</td>
+</tr>
+<tr>
+<td><code>?текст</code></td>
+<td>Поиск назад</td>
+</tr>
+<tr>
+<td><code>n</code></td>
+<td>Следующее совпадение</td>
+</tr>
+<tr>
+<td><code>N</code></td>
+<td>Предыдущее совпадение</td>
+</tr>
+<tr>
+<td><code>q</code></td>
+<td>Выход</td>
+</tr>
+</tbody></table>
+<h3>more - упрощённый постраничный просмотр</h3>
+<p><code>more</code> - предшественник <code>less</code>, умеет только прокручивать вперёд. Использовать <code>less</code> предпочтительнее, но <code>more</code> гарантированно есть на любой POSIX-совместимой системе. </p>
+<pre><code class="language-bash">more /etc/passwd
+more -5 file.txt         # Показывать по 5 строк
+</code></pre>
+<h3>head - первые строки файла</h3>
+<p><code>head</code> по умолчанию выводит первые 10 строк файла.</p>
+<pre><code class="language-bash">head file.txt                # Первые 10 строк
+head -n 20 file.txt          # Первые 20 строк
+head -n -5 file.txt          # Все строки, кроме последних 5
+head -c 100 file.txt         # Первые 100 байт
+head -q file1.txt file2.txt  # Несколько файлов без заголовков
+</code></pre>
+<h3>tail - последние строки файла</h3>
+<p><code>tail</code> по умолчанию выводит последние 10 строк.</p>
+<pre><code class="language-bash">tail file.txt                # Последние 10 строк
+tail -n 20 file.txt          # Последние 20 строк
+tail -n +5 file.txt          # Все строки, начиная с 5-й
+tail -c 200 file.txt         # Последние 200 байт
+</code></pre>
+<h3>tail -f - отслеживание файла в реальном времени</h3>
+<p>Флаг <code>-f</code> (от <em>follow</em>) держит файл открытым и выводит новые строки по мере их появления. Незаменим для мониторинга логов.</p>
+<pre><code class="language-bash">tail -f /var/log/syslog                  # Следить за системным логом
+tail -f /var/log/nginx/access.log        # Следить за логом nginx
+tail -fn 50 /var/log/auth.log            # Последние 50 строк + слежение
+tail -f file1.log file2.log              # Следить за несколькими файлами
+</code></pre>
+<div class="custom-alert" data-alert-type="tip">
+<p><code>Ctrl+C</code> для выхода из режима слежения. Если хотите следить за файлом даже после его ротации (пересоздания) - используйте <code>tail -F</code> (заглавная F).</p>
+
+</div>
+
+<hr>
+<h2>Поиск внутри файлов</h2>
+<h3>grep - поиск текста по шаблону</h3>
+<p><code>grep</code> (от <em>global regular expression print</em>) ищет строки по шаблону в файлах или потоке данных. Одна из самых используемых команд в Linux.</p>
+<pre><code class="language-bash">grep &quot;error&quot; /var/log/syslog             # Строки содержащие &quot;error&quot;
+grep -i &quot;warning&quot; file.txt               # Без учёта регистра
+grep -n &quot;root&quot; /etc/passwd               # С номерами строк
+grep -c &quot;error&quot; /var/log/syslog          # Подсчитать количество совпадений
+grep -v &quot;debug&quot; app.log                  # Инвертировать: строки БЕЗ &quot;debug&quot;
+grep -l &quot;TODO&quot; *.py                      # Только имена файлов с совпадениями
+grep -w &quot;root&quot; /etc/passwd               # Только целые слова (не &quot;rootdir&quot;)
+grep -A 3 &quot;error&quot; file.log               # 3 строки после совпадения (After)
+grep -B 2 &quot;error&quot; file.log               # 2 строки до совпадения (Before)
+grep -C 2 &quot;error&quot; file.log               # По 2 строки до и после (Context)
+</code></pre>
+<h3>grep -r - рекурсивный поиск</h3>
+<pre><code class="language-bash">grep -r &quot;function_name&quot; .               # Во всех файлах текущего каталога
+grep -r &quot;TODO&quot; /home/user/project       # В конкретном проекте
+grep -rl &quot;api_key&quot; .                    # Только имена файлов рекурсивно
+grep -r --include=&quot;*.py&quot; &quot;import&quot; .    # Только в .py файлах
+grep -r --exclude=&quot;*.log&quot; &quot;error&quot; .    # Исключить .log файлы
+grep -r --exclude-dir=&quot;.git&quot; &quot;fix&quot; .   # Исключить каталог
+</code></pre>
+<h3>grep -E - расширенные регулярные выражения</h3>
+<p><code>-E</code> (или <code>egrep</code>) включает поддержку расширенного синтаксиса регулярных выражений.</p>
+<pre><code class="language-bash">grep -E &quot;(error|fail|critical)&quot; /var/log/syslog   # ИЛИ
+grep -E &quot;^root&quot; /etc/passwd                        # Строки, начинающиеся с &quot;root&quot;
+grep -E &quot;bash$&quot; /etc/passwd                        # Строки, заканчивающиеся на &quot;bash&quot;
+grep -E &quot;[0-9]{1,3}\.[0-9]{1,3}&quot; file.txt         # IP-адреса (упрощённо)
+grep -E &quot;^$&quot; file.txt                              # Пустые строки
+grep -E &quot;https?://&quot; file.txt                       # http или https ссылки
+</code></pre>
+<h3>awk - обработка и извлечение полей</h3>
+<p><code>awk</code> - язык для построчной обработки текста. Особенно силён при работе с табличными данными, логами и файлами с разделителями.</p>
+<p>Базовая модель: <code>awk &#39;условие { действие }&#39; файл</code>. По умолчанию разделитель - пробел/tab, поля: <code>$1</code>, <code>$2</code>, ..., <code>$NF</code> (последнее поле), <code>$0</code> - вся строка.</p>
+<pre><code class="language-bash"># /etc/passwd: user:x:uid:gid:info:home:shell
+awk -F: &#39;{print $1}&#39; /etc/passwd                     # Имена всех пользователей
+awk -F: &#39;{print $1, $3}&#39; /etc/passwd                 # Имя и UID
+awk -F: &#39;$3 &gt;= 1000 {print $1}&#39; /etc/passwd          # Только обычные пользователи (UID ≥ 1000)
+awk -F: &#39;{print $1&quot;: &quot;$7}&#39; /etc/passwd               # Форматированный вывод
+
+# Работа с пробельным разделителем
+awk &#39;{print $1}&#39; access.log                          # Первое поле (напр. IP в логе nginx)
+awk &#39;NR==5&#39; file.txt                                 # Вывести только 5-ю строку
+awk &#39;NR&gt;=5 &amp;&amp; NR&lt;=10&#39; file.txt                       # Строки с 5 по 10
+
+# Встроенные переменные
+awk &#39;{print NR&quot;: &quot;$0}&#39; file.txt                      # Добавить номера строк
+awk &#39;END{print NR}&#39; file.txt                         # Подсчитать количество строк
+awk &#39;{sum += $1} END {print &quot;Сумма:&quot;, sum}&#39; numbers.txt  # Сложить числа из первого столбца
+
+# BEGIN и END блоки
+awk &#39;BEGIN{print &quot;=== Пользователи ===&quot;} -F: {print $1} END{print &quot;=== Конец ===&quot;}&#39; /etc/passwd
+</code></pre>
+<h3>sed - потоковый редактор</h3>
+<p><code>sed</code> (от <em>stream editor</em>) обрабатывает текст построчно - заменяет, удаляет, вставляет, фильтрует. По умолчанию не изменяет исходный файл, а выводит результат в stdout.</p>
+<pre><code class="language-bash"># Замена
+sed &#39;s/old/new/&#39; file.txt              # Заменить первое вхождение в каждой строке
+sed &#39;s/old/new/g&#39; file.txt             # Заменить все вхождения (global)
+sed &#39;s/old/new/gi&#39; file.txt            # Без учёта регистра
+sed &#39;s/root/admin/g&#39; /etc/passwd       # Пример с реальным файлом
+
+# Редактирование файла &quot;на месте&quot;
+sed -i &#39;s/old/new/g&#39; file.txt          # Изменить файл (осторожно!)
+sed -i.bak &#39;s/old/new/g&#39; file.txt      # Изменить файл, сохранив backup .bak
+
+# Удаление строк
+sed &#39;/^#/d&#39; config.txt                 # Удалить все комментарии (строки с #)
+sed &#39;/^$/d&#39; file.txt                   # Удалить пустые строки
+sed &#39;5d&#39; file.txt                      # Удалить 5-ю строку
+sed &#39;2,4d&#39; file.txt                    # Удалить строки 2-4
+
+# Вывод конкретных строк
+sed -n &#39;5p&#39; file.txt                   # Вывести только 5-ю строку
+sed -n &#39;5,10p&#39; file.txt                # Строки 5-10
+sed -n &#39;/error/p&#39; file.txt             # Строки содержащие &quot;error&quot;
+
+# Добавление строк
+sed &#39;3a\Новая строка после 3-й&#39; file.txt    # Добавить после строки 3
+sed &#39;1i\Заголовок&#39; file.txt                 # Добавить перед строкой 1
+</code></pre>
+<hr>
+<p>В следующей части - <strong>пользователи и группы</strong>: создание, управление, <code>/etc/passwd</code>, <code>/etc/shadow</code>, <code>sudo</code> и всё что с этим связано. а пока держите Linux Cheatsheet — Файловая система</p>
+<h2>Навигация</h2>
+<table>
+<thead>
+<tr>
+<th>Команда</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>pwd</code></td>
+<td>Показать текущий каталог</td>
+</tr>
+<tr>
+<td><code>cd /path</code></td>
+<td>Перейти в каталог</td>
+</tr>
+<tr>
+<td><code>cd ..</code></td>
+<td>На уровень вверх</td>
+</tr>
+<tr>
+<td><code>cd ~</code></td>
+<td>В домашний каталог</td>
+</tr>
+<tr>
+<td><code>cd -</code></td>
+<td>В предыдущий каталог</td>
+</tr>
+<tr>
+<td><code>ls</code></td>
+<td>Содержимое текущего каталога</td>
+</tr>
+<tr>
+<td><code>ls -l</code></td>
+<td>Подробный список (права, владелец, размер)</td>
+</tr>
+<tr>
+<td><code>ls -a</code></td>
+<td>Включая скрытые файлы</td>
+</tr>
+<tr>
+<td><code>ls -lah</code></td>
+<td>Подробно + скрытые + читаемый размер</td>
+</tr>
+<tr>
+<td><code>ls -lt</code></td>
+<td>Сортировка по времени изменения</td>
+</tr>
+<tr>
+<td><code>ls -lS</code></td>
+<td>Сортировка по размеру</td>
+</tr>
+<tr>
+<td><code>ls -R</code></td>
+<td>Рекурсивный вывод</td>
+</tr>
+<tr>
+<td><code>tree</code></td>
+<td>Дерево каталогов</td>
+</tr>
+<tr>
+<td><code>tree -L 2</code></td>
+<td>Дерево на 2 уровня вглубь</td>
+</tr>
+<tr>
+<td><code>tree -d</code></td>
+<td>Только каталоги</td>
+</tr>
+<tr>
+<td><code>tree -a</code></td>
+<td>Включая скрытые</td>
+</tr>
+</tbody></table>
+<h2>Поиск файлов</h2>
+<table>
+<thead>
+<tr>
+<th>Команда</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>find . -name &quot;*.log&quot;</code></td>
+<td>Поиск по имени</td>
+</tr>
+<tr>
+<td><code>find /etc -type f</code></td>
+<td>Только файлы</td>
+</tr>
+<tr>
+<td><code>find /etc -type d</code></td>
+<td>Только каталоги</td>
+</tr>
+<tr>
+<td><code>find /etc -type l</code></td>
+<td>Только символические ссылки</td>
+</tr>
+<tr>
+<td><code>find / -size +100M</code></td>
+<td>Файлы больше 100 MB</td>
+</tr>
+<tr>
+<td><code>find /tmp -mtime +7</code></td>
+<td>Не изменялись более 7 дней</td>
+</tr>
+<tr>
+<td><code>find / -mmin -60</code></td>
+<td>Изменялись за последний час</td>
+</tr>
+<tr>
+<td><code>find / -perm 777</code></td>
+<td>Файлы с правами 777</td>
+</tr>
+<tr>
+<td><code>find /home -user username</code></td>
+<td>Файлы конкретного пользователя</td>
+</tr>
+<tr>
+<td><code>find /tmp -name &quot;*.tmp&quot; -delete</code></td>
+<td>Найти и удалить</td>
+</tr>
+<tr>
+<td><code>locate filename</code></td>
+<td>Быстрый поиск по базе данных</td>
+</tr>
+<tr>
+<td><code>locate -i filename</code></td>
+<td>Поиск без учёта регистра</td>
+</tr>
+<tr>
+<td><code>sudo updatedb</code></td>
+<td>Обновить базу данных locate</td>
+</tr>
+</tbody></table>
+<h2>Работа с файлами и каталогами</h2>
+<table>
+<thead>
+<tr>
+<th>Команда</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>touch file.txt</code></td>
+<td>Создать пустой файл</td>
+</tr>
+<tr>
+<td><code>mkdir dir</code></td>
+<td>Создать каталог</td>
+</tr>
+<tr>
+<td><code>mkdir -p a/b/c</code></td>
+<td>Создать вложенные каталоги</td>
+</tr>
+<tr>
+<td><code>cp file.txt copy.txt</code></td>
+<td>Копировать файл</td>
+</tr>
+<tr>
+<td><code>cp -r dir1 dir2</code></td>
+<td>Копировать каталог рекурсивно</td>
+</tr>
+<tr>
+<td><code>cp -p file.txt copy.txt</code></td>
+<td>Копировать с сохранением метаданных</td>
+</tr>
+<tr>
+<td><code>mv old.txt new.txt</code></td>
+<td>Переименовать файл</td>
+</tr>
+<tr>
+<td><code>mv file.txt /tmp/</code></td>
+<td>Переместить файл</td>
+</tr>
+<tr>
+<td><code>rm file.txt</code></td>
+<td>Удалить файл</td>
+</tr>
+<tr>
+<td><code>rm -r dir/</code></td>
+<td>Удалить каталог рекурсивно</td>
+</tr>
+<tr>
+<td><code>rm -rf dir/</code></td>
+<td>Принудительное удаление без подтверждения</td>
+</tr>
+<tr>
+<td><code>ln file.txt hardlink.txt</code></td>
+<td>Создать жёсткую ссылку</td>
+</tr>
+<tr>
+<td><code>ln -s file.txt symlink.txt</code></td>
+<td>Создать символическую ссылку</td>
+</tr>
+<tr>
+<td><code>stat file.txt</code></td>
+<td>Подробная информация о файле</td>
+</tr>
+<tr>
+<td><code>file file.txt</code></td>
+<td>Определить тип файла</td>
+</tr>
+</tbody></table>
+<h2>Просмотр содержимого</h2>
+<table>
+<thead>
+<tr>
+<th>Команда</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>cat file.txt</code></td>
+<td>Вывести содержимое файла</td>
+</tr>
+<tr>
+<td><code>cat -n file.txt</code></td>
+<td>С номерами строк</td>
+</tr>
+<tr>
+<td><code>less file.txt</code></td>
+<td>Постраничный просмотр (интерактивный)</td>
+</tr>
+<tr>
+<td><code>less -N file.txt</code></td>
+<td>С номерами строк</td>
+</tr>
+<tr>
+<td><code>more file.txt</code></td>
+<td>Постраничный просмотр (упрощённый)</td>
+</tr>
+<tr>
+<td><code>head file.txt</code></td>
+<td>Первые 10 строк</td>
+</tr>
+<tr>
+<td><code>head -n 20 file.txt</code></td>
+<td>Первые 20 строк</td>
+</tr>
+<tr>
+<td><code>tail file.txt</code></td>
+<td>Последние 10 строк</td>
+</tr>
+<tr>
+<td><code>tail -n 20 file.txt</code></td>
+<td>Последние 20 строк</td>
+</tr>
+<tr>
+<td><code>tail -f file.txt</code></td>
+<td>Слежение за файлом в реальном времени</td>
+</tr>
+<tr>
+<td><code>tail -F file.txt</code></td>
+<td>Слежение с учётом ротации файла</td>
+</tr>
+</tbody></table>
+<h2>Поиск внутри файлов</h2>
+<table>
+<thead>
+<tr>
+<th>Команда</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>grep &quot;text&quot; file.txt</code></td>
+<td>Поиск строк по шаблону</td>
+</tr>
+<tr>
+<td><code>grep -i &quot;text&quot; file.txt</code></td>
+<td>Без учёта регистра</td>
+</tr>
+<tr>
+<td><code>grep -n &quot;text&quot; file.txt</code></td>
+<td>С номерами строк</td>
+</tr>
+<tr>
+<td><code>grep -c &quot;text&quot; file.txt</code></td>
+<td>Подсчитать совпадения</td>
+</tr>
+<tr>
+<td><code>grep -v &quot;text&quot; file.txt</code></td>
+<td>Инвертировать (строки БЕЗ шаблона)</td>
+</tr>
+<tr>
+<td><code>grep -l &quot;text&quot; *.txt</code></td>
+<td>Только имена файлов с совпадениями</td>
+</tr>
+<tr>
+<td><code>grep -w &quot;word&quot; file.txt</code></td>
+<td>Только целые слова</td>
+</tr>
+<tr>
+<td><code>grep -A 3 &quot;text&quot; file.txt</code></td>
+<td>3 строки после совпадения</td>
+</tr>
+<tr>
+<td><code>grep -B 2 &quot;text&quot; file.txt</code></td>
+<td>2 строки до совпадения</td>
+</tr>
+<tr>
+<td><code>grep -C 2 &quot;text&quot; file.txt</code></td>
+<td>По 2 строки до и после</td>
+</tr>
+<tr>
+<td><code>grep -r &quot;text&quot; .</code></td>
+<td>Рекурсивный поиск</td>
+</tr>
+<tr>
+<td><code>grep -rl &quot;text&quot; .</code></td>
+<td>Рекурсивно, только имена файлов</td>
+</tr>
+<tr>
+<td><code>grep -E &quot;(err|warn)&quot; file</code></td>
+<td>Расширенные регулярные выражения</td>
+</tr>
+<tr>
+<td><code>grep -E &quot;^root&quot; file</code></td>
+<td>Строки начинающиеся с &quot;root&quot;</td>
+</tr>
+<tr>
+<td><code>grep -E &quot;bash$&quot; file</code></td>
+<td>Строки заканчивающиеся на &quot;bash&quot;</td>
+</tr>
+<tr>
+<td><code>awk &#39;{print $1}&#39; file</code></td>
+<td>Вывести первый столбец</td>
+</tr>
+<tr>
+<td><code>awk -F: &#39;{print $1}&#39; file</code></td>
+<td>Разделитель двоеточие</td>
+</tr>
+<tr>
+<td><code>awk &#39;NR==5&#39; file</code></td>
+<td>Вывести только 5-ю строку</td>
+</tr>
+<tr>
+<td><code>awk &#39;END{print NR}&#39; file</code></td>
+<td>Подсчитать строки</td>
+</tr>
+<tr>
+<td><code>sed &#39;s/old/new/g&#39; file</code></td>
+<td>Заменить все вхождения</td>
+</tr>
+<tr>
+<td><code>sed -i &#39;s/old/new/g&#39; file</code></td>
+<td>Заменить в самом файле</td>
+</tr>
+<tr>
+<td><code>sed -i.bak &#39;s/old/new/g&#39; file</code></td>
+<td>Заменить с созданием backup</td>
+</tr>
+<tr>
+<td><code>sed &#39;/^$/d&#39; file</code></td>
+<td>Удалить пустые строки</td>
+</tr>
+<tr>
+<td><code>sed &#39;/^#/d&#39; file</code></td>
+<td>Удалить строки с комментариями</td>
+</tr>
+<tr>
+<td><code>sed -n &#39;5,10p&#39; file</code></td>
+<td>Вывести строки 5-10</td>
+</tr>
+</tbody></table>
+<h2>Базовые команды терминала</h2>
+<table>
+<thead>
+<tr>
+<th>Команда</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>clear</code></td>
+<td>Очистить терминал</td>
+</tr>
+<tr>
+<td><code>history</code></td>
+<td>История команд</td>
+</tr>
+<tr>
+<td><code>history | grep &quot;cmd&quot;</code></td>
+<td>Поиск по истории</td>
+</tr>
+<tr>
+<td><code>!!</code></td>
+<td>Повторить последнюю команду</td>
+</tr>
+<tr>
+<td><code>!5</code></td>
+<td>Выполнить команду №5 из истории</td>
+</tr>
+<tr>
+<td><code>Ctrl + C</code></td>
+<td>Прервать текущую команду</td>
+</tr>
+<tr>
+<td><code>Ctrl + Z</code></td>
+<td>Приостановить процесс</td>
+</tr>
+<tr>
+<td><code>Ctrl + L</code></td>
+<td>Очистить терминал (как clear)</td>
+</tr>
+<tr>
+<td><code>Ctrl + R</code></td>
+<td>Поиск по истории команд</td>
+</tr>
+<tr>
+<td><code>Ctrl + A</code></td>
+<td>Перейти в начало строки</td>
+</tr>
+<tr>
+<td><code>Ctrl + E</code></td>
+<td>Перейти в конец строки</td>
+</tr>
+<tr>
+<td><code>Ctrl + U</code></td>
+<td>Удалить строку до курсора</td>
+</tr>
+<tr>
+<td><code>Tab</code></td>
+<td>Автодополнение</td>
+</tr>
+<tr>
+<td><code>man command</code></td>
+<td>Документация по команде</td>
+</tr>
+<tr>
+<td><code>command --help</code></td>
+<td>Краткая справка</td>
+</tr>
+<tr>
+<td><code>which command</code></td>
+<td>Путь к исполняемому файлу</td>
+</tr>
+<tr>
+<td><code>echo &quot;text&quot;</code></td>
+<td>Вывести текст</td>
+</tr>
+<tr>
+<td><code>exit</code></td>
+<td>Выйти из терминала / сессии</td>
+</tr>
+</tbody></table>
+</article> </main> </noscript> <astro-island uid="ZRmjCR" component-url="/assets/DocContent.CoKfap2Q.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{&quot;doc&quot;:[0,{&quot;id&quot;:[0,&quot;article/linux/linux-files&quot;],&quot;title&quot;:[0,&quot;Linux: Файлы, навигация и поиск&quot;],&quot;slug&quot;:[0,&quot;article/linux/linux-files&quot;],&quot;description&quot;:[0,&quot;Первая часть серии о Linux для DevOps и DevSecOps - разбираем структуру файловой системы, навигацию, работу с файлами, просмотр содержимого и поиск внутри файлов.&quot;],&quot;content&quot;:[0,&quot;&lt;h1&gt;Введение&lt;/h1&gt;\n&lt;p&gt; Давайте не будем вдаваться в элементарные подробности терминологии — что такое файловая система и тому подобное. Скажу лишь, что статья подготовлена для новичков и специалистов, желающих обновить свои знания. Я постарался написать коротко и по сути. Всего частей будет 11.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;Структура файловой системы&lt;/h2&gt;\n&lt;pre&gt;&lt;code&gt;/\n├── etc        # конфигурации системы и приложений\n├── var        # переменные данные: логи, кэш, очереди\n├── proc       # состояние ядра и процессов\n├── sys        # устройства и драйверы\n├── tmp        # временные файлы\n├── home       # домашние директории пользователей\n├── root       # домашняя директория суперпользователя\n├── dev        # файлы устройств\n├── usr        # программы и библиотеки\n├── bin        # базовые утилиты (symlink на /usr/bin)\n├── sbin       # команды администрирования (symlink на /usr/sbin)\n├── opt        # сторонний софт\n├── run        # runtime-данные процессов\n├── mnt        # точки ручного монтирования\n└── boot       # файлы загрузчика и ядро\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Корневой каталог &lt;code&gt;/&lt;/code&gt; - вершина всей иерархии. Всё остальное монтируется внутрь него. Рассмотрим ключевые каталоги подробнее.&lt;/p&gt;\n&lt;h3&gt;/etc&lt;/h3&gt;\n&lt;p&gt;От &lt;em&gt;et cetera&lt;/em&gt; или &lt;em&gt;Editable Text Configuration&lt;/em&gt; - здесь хранятся конфигурационные файлы всей системы. Настройки служб, сетевых параметров, пользователей - всё сюда. Важные файлы: &lt;code&gt;/etc/passwd&lt;/code&gt; (пользователи), &lt;code&gt;/etc/fstab&lt;/code&gt; (монтирование файловых систем), &lt;code&gt;/etc/hosts&lt;/code&gt; (локальный DNS), &lt;code&gt;/etc/ssh/sshd_config&lt;/code&gt; (настройки SSH-сервера).&lt;/p&gt;\n&lt;h3&gt;/var&lt;/h3&gt;\n&lt;p&gt;От &lt;em&gt;variable&lt;/em&gt; - данные, которые постоянно меняются в процессе работы: логи (&lt;code&gt;/var/log&lt;/code&gt;), почтовые очереди (&lt;code&gt;/var/mail&lt;/code&gt;), спулеры (&lt;code&gt;/var/spool&lt;/code&gt;), данные веб-серверов (&lt;code&gt;/var/www&lt;/code&gt;). Именно сюда смотреть в первую очередь при диагностике проблем.&lt;/p&gt;\n&lt;h3&gt;/proc&lt;/h3&gt;\n&lt;p&gt;Виртуальная файловая система - файлы здесь не хранятся на диске, а генерируются ядром в реальном времени. Предоставляет информацию о запущенных процессах и состоянии ядра. Примеры: &lt;code&gt;/proc/cpuinfo&lt;/code&gt; - информация о процессоре, &lt;code&gt;/proc/meminfo&lt;/code&gt; - память, &lt;code&gt;/proc/1/&lt;/code&gt; - данные процесса с PID 1.&lt;/p&gt;\n&lt;h3&gt;/sys&lt;/h3&gt;\n&lt;p&gt;Ещё одна виртуальная ФС - интерфейс к устройствам и драйверам ядра. Позволяет читать и изменять параметры ядра и оборудования на лету. Широко используется при работе с сетевыми интерфейсами, дисками и другим железом.&lt;/p&gt;\n&lt;h3&gt;/tmp&lt;/h3&gt;\n&lt;p&gt;Временные файлы. Любой пользователь может создавать файлы здесь. Содержимое обычно очищается при перезагрузке или по таймеру (через &lt;code&gt;systemd-tmpfiles&lt;/code&gt;). Не храните здесь ничего важного.&lt;/p&gt;\n&lt;h3&gt;/home&lt;/h3&gt;\n&lt;p&gt;Домашние каталоги обычных пользователей. Каждый пользователь получает свой подкаталог - &lt;code&gt;/home/username&lt;/code&gt;. Здесь хранятся личные файлы, конфиги программ (скрытые папки вида &lt;code&gt;.config&lt;/code&gt;, &lt;code&gt;.ssh&lt;/code&gt;), документы.&lt;/p&gt;\n&lt;h3&gt;/root&lt;/h3&gt;\n&lt;p&gt;Домашний каталог суперпользователя. Намеренно вынесен отдельно от &lt;code&gt;/home&lt;/code&gt; - для безопасности и доступности даже при проблемах с монтированием &lt;code&gt;/home&lt;/code&gt;.&lt;/p&gt;\n&lt;h3&gt;/dev&lt;/h3&gt;\n&lt;p&gt;Файлы устройств - интерфейсы к аппаратному обеспечению. &lt;code&gt;/dev/sda&lt;/code&gt; - первый жёсткий диск, &lt;code&gt;/dev/sda1&lt;/code&gt; - его первый раздел, &lt;code&gt;/dev/null&lt;/code&gt; - «чёрная дыра» для ненужного вывода, &lt;code&gt;/dev/zero&lt;/code&gt; - источник нулевых байт, &lt;code&gt;/dev/random&lt;/code&gt; и &lt;code&gt;/dev/urandom&lt;/code&gt; - генераторы случайных данных.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;Навигация по файловой системе&lt;/h2&gt;\n&lt;h3&gt;ls - просмотр содержимого каталога&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;ls&lt;/code&gt; (от &lt;em&gt;list&lt;/em&gt;) выводит список файлов и подкаталогов. Без аргументов показывает текущий каталог.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;ls                    # Содержимое текущего каталога\nls /etc               # Содержимое /etc\nls -l                 # Подробный список: права, владелец, размер, дата\nls -a                 # Все файлы, включая скрытые (начинающиеся с точки)\nls -lh                # Подробный список с читаемым размером (KB, MB, GB)\nls -lt                # Сортировка по времени изменения (новые сверху)\nls -lS                # Сортировка по размеру (большие сверху)\nls -R                 # Рекурсивный вывод всех вложенных каталогов\nls -ld /etc           # Информация о самом каталоге, а не его содержимом\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Флаги можно комбинировать. &lt;code&gt;ls -lah&lt;/code&gt; - пожалуй, самая частая комбинация в работе: подробный список, скрытые файлы, читаемые размеры.&lt;/p&gt;\n&lt;h3&gt;cd - смена текущего каталога&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;cd&lt;/code&gt; (от &lt;em&gt;change directory&lt;/em&gt;) - основа навигации.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;cd /etc               # Перейти в /etc (абсолютный путь)\ncd logs               # Перейти в подкаталог logs (относительный путь)\ncd ..                 # На уровень вверх\ncd ../..              # На два уровня вверх\ncd ~                  # В домашний каталог текущего пользователя\ncd                    # То же самое, что cd ~\ncd -                  # В предыдущий каталог (удобно для переключения между двумя)\ncd /var/log           # Абсолютный путь от корня\n&lt;/code&gt;&lt;/pre&gt;\n&lt;div class=\&quot;custom-alert\&quot; data-alert-type=\&quot;tip\&quot;&gt;\n&lt;p&gt;&lt;code&gt;cd -&lt;/code&gt; - очень удобная команда когда нужно быстро переключаться между двумя каталогами.&lt;/p&gt;\n\n&lt;/div&gt;\n\n&lt;h3&gt;pwd - текущий рабочий каталог&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;pwd&lt;/code&gt; (от &lt;em&gt;print working directory&lt;/em&gt;) выводит абсолютный путь к тому месту, где вы сейчас находитесь.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;pwd\n# Вывод: /home/username/projects\n&lt;/code&gt;&lt;/pre&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;pwd -P    # Показать реальный путь без symlink&amp;#39;ов\npwd -L    # Показать логический путь (по умолчанию)\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;find - поиск файлов и каталогов&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;find&lt;/code&gt; - мощный инструмент для поиска по имени, типу, размеру, правам, времени изменения и многому другому. Ищет рекурсивно в указанной директории.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Поиск по имени\nfind . -name &amp;quot;*.log&amp;quot;              # Все .log файлы в текущем каталоге\nfind /etc -name &amp;quot;hosts&amp;quot;           # Файл hosts в /etc\nfind / -name &amp;quot;*.conf&amp;quot; 2&amp;gt;/dev/null # Все .conf файлы на всей системе, без ошибок\n\n# Поиск по типу\nfind /var -type f                 # Только файлы (не каталоги)\nfind /etc -type d                 # Только каталоги\nfind /dev -type l                 # Только символические ссылки\n\n# Поиск по размеру\nfind / -size +100M                # Файлы больше 100 MB\nfind /tmp -size -1k               # Файлы меньше 1 KB\n\n# Поиск по времени\nfind /var/log -mtime -1           # Изменялись за последние 24 часа\nfind /tmp -atime +7               # Не открывались более 7 дней\n\n# Поиск по правам и владельцу\nfind / -perm 777                  # Файлы с правами 777\nfind /home -user username         # Файлы конкретного пользователя\n\n# Поиск + действие\nfind /tmp -name &amp;quot;*.tmp&amp;quot; -delete          # Найти и удалить\nfind /var/log -name &amp;quot;*.log&amp;quot; -exec ls -lh {} \\;  # Найти и выполнить команду\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;locate - быстрый поиск по базе данных&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;locate&lt;/code&gt; ищет не на диске в реальном времени, а по заранее собранной базе данных - поэтому работает значительно быстрее &lt;code&gt;find&lt;/code&gt;. Минус: база не знает о файлах, созданных после последнего обновления.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;locate passwd                  # Найти все пути, содержащие &amp;quot;passwd&amp;quot;\nlocate -i readme               # Поиск без учёта регистра\nlocate -c &amp;quot;*.conf&amp;quot;             # Подсчитать количество совпадений\nlocate -l 10 &amp;quot;*.log&amp;quot;           # Вывести максимум 10 результатов\n\nsudo updatedb                  # Обновить базу данных вручную\n&lt;/code&gt;&lt;/pre&gt;\n&lt;div class=\&quot;custom-alert\&quot; data-alert-type=\&quot;note\&quot;&gt;\n&lt;p&gt;В Ubuntu/Debian locate устанавливается отдельно. Начиная с Ubuntu 22.04 рекомендуется plocate вместо устаревшего mlocate — он быстрее за счёт более эффективного формата индекса: sudo apt install plocate. Команда locate при этом остаётся той же. База обновляется автоматически через cron/systemd-timer, обычно раз в сутки.&lt;/p&gt;\n\n&lt;/div&gt;\n\n&lt;h3&gt;tree - дерево каталогов&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;tree&lt;/code&gt; визуализирует структуру каталогов в виде дерева - удобно для быстрого обзора проекта или системной директории.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;tree                      # Дерево текущего каталога\ntree /etc                 # Дерево /etc\ntree -L 2                 # Ограничить глубину 2 уровнями\ntree -L 3 /var            # /var на 3 уровня вглубь\ntree -a                   # Включая скрытые файлы\ntree -d                   # Только каталоги, без файлов\ntree -f                   # Показывать полные пути\ntree -h                   # Показывать размер файлов\ntree -I &amp;quot;node_modules&amp;quot;    # Исключить каталог из вывода\n&lt;/code&gt;&lt;/pre&gt;\n&lt;div class=\&quot;custom-alert\&quot; data-alert-type=\&quot;note\&quot;&gt;\n&lt;p&gt;Установка: &lt;code&gt;sudo apt install tree&lt;/code&gt;&lt;/p&gt;\n\n&lt;/div&gt;\n\n&lt;hr&gt;\n&lt;h2&gt;Работа с файлами и каталогами&lt;/h2&gt;\n&lt;h3&gt;cp - копирование&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;cp&lt;/code&gt; (от &lt;em&gt;copy&lt;/em&gt;) копирует файлы и каталоги.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;cp file.txt copy.txt              # Копировать файл\ncp file.txt /tmp/                 # Скопировать в другой каталог\ncp file1.txt file2.txt /tmp/      # Скопировать несколько файлов\ncp -r dir1 dir2                   # Копировать каталог рекурсивно\ncp -r dir1/ /backup/              # Копировать содержимое dir1 в /backup\ncp -p file.txt copy.txt           # Сохранить права, владельца и временные метки\ncp -u source.txt dest.txt         # Копировать только если source новее dest\ncp -v file.txt /tmp/              # Подробный вывод (verbose)\ncp -i file.txt existing.txt       # Спросить перед перезаписью\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;mv - перемещение и переименование&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;mv&lt;/code&gt; (от &lt;em&gt;move&lt;/em&gt;) - и перемещение, и переименование делается одной командой.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;mv old.txt new.txt                # Переименовать файл\nmv file.txt /tmp/                 # Переместить файл в /tmp\nmv file.txt /tmp/newname.txt      # Переместить и переименовать одновременно\nmv dir1 dir2                      # Переименовать каталог\nmv *.log /var/archive/            # Переместить все .log файлы\nmv -i file.txt existing.txt       # Спросить перед перезаписью\nmv -u source.txt dest.txt         # Переместить только если source новее\nmv -v file.txt /tmp/              # Verbose-режим\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;rm - удаление&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;rm&lt;/code&gt; (от &lt;em&gt;remove&lt;/em&gt;) удаляет файлы и каталоги.&lt;/p&gt;\n&lt;div class=\&quot;custom-alert\&quot; data-alert-type=\&quot;caution\&quot;&gt;\n&lt;p&gt;Удалённые через &lt;code&gt;rm&lt;/code&gt; файлы не попадают в корзину. Восстановление возможно, но сложно и не гарантировано. &lt;code&gt;rm -rf&lt;/code&gt; - особо опасная команда, требует максимального внимания.&lt;/p&gt;\n\n&lt;/div&gt;\n\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;rm file.txt                   # Удалить файл\nrm file1.txt file2.txt        # Удалить несколько файлов\nrm *.tmp                      # Удалить все .tmp файлы\nrm -i file.txt                # Запросить подтверждение\nrm -r directory/              # Удалить каталог рекурсивно\nrm -rf directory/             # Принудительное рекурсивное удаление без запроса\nrm -v file.txt                # Verbose-режим - показывать что удаляется\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;mkdir - создание каталогов&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;mkdir&lt;/code&gt; (от &lt;em&gt;make directory&lt;/em&gt;) создаёт новые каталоги.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;mkdir new_dir                        # Создать каталог\nmkdir dir1 dir2 dir3                 # Создать несколько каталогов\nmkdir -p parent/child/grandchild     # Создать всю цепочку, если не существует\nmkdir -m 755 secure_dir              # Создать с указанными правами\nmkdir -v new_dir                     # Verbose-режим\n&lt;/code&gt;&lt;/pre&gt;\n&lt;blockquote&gt;\n&lt;p&gt;mkdir -p незаменим в скриптах: без него команда упадёт с ошибкой при повторном запуске, если каталог уже существует. Флаг решает обе задачи сразу — «если каталог уже есть, всё в порядке; иначе создай его и все промежуточные».&lt;/p&gt;\n&lt;/blockquote&gt;\n&lt;h3&gt;touch - создание файлов и обновление временных меток&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;touch&lt;/code&gt; создаёт пустой файл, если он не существует, или обновляет временные метки у существующего.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;touch file.txt                    # Создать пустой файл\ntouch file1.txt file2.txt         # Создать несколько файлов\ntouch -m file.txt                 # Обновить только время модификации\ntouch -a file.txt                 # Обновить только время доступа\ntouch -t 202501011200 file.txt    # Установить конкретное время (YYYYMMDDhhmm)\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;ln - создание ссылок&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;ln&lt;/code&gt; (от &lt;em&gt;link&lt;/em&gt;) создаёт жёсткие или символические ссылки.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Жёсткая ссылка (hard link)&lt;/strong&gt; указывает на тот же inode, что и оригинал. Удаление исходного файла не уничтожает данные - они доступны через ссылку. Не работает между разными файловыми системами и не может ссылаться на каталоги.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Символическая ссылка (symlink)&lt;/strong&gt; - указатель на путь к файлу или каталогу. Аналог ярлыка в Windows. Работает между ФС и с каталогами. При удалении оригинала ссылка становится битой.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;ln file.txt hardlink.txt              # Жёсткая ссылка\nln -s file.txt symlink.txt            # Символическая ссылка на файл\nln -s /etc/nginx/nginx.conf ~/nginx.conf  # Symlink с абсолютным путём\nln -s /var/www /srv/web               # Символическая ссылка на каталог\nln -sf new_target.txt existing_link.txt   # Перезаписать существующий symlink\n\nls -la symlink.txt                    # Видно что это ссылка и куда ведёт\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;stat - подробная информация о файле&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;stat&lt;/code&gt; выводит полную информацию о файле: размер, тип, inode, права доступа, владелец, три временные метки.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;stat file.txt\n# Вывод:\n#   File: file.txt\n#   Size: 1024       Blocks: 8    IO Block: 4096  regular file\n#   Device: 8,1      Inode: 131074    Links: 1\n#   Access: (0644/-rw-r--r--)  Uid: (1000/username)   Gid: (1000/username)\n#   Access: 2026-02-25 10:00:00\n#   Modify: 2026-02-24 15:30:00\n#   Change: 2026-02-24 15:30:00\n\nstat /etc                        # Информация о каталоге\nstat -f file.txt                 # Информация о файловой системе, на которой лежит файл\nstat --format=&amp;quot;%n %s %U&amp;quot;        # Форматированный вывод: имя, размер, владелец\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Три временные метки:&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;&lt;strong&gt;Access&lt;/strong&gt; - последнее чтение файла&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Modify&lt;/strong&gt; - последнее изменение содержимого&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Change&lt;/strong&gt; - последнее изменение метаданных (права, владелец)&lt;/li&gt;\n&lt;/ul&gt;\n&lt;h3&gt;file - определение типа файла&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;file&lt;/code&gt; анализирует содержимое файла и определяет его тип - независимо от расширения.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;file document.pdf          # Выведет: PDF document, version 1.6\nfile /bin/bash             # Выведет: ELF 64-bit LSB executable...\nfile archive.tar.gz        # Выведет: gzip compressed data...\nfile image.png             # Выведет: PNG image data, 1920 x 1080...\nfile script.sh             # Выведет: Bourne-Again shell script...\nfile unknown_file          # Полезно когда расширение неизвестно или отсутствует\n\nfile *                     # Определить тип всех файлов в текущем каталоге\nfile -i document.pdf       # MIME-тип вместо текстового описания\n&lt;/code&gt;&lt;/pre&gt;\n&lt;hr&gt;\n&lt;h2&gt;Просмотр содержимого файлов&lt;/h2&gt;\n&lt;h3&gt;cat - вывод содержимого файла&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;cat&lt;/code&gt; (от &lt;em&gt;concatenate&lt;/em&gt;) выводит содержимое одного или нескольких файлов. Лучше всего подходит для коротких файлов.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;cat file.txt                      # Вывести содержимое файла\ncat file1.txt file2.txt           # Объединить и вывести два файла\ncat -n file.txt                   # С номерами строк\ncat -A file.txt                   # Показать спецсимволы ($ в конце строк, ^I для табуляции)\ncat -s file.txt                   # Сжать несколько пустых строк в одну\ncat /dev/null &amp;gt; file.txt          # Очистить файл (обнулить)\ncat &amp;gt; newfile.txt                 # Создать файл и писать в него вручную (Ctrl+D для завершения)\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;less - постраничный просмотр&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;less&lt;/code&gt; - интерактивный просмотрщик для больших файлов. Не загружает весь файл в память, поэтому отлично работает с гигантскими логами.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;less /var/log/syslog\nless +F /var/log/syslog          # Открыть в режиме отслеживания (как tail -f)\nless -N file.txt                 # С номерами строк\nless -S file.txt                 # Без переноса длинных строк\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Управление внутри &lt;code&gt;less&lt;/code&gt;:&lt;/p&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Клавиша&lt;/th&gt;\n&lt;th&gt;Действие&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;Space&lt;/code&gt; / &lt;code&gt;f&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Следующая страница&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;b&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Предыдущая страница&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;g&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Начало файла&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;G&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Конец файла&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;/текст&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Поиск вперёд&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;?текст&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Поиск назад&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;n&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Следующее совпадение&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;N&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Предыдущее совпадение&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;q&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Выход&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h3&gt;more - упрощённый постраничный просмотр&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;more&lt;/code&gt; - предшественник &lt;code&gt;less&lt;/code&gt;, умеет только прокручивать вперёд. Использовать &lt;code&gt;less&lt;/code&gt; предпочтительнее, но &lt;code&gt;more&lt;/code&gt; гарантированно есть на любой POSIX-совместимой системе. &lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;more /etc/passwd\nmore -5 file.txt         # Показывать по 5 строк\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;head - первые строки файла&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;head&lt;/code&gt; по умолчанию выводит первые 10 строк файла.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;head file.txt                # Первые 10 строк\nhead -n 20 file.txt          # Первые 20 строк\nhead -n -5 file.txt          # Все строки, кроме последних 5\nhead -c 100 file.txt         # Первые 100 байт\nhead -q file1.txt file2.txt  # Несколько файлов без заголовков\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;tail - последние строки файла&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;tail&lt;/code&gt; по умолчанию выводит последние 10 строк.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;tail file.txt                # Последние 10 строк\ntail -n 20 file.txt          # Последние 20 строк\ntail -n +5 file.txt          # Все строки, начиная с 5-й\ntail -c 200 file.txt         # Последние 200 байт\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;tail -f - отслеживание файла в реальном времени&lt;/h3&gt;\n&lt;p&gt;Флаг &lt;code&gt;-f&lt;/code&gt; (от &lt;em&gt;follow&lt;/em&gt;) держит файл открытым и выводит новые строки по мере их появления. Незаменим для мониторинга логов.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;tail -f /var/log/syslog                  # Следить за системным логом\ntail -f /var/log/nginx/access.log        # Следить за логом nginx\ntail -fn 50 /var/log/auth.log            # Последние 50 строк + слежение\ntail -f file1.log file2.log              # Следить за несколькими файлами\n&lt;/code&gt;&lt;/pre&gt;\n&lt;div class=\&quot;custom-alert\&quot; data-alert-type=\&quot;tip\&quot;&gt;\n&lt;p&gt;&lt;code&gt;Ctrl+C&lt;/code&gt; для выхода из режима слежения. Если хотите следить за файлом даже после его ротации (пересоздания) - используйте &lt;code&gt;tail -F&lt;/code&gt; (заглавная F).&lt;/p&gt;\n\n&lt;/div&gt;\n\n&lt;hr&gt;\n&lt;h2&gt;Поиск внутри файлов&lt;/h2&gt;\n&lt;h3&gt;grep - поиск текста по шаблону&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;grep&lt;/code&gt; (от &lt;em&gt;global regular expression print&lt;/em&gt;) ищет строки по шаблону в файлах или потоке данных. Одна из самых используемых команд в Linux.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;grep &amp;quot;error&amp;quot; /var/log/syslog             # Строки содержащие &amp;quot;error&amp;quot;\ngrep -i &amp;quot;warning&amp;quot; file.txt               # Без учёта регистра\ngrep -n &amp;quot;root&amp;quot; /etc/passwd               # С номерами строк\ngrep -c &amp;quot;error&amp;quot; /var/log/syslog          # Подсчитать количество совпадений\ngrep -v &amp;quot;debug&amp;quot; app.log                  # Инвертировать: строки БЕЗ &amp;quot;debug&amp;quot;\ngrep -l &amp;quot;TODO&amp;quot; *.py                      # Только имена файлов с совпадениями\ngrep -w &amp;quot;root&amp;quot; /etc/passwd               # Только целые слова (не &amp;quot;rootdir&amp;quot;)\ngrep -A 3 &amp;quot;error&amp;quot; file.log               # 3 строки после совпадения (After)\ngrep -B 2 &amp;quot;error&amp;quot; file.log               # 2 строки до совпадения (Before)\ngrep -C 2 &amp;quot;error&amp;quot; file.log               # По 2 строки до и после (Context)\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;grep -r - рекурсивный поиск&lt;/h3&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;grep -r &amp;quot;function_name&amp;quot; .               # Во всех файлах текущего каталога\ngrep -r &amp;quot;TODO&amp;quot; /home/user/project       # В конкретном проекте\ngrep -rl &amp;quot;api_key&amp;quot; .                    # Только имена файлов рекурсивно\ngrep -r --include=&amp;quot;*.py&amp;quot; &amp;quot;import&amp;quot; .    # Только в .py файлах\ngrep -r --exclude=&amp;quot;*.log&amp;quot; &amp;quot;error&amp;quot; .    # Исключить .log файлы\ngrep -r --exclude-dir=&amp;quot;.git&amp;quot; &amp;quot;fix&amp;quot; .   # Исключить каталог\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;grep -E - расширенные регулярные выражения&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;-E&lt;/code&gt; (или &lt;code&gt;egrep&lt;/code&gt;) включает поддержку расширенного синтаксиса регулярных выражений.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;grep -E &amp;quot;(error|fail|critical)&amp;quot; /var/log/syslog   # ИЛИ\ngrep -E &amp;quot;^root&amp;quot; /etc/passwd                        # Строки, начинающиеся с &amp;quot;root&amp;quot;\ngrep -E &amp;quot;bash$&amp;quot; /etc/passwd                        # Строки, заканчивающиеся на &amp;quot;bash&amp;quot;\ngrep -E &amp;quot;[0-9]{1,3}\\.[0-9]{1,3}&amp;quot; file.txt         # IP-адреса (упрощённо)\ngrep -E &amp;quot;^$&amp;quot; file.txt                              # Пустые строки\ngrep -E &amp;quot;https?://&amp;quot; file.txt                       # http или https ссылки\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;awk - обработка и извлечение полей&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;awk&lt;/code&gt; - язык для построчной обработки текста. Особенно силён при работе с табличными данными, логами и файлами с разделителями.&lt;/p&gt;\n&lt;p&gt;Базовая модель: &lt;code&gt;awk &amp;#39;условие { действие }&amp;#39; файл&lt;/code&gt;. По умолчанию разделитель - пробел/tab, поля: &lt;code&gt;$1&lt;/code&gt;, &lt;code&gt;$2&lt;/code&gt;, ..., &lt;code&gt;$NF&lt;/code&gt; (последнее поле), &lt;code&gt;$0&lt;/code&gt; - вся строка.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# /etc/passwd: user:x:uid:gid:info:home:shell\nawk -F: &amp;#39;{print $1}&amp;#39; /etc/passwd                     # Имена всех пользователей\nawk -F: &amp;#39;{print $1, $3}&amp;#39; /etc/passwd                 # Имя и UID\nawk -F: &amp;#39;$3 &amp;gt;= 1000 {print $1}&amp;#39; /etc/passwd          # Только обычные пользователи (UID ≥ 1000)\nawk -F: &amp;#39;{print $1&amp;quot;: &amp;quot;$7}&amp;#39; /etc/passwd               # Форматированный вывод\n\n# Работа с пробельным разделителем\nawk &amp;#39;{print $1}&amp;#39; access.log                          # Первое поле (напр. IP в логе nginx)\nawk &amp;#39;NR==5&amp;#39; file.txt                                 # Вывести только 5-ю строку\nawk &amp;#39;NR&amp;gt;=5 &amp;amp;&amp;amp; NR&amp;lt;=10&amp;#39; file.txt                       # Строки с 5 по 10\n\n# Встроенные переменные\nawk &amp;#39;{print NR&amp;quot;: &amp;quot;$0}&amp;#39; file.txt                      # Добавить номера строк\nawk &amp;#39;END{print NR}&amp;#39; file.txt                         # Подсчитать количество строк\nawk &amp;#39;{sum += $1} END {print &amp;quot;Сумма:&amp;quot;, sum}&amp;#39; numbers.txt  # Сложить числа из первого столбца\n\n# BEGIN и END блоки\nawk &amp;#39;BEGIN{print &amp;quot;=== Пользователи ===&amp;quot;} -F: {print $1} END{print &amp;quot;=== Конец ===&amp;quot;}&amp;#39; /etc/passwd\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;sed - потоковый редактор&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;sed&lt;/code&gt; (от &lt;em&gt;stream editor&lt;/em&gt;) обрабатывает текст построчно - заменяет, удаляет, вставляет, фильтрует. По умолчанию не изменяет исходный файл, а выводит результат в stdout.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Замена\nsed &amp;#39;s/old/new/&amp;#39; file.txt              # Заменить первое вхождение в каждой строке\nsed &amp;#39;s/old/new/g&amp;#39; file.txt             # Заменить все вхождения (global)\nsed &amp;#39;s/old/new/gi&amp;#39; file.txt            # Без учёта регистра\nsed &amp;#39;s/root/admin/g&amp;#39; /etc/passwd       # Пример с реальным файлом\n\n# Редактирование файла &amp;quot;на месте&amp;quot;\nsed -i &amp;#39;s/old/new/g&amp;#39; file.txt          # Изменить файл (осторожно!)\nsed -i.bak &amp;#39;s/old/new/g&amp;#39; file.txt      # Изменить файл, сохранив backup .bak\n\n# Удаление строк\nsed &amp;#39;/^#/d&amp;#39; config.txt                 # Удалить все комментарии (строки с #)\nsed &amp;#39;/^$/d&amp;#39; file.txt                   # Удалить пустые строки\nsed &amp;#39;5d&amp;#39; file.txt                      # Удалить 5-ю строку\nsed &amp;#39;2,4d&amp;#39; file.txt                    # Удалить строки 2-4\n\n# Вывод конкретных строк\nsed -n &amp;#39;5p&amp;#39; file.txt                   # Вывести только 5-ю строку\nsed -n &amp;#39;5,10p&amp;#39; file.txt                # Строки 5-10\nsed -n &amp;#39;/error/p&amp;#39; file.txt             # Строки содержащие &amp;quot;error&amp;quot;\n\n# Добавление строк\nsed &amp;#39;3a\\Новая строка после 3-й&amp;#39; file.txt    # Добавить после строки 3\nsed &amp;#39;1i\\Заголовок&amp;#39; file.txt                 # Добавить перед строкой 1\n&lt;/code&gt;&lt;/pre&gt;\n&lt;hr&gt;\n&lt;p&gt;В следующей части - &lt;strong&gt;пользователи и группы&lt;/strong&gt;: создание, управление, &lt;code&gt;/etc/passwd&lt;/code&gt;, &lt;code&gt;/etc/shadow&lt;/code&gt;, &lt;code&gt;sudo&lt;/code&gt; и всё что с этим связано. а пока держите Linux Cheatsheet — Файловая система&lt;/p&gt;\n&lt;h2&gt;Навигация&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Команда&lt;/th&gt;\n&lt;th&gt;Описание&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;pwd&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Показать текущий каталог&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;cd /path&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Перейти в каталог&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;cd ..&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;На уровень вверх&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;cd ~&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;В домашний каталог&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;cd -&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;В предыдущий каталог&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;ls&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Содержимое текущего каталога&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;ls -l&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Подробный список (права, владелец, размер)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;ls -a&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Включая скрытые файлы&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;ls -lah&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Подробно + скрытые + читаемый размер&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;ls -lt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Сортировка по времени изменения&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;ls -lS&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Сортировка по размеру&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;ls -R&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Рекурсивный вывод&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;tree&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Дерево каталогов&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;tree -L 2&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Дерево на 2 уровня вглубь&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;tree -d&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Только каталоги&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;tree -a&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Включая скрытые&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h2&gt;Поиск файлов&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Команда&lt;/th&gt;\n&lt;th&gt;Описание&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;find . -name &amp;quot;*.log&amp;quot;&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Поиск по имени&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;find /etc -type f&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Только файлы&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;find /etc -type d&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Только каталоги&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;find /etc -type l&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Только символические ссылки&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;find / -size +100M&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Файлы больше 100 MB&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;find /tmp -mtime +7&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Не изменялись более 7 дней&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;find / -mmin -60&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Изменялись за последний час&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;find / -perm 777&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Файлы с правами 777&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;find /home -user username&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Файлы конкретного пользователя&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;find /tmp -name &amp;quot;*.tmp&amp;quot; -delete&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Найти и удалить&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;locate filename&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Быстрый поиск по базе данных&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;locate -i filename&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Поиск без учёта регистра&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;sudo updatedb&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Обновить базу данных locate&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h2&gt;Работа с файлами и каталогами&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Команда&lt;/th&gt;\n&lt;th&gt;Описание&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;touch file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Создать пустой файл&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;mkdir dir&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Создать каталог&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;mkdir -p a/b/c&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Создать вложенные каталоги&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;cp file.txt copy.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Копировать файл&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;cp -r dir1 dir2&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Копировать каталог рекурсивно&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;cp -p file.txt copy.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Копировать с сохранением метаданных&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;mv old.txt new.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Переименовать файл&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;mv file.txt /tmp/&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Переместить файл&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;rm file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Удалить файл&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;rm -r dir/&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Удалить каталог рекурсивно&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;rm -rf dir/&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Принудительное удаление без подтверждения&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;ln file.txt hardlink.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Создать жёсткую ссылку&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;ln -s file.txt symlink.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Создать символическую ссылку&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;stat file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Подробная информация о файле&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;file file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Определить тип файла&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h2&gt;Просмотр содержимого&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Команда&lt;/th&gt;\n&lt;th&gt;Описание&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;cat file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Вывести содержимое файла&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;cat -n file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;С номерами строк&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;less file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Постраничный просмотр (интерактивный)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;less -N file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;С номерами строк&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;more file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Постраничный просмотр (упрощённый)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;head file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Первые 10 строк&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;head -n 20 file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Первые 20 строк&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;tail file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Последние 10 строк&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;tail -n 20 file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Последние 20 строк&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;tail -f file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Слежение за файлом в реальном времени&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;tail -F file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Слежение с учётом ротации файла&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h2&gt;Поиск внутри файлов&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Команда&lt;/th&gt;\n&lt;th&gt;Описание&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;grep &amp;quot;text&amp;quot; file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Поиск строк по шаблону&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;grep -i &amp;quot;text&amp;quot; file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Без учёта регистра&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;grep -n &amp;quot;text&amp;quot; file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;С номерами строк&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;grep -c &amp;quot;text&amp;quot; file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Подсчитать совпадения&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;grep -v &amp;quot;text&amp;quot; file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Инвертировать (строки БЕЗ шаблона)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;grep -l &amp;quot;text&amp;quot; *.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Только имена файлов с совпадениями&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;grep -w &amp;quot;word&amp;quot; file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Только целые слова&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;grep -A 3 &amp;quot;text&amp;quot; file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;3 строки после совпадения&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;grep -B 2 &amp;quot;text&amp;quot; file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;2 строки до совпадения&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;grep -C 2 &amp;quot;text&amp;quot; file.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;По 2 строки до и после&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;grep -r &amp;quot;text&amp;quot; .&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Рекурсивный поиск&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;grep -rl &amp;quot;text&amp;quot; .&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Рекурсивно, только имена файлов&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;grep -E &amp;quot;(err|warn)&amp;quot; file&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Расширенные регулярные выражения&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;grep -E &amp;quot;^root&amp;quot; file&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Строки начинающиеся с &amp;quot;root&amp;quot;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;grep -E &amp;quot;bash$&amp;quot; file&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Строки заканчивающиеся на &amp;quot;bash&amp;quot;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;awk &amp;#39;{print $1}&amp;#39; file&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Вывести первый столбец&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;awk -F: &amp;#39;{print $1}&amp;#39; file&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Разделитель двоеточие&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;awk &amp;#39;NR==5&amp;#39; file&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Вывести только 5-ю строку&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;awk &amp;#39;END{print NR}&amp;#39; file&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Подсчитать строки&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;sed &amp;#39;s/old/new/g&amp;#39; file&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Заменить все вхождения&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;sed -i &amp;#39;s/old/new/g&amp;#39; file&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Заменить в самом файле&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;sed -i.bak &amp;#39;s/old/new/g&amp;#39; file&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Заменить с созданием backup&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;sed &amp;#39;/^$/d&amp;#39; file&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Удалить пустые строки&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;sed &amp;#39;/^#/d&amp;#39; file&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Удалить строки с комментариями&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;sed -n &amp;#39;5,10p&amp;#39; file&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Вывести строки 5-10&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h2&gt;Базовые команды терминала&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Команда&lt;/th&gt;\n&lt;th&gt;Описание&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;clear&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Очистить терминал&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;history&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;История команд&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;history | grep &amp;quot;cmd&amp;quot;&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Поиск по истории&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;!!&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Повторить последнюю команду&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;!5&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Выполнить команду №5 из истории&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;Ctrl + C&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Прервать текущую команду&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;Ctrl + Z&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Приостановить процесс&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;Ctrl + L&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Очистить терминал (как clear)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;Ctrl + R&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Поиск по истории команд&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;Ctrl + A&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Перейти в начало строки&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;Ctrl + E&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Перейти в конец строки&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;Ctrl + U&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Удалить строку до курсора&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;Tab&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Автодополнение&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;man command&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Документация по команде&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;command --help&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Краткая справка&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;which command&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Путь к исполняемому файлу&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;echo &amp;quot;text&amp;quot;&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Вывести текст&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;exit&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Выйти из терминала / сессии&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&quot;],&quot;typename&quot;:[0,&quot;Линукс&quot;],&quot;categoryPath&quot;:[1,[[0,{&quot;slug&quot;:[0,&quot;linux&quot;],&quot;title&quot;:[0,&quot;Линукс&quot;],&quot;icon&quot;:[0,&quot;folder-tree&quot;]}]]],&quot;navSlug&quot;:[0,&quot;article&quot;],&quot;navTitle&quot;:[0,&quot;Статьи opensophy&quot;],&quot;navIcon&quot;:[0,&quot;brain&quot;],&quot;author&quot;:[0,&quot;&quot;],&quot;date&quot;:[0,&quot;2026-02-25&quot;],&quot;updated&quot;:[0,&quot;2026-05-26&quot;],&quot;tags&quot;:[1,[[0,&quot;linux&quot;],[0,&quot;инструменты&quot;]]],&quot;lang&quot;:[0,&quot;ru&quot;],&quot;keywords&quot;:[0,&quot;Linux файловая система, команды Linux, навигация Linux, grep awk sed, bash команды&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;icon&quot;:[0,&quot;search-code&quot;],&quot;priority&quot;:[0,0],&quot;custom&quot;:[0,&quot;&quot;],&quot;frontmatter&quot;:[0,{&quot;title&quot;:[0,&quot;Linux: Файлы, навигация и поиск&quot;],&quot;description&quot;:[0,&quot;Первая часть серии о Linux для DevOps и DevSecOps - разбираем структуру файловой системы, навигацию, работу с файлами, просмотр содержимого и поиск внутри файлов.&quot;],&quot;date&quot;:[0,&quot;2026-02-25&quot;],&quot;updated&quot;:[0,&quot;2026-05-26&quot;],&quot;tags&quot;:[0,&quot;linux, инструменты&quot;],&quot;keywords&quot;:[0,&quot;Linux файловая система, команды Linux, навигация Linux, grep awk sed, bash команды&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;lang&quot;:[0,&quot;ru&quot;],&quot;priority&quot;:[0,&quot;0&quot;]}]}]}" ssr client="only" opts="{&quot;name&quot;:&quot;DocContent&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island>   <astro-island uid="Z1Ix9sf" component-url="/assets/DevPanelLoader.6ELCzLIu.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{}" ssr client="only" opts="{&quot;name&quot;:&quot;DevPanelLoader&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island> <!-- Re-apply theme after SPA navigation --> <script>
+      document.addEventListener('astro:after-swap', function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      });
+    </script> </body> </html>

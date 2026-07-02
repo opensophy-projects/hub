@@ -1,0 +1,583 @@
+<!DOCTYPE html><html lang="ru"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- Theme: runs before paint, prevents flash --><script>
+      (function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.add('js');
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      })();
+    </script><!-- Primary SEO --><title>Linux: Права доступа — Opensophy</title><meta name="description" content="Третья часть серии о Linux для DevOps и DevSecOps – разбираем права доступа, модель UGO, биты rwx, числовое и символьное представление, chmod и chown."><meta name="keywords" content="opensophy, кибербезопасность, DevSecOps, linux, разработка, инструменты, туториалы, open source, mTLS, SAST, DAST, SCA, zero trust, CI/CD"><meta name="author" content="Opensophy"><meta name="robots" content="index, follow"><meta name="theme-color" content="#0a0a0a"><meta name="color-scheme" content="dark light"><link rel="canonical" href="https://opensophy.com/article/linux/file-permissions/"><!-- Sitemap discovery --><link rel="sitemap" type="application/xml" href="/sitemap.xml"><!-- Open Graph --><meta property="og:site_name" content="Opensophy"><meta property="og:title" content="Linux: Права доступа — Opensophy"><meta property="og:description" content="Третья часть серии о Linux для DevOps и DevSecOps – разбираем права доступа, модель UGO, биты rwx, числовое и символьное представление, chmod и chown."><meta property="og:type" content="article"><meta property="og:url" content="https://opensophy.com/article/linux/file-permissions/"><meta property="og:image" content="https://opensophy.com/assets/image.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ru_RU"><!-- Twitter / X --><meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@opensophy"><meta name="twitter:title" content="Linux: Права доступа — Opensophy"><meta name="twitter:description" content="Третья часть серии о Linux для DevOps и DevSecOps – разбираем права доступа, модель UGO, биты rwx, числовое и символьное представление, chmod и chown."><meta name="twitter:image" content="https://opensophy.com/assets/image.png"><!-- Article-specific --><meta property="article:published_time" content="2026-05-13T00:00:00.000Z"><meta property="article:modified_time" content="2026-05-13T00:00:00.000Z"><meta property="article:author" content="Opensophy"><!-- Favicon --><link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/favicon.png"><!-- Astro SPA transitions --><meta name="astro-view-transitions-enabled" content="true"><meta name="astro-view-transitions-fallback" content="animate"><script type="module" src="/assets/ClientRouter.astro_astro_type_script_index_0_lang.CAqDO0tx.js"></script><!-- Structured Data JSON-LD --><script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Linux: Права доступа","description":"Третья часть серии о Linux для DevOps и DevSecOps – разбираем права доступа, модель UGO, биты rwx, числовое и символьное представление, chmod и chown.","url":"https://opensophy.com/article/linux/file-permissions/","image":"https://opensophy.com/assets/image.png","author":{"@type":"Person","name":"Opensophy"},"publisher":{"@type":"Organization","name":"Opensophy","url":"https://opensophy.com"},"datePublished":"2026-05-13T00:00:00.000Z","dateModified":"2026-05-13T00:00:00.000Z","inLanguage":"ru"}</script><link rel="stylesheet" href="/assets/Layout.BzjEPNLe.css"></head> <body> <style>astro-island,astro-slot,astro-static-slot{display:contents}</style><script>(()=>{var e=async t=>{await(await t())()};(self.Astro||(self.Astro={})).only=e;window.dispatchEvent(new Event("astro:only"));})();</script><script>(()=>{var g=Object.defineProperty;var w=(c,s,d)=>s in c?g(c,s,{enumerable:!0,configurable:!0,writable:!0,value:d}):c[s]=d;var l=(c,s,d)=>w(c,typeof s!="symbol"?s+"":s,d);var E=new Set(["__proto__","constructor","prototype"]);{let c={0:t=>y(t),1:t=>d(t),2:t=>new RegExp(t),3:t=>new Date(t),4:t=>new Map(d(t)),5:t=>new Set(d(t)),6:t=>BigInt(t),7:t=>new URL(t),8:t=>new Uint8Array(t),9:t=>new Uint16Array(t),10:t=>new Uint32Array(t),11:t=>Number.POSITIVE_INFINITY*t},s=t=>{let[p,e]=t;return p in c?c[p](e):void 0},d=t=>t.map(s),y=t=>typeof t!="object"||t===null?t:Object.fromEntries(Object.entries(t).map(([p,e])=>[p,s(e)]));class f extends HTMLElement{constructor(){super(...arguments);l(this,"Component");l(this,"hydrator");l(this,"hydrate",async()=>{var b;if(!this.hydrator||!this.isConnected)return;let e=(b=this.parentElement)==null?void 0:b.closest("astro-island[ssr]");if(e){e.addEventListener("astro:hydrate",this.hydrate,{once:!0});return}let n=this.querySelectorAll("astro-slot"),r={},i=this.querySelectorAll("template[data-astro-template]");for(let o of i){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("data-astro-template")||"default"]=o.innerHTML,o.remove())}for(let o of n){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("name")||"default"]=o.innerHTML)}let u;try{u=this.hasAttribute("props")?y(JSON.parse(this.getAttribute("props"))):{}}catch(o){let a=this.getAttribute("component-url")||"<unknown>",v=this.getAttribute("component-export");throw v&&(a+=` (export ${v})`),console.error(`[hydrate] Error parsing props for component ${a}`,this.getAttribute("props"),o),o}let h;await this.hydrator(this)(this.Component,u,r,{client:this.getAttribute("client")}),this.removeAttribute("ssr"),this.dispatchEvent(new CustomEvent("astro:hydrate"))});l(this,"unmount",()=>{this.isConnected||this.dispatchEvent(new CustomEvent("astro:unmount"))})}disconnectedCallback(){document.removeEventListener("astro:after-swap",this.unmount),document.addEventListener("astro:after-swap",this.unmount,{once:!0})}connectedCallback(){if(!this.hasAttribute("await-children")||document.readyState==="interactive"||document.readyState==="complete")this.childrenConnectedCallback();else{let e=()=>{document.removeEventListener("DOMContentLoaded",e),n.disconnect(),this.childrenConnectedCallback()},n=new MutationObserver(()=>{var r;((r=this.lastChild)==null?void 0:r.nodeType)===Node.COMMENT_NODE&&this.lastChild.nodeValue==="astro:end"&&(this.lastChild.remove(),e())});n.observe(this,{childList:!0}),document.addEventListener("DOMContentLoaded",e)}}async childrenConnectedCallback(){let e=this.getAttribute("before-hydration-url");e&&await import(e),this.start()}getRetryImportUrl(e){let n=new URL(e,document.baseURI),r=`astro-retry=${Date.now()}`,i=n.hash.replace(/^#/,"");return n.hash=i?`${i}&${r}`:r,n.toString()}async importWithRetry(e){try{return await import(e)}catch(n){return await new Promise(r=>setTimeout(r,1e3)),import(this.getRetryImportUrl(e))}}handleHydrationError(e){let n=this.getAttribute("component-url"),r=new CustomEvent("astro:hydration-error",{cancelable:!0,bubbles:!0,composed:!0,detail:{error:e,componentUrl:n}});this.dispatchEvent(r)&&console.error(`[astro-island] Error hydrating ${n}`,e)}async start(){let e=JSON.parse(this.getAttribute("opts")),n=this.getAttribute("client");if(Astro[n]===void 0){window.addEventListener(`astro:${n}`,()=>this.start(),{once:!0});return}try{await Astro[n](async()=>{let r=this.getAttribute("renderer-url");try{let[i,{default:u}]=await Promise.all([this.importWithRetry(this.getAttribute("component-url")),r?this.importWithRetry(r):Promise.resolve({default:()=>()=>{}})]),h=this.getAttribute("component-export")||"default";if(h.includes(".")){this.Component=i;for(let m of h.split(".")){if(E.has(m)||!this.Component||typeof this.Component!="object"&&typeof this.Component!="function"||!Object.hasOwn(this.Component,m))throw new Error(`Invalid component export path: ${h}`);this.Component=this.Component[m]}}else{if(E.has(h))throw new Error(`Invalid component export path: ${h}`);this.Component=i[h]}return this.hydrator=u,this.hydrate}catch(i){return this.handleHydrationError(i),()=>{}}},e,this)}catch(r){this.handleHydrationError(r)}}attributeChangedCallback(){this.hydrate()}}l(f,"observedAttributes",["props"]),customElements.get("astro-island")||customElements.define("astro-island",f)}})();</script>   <noscript> <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;"> <article><h2>Введение</h2>
+<p>Продолжаем серию рубрики Linux. В прошлой серии разобрали пользователей и группы – UID, GID, <code>/etc/passwd</code>. Теперь разберём что ядро делает с этими числами когда процесс пытается открыть файл или войти в директорию. Про права доступа легко выучить команды – <code>chmod 755</code>, <code>chown user file</code> – но не понимать что происходит под капотом. Тогда начинаются странные ситуации: «я же владелец, почему Permission denied?». Цель этой статьи – дать модель, а не только набор команд.</p>
+<p>Вся статья построена на практике: каждый раздел можно пройти руками. Для большинства примеров достаточно обычного пользователя, для части нужен <code>sudo</code>. Где нужен – отмечено явно. Серия в основном под Ubuntu/Debian.</p>
+<p>В конце статьи будет бонус который даст вам возможность изучить права доступа в Linux ещё доступнее и возможно проще.</p>
+<hr>
+<h2>1. Что такое права доступа и зачем они нужны</h2>
+<p>Linux – многопользовательская система. На одной машине одновременно работают процессы от разных пользователей: nginx читает файлы сайта, postgres работает со своими данными, разработчик ivan пишет код в своём каталоге. Без изоляции любой мог бы читать чужие ключи SSH, удалять чужие файлы, подменять конфиги сервисов.</p>
+<p>Права доступа – механизм изоляции. Каждый файловый объект несёт метаданные: кто владелец, какая группа, кто что может делать. Метаданные хранятся в <strong>inode</strong> – структуре файловой системы которая описывает файл. Важно понимать: содержимое файла и его метаданные (включая права) хранятся раздельно. Когда вы делаете <code>ls -la</code> – вы читаете именно inode, а не сам файл.</p>
+<p>Посмотрим на конкретный пример. Файл <code>/etc/shadow</code> хранит хеши паролей всех пользователей:</p>
+<pre><code class="language-bash">ls -la /etc/shadow
+</code></pre>
+<pre><code>-rw-r----- 1 root shadow 1478 апр 16 12:03 /etc/shadow
+</code></pre>
+<p>Права гарантируют что читать его может только root и члены группы <code>shadow</code>. Обычный пользователь – нет. Разберём эту строку полностью, слева направо.</p>
+<table>
+<thead>
+<tr>
+<th>Часть</th>
+<th>Что означает</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>-rw-r-----</code></td>
+<td>тип файла и биты прав (разберём ниже)</td>
+</tr>
+<tr>
+<td><code>1</code></td>
+<td>количество жёстких ссылок на файл</td>
+</tr>
+<tr>
+<td><code>root</code></td>
+<td>владелец файла</td>
+</tr>
+<tr>
+<td><code>shadow</code></td>
+<td>группа-владелец файла</td>
+</tr>
+<tr>
+<td><code>1478</code></td>
+<td>размер в байтах</td>
+</tr>
+<tr>
+<td><code>апр 16 12:03</code></td>
+<td>дата последнего изменения</td>
+</tr>
+<tr>
+<td><code>/etc/shadow</code></td>
+<td>путь к файлу</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>2. Модель UGO – три класса доступа</h2>
+<p>Стандартная модель Linux делит всех на три класса относительно конкретного файла.</p>
+<p><strong>U – User (владелец).</strong> Один конкретный пользователь. Когда создаёте файл – автоматически становитесь его владельцем. <strong>G – Group (группа).</strong> Одна конкретная группа. По умолчанию – primary group пользователя который создал файл. <strong>O – Others (остальные).</strong> Все кто не попал в первые два класса.</p>
+<p>Для каждого из трёх классов устанавливается свой набор прав. Вот как это выглядит в выводе <code>ls -la</code>:</p>
+<pre><code>veil@veilos:~$ ls -la
+drwxr-x---+ 19 veil veil 4096 апр 24 13:14 .
+</code></pre>
+<p>Первый символ – тип файла:</p>
+<table>
+<thead>
+<tr>
+<th>Символ</th>
+<th>Тип</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>-</code></td>
+<td>обычный файл</td>
+</tr>
+<tr>
+<td><code>d</code></td>
+<td>директория</td>
+</tr>
+<tr>
+<td><code>l</code></td>
+<td>символическая ссылка</td>
+</tr>
+<tr>
+<td><code>b</code></td>
+<td>блочное устройство</td>
+</tr>
+<tr>
+<td><code>c</code></td>
+<td>символьное устройство</td>
+</tr>
+<tr>
+<td><code>p</code></td>
+<td>именованный канал (pipe)</td>
+</tr>
+<tr>
+<td><code>s</code></td>
+<td>сокет</td>
+</tr>
+</tbody></table>
+<p>Следующие 9 символов – три блока по три бита для U, G и O. Вернёмся к <code>/etc/shadow</code>:</p>
+<pre><code>-  rw-  r--  ---
+   U      G    O
+
+U=rw- → владелец (root) читает и пишет
+G=r-- → группа (shadow) только читает
+O=--- → все остальные – никаких прав
+</code></pre>
+<p>Каждый файл имеет ровно одного владельца и ровно одну группу – не двух, не список. Это ограничение стандартной модели UGO. Для более гибкого управления существуют ACL – разберём их в разделе 9.</p>
+<hr>
+<h2>3. Биты rwx – что они означают</h2>
+<p>Три бита в каждом блоке: <strong>r</strong> – read, <strong>w</strong> – write, <strong>x</strong> – execute. Установлен бит – операция разрешена. Сброшен (дефис) – запрещена. Смысл битов различается для файлов и директорий.</p>
+<h3>Для файлов</h3>
+<table>
+<thead>
+<tr>
+<th>Бит</th>
+<th>Что разрешает</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>r</code></td>
+<td>читать содержимое (<code>cat</code>, <code>less</code>, <code>cp</code>)</td>
+</tr>
+<tr>
+<td><code>w</code></td>
+<td>изменять содержимое (редакторы, <code>echo &gt;&gt;</code>)</td>
+</tr>
+<tr>
+<td><code>x</code></td>
+<td>запускать как программу</td>
+</tr>
+</tbody></table>
+<h3>Для директорий</h3>
+<p>Здесь важно не путать – директория это тоже файл, просто специального типа. Биты работают иначе.</p>
+<table>
+<thead>
+<tr>
+<th>Бит</th>
+<th>Что разрешает</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>r</code></td>
+<td>читать список файлов внутри (<code>ls</code>)</td>
+</tr>
+<tr>
+<td><code>w</code></td>
+<td>создавать и удалять файлы внутри</td>
+</tr>
+<tr>
+<td><code>x</code></td>
+<td>входить (<code>cd</code>) и обращаться к файлам по имени</td>
+</tr>
+</tbody></table>
+<p>На директориях бит <code>х</code> (проход) нужен, чтобы в дальнейшем войти через <code>cd</code> или обратиться к файлу по пути. <code>r</code> без <code>x</code> будет парадоксом, где список файлов через <code>ls</code> будет видно а открыть нельзя, поэтому <code>r</code> и <code>x</code> на директориях почти во многих случаях ставятся вместе. </p>
+<hr>
+<h2>4. Числовое и символьное представление</h2>
+<p>Существует два способа записывать права, и оба используются в реальной работе. Разберём оба.</p>
+<h3>Числовое (восьмеричное)</h3>
+<p>Каждый бит имеет числовое значение:</p>
+<pre><code>r = 4
+w = 2
+x = 1
+- = 0
+</code></pre>
+<p>Чтобы получить число для класса – складываем биты:</p>
+<pre><code>rwx = 4+2+1 = 7
+rw- = 4+2+0 = 6
+r-x = 4+0+1 = 5
+r-- = 4+0+0 = 4
+--- = 0+0+0 = 0
+</code></pre>
+<p>Итоговые права – три цифры, по одной для U, G, O:</p>
+<pre><code>755 → rwx r-x r-x
+644 → rw- r-- r--
+700 → rwx --- ---
+600 → rw- --- ---
+</code></pre>
+<p><code>777</code> означает что любой пользователь на системе может читать, изменять и запускать файл. На сервере где работают несколько пользователей – это дыра. Особенно опасно если это скрипт который запускается по cron от root – любой сможет подменить его содержимое. Используйте с осторожностью.</p>
+<p>Шпаргалка по типовым комбинациям:</p>
+<table>
+<thead>
+<tr>
+<th>Права</th>
+<th>Символьно</th>
+<th>Когда применять</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>644</code></td>
+<td><code>rw-r--r--</code></td>
+<td>Обычные файлы, конфиги</td>
+</tr>
+<tr>
+<td><code>755</code></td>
+<td><code>rwxr-xr-x</code></td>
+<td>Исполняемые файлы, директории</td>
+</tr>
+<tr>
+<td><code>600</code></td>
+<td><code>rw-------</code></td>
+<td>Приватные ключи SSH, секреты</td>
+</tr>
+<tr>
+<td><code>640</code></td>
+<td><code>rw-r-----</code></td>
+<td>Конфиги с паролями – группа читает, others нет</td>
+</tr>
+<tr>
+<td><code>700</code></td>
+<td><code>rwx------</code></td>
+<td>Домашняя директория сервисного пользователя</td>
+</tr>
+<tr>
+<td><code>750</code></td>
+<td><code>rwxr-x---</code></td>
+<td>Директории сервисов</td>
+</tr>
+<tr>
+<td><code>777</code></td>
+<td><code>rwxrwxrwx</code></td>
+<td>Почти никогда – проблема безопасности</td>
+</tr>
+</tbody></table>
+<h3>Символьное</h3>
+<p>Удобно когда нужно добавить или убрать один бит не трогая остальные – не надо держать в голове итоговое число. Синтаксис: <code>[кто][операция][что]</code>.</p>
+<p><strong>Кто:</strong> <code>u</code> – владелец, <code>g</code> – группа, <code>o</code> – остальные, <code>a</code> – все сразу (u+g+o).</p>
+<p><strong>Операция:</strong> <code>+</code> – добавить, <code>-</code> – убрать, <code>=</code> – установить точно (остальные биты сбросятся).</p>
+<pre><code class="language-bash">chmod u+x script.sh        # добавить x владельцу
+chmod g-w file.txt         # убрать w у группы
+chmod o=r file.txt         # ровно r для others, остальное сбрасывается
+chmod a+x file.sh          # добавить x всем
+chmod u+x,g-w file.txt     # несколько операций через запятую
+chmod go-rwx secret.txt    # убрать всё у группы и others
+</code></pre>
+<p><strong>Когда что удобнее:</strong> числовой – когда знаешь точное итоговое состояние. Символьный – когда хочешь изменить один бит не затрагивая остальные.</p>
+<p><strong>Особый случай: <code>+X</code> (заглавная)</strong></p>
+<p><code>+x</code> (строчная) ставит бит execute на всё подряд – и на файлы, и на директории. <code>+X</code> (заглавная) её можно назвать умнее: она ставит execute только там, где это имеет смысл – на директории всегда, на файлы только если у кого-то из классов уже стоит <code>x</code>.</p>
+<pre><code class="language-bash">chmod -R +x dir/     # x поставится на ВСЕ файлы внутри, включая .txt, .jpg
+chmod -R +X dir/     # x поставится только на директории и уже исполняемые файлы
+</code></pre>
+<p>Пример где можно применить: для рекурсивной установки прав.(Это безопаснее и правильнее чем потом чистить лишние биты через <code>find</code>.)</p>
+<hr>
+<h2>5. chmod – изменение прав</h2>
+<p><code>chmod</code> (от <em>change mode</em>) – команда для изменения прав доступа.</p>
+<pre><code class="language-bash"># Числовым способом
+chmod 644 file.txt
+chmod 755 /var/www/html
+chmod 600 ~/.ssh/id_rsa
+
+# Символьным способом
+chmod u+x script.sh
+chmod g+w shared/
+chmod o-rwx secret.txt
+
+# Рекурсивно для всего дерева каталогов
+chmod -R 750 /var/lib/app
+</code></pre>
+<p>Здесь есть типичная ловушка при настройке веб-серверов. Многие делают так:</p>
+<pre><code class="language-bash">chmod -R 755 /var/www/html
+</code></pre>
+<p>Эта команда поставит <code>755</code> на абсолютно все объекты – и директории, и файлы. Для директорий <code>755</code> нормально, им нужен <code>x</code> чтобы в них можно было входить. Но для файлов это означает что <code>.html</code>, <code>.css</code>, <code>.jpg</code> становятся исполняемыми – а этого не должно быть. Правильный способ – разделить файлы и директории:</p>
+<pre><code class="language-bash"># Директориям нужен x чтобы в них можно было входить
+find /var/www/html -type d -exec chmod 755 {} \;
+
+# Файлам x не нужен
+find /var/www/html -type f -exec chmod 644 {} \;
+</code></pre>
+<p>После этого права будут корректные: директории – <code>755</code>, файлы – <code>644</code>, без лишнего <code>x</code>. Главное: не ставить права «на глаз» – всегда думайте кому реально нужен доступ.</p>
+<hr>
+<h2>6. chown и chgrp – смена владельца и группы</h2>
+<p><code>chown</code> (от <em>change owner</em>) меняет владельца файла, группу, или оба сразу. <code>chgrp</code> (от <em>change group</em>) меняет только группу – по сути то же что <code>chown :group</code>, просто отдельная команда.</p>
+<pre><code class="language-bash"># Сменить только владельца
+chown ivan file.txt
+
+# Сменить только группу
+chgrp developers file.txt
+
+# Сменить и владельца и группу сразу
+chown ivan:developers file.txt
+
+# Рекурсивно
+chown -R www-data:www-data /var/www/html
+</code></pre>
+<p>Обычный пользователь может поменять группу файла только на одну из своих собственных групп. Поменять владельца на другого пользователя – только root. Без этого ограничения можно было бы «подарить» вредоносный файл с SUID другому пользователю – и это стало бы простым способом эскалации привилегий.</p>
+<hr>
+<h2>7. Как ядро принимает решение о доступе</h2>
+<p>Это самый важный раздел статьи. Команды можно выучить, но без понимания алгоритма поведение системы будет казаться непредсказуемым. Особенно когда видишь Permission denied там где не ожидаешь.</p>
+<h3>7.1 Real vs Effective UID</h3>
+<p>Когда пользователь запускает программу, у процесса есть несколько идентификаторов. <strong>RUID (Real UID)</strong> – кто фактически запустил процесс. Не меняется в течение жизни процесса. <strong>EUID (Effective UID)</strong> – от чьего имени процесс работает прямо сейчас. Именно его проверяет ядро при обращении к файлу.</p>
+<p>В большинстве случаев RUID == EUID. Но это различие становится важным при SUID – разберём в следующем разделе.</p>
+<pre><code class="language-bash">cat /proc/self/status | grep Uid
+</code></pre>
+<pre><code>Uid:    1000    1000    1000    1000
+</code></pre>
+<p>Четыре числа в строке: Real UID, Effective UID, Saved UID (нужен для временного переключения прав), Filesystem UID (используется при проверке доступа к файлам – в большинстве случаев совпадает с EUID). Для понимания прав доступа ключевой – второй, EUID.</p>
+<h3>7.2 Алгоритм проверки прав</h3>
+<p>Когда процесс обращается к файлу, ядро проверяет права строго по порядку и останавливается на первом совпадении:</p>
+<ol>
+<li>Если EUID = 0 (root) → доступ почти всегда разрешён</li>
+<li>Если EUID совпадает с владельцем файла → используются права владельца</li>
+<li>Если группа процесса (EGID или дополнительные группы) совпадает с группой файла → используются права группы</li>
+<li>Во всех остальных случаях → используются права для остальных (others)</li>
+</ol>
+<p>Система не комбинирует права – она берёт только один подходящий вариант и на этом заканчивает проверку.</p>
+<h3>7.3 Права не суммируются</h3>
+<p>Частая ловушка с которой сталкиваются многие. Допустим есть файл:</p>
+<pre><code class="language-bash">ls -la secret.txt
+# ----rwx--- 1 ivan developers secret.txt
+#  U: ---    G: rwx    O: ---
+</code></pre>
+<p>Пользователь <code>ivan</code> является владельцем и одновременно входит в группу <code>developers</code>:</p>
+<pre><code class="language-bash">id ivan
+# uid=1001(ivan) gid=1001(ivan) groups=1001(ivan),1005(developers)
+</code></pre>
+<p>Но если ivan попробует прочитать файл – получит Permission denied. Почему? Ядро проверило: EUID процесса совпадает с UID файла – совпадение на шаге 2. Применило биты owner – <code>---</code>. Остановилось. Биты group <code>rwx</code> даже не рассматривались. <code>ivan</code> является владельцем, но у владельца нет прав. Группа имеет полный доступ – но до неё проверка не дошла.</p>
+<p>Решение – дать владельцу права явно:</p>
+<pre><code class="language-bash">chmod u+r secret.txt
+# или явно задать нужные права
+chmod 740 secret.txt    # u=rwx, g=r--, o=---
+</code></pre>
+<p>Уточнение: пример выше демонстрирует механику проверки прав ядром, а не реальную схему работы с группами. Ситуация <code>----rwx---</code> на файле, где владелец намеренно без прав, надуманная и в реальной практике почти не встречается.</p>
+<p><strong>Зачем тогда нужны группы?</strong></p>
+<p>Главная задача групп – дать одинаковые права произвольному набору пользователей без того, чтобы менять права на каждом файле вручную. Это работает именно потому что проверка group-битов срабатывает когда пользователь <strong>не является владельцем</strong> файла.</p>
+<p>Примерный сценарий: команда разработчиков работает с общим проектом.</p>
+<pre><code class="language-bash"># Создать группу и добавить пользователей
+groupadd developers
+usermod -aG developers maria
+usermod -aG developers sergei
+ 
+# Назначить группу на директорию проекта
+chown -R ivan:developers /project
+chmod -R 750 /project
+</code></pre>
+<p>Теперь <code>ivan</code> – владелец (<code>rwx</code>), все члены группы <code>developers</code> – читают и входят (<code>r-x</code>), остальные – ничего. Когда нужно добавить нового разработчика – просто <code>usermod -aG developers newuser</code>, и он сразу получает нужный доступ. Группы становятся особенно полезными в связке с SGID на директории (раздел 8): новые файлы автоматически наследуют группу директории, и всем членам группы не нужно думать о правах при создании файлов.</p>
+<h3>7.4 root и права</h3>
+<p>root (EUID=0) обходит проверку UGO для большинства операций – может читать любой файл, писать в любой файл независимо от прав. Но есть одно исключение: бит execute. Даже root не может запустить файл если ни у кого не установлен <code>x</code>:</p>
+<pre><code class="language-bash">chmod 644 script.sh
+sudo ./script.sh
+# ./script.sh: Permission denied – даже для root
+</code></pre>
+<p>Чтобы запустить – сначала <code>chmod +x script.sh</code>, потом <code>sudo ./script.sh</code>. Это защита от случайного запуска: если <code>x</code> не установлен, файл не является исполняемым ни для кого, включая root.</p>
+<hr>
+<h2>8. Специальные биты – SUID, SGID, Sticky bit</h2>
+<p>Помимо стандартных <code>rwx</code> существуют три специальных бита. Каждый работает по-разному в зависимости от того – установлен он на файл или на директорию.</p>
+<h3>SUID (Set User ID)</h3>
+<p>При запуске файла с SUID процесс получает <strong>EUID = UID владельца файла</strong>, а не UID пользователя который его запустил. Пример – команда <code>passwd</code>. Обычный пользователь должен иметь возможность сменить свой пароль, а значит записать новый хеш в <code>/etc/shadow</code>. Но <code>/etc/shadow</code> доступен только root. SUID решает эту проблему: <code>/usr/bin/passwd</code> принадлежит root и имеет SUID – при запуске процесс временно получает EUID=0 и может писать в shadow.</p>
+<pre><code class="language-bash">ls -la /usr/bin/passwd
+# -rwsr-xr-x 1 root root 64152 Feb 6 /usr/bin/passwd
+</code></pre>
+<p><code>s</code> вместо <code>x</code> в блоке владельца – SUID установлен. Заглавная <code>S</code> (без <code>x</code>) означает что SUID установлен но бит execute при этом не установлен – это подозрительная ситуация которой обычно не должно быть.</p>
+<pre><code class="language-bash"># Установить SUID
+chmod u+s file
+chmod 4755 file    # 4 – это SUID в числовом виде
+
+# Найти все файлы с SUID в системе
+find / -perm -4000 -type f 2&gt;/dev/null
+</code></pre>
+<p>SUID-бинарники – популярная цель при атаках на повышение привилегий. Если на стандартной утилите вроде <code>vim</code>, <code>find</code> или <code>bash</code> внезапно появился SUID – это серьёзный повод для расследования. Регулярно проверяйте список SUID-файлов и сравнивайте с эталоном.</p>
+<blockquote>
+<p>Эталон – это список SUID-файлов, снятый в заведомо чистом состоянии системы (сразу после установки или после проверенного аудита). При следующих проверках вы сравниваете текущий список с ним и видите, что появилось нового.</p>
+</blockquote>
+<h3>SGID (Set Group ID)</h3>
+<p>SGID работает по-разному для файлов и директорий. <strong>На файл:</strong> процесс получает <strong>EGID = GID группы файла</strong> – аналог SUID но для группы. Используется редко. <strong>На директорию:</strong> все файлы и поддиректории созданные внутри автоматически наследуют группу этой директории, а не primary group создателя. Это ключевой механизм для совместной работы. В качестве примера возьмём несколько разработчиков которые работают с одной директорией. Без SGID каждый создаёт файлы со своей primary group – другие не могут их редактировать даже если входят в нужную группу. С SGID все файлы автоматически получают группу директории и все члены группы могут работать с ними без лишних телодвижений.</p>
+<pre><code class="language-bash"># Установить SGID на директорию
+chmod g+s /project
+chmod 2755 /project    # 2 – это SGID в числовом виде
+
+# Проверить – в выводе ls будет s вместо x в блоке группы
+ls -la /project
+# drwxr-sr-x 2 ivan developers 4096 апр 29 /project
+</code></pre>
+<h3>Sticky bit</h3>
+<p>Sticky bit решает конкретную проблему: если у пользователя есть право <code>w</code> на директорию – он может удалить из неё любой файл, даже чужой. <strong>На директорию:</strong> пользователь может удалить файл только если он является владельцем файла или владельцем директории. Просто иметь <code>w</code> на директорию – недостаточно. Пример – <code>/tmp</code>, где директория доступна на запись всем, но никто не должен удалять чужие файлы:</p>
+<pre><code class="language-bash">ls -la /
+# drwxrwxrwt  22 root root 4096 апр 29 19:07 tmp
+</code></pre>
+<p><code>t</code> вместо <code>x</code> в блоке others – sticky bit установлен.</p>
+<pre><code class="language-bash"># Установить sticky bit
+chmod +t /shared
+chmod 1777 /shared    # 1 – это sticky bit в числовом виде
+</code></pre>
+<h3>Сводная таблица</h3>
+<table>
+<thead>
+<tr>
+<th>Бит</th>
+<th>Числовой</th>
+<th>Символьный</th>
+<th>На файл</th>
+<th>На директорию</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SUID</td>
+<td><code>4000</code></td>
+<td><code>u+s</code></td>
+<td>EUID = UID владельца файла</td>
+<td>Нет эффекта</td>
+</tr>
+<tr>
+<td>SGID</td>
+<td><code>2000</code></td>
+<td><code>g+s</code></td>
+<td>EGID = GID группы файла</td>
+<td>Новые файлы наследуют группу директории</td>
+</tr>
+<tr>
+<td>Sticky</td>
+<td><code>1000</code></td>
+<td><code>+t</code></td>
+<td>Нет эффекта</td>
+<td>Удалить файл может только его владелец</td>
+</tr>
+</tbody></table>
+<p>Специальные биты идут первой цифрой в четырёхзначной записи:</p>
+<pre><code class="language-bash">chmod 4755 file    # SUID + rwxr-xr-x
+chmod 2755 dir     # SGID + rwxr-xr-x
+chmod 1777 dir     # Sticky + rwxrwxrwx
+chmod 3755 dir     # SGID + Sticky + rwxr-xr-x
+</code></pre>
+<hr>
+<h2>9. ACL – когда стандартных прав недостаточно</h2>
+<p>Стандартная модель UGO имеет фундаментальное ограничение: один владелец и одна группа. Что если нужно дать доступ двум разным пользователям с разными правами? Например, пользователь maria должна читать и писать файл, пользователь sergei – только читать, а все остальные – ничего. В UGO это не реализовать. ACL (Access Control Lists) решают эту задачу – они позволяют прописать права для произвольного количества пользователей и групп на один объект.</p>
+<p>Для начала проверим что пакет установлен:</p>
+<pre><code class="language-bash">apt list --installed 2&gt;/dev/null | grep acl
+# Если пакета нет:
+sudo apt install acl
+</code></pre>
+<h3>9.1 Просмотр ACL</h3>
+<pre><code class="language-bash">getfacl file.txt
+# file: file.txt
+# owner: veil
+# group: veil
+user::rw-          ← права владельца (стандартные)
+group::r--         ← права группы (стандартные)
+other::r--         ← права остальных (стандартные)
+</code></pre>
+<p>Пока ACL не установлены – вывод совпадает с обычными правами. Как только добавляем ACL-запись, в выводе <code>ls -la</code> появляется символ <code>+</code> в конце строки прав:</p>
+<pre><code class="language-bash">ls -la file.txt
+# -rw-r--r--+ 1 veil veil 34045 апр 29 15:18 file.txt
+#           ↑ этот плюс означает что на файле есть ACL
+</code></pre>
+<h3>9.2 Установка ACL</h3>
+<pre><code class="language-bash"># Дать конкретному пользователю права на файл
+setfacl -m u:maria:rw file.txt
+
+# Дать группе права на директорию
+setfacl -m g:backend:rx /var/www/api
+
+# Несколько записей сразу
+setfacl -m u:maria:rw,g:backend:r file.txt
+
+# Удалить конкретную ACL-запись
+setfacl -x u:maria file.txt
+
+# Удалить все ACL с файла
+setfacl -b file.txt
+</code></pre>
+<p>После добавления ACL для maria – <code>getfacl</code> покажет дополнительные строки:</p>
+<pre><code class="language-bash">getfacl file.txt
+# file: file.txt
+# owner: veil
+# group: veil
+user::rw-
+user:maria:rw-     ← ACL-запись для конкретного пользователя
+group::r--
+mask::rw-          ← маска появилась автоматически
+other::r--
+</code></pre>
+<h3>9.3 Маска</h3>
+<p>Маска – это максимально возможные эффективные права для всех ACL-записей, кроме владельца и others. Если маска <code>r-x</code>, то даже ACL с <code>rwx</code> реально даст только <code>r-x</code>. Маска появляется автоматически при добавлении первой ACL-записи и расширяется когда вы добавляете записи с большими правами. Можно задать явно:</p>
+<pre><code class="language-bash"># Посмотреть маску
+getfacl file.txt | grep mask
+
+# Явно задать маску
+setfacl -m mask::rx file.txt
+</code></pre>
+<h3>9.4 ACL по умолчанию – важный момент</h3>
+<p>Без флага <code>-d</code> ACL применяется только к уже существующим файлам. Новые файлы созданные в директории его <strong>не наследуют</strong>. Это частая ошибка – настроил ACL на директорию, а файлы которые потом создаются внутри его не получают.</p>
+<p>Правильный паттерн – всегда два вызова:</p>
+<pre><code class="language-bash"># 1. Применить к существующим файлам и поддиректориям
+setfacl -R -m g:developers:rwx /project
+
+# 2. Установить ACL по умолчанию – для всех новых файлов
+setfacl -d -m g:developers:rwx /project
+
+# Проверить – в выводе появятся строки default:
+getfacl /project
+# file: project
+# owner: ivan
+# group: ivan
+user::rwx
+group::r-x
+other::r-x
+default:group:developers:rwx    ← будет применяться к новым файлам
+</code></pre>
+<hr>
+<h2>10. umask – права по умолчанию при создании файлов</h2>
+<p>Когда создаётся новый файл или директория – система не даёт максимально возможные права, а вычитает из них маску. Это и есть <code>umask</code>. Максимальные права при создании: файл – <code>666</code> (execute никогда не ставится автоматически), директория – <code>777</code>.</p>
+<pre><code class="language-bash"># Посмотреть текущую маску
+umask
+# 0022
+
+# Расчёт:
+# файл:       666 - 022 = 644 (rw-r--r--)
+# директория: 777 - 022 = 755 (rwxr-xr-x)
+</code></pre>
+<p>Строго говоря umask работает как побитовая операция исключения, а не простое вычитание. Разница проявляется если у вас нестандартные значения: например, <code>666</code> минус <code>033</code> математически даст <code>633</code>, но побитовое исключение даст <code>644</code>. Для стандартных значений (<code>022</code>, <code>027</code>, <code>077</code>) простое вычитание даёт верный результат и удобнее для понимания.</p>
+<pre><code class="language-bash"># Проверить на практике
+umask 022
+touch newfile.txt &amp;&amp; ls -la newfile.txt
+# -rw-r--r-- 1 ivan ivan 0 Mar 26 newfile.txt   ← 644
+
+mkdir newdir &amp;&amp; ls -la | grep newdir
+# drwxr-xr-x 2 ivan ivan 4096 Mar 26 newdir     ← 755
+</code></pre>
+<h3>Типичные значения</h3>
+<table>
+<thead>
+<tr>
+<th>umask</th>
+<th>Файлы</th>
+<th>Директории</th>
+<th>Когда применять</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>022</code></td>
+<td><code>644</code></td>
+<td><code>755</code></td>
+<td>Стандарт – публичный доступ на чтение</td>
+</tr>
+<tr>
+<td><code>027</code></td>
+<td><code>640</code></td>
+<td><code>750</code></td>
+<td>Усиленный – others вообще без доступа</td>
+</tr>
+<tr>
+<td><code>077</code></td>
+<td><code>600</code></td>
+<td><code>700</code></td>
+<td>Параноидальный – только владелец</td>
+</tr>
+</tbody></table>
+<h3>Где настраивается</h3>
+<pre><code class="language-bash"># Для текущей сессии
+umask 027
+
+# Глобально для всех пользователей
+grep UMASK /etc/login.defs
+# UMASK 022
+
+# Для конкретного пользователя
+echo &quot;umask 027&quot; &gt;&gt; ~/.bashrc
+
+# Для сервиса через systemd unit-файл
+# [Service]
+# UMask=0027
+</code></pre>
+<h2>Бонус и Заключение</h2>
+<p>Мы рассмотрели всё начиная от базовой модели UGO и битов rwx до алгоритма принятия решений ядром, специальных битов и ACL. Отдельно хочу поделиться полезным материалом на YouTube от Дмитрия с заданиями для самостоятельной отработки навыков, очень полезно тем, кто только начинает учить Linux.</p>
+<ul>
+<li><a href="https://youtu.be/lvG7N2NoogY?si=Uoz9AWQy4QXOd7nV">Урок 12 – Управление пользователями и группами</a></li>
+<li><a href="https://www.youtube.com/watch?v=lvG7N2NoogY">Урок 13 – Избирательные права доступа (DAC) над файлами</a></li>
+<li><a href="https://www.youtube.com/watch?v=PPqiQ08pmto">Урок 14 – Избирательные права доступа (DAC) над каталогами</a></li>
+</ul>
+<p>Увидимся в следующей части серии!</p>
+</article> </main> </noscript> <astro-island uid="ZJ29Yi" component-url="/assets/DocContent.CoKfap2Q.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{&quot;doc&quot;:[0,{&quot;id&quot;:[0,&quot;article/linux/file-permissions&quot;],&quot;title&quot;:[0,&quot;Linux: Права доступа&quot;],&quot;slug&quot;:[0,&quot;article/linux/file-permissions&quot;],&quot;description&quot;:[0,&quot;Третья часть серии о Linux для DevOps и DevSecOps – разбираем права доступа, модель UGO, биты rwx, числовое и символьное представление, chmod и chown.&quot;],&quot;content&quot;:[0,&quot;&lt;h2&gt;Введение&lt;/h2&gt;\n&lt;p&gt;Продолжаем серию рубрики Linux. В прошлой серии разобрали пользователей и группы – UID, GID, &lt;code&gt;/etc/passwd&lt;/code&gt;. Теперь разберём что ядро делает с этими числами когда процесс пытается открыть файл или войти в директорию. Про права доступа легко выучить команды – &lt;code&gt;chmod 755&lt;/code&gt;, &lt;code&gt;chown user file&lt;/code&gt; – но не понимать что происходит под капотом. Тогда начинаются странные ситуации: «я же владелец, почему Permission denied?». Цель этой статьи – дать модель, а не только набор команд.&lt;/p&gt;\n&lt;p&gt;Вся статья построена на практике: каждый раздел можно пройти руками. Для большинства примеров достаточно обычного пользователя, для части нужен &lt;code&gt;sudo&lt;/code&gt;. Где нужен – отмечено явно. Серия в основном под Ubuntu/Debian.&lt;/p&gt;\n&lt;p&gt;В конце статьи будет бонус который даст вам возможность изучить права доступа в Linux ещё доступнее и возможно проще.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;1. Что такое права доступа и зачем они нужны&lt;/h2&gt;\n&lt;p&gt;Linux – многопользовательская система. На одной машине одновременно работают процессы от разных пользователей: nginx читает файлы сайта, postgres работает со своими данными, разработчик ivan пишет код в своём каталоге. Без изоляции любой мог бы читать чужие ключи SSH, удалять чужие файлы, подменять конфиги сервисов.&lt;/p&gt;\n&lt;p&gt;Права доступа – механизм изоляции. Каждый файловый объект несёт метаданные: кто владелец, какая группа, кто что может делать. Метаданные хранятся в &lt;strong&gt;inode&lt;/strong&gt; – структуре файловой системы которая описывает файл. Важно понимать: содержимое файла и его метаданные (включая права) хранятся раздельно. Когда вы делаете &lt;code&gt;ls -la&lt;/code&gt; – вы читаете именно inode, а не сам файл.&lt;/p&gt;\n&lt;p&gt;Посмотрим на конкретный пример. Файл &lt;code&gt;/etc/shadow&lt;/code&gt; хранит хеши паролей всех пользователей:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;ls -la /etc/shadow\n&lt;/code&gt;&lt;/pre&gt;\n&lt;pre&gt;&lt;code&gt;-rw-r----- 1 root shadow 1478 апр 16 12:03 /etc/shadow\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Права гарантируют что читать его может только root и члены группы &lt;code&gt;shadow&lt;/code&gt;. Обычный пользователь – нет. Разберём эту строку полностью, слева направо.&lt;/p&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Часть&lt;/th&gt;\n&lt;th&gt;Что означает&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;-rw-r-----&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;тип файла и биты прав (разберём ниже)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;1&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;количество жёстких ссылок на файл&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;root&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;владелец файла&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;shadow&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;группа-владелец файла&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;1478&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;размер в байтах&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;апр 16 12:03&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;дата последнего изменения&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;/etc/shadow&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;путь к файлу&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;hr&gt;\n&lt;h2&gt;2. Модель UGO – три класса доступа&lt;/h2&gt;\n&lt;p&gt;Стандартная модель Linux делит всех на три класса относительно конкретного файла.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;U – User (владелец).&lt;/strong&gt; Один конкретный пользователь. Когда создаёте файл – автоматически становитесь его владельцем. &lt;strong&gt;G – Group (группа).&lt;/strong&gt; Одна конкретная группа. По умолчанию – primary group пользователя который создал файл. &lt;strong&gt;O – Others (остальные).&lt;/strong&gt; Все кто не попал в первые два класса.&lt;/p&gt;\n&lt;p&gt;Для каждого из трёх классов устанавливается свой набор прав. Вот как это выглядит в выводе &lt;code&gt;ls -la&lt;/code&gt;:&lt;/p&gt;\n&lt;pre&gt;&lt;code&gt;veil@veilos:~$ ls -la\ndrwxr-x---+ 19 veil veil 4096 апр 24 13:14 .\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Первый символ – тип файла:&lt;/p&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Символ&lt;/th&gt;\n&lt;th&gt;Тип&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;-&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;обычный файл&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;d&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;директория&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;l&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;символическая ссылка&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;b&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;блочное устройство&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;c&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;символьное устройство&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;p&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;именованный канал (pipe)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;s&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;сокет&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;p&gt;Следующие 9 символов – три блока по три бита для U, G и O. Вернёмся к &lt;code&gt;/etc/shadow&lt;/code&gt;:&lt;/p&gt;\n&lt;pre&gt;&lt;code&gt;-  rw-  r--  ---\n   U      G    O\n\nU=rw- → владелец (root) читает и пишет\nG=r-- → группа (shadow) только читает\nO=--- → все остальные – никаких прав\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Каждый файл имеет ровно одного владельца и ровно одну группу – не двух, не список. Это ограничение стандартной модели UGO. Для более гибкого управления существуют ACL – разберём их в разделе 9.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;3. Биты rwx – что они означают&lt;/h2&gt;\n&lt;p&gt;Три бита в каждом блоке: &lt;strong&gt;r&lt;/strong&gt; – read, &lt;strong&gt;w&lt;/strong&gt; – write, &lt;strong&gt;x&lt;/strong&gt; – execute. Установлен бит – операция разрешена. Сброшен (дефис) – запрещена. Смысл битов различается для файлов и директорий.&lt;/p&gt;\n&lt;h3&gt;Для файлов&lt;/h3&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Бит&lt;/th&gt;\n&lt;th&gt;Что разрешает&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;r&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;читать содержимое (&lt;code&gt;cat&lt;/code&gt;, &lt;code&gt;less&lt;/code&gt;, &lt;code&gt;cp&lt;/code&gt;)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;w&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;изменять содержимое (редакторы, &lt;code&gt;echo &amp;gt;&amp;gt;&lt;/code&gt;)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;x&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;запускать как программу&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h3&gt;Для директорий&lt;/h3&gt;\n&lt;p&gt;Здесь важно не путать – директория это тоже файл, просто специального типа. Биты работают иначе.&lt;/p&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Бит&lt;/th&gt;\n&lt;th&gt;Что разрешает&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;r&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;читать список файлов внутри (&lt;code&gt;ls&lt;/code&gt;)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;w&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;создавать и удалять файлы внутри&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;x&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;входить (&lt;code&gt;cd&lt;/code&gt;) и обращаться к файлам по имени&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;p&gt;На директориях бит &lt;code&gt;х&lt;/code&gt; (проход) нужен, чтобы в дальнейшем войти через &lt;code&gt;cd&lt;/code&gt; или обратиться к файлу по пути. &lt;code&gt;r&lt;/code&gt; без &lt;code&gt;x&lt;/code&gt; будет парадоксом, где список файлов через &lt;code&gt;ls&lt;/code&gt; будет видно а открыть нельзя, поэтому &lt;code&gt;r&lt;/code&gt; и &lt;code&gt;x&lt;/code&gt; на директориях почти во многих случаях ставятся вместе. &lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;4. Числовое и символьное представление&lt;/h2&gt;\n&lt;p&gt;Существует два способа записывать права, и оба используются в реальной работе. Разберём оба.&lt;/p&gt;\n&lt;h3&gt;Числовое (восьмеричное)&lt;/h3&gt;\n&lt;p&gt;Каждый бит имеет числовое значение:&lt;/p&gt;\n&lt;pre&gt;&lt;code&gt;r = 4\nw = 2\nx = 1\n- = 0\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Чтобы получить число для класса – складываем биты:&lt;/p&gt;\n&lt;pre&gt;&lt;code&gt;rwx = 4+2+1 = 7\nrw- = 4+2+0 = 6\nr-x = 4+0+1 = 5\nr-- = 4+0+0 = 4\n--- = 0+0+0 = 0\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Итоговые права – три цифры, по одной для U, G, O:&lt;/p&gt;\n&lt;pre&gt;&lt;code&gt;755 → rwx r-x r-x\n644 → rw- r-- r--\n700 → rwx --- ---\n600 → rw- --- ---\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;&lt;code&gt;777&lt;/code&gt; означает что любой пользователь на системе может читать, изменять и запускать файл. На сервере где работают несколько пользователей – это дыра. Особенно опасно если это скрипт который запускается по cron от root – любой сможет подменить его содержимое. Используйте с осторожностью.&lt;/p&gt;\n&lt;p&gt;Шпаргалка по типовым комбинациям:&lt;/p&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Права&lt;/th&gt;\n&lt;th&gt;Символьно&lt;/th&gt;\n&lt;th&gt;Когда применять&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;644&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;rw-r--r--&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Обычные файлы, конфиги&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;755&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;rwxr-xr-x&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Исполняемые файлы, директории&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;600&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;rw-------&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Приватные ключи SSH, секреты&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;640&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;rw-r-----&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Конфиги с паролями – группа читает, others нет&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;700&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;rwx------&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Домашняя директория сервисного пользователя&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;750&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;rwxr-x---&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Директории сервисов&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;777&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;rwxrwxrwx&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Почти никогда – проблема безопасности&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h3&gt;Символьное&lt;/h3&gt;\n&lt;p&gt;Удобно когда нужно добавить или убрать один бит не трогая остальные – не надо держать в голове итоговое число. Синтаксис: &lt;code&gt;[кто][операция][что]&lt;/code&gt;.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Кто:&lt;/strong&gt; &lt;code&gt;u&lt;/code&gt; – владелец, &lt;code&gt;g&lt;/code&gt; – группа, &lt;code&gt;o&lt;/code&gt; – остальные, &lt;code&gt;a&lt;/code&gt; – все сразу (u+g+o).&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Операция:&lt;/strong&gt; &lt;code&gt;+&lt;/code&gt; – добавить, &lt;code&gt;-&lt;/code&gt; – убрать, &lt;code&gt;=&lt;/code&gt; – установить точно (остальные биты сбросятся).&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;chmod u+x script.sh        # добавить x владельцу\nchmod g-w file.txt         # убрать w у группы\nchmod o=r file.txt         # ровно r для others, остальное сбрасывается\nchmod a+x file.sh          # добавить x всем\nchmod u+x,g-w file.txt     # несколько операций через запятую\nchmod go-rwx secret.txt    # убрать всё у группы и others\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;&lt;strong&gt;Когда что удобнее:&lt;/strong&gt; числовой – когда знаешь точное итоговое состояние. Символьный – когда хочешь изменить один бит не затрагивая остальные.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Особый случай: &lt;code&gt;+X&lt;/code&gt; (заглавная)&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;&lt;code&gt;+x&lt;/code&gt; (строчная) ставит бит execute на всё подряд – и на файлы, и на директории. &lt;code&gt;+X&lt;/code&gt; (заглавная) её можно назвать умнее: она ставит execute только там, где это имеет смысл – на директории всегда, на файлы только если у кого-то из классов уже стоит &lt;code&gt;x&lt;/code&gt;.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;chmod -R +x dir/     # x поставится на ВСЕ файлы внутри, включая .txt, .jpg\nchmod -R +X dir/     # x поставится только на директории и уже исполняемые файлы\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Пример где можно применить: для рекурсивной установки прав.(Это безопаснее и правильнее чем потом чистить лишние биты через &lt;code&gt;find&lt;/code&gt;.)&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;5. chmod – изменение прав&lt;/h2&gt;\n&lt;p&gt;&lt;code&gt;chmod&lt;/code&gt; (от &lt;em&gt;change mode&lt;/em&gt;) – команда для изменения прав доступа.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Числовым способом\nchmod 644 file.txt\nchmod 755 /var/www/html\nchmod 600 ~/.ssh/id_rsa\n\n# Символьным способом\nchmod u+x script.sh\nchmod g+w shared/\nchmod o-rwx secret.txt\n\n# Рекурсивно для всего дерева каталогов\nchmod -R 750 /var/lib/app\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Здесь есть типичная ловушка при настройке веб-серверов. Многие делают так:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;chmod -R 755 /var/www/html\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Эта команда поставит &lt;code&gt;755&lt;/code&gt; на абсолютно все объекты – и директории, и файлы. Для директорий &lt;code&gt;755&lt;/code&gt; нормально, им нужен &lt;code&gt;x&lt;/code&gt; чтобы в них можно было входить. Но для файлов это означает что &lt;code&gt;.html&lt;/code&gt;, &lt;code&gt;.css&lt;/code&gt;, &lt;code&gt;.jpg&lt;/code&gt; становятся исполняемыми – а этого не должно быть. Правильный способ – разделить файлы и директории:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Директориям нужен x чтобы в них можно было входить\nfind /var/www/html -type d -exec chmod 755 {} \\;\n\n# Файлам x не нужен\nfind /var/www/html -type f -exec chmod 644 {} \\;\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;После этого права будут корректные: директории – &lt;code&gt;755&lt;/code&gt;, файлы – &lt;code&gt;644&lt;/code&gt;, без лишнего &lt;code&gt;x&lt;/code&gt;. Главное: не ставить права «на глаз» – всегда думайте кому реально нужен доступ.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;6. chown и chgrp – смена владельца и группы&lt;/h2&gt;\n&lt;p&gt;&lt;code&gt;chown&lt;/code&gt; (от &lt;em&gt;change owner&lt;/em&gt;) меняет владельца файла, группу, или оба сразу. &lt;code&gt;chgrp&lt;/code&gt; (от &lt;em&gt;change group&lt;/em&gt;) меняет только группу – по сути то же что &lt;code&gt;chown :group&lt;/code&gt;, просто отдельная команда.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Сменить только владельца\nchown ivan file.txt\n\n# Сменить только группу\nchgrp developers file.txt\n\n# Сменить и владельца и группу сразу\nchown ivan:developers file.txt\n\n# Рекурсивно\nchown -R www-data:www-data /var/www/html\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Обычный пользователь может поменять группу файла только на одну из своих собственных групп. Поменять владельца на другого пользователя – только root. Без этого ограничения можно было бы «подарить» вредоносный файл с SUID другому пользователю – и это стало бы простым способом эскалации привилегий.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;7. Как ядро принимает решение о доступе&lt;/h2&gt;\n&lt;p&gt;Это самый важный раздел статьи. Команды можно выучить, но без понимания алгоритма поведение системы будет казаться непредсказуемым. Особенно когда видишь Permission denied там где не ожидаешь.&lt;/p&gt;\n&lt;h3&gt;7.1 Real vs Effective UID&lt;/h3&gt;\n&lt;p&gt;Когда пользователь запускает программу, у процесса есть несколько идентификаторов. &lt;strong&gt;RUID (Real UID)&lt;/strong&gt; – кто фактически запустил процесс. Не меняется в течение жизни процесса. &lt;strong&gt;EUID (Effective UID)&lt;/strong&gt; – от чьего имени процесс работает прямо сейчас. Именно его проверяет ядро при обращении к файлу.&lt;/p&gt;\n&lt;p&gt;В большинстве случаев RUID == EUID. Но это различие становится важным при SUID – разберём в следующем разделе.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;cat /proc/self/status | grep Uid\n&lt;/code&gt;&lt;/pre&gt;\n&lt;pre&gt;&lt;code&gt;Uid:    1000    1000    1000    1000\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Четыре числа в строке: Real UID, Effective UID, Saved UID (нужен для временного переключения прав), Filesystem UID (используется при проверке доступа к файлам – в большинстве случаев совпадает с EUID). Для понимания прав доступа ключевой – второй, EUID.&lt;/p&gt;\n&lt;h3&gt;7.2 Алгоритм проверки прав&lt;/h3&gt;\n&lt;p&gt;Когда процесс обращается к файлу, ядро проверяет права строго по порядку и останавливается на первом совпадении:&lt;/p&gt;\n&lt;ol&gt;\n&lt;li&gt;Если EUID = 0 (root) → доступ почти всегда разрешён&lt;/li&gt;\n&lt;li&gt;Если EUID совпадает с владельцем файла → используются права владельца&lt;/li&gt;\n&lt;li&gt;Если группа процесса (EGID или дополнительные группы) совпадает с группой файла → используются права группы&lt;/li&gt;\n&lt;li&gt;Во всех остальных случаях → используются права для остальных (others)&lt;/li&gt;\n&lt;/ol&gt;\n&lt;p&gt;Система не комбинирует права – она берёт только один подходящий вариант и на этом заканчивает проверку.&lt;/p&gt;\n&lt;h3&gt;7.3 Права не суммируются&lt;/h3&gt;\n&lt;p&gt;Частая ловушка с которой сталкиваются многие. Допустим есть файл:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;ls -la secret.txt\n# ----rwx--- 1 ivan developers secret.txt\n#  U: ---    G: rwx    O: ---\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Пользователь &lt;code&gt;ivan&lt;/code&gt; является владельцем и одновременно входит в группу &lt;code&gt;developers&lt;/code&gt;:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;id ivan\n# uid=1001(ivan) gid=1001(ivan) groups=1001(ivan),1005(developers)\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Но если ivan попробует прочитать файл – получит Permission denied. Почему? Ядро проверило: EUID процесса совпадает с UID файла – совпадение на шаге 2. Применило биты owner – &lt;code&gt;---&lt;/code&gt;. Остановилось. Биты group &lt;code&gt;rwx&lt;/code&gt; даже не рассматривались. &lt;code&gt;ivan&lt;/code&gt; является владельцем, но у владельца нет прав. Группа имеет полный доступ – но до неё проверка не дошла.&lt;/p&gt;\n&lt;p&gt;Решение – дать владельцу права явно:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;chmod u+r secret.txt\n# или явно задать нужные права\nchmod 740 secret.txt    # u=rwx, g=r--, o=---\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Уточнение: пример выше демонстрирует механику проверки прав ядром, а не реальную схему работы с группами. Ситуация &lt;code&gt;----rwx---&lt;/code&gt; на файле, где владелец намеренно без прав, надуманная и в реальной практике почти не встречается.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Зачем тогда нужны группы?&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;Главная задача групп – дать одинаковые права произвольному набору пользователей без того, чтобы менять права на каждом файле вручную. Это работает именно потому что проверка group-битов срабатывает когда пользователь &lt;strong&gt;не является владельцем&lt;/strong&gt; файла.&lt;/p&gt;\n&lt;p&gt;Примерный сценарий: команда разработчиков работает с общим проектом.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Создать группу и добавить пользователей\ngroupadd developers\nusermod -aG developers maria\nusermod -aG developers sergei\n \n# Назначить группу на директорию проекта\nchown -R ivan:developers /project\nchmod -R 750 /project\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Теперь &lt;code&gt;ivan&lt;/code&gt; – владелец (&lt;code&gt;rwx&lt;/code&gt;), все члены группы &lt;code&gt;developers&lt;/code&gt; – читают и входят (&lt;code&gt;r-x&lt;/code&gt;), остальные – ничего. Когда нужно добавить нового разработчика – просто &lt;code&gt;usermod -aG developers newuser&lt;/code&gt;, и он сразу получает нужный доступ. Группы становятся особенно полезными в связке с SGID на директории (раздел 8): новые файлы автоматически наследуют группу директории, и всем членам группы не нужно думать о правах при создании файлов.&lt;/p&gt;\n&lt;h3&gt;7.4 root и права&lt;/h3&gt;\n&lt;p&gt;root (EUID=0) обходит проверку UGO для большинства операций – может читать любой файл, писать в любой файл независимо от прав. Но есть одно исключение: бит execute. Даже root не может запустить файл если ни у кого не установлен &lt;code&gt;x&lt;/code&gt;:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;chmod 644 script.sh\nsudo ./script.sh\n# ./script.sh: Permission denied – даже для root\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Чтобы запустить – сначала &lt;code&gt;chmod +x script.sh&lt;/code&gt;, потом &lt;code&gt;sudo ./script.sh&lt;/code&gt;. Это защита от случайного запуска: если &lt;code&gt;x&lt;/code&gt; не установлен, файл не является исполняемым ни для кого, включая root.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;8. Специальные биты – SUID, SGID, Sticky bit&lt;/h2&gt;\n&lt;p&gt;Помимо стандартных &lt;code&gt;rwx&lt;/code&gt; существуют три специальных бита. Каждый работает по-разному в зависимости от того – установлен он на файл или на директорию.&lt;/p&gt;\n&lt;h3&gt;SUID (Set User ID)&lt;/h3&gt;\n&lt;p&gt;При запуске файла с SUID процесс получает &lt;strong&gt;EUID = UID владельца файла&lt;/strong&gt;, а не UID пользователя который его запустил. Пример – команда &lt;code&gt;passwd&lt;/code&gt;. Обычный пользователь должен иметь возможность сменить свой пароль, а значит записать новый хеш в &lt;code&gt;/etc/shadow&lt;/code&gt;. Но &lt;code&gt;/etc/shadow&lt;/code&gt; доступен только root. SUID решает эту проблему: &lt;code&gt;/usr/bin/passwd&lt;/code&gt; принадлежит root и имеет SUID – при запуске процесс временно получает EUID=0 и может писать в shadow.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;ls -la /usr/bin/passwd\n# -rwsr-xr-x 1 root root 64152 Feb 6 /usr/bin/passwd\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;&lt;code&gt;s&lt;/code&gt; вместо &lt;code&gt;x&lt;/code&gt; в блоке владельца – SUID установлен. Заглавная &lt;code&gt;S&lt;/code&gt; (без &lt;code&gt;x&lt;/code&gt;) означает что SUID установлен но бит execute при этом не установлен – это подозрительная ситуация которой обычно не должно быть.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Установить SUID\nchmod u+s file\nchmod 4755 file    # 4 – это SUID в числовом виде\n\n# Найти все файлы с SUID в системе\nfind / -perm -4000 -type f 2&amp;gt;/dev/null\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;SUID-бинарники – популярная цель при атаках на повышение привилегий. Если на стандартной утилите вроде &lt;code&gt;vim&lt;/code&gt;, &lt;code&gt;find&lt;/code&gt; или &lt;code&gt;bash&lt;/code&gt; внезапно появился SUID – это серьёзный повод для расследования. Регулярно проверяйте список SUID-файлов и сравнивайте с эталоном.&lt;/p&gt;\n&lt;blockquote&gt;\n&lt;p&gt;Эталон – это список SUID-файлов, снятый в заведомо чистом состоянии системы (сразу после установки или после проверенного аудита). При следующих проверках вы сравниваете текущий список с ним и видите, что появилось нового.&lt;/p&gt;\n&lt;/blockquote&gt;\n&lt;h3&gt;SGID (Set Group ID)&lt;/h3&gt;\n&lt;p&gt;SGID работает по-разному для файлов и директорий. &lt;strong&gt;На файл:&lt;/strong&gt; процесс получает &lt;strong&gt;EGID = GID группы файла&lt;/strong&gt; – аналог SUID но для группы. Используется редко. &lt;strong&gt;На директорию:&lt;/strong&gt; все файлы и поддиректории созданные внутри автоматически наследуют группу этой директории, а не primary group создателя. Это ключевой механизм для совместной работы. В качестве примера возьмём несколько разработчиков которые работают с одной директорией. Без SGID каждый создаёт файлы со своей primary group – другие не могут их редактировать даже если входят в нужную группу. С SGID все файлы автоматически получают группу директории и все члены группы могут работать с ними без лишних телодвижений.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Установить SGID на директорию\nchmod g+s /project\nchmod 2755 /project    # 2 – это SGID в числовом виде\n\n# Проверить – в выводе ls будет s вместо x в блоке группы\nls -la /project\n# drwxr-sr-x 2 ivan developers 4096 апр 29 /project\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;Sticky bit&lt;/h3&gt;\n&lt;p&gt;Sticky bit решает конкретную проблему: если у пользователя есть право &lt;code&gt;w&lt;/code&gt; на директорию – он может удалить из неё любой файл, даже чужой. &lt;strong&gt;На директорию:&lt;/strong&gt; пользователь может удалить файл только если он является владельцем файла или владельцем директории. Просто иметь &lt;code&gt;w&lt;/code&gt; на директорию – недостаточно. Пример – &lt;code&gt;/tmp&lt;/code&gt;, где директория доступна на запись всем, но никто не должен удалять чужие файлы:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;ls -la /\n# drwxrwxrwt  22 root root 4096 апр 29 19:07 tmp\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;&lt;code&gt;t&lt;/code&gt; вместо &lt;code&gt;x&lt;/code&gt; в блоке others – sticky bit установлен.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Установить sticky bit\nchmod +t /shared\nchmod 1777 /shared    # 1 – это sticky bit в числовом виде\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;Сводная таблица&lt;/h3&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Бит&lt;/th&gt;\n&lt;th&gt;Числовой&lt;/th&gt;\n&lt;th&gt;Символьный&lt;/th&gt;\n&lt;th&gt;На файл&lt;/th&gt;\n&lt;th&gt;На директорию&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;SUID&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;4000&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;u+s&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;EUID = UID владельца файла&lt;/td&gt;\n&lt;td&gt;Нет эффекта&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;SGID&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;2000&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;g+s&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;EGID = GID группы файла&lt;/td&gt;\n&lt;td&gt;Новые файлы наследуют группу директории&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Sticky&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;1000&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;+t&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Нет эффекта&lt;/td&gt;\n&lt;td&gt;Удалить файл может только его владелец&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;p&gt;Специальные биты идут первой цифрой в четырёхзначной записи:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;chmod 4755 file    # SUID + rwxr-xr-x\nchmod 2755 dir     # SGID + rwxr-xr-x\nchmod 1777 dir     # Sticky + rwxrwxrwx\nchmod 3755 dir     # SGID + Sticky + rwxr-xr-x\n&lt;/code&gt;&lt;/pre&gt;\n&lt;hr&gt;\n&lt;h2&gt;9. ACL – когда стандартных прав недостаточно&lt;/h2&gt;\n&lt;p&gt;Стандартная модель UGO имеет фундаментальное ограничение: один владелец и одна группа. Что если нужно дать доступ двум разным пользователям с разными правами? Например, пользователь maria должна читать и писать файл, пользователь sergei – только читать, а все остальные – ничего. В UGO это не реализовать. ACL (Access Control Lists) решают эту задачу – они позволяют прописать права для произвольного количества пользователей и групп на один объект.&lt;/p&gt;\n&lt;p&gt;Для начала проверим что пакет установлен:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;apt list --installed 2&amp;gt;/dev/null | grep acl\n# Если пакета нет:\nsudo apt install acl\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;9.1 Просмотр ACL&lt;/h3&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;getfacl file.txt\n# file: file.txt\n# owner: veil\n# group: veil\nuser::rw-          ← права владельца (стандартные)\ngroup::r--         ← права группы (стандартные)\nother::r--         ← права остальных (стандартные)\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Пока ACL не установлены – вывод совпадает с обычными правами. Как только добавляем ACL-запись, в выводе &lt;code&gt;ls -la&lt;/code&gt; появляется символ &lt;code&gt;+&lt;/code&gt; в конце строки прав:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;ls -la file.txt\n# -rw-r--r--+ 1 veil veil 34045 апр 29 15:18 file.txt\n#           ↑ этот плюс означает что на файле есть ACL\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;9.2 Установка ACL&lt;/h3&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Дать конкретному пользователю права на файл\nsetfacl -m u:maria:rw file.txt\n\n# Дать группе права на директорию\nsetfacl -m g:backend:rx /var/www/api\n\n# Несколько записей сразу\nsetfacl -m u:maria:rw,g:backend:r file.txt\n\n# Удалить конкретную ACL-запись\nsetfacl -x u:maria file.txt\n\n# Удалить все ACL с файла\nsetfacl -b file.txt\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;После добавления ACL для maria – &lt;code&gt;getfacl&lt;/code&gt; покажет дополнительные строки:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;getfacl file.txt\n# file: file.txt\n# owner: veil\n# group: veil\nuser::rw-\nuser:maria:rw-     ← ACL-запись для конкретного пользователя\ngroup::r--\nmask::rw-          ← маска появилась автоматически\nother::r--\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;9.3 Маска&lt;/h3&gt;\n&lt;p&gt;Маска – это максимально возможные эффективные права для всех ACL-записей, кроме владельца и others. Если маска &lt;code&gt;r-x&lt;/code&gt;, то даже ACL с &lt;code&gt;rwx&lt;/code&gt; реально даст только &lt;code&gt;r-x&lt;/code&gt;. Маска появляется автоматически при добавлении первой ACL-записи и расширяется когда вы добавляете записи с большими правами. Можно задать явно:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Посмотреть маску\ngetfacl file.txt | grep mask\n\n# Явно задать маску\nsetfacl -m mask::rx file.txt\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;9.4 ACL по умолчанию – важный момент&lt;/h3&gt;\n&lt;p&gt;Без флага &lt;code&gt;-d&lt;/code&gt; ACL применяется только к уже существующим файлам. Новые файлы созданные в директории его &lt;strong&gt;не наследуют&lt;/strong&gt;. Это частая ошибка – настроил ACL на директорию, а файлы которые потом создаются внутри его не получают.&lt;/p&gt;\n&lt;p&gt;Правильный паттерн – всегда два вызова:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# 1. Применить к существующим файлам и поддиректориям\nsetfacl -R -m g:developers:rwx /project\n\n# 2. Установить ACL по умолчанию – для всех новых файлов\nsetfacl -d -m g:developers:rwx /project\n\n# Проверить – в выводе появятся строки default:\ngetfacl /project\n# file: project\n# owner: ivan\n# group: ivan\nuser::rwx\ngroup::r-x\nother::r-x\ndefault:group:developers:rwx    ← будет применяться к новым файлам\n&lt;/code&gt;&lt;/pre&gt;\n&lt;hr&gt;\n&lt;h2&gt;10. umask – права по умолчанию при создании файлов&lt;/h2&gt;\n&lt;p&gt;Когда создаётся новый файл или директория – система не даёт максимально возможные права, а вычитает из них маску. Это и есть &lt;code&gt;umask&lt;/code&gt;. Максимальные права при создании: файл – &lt;code&gt;666&lt;/code&gt; (execute никогда не ставится автоматически), директория – &lt;code&gt;777&lt;/code&gt;.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Посмотреть текущую маску\numask\n# 0022\n\n# Расчёт:\n# файл:       666 - 022 = 644 (rw-r--r--)\n# директория: 777 - 022 = 755 (rwxr-xr-x)\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Строго говоря umask работает как побитовая операция исключения, а не простое вычитание. Разница проявляется если у вас нестандартные значения: например, &lt;code&gt;666&lt;/code&gt; минус &lt;code&gt;033&lt;/code&gt; математически даст &lt;code&gt;633&lt;/code&gt;, но побитовое исключение даст &lt;code&gt;644&lt;/code&gt;. Для стандартных значений (&lt;code&gt;022&lt;/code&gt;, &lt;code&gt;027&lt;/code&gt;, &lt;code&gt;077&lt;/code&gt;) простое вычитание даёт верный результат и удобнее для понимания.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Проверить на практике\numask 022\ntouch newfile.txt &amp;amp;&amp;amp; ls -la newfile.txt\n# -rw-r--r-- 1 ivan ivan 0 Mar 26 newfile.txt   ← 644\n\nmkdir newdir &amp;amp;&amp;amp; ls -la | grep newdir\n# drwxr-xr-x 2 ivan ivan 4096 Mar 26 newdir     ← 755\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;Типичные значения&lt;/h3&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;umask&lt;/th&gt;\n&lt;th&gt;Файлы&lt;/th&gt;\n&lt;th&gt;Директории&lt;/th&gt;\n&lt;th&gt;Когда применять&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;022&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;644&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;755&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Стандарт – публичный доступ на чтение&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;027&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;640&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;750&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Усиленный – others вообще без доступа&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;077&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;600&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;700&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Параноидальный – только владелец&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h3&gt;Где настраивается&lt;/h3&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Для текущей сессии\numask 027\n\n# Глобально для всех пользователей\ngrep UMASK /etc/login.defs\n# UMASK 022\n\n# Для конкретного пользователя\necho &amp;quot;umask 027&amp;quot; &amp;gt;&amp;gt; ~/.bashrc\n\n# Для сервиса через systemd unit-файл\n# [Service]\n# UMask=0027\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h2&gt;Бонус и Заключение&lt;/h2&gt;\n&lt;p&gt;Мы рассмотрели всё начиная от базовой модели UGO и битов rwx до алгоритма принятия решений ядром, специальных битов и ACL. Отдельно хочу поделиться полезным материалом на YouTube от Дмитрия с заданиями для самостоятельной отработки навыков, очень полезно тем, кто только начинает учить Linux.&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;&lt;a href=\&quot;https://youtu.be/lvG7N2NoogY?si=Uoz9AWQy4QXOd7nV\&quot;&gt;Урок 12 – Управление пользователями и группами&lt;/a&gt;&lt;/li&gt;\n&lt;li&gt;&lt;a href=\&quot;https://www.youtube.com/watch?v=lvG7N2NoogY\&quot;&gt;Урок 13 – Избирательные права доступа (DAC) над файлами&lt;/a&gt;&lt;/li&gt;\n&lt;li&gt;&lt;a href=\&quot;https://www.youtube.com/watch?v=PPqiQ08pmto\&quot;&gt;Урок 14 – Избирательные права доступа (DAC) над каталогами&lt;/a&gt;&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;Увидимся в следующей части серии!&lt;/p&gt;\n&quot;],&quot;typename&quot;:[0,&quot;Линукс&quot;],&quot;categoryPath&quot;:[1,[[0,{&quot;slug&quot;:[0,&quot;linux&quot;],&quot;title&quot;:[0,&quot;Линукс&quot;],&quot;icon&quot;:[0,&quot;folder-tree&quot;]}]]],&quot;navSlug&quot;:[0,&quot;article&quot;],&quot;navTitle&quot;:[0,&quot;Статьи opensophy&quot;],&quot;navIcon&quot;:[0,&quot;brain&quot;],&quot;author&quot;:[0,&quot;&quot;],&quot;date&quot;:[0,&quot;2026-05-13&quot;],&quot;updated&quot;:[0,&quot;2026-05-14&quot;],&quot;tags&quot;:[1,[[0,&quot;linux&quot;],[0,&quot;devsecops&quot;]]],&quot;lang&quot;:[0,&quot;ru&quot;],&quot;keywords&quot;:[0,&quot;&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;icon&quot;:[0,&quot;mouse-pointer-2-off&quot;],&quot;priority&quot;:[0,2],&quot;custom&quot;:[0,&quot;&quot;],&quot;frontmatter&quot;:[0,{&quot;title&quot;:[0,&quot;Linux: Права доступа&quot;],&quot;description&quot;:[0,&quot;Третья часть серии о Linux для DevOps и DevSecOps – разбираем права доступа, модель UGO, биты rwx, числовое и символьное представление, chmod и chown.&quot;],&quot;date&quot;:[0,&quot;2026-05-13&quot;],&quot;updated&quot;:[0,&quot;2026-05-14&quot;],&quot;tags&quot;:[0,&quot;linux, devsecops&quot;],&quot;lang&quot;:[0,&quot;ru&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;priority&quot;:[0,&quot;2&quot;]}]}]}" ssr client="only" opts="{&quot;name&quot;:&quot;DocContent&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island>   <astro-island uid="Z1Ix9sf" component-url="/assets/DevPanelLoader.6ELCzLIu.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{}" ssr client="only" opts="{&quot;name&quot;:&quot;DevPanelLoader&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island> <!-- Re-apply theme after SPA navigation --> <script>
+      document.addEventListener('astro:after-swap', function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      });
+    </script> </body> </html>

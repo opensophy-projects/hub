@@ -1,0 +1,1 @@
+import{j as e}from"./vendor-react.DgFKySyv.js";import t from"./wave-text.LWQRkmYh.js";const i=()=>e.jsx("div",{style:{padding:"2rem 1rem",textAlign:"center"},children:e.jsx(t,{amplitude:8,duration:1.2,staggerDelay:.05,className:"text-4xl font-bold",children:"Волновой текст"})});export{i as default};

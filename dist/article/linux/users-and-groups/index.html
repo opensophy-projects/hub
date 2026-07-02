@@ -1,0 +1,800 @@
+<!DOCTYPE html><html lang="ru"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- Theme: runs before paint, prevents flash --><script>
+      (function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.add('js');
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      })();
+    </script><!-- Primary SEO --><title>Linux: Пользователи и группы — Opensophy</title><meta name="description" content="Вторая часть серии о Linux для DevOps и DevSecOps — разбираем, как устроены пользователи и группы, UID/GID, /etc/passwd и shadow, sudo, безопасность и реальные сценарии администрирования."><meta name="keywords" content="opensophy, кибербезопасность, DevSecOps, linux, разработка, инструменты, туториалы, open source, mTLS, SAST, DAST, SCA, zero trust, CI/CD"><meta name="author" content="Opensophy"><meta name="robots" content="index, follow"><meta name="theme-color" content="#0a0a0a"><meta name="color-scheme" content="dark light"><link rel="canonical" href="https://opensophy.com/article/linux/users-and-groups/"><!-- Sitemap discovery --><link rel="sitemap" type="application/xml" href="/sitemap.xml"><!-- Open Graph --><meta property="og:site_name" content="Opensophy"><meta property="og:title" content="Linux: Пользователи и группы — Opensophy"><meta property="og:description" content="Вторая часть серии о Linux для DevOps и DevSecOps — разбираем, как устроены пользователи и группы, UID/GID, /etc/passwd и shadow, sudo, безопасность и реальные сценарии администрирования."><meta property="og:type" content="article"><meta property="og:url" content="https://opensophy.com/article/linux/users-and-groups/"><meta property="og:image" content="https://opensophy.com/assets/image.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ru_RU"><!-- Twitter / X --><meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@opensophy"><meta name="twitter:title" content="Linux: Пользователи и группы — Opensophy"><meta name="twitter:description" content="Вторая часть серии о Linux для DevOps и DevSecOps — разбираем, как устроены пользователи и группы, UID/GID, /etc/passwd и shadow, sudo, безопасность и реальные сценарии администрирования."><meta name="twitter:image" content="https://opensophy.com/assets/image.png"><!-- Article-specific --><meta property="article:published_time" content="2026-03-26T00:00:00.000Z"><meta property="article:modified_time" content="2026-03-26T00:00:00.000Z"><meta property="article:author" content="Opensophy"><!-- Favicon --><link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/favicon.png"><!-- Astro SPA transitions --><meta name="astro-view-transitions-enabled" content="true"><meta name="astro-view-transitions-fallback" content="animate"><script type="module" src="/assets/ClientRouter.astro_astro_type_script_index_0_lang.CAqDO0tx.js"></script><!-- Structured Data JSON-LD --><script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Linux: Пользователи и группы","description":"Вторая часть серии о Linux для DevOps и DevSecOps — разбираем, как устроены пользователи и группы, UID/GID, /etc/passwd и shadow, sudo, безопасность и реальные сценарии администрирования.","url":"https://opensophy.com/article/linux/users-and-groups/","image":"https://opensophy.com/assets/image.png","author":{"@type":"Person","name":"Opensophy"},"publisher":{"@type":"Organization","name":"Opensophy","url":"https://opensophy.com"},"datePublished":"2026-03-26T00:00:00.000Z","dateModified":"2026-03-26T00:00:00.000Z","inLanguage":"ru"}</script><link rel="stylesheet" href="/assets/Layout.BzjEPNLe.css"></head> <body> <style>astro-island,astro-slot,astro-static-slot{display:contents}</style><script>(()=>{var e=async t=>{await(await t())()};(self.Astro||(self.Astro={})).only=e;window.dispatchEvent(new Event("astro:only"));})();</script><script>(()=>{var g=Object.defineProperty;var w=(c,s,d)=>s in c?g(c,s,{enumerable:!0,configurable:!0,writable:!0,value:d}):c[s]=d;var l=(c,s,d)=>w(c,typeof s!="symbol"?s+"":s,d);var E=new Set(["__proto__","constructor","prototype"]);{let c={0:t=>y(t),1:t=>d(t),2:t=>new RegExp(t),3:t=>new Date(t),4:t=>new Map(d(t)),5:t=>new Set(d(t)),6:t=>BigInt(t),7:t=>new URL(t),8:t=>new Uint8Array(t),9:t=>new Uint16Array(t),10:t=>new Uint32Array(t),11:t=>Number.POSITIVE_INFINITY*t},s=t=>{let[p,e]=t;return p in c?c[p](e):void 0},d=t=>t.map(s),y=t=>typeof t!="object"||t===null?t:Object.fromEntries(Object.entries(t).map(([p,e])=>[p,s(e)]));class f extends HTMLElement{constructor(){super(...arguments);l(this,"Component");l(this,"hydrator");l(this,"hydrate",async()=>{var b;if(!this.hydrator||!this.isConnected)return;let e=(b=this.parentElement)==null?void 0:b.closest("astro-island[ssr]");if(e){e.addEventListener("astro:hydrate",this.hydrate,{once:!0});return}let n=this.querySelectorAll("astro-slot"),r={},i=this.querySelectorAll("template[data-astro-template]");for(let o of i){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("data-astro-template")||"default"]=o.innerHTML,o.remove())}for(let o of n){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("name")||"default"]=o.innerHTML)}let u;try{u=this.hasAttribute("props")?y(JSON.parse(this.getAttribute("props"))):{}}catch(o){let a=this.getAttribute("component-url")||"<unknown>",v=this.getAttribute("component-export");throw v&&(a+=` (export ${v})`),console.error(`[hydrate] Error parsing props for component ${a}`,this.getAttribute("props"),o),o}let h;await this.hydrator(this)(this.Component,u,r,{client:this.getAttribute("client")}),this.removeAttribute("ssr"),this.dispatchEvent(new CustomEvent("astro:hydrate"))});l(this,"unmount",()=>{this.isConnected||this.dispatchEvent(new CustomEvent("astro:unmount"))})}disconnectedCallback(){document.removeEventListener("astro:after-swap",this.unmount),document.addEventListener("astro:after-swap",this.unmount,{once:!0})}connectedCallback(){if(!this.hasAttribute("await-children")||document.readyState==="interactive"||document.readyState==="complete")this.childrenConnectedCallback();else{let e=()=>{document.removeEventListener("DOMContentLoaded",e),n.disconnect(),this.childrenConnectedCallback()},n=new MutationObserver(()=>{var r;((r=this.lastChild)==null?void 0:r.nodeType)===Node.COMMENT_NODE&&this.lastChild.nodeValue==="astro:end"&&(this.lastChild.remove(),e())});n.observe(this,{childList:!0}),document.addEventListener("DOMContentLoaded",e)}}async childrenConnectedCallback(){let e=this.getAttribute("before-hydration-url");e&&await import(e),this.start()}getRetryImportUrl(e){let n=new URL(e,document.baseURI),r=`astro-retry=${Date.now()}`,i=n.hash.replace(/^#/,"");return n.hash=i?`${i}&${r}`:r,n.toString()}async importWithRetry(e){try{return await import(e)}catch(n){return await new Promise(r=>setTimeout(r,1e3)),import(this.getRetryImportUrl(e))}}handleHydrationError(e){let n=this.getAttribute("component-url"),r=new CustomEvent("astro:hydration-error",{cancelable:!0,bubbles:!0,composed:!0,detail:{error:e,componentUrl:n}});this.dispatchEvent(r)&&console.error(`[astro-island] Error hydrating ${n}`,e)}async start(){let e=JSON.parse(this.getAttribute("opts")),n=this.getAttribute("client");if(Astro[n]===void 0){window.addEventListener(`astro:${n}`,()=>this.start(),{once:!0});return}try{await Astro[n](async()=>{let r=this.getAttribute("renderer-url");try{let[i,{default:u}]=await Promise.all([this.importWithRetry(this.getAttribute("component-url")),r?this.importWithRetry(r):Promise.resolve({default:()=>()=>{}})]),h=this.getAttribute("component-export")||"default";if(h.includes(".")){this.Component=i;for(let m of h.split(".")){if(E.has(m)||!this.Component||typeof this.Component!="object"&&typeof this.Component!="function"||!Object.hasOwn(this.Component,m))throw new Error(`Invalid component export path: ${h}`);this.Component=this.Component[m]}}else{if(E.has(h))throw new Error(`Invalid component export path: ${h}`);this.Component=i[h]}return this.hydrator=u,this.hydrate}catch(i){return this.handleHydrationError(i),()=>{}}},e,this)}catch(r){this.handleHydrationError(r)}}attributeChangedCallback(){this.hydrate()}}l(f,"observedAttributes",["props"]),customElements.get("astro-island")||customElements.define("astro-island",f)}})();</script>   <noscript> <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;"> <article><h2>1. Введение</h2>
+<p>Продолжаем прохождение linux! Сразу уточню что статья может обновляться после адекватной критики и уточнений от сообщества <a href="https://habr.com/ru/users/opensophy/">Хабра</a>(там где офицально статья была опубликована от opensophy), свежие обновления всегда происходят на opensophy.com, если вы только начинаете изучать линукс или хотите освежить память можете вернуться в прошлую серию рубрики &quot;<a href="https://opensophy.com/article/linux/linux-files/">Учим Linux: Файлы, навигация и поиск</a>&quot;. В этой части я попытался расписать довольно кратко т.к. информации и так много и тот же новичок может не сразу все выучить но по комментариям из Хабра я буду создавать что-то вроде чеклиста оперативных вопросов(это если я пропустил что-то из важной информации). Приступим. </p>
+<blockquote>
+<p>Серия рубрик в основном под Ubuntu/Debian</p>
+</blockquote>
+<hr>
+<h2>2. Как Linux идентифицирует пользователя</h2>
+<h3>2.1 Username vs UID</h3>
+<p>Ядро Linux работает исключительно с числами. <strong>UID (User Identifier)</strong> — числовой идентификатор пользователя (обычно 32-битный). Имя пользователя (username) — лишь человекочитаемый псевдоним, который инструменты вроде <code>ls</code> или <code>ps</code> подставляют при выводе, обращаясь к <code>/etc/passwd</code>.</p>
+<blockquote>
+<p>⚠️ Если удалить пользователя и создать нового с тем же именем, но другим UID — новый пользователь <strong>не получит доступ</strong> к старым файлам. Права привязаны к UID, а не к имени.(А ВОТ ЕСЛИ ВЫ ПРИВЯЖЕТЕ к UID ТО ПОЛУЧИТ ДОСТУП К СТАРЫМ ФАЙЛАМ. Вроде очевидно но учитывайте этот момент)</p>
+</blockquote>
+<h3>2.2 Основные атрибуты пользователя</h3>
+<table>
+<thead>
+<tr>
+<th>Атрибут</th>
+<th>Описание</th>
+<th>Пример</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>username</td>
+<td>Имя для входа и отображения</td>
+<td><code>deployer</code></td>
+</tr>
+<tr>
+<td>UID</td>
+<td>Числовой идентификатор</td>
+<td><code>1001</code></td>
+</tr>
+<tr>
+<td>GID</td>
+<td>Первичная группа</td>
+<td><code>1001</code></td>
+</tr>
+<tr>
+<td>home</td>
+<td>Домашний каталог</td>
+<td><code>/home/deployer</code></td>
+</tr>
+<tr>
+<td>shell</td>
+<td>Интерактивная оболочка</td>
+<td><code>/bin/bash</code></td>
+</tr>
+<tr>
+<td>GECOS</td>
+<td>Комментарий (имя, телефон, ...)</td>
+<td><code>Ivan Petrov,,</code></td>
+</tr>
+</tbody></table>
+<h3>2.3 Быстрая диагностика</h3>
+<p>Первое, что можно сделать при входе на незнакомый сервер — проверить себя:</p>
+<pre><code class="language-bash"># Полная информация: uid, gid, все группы
+id
+# uid=1001(deployer) gid=1001(deployer) groups=1001(deployer),27(sudo),998(docker)
+
+# Только UID / GID
+id -u
+id -g
+
+# Только имя пользователя
+whoami
+
+# Полная запись из /etc/passwd
+getent passwd deployer
+# deployer:x:1001:1001:Deploy Bot,,:/home/deployer:/bin/bash
+
+# Группа
+getent group docker
+# docker:x:998:deployer,ci
+</code></pre>
+<blockquote>
+<p>✅ <code>getent</code> предпочтительнее прямого чтения <code>/etc/passwd</code>, потому что он учитывает LDAP, NIS и другие NSS-источники — корректно работает в корпоративной среде.</p>
+</blockquote>
+<hr>
+<h2>3. Модель доступа: пользователь → система</h2>
+<h3>3.1 «Всё есть файл»</h3>
+<p>Каждый объект в Linux — файл, директория, устройство, сокет — имеет <strong>владельца (owner)</strong> и <strong>группу (group)</strong>. Это метаданные хранятся прямо в inode.</p>
+<pre><code class="language-bash">ls -la /var/log/nginx/
+# drwxr-xr-x  2 root     adm    4096 Mar 26 09:00 .
+# -rw-r-----  1 www-data adm  187234 Mar 26 10:41 access.log
+# -rw-r-----  1 www-data adm    1204 Mar 26 07:22 error.log
+#
+# Структура строки:
+# тип+права  links  owner    group  size  дата  имя
+</code></pre>
+<h3>3.2 Упрощённая модель проверки прав</h3>
+<pre><code>процесс (UID/GID) → owner? → group? → others
+</code></pre>
+<p>Ядро идёт слева направо и <strong>останавливается на первом совпадении</strong>. Если UID процесса совпадает с owner файла — применяются только права owner, права group уже не проверяются.</p>
+<blockquote>
+<p>ℹ️ Подробный разбор битов <code>rwx</code>, SUID/SGID/Sticky bit и ACL — в следующей статье «Права доступа».</p>
+</blockquote>
+<hr>
+<h2>4. Виды пользователей</h2>
+<h3>4.1 Диапазоны UID</h3>
+<table>
+<thead>
+<tr>
+<th>Диапазон</th>
+<th>Тип</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>0</code></td>
+<td><strong>root</strong> — суперпользователь. Обходит большинство проверок прав доступа, но не все</td>
+</tr>
+<tr>
+<td><code>1–999</code></td>
+<td><strong>Системные пользователи</strong> — сервисы и демоны. Без интерактивного входа.</td>
+</tr>
+<tr>
+<td><code>1000+</code></td>
+<td><strong>Обычные пользователи</strong> — реальные люди. <code>useradd</code> назначает UID ≥ 1000.</td>
+</tr>
+<tr>
+<td><code>65534</code></td>
+<td><strong>nobody</strong> — минимальное доверие. NFS, sshd, sandbox-изоляция.</td>
+</tr>
+</tbody></table>
+<p>Диапазоны настраиваются в <code>/etc/login.defs</code>:</p>
+<pre><code class="language-ini">UID_MIN          1000
+UID_MAX         60000
+SYS_UID_MIN      201
+SYS_UID_MAX      999
+CREATE_HOME      yes
+PASS_MIN_LEN       8
+</code></pre>
+<p>(обычно: системные &lt;1000, обычные ≥1000)</p>
+<h3>4.2 Системные пользователи и nologin</h3>
+<p>Сервисы типа nginx, postgres, redis работают от имени собственного системного пользователя. У таких пользователей в качестве shell прописан <code>/usr/sbin/nologin</code> или <code>/bin/false</code> — интерактивный вход заблокирован.</p>
+<pre><code class="language-bash"># Посмотреть системных пользователей (UID &lt; 1000)
+awk -F: &#39;$3 &lt; 1000 &amp;&amp; $3 &gt; 0 {print $1, $3, $7}&#39; /etc/passwd
+# Специфические просмотры(для инструментов и др.)
+# daemon   1   /usr/sbin/nologin
+# www-data 33  /usr/sbin/nologin
+# postgres 117 /bin/bash     ← исключение: нужен для psql
+# nginx    998 /sbin/nologin
+</code></pre>
+<h3>4.3 root и nobody — крайности спектра</h3>
+<p><strong>root (UID 0)</strong> — полный контроль над системой. Ядро не проверяет права доступа. Может монтировать ФС, загружать модули ядра, убивать любые процессы, читать любые файлы. При компрометации — полная потеря системы.</p>
+<p><strong>nobody (UID 65534)</strong> — минимальные привилегии. Не владеет ни одним файлом. Используется как «безопасный» контекст для untrusted-кода: NFS-маппинг, CGI-процессы, sandbox-изоляция.</p>
+<blockquote>
+<p>nobody = 65534 — не всегда (может быть nfsnobody / UID может отличаться)</p>
+</blockquote>
+<hr>
+<h2>5. Группы</h2>
+<h3>5.1 Зачем нужны группы</h3>
+<p>Группы — механизм <strong>коллективного доступа</strong>. Вместо раздачи прав каждому пользователю индивидуально, достаточно добавить нужных людей в группу и выдать права группе. Классический пример: группа <code>docker</code> открывает доступ к сокету Docker без sudo.</p>
+<h3>5.2 Первичная и дополнительные группы</h3>
+<table>
+<thead>
+<tr>
+<th>Тип</th>
+<th>Хранится в</th>
+<th>Назначение</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Primary (GID)</td>
+<td><code>/etc/passwd</code>, поле 4</td>
+<td>GID новых создаваемых файлов. Одна на пользователя.</td>
+</tr>
+<tr>
+<td>Supplementary</td>
+<td><code>/etc/group</code></td>
+<td>Дополнительные права. Ограничение зависит от системы (обычно десятки тысяч).</td>
+</tr>
+</tbody></table>
+<h3>5.3 Проверка членства</h3>
+<pre><code class="language-bash"># Все группы текущего пользователя
+groups
+# deployer sudo docker adm
+
+# То же с GID
+id
+# uid=1001(deployer) gid=1001(deployer) groups=1001(deployer),27(sudo),998(docker)
+
+# Группы конкретного пользователя
+groups maria
+
+# Все члены группы docker
+getent group docker
+# docker:x:998:deployer,maria,ci-bot
+</code></pre>
+<hr>
+<h2>6. Где хранится информация</h2>
+<h3>6.1 /etc/passwd — реестр пользователей</h3>
+<p>Читаемый всеми файл. <strong>Пароля здесь нет</strong> — поле пароля содержит <code>x</code>, хеш находится в <code>/etc/shadow</code>.</p>
+<pre><code>deployer : x : 1001 : 1001 : Deploy Bot,, : /home/deployer : /bin/bash
+   1        2    3      4         5                6               7
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Содержимое</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Username</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Пароль — всегда <code>x</code>, хеш в shadow</td>
+</tr>
+<tr>
+<td>3</td>
+<td>UID</td>
+</tr>
+<tr>
+<td>4</td>
+<td>GID (первичная группа)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>GECOS — комментарий (имя, телефон, ...)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Домашний каталог</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Логин-шелл</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>По поводу &quot;x&quot;: когда-то давно пароль мог храниться здесь в зашифрованном виде, но такая концепция не была признана безопасной.</p>
+</blockquote>
+<p>это примерно выглядело так: </p>
+<p>Раньше:<br>хеш пароля реально хранился прямо в /etc/passwd<br>файл был:</p>
+<ul>
+<li>читаем всеми ❗</li>
+<li>потому что нужен для работы системы (UID → username)</li>
+</ul>
+<p>В итоге:</p>
+<ul>
+<li>любой пользователь мог читать хеши</li>
+<li>и пытаться их брутфорсить офлайн</li>
+</ul>
+<p>Поэтому позже была введена система shadow passwords: поле пароля в /etc/passwd заменили на x, а сами хеши перенесли в защищённый файл /etc/shadow, доступный только root.</p>
+<h3>6.2 /etc/shadow — хеши паролей</h3>
+<p>Доступен только root (и группе <code>shadow</code>). Содержит хеш пароля с солью и параметры устаревания.</p>
+<pre><code>deployer:$6$rounds=5000$xPwF...$kE9...hash...:19800:0:99999:7:::
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>$6$...</code></td>
+<td><code>$6$</code> = SHA-512. Далее: rounds, salt, хеш. <code>$y$</code> = yescrypt (современный.)</td>
+</tr>
+<tr>
+<td><code>19800</code></td>
+<td>Дата последней смены (дни с 1970-01-01)</td>
+</tr>
+<tr>
+<td><code>0</code></td>
+<td>Мин. дней до следующей смены</td>
+</tr>
+<tr>
+<td><code>99999</code></td>
+<td>Макс. срок действия (99999 ≈ никогда)</td>
+</tr>
+<tr>
+<td><code>7</code></td>
+<td>Предупреждение за N дней до истечения</td>
+</tr>
+<tr>
+<td><code>!</code> или <code>*</code></td>
+<td>Заблокированный аккаунт</td>
+</tr>
+</tbody></table>
+<p>Можно еще уточнить что формат хеша в /etc/shadow зависит от системы и настроек тк <span class="katex-inline"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>y</mi></mrow><annotation encoding="application/x-tex">y</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.0359em;">y</span></span></span></span></span> используется не везде(следует уточнять в зависимости от ОС)</p>
+<h3>6.3 /etc/group</h3>
+<pre><code>docker : x : 998 : deployer,ci-bot
+  1      2    3         4
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Содержимое</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Название группы</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Пароль группы (всегда <code>x</code>)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>GID</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Список supplementary-пользователей</td>
+</tr>
+</tbody></table>
+<h3>6.4 /etc/gshadow</h3>
+<p>Хеши паролей групп и список администраторов групп. Нужен ~редко — актуален при использовании <code>newgrp</code> с паролем.</p>
+<h3>6.5 Безопасное редактирование</h3>
+<blockquote>
+<p>🚨 <strong>Никогда</strong> не редактируй <code>/etc/passwd</code>, <code>/etc/shadow</code>, <code>/etc/group</code> напрямую через nano или vim. При параллельном изменении возможна гонка условий и повреждение файла.</p>
+</blockquote>
+<pre><code class="language-bash">vipw        # редактировать /etc/passwd (с блокировкой и валидацией)
+vipw -s     # редактировать /etc/shadow
+vigr        # редактировать /etc/group
+vigr -s     # редактировать /etc/gshadow
+
+# После ручного редактирования — проверить целостность
+pwck        # проверка /etc/passwd и /etc/shadow
+grpck       # проверка /etc/group и /etc/gshadow
+</code></pre>
+<hr>
+<h2>7. Создание пользователей</h2>
+<h3>7.1 useradd — параметры</h3>
+<table>
+<thead>
+<tr>
+<th>Ключ</th>
+<th>Описание</th>
+<th>Пример</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>-m</code></td>
+<td>Создать домашний каталог</td>
+<td><code>-m</code></td>
+</tr>
+<tr>
+<td><code>-s</code></td>
+<td>Логин-шелл</td>
+<td><code>-s /bin/bash</code></td>
+</tr>
+<tr>
+<td><code>-G</code></td>
+<td>Дополнительные группы (через запятую)</td>
+<td><code>-G sudo,docker</code></td>
+</tr>
+<tr>
+<td><code>-g</code></td>
+<td>Первичная группа (GID или имя)</td>
+<td><code>-g www-data</code></td>
+</tr>
+<tr>
+<td><code>-u</code></td>
+<td>Явно задать UID</td>
+<td><code>-u 1500</code></td>
+</tr>
+<tr>
+<td><code>-c</code></td>
+<td>Комментарий (GECOS)</td>
+<td><code>-c &quot;Ivan Petrov&quot;</code></td>
+</tr>
+<tr>
+<td><code>-d</code></td>
+<td>Путь к home (если не стандартный)</td>
+<td><code>-d /opt/service</code></td>
+</tr>
+<tr>
+<td><code>-e</code></td>
+<td>Дата истечения аккаунта (YYYY-MM-DD)</td>
+<td><code>-e 2025-12-31</code></td>
+</tr>
+<tr>
+<td><code>-r</code></td>
+<td>Системный пользователь (UID из sys-диапазона)</td>
+<td><code>-r</code></td>
+</tr>
+<tr>
+<td><code>-b</code></td>
+<td>Базовый каталог (вместо <code>/home</code>)</td>
+<td><code>-b /srv</code></td>
+</tr>
+<tr>
+<td><code>-k</code></td>
+<td>Каталог-шаблон вместо <code>/etc/skel</code></td>
+<td><code>-k /opt/skel</code></td>
+</tr>
+<tr>
+<td><code>-f</code></td>
+<td>Дней неактивности после устаревания пароля до блокировки</td>
+<td><code>-f 7</code></td>
+</tr>
+</tbody></table>
+<pre><code class="language-bash"># Создать обычного пользователя с home и bash
+useradd -m -s /bin/bash ivan
+
+# Пользователь для CI/CD — без home, с nologin
+useradd -r -s /usr/sbin/nologin -c &quot;CI Bot&quot; ci-bot
+
+# Разработчик с несколькими группами
+useradd -m -s /bin/bash -G sudo,docker,adm -c &quot;Maria Ivanova&quot; maria
+
+# Сервисный пользователь с нестандартным home
+useradd -r -m -d /var/lib/prometheus -s /usr/sbin/nologin prometheus
+</code></pre>
+<h3>7.2 Установка пароля</h3>
+<pre><code class="language-bash"># Интерактивно (запросит дважды)
+passwd ivan
+
+# В скриптах — через chpasswd
+echo &#39;ivan:secretpass&#39; | chpasswd
+
+# Сгенерировать случайный пароль
+NEW_PASS=$(openssl rand -base64 16)
+echo &quot;ivan:${NEW_PASS}&quot; | chpasswd
+echo &quot;Пароль: ${NEW_PASS}&quot;   # сохрани в менеджер!
+
+# Принудить сменить пароль при первом входе
+passwd -e ivan
+</code></pre>
+<h3>7.3 Что происходит под капотом при useradd -m</h3>
+<ol>
+<li>Запись в <code>/etc/passwd</code></li>
+<li>Запись в <code>/etc/shadow</code> (заблокирована до установки пароля)</li>
+<li>Запись в <code>/etc/group</code> (создаётся одноимённая primary-группа)</li>
+<li><code>mkdir /home/username</code></li>
+<li><code>cp -r /etc/skel/* /home/username</code></li>
+<li><code>chown -R user:user /home/username</code></li>
+</ol>
+<hr>
+<h2>8. Окружение пользователя</h2>
+<h3>8.1 /etc/skel — шаблонные файлы</h3>
+<p>При создании пользователя с флагом <code>-m</code> содержимое <code>/etc/skel</code> копируется в home. Удобный механизм для стандартизации окружения.</p>
+<pre><code class="language-bash">ls -la /etc/skel/
+# .bash_logout  .bashrc  .profile
+
+# Добавить корпоративный .gitconfig для всех новых пользователей
+cat &gt; /etc/skel/.gitconfig &lt;&lt;&#39;EOF&#39;
+[core]
+    autocrlf = input
+    editor = vim
+[pull]
+    rebase = true
+EOF
+</code></pre>
+<h3>8.2 Глобальные настройки</h3>
+<table>
+<thead>
+<tr>
+<th>Файл</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/etc/default/useradd</code></td>
+<td>Дефолты для <code>useradd</code>: GROUP, HOME, SHELL, SKEL, INACTIVE</td>
+</tr>
+<tr>
+<td><code>/etc/login.defs</code></td>
+<td>Диапазоны UID/GID, политика паролей, umask, HOME_MODE</td>
+</tr>
+<tr>
+<td><code>/etc/profile</code></td>
+<td>Env-переменные для всех пользователей при логин-сессии</td>
+</tr>
+<tr>
+<td><code>/etc/profile.d/*.sh</code></td>
+<td>Модульные скрипты из <code>/etc/profile</code> (предпочтительный способ)</td>
+</tr>
+<tr>
+<td><code>/etc/bash.bashrc</code></td>
+<td>Глобальный bashrc для интерактивных шеллов (Debian/Ubuntu)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>9. umask — права по умолчанию</h2>
+<p><code>umask</code> — маска, <strong>вычитаемая</strong> из максимальных прав при создании файлов и директорий. Максимум для файлов — <code>666</code>, для директорий — <code>777</code>.</p>
+<pre><code class="language-bash"># Посмотреть текущую маску
+umask
+# 0022
+
+# Расчёт: файл  666 &amp; ~022 = 644 (rw-r--r--)
+#         дирек 777 &amp; ~022 = 755 (rwxr-xr-x)
+
+touch test.txt &amp;&amp; ls -l test.txt
+# -rw-r--r-- 1 deployer deployer 0 Mar 26 12:00 test.txt
+
+# Поменять для текущей сессии
+umask 027   # файлы: 640, директории: 750
+
+# Глобально — в /etc/login.defs:
+# UMASK 022
+
+# Для PAM — в /etc/pam.d/common-session:
+# session optional pam_umask.so umask=002
+</code></pre>
+<blockquote>
+<p>ℹ️ <code>umask</code> работает как побитовая <strong>маска исключения</strong>: <code>666 &amp; ~022 = 644</code>. Простое вычитание при нестандартных значениях даст неверный результат.</p>
+</blockquote>
+<hr>
+<h2>10. Изменение пользователей</h2>
+<h3>10.1 usermod</h3>
+<pre><code class="language-bash"># Изменить логин-шелл
+usermod -s /bin/zsh ivan
+
+# Переименовать пользователя
+usermod -l ivan-petrov ivan
+
+# Изменить домашний каталог (с перемещением файлов)
+usermod -d /home/ivan-petrov -m ivan-petrov
+
+# Установить дату истечения
+usermod -e 2025-12-31 contractor
+
+# Сменить первичную группу
+usermod -g developers ivan-petrov
+
+# Добавить в дополнительную группу
+usermod -aG docker ivan-petrov    # -a ОБЯЗАТЕЛЕН!
+</code></pre>
+<blockquote>
+<p>🚨 Флаг <code>-G</code> без <code>-a</code> <strong>заменяет</strong> все дополнительные группы. Пользователь потеряет все группы, включая <code>sudo</code>. Всегда используй <code>-aG</code>.</p>
+</blockquote>
+<h3>10.2 chsh — смена оболочки</h3>
+<pre><code class="language-bash"># Интерактивно (сам пользователь может сменить свою оболочку)
+chsh
+# New shell [/bin/bash]: /bin/zsh
+
+# Неинтерактивно (только root)
+chsh -s /bin/fish ivan
+
+# Доступные оболочки — только из /etc/shells
+cat /etc/shells
+</code></pre>
+<h3>10.3 Блокировка и разблокировка</h3>
+<pre><code class="language-bash"># Заблокировать (ставит ! перед хешем в shadow)
+passwd -l ivan
+usermod -L ivan   # эквивалент
+
+# Разблокировать
+passwd -u ivan
+usermod -U ivan
+
+# Проверить статус пароля
+passwd -S ivan
+# ivan L 03/26/2026 0 99999 7 -1
+#      ^ L=Locked, P=Password set, NP=No Password
+</code></pre>
+<blockquote>
+<p>⚠️ Блокировка через <code>passwd -l</code> запрещает вход по паролю, но <strong>не блокирует SSH по ключу</strong>. Для полной блокировки: дополнительно <code>usermod -s /usr/sbin/nologin ivan</code> или <code>usermod -e 1 ivan</code>.</p>
+</blockquote>
+<hr>
+<h2>11. Удаление пользователей</h2>
+<h3>11.1 userdel</h3>
+<pre><code class="language-bash"># Удалить пользователя (home НЕ удаляется)
+userdel ivan
+
+# Удалить вместе с home-каталогом и почтовым ящиком
+userdel -r ivan
+
+# Предварительно сохранить данные
+tar -czf /backup/ivan-$(date +%F).tar.gz /home/ivan
+userdel -r ivan
+</code></pre>
+<h3>11.2 Риски при удалении</h3>
+<table>
+<thead>
+<tr>
+<th>Риск</th>
+<th>Последствие</th>
+<th>Защита</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Потеря данных</td>
+<td>Файлы в home безвозвратно удалены</td>
+<td>Бэкап перед <code>userdel -r</code></td>
+</tr>
+<tr>
+<td>Orphaned files</td>
+<td>Файлы вне home с UID без пользователя</td>
+<td><code>find / -nouser</code> до/после</td>
+</tr>
+<tr>
+<td>UID reuse</td>
+<td>Новый пользователь получает тот же UID → старые файлы</td>
+<td>Явно задавать UID через <code>-u</code></td>
+</tr>
+<tr>
+<td>Запущенные сессии</td>
+<td><code>userdel</code> упадёт: «user is currently logged in»</td>
+<td><code>pkill -u ivan &amp;&amp; userdel -r ivan</code></td>
+</tr>
+</tbody></table>
+<pre><code class="language-bash"># Найти «осиротевшие» файлы
+find / -nouser -nogroup -ls 2&gt;/dev/null
+</code></pre>
+<hr>
+<h2>12. Управление группами</h2>
+<h3>12.1 groupadd / groupmod / groupdel</h3>
+<pre><code class="language-bash"># Создать группу
+groupadd developers
+groupadd -g 5000 infra          # с явным GID
+groupadd -r appservice          # системная группа
+
+# Переименовать
+groupmod -n backend developers
+
+# Изменить GID (осторожно: файлы со старым GID станут orphaned)
+groupmod -g 5100 backend
+
+# Удалить
+groupdel backend
+</code></pre>
+<h3>12.2 Добавление пользователя в группу</h3>
+<pre><code class="language-bash"># Правильно: -aG (append + Groups)
+usermod -aG docker ivan
+
+# Сразу в несколько групп
+usermod -aG docker,sudo,adm maria
+</code></pre>
+<blockquote>
+<p>⚠️ Изменения вступают в силу только при <strong>следующем входе</strong>. Для немедленного применения в текущей сессии:</p>
+</blockquote>
+<pre><code class="language-bash">newgrp docker         # запускает subshell с активной группой docker
+# или
+exec su -l $USER      # перезапускает логин-сессию без выхода
+</code></pre>
+<h3>12.3 Проверка</h3>
+<pre><code class="language-bash">getent group docker
+# docker:x:998:deployer,maria,ci-bot
+
+id maria
+groups maria
+</code></pre>
+<hr>
+<h2>13. Привилегии: su vs sudo</h2>
+<h3>13.1 su — переключение пользователя</h3>
+<p><code>su</code> запускает новый шелл от имени другого пользователя, используя <strong>его пароль</strong>.</p>
+<pre><code class="language-bash"># Переключиться на root без загрузки окружения
+su
+
+# Переключиться на root с полным login shell (рекомендуется)
+su -
+su -l root
+
+# Переключиться на другого пользователя
+su - maria
+
+# Выполнить одну команду
+su -c &quot;whoami; id&quot; - maria
+</code></pre>
+<p><strong>Разница <code>su</code> vs <code>su -</code>:</strong></p>
+<ul>
+<li><code>su</code> — переключает UID, но сохраняет PATH и переменные текущего пользователя</li>
+<li><code>su -</code> — полный login shell: новый PATH, HOME, SHELL, выполняется <code>~/.profile</code> целевого пользователя</li>
+</ul>
+<blockquote>
+<p>⚠️ На Ubuntu по умолчанию у root нет пароля. Используем <code>sudo -i</code> или <code>sudo su -</code> вместо <code>su</code>.</p>
+</blockquote>
+<h3>13.2 sudo — точечное делегирование прав</h3>
+<p><code>sudo</code> выполняет одну команду с повышенными привилегиями, авторизуясь паролем <strong>самого пользователя</strong> и логируя каждое действие.</p>
+<pre><code class="language-bash"># Выполнить команду от root
+sudo apt update
+
+# Получить root-шелл (login shell)
+sudo -i
+
+# Получить root-шелл (non-login)
+sudo -s
+
+# Выполнить от имени другого пользователя
+sudo -u www-data id
+
+# Посмотреть, что тебе разрешено
+sudo -l
+
+# Повторить последнюю команду с sudo
+sudo !!
+
+# Аудит: все sudo-действия
+grep sudo /var/log/auth.log | tail -20
+</code></pre>
+<h3>13.3 Настройка /etc/sudoers</h3>
+<blockquote>
+<p>🚨 Редактировать <strong>только через <code>visudo</code></strong>. Синтаксическая ошибка без visudo заблокирует весь sudo на системе.</p>
+</blockquote>
+<pre><code class="language-bash">visudo
+</code></pre>
+<p>Синтаксис строки: <code>КТО ОТКУДА=(ОТ_КОГО) [NOPASSWD:] ЧТО</code></p>
+<pre><code># Группа sudo — полные права со своим паролем
+%sudo   ALL=(ALL:ALL) ALL
+
+# Конкретный пользователь — только restart nginx без пароля
+deployer ALL=(root) NOPASSWD: /usr/sbin/service nginx restart
+
+# CI-бот — только docker
+ci-bot ALL=(root) NOPASSWD: /usr/bin/docker
+
+# Запретить конкретную команду для группы
+%developers ALL=(ALL) ALL, !/usr/sbin/visudo
+</code></pre>
+<p>Модульная организация через <code>/etc/sudoers.d/</code>:</p>
+<pre><code class="language-bash">visudo -f /etc/sudoers.d/ci-bot
+# Содержимое:
+# ci-bot ALL=(root) NOPASSWD: /usr/bin/docker pull *, /usr/bin/docker run *
+
+# Права файла обязательно 0440
+chmod 0440 /etc/sudoers.d/ci-bot
+</code></pre>
+<h3>13.4 su vs sudo — когда что использовать</h3>
+<table>
+<thead>
+<tr>
+<th>Критерий</th>
+<th><code>su</code></th>
+<th><code>sudo</code> ✓</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Авторизация</td>
+<td>Пароль целевого пользователя</td>
+<td>Свой пароль</td>
+</tr>
+<tr>
+<td>Аудит</td>
+<td>Нет гранулярного лога</td>
+<td>Полный лог в syslog</td>
+</tr>
+<tr>
+<td>Гранулярность</td>
+<td>Полная смена identity</td>
+<td>Конкретные команды с <code>NOPASSWD</code></td>
+</tr>
+<tr>
+<td>Автоматизация</td>
+<td>Неудобно</td>
+<td>Удобно: <code>NOPASSWD</code> для скриптов</td>
+</tr>
+<tr>
+<td>Когда применять</td>
+<td>Длительная сессия под другим пользователем</td>
+<td>Production-серверы, разовые привилегированные операции</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Шпаргалка</h2>
+<h3>Диагностика</h3>
+<pre><code class="language-bash">id                          # uid/gid/groups текущего пользователя
+whoami                      # имя текущего пользователя
+id username                 # uid/gid/groups указанного пользователя
+groups username             # группы пользователя
+getent passwd username      # запись из passwd (учитывает LDAP)
+getent group groupname      # запись о группе
+passwd -S username          # статус пароля
+last                        # история входов
+w                           # кто сейчас залогинен
+</code></pre>
+<h3>Управление пользователями</h3>
+<pre><code class="language-bash">useradd -m -s /bin/bash -G sudo user    # создать пользователя
+passwd user                              # установить пароль
+usermod -aG group user                   # добавить в группу
+usermod -L / -U user                     # блокировать / разблокировать
+userdel -r user                          # удалить с home
+</code></pre>
+<h3>Управление группами</h3>
+<pre><code class="language-bash">groupadd groupname                       # создать группу
+groupmod -n newname oldname              # переименовать
+groupdel groupname                       # удалить
+groupname                         # активировать группу в текущей сессии
+</code></pre>
+<h3>Безопасное редактирование системных файлов</h3>
+<pre><code class="language-bash">visudo                                   # /etc/sudoers
+vipw                                     # /etc/passwd
+vipw -s                                  # /etc/shadow
+vigr                                     # /etc/group
+pwck &amp;&amp; grpck                            # проверить целостность
+</code></pre>
+</article> </main> </noscript> <astro-island uid="WehIy" component-url="/assets/DocContent.CoKfap2Q.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{&quot;doc&quot;:[0,{&quot;id&quot;:[0,&quot;article/linux/users-and-groups&quot;],&quot;title&quot;:[0,&quot;Linux: Пользователи и группы&quot;],&quot;slug&quot;:[0,&quot;article/linux/users-and-groups&quot;],&quot;description&quot;:[0,&quot;Вторая часть серии о Linux для DevOps и DevSecOps — разбираем, как устроены пользователи и группы, UID/GID, /etc/passwd и shadow, sudo, безопасность и реальные сценарии администрирования.&quot;],&quot;content&quot;:[0,&quot;&lt;h2&gt;1. Введение&lt;/h2&gt;\n&lt;p&gt;Продолжаем прохождение linux! Сразу уточню что статья может обновляться после адекватной критики и уточнений от сообщества &lt;a href=\&quot;https://habr.com/ru/users/opensophy/\&quot;&gt;Хабра&lt;/a&gt;(там где офицально статья была опубликована от opensophy), свежие обновления всегда происходят на opensophy.com, если вы только начинаете изучать линукс или хотите освежить память можете вернуться в прошлую серию рубрики &amp;quot;&lt;a href=\&quot;https://opensophy.com/article/linux/linux-files/\&quot;&gt;Учим Linux: Файлы, навигация и поиск&lt;/a&gt;&amp;quot;. В этой части я попытался расписать довольно кратко т.к. информации и так много и тот же новичок может не сразу все выучить но по комментариям из Хабра я буду создавать что-то вроде чеклиста оперативных вопросов(это если я пропустил что-то из важной информации). Приступим. &lt;/p&gt;\n&lt;blockquote&gt;\n&lt;p&gt;Серия рубрик в основном под Ubuntu/Debian&lt;/p&gt;\n&lt;/blockquote&gt;\n&lt;hr&gt;\n&lt;h2&gt;2. Как Linux идентифицирует пользователя&lt;/h2&gt;\n&lt;h3&gt;2.1 Username vs UID&lt;/h3&gt;\n&lt;p&gt;Ядро Linux работает исключительно с числами. &lt;strong&gt;UID (User Identifier)&lt;/strong&gt; — числовой идентификатор пользователя (обычно 32-битный). Имя пользователя (username) — лишь человекочитаемый псевдоним, который инструменты вроде &lt;code&gt;ls&lt;/code&gt; или &lt;code&gt;ps&lt;/code&gt; подставляют при выводе, обращаясь к &lt;code&gt;/etc/passwd&lt;/code&gt;.&lt;/p&gt;\n&lt;blockquote&gt;\n&lt;p&gt;⚠️ Если удалить пользователя и создать нового с тем же именем, но другим UID — новый пользователь &lt;strong&gt;не получит доступ&lt;/strong&gt; к старым файлам. Права привязаны к UID, а не к имени.(А ВОТ ЕСЛИ ВЫ ПРИВЯЖЕТЕ к UID ТО ПОЛУЧИТ ДОСТУП К СТАРЫМ ФАЙЛАМ. Вроде очевидно но учитывайте этот момент)&lt;/p&gt;\n&lt;/blockquote&gt;\n&lt;h3&gt;2.2 Основные атрибуты пользователя&lt;/h3&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Атрибут&lt;/th&gt;\n&lt;th&gt;Описание&lt;/th&gt;\n&lt;th&gt;Пример&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;username&lt;/td&gt;\n&lt;td&gt;Имя для входа и отображения&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;deployer&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;UID&lt;/td&gt;\n&lt;td&gt;Числовой идентификатор&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;1001&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;GID&lt;/td&gt;\n&lt;td&gt;Первичная группа&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;1001&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;home&lt;/td&gt;\n&lt;td&gt;Домашний каталог&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;/home/deployer&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;shell&lt;/td&gt;\n&lt;td&gt;Интерактивная оболочка&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;/bin/bash&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;GECOS&lt;/td&gt;\n&lt;td&gt;Комментарий (имя, телефон, ...)&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;Ivan Petrov,,&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h3&gt;2.3 Быстрая диагностика&lt;/h3&gt;\n&lt;p&gt;Первое, что можно сделать при входе на незнакомый сервер — проверить себя:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Полная информация: uid, gid, все группы\nid\n# uid=1001(deployer) gid=1001(deployer) groups=1001(deployer),27(sudo),998(docker)\n\n# Только UID / GID\nid -u\nid -g\n\n# Только имя пользователя\nwhoami\n\n# Полная запись из /etc/passwd\ngetent passwd deployer\n# deployer:x:1001:1001:Deploy Bot,,:/home/deployer:/bin/bash\n\n# Группа\ngetent group docker\n# docker:x:998:deployer,ci\n&lt;/code&gt;&lt;/pre&gt;\n&lt;blockquote&gt;\n&lt;p&gt;✅ &lt;code&gt;getent&lt;/code&gt; предпочтительнее прямого чтения &lt;code&gt;/etc/passwd&lt;/code&gt;, потому что он учитывает LDAP, NIS и другие NSS-источники — корректно работает в корпоративной среде.&lt;/p&gt;\n&lt;/blockquote&gt;\n&lt;hr&gt;\n&lt;h2&gt;3. Модель доступа: пользователь → система&lt;/h2&gt;\n&lt;h3&gt;3.1 «Всё есть файл»&lt;/h3&gt;\n&lt;p&gt;Каждый объект в Linux — файл, директория, устройство, сокет — имеет &lt;strong&gt;владельца (owner)&lt;/strong&gt; и &lt;strong&gt;группу (group)&lt;/strong&gt;. Это метаданные хранятся прямо в inode.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;ls -la /var/log/nginx/\n# drwxr-xr-x  2 root     adm    4096 Mar 26 09:00 .\n# -rw-r-----  1 www-data adm  187234 Mar 26 10:41 access.log\n# -rw-r-----  1 www-data adm    1204 Mar 26 07:22 error.log\n#\n# Структура строки:\n# тип+права  links  owner    group  size  дата  имя\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;3.2 Упрощённая модель проверки прав&lt;/h3&gt;\n&lt;pre&gt;&lt;code&gt;процесс (UID/GID) → owner? → group? → others\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Ядро идёт слева направо и &lt;strong&gt;останавливается на первом совпадении&lt;/strong&gt;. Если UID процесса совпадает с owner файла — применяются только права owner, права group уже не проверяются.&lt;/p&gt;\n&lt;blockquote&gt;\n&lt;p&gt;ℹ️ Подробный разбор битов &lt;code&gt;rwx&lt;/code&gt;, SUID/SGID/Sticky bit и ACL — в следующей статье «Права доступа».&lt;/p&gt;\n&lt;/blockquote&gt;\n&lt;hr&gt;\n&lt;h2&gt;4. Виды пользователей&lt;/h2&gt;\n&lt;h3&gt;4.1 Диапазоны UID&lt;/h3&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Диапазон&lt;/th&gt;\n&lt;th&gt;Тип&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;0&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;strong&gt;root&lt;/strong&gt; — суперпользователь. Обходит большинство проверок прав доступа, но не все&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;1–999&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;strong&gt;Системные пользователи&lt;/strong&gt; — сервисы и демоны. Без интерактивного входа.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;1000+&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;strong&gt;Обычные пользователи&lt;/strong&gt; — реальные люди. &lt;code&gt;useradd&lt;/code&gt; назначает UID ≥ 1000.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;65534&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;strong&gt;nobody&lt;/strong&gt; — минимальное доверие. NFS, sshd, sandbox-изоляция.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;p&gt;Диапазоны настраиваются в &lt;code&gt;/etc/login.defs&lt;/code&gt;:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-ini\&quot;&gt;UID_MIN          1000\nUID_MAX         60000\nSYS_UID_MIN      201\nSYS_UID_MAX      999\nCREATE_HOME      yes\nPASS_MIN_LEN       8\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;(обычно: системные &amp;lt;1000, обычные ≥1000)&lt;/p&gt;\n&lt;h3&gt;4.2 Системные пользователи и nologin&lt;/h3&gt;\n&lt;p&gt;Сервисы типа nginx, postgres, redis работают от имени собственного системного пользователя. У таких пользователей в качестве shell прописан &lt;code&gt;/usr/sbin/nologin&lt;/code&gt; или &lt;code&gt;/bin/false&lt;/code&gt; — интерактивный вход заблокирован.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Посмотреть системных пользователей (UID &amp;lt; 1000)\nawk -F: &amp;#39;$3 &amp;lt; 1000 &amp;amp;&amp;amp; $3 &amp;gt; 0 {print $1, $3, $7}&amp;#39; /etc/passwd\n# Специфические просмотры(для инструментов и др.)\n# daemon   1   /usr/sbin/nologin\n# www-data 33  /usr/sbin/nologin\n# postgres 117 /bin/bash     ← исключение: нужен для psql\n# nginx    998 /sbin/nologin\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;4.3 root и nobody — крайности спектра&lt;/h3&gt;\n&lt;p&gt;&lt;strong&gt;root (UID 0)&lt;/strong&gt; — полный контроль над системой. Ядро не проверяет права доступа. Может монтировать ФС, загружать модули ядра, убивать любые процессы, читать любые файлы. При компрометации — полная потеря системы.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;nobody (UID 65534)&lt;/strong&gt; — минимальные привилегии. Не владеет ни одним файлом. Используется как «безопасный» контекст для untrusted-кода: NFS-маппинг, CGI-процессы, sandbox-изоляция.&lt;/p&gt;\n&lt;blockquote&gt;\n&lt;p&gt;nobody = 65534 — не всегда (может быть nfsnobody / UID может отличаться)&lt;/p&gt;\n&lt;/blockquote&gt;\n&lt;hr&gt;\n&lt;h2&gt;5. Группы&lt;/h2&gt;\n&lt;h3&gt;5.1 Зачем нужны группы&lt;/h3&gt;\n&lt;p&gt;Группы — механизм &lt;strong&gt;коллективного доступа&lt;/strong&gt;. Вместо раздачи прав каждому пользователю индивидуально, достаточно добавить нужных людей в группу и выдать права группе. Классический пример: группа &lt;code&gt;docker&lt;/code&gt; открывает доступ к сокету Docker без sudo.&lt;/p&gt;\n&lt;h3&gt;5.2 Первичная и дополнительные группы&lt;/h3&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Тип&lt;/th&gt;\n&lt;th&gt;Хранится в&lt;/th&gt;\n&lt;th&gt;Назначение&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;Primary (GID)&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;/etc/passwd&lt;/code&gt;, поле 4&lt;/td&gt;\n&lt;td&gt;GID новых создаваемых файлов. Одна на пользователя.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Supplementary&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;/etc/group&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Дополнительные права. Ограничение зависит от системы (обычно десятки тысяч).&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h3&gt;5.3 Проверка членства&lt;/h3&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Все группы текущего пользователя\ngroups\n# deployer sudo docker adm\n\n# То же с GID\nid\n# uid=1001(deployer) gid=1001(deployer) groups=1001(deployer),27(sudo),998(docker)\n\n# Группы конкретного пользователя\ngroups maria\n\n# Все члены группы docker\ngetent group docker\n# docker:x:998:deployer,maria,ci-bot\n&lt;/code&gt;&lt;/pre&gt;\n&lt;hr&gt;\n&lt;h2&gt;6. Где хранится информация&lt;/h2&gt;\n&lt;h3&gt;6.1 /etc/passwd — реестр пользователей&lt;/h3&gt;\n&lt;p&gt;Читаемый всеми файл. &lt;strong&gt;Пароля здесь нет&lt;/strong&gt; — поле пароля содержит &lt;code&gt;x&lt;/code&gt;, хеш находится в &lt;code&gt;/etc/shadow&lt;/code&gt;.&lt;/p&gt;\n&lt;pre&gt;&lt;code&gt;deployer : x : 1001 : 1001 : Deploy Bot,, : /home/deployer : /bin/bash\n   1        2    3      4         5                6               7\n&lt;/code&gt;&lt;/pre&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Поле&lt;/th&gt;\n&lt;th&gt;Содержимое&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;1&lt;/td&gt;\n&lt;td&gt;Username&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;2&lt;/td&gt;\n&lt;td&gt;Пароль — всегда &lt;code&gt;x&lt;/code&gt;, хеш в shadow&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;3&lt;/td&gt;\n&lt;td&gt;UID&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;4&lt;/td&gt;\n&lt;td&gt;GID (первичная группа)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;5&lt;/td&gt;\n&lt;td&gt;GECOS — комментарий (имя, телефон, ...)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;6&lt;/td&gt;\n&lt;td&gt;Домашний каталог&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;7&lt;/td&gt;\n&lt;td&gt;Логин-шелл&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;blockquote&gt;\n&lt;p&gt;По поводу &amp;quot;x&amp;quot;: когда-то давно пароль мог храниться здесь в зашифрованном виде, но такая концепция не была признана безопасной.&lt;/p&gt;\n&lt;/blockquote&gt;\n&lt;p&gt;это примерно выглядело так: &lt;/p&gt;\n&lt;p&gt;Раньше:&lt;br&gt;хеш пароля реально хранился прямо в /etc/passwd&lt;br&gt;файл был:&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;читаем всеми ❗&lt;/li&gt;\n&lt;li&gt;потому что нужен для работы системы (UID → username)&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;В итоге:&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;любой пользователь мог читать хеши&lt;/li&gt;\n&lt;li&gt;и пытаться их брутфорсить офлайн&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;Поэтому позже была введена система shadow passwords: поле пароля в /etc/passwd заменили на x, а сами хеши перенесли в защищённый файл /etc/shadow, доступный только root.&lt;/p&gt;\n&lt;h3&gt;6.2 /etc/shadow — хеши паролей&lt;/h3&gt;\n&lt;p&gt;Доступен только root (и группе &lt;code&gt;shadow&lt;/code&gt;). Содержит хеш пароля с солью и параметры устаревания.&lt;/p&gt;\n&lt;pre&gt;&lt;code&gt;deployer:$6$rounds=5000$xPwF...$kE9...hash...:19800:0:99999:7:::\n&lt;/code&gt;&lt;/pre&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Поле&lt;/th&gt;\n&lt;th&gt;Описание&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;$6$...&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;$6$&lt;/code&gt; = SHA-512. Далее: rounds, salt, хеш. &lt;code&gt;$y$&lt;/code&gt; = yescrypt (современный.)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;19800&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Дата последней смены (дни с 1970-01-01)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;0&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Мин. дней до следующей смены&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;99999&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Макс. срок действия (99999 ≈ никогда)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;7&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Предупреждение за N дней до истечения&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;!&lt;/code&gt; или &lt;code&gt;*&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Заблокированный аккаунт&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;p&gt;Можно еще уточнить что формат хеша в /etc/shadow зависит от системы и настроек тк &lt;span class=\&quot;katex-inline\&quot;&gt;&lt;span class=\&quot;katex\&quot;&gt;&lt;span class=\&quot;katex-mathml\&quot;&gt;&lt;math xmlns=\&quot;http://www.w3.org/1998/Math/MathML\&quot;&gt;&lt;semantics&gt;&lt;mrow&gt;&lt;mi&gt;y&lt;/mi&gt;&lt;/mrow&gt;&lt;annotation encoding=\&quot;application/x-tex\&quot;&gt;y&lt;/annotation&gt;&lt;/semantics&gt;&lt;/math&gt;&lt;/span&gt;&lt;span class=\&quot;katex-html\&quot; aria-hidden=\&quot;true\&quot;&gt;&lt;span class=\&quot;base\&quot;&gt;&lt;span class=\&quot;strut\&quot; style=\&quot;height:0.625em;vertical-align:-0.1944em;\&quot;&gt;&lt;/span&gt;&lt;span class=\&quot;mord mathnormal\&quot; style=\&quot;margin-right:0.0359em;\&quot;&gt;y&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/span&gt; используется не везде(следует уточнять в зависимости от ОС)&lt;/p&gt;\n&lt;h3&gt;6.3 /etc/group&lt;/h3&gt;\n&lt;pre&gt;&lt;code&gt;docker : x : 998 : deployer,ci-bot\n  1      2    3         4\n&lt;/code&gt;&lt;/pre&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Поле&lt;/th&gt;\n&lt;th&gt;Содержимое&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;1&lt;/td&gt;\n&lt;td&gt;Название группы&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;2&lt;/td&gt;\n&lt;td&gt;Пароль группы (всегда &lt;code&gt;x&lt;/code&gt;)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;3&lt;/td&gt;\n&lt;td&gt;GID&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;4&lt;/td&gt;\n&lt;td&gt;Список supplementary-пользователей&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h3&gt;6.4 /etc/gshadow&lt;/h3&gt;\n&lt;p&gt;Хеши паролей групп и список администраторов групп. Нужен ~редко — актуален при использовании &lt;code&gt;newgrp&lt;/code&gt; с паролем.&lt;/p&gt;\n&lt;h3&gt;6.5 Безопасное редактирование&lt;/h3&gt;\n&lt;blockquote&gt;\n&lt;p&gt;🚨 &lt;strong&gt;Никогда&lt;/strong&gt; не редактируй &lt;code&gt;/etc/passwd&lt;/code&gt;, &lt;code&gt;/etc/shadow&lt;/code&gt;, &lt;code&gt;/etc/group&lt;/code&gt; напрямую через nano или vim. При параллельном изменении возможна гонка условий и повреждение файла.&lt;/p&gt;\n&lt;/blockquote&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;vipw        # редактировать /etc/passwd (с блокировкой и валидацией)\nvipw -s     # редактировать /etc/shadow\nvigr        # редактировать /etc/group\nvigr -s     # редактировать /etc/gshadow\n\n# После ручного редактирования — проверить целостность\npwck        # проверка /etc/passwd и /etc/shadow\ngrpck       # проверка /etc/group и /etc/gshadow\n&lt;/code&gt;&lt;/pre&gt;\n&lt;hr&gt;\n&lt;h2&gt;7. Создание пользователей&lt;/h2&gt;\n&lt;h3&gt;7.1 useradd — параметры&lt;/h3&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Ключ&lt;/th&gt;\n&lt;th&gt;Описание&lt;/th&gt;\n&lt;th&gt;Пример&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;-m&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Создать домашний каталог&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;-m&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;-s&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Логин-шелл&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;-s /bin/bash&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;-G&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Дополнительные группы (через запятую)&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;-G sudo,docker&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;-g&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Первичная группа (GID или имя)&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;-g www-data&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;-u&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Явно задать UID&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;-u 1500&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;-c&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Комментарий (GECOS)&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;-c &amp;quot;Ivan Petrov&amp;quot;&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;-d&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Путь к home (если не стандартный)&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;-d /opt/service&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;-e&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Дата истечения аккаунта (YYYY-MM-DD)&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;-e 2025-12-31&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;-r&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Системный пользователь (UID из sys-диапазона)&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;-r&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;-b&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Базовый каталог (вместо &lt;code&gt;/home&lt;/code&gt;)&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;-b /srv&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;-k&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Каталог-шаблон вместо &lt;code&gt;/etc/skel&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;-k /opt/skel&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;-f&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Дней неактивности после устаревания пароля до блокировки&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;-f 7&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Создать обычного пользователя с home и bash\nuseradd -m -s /bin/bash ivan\n\n# Пользователь для CI/CD — без home, с nologin\nuseradd -r -s /usr/sbin/nologin -c &amp;quot;CI Bot&amp;quot; ci-bot\n\n# Разработчик с несколькими группами\nuseradd -m -s /bin/bash -G sudo,docker,adm -c &amp;quot;Maria Ivanova&amp;quot; maria\n\n# Сервисный пользователь с нестандартным home\nuseradd -r -m -d /var/lib/prometheus -s /usr/sbin/nologin prometheus\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;7.2 Установка пароля&lt;/h3&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Интерактивно (запросит дважды)\npasswd ivan\n\n# В скриптах — через chpasswd\necho &amp;#39;ivan:secretpass&amp;#39; | chpasswd\n\n# Сгенерировать случайный пароль\nNEW_PASS=$(openssl rand -base64 16)\necho &amp;quot;ivan:${NEW_PASS}&amp;quot; | chpasswd\necho &amp;quot;Пароль: ${NEW_PASS}&amp;quot;   # сохрани в менеджер!\n\n# Принудить сменить пароль при первом входе\npasswd -e ivan\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;7.3 Что происходит под капотом при useradd -m&lt;/h3&gt;\n&lt;ol&gt;\n&lt;li&gt;Запись в &lt;code&gt;/etc/passwd&lt;/code&gt;&lt;/li&gt;\n&lt;li&gt;Запись в &lt;code&gt;/etc/shadow&lt;/code&gt; (заблокирована до установки пароля)&lt;/li&gt;\n&lt;li&gt;Запись в &lt;code&gt;/etc/group&lt;/code&gt; (создаётся одноимённая primary-группа)&lt;/li&gt;\n&lt;li&gt;&lt;code&gt;mkdir /home/username&lt;/code&gt;&lt;/li&gt;\n&lt;li&gt;&lt;code&gt;cp -r /etc/skel/* /home/username&lt;/code&gt;&lt;/li&gt;\n&lt;li&gt;&lt;code&gt;chown -R user:user /home/username&lt;/code&gt;&lt;/li&gt;\n&lt;/ol&gt;\n&lt;hr&gt;\n&lt;h2&gt;8. Окружение пользователя&lt;/h2&gt;\n&lt;h3&gt;8.1 /etc/skel — шаблонные файлы&lt;/h3&gt;\n&lt;p&gt;При создании пользователя с флагом &lt;code&gt;-m&lt;/code&gt; содержимое &lt;code&gt;/etc/skel&lt;/code&gt; копируется в home. Удобный механизм для стандартизации окружения.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;ls -la /etc/skel/\n# .bash_logout  .bashrc  .profile\n\n# Добавить корпоративный .gitconfig для всех новых пользователей\ncat &amp;gt; /etc/skel/.gitconfig &amp;lt;&amp;lt;&amp;#39;EOF&amp;#39;\n[core]\n    autocrlf = input\n    editor = vim\n[pull]\n    rebase = true\nEOF\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;8.2 Глобальные настройки&lt;/h3&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Файл&lt;/th&gt;\n&lt;th&gt;Описание&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;/etc/default/useradd&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Дефолты для &lt;code&gt;useradd&lt;/code&gt;: GROUP, HOME, SHELL, SKEL, INACTIVE&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;/etc/login.defs&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Диапазоны UID/GID, политика паролей, umask, HOME_MODE&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;/etc/profile&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Env-переменные для всех пользователей при логин-сессии&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;/etc/profile.d/*.sh&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Модульные скрипты из &lt;code&gt;/etc/profile&lt;/code&gt; (предпочтительный способ)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;/etc/bash.bashrc&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Глобальный bashrc для интерактивных шеллов (Debian/Ubuntu)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;hr&gt;\n&lt;h2&gt;9. umask — права по умолчанию&lt;/h2&gt;\n&lt;p&gt;&lt;code&gt;umask&lt;/code&gt; — маска, &lt;strong&gt;вычитаемая&lt;/strong&gt; из максимальных прав при создании файлов и директорий. Максимум для файлов — &lt;code&gt;666&lt;/code&gt;, для директорий — &lt;code&gt;777&lt;/code&gt;.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Посмотреть текущую маску\numask\n# 0022\n\n# Расчёт: файл  666 &amp;amp; ~022 = 644 (rw-r--r--)\n#         дирек 777 &amp;amp; ~022 = 755 (rwxr-xr-x)\n\ntouch test.txt &amp;amp;&amp;amp; ls -l test.txt\n# -rw-r--r-- 1 deployer deployer 0 Mar 26 12:00 test.txt\n\n# Поменять для текущей сессии\numask 027   # файлы: 640, директории: 750\n\n# Глобально — в /etc/login.defs:\n# UMASK 022\n\n# Для PAM — в /etc/pam.d/common-session:\n# session optional pam_umask.so umask=002\n&lt;/code&gt;&lt;/pre&gt;\n&lt;blockquote&gt;\n&lt;p&gt;ℹ️ &lt;code&gt;umask&lt;/code&gt; работает как побитовая &lt;strong&gt;маска исключения&lt;/strong&gt;: &lt;code&gt;666 &amp;amp; ~022 = 644&lt;/code&gt;. Простое вычитание при нестандартных значениях даст неверный результат.&lt;/p&gt;\n&lt;/blockquote&gt;\n&lt;hr&gt;\n&lt;h2&gt;10. Изменение пользователей&lt;/h2&gt;\n&lt;h3&gt;10.1 usermod&lt;/h3&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Изменить логин-шелл\nusermod -s /bin/zsh ivan\n\n# Переименовать пользователя\nusermod -l ivan-petrov ivan\n\n# Изменить домашний каталог (с перемещением файлов)\nusermod -d /home/ivan-petrov -m ivan-petrov\n\n# Установить дату истечения\nusermod -e 2025-12-31 contractor\n\n# Сменить первичную группу\nusermod -g developers ivan-petrov\n\n# Добавить в дополнительную группу\nusermod -aG docker ivan-petrov    # -a ОБЯЗАТЕЛЕН!\n&lt;/code&gt;&lt;/pre&gt;\n&lt;blockquote&gt;\n&lt;p&gt;🚨 Флаг &lt;code&gt;-G&lt;/code&gt; без &lt;code&gt;-a&lt;/code&gt; &lt;strong&gt;заменяет&lt;/strong&gt; все дополнительные группы. Пользователь потеряет все группы, включая &lt;code&gt;sudo&lt;/code&gt;. Всегда используй &lt;code&gt;-aG&lt;/code&gt;.&lt;/p&gt;\n&lt;/blockquote&gt;\n&lt;h3&gt;10.2 chsh — смена оболочки&lt;/h3&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Интерактивно (сам пользователь может сменить свою оболочку)\nchsh\n# New shell [/bin/bash]: /bin/zsh\n\n# Неинтерактивно (только root)\nchsh -s /bin/fish ivan\n\n# Доступные оболочки — только из /etc/shells\ncat /etc/shells\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;10.3 Блокировка и разблокировка&lt;/h3&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Заблокировать (ставит ! перед хешем в shadow)\npasswd -l ivan\nusermod -L ivan   # эквивалент\n\n# Разблокировать\npasswd -u ivan\nusermod -U ivan\n\n# Проверить статус пароля\npasswd -S ivan\n# ivan L 03/26/2026 0 99999 7 -1\n#      ^ L=Locked, P=Password set, NP=No Password\n&lt;/code&gt;&lt;/pre&gt;\n&lt;blockquote&gt;\n&lt;p&gt;⚠️ Блокировка через &lt;code&gt;passwd -l&lt;/code&gt; запрещает вход по паролю, но &lt;strong&gt;не блокирует SSH по ключу&lt;/strong&gt;. Для полной блокировки: дополнительно &lt;code&gt;usermod -s /usr/sbin/nologin ivan&lt;/code&gt; или &lt;code&gt;usermod -e 1 ivan&lt;/code&gt;.&lt;/p&gt;\n&lt;/blockquote&gt;\n&lt;hr&gt;\n&lt;h2&gt;11. Удаление пользователей&lt;/h2&gt;\n&lt;h3&gt;11.1 userdel&lt;/h3&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Удалить пользователя (home НЕ удаляется)\nuserdel ivan\n\n# Удалить вместе с home-каталогом и почтовым ящиком\nuserdel -r ivan\n\n# Предварительно сохранить данные\ntar -czf /backup/ivan-$(date +%F).tar.gz /home/ivan\nuserdel -r ivan\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;11.2 Риски при удалении&lt;/h3&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Риск&lt;/th&gt;\n&lt;th&gt;Последствие&lt;/th&gt;\n&lt;th&gt;Защита&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;Потеря данных&lt;/td&gt;\n&lt;td&gt;Файлы в home безвозвратно удалены&lt;/td&gt;\n&lt;td&gt;Бэкап перед &lt;code&gt;userdel -r&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Orphaned files&lt;/td&gt;\n&lt;td&gt;Файлы вне home с UID без пользователя&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;find / -nouser&lt;/code&gt; до/после&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;UID reuse&lt;/td&gt;\n&lt;td&gt;Новый пользователь получает тот же UID → старые файлы&lt;/td&gt;\n&lt;td&gt;Явно задавать UID через &lt;code&gt;-u&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Запущенные сессии&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;userdel&lt;/code&gt; упадёт: «user is currently logged in»&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;pkill -u ivan &amp;amp;&amp;amp; userdel -r ivan&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Найти «осиротевшие» файлы\nfind / -nouser -nogroup -ls 2&amp;gt;/dev/null\n&lt;/code&gt;&lt;/pre&gt;\n&lt;hr&gt;\n&lt;h2&gt;12. Управление группами&lt;/h2&gt;\n&lt;h3&gt;12.1 groupadd / groupmod / groupdel&lt;/h3&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Создать группу\ngroupadd developers\ngroupadd -g 5000 infra          # с явным GID\ngroupadd -r appservice          # системная группа\n\n# Переименовать\ngroupmod -n backend developers\n\n# Изменить GID (осторожно: файлы со старым GID станут orphaned)\ngroupmod -g 5100 backend\n\n# Удалить\ngroupdel backend\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;12.2 Добавление пользователя в группу&lt;/h3&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Правильно: -aG (append + Groups)\nusermod -aG docker ivan\n\n# Сразу в несколько групп\nusermod -aG docker,sudo,adm maria\n&lt;/code&gt;&lt;/pre&gt;\n&lt;blockquote&gt;\n&lt;p&gt;⚠️ Изменения вступают в силу только при &lt;strong&gt;следующем входе&lt;/strong&gt;. Для немедленного применения в текущей сессии:&lt;/p&gt;\n&lt;/blockquote&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;newgrp docker         # запускает subshell с активной группой docker\n# или\nexec su -l $USER      # перезапускает логин-сессию без выхода\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;12.3 Проверка&lt;/h3&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;getent group docker\n# docker:x:998:deployer,maria,ci-bot\n\nid maria\ngroups maria\n&lt;/code&gt;&lt;/pre&gt;\n&lt;hr&gt;\n&lt;h2&gt;13. Привилегии: su vs sudo&lt;/h2&gt;\n&lt;h3&gt;13.1 su — переключение пользователя&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;su&lt;/code&gt; запускает новый шелл от имени другого пользователя, используя &lt;strong&gt;его пароль&lt;/strong&gt;.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Переключиться на root без загрузки окружения\nsu\n\n# Переключиться на root с полным login shell (рекомендуется)\nsu -\nsu -l root\n\n# Переключиться на другого пользователя\nsu - maria\n\n# Выполнить одну команду\nsu -c &amp;quot;whoami; id&amp;quot; - maria\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;&lt;strong&gt;Разница &lt;code&gt;su&lt;/code&gt; vs &lt;code&gt;su -&lt;/code&gt;:&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;&lt;code&gt;su&lt;/code&gt; — переключает UID, но сохраняет PATH и переменные текущего пользователя&lt;/li&gt;\n&lt;li&gt;&lt;code&gt;su -&lt;/code&gt; — полный login shell: новый PATH, HOME, SHELL, выполняется &lt;code&gt;~/.profile&lt;/code&gt; целевого пользователя&lt;/li&gt;\n&lt;/ul&gt;\n&lt;blockquote&gt;\n&lt;p&gt;⚠️ На Ubuntu по умолчанию у root нет пароля. Используем &lt;code&gt;sudo -i&lt;/code&gt; или &lt;code&gt;sudo su -&lt;/code&gt; вместо &lt;code&gt;su&lt;/code&gt;.&lt;/p&gt;\n&lt;/blockquote&gt;\n&lt;h3&gt;13.2 sudo — точечное делегирование прав&lt;/h3&gt;\n&lt;p&gt;&lt;code&gt;sudo&lt;/code&gt; выполняет одну команду с повышенными привилегиями, авторизуясь паролем &lt;strong&gt;самого пользователя&lt;/strong&gt; и логируя каждое действие.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Выполнить команду от root\nsudo apt update\n\n# Получить root-шелл (login shell)\nsudo -i\n\n# Получить root-шелл (non-login)\nsudo -s\n\n# Выполнить от имени другого пользователя\nsudo -u www-data id\n\n# Посмотреть, что тебе разрешено\nsudo -l\n\n# Повторить последнюю команду с sudo\nsudo !!\n\n# Аудит: все sudo-действия\ngrep sudo /var/log/auth.log | tail -20\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;13.3 Настройка /etc/sudoers&lt;/h3&gt;\n&lt;blockquote&gt;\n&lt;p&gt;🚨 Редактировать &lt;strong&gt;только через &lt;code&gt;visudo&lt;/code&gt;&lt;/strong&gt;. Синтаксическая ошибка без visudo заблокирует весь sudo на системе.&lt;/p&gt;\n&lt;/blockquote&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;visudo\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Синтаксис строки: &lt;code&gt;КТО ОТКУДА=(ОТ_КОГО) [NOPASSWD:] ЧТО&lt;/code&gt;&lt;/p&gt;\n&lt;pre&gt;&lt;code&gt;# Группа sudo — полные права со своим паролем\n%sudo   ALL=(ALL:ALL) ALL\n\n# Конкретный пользователь — только restart nginx без пароля\ndeployer ALL=(root) NOPASSWD: /usr/sbin/service nginx restart\n\n# CI-бот — только docker\nci-bot ALL=(root) NOPASSWD: /usr/bin/docker\n\n# Запретить конкретную команду для группы\n%developers ALL=(ALL) ALL, !/usr/sbin/visudo\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Модульная организация через &lt;code&gt;/etc/sudoers.d/&lt;/code&gt;:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;visudo -f /etc/sudoers.d/ci-bot\n# Содержимое:\n# ci-bot ALL=(root) NOPASSWD: /usr/bin/docker pull *, /usr/bin/docker run *\n\n# Права файла обязательно 0440\nchmod 0440 /etc/sudoers.d/ci-bot\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;13.4 su vs sudo — когда что использовать&lt;/h3&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Критерий&lt;/th&gt;\n&lt;th&gt;&lt;code&gt;su&lt;/code&gt;&lt;/th&gt;\n&lt;th&gt;&lt;code&gt;sudo&lt;/code&gt; ✓&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;Авторизация&lt;/td&gt;\n&lt;td&gt;Пароль целевого пользователя&lt;/td&gt;\n&lt;td&gt;Свой пароль&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Аудит&lt;/td&gt;\n&lt;td&gt;Нет гранулярного лога&lt;/td&gt;\n&lt;td&gt;Полный лог в syslog&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Гранулярность&lt;/td&gt;\n&lt;td&gt;Полная смена identity&lt;/td&gt;\n&lt;td&gt;Конкретные команды с &lt;code&gt;NOPASSWD&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Автоматизация&lt;/td&gt;\n&lt;td&gt;Неудобно&lt;/td&gt;\n&lt;td&gt;Удобно: &lt;code&gt;NOPASSWD&lt;/code&gt; для скриптов&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Когда применять&lt;/td&gt;\n&lt;td&gt;Длительная сессия под другим пользователем&lt;/td&gt;\n&lt;td&gt;Production-серверы, разовые привилегированные операции&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;hr&gt;\n&lt;h2&gt;Шпаргалка&lt;/h2&gt;\n&lt;h3&gt;Диагностика&lt;/h3&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;id                          # uid/gid/groups текущего пользователя\nwhoami                      # имя текущего пользователя\nid username                 # uid/gid/groups указанного пользователя\ngroups username             # группы пользователя\ngetent passwd username      # запись из passwd (учитывает LDAP)\ngetent group groupname      # запись о группе\npasswd -S username          # статус пароля\nlast                        # история входов\nw                           # кто сейчас залогинен\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;Управление пользователями&lt;/h3&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;useradd -m -s /bin/bash -G sudo user    # создать пользователя\npasswd user                              # установить пароль\nusermod -aG group user                   # добавить в группу\nusermod -L / -U user                     # блокировать / разблокировать\nuserdel -r user                          # удалить с home\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;Управление группами&lt;/h3&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;groupadd groupname                       # создать группу\ngroupmod -n newname oldname              # переименовать\ngroupdel groupname                       # удалить\ngroupname                         # активировать группу в текущей сессии\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;Безопасное редактирование системных файлов&lt;/h3&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;visudo                                   # /etc/sudoers\nvipw                                     # /etc/passwd\nvipw -s                                  # /etc/shadow\nvigr                                     # /etc/group\npwck &amp;amp;&amp;amp; grpck                            # проверить целостность\n&lt;/code&gt;&lt;/pre&gt;\n&quot;],&quot;typename&quot;:[0,&quot;Линукс&quot;],&quot;categoryPath&quot;:[1,[[0,{&quot;slug&quot;:[0,&quot;linux&quot;],&quot;title&quot;:[0,&quot;Линукс&quot;],&quot;icon&quot;:[0,&quot;folder-tree&quot;]}]]],&quot;navSlug&quot;:[0,&quot;article&quot;],&quot;navTitle&quot;:[0,&quot;Статьи opensophy&quot;],&quot;navIcon&quot;:[0,&quot;brain&quot;],&quot;author&quot;:[0,&quot;&quot;],&quot;date&quot;:[0,&quot;2026-03-26&quot;],&quot;updated&quot;:[0,&quot;2026-05-11&quot;],&quot;tags&quot;:[1,[[0,&quot;linux&quot;],[0,&quot;devsecops&quot;]]],&quot;lang&quot;:[0,&quot;ru&quot;],&quot;keywords&quot;:[0,&quot;&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;icon&quot;:[0,&quot;user-round-plus&quot;],&quot;priority&quot;:[0,1],&quot;custom&quot;:[0,&quot;&quot;],&quot;frontmatter&quot;:[0,{&quot;title&quot;:[0,&quot;Linux: Пользователи и группы&quot;],&quot;description&quot;:[0,&quot;Вторая часть серии о Linux для DevOps и DevSecOps — разбираем, как устроены пользователи и группы, UID/GID, /etc/passwd и shadow, sudo, безопасность и реальные сценарии администрирования.&quot;],&quot;date&quot;:[0,&quot;2026-03-26&quot;],&quot;updated&quot;:[0,&quot;2026-05-11&quot;],&quot;tags&quot;:[0,&quot;linux, devsecops&quot;],&quot;icon&quot;:[0,&quot;user-round-plus&quot;],&quot;lang&quot;:[0,&quot;ru&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;priority&quot;:[0,&quot;1&quot;]}]}]}" ssr client="only" opts="{&quot;name&quot;:&quot;DocContent&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island>   <astro-island uid="Z1Ix9sf" component-url="/assets/DevPanelLoader.6ELCzLIu.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{}" ssr client="only" opts="{&quot;name&quot;:&quot;DevPanelLoader&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island> <!-- Re-apply theme after SPA navigation --> <script>
+      document.addEventListener('astro:after-swap', function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      });
+    </script> </body> </html>

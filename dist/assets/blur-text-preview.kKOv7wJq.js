@@ -1,0 +1,1 @@
+import{j as t}from"./vendor-react.DgFKySyv.js";import e from"./BlurText.DxM7gIKW.js";const x=()=>t.jsx("div",{style:{padding:"2rem 1rem",textAlign:"center"},children:t.jsx(e,{text:"Добро пожаловать в будущее веб-дизайна",delay:200,animateBy:"words",direction:"top",className:"text-4xl font-bold text-center"})});export{x as default};

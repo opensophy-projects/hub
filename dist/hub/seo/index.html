@@ -1,0 +1,221 @@
+<!DOCTYPE html><html lang="ru"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- Theme: runs before paint, prevents flash --><script>
+      (function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.add('js');
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      })();
+    </script><!-- Primary SEO --><title>SEO и индексация Hub V3.5 — Opensophy</title><meta name="description" content="Практическое руководство по SEO в Hub: frontmatter, meta tags, Open Graph, Twitter Cards, canonical, robots.txt, sitemap.xml, JSON-LD, llm.txt и чеклист публикации."><meta name="keywords" content="Hub SEO, Astro SEO, sitemap, robots.txt, Open Graph, JSON-LD, llm.txt"><meta name="author" content="Opensophy"><meta name="robots" content="index, follow"><meta name="theme-color" content="#0a0a0a"><meta name="color-scheme" content="dark light"><link rel="canonical" href="https://opensophy.com/hub/seo/"><!-- Sitemap discovery --><link rel="sitemap" type="application/xml" href="/sitemap.xml"><!-- Open Graph --><meta property="og:site_name" content="Opensophy"><meta property="og:title" content="SEO и индексация Hub V3.5 — Opensophy"><meta property="og:description" content="Практическое руководство по SEO в Hub: frontmatter, meta tags, Open Graph, Twitter Cards, canonical, robots.txt, sitemap.xml, JSON-LD, llm.txt и чеклист публикации."><meta property="og:type" content="article"><meta property="og:url" content="https://opensophy.com/hub/seo/"><meta property="og:image" content="https://opensophy.com/assets/image.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ru_RU"><!-- Twitter / X --><meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@opensophy"><meta name="twitter:title" content="SEO и индексация Hub V3.5 — Opensophy"><meta name="twitter:description" content="Практическое руководство по SEO в Hub: frontmatter, meta tags, Open Graph, Twitter Cards, canonical, robots.txt, sitemap.xml, JSON-LD, llm.txt и чеклист публикации."><meta name="twitter:image" content="https://opensophy.com/assets/image.png"><!-- Article-specific --><meta property="article:published_time" content="2026-06-16T00:00:00.000Z"><meta property="article:modified_time" content="2026-06-16T00:00:00.000Z"><meta property="article:author" content="Opensophy"><!-- Favicon --><link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/favicon.png"><!-- Astro SPA transitions --><meta name="astro-view-transitions-enabled" content="true"><meta name="astro-view-transitions-fallback" content="animate"><script type="module" src="/assets/ClientRouter.astro_astro_type_script_index_0_lang.CAqDO0tx.js"></script><!-- Structured Data JSON-LD --><script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"SEO и индексация Hub V3.5","description":"Практическое руководство по SEO в Hub: frontmatter, meta tags, Open Graph, Twitter Cards, canonical, robots.txt, sitemap.xml, JSON-LD, llm.txt и чеклист публикации.","url":"https://opensophy.com/hub/seo/","image":"https://opensophy.com/assets/image.png","author":{"@type":"Person","name":"Opensophy"},"publisher":{"@type":"Organization","name":"Opensophy","url":"https://opensophy.com"},"datePublished":"2026-06-16T00:00:00.000Z","dateModified":"2026-06-16T00:00:00.000Z","inLanguage":"ru"}</script><link rel="stylesheet" href="/assets/Layout.BzjEPNLe.css"></head> <body> <style>astro-island,astro-slot,astro-static-slot{display:contents}</style><script>(()=>{var e=async t=>{await(await t())()};(self.Astro||(self.Astro={})).only=e;window.dispatchEvent(new Event("astro:only"));})();</script><script>(()=>{var g=Object.defineProperty;var w=(c,s,d)=>s in c?g(c,s,{enumerable:!0,configurable:!0,writable:!0,value:d}):c[s]=d;var l=(c,s,d)=>w(c,typeof s!="symbol"?s+"":s,d);var E=new Set(["__proto__","constructor","prototype"]);{let c={0:t=>y(t),1:t=>d(t),2:t=>new RegExp(t),3:t=>new Date(t),4:t=>new Map(d(t)),5:t=>new Set(d(t)),6:t=>BigInt(t),7:t=>new URL(t),8:t=>new Uint8Array(t),9:t=>new Uint16Array(t),10:t=>new Uint32Array(t),11:t=>Number.POSITIVE_INFINITY*t},s=t=>{let[p,e]=t;return p in c?c[p](e):void 0},d=t=>t.map(s),y=t=>typeof t!="object"||t===null?t:Object.fromEntries(Object.entries(t).map(([p,e])=>[p,s(e)]));class f extends HTMLElement{constructor(){super(...arguments);l(this,"Component");l(this,"hydrator");l(this,"hydrate",async()=>{var b;if(!this.hydrator||!this.isConnected)return;let e=(b=this.parentElement)==null?void 0:b.closest("astro-island[ssr]");if(e){e.addEventListener("astro:hydrate",this.hydrate,{once:!0});return}let n=this.querySelectorAll("astro-slot"),r={},i=this.querySelectorAll("template[data-astro-template]");for(let o of i){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("data-astro-template")||"default"]=o.innerHTML,o.remove())}for(let o of n){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("name")||"default"]=o.innerHTML)}let u;try{u=this.hasAttribute("props")?y(JSON.parse(this.getAttribute("props"))):{}}catch(o){let a=this.getAttribute("component-url")||"<unknown>",v=this.getAttribute("component-export");throw v&&(a+=` (export ${v})`),console.error(`[hydrate] Error parsing props for component ${a}`,this.getAttribute("props"),o),o}let h;await this.hydrator(this)(this.Component,u,r,{client:this.getAttribute("client")}),this.removeAttribute("ssr"),this.dispatchEvent(new CustomEvent("astro:hydrate"))});l(this,"unmount",()=>{this.isConnected||this.dispatchEvent(new CustomEvent("astro:unmount"))})}disconnectedCallback(){document.removeEventListener("astro:after-swap",this.unmount),document.addEventListener("astro:after-swap",this.unmount,{once:!0})}connectedCallback(){if(!this.hasAttribute("await-children")||document.readyState==="interactive"||document.readyState==="complete")this.childrenConnectedCallback();else{let e=()=>{document.removeEventListener("DOMContentLoaded",e),n.disconnect(),this.childrenConnectedCallback()},n=new MutationObserver(()=>{var r;((r=this.lastChild)==null?void 0:r.nodeType)===Node.COMMENT_NODE&&this.lastChild.nodeValue==="astro:end"&&(this.lastChild.remove(),e())});n.observe(this,{childList:!0}),document.addEventListener("DOMContentLoaded",e)}}async childrenConnectedCallback(){let e=this.getAttribute("before-hydration-url");e&&await import(e),this.start()}getRetryImportUrl(e){let n=new URL(e,document.baseURI),r=`astro-retry=${Date.now()}`,i=n.hash.replace(/^#/,"");return n.hash=i?`${i}&${r}`:r,n.toString()}async importWithRetry(e){try{return await import(e)}catch(n){return await new Promise(r=>setTimeout(r,1e3)),import(this.getRetryImportUrl(e))}}handleHydrationError(e){let n=this.getAttribute("component-url"),r=new CustomEvent("astro:hydration-error",{cancelable:!0,bubbles:!0,composed:!0,detail:{error:e,componentUrl:n}});this.dispatchEvent(r)&&console.error(`[astro-island] Error hydrating ${n}`,e)}async start(){let e=JSON.parse(this.getAttribute("opts")),n=this.getAttribute("client");if(Astro[n]===void 0){window.addEventListener(`astro:${n}`,()=>this.start(),{once:!0});return}try{await Astro[n](async()=>{let r=this.getAttribute("renderer-url");try{let[i,{default:u}]=await Promise.all([this.importWithRetry(this.getAttribute("component-url")),r?this.importWithRetry(r):Promise.resolve({default:()=>()=>{}})]),h=this.getAttribute("component-export")||"default";if(h.includes(".")){this.Component=i;for(let m of h.split(".")){if(E.has(m)||!this.Component||typeof this.Component!="object"&&typeof this.Component!="function"||!Object.hasOwn(this.Component,m))throw new Error(`Invalid component export path: ${h}`);this.Component=this.Component[m]}}else{if(E.has(h))throw new Error(`Invalid component export path: ${h}`);this.Component=i[h]}return this.hydrator=u,this.hydrate}catch(i){return this.handleHydrationError(i),()=>{}}},e,this)}catch(r){this.handleHydrationError(r)}}attributeChangedCallback(){this.hydrate()}}l(f,"observedAttributes",["props"]),customElements.get("astro-island")||customElements.define("astro-island",f)}})();</script>   <noscript> <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;"> <article><h1>SEO и индексация Hub V3.5</h1>
+<p>Hub V3.5 уже содержит базовый SEO-слой в <code>Layout.astro</code>: title, description, keywords, canonical, robots, Open Graph, Twitter Cards, sitemap discovery и JSON-LD для сайта/статей. Задача автора — правильно заполнить frontmatter и не ломать slug.</p>
+<hr>
+<h2>Что генерируется автоматически</h2>
+<table>
+<thead>
+<tr>
+<th>Механизм</th>
+<th>Где создаётся</th>
+<th>Что даёт</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>&lt;title&gt;</code></td>
+<td><code>Layout.astro</code></td>
+<td>Заголовок вкладки и поисковой выдачи.</td>
+</tr>
+<tr>
+<td><code>meta description</code></td>
+<td><code>Layout.astro</code></td>
+<td>Сниппет страницы.</td>
+</tr>
+<tr>
+<td>Canonical</td>
+<td><code>Layout.astro</code></td>
+<td>Основной URL страницы.</td>
+</tr>
+<tr>
+<td>Open Graph</td>
+<td><code>Layout.astro</code></td>
+<td>Превью в соцсетях и мессенджерах.</td>
+</tr>
+<tr>
+<td>Twitter Cards</td>
+<td><code>Layout.astro</code></td>
+<td>Превью в X/Twitter-совместимых клиентах.</td>
+</tr>
+<tr>
+<td>JSON-LD WebSite</td>
+<td>Главная страница</td>
+<td>Структурированные данные сайта.</td>
+</tr>
+<tr>
+<td>JSON-LD Article</td>
+<td>Статьи</td>
+<td>Даты, автор, описание, image.</td>
+</tr>
+<tr>
+<td><code>sitemap.xml</code></td>
+<td><code>npm run generate</code></td>
+<td>Карта сайта для поисковиков.</td>
+</tr>
+<tr>
+<td><code>robots.txt</code></td>
+<td><code>public/robots.txt</code></td>
+<td>Правила индексации для ботов.</td>
+</tr>
+<tr>
+<td><code>llm.txt</code></td>
+<td><code>npm run generate</code></td>
+<td>Удобный индекс контента для LLM/AI.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>SEO frontmatter для статьи</h2>
+<pre><code class="language-yaml">---
+title: &quot;CVSS: как правильно оценивать критичность уязвимостей&quot;
+description: &quot;Подробное руководство по CVSS: метрики, векторы, примеры оценки и типичные ошибки.&quot;
+author: opensophy
+date: 2026-06-16
+updated: 2026-06-16
+tags: &quot;cvss, vulnerability management, security&quot;
+keywords: &quot;CVSS, оценка уязвимостей, кибербезопасность, vulnerability scoring&quot;
+icon: siren
+image: &quot;/assets/cvss-guide.png&quot;
+lang: ru
+robots: &quot;index, follow&quot;
+priority: 20
+---
+</code></pre>
+<h3>Минимум для качественной страницы</h3>
+<ul>
+<li><code>title</code> до 60–70 символов;</li>
+<li><code>description</code> до 150–170 символов;</li>
+<li>стабильный slug в <code>{}</code>;</li>
+<li><code>date</code> и <code>updated</code> в формате <code>YYYY-MM-DD</code>;</li>
+<li><code>robots: &quot;index, follow&quot;</code> для публичных страниц;</li>
+<li>уникальный <code>keywords</code> без спама;</li>
+<li><code>image</code> 1200×630 для важных страниц.</li>
+</ul>
+<hr>
+<h2>Robots: когда что ставить</h2>
+<table>
+<thead>
+<tr>
+<th>Значение</th>
+<th>Когда использовать</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>index, follow</code></td>
+<td>Публичные статьи, документация, landing pages.</td>
+</tr>
+<tr>
+<td><code>noindex, follow</code></td>
+<td>Служебные страницы, черновики, страницы без ценности для выдачи.</td>
+</tr>
+<tr>
+<td><code>noindex, nofollow</code></td>
+<td>404, технические страницы, закрытые материалы.</td>
+</tr>
+</tbody></table>
+<p>Не ставьте <code>noindex</code> на страницы, которые должны попадать в поиск.</p>
+<hr>
+<h2>Sitemap</h2>
+<p><code>sitemap.xml</code> обновляется командой:</p>
+<pre><code class="language-bash">npm run generate
+</code></pre>
+<p>Он должен включать все публичные Markdown-документы, категории и custom pages. После добавления контента всегда запускайте генерацию и проверяйте <code>public/sitemap.xml</code>.</p>
+<hr>
+<h2>Canonical и slug</h2>
+<p>Canonical строится из <code>SITE.url</code> в <code>Layout.astro</code> и текущего slug. Поэтому важно:</p>
+<ul>
+<li>не менять slug без необходимости;</li>
+<li>не создавать дубли страниц с одинаковым смыслом;</li>
+<li>использовать один формат URL со слешем на конце;</li>
+<li>проверять custom pages на конфликт с Markdown-документами.</li>
+</ul>
+<hr>
+<h2>Open Graph image</h2>
+<p>Если <code>image</code> не указан, используется глобальный fallback <code>/og-image.png</code>. Для важных статей лучше добавлять индивидуальную картинку:</p>
+<pre><code class="language-yaml">image: &quot;/assets/article-cover.png&quot;
+</code></pre>
+<p>Рекомендации:</p>
+<ul>
+<li>размер 1200×630;</li>
+<li>понятный визуальный заголовок;</li>
+<li>путь от корня сайта (<code>/assets/...</code>);</li>
+<li>небольшой вес файла.</li>
+</ul>
+<hr>
+<h2>SEO для категорий</h2>
+<p>Категории V3.5 создаются автоматически из <code>[C]</code> папок и получают описание вида:</p>
+<pre><code class="language-txt">Статьи в категории «Название категории»
+</code></pre>
+<p>Чтобы категория была полезной:</p>
+<ul>
+<li>давайте категории понятное название;</li>
+<li>используйте точный slug;</li>
+<li>не смешивайте разные темы;</li>
+<li>добавляйте качественные <code>description</code> и <code>tags</code> в дочерние статьи.</li>
+</ul>
+<hr>
+<h2>SEO для custom pages</h2>
+<p>У custom page есть <code>metadata.ts</code>:</p>
+<pre><code class="language-ts">import type { CustomPageMetadata } from &#39;../types&#39;;
+
+const metadata: CustomPageMetadata = {
+  title: &#39;General&#39;,
+  description: &#39;Главная страница Opensophy.&#39;,
+  keywords: &#39;opensophy, open source, security, development&#39;,
+  robots: &#39;index, follow&#39;,
+  lang: &#39;ru&#39;,
+  type: &#39;website&#39;,
+  image: &#39;/assets/cover.png&#39;,
+};
+
+export default metadata;
+</code></pre>
+<p>Если custom page подключена через Markdown frontmatter <code>custom</code>, SEO лучше держать в Markdown-файле, потому что именно он создаёт маршрут документа.</p>
+<hr>
+<h2><code>robots.txt</code> и <code>llm.txt</code></h2>
+<ul>
+<li><code>public/robots.txt</code> должен указывать правила индексации и sitemap.</li>
+<li><code>public/llm.txt</code> обновляется генератором и помогает AI/LLM быстро понять структуру контента.</li>
+</ul>
+<p>После крупных изменений контента запускайте:</p>
+<pre><code class="language-bash">npm run generate
+</code></pre>
+<hr>
+<h2>Чеклист SEO перед релизом</h2>
+<div class="custom-steps"><div class="custom-step" data-status="done" data-title="Метаданные" data-color=""><p>У всех важных страниц есть <code>title</code>, <code>description</code>, <code>date</code>, <code>updated</code>, <code>lang</code>, <code>robots</code>.</p>
+</div><div class="custom-step" data-status="done" data-title="URL" data-color=""><p>Slug задан явно, стабилен и не конфликтует с другими страницами.</p>
+</div><div class="custom-step" data-status="done" data-title="Sitemap" data-color=""><p><code>npm run generate</code> обновил <code>public/sitemap.xml</code>.</p>
+</div><div class="custom-step" data-status="done" data-title="OG" data-color=""><p>Для главных страниц есть <code>image</code> или корректный fallback <code>/og-image.png</code>.</p>
+</div><div class="custom-step" data-status="done" data-title="Индексация" data-color=""><p>Нет случайных <code>noindex</code> на публичных страницах.</p>
+</div><div class="custom-step" data-status="done" data-title="Контент" data-color=""><p>На странице есть один <code>h1</code>, логичная структура <code>h2/h3</code>, внутренние ссылки и понятное вступление.</p>
+</div></div>
+
+<hr>
+<h2>Быстрый аудит после деплоя</h2>
+<pre><code class="language-bash">curl -I https://example.com/sitemap.xml
+curl https://example.com/robots.txt
+curl https://example.com/llm.txt
+</code></pre>
+<p>Также проверьте:</p>
+<ul>
+<li>title и description в исходном HTML;</li>
+<li>canonical;</li>
+<li>OG preview в мессенджере;</li>
+<li>отсутствие 404 на новых URL;</li>
+<li>Lighthouse SEO-раздел.</li>
+</ul>
+</article> </main> </noscript> <astro-island uid="2aXxcP" component-url="/assets/DocContent.CoKfap2Q.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{&quot;doc&quot;:[0,{&quot;id&quot;:[0,&quot;hub/seo&quot;],&quot;title&quot;:[0,&quot;SEO и индексация Hub V3.5&quot;],&quot;slug&quot;:[0,&quot;hub/seo&quot;],&quot;description&quot;:[0,&quot;Практическое руководство по SEO в Hub: frontmatter, meta tags, Open Graph, Twitter Cards, canonical, robots.txt, sitemap.xml, JSON-LD, llm.txt и чеклист публикации.&quot;],&quot;content&quot;:[0,&quot;&lt;h1&gt;SEO и индексация Hub V3.5&lt;/h1&gt;\n&lt;p&gt;Hub V3.5 уже содержит базовый SEO-слой в &lt;code&gt;Layout.astro&lt;/code&gt;: title, description, keywords, canonical, robots, Open Graph, Twitter Cards, sitemap discovery и JSON-LD для сайта/статей. Задача автора — правильно заполнить frontmatter и не ломать slug.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;Что генерируется автоматически&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Механизм&lt;/th&gt;\n&lt;th&gt;Где создаётся&lt;/th&gt;\n&lt;th&gt;Что даёт&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;&amp;lt;title&amp;gt;&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;Layout.astro&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Заголовок вкладки и поисковой выдачи.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;meta description&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;Layout.astro&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Сниппет страницы.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Canonical&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;Layout.astro&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Основной URL страницы.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Open Graph&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;Layout.astro&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Превью в соцсетях и мессенджерах.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Twitter Cards&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;Layout.astro&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Превью в X/Twitter-совместимых клиентах.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;JSON-LD WebSite&lt;/td&gt;\n&lt;td&gt;Главная страница&lt;/td&gt;\n&lt;td&gt;Структурированные данные сайта.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;JSON-LD Article&lt;/td&gt;\n&lt;td&gt;Статьи&lt;/td&gt;\n&lt;td&gt;Даты, автор, описание, image.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;sitemap.xml&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;npm run generate&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Карта сайта для поисковиков.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;robots.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;public/robots.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Правила индексации для ботов.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;llm.txt&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;npm run generate&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Удобный индекс контента для LLM/AI.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;hr&gt;\n&lt;h2&gt;SEO frontmatter для статьи&lt;/h2&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-yaml\&quot;&gt;---\ntitle: &amp;quot;CVSS: как правильно оценивать критичность уязвимостей&amp;quot;\ndescription: &amp;quot;Подробное руководство по CVSS: метрики, векторы, примеры оценки и типичные ошибки.&amp;quot;\nauthor: opensophy\ndate: 2026-06-16\nupdated: 2026-06-16\ntags: &amp;quot;cvss, vulnerability management, security&amp;quot;\nkeywords: &amp;quot;CVSS, оценка уязвимостей, кибербезопасность, vulnerability scoring&amp;quot;\nicon: siren\nimage: &amp;quot;/assets/cvss-guide.png&amp;quot;\nlang: ru\nrobots: &amp;quot;index, follow&amp;quot;\npriority: 20\n---\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;Минимум для качественной страницы&lt;/h3&gt;\n&lt;ul&gt;\n&lt;li&gt;&lt;code&gt;title&lt;/code&gt; до 60–70 символов;&lt;/li&gt;\n&lt;li&gt;&lt;code&gt;description&lt;/code&gt; до 150–170 символов;&lt;/li&gt;\n&lt;li&gt;стабильный slug в &lt;code&gt;{}&lt;/code&gt;;&lt;/li&gt;\n&lt;li&gt;&lt;code&gt;date&lt;/code&gt; и &lt;code&gt;updated&lt;/code&gt; в формате &lt;code&gt;YYYY-MM-DD&lt;/code&gt;;&lt;/li&gt;\n&lt;li&gt;&lt;code&gt;robots: &amp;quot;index, follow&amp;quot;&lt;/code&gt; для публичных страниц;&lt;/li&gt;\n&lt;li&gt;уникальный &lt;code&gt;keywords&lt;/code&gt; без спама;&lt;/li&gt;\n&lt;li&gt;&lt;code&gt;image&lt;/code&gt; 1200×630 для важных страниц.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;hr&gt;\n&lt;h2&gt;Robots: когда что ставить&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Значение&lt;/th&gt;\n&lt;th&gt;Когда использовать&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;index, follow&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Публичные статьи, документация, landing pages.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;noindex, follow&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Служебные страницы, черновики, страницы без ценности для выдачи.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;noindex, nofollow&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;404, технические страницы, закрытые материалы.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;p&gt;Не ставьте &lt;code&gt;noindex&lt;/code&gt; на страницы, которые должны попадать в поиск.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;Sitemap&lt;/h2&gt;\n&lt;p&gt;&lt;code&gt;sitemap.xml&lt;/code&gt; обновляется командой:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;npm run generate\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Он должен включать все публичные Markdown-документы, категории и custom pages. После добавления контента всегда запускайте генерацию и проверяйте &lt;code&gt;public/sitemap.xml&lt;/code&gt;.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;Canonical и slug&lt;/h2&gt;\n&lt;p&gt;Canonical строится из &lt;code&gt;SITE.url&lt;/code&gt; в &lt;code&gt;Layout.astro&lt;/code&gt; и текущего slug. Поэтому важно:&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;не менять slug без необходимости;&lt;/li&gt;\n&lt;li&gt;не создавать дубли страниц с одинаковым смыслом;&lt;/li&gt;\n&lt;li&gt;использовать один формат URL со слешем на конце;&lt;/li&gt;\n&lt;li&gt;проверять custom pages на конфликт с Markdown-документами.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;hr&gt;\n&lt;h2&gt;Open Graph image&lt;/h2&gt;\n&lt;p&gt;Если &lt;code&gt;image&lt;/code&gt; не указан, используется глобальный fallback &lt;code&gt;/og-image.png&lt;/code&gt;. Для важных статей лучше добавлять индивидуальную картинку:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-yaml\&quot;&gt;image: &amp;quot;/assets/article-cover.png&amp;quot;\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Рекомендации:&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;размер 1200×630;&lt;/li&gt;\n&lt;li&gt;понятный визуальный заголовок;&lt;/li&gt;\n&lt;li&gt;путь от корня сайта (&lt;code&gt;/assets/...&lt;/code&gt;);&lt;/li&gt;\n&lt;li&gt;небольшой вес файла.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;hr&gt;\n&lt;h2&gt;SEO для категорий&lt;/h2&gt;\n&lt;p&gt;Категории V3.5 создаются автоматически из &lt;code&gt;[C]&lt;/code&gt; папок и получают описание вида:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-txt\&quot;&gt;Статьи в категории «Название категории»\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Чтобы категория была полезной:&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;давайте категории понятное название;&lt;/li&gt;\n&lt;li&gt;используйте точный slug;&lt;/li&gt;\n&lt;li&gt;не смешивайте разные темы;&lt;/li&gt;\n&lt;li&gt;добавляйте качественные &lt;code&gt;description&lt;/code&gt; и &lt;code&gt;tags&lt;/code&gt; в дочерние статьи.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;hr&gt;\n&lt;h2&gt;SEO для custom pages&lt;/h2&gt;\n&lt;p&gt;У custom page есть &lt;code&gt;metadata.ts&lt;/code&gt;:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-ts\&quot;&gt;import type { CustomPageMetadata } from &amp;#39;../types&amp;#39;;\n\nconst metadata: CustomPageMetadata = {\n  title: &amp;#39;General&amp;#39;,\n  description: &amp;#39;Главная страница Opensophy.&amp;#39;,\n  keywords: &amp;#39;opensophy, open source, security, development&amp;#39;,\n  robots: &amp;#39;index, follow&amp;#39;,\n  lang: &amp;#39;ru&amp;#39;,\n  type: &amp;#39;website&amp;#39;,\n  image: &amp;#39;/assets/cover.png&amp;#39;,\n};\n\nexport default metadata;\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Если custom page подключена через Markdown frontmatter &lt;code&gt;custom&lt;/code&gt;, SEO лучше держать в Markdown-файле, потому что именно он создаёт маршрут документа.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;&lt;code&gt;robots.txt&lt;/code&gt; и &lt;code&gt;llm.txt&lt;/code&gt;&lt;/h2&gt;\n&lt;ul&gt;\n&lt;li&gt;&lt;code&gt;public/robots.txt&lt;/code&gt; должен указывать правила индексации и sitemap.&lt;/li&gt;\n&lt;li&gt;&lt;code&gt;public/llm.txt&lt;/code&gt; обновляется генератором и помогает AI/LLM быстро понять структуру контента.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;После крупных изменений контента запускайте:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;npm run generate\n&lt;/code&gt;&lt;/pre&gt;\n&lt;hr&gt;\n&lt;h2&gt;Чеклист SEO перед релизом&lt;/h2&gt;\n&lt;div class=\&quot;custom-steps\&quot;&gt;&lt;div class=\&quot;custom-step\&quot; data-status=\&quot;done\&quot; data-title=\&quot;Метаданные\&quot; data-color=\&quot;\&quot;&gt;&lt;p&gt;У всех важных страниц есть &lt;code&gt;title&lt;/code&gt;, &lt;code&gt;description&lt;/code&gt;, &lt;code&gt;date&lt;/code&gt;, &lt;code&gt;updated&lt;/code&gt;, &lt;code&gt;lang&lt;/code&gt;, &lt;code&gt;robots&lt;/code&gt;.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-step\&quot; data-status=\&quot;done\&quot; data-title=\&quot;URL\&quot; data-color=\&quot;\&quot;&gt;&lt;p&gt;Slug задан явно, стабилен и не конфликтует с другими страницами.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-step\&quot; data-status=\&quot;done\&quot; data-title=\&quot;Sitemap\&quot; data-color=\&quot;\&quot;&gt;&lt;p&gt;&lt;code&gt;npm run generate&lt;/code&gt; обновил &lt;code&gt;public/sitemap.xml&lt;/code&gt;.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-step\&quot; data-status=\&quot;done\&quot; data-title=\&quot;OG\&quot; data-color=\&quot;\&quot;&gt;&lt;p&gt;Для главных страниц есть &lt;code&gt;image&lt;/code&gt; или корректный fallback &lt;code&gt;/og-image.png&lt;/code&gt;.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-step\&quot; data-status=\&quot;done\&quot; data-title=\&quot;Индексация\&quot; data-color=\&quot;\&quot;&gt;&lt;p&gt;Нет случайных &lt;code&gt;noindex&lt;/code&gt; на публичных страницах.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-step\&quot; data-status=\&quot;done\&quot; data-title=\&quot;Контент\&quot; data-color=\&quot;\&quot;&gt;&lt;p&gt;На странице есть один &lt;code&gt;h1&lt;/code&gt;, логичная структура &lt;code&gt;h2/h3&lt;/code&gt;, внутренние ссылки и понятное вступление.&lt;/p&gt;\n&lt;/div&gt;&lt;/div&gt;\n\n&lt;hr&gt;\n&lt;h2&gt;Быстрый аудит после деплоя&lt;/h2&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;curl -I https://example.com/sitemap.xml\ncurl https://example.com/robots.txt\ncurl https://example.com/llm.txt\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Также проверьте:&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;title и description в исходном HTML;&lt;/li&gt;\n&lt;li&gt;canonical;&lt;/li&gt;\n&lt;li&gt;OG preview в мессенджере;&lt;/li&gt;\n&lt;li&gt;отсутствие 404 на новых URL;&lt;/li&gt;\n&lt;li&gt;Lighthouse SEO-раздел.&lt;/li&gt;\n&lt;/ul&gt;\n&quot;],&quot;typename&quot;:[0,&quot;&quot;],&quot;categoryPath&quot;:[1,[]],&quot;navSlug&quot;:[0,&quot;hub&quot;],&quot;navTitle&quot;:[0,&quot;Документация Hub&quot;],&quot;navIcon&quot;:[0,&quot;book-open&quot;],&quot;author&quot;:[0,&quot;&quot;],&quot;date&quot;:[0,&quot;2026-06-16&quot;],&quot;updated&quot;:[0,&quot;2026-06-16&quot;],&quot;tags&quot;:[1,[[0,&quot;seo&quot;],[0,&quot;индексация&quot;],[0,&quot;sitemap&quot;],[0,&quot;robots&quot;],[0,&quot;open graph&quot;],[0,&quot;json-ld&quot;],[0,&quot;llm.txt&quot;]]],&quot;lang&quot;:[0,&quot;ru&quot;],&quot;keywords&quot;:[0,&quot;Hub SEO, Astro SEO, sitemap, robots.txt, Open Graph, JSON-LD, llm.txt&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;icon&quot;:[0,&quot;search&quot;],&quot;priority&quot;:[0,3],&quot;custom&quot;:[0,&quot;&quot;],&quot;frontmatter&quot;:[0,{&quot;title&quot;:[0,&quot;SEO и индексация Hub V3.5&quot;],&quot;description&quot;:[0,&quot;Практическое руководство по SEO в Hub: frontmatter, meta tags, Open Graph, Twitter Cards, canonical, robots.txt, sitemap.xml, JSON-LD, llm.txt и чеклист публикации.&quot;],&quot;date&quot;:[0,&quot;2026-06-16&quot;],&quot;updated&quot;:[0,&quot;2026-06-16&quot;],&quot;tags&quot;:[0,&quot;seo, индексация, sitemap, robots, open graph, json-ld, llm.txt&quot;],&quot;keywords&quot;:[0,&quot;Hub SEO, Astro SEO, sitemap, robots.txt, Open Graph, JSON-LD, llm.txt&quot;],&quot;icon&quot;:[0,&quot;search&quot;],&quot;lang&quot;:[0,&quot;ru&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;priority&quot;:[0,&quot;3&quot;]}]}]}" ssr client="only" opts="{&quot;name&quot;:&quot;DocContent&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island>   <astro-island uid="Z1Ix9sf" component-url="/assets/DevPanelLoader.6ELCzLIu.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{}" ssr client="only" opts="{&quot;name&quot;:&quot;DevPanelLoader&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island> <!-- Re-apply theme after SPA navigation --> <script>
+      document.addEventListener('astro:after-swap', function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      });
+    </script> </body> </html>

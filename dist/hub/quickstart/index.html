@@ -1,0 +1,289 @@
+<!DOCTYPE html><html lang="ru"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- Theme: runs before paint, prevents flash --><script>
+      (function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.add('js');
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      })();
+    </script><!-- Primary SEO --><title>Быстрый старт и деплой Hub V3.5 — Opensophy</title><meta name="description" content="Как запустить Hub локально, добавить контент, собрать production build и задеплоить проект на GitHub Pages, Vercel, Netlify/Cloudflare Pages, Bolt.new и статический хостинг."><meta name="keywords" content="Hub quickstart, Astro deploy, GitHub Pages, Vercel, Bolt.new, Opensophy Hub"><meta name="author" content="Opensophy"><meta name="robots" content="index, follow"><meta name="theme-color" content="#0a0a0a"><meta name="color-scheme" content="dark light"><link rel="canonical" href="https://opensophy.com/hub/quickstart/"><!-- Sitemap discovery --><link rel="sitemap" type="application/xml" href="/sitemap.xml"><!-- Open Graph --><meta property="og:site_name" content="Opensophy"><meta property="og:title" content="Быстрый старт и деплой Hub V3.5 — Opensophy"><meta property="og:description" content="Как запустить Hub локально, добавить контент, собрать production build и задеплоить проект на GitHub Pages, Vercel, Netlify/Cloudflare Pages, Bolt.new и статический хостинг."><meta property="og:type" content="article"><meta property="og:url" content="https://opensophy.com/hub/quickstart/"><meta property="og:image" content="https://opensophy.com/assets/image.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ru_RU"><!-- Twitter / X --><meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@opensophy"><meta name="twitter:title" content="Быстрый старт и деплой Hub V3.5 — Opensophy"><meta name="twitter:description" content="Как запустить Hub локально, добавить контент, собрать production build и задеплоить проект на GitHub Pages, Vercel, Netlify/Cloudflare Pages, Bolt.new и статический хостинг."><meta name="twitter:image" content="https://opensophy.com/assets/image.png"><!-- Article-specific --><meta property="article:published_time" content="2026-06-16T00:00:00.000Z"><meta property="article:modified_time" content="2026-06-16T00:00:00.000Z"><meta property="article:author" content="Opensophy"><!-- Favicon --><link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/favicon.png"><!-- Astro SPA transitions --><meta name="astro-view-transitions-enabled" content="true"><meta name="astro-view-transitions-fallback" content="animate"><script type="module" src="/assets/ClientRouter.astro_astro_type_script_index_0_lang.CAqDO0tx.js"></script><!-- Structured Data JSON-LD --><script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Быстрый старт и деплой Hub V3.5","description":"Как запустить Hub локально, добавить контент, собрать production build и задеплоить проект на GitHub Pages, Vercel, Netlify/Cloudflare Pages, Bolt.new и статический хостинг.","url":"https://opensophy.com/hub/quickstart/","image":"https://opensophy.com/assets/image.png","author":{"@type":"Person","name":"Opensophy"},"publisher":{"@type":"Organization","name":"Opensophy","url":"https://opensophy.com"},"datePublished":"2026-06-16T00:00:00.000Z","dateModified":"2026-06-16T00:00:00.000Z","inLanguage":"ru"}</script><link rel="stylesheet" href="/assets/Layout.BzjEPNLe.css"></head> <body> <style>astro-island,astro-slot,astro-static-slot{display:contents}</style><script>(()=>{var e=async t=>{await(await t())()};(self.Astro||(self.Astro={})).only=e;window.dispatchEvent(new Event("astro:only"));})();</script><script>(()=>{var g=Object.defineProperty;var w=(c,s,d)=>s in c?g(c,s,{enumerable:!0,configurable:!0,writable:!0,value:d}):c[s]=d;var l=(c,s,d)=>w(c,typeof s!="symbol"?s+"":s,d);var E=new Set(["__proto__","constructor","prototype"]);{let c={0:t=>y(t),1:t=>d(t),2:t=>new RegExp(t),3:t=>new Date(t),4:t=>new Map(d(t)),5:t=>new Set(d(t)),6:t=>BigInt(t),7:t=>new URL(t),8:t=>new Uint8Array(t),9:t=>new Uint16Array(t),10:t=>new Uint32Array(t),11:t=>Number.POSITIVE_INFINITY*t},s=t=>{let[p,e]=t;return p in c?c[p](e):void 0},d=t=>t.map(s),y=t=>typeof t!="object"||t===null?t:Object.fromEntries(Object.entries(t).map(([p,e])=>[p,s(e)]));class f extends HTMLElement{constructor(){super(...arguments);l(this,"Component");l(this,"hydrator");l(this,"hydrate",async()=>{var b;if(!this.hydrator||!this.isConnected)return;let e=(b=this.parentElement)==null?void 0:b.closest("astro-island[ssr]");if(e){e.addEventListener("astro:hydrate",this.hydrate,{once:!0});return}let n=this.querySelectorAll("astro-slot"),r={},i=this.querySelectorAll("template[data-astro-template]");for(let o of i){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("data-astro-template")||"default"]=o.innerHTML,o.remove())}for(let o of n){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("name")||"default"]=o.innerHTML)}let u;try{u=this.hasAttribute("props")?y(JSON.parse(this.getAttribute("props"))):{}}catch(o){let a=this.getAttribute("component-url")||"<unknown>",v=this.getAttribute("component-export");throw v&&(a+=` (export ${v})`),console.error(`[hydrate] Error parsing props for component ${a}`,this.getAttribute("props"),o),o}let h;await this.hydrator(this)(this.Component,u,r,{client:this.getAttribute("client")}),this.removeAttribute("ssr"),this.dispatchEvent(new CustomEvent("astro:hydrate"))});l(this,"unmount",()=>{this.isConnected||this.dispatchEvent(new CustomEvent("astro:unmount"))})}disconnectedCallback(){document.removeEventListener("astro:after-swap",this.unmount),document.addEventListener("astro:after-swap",this.unmount,{once:!0})}connectedCallback(){if(!this.hasAttribute("await-children")||document.readyState==="interactive"||document.readyState==="complete")this.childrenConnectedCallback();else{let e=()=>{document.removeEventListener("DOMContentLoaded",e),n.disconnect(),this.childrenConnectedCallback()},n=new MutationObserver(()=>{var r;((r=this.lastChild)==null?void 0:r.nodeType)===Node.COMMENT_NODE&&this.lastChild.nodeValue==="astro:end"&&(this.lastChild.remove(),e())});n.observe(this,{childList:!0}),document.addEventListener("DOMContentLoaded",e)}}async childrenConnectedCallback(){let e=this.getAttribute("before-hydration-url");e&&await import(e),this.start()}getRetryImportUrl(e){let n=new URL(e,document.baseURI),r=`astro-retry=${Date.now()}`,i=n.hash.replace(/^#/,"");return n.hash=i?`${i}&${r}`:r,n.toString()}async importWithRetry(e){try{return await import(e)}catch(n){return await new Promise(r=>setTimeout(r,1e3)),import(this.getRetryImportUrl(e))}}handleHydrationError(e){let n=this.getAttribute("component-url"),r=new CustomEvent("astro:hydration-error",{cancelable:!0,bubbles:!0,composed:!0,detail:{error:e,componentUrl:n}});this.dispatchEvent(r)&&console.error(`[astro-island] Error hydrating ${n}`,e)}async start(){let e=JSON.parse(this.getAttribute("opts")),n=this.getAttribute("client");if(Astro[n]===void 0){window.addEventListener(`astro:${n}`,()=>this.start(),{once:!0});return}try{await Astro[n](async()=>{let r=this.getAttribute("renderer-url");try{let[i,{default:u}]=await Promise.all([this.importWithRetry(this.getAttribute("component-url")),r?this.importWithRetry(r):Promise.resolve({default:()=>()=>{}})]),h=this.getAttribute("component-export")||"default";if(h.includes(".")){this.Component=i;for(let m of h.split(".")){if(E.has(m)||!this.Component||typeof this.Component!="object"&&typeof this.Component!="function"||!Object.hasOwn(this.Component,m))throw new Error(`Invalid component export path: ${h}`);this.Component=this.Component[m]}}else{if(E.has(h))throw new Error(`Invalid component export path: ${h}`);this.Component=i[h]}return this.hydrator=u,this.hydrate}catch(i){return this.handleHydrationError(i),()=>{}}},e,this)}catch(r){this.handleHydrationError(r)}}attributeChangedCallback(){this.hydrate()}}l(f,"observedAttributes",["props"]),customElements.get("astro-island")||customElements.define("astro-island",f)}})();</script>   <noscript> <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;"> <article><h1>Быстрый старт Hub V3.5</h1>
+<p>Hub — статический Astro-проект с React-островами. Контент хранится в <code>Docs/</code>, данные для навигации генерируются в <code>public/data/docs/manifest.json</code>, а маршруты собираются через Astro.</p>
+<hr>
+<h2>Требования</h2>
+<ul>
+<li>Node.js 20+;</li>
+<li>npm 10+;</li>
+<li>Git;</li>
+<li>доступ к репозиторию проекта.</li>
+</ul>
+<p>Проверка:</p>
+<pre><code class="language-bash">node -v
+npm -v
+git --version
+</code></pre>
+<hr>
+<h2>Локальный запуск</h2>
+<pre><code class="language-bash">git clone https://github.com/opensophy-projects/hub.git
+cd hub
+npm install
+npm run generate
+npm run dev
+</code></pre>
+<p>После запуска Astro покажет локальный адрес, обычно:</p>
+<pre><code class="language-txt">http://localhost:4321/
+</code></pre>
+<hr>
+<h2>Основные команды</h2>
+<table>
+<thead>
+<tr>
+<th>Команда</th>
+<th>Назначение</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>npm run dev</code></td>
+<td>Генерация данных и запуск dev-сервера.</td>
+</tr>
+<tr>
+<td><code>npm run generate</code></td>
+<td>Пересобрать manifest, sitemap и LLM-файл.</td>
+</tr>
+<tr>
+<td><code>npm run build</code></td>
+<td>Production-сборка Astro.</td>
+</tr>
+<tr>
+<td><code>npm run preview</code></td>
+<td>Локальный preview production build.</td>
+</tr>
+<tr>
+<td><code>npm run lint</code></td>
+<td>Проверка ESLint через кастомный runner.</td>
+</tr>
+<tr>
+<td><code>npm test</code></td>
+<td>Запуск unit-тестов.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Добавить первую страницу</h2>
+<p>Создайте файл:</p>
+<pre><code class="language-txt">Docs/[N][book-open]Документация{docs}/[A][file-text]Моя страница{my-page}.md
+</code></pre>
+<p>Минимальное содержимое:</p>
+<pre><code class="language-md">---
+title: &quot;Моя страница&quot;
+description: &quot;Короткое описание страницы.&quot;
+author: opensophy
+date: 2026-06-16
+icon: file-text
+robots: &quot;index, follow&quot;
+---
+
+# Моя страница
+
+Контент страницы.
+</code></pre>
+<p>Затем:</p>
+<pre><code class="language-bash">npm run generate
+npm run dev
+</code></pre>
+<p>Страница будет доступна по адресу:</p>
+<pre><code class="language-txt">/docs/my-page/
+</code></pre>
+<hr>
+<h2>Production build</h2>
+<pre><code class="language-bash">npm run generate
+npm run build
+npm run preview
+</code></pre>
+<p>Результат сборки находится в <code>dist/</code>.</p>
+<hr>
+<h2>Деплой на Vercel</h2>
+<h3>Через UI</h3>
+<ol>
+<li>Импортируйте GitHub-репозиторий в Vercel.</li>
+<li>Framework preset: <strong>Astro</strong>.</li>
+<li>Install command: <code>npm install</code>.</li>
+<li>Build command: <code>npm run build</code>.</li>
+<li>Output directory: <code>dist</code>.</li>
+<li>Deploy.</li>
+</ol>
+<p><code>npm run build</code> уже запускает <code>npm run generate</code>, поэтому manifest и sitemap будут актуальными.</p>
+<h3>Через CLI</h3>
+<pre><code class="language-bash">npm i -g vercel
+vercel
+vercel --prod
+</code></pre>
+<hr>
+<h2>Деплой на GitHub Pages</h2>
+<p>Для GitHub Pages лучше использовать GitHub Actions.</p>
+<p>Создайте <code>.github/workflows/deploy.yml</code>:</p>
+<pre><code class="language-yaml">name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
+</code></pre>
+<p>В настройках репозитория включите <strong>Settings → Pages → Source: GitHub Actions</strong>.</p>
+<h3>Если сайт публикуется не в корне домена</h3>
+<p>Если GitHub Pages отдаёт проект по адресу вида:</p>
+<pre><code class="language-txt">https://username.github.io/repository-name/
+</code></pre>
+<p>нужно настроить <code>base</code>/<code>site</code> в <code>astro.config.mjs</code> под ваш репозиторий. Для кастомного домена вроде <code>https://opensophy.com/</code> base обычно не нужен.</p>
+<hr>
+<h2>Деплой на Netlify или Cloudflare Pages</h2>
+<p>Общие настройки одинаковые:</p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Значение</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Build command</td>
+<td><code>npm run build</code></td>
+</tr>
+<tr>
+<td>Output directory</td>
+<td><code>dist</code></td>
+</tr>
+<tr>
+<td>Node version</td>
+<td><code>20</code> или выше</td>
+</tr>
+</tbody></table>
+<p>Для Netlify можно добавить <code>netlify.toml</code>:</p>
+<pre><code class="language-toml">[build]
+  command = &quot;npm run build&quot;
+  publish = &quot;dist&quot;
+</code></pre>
+<hr>
+<h2>Bolt.new / StackBlitz-подобные окружения</h2>
+<ol>
+<li>Откройте проект в Bolt.new.</li>
+<li>Убедитесь, что установлены зависимости: <code>npm install</code>.</li>
+<li>Запустите <code>npm run generate</code>.</li>
+<li>Запустите <code>npm run dev</code>.</li>
+<li>Для публикации используйте встроенный deploy или экспорт проекта в GitHub/Vercel.</li>
+</ol>
+<p>Если окружение пересоздаётся, первым делом запускайте:</p>
+<pre><code class="language-bash">npm install
+npm run generate
+</code></pre>
+<hr>
+<h2>Статический хостинг / VPS / Nginx</h2>
+<p>Соберите проект:</p>
+<pre><code class="language-bash">npm ci
+npm run build
+</code></pre>
+<p>Скопируйте <code>dist/</code> на сервер.</p>
+<p>Пример Nginx:</p>
+<pre><code class="language-nginx">server {
+  listen 80;
+  server_name example.com;
+
+  root /var/www/hub/dist;
+  index index.html;
+
+  location / {
+    try_files $uri $uri/ /404.html;
+  }
+}
+</code></pre>
+<hr>
+<h2>Чеклист перед публикацией</h2>
+<div class="custom-steps"><div class="custom-step" data-status="done" data-title="Генерация" data-color=""><p><code>npm run generate</code> выполнен после изменений в <code>Docs/</code>.</p>
+</div><div class="custom-step" data-status="done" data-title="Проверки" data-color=""><p><code>npm test</code> и <code>npm run lint</code> не показывают критичных ошибок.</p>
+</div><div class="custom-step" data-status="done" data-title="Build" data-color=""><p><code>npm run build</code> завершился успешно.</p>
+</div><div class="custom-step" data-status="done" data-title="SEO" data-color=""><p>Проверьте <code>title</code>, <code>description</code>, <code>robots</code>, canonical, sitemap и OG image.</p>
+</div><div class="custom-step" data-status="done" data-title="Навигация" data-color=""><p>Проверьте, что новые страницы появились в поиске, sidebar и категориях.</p>
+</div></div>
+
+<hr>
+<h2>Частые проблемы</h2>
+<table>
+<thead>
+<tr>
+<th>Проблема</th>
+<th>Решение</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Страница не появилась</td>
+<td>Запустите <code>npm run generate</code>, проверьте имя файла и slug.</td>
+</tr>
+<tr>
+<td>404 после деплоя</td>
+<td>Проверьте <code>dist/</code>, настройки output directory и base path.</td>
+</tr>
+<tr>
+<td>Не грузятся картинки</td>
+<td>Используйте пути <code>/assets/name.png</code> для файлов из <code>public/assets/</code>.</td>
+</tr>
+<tr>
+<td>Не работает custom page</td>
+<td>Проверьте <code>src/custom/&lt;folder&gt;{slug}/Page.tsx</code> и поле <code>custom</code> во frontmatter.</td>
+</tr>
+<tr>
+<td>GitHub Pages показывает пустой сайт</td>
+<td>Проверьте <code>astro.config.mjs</code> <code>base</code>, если сайт не на корне домена.</td>
+</tr>
+</tbody></table>
+</article> </main> </noscript> <astro-island uid="sibfi" component-url="/assets/DocContent.CoKfap2Q.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{&quot;doc&quot;:[0,{&quot;id&quot;:[0,&quot;hub/quickstart&quot;],&quot;title&quot;:[0,&quot;Быстрый старт и деплой Hub V3.5&quot;],&quot;slug&quot;:[0,&quot;hub/quickstart&quot;],&quot;description&quot;:[0,&quot;Как запустить Hub локально, добавить контент, собрать production build и задеплоить проект на GitHub Pages, Vercel, Netlify/Cloudflare Pages, Bolt.new и статический хостинг.&quot;],&quot;content&quot;:[0,&quot;&lt;h1&gt;Быстрый старт Hub V3.5&lt;/h1&gt;\n&lt;p&gt;Hub — статический Astro-проект с React-островами. Контент хранится в &lt;code&gt;Docs/&lt;/code&gt;, данные для навигации генерируются в &lt;code&gt;public/data/docs/manifest.json&lt;/code&gt;, а маршруты собираются через Astro.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;Требования&lt;/h2&gt;\n&lt;ul&gt;\n&lt;li&gt;Node.js 20+;&lt;/li&gt;\n&lt;li&gt;npm 10+;&lt;/li&gt;\n&lt;li&gt;Git;&lt;/li&gt;\n&lt;li&gt;доступ к репозиторию проекта.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;Проверка:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;node -v\nnpm -v\ngit --version\n&lt;/code&gt;&lt;/pre&gt;\n&lt;hr&gt;\n&lt;h2&gt;Локальный запуск&lt;/h2&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;git clone https://github.com/opensophy-projects/hub.git\ncd hub\nnpm install\nnpm run generate\nnpm run dev\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;После запуска Astro покажет локальный адрес, обычно:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-txt\&quot;&gt;http://localhost:4321/\n&lt;/code&gt;&lt;/pre&gt;\n&lt;hr&gt;\n&lt;h2&gt;Основные команды&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Команда&lt;/th&gt;\n&lt;th&gt;Назначение&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;npm run dev&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Генерация данных и запуск dev-сервера.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;npm run generate&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Пересобрать manifest, sitemap и LLM-файл.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;npm run build&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Production-сборка Astro.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;npm run preview&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Локальный preview production build.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;npm run lint&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Проверка ESLint через кастомный runner.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;npm test&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Запуск unit-тестов.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;hr&gt;\n&lt;h2&gt;Добавить первую страницу&lt;/h2&gt;\n&lt;p&gt;Создайте файл:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-txt\&quot;&gt;Docs/[N][book-open]Документация{docs}/[A][file-text]Моя страница{my-page}.md\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Минимальное содержимое:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-md\&quot;&gt;---\ntitle: &amp;quot;Моя страница&amp;quot;\ndescription: &amp;quot;Короткое описание страницы.&amp;quot;\nauthor: opensophy\ndate: 2026-06-16\nicon: file-text\nrobots: &amp;quot;index, follow&amp;quot;\n---\n\n# Моя страница\n\nКонтент страницы.\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Затем:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;npm run generate\nnpm run dev\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Страница будет доступна по адресу:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-txt\&quot;&gt;/docs/my-page/\n&lt;/code&gt;&lt;/pre&gt;\n&lt;hr&gt;\n&lt;h2&gt;Production build&lt;/h2&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;npm run generate\nnpm run build\nnpm run preview\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Результат сборки находится в &lt;code&gt;dist/&lt;/code&gt;.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;Деплой на Vercel&lt;/h2&gt;\n&lt;h3&gt;Через UI&lt;/h3&gt;\n&lt;ol&gt;\n&lt;li&gt;Импортируйте GitHub-репозиторий в Vercel.&lt;/li&gt;\n&lt;li&gt;Framework preset: &lt;strong&gt;Astro&lt;/strong&gt;.&lt;/li&gt;\n&lt;li&gt;Install command: &lt;code&gt;npm install&lt;/code&gt;.&lt;/li&gt;\n&lt;li&gt;Build command: &lt;code&gt;npm run build&lt;/code&gt;.&lt;/li&gt;\n&lt;li&gt;Output directory: &lt;code&gt;dist&lt;/code&gt;.&lt;/li&gt;\n&lt;li&gt;Deploy.&lt;/li&gt;\n&lt;/ol&gt;\n&lt;p&gt;&lt;code&gt;npm run build&lt;/code&gt; уже запускает &lt;code&gt;npm run generate&lt;/code&gt;, поэтому manifest и sitemap будут актуальными.&lt;/p&gt;\n&lt;h3&gt;Через CLI&lt;/h3&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;npm i -g vercel\nvercel\nvercel --prod\n&lt;/code&gt;&lt;/pre&gt;\n&lt;hr&gt;\n&lt;h2&gt;Деплой на GitHub Pages&lt;/h2&gt;\n&lt;p&gt;Для GitHub Pages лучше использовать GitHub Actions.&lt;/p&gt;\n&lt;p&gt;Создайте &lt;code&gt;.github/workflows/deploy.yml&lt;/code&gt;:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-yaml\&quot;&gt;name: Deploy to GitHub Pages\n\non:\n  push:\n    branches: [main]\n  workflow_dispatch:\n\npermissions:\n  contents: read\n  pages: write\n  id-token: write\n\nconcurrency:\n  group: pages\n  cancel-in-progress: false\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout\n        uses: actions/checkout@v4\n\n      - name: Setup Node\n        uses: actions/setup-node@v4\n        with:\n          node-version: 20\n          cache: npm\n\n      - name: Install\n        run: npm ci\n\n      - name: Build\n        run: npm run build\n\n      - name: Upload artifact\n        uses: actions/upload-pages-artifact@v3\n        with:\n          path: dist\n\n  deploy:\n    environment:\n      name: github-pages\n      url: ${{ steps.deployment.outputs.page_url }}\n    runs-on: ubuntu-latest\n    needs: build\n    steps:\n      - name: Deploy\n        id: deployment\n        uses: actions/deploy-pages@v4\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;В настройках репозитория включите &lt;strong&gt;Settings → Pages → Source: GitHub Actions&lt;/strong&gt;.&lt;/p&gt;\n&lt;h3&gt;Если сайт публикуется не в корне домена&lt;/h3&gt;\n&lt;p&gt;Если GitHub Pages отдаёт проект по адресу вида:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-txt\&quot;&gt;https://username.github.io/repository-name/\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;нужно настроить &lt;code&gt;base&lt;/code&gt;/&lt;code&gt;site&lt;/code&gt; в &lt;code&gt;astro.config.mjs&lt;/code&gt; под ваш репозиторий. Для кастомного домена вроде &lt;code&gt;https://opensophy.com/&lt;/code&gt; base обычно не нужен.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;Деплой на Netlify или Cloudflare Pages&lt;/h2&gt;\n&lt;p&gt;Общие настройки одинаковые:&lt;/p&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Параметр&lt;/th&gt;\n&lt;th&gt;Значение&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;Build command&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;npm run build&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Output directory&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;dist&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Node version&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;20&lt;/code&gt; или выше&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;p&gt;Для Netlify можно добавить &lt;code&gt;netlify.toml&lt;/code&gt;:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-toml\&quot;&gt;[build]\n  command = &amp;quot;npm run build&amp;quot;\n  publish = &amp;quot;dist&amp;quot;\n&lt;/code&gt;&lt;/pre&gt;\n&lt;hr&gt;\n&lt;h2&gt;Bolt.new / StackBlitz-подобные окружения&lt;/h2&gt;\n&lt;ol&gt;\n&lt;li&gt;Откройте проект в Bolt.new.&lt;/li&gt;\n&lt;li&gt;Убедитесь, что установлены зависимости: &lt;code&gt;npm install&lt;/code&gt;.&lt;/li&gt;\n&lt;li&gt;Запустите &lt;code&gt;npm run generate&lt;/code&gt;.&lt;/li&gt;\n&lt;li&gt;Запустите &lt;code&gt;npm run dev&lt;/code&gt;.&lt;/li&gt;\n&lt;li&gt;Для публикации используйте встроенный deploy или экспорт проекта в GitHub/Vercel.&lt;/li&gt;\n&lt;/ol&gt;\n&lt;p&gt;Если окружение пересоздаётся, первым делом запускайте:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;npm install\nnpm run generate\n&lt;/code&gt;&lt;/pre&gt;\n&lt;hr&gt;\n&lt;h2&gt;Статический хостинг / VPS / Nginx&lt;/h2&gt;\n&lt;p&gt;Соберите проект:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;npm ci\nnpm run build\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Скопируйте &lt;code&gt;dist/&lt;/code&gt; на сервер.&lt;/p&gt;\n&lt;p&gt;Пример Nginx:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-nginx\&quot;&gt;server {\n  listen 80;\n  server_name example.com;\n\n  root /var/www/hub/dist;\n  index index.html;\n\n  location / {\n    try_files $uri $uri/ /404.html;\n  }\n}\n&lt;/code&gt;&lt;/pre&gt;\n&lt;hr&gt;\n&lt;h2&gt;Чеклист перед публикацией&lt;/h2&gt;\n&lt;div class=\&quot;custom-steps\&quot;&gt;&lt;div class=\&quot;custom-step\&quot; data-status=\&quot;done\&quot; data-title=\&quot;Генерация\&quot; data-color=\&quot;\&quot;&gt;&lt;p&gt;&lt;code&gt;npm run generate&lt;/code&gt; выполнен после изменений в &lt;code&gt;Docs/&lt;/code&gt;.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-step\&quot; data-status=\&quot;done\&quot; data-title=\&quot;Проверки\&quot; data-color=\&quot;\&quot;&gt;&lt;p&gt;&lt;code&gt;npm test&lt;/code&gt; и &lt;code&gt;npm run lint&lt;/code&gt; не показывают критичных ошибок.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-step\&quot; data-status=\&quot;done\&quot; data-title=\&quot;Build\&quot; data-color=\&quot;\&quot;&gt;&lt;p&gt;&lt;code&gt;npm run build&lt;/code&gt; завершился успешно.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-step\&quot; data-status=\&quot;done\&quot; data-title=\&quot;SEO\&quot; data-color=\&quot;\&quot;&gt;&lt;p&gt;Проверьте &lt;code&gt;title&lt;/code&gt;, &lt;code&gt;description&lt;/code&gt;, &lt;code&gt;robots&lt;/code&gt;, canonical, sitemap и OG image.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-step\&quot; data-status=\&quot;done\&quot; data-title=\&quot;Навигация\&quot; data-color=\&quot;\&quot;&gt;&lt;p&gt;Проверьте, что новые страницы появились в поиске, sidebar и категориях.&lt;/p&gt;\n&lt;/div&gt;&lt;/div&gt;\n\n&lt;hr&gt;\n&lt;h2&gt;Частые проблемы&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Проблема&lt;/th&gt;\n&lt;th&gt;Решение&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;Страница не появилась&lt;/td&gt;\n&lt;td&gt;Запустите &lt;code&gt;npm run generate&lt;/code&gt;, проверьте имя файла и slug.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;404 после деплоя&lt;/td&gt;\n&lt;td&gt;Проверьте &lt;code&gt;dist/&lt;/code&gt;, настройки output directory и base path.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Не грузятся картинки&lt;/td&gt;\n&lt;td&gt;Используйте пути &lt;code&gt;/assets/name.png&lt;/code&gt; для файлов из &lt;code&gt;public/assets/&lt;/code&gt;.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Не работает custom page&lt;/td&gt;\n&lt;td&gt;Проверьте &lt;code&gt;src/custom/&amp;lt;folder&amp;gt;{slug}/Page.tsx&lt;/code&gt; и поле &lt;code&gt;custom&lt;/code&gt; во frontmatter.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;GitHub Pages показывает пустой сайт&lt;/td&gt;\n&lt;td&gt;Проверьте &lt;code&gt;astro.config.mjs&lt;/code&gt; &lt;code&gt;base&lt;/code&gt;, если сайт не на корне домена.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&quot;],&quot;typename&quot;:[0,&quot;&quot;],&quot;categoryPath&quot;:[1,[]],&quot;navSlug&quot;:[0,&quot;hub&quot;],&quot;navTitle&quot;:[0,&quot;Документация Hub&quot;],&quot;navIcon&quot;:[0,&quot;book-open&quot;],&quot;author&quot;:[0,&quot;&quot;],&quot;date&quot;:[0,&quot;2026-06-16&quot;],&quot;updated&quot;:[0,&quot;2026-06-16&quot;],&quot;tags&quot;:[1,[[0,&quot;quickstart&quot;],[0,&quot;deploy&quot;],[0,&quot;github pages&quot;],[0,&quot;vercel&quot;],[0,&quot;bolt.new&quot;],[0,&quot;astro&quot;],[0,&quot;hub&quot;]]],&quot;lang&quot;:[0,&quot;ru&quot;],&quot;keywords&quot;:[0,&quot;Hub quickstart, Astro deploy, GitHub Pages, Vercel, Bolt.new, Opensophy Hub&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;icon&quot;:[0,&quot;rocket&quot;],&quot;priority&quot;:[0,2],&quot;custom&quot;:[0,&quot;&quot;],&quot;frontmatter&quot;:[0,{&quot;title&quot;:[0,&quot;Быстрый старт и деплой Hub V3.5&quot;],&quot;description&quot;:[0,&quot;Как запустить Hub локально, добавить контент, собрать production build и задеплоить проект на GitHub Pages, Vercel, Netlify/Cloudflare Pages, Bolt.new и статический хостинг.&quot;],&quot;date&quot;:[0,&quot;2026-06-16&quot;],&quot;updated&quot;:[0,&quot;2026-06-16&quot;],&quot;tags&quot;:[0,&quot;quickstart, deploy, github pages, vercel, bolt.new, astro, hub&quot;],&quot;keywords&quot;:[0,&quot;Hub quickstart, Astro deploy, GitHub Pages, Vercel, Bolt.new, Opensophy Hub&quot;],&quot;icon&quot;:[0,&quot;rocket&quot;],&quot;lang&quot;:[0,&quot;ru&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;priority&quot;:[0,&quot;2&quot;]}]}]}" ssr client="only" opts="{&quot;name&quot;:&quot;DocContent&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island>   <astro-island uid="Z1Ix9sf" component-url="/assets/DevPanelLoader.6ELCzLIu.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{}" ssr client="only" opts="{&quot;name&quot;:&quot;DevPanelLoader&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island> <!-- Re-apply theme after SPA navigation --> <script>
+      document.addEventListener('astro:after-swap', function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      });
+    </script> </body> </html>

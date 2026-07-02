@@ -1,0 +1,1 @@
+import{j as s}from"./vendor-react.DgFKySyv.js";import i from"./morphing-text.BxUeVBZi.js";const m=({texts:t="Дизайн, Интерфейс, Анимация, Движение",className:r=""})=>{const e=t.split(",").map(o=>o.trim()).filter(Boolean);return s.jsx(i,{texts:e,className:r})};export{m as default};

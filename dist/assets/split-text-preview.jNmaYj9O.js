@@ -1,0 +1,1 @@
+import{j as t}from"./vendor-react.DgFKySyv.js";import e from"./split-text.D5Lfo-Sh.js";const i=()=>t.jsx("div",{style:{padding:"2rem 1rem"},children:t.jsx(e,{text:"Привет, это Разбиение текста!",className:"text-4xl font-bold",splitType:"chars",delay:50,duration:1.25,ease:"power3.out",textAlign:"center"})});export{i as default};

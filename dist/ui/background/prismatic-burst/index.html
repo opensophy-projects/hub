@@ -1,0 +1,89 @@
+<!DOCTYPE html><html lang="ru"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- Theme: runs before paint, prevents flash --><script>
+      (function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.add('js');
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      })();
+    </script><!-- Primary SEO --><title>Призматический всплеск — Opensophy</title><meta name="description" content="WebGL-фон на OGL с призматическими лучами через ray marching. 44 итерации формируют радиальный паттерн лучей с bend-деформацией и спектральной или пользовательской градиентной окраской. Три режима анимации, настраиваемое количество лучей и mix-blend-mode."><meta name="keywords" content="react background, animated background, prismatic-burst, shader"><meta name="author" content="Opensophy"><meta name="robots" content="index, follow"><meta name="theme-color" content="#0a0a0a"><meta name="color-scheme" content="dark light"><link rel="canonical" href="https://opensophy.com/ui/background/prismatic-burst/"><!-- Sitemap discovery --><link rel="sitemap" type="application/xml" href="/sitemap.xml"><!-- Open Graph --><meta property="og:site_name" content="Opensophy"><meta property="og:title" content="Призматический всплеск — Opensophy"><meta property="og:description" content="WebGL-фон на OGL с призматическими лучами через ray marching. 44 итерации формируют радиальный паттерн лучей с bend-деформацией и спектральной или пользовательской градиентной окраской. Три режима анимации, настраиваемое количество лучей и mix-blend-mode."><meta property="og:type" content="article"><meta property="og:url" content="https://opensophy.com/ui/background/prismatic-burst/"><meta property="og:image" content="https://opensophy.com/assets/image.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ru_RU"><!-- Twitter / X --><meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@opensophy"><meta name="twitter:title" content="Призматический всплеск — Opensophy"><meta name="twitter:description" content="WebGL-фон на OGL с призматическими лучами через ray marching. 44 итерации формируют радиальный паттерн лучей с bend-деформацией и спектральной или пользовательской градиентной окраской. Три режима анимации, настраиваемое количество лучей и mix-blend-mode."><meta name="twitter:image" content="https://opensophy.com/assets/image.png"><!-- Article-specific --><meta property="article:published_time" content="2026-05-18T00:00:00.000Z"><meta property="article:modified_time" content="2026-05-18T00:00:00.000Z"><meta property="article:author" content="Opensophy"><!-- Favicon --><link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/favicon.png"><!-- Astro SPA transitions --><meta name="astro-view-transitions-enabled" content="true"><meta name="astro-view-transitions-fallback" content="animate"><script type="module" src="/assets/ClientRouter.astro_astro_type_script_index_0_lang.CAqDO0tx.js"></script><!-- Structured Data JSON-LD --><script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Призматический всплеск","description":"WebGL-фон на OGL с призматическими лучами через ray marching. 44 итерации формируют радиальный паттерн лучей с bend-деформацией и спектральной или пользовательской градиентной окраской. Три режима анимации, настраиваемое количество лучей и mix-blend-mode.","url":"https://opensophy.com/ui/background/prismatic-burst/","image":"https://opensophy.com/assets/image.png","author":{"@type":"Person","name":"Opensophy"},"publisher":{"@type":"Organization","name":"Opensophy","url":"https://opensophy.com"},"datePublished":"2026-05-18T00:00:00.000Z","dateModified":"2026-05-18T00:00:00.000Z","inLanguage":"ru"}</script><link rel="stylesheet" href="/assets/Layout.BzjEPNLe.css"></head> <body> <style>astro-island,astro-slot,astro-static-slot{display:contents}</style><script>(()=>{var e=async t=>{await(await t())()};(self.Astro||(self.Astro={})).only=e;window.dispatchEvent(new Event("astro:only"));})();</script><script>(()=>{var g=Object.defineProperty;var w=(c,s,d)=>s in c?g(c,s,{enumerable:!0,configurable:!0,writable:!0,value:d}):c[s]=d;var l=(c,s,d)=>w(c,typeof s!="symbol"?s+"":s,d);var E=new Set(["__proto__","constructor","prototype"]);{let c={0:t=>y(t),1:t=>d(t),2:t=>new RegExp(t),3:t=>new Date(t),4:t=>new Map(d(t)),5:t=>new Set(d(t)),6:t=>BigInt(t),7:t=>new URL(t),8:t=>new Uint8Array(t),9:t=>new Uint16Array(t),10:t=>new Uint32Array(t),11:t=>Number.POSITIVE_INFINITY*t},s=t=>{let[p,e]=t;return p in c?c[p](e):void 0},d=t=>t.map(s),y=t=>typeof t!="object"||t===null?t:Object.fromEntries(Object.entries(t).map(([p,e])=>[p,s(e)]));class f extends HTMLElement{constructor(){super(...arguments);l(this,"Component");l(this,"hydrator");l(this,"hydrate",async()=>{var b;if(!this.hydrator||!this.isConnected)return;let e=(b=this.parentElement)==null?void 0:b.closest("astro-island[ssr]");if(e){e.addEventListener("astro:hydrate",this.hydrate,{once:!0});return}let n=this.querySelectorAll("astro-slot"),r={},i=this.querySelectorAll("template[data-astro-template]");for(let o of i){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("data-astro-template")||"default"]=o.innerHTML,o.remove())}for(let o of n){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("name")||"default"]=o.innerHTML)}let u;try{u=this.hasAttribute("props")?y(JSON.parse(this.getAttribute("props"))):{}}catch(o){let a=this.getAttribute("component-url")||"<unknown>",v=this.getAttribute("component-export");throw v&&(a+=` (export ${v})`),console.error(`[hydrate] Error parsing props for component ${a}`,this.getAttribute("props"),o),o}let h;await this.hydrator(this)(this.Component,u,r,{client:this.getAttribute("client")}),this.removeAttribute("ssr"),this.dispatchEvent(new CustomEvent("astro:hydrate"))});l(this,"unmount",()=>{this.isConnected||this.dispatchEvent(new CustomEvent("astro:unmount"))})}disconnectedCallback(){document.removeEventListener("astro:after-swap",this.unmount),document.addEventListener("astro:after-swap",this.unmount,{once:!0})}connectedCallback(){if(!this.hasAttribute("await-children")||document.readyState==="interactive"||document.readyState==="complete")this.childrenConnectedCallback();else{let e=()=>{document.removeEventListener("DOMContentLoaded",e),n.disconnect(),this.childrenConnectedCallback()},n=new MutationObserver(()=>{var r;((r=this.lastChild)==null?void 0:r.nodeType)===Node.COMMENT_NODE&&this.lastChild.nodeValue==="astro:end"&&(this.lastChild.remove(),e())});n.observe(this,{childList:!0}),document.addEventListener("DOMContentLoaded",e)}}async childrenConnectedCallback(){let e=this.getAttribute("before-hydration-url");e&&await import(e),this.start()}getRetryImportUrl(e){let n=new URL(e,document.baseURI),r=`astro-retry=${Date.now()}`,i=n.hash.replace(/^#/,"");return n.hash=i?`${i}&${r}`:r,n.toString()}async importWithRetry(e){try{return await import(e)}catch(n){return await new Promise(r=>setTimeout(r,1e3)),import(this.getRetryImportUrl(e))}}handleHydrationError(e){let n=this.getAttribute("component-url"),r=new CustomEvent("astro:hydration-error",{cancelable:!0,bubbles:!0,composed:!0,detail:{error:e,componentUrl:n}});this.dispatchEvent(r)&&console.error(`[astro-island] Error hydrating ${n}`,e)}async start(){let e=JSON.parse(this.getAttribute("opts")),n=this.getAttribute("client");if(Astro[n]===void 0){window.addEventListener(`astro:${n}`,()=>this.start(),{once:!0});return}try{await Astro[n](async()=>{let r=this.getAttribute("renderer-url");try{let[i,{default:u}]=await Promise.all([this.importWithRetry(this.getAttribute("component-url")),r?this.importWithRetry(r):Promise.resolve({default:()=>()=>{}})]),h=this.getAttribute("component-export")||"default";if(h.includes(".")){this.Component=i;for(let m of h.split(".")){if(E.has(m)||!this.Component||typeof this.Component!="object"&&typeof this.Component!="function"||!Object.hasOwn(this.Component,m))throw new Error(`Invalid component export path: ${h}`);this.Component=this.Component[m]}}else{if(E.has(h))throw new Error(`Invalid component export path: ${h}`);this.Component=i[h]}return this.hydrator=u,this.hydrate}catch(i){return this.handleHydrationError(i),()=>{}}},e,this)}catch(r){this.handleHydrationError(r)}}attributeChangedCallback(){this.hydrate()}}l(f,"observedAttributes",["props"]),customElements.get("astro-island")||customElements.define("astro-island",f)}})();</script>   <noscript> <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;"> <article><p>[uic:prismatic-burst]</p>
+<table>
+<thead>
+<tr>
+<th>Проп</th>
+<th>Type</th>
+<th>Обычно</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>intensity</code></td>
+<td><code>number</code></td>
+<td><code>2</code></td>
+<td>Яркость лучей</td>
+</tr>
+<tr>
+<td><code>speed</code></td>
+<td><code>number</code></td>
+<td><code>0.5</code></td>
+<td>Скорость анимации</td>
+</tr>
+<tr>
+<td><code>animationType</code></td>
+<td><code>string</code></td>
+<td><code>&#39;rotate3d&#39;</code></td>
+<td>Режим (<code>rotate</code>/<code>rotate3d</code>/<code>hover</code>)</td>
+</tr>
+<tr>
+<td><code>colors</code></td>
+<td><code>string[]</code></td>
+<td><code>undefined</code></td>
+<td>Кастомные цвета спектра (до 64)</td>
+</tr>
+<tr>
+<td><code>distort</code></td>
+<td><code>number</code></td>
+<td><code>0</code></td>
+<td>Сила bend-деформации лучей</td>
+</tr>
+<tr>
+<td><code>paused</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>Пауза анимации</td>
+</tr>
+<tr>
+<td><code>rayCount</code></td>
+<td><code>number</code></td>
+<td><code>24</code></td>
+<td>Количество лучей в паттерне</td>
+</tr>
+<tr>
+<td><code>hoverDampness</code></td>
+<td><code>number</code></td>
+<td><code>0.1</code></td>
+<td>Инерция hover-режима</td>
+</tr>
+<tr>
+<td><code>offset</code></td>
+<td><code>object</code></td>
+<td><code>{x:0,y:0}</code></td>
+<td>Смещение центра (px)</td>
+</tr>
+<tr>
+<td><code>mixBlendMode</code></td>
+<td><code>string</code></td>
+<td><code>&#39;screen&#39;</code></td>
+<td>CSS mix-blend-mode</td>
+</tr>
+</tbody></table>
+</article> </main> </noscript> <astro-island uid="15BANw" component-url="/assets/DocContent.CoKfap2Q.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{&quot;doc&quot;:[0,{&quot;id&quot;:[0,&quot;ui/background/prismatic-burst&quot;],&quot;title&quot;:[0,&quot;Призматический всплеск&quot;],&quot;slug&quot;:[0,&quot;ui/background/prismatic-burst&quot;],&quot;description&quot;:[0,&quot;WebGL-фон на OGL с призматическими лучами через ray marching. 44 итерации формируют радиальный паттерн лучей с bend-деформацией и спектральной или пользовательской градиентной окраской. Три режима анимации, настраиваемое количество лучей и mix-blend-mode.&quot;],&quot;content&quot;:[0,&quot;&lt;p&gt;[uic:prismatic-burst]&lt;/p&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Проп&lt;/th&gt;\n&lt;th&gt;Type&lt;/th&gt;\n&lt;th&gt;Обычно&lt;/th&gt;\n&lt;th&gt;Описание&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;intensity&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;number&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;2&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Яркость лучей&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;speed&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;number&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;0.5&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Скорость анимации&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;animationType&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;string&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;&amp;#39;rotate3d&amp;#39;&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Режим (&lt;code&gt;rotate&lt;/code&gt;/&lt;code&gt;rotate3d&lt;/code&gt;/&lt;code&gt;hover&lt;/code&gt;)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;colors&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;string[]&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;undefined&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Кастомные цвета спектра (до 64)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;distort&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;number&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;0&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Сила bend-деформации лучей&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;paused&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;boolean&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;false&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Пауза анимации&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;rayCount&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;number&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;24&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Количество лучей в паттерне&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;hoverDampness&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;number&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;0.1&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Инерция hover-режима&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;offset&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;object&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;{x:0,y:0}&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Смещение центра (px)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;mixBlendMode&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;string&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;&amp;#39;screen&amp;#39;&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;CSS mix-blend-mode&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&quot;],&quot;typename&quot;:[0,&quot;Фон&quot;],&quot;categoryPath&quot;:[1,[[0,{&quot;slug&quot;:[0,&quot;background&quot;],&quot;title&quot;:[0,&quot;Фон&quot;],&quot;icon&quot;:[0,&quot;maximize&quot;]}]]],&quot;navSlug&quot;:[0,&quot;ui&quot;],&quot;navTitle&quot;:[0,&quot;UI Библиотека&quot;],&quot;navIcon&quot;:[0,&quot;component&quot;],&quot;author&quot;:[0,&quot;&quot;],&quot;date&quot;:[0,&quot;2026-05-18&quot;],&quot;updated&quot;:[0,&quot;&quot;],&quot;tags&quot;:[1,[[0,&quot;разработка&quot;],[0,&quot;ui&quot;],[0,&quot;ui-компоненты&quot;]]],&quot;lang&quot;:[0,&quot;ru&quot;],&quot;keywords&quot;:[0,&quot;react background, animated background, prismatic-burst, shader&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;icon&quot;:[0,&quot;sparkle&quot;],&quot;priority&quot;:[0,999],&quot;custom&quot;:[0,&quot;&quot;],&quot;frontmatter&quot;:[0,{&quot;title&quot;:[0,&quot;Призматический всплеск&quot;],&quot;description&quot;:[0,&quot;WebGL-фон на OGL с призматическими лучами через ray marching. 44 итерации формируют радиальный паттерн лучей с bend-деформацией и спектральной или пользовательской градиентной окраской. Три режима анимации, настраиваемое количество лучей и mix-blend-mode.&quot;],&quot;date&quot;:[0,&quot;2026-05-18&quot;],&quot;tags&quot;:[0,&quot;разработка, ui, ui-компоненты&quot;],&quot;keywords&quot;:[0,&quot;react background, animated background, prismatic-burst, shader&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;lang&quot;:[0,&quot;ru&quot;]}]}]}" ssr client="only" opts="{&quot;name&quot;:&quot;DocContent&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island>   <astro-island uid="Z1Ix9sf" component-url="/assets/DevPanelLoader.6ELCzLIu.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{}" ssr client="only" opts="{&quot;name&quot;:&quot;DevPanelLoader&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island> <!-- Re-apply theme after SPA navigation --> <script>
+      document.addEventListener('astro:after-swap', function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      });
+    </script> </body> </html>

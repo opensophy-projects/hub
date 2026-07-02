@@ -1,0 +1,568 @@
+<!DOCTYPE html><html lang="ru"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- Theme: runs before paint, prevents flash --><script>
+      (function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.add('js');
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      })();
+    </script><!-- Primary SEO --><title>Docker Fundamentals: теория и базовая эксплуатация — Opensophy</title><meta name="description" content="1 часть серии статей по Docker. Базовая теория по Docker для новичков и практиков — контейнеры, образы, Dockerfile, слои, HEALTHCHECK, multi-stage builds и шпаргалка по командам."><meta name="keywords" content="Docker, контейнеры, Dockerfile, Docker образы, Docker команды, HEALTHCHECK, multi-stage builds, Docker Compose, Docker для начинающих"><meta name="author" content="Opensophy"><meta name="robots" content="index, follow"><meta name="theme-color" content="#0a0a0a"><meta name="color-scheme" content="dark light"><link rel="canonical" href="https://opensophy.com/article/docker/theory-and-basic-operation/"><!-- Sitemap discovery --><link rel="sitemap" type="application/xml" href="/sitemap.xml"><!-- Open Graph --><meta property="og:site_name" content="Opensophy"><meta property="og:title" content="Docker Fundamentals: теория и базовая эксплуатация — Opensophy"><meta property="og:description" content="1 часть серии статей по Docker. Базовая теория по Docker для новичков и практиков — контейнеры, образы, Dockerfile, слои, HEALTHCHECK, multi-stage builds и шпаргалка по командам."><meta property="og:type" content="article"><meta property="og:url" content="https://opensophy.com/article/docker/theory-and-basic-operation/"><meta property="og:image" content="https://opensophy.com/assets/image.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ru_RU"><!-- Twitter / X --><meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@opensophy"><meta name="twitter:title" content="Docker Fundamentals: теория и базовая эксплуатация — Opensophy"><meta name="twitter:description" content="1 часть серии статей по Docker. Базовая теория по Docker для новичков и практиков — контейнеры, образы, Dockerfile, слои, HEALTHCHECK, multi-stage builds и шпаргалка по командам."><meta name="twitter:image" content="https://opensophy.com/assets/image.png"><!-- Article-specific --><meta property="article:published_time" content="2026-06-17T00:00:00.000Z"><meta property="article:modified_time" content="2026-06-17T00:00:00.000Z"><meta property="article:author" content="Opensophy"><!-- Favicon --><link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/favicon.png"><!-- Astro SPA transitions --><meta name="astro-view-transitions-enabled" content="true"><meta name="astro-view-transitions-fallback" content="animate"><script type="module" src="/assets/ClientRouter.astro_astro_type_script_index_0_lang.CAqDO0tx.js"></script><!-- Structured Data JSON-LD --><script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Docker Fundamentals: теория и базовая эксплуатация","description":"1 часть серии статей по Docker. Базовая теория по Docker для новичков и практиков — контейнеры, образы, Dockerfile, слои, HEALTHCHECK, multi-stage builds и шпаргалка по командам.","url":"https://opensophy.com/article/docker/theory-and-basic-operation/","image":"https://opensophy.com/assets/image.png","author":{"@type":"Person","name":"Opensophy"},"publisher":{"@type":"Organization","name":"Opensophy","url":"https://opensophy.com"},"datePublished":"2026-06-17T00:00:00.000Z","dateModified":"2026-06-17T00:00:00.000Z","inLanguage":"ru"}</script><link rel="stylesheet" href="/assets/Layout.BzjEPNLe.css"></head> <body> <style>astro-island,astro-slot,astro-static-slot{display:contents}</style><script>(()=>{var e=async t=>{await(await t())()};(self.Astro||(self.Astro={})).only=e;window.dispatchEvent(new Event("astro:only"));})();</script><script>(()=>{var g=Object.defineProperty;var w=(c,s,d)=>s in c?g(c,s,{enumerable:!0,configurable:!0,writable:!0,value:d}):c[s]=d;var l=(c,s,d)=>w(c,typeof s!="symbol"?s+"":s,d);var E=new Set(["__proto__","constructor","prototype"]);{let c={0:t=>y(t),1:t=>d(t),2:t=>new RegExp(t),3:t=>new Date(t),4:t=>new Map(d(t)),5:t=>new Set(d(t)),6:t=>BigInt(t),7:t=>new URL(t),8:t=>new Uint8Array(t),9:t=>new Uint16Array(t),10:t=>new Uint32Array(t),11:t=>Number.POSITIVE_INFINITY*t},s=t=>{let[p,e]=t;return p in c?c[p](e):void 0},d=t=>t.map(s),y=t=>typeof t!="object"||t===null?t:Object.fromEntries(Object.entries(t).map(([p,e])=>[p,s(e)]));class f extends HTMLElement{constructor(){super(...arguments);l(this,"Component");l(this,"hydrator");l(this,"hydrate",async()=>{var b;if(!this.hydrator||!this.isConnected)return;let e=(b=this.parentElement)==null?void 0:b.closest("astro-island[ssr]");if(e){e.addEventListener("astro:hydrate",this.hydrate,{once:!0});return}let n=this.querySelectorAll("astro-slot"),r={},i=this.querySelectorAll("template[data-astro-template]");for(let o of i){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("data-astro-template")||"default"]=o.innerHTML,o.remove())}for(let o of n){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("name")||"default"]=o.innerHTML)}let u;try{u=this.hasAttribute("props")?y(JSON.parse(this.getAttribute("props"))):{}}catch(o){let a=this.getAttribute("component-url")||"<unknown>",v=this.getAttribute("component-export");throw v&&(a+=` (export ${v})`),console.error(`[hydrate] Error parsing props for component ${a}`,this.getAttribute("props"),o),o}let h;await this.hydrator(this)(this.Component,u,r,{client:this.getAttribute("client")}),this.removeAttribute("ssr"),this.dispatchEvent(new CustomEvent("astro:hydrate"))});l(this,"unmount",()=>{this.isConnected||this.dispatchEvent(new CustomEvent("astro:unmount"))})}disconnectedCallback(){document.removeEventListener("astro:after-swap",this.unmount),document.addEventListener("astro:after-swap",this.unmount,{once:!0})}connectedCallback(){if(!this.hasAttribute("await-children")||document.readyState==="interactive"||document.readyState==="complete")this.childrenConnectedCallback();else{let e=()=>{document.removeEventListener("DOMContentLoaded",e),n.disconnect(),this.childrenConnectedCallback()},n=new MutationObserver(()=>{var r;((r=this.lastChild)==null?void 0:r.nodeType)===Node.COMMENT_NODE&&this.lastChild.nodeValue==="astro:end"&&(this.lastChild.remove(),e())});n.observe(this,{childList:!0}),document.addEventListener("DOMContentLoaded",e)}}async childrenConnectedCallback(){let e=this.getAttribute("before-hydration-url");e&&await import(e),this.start()}getRetryImportUrl(e){let n=new URL(e,document.baseURI),r=`astro-retry=${Date.now()}`,i=n.hash.replace(/^#/,"");return n.hash=i?`${i}&${r}`:r,n.toString()}async importWithRetry(e){try{return await import(e)}catch(n){return await new Promise(r=>setTimeout(r,1e3)),import(this.getRetryImportUrl(e))}}handleHydrationError(e){let n=this.getAttribute("component-url"),r=new CustomEvent("astro:hydration-error",{cancelable:!0,bubbles:!0,composed:!0,detail:{error:e,componentUrl:n}});this.dispatchEvent(r)&&console.error(`[astro-island] Error hydrating ${n}`,e)}async start(){let e=JSON.parse(this.getAttribute("opts")),n=this.getAttribute("client");if(Astro[n]===void 0){window.addEventListener(`astro:${n}`,()=>this.start(),{once:!0});return}try{await Astro[n](async()=>{let r=this.getAttribute("renderer-url");try{let[i,{default:u}]=await Promise.all([this.importWithRetry(this.getAttribute("component-url")),r?this.importWithRetry(r):Promise.resolve({default:()=>()=>{}})]),h=this.getAttribute("component-export")||"default";if(h.includes(".")){this.Component=i;for(let m of h.split(".")){if(E.has(m)||!this.Component||typeof this.Component!="object"&&typeof this.Component!="function"||!Object.hasOwn(this.Component,m))throw new Error(`Invalid component export path: ${h}`);this.Component=this.Component[m]}}else{if(E.has(h))throw new Error(`Invalid component export path: ${h}`);this.Component=i[h]}return this.hydrator=u,this.hydrate}catch(i){return this.handleHydrationError(i),()=>{}}},e,this)}catch(r){this.handleHydrationError(r)}}attributeChangedCallback(){this.hydrate()}}l(f,"observedAttributes",["props"]),customElements.get("astro-island")||customElements.define("astro-island",f)}})();</script>   <noscript> <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;"> <article><h2>Введение</h2>
+<p>Я очень рад, что существует такая технология, как Docker, и внедряю её в проекты и инфраструктуру клиентов. Однако есть одно «но»: многие не понимают, что это и зачем оно нужно, а объяснять иногда достаточно сложно (особенно повторять каждый раз каждому человеку, да и есть шанс что-то упустить). В этой статье вы узнаете базу по Docker, где найти практику и актуальные знания. Технология будет полезна многим: от специалистов по безопасности до разработчиков. А сама статья будет познавательна для тех, кто только изучает работу Docker и хочет узнать ответы на вопросы, которые часто задаются на собеседованиях, где требуется Docker. Приступим!</p>
+<blockquote>
+<p>1 серия статей по Docker. Docker Fundamentals: теория и базовая эксплуатация</p>
+</blockquote>
+<h2>Часть 1: Вводная информация</h2>
+<h3>Docker — что это и зачем он нужен.</h3>
+<p>Кратко: Docker — это программная платформа для разработки, доставки и запуска приложений в изолированных средах — контейнерах. Она нужна для изоляции и стабильности. А теперь попробую объяснить.</p>
+<ol>
+<li>Стабильность</li>
+</ol>
+<p>Представим, что у вас есть веб-приложение: зависимости, конфиги и важные настройки. На вашей машине всё работает идеально, но вы отправляете проект другу, и через некоторое время при попытке развернуть его друг пишет: «У меня не работает». Или другая ситуация: вы сами разворачиваете то же приложение через полгода, и что-то ломается. Обновилась версия библиотеки, поменялся пакет в репозитории, изменилась конфигурация системы. Код тот же, а результат другой.</p>
+<p>Как же Docker решает эти проблемы? Он упаковывает приложение вместе со всем окружением в единый артефакт, который называется образ (англ. image). Внутри образа зафиксировано всё: само приложение, зависимости, конфиги и все настройки, необходимые для работы сервиса. Если в образе используется Python 3.9, то именно эта версия и будет запускаться независимо от обновлений хостовой системы. Этот образ запускается одинаково везде и всегда: на вашей машине, у друга, на сервере.</p>
+<ol start="2">
+<li>Изоляция</li>
+</ol>
+<p>Представим, что на одном сервере нужно запустить несколько сервисов: один на Python 3.9, другой на Python 3.11, третий требует PostgreSQL 14, четвёртый — PostgreSQL 16. Без Docker версии конфликтуют, библиотеки перетирают друг друга, один сервис может сломать другой. В Docker каждый контейнер живёт в своём окружении: своя файловая система, своя сеть, свои процессы и библиотеки. Они не знают о существовании друг друга и не конфликтуют.</p>
+<p>Помимо этого, можно явно ограничить ресурсы каждого контейнера, например, разрешить использовать не более 512 МБ памяти и половину ядра процессора. Если контейнер попытается выйти за лимит, Docker его ограничит. Один «прожорливый» сервис не положит остальные.</p>
+<p><em>Это основные преимущества, за которые я рекомендую вам Docker.</em></p>
+<h3>Сколько ресурсов нужно, чтобы запустить Docker?</h3>
+<p>Docker работает на Linux, Windows и macOS. <strong>Я предпочитаю и рекомендую Linux.</strong></p>
+<p>На Linux Docker работает напрямую через ядро системы, фоновый демон потребляет от ~50 до ~100 МБ ОЗУ. На Windows и macOS запускается Docker Desktop, которому в режиме виртуальной машины нужно около 2–4 ГБ ОЗУ. Есть альтернатива: на Windows можно использовать WSL 2 + Docker Engine, потребление памяти будет поменьше, но настройка чуть сложнее.</p>
+<p>Если встанет вопрос с обучением, например, у вас слабая машина, то рекомендую опять же перейти на Linux, чтобы сэкономить ресурсы. Для обучения (как я использовал раньше, когда у меня был слабый ноутбук) достаточно 6 ГБ оперативной памяти и 70 ГБ свободного места на диске.</p>
+<h3>Установка Docker.</h3>
+<p>Здесь лучше изучить установку самостоятельно (да и в документации Docker всё расписано подробнее). </p>
+<ul>
+<li>Скачать на <a href="https://docs.docker.com/desktop/setup/install/mac-install/">macOS</a></li>
+<li>Скачать на <a href="https://docs.docker.com/desktop/setup/install/windows-install/">Windows</a></li>
+</ul>
+<blockquote>
+<p>Это скачает Docker с GUI. В Windows и macOS рекомендую ещё посмотреть permission requirements под вашу ОС.</p>
+</blockquote>
+<ul>
+<li>Скачать на <a href="https://docs.docker.com/engine/install/">Linux</a></li>
+</ul>
+<p><strong>Пример установки под Ubuntu</strong></p>
+<ol>
+<li>Смена фаерволла. По умолчанию используется в Ubuntu <code>UFW</code>, но Docker совместим с iptables-nft и iptables-legacy. (Поэтому скачайте iptables, если не скачан.) Более опытные пользователи могут сказать, что Docker можно будет подружить с ufw (я с этим согласен), но всё же давайте будем придерживаться того, что поддерживается.</li>
+</ol>
+<pre><code class="language-bash">sudo apt install iptables
+</code></pre>
+<ol start="2">
+<li>Установка. Если документация показалась сложной для установки Docker, вы можете быстро скачать через скрипт: <code>curl -fsSL https://get.docker.com | sh</code></li>
+</ol>
+<blockquote>
+<p>Установку вручную я всё же рекомендую научиться делать без скрипта.</p>
+</blockquote>
+<p>После этого можете посмотреть <code>docker version</code> или <code>docker --help</code>, чтобы убедиться, что Docker скачан.</p>
+<h2>Часть 2: База теории по Docker</h2>
+<h3>Начнём с терминологии</h3>
+<p><strong>★ Контейнер (англ. Container)</strong> — изолированный процесс на вашей машине со своей файловой системой, сетью и переменными окружения.</p>
+<p><strong>★ Образ (англ. Image)</strong> — шаблон, из которого создаётся контейнер. Содержит всё необходимое для запуска приложения.</p>
+<p><strong>★ Слои (англ. Layers)</strong> — составные части образа. Каждая инструкция в Dockerfile создаёт новый слой. Слои кэшируются и переиспользуются между образами.</p>
+<p><strong>★ Теги (англ. Tags)</strong> — метки версий образа. Формат: имя:тег, например nginx:1.25 или python:3.11-alpine. Подробнее о том, как версионировать свои образы, будет написано ниже.</p>
+<p><strong>★ Реестр (англ. Registry)</strong> — хранилище образов. Публичный пример — Docker Hub, откуда Docker скачивает образы по умолчанию.</p>
+<p><strong>.Dockerignore</strong> — файл, который указывает, что не нужно копировать в образ при сборке. Работает по тому же принципу, что и .gitignore. Создавайте .dockerignore всегда, даже для небольших проектов. Так вы сэкономите кучу времени, место на диске сервера и защитите себя от случайной утечки секретов (например, файла .env) в готовый публичный образ. Что обычно туда пишут? будет написано ниже.</p>
+<p><strong>★ Тома (англ. Volumes)</strong> — механизм хранения данных вне контейнера. Данные в томе сохраняются даже после удаления контейнера. Docker сам управляет расположением тома на хосте.</p>
+<p><strong>Монтирование директорий (англ. Bind Mounts)</strong> — подключение папки с хостовой машины напрямую в контейнер. В отличие от томов, вы сами указываете путь на хосте. Подробнее о разнице между томами и bind mounts поговорим ниже.</p>
+<p><strong>★ Сети (англ. Networks)</strong> — механизм взаимодействия контейнеров между собой и с внешним миром. По умолчанию каждый контейнер получает свой IP-адрес внутри виртуальной сети Docker (bridge-сеть). Подробно сети будут разобраны в следующей части серии.</p>
+<p><strong>Демон Docker (англ. Docker Daemon, Dockerd)</strong> — фоновый процесс, который управляет всем: создаёт, запускает и удаляет контейнеры. Когда вы вводите любую команду docker — она уходит именно к нему.</p>
+<p><strong>★ Dockerfile</strong> — текстовый файл с инструкциями, как собрать образ.</p>
+<p><strong>Docker Engine</strong> — сам Docker: демон, CLI и API. То, что вы устанавливаете на Linux (или другую ОС), когда ставите Docker.<br><strong>★ Docker Compose</strong> — инструмент для запуска нескольких контейнеров одной командой через YAML-файл.</p>
+<p><strong>Контекст сборки (англ. Build Context)</strong> — папка, которую Docker отправляет демону при сборке образа. Обычно это директория, где лежит Dockerfile.</p>
+<p>С терминологией пока достаточно для начинающего уровня, будет ещё больше, когда поговорим про Docker Swarm и безопасность Docker в следующей статье серии. ★ отмечены самые частые термины/слова, которые вы будете встречать при обсуждении вопросов в чатах DevOps/Docker и т. д. или видеть их у себя в терминале. Переходим к объяснению, зачем вообще это знать. Знать команды и понимать, как они работают, полезно к тому же об этом могут спросить на собеседовании.</p>
+<p><strong>Контейнер.</strong> Он живёт ровно столько, сколько живёт его основной процесс. Завершился процесс = завершился контейнер, аналогично с удалением контейнера: удалили = изменения внутри него пропали, но образ при этом останется нетронутым. Если описывать жизненный цикл контейнера, то он начинается с образа, из него командой <code>docker run</code> создаётся и сразу запускается контейнер. После остановки командой <code>docker stop</code> контейнер не исчезает, он переходит в остановленное состояние и его можно запустить снова через <code>docker start</code>. Когда контейнер больше не нужен, он удаляется командой <code>docker rm</code>. После удаления все изменения внутри него пропадают, образ при этом остаётся нетронутым.</p>
+<p>Под капотом Docker использует два механизма ядра Linux:</p>
+<ul>
+<li><strong>Namespaces</strong> — изолируют контейнер. Каждый контейнер видит только свои процессы, свою сеть и свою файловую систему.</li>
+<li><strong>cgroups</strong> — ограничивают ресурсы. Именно через них Docker позволяет задать лимиты на CPU и память для каждого контейнера.</li>
+</ul>
+<p><strong>Образ.</strong> Он состоит из слоёв, каждая «инструкция в Dockerfile» (это команды FROM, RUN и т. д.) создаёт свой слой. Например: первый слой — это Alpine Linux, второй — Python поверх него, третий — установленные зависимости, четвёртый — код вашего приложения. И все эти слои неизменяемы, но когда вы запускаете контейнер, Docker добавляет поверх всех этих слоёв образа ещё один — изменяемый (так называемый Copy-on-Write слой: файлы из образа не копируются заранее, а только в момент, когда контейнер пытается их изменить — тогда Docker копирует файл в этот слой и меняет уже там, оригинал в образе остаётся нетронутым). Всё, что происходит внутри контейнера: создаются файлы, пишутся логи, копится кэш — всё уходит в этот верхний слой. Сам образ не трогается. Поэтому из одного образа можно запустить десять контейнеров одновременно: у каждого свой изменяемый слой, а базовые слои общие.</p>
+<p>Из этого вытекает ещё одно преимущество, которое мы обсудили: если у вас несколько образов на базе <code>python:3.11-alpine</code> — слой с Python хранится на диске один раз, а не для каждого образа отдельно. Docker скачивает только те слои, которых ещё нет.</p>
+<p><strong>Dockerfile.</strong> В терминологии уже разобрались, что это такое; добавлю ещё информацию о командах и то, что вы можете посмотреть примеры этих Dockerfile в open-source инструментах. (Если не можете найти: <a href="https://github.com/Dokploy/dokploy/blob/canary/Dockerfile">Dokploy</a>) там же вы увидите и <strong>Multi-stage builds.</strong></p>
+<p><a href="https://docs.docker.com/build/building/multi-stage/">Multi-stage builds</a> — это подход, при котором в одном Dockerfile создаётся несколько этапов сборки. Например, в Dockerfile Dokploy есть этапы base, build и dokploy: сначала собирается приложение, а затем в финальный этап через COPY --from=build переносятся только нужные артефакты. Благодаря этому этапы сборки и запуска разделяются, а Dockerfile становится более гибким и удобным для сопровождения. Сначала Docker собирает всё необходимое в промежуточных этапах, а затем переносит в финальный образ только нужные артефакты. Такой подход делает Dockerfile более аккуратным, удобным для сопровождения и помогает не хранить в финальном образе лишние файлы, использовавшиеся только во время сборки.</p>
+<p><strong>Переменные окружения (ENV).</strong> Используются для хранения настроек приложения: адресов баз данных, портов, токенов, паролей и других параметров, задать их можно по-разному. Лично я предпочитаю использовать файл <code>env</code> где вы пишете, например, <code>DB_PASSWORD=qwerty</code> и всё. Но можно задавать их и через ENV в Dockerfile, и через флаг -e при запуске контейнера <code>docker run -d -e DB_PASSWORD=secret myapp</code></p>
+<p><strong>Тег <code>latest</code> и почему его лучше не использовать в продакшне.</strong> Если написать <code>docker pull nginx</code> без указания версии, Docker скачает образ с тегом <code>latest</code>. Удобно, вот только <code>latest</code> меняется. Сегодня он может указывать на одну версию, а через месяц уже на другую.</p>
+<p>Из-за этого один и тот же <code>docker-compose.yml</code> при разных деплоях может поднять разные версии приложения. Это может привести к неожиданным изменениям в работе сервиса, проблемам с совместимостью или появлению новых уязвимостей. Поэтому в продакшне лучше всегда указывать конкретный тег, например <code>container:1.25.5</code>.</p>
+<h3>Теги: как версионировать свои образы</h3>
+<p>Отдельно стоит сказать про теги образов. На собеседованиях про это спрашивают редко, а вот в реальной работе — постоянно. Единого правила нет: в одной компании используют версии, в другой — хэши коммитов, а где-то вообще смешивают несколько подходов.</p>
+<p>Самый очевидный вариант — семантическое версионирование: <code>myapp:1.4.2</code>. Если у вас есть релизы и changelog, по такому тегу сразу понятно, что перед вами за версия приложения.</p>
+<p>Часто встречается и другой подход — тегировать образы хэшем коммита, например <code>myapp:a3f8c1d</code>. Особенно это любят в CI/CD. У каждого коммита получается свой образ, поэтому потом не приходится гадать, какой именно код сейчас крутится на сервере. При необходимости можно быстро найти нужный коммит и откатиться.</p>
+<p>Иногда в тег добавляют окружение: <code>myapp:staging</code> или <code>myapp:production</code>. Лично мне такой вариант нравится меньше, потому что возникает путаница: непонятно, что именно скрывается за этим тегом. Но если один и тот же образ последовательно проходит через несколько стендов, такой подход вполне имеет право на жизнь.</p>
+<p>Сам я чаще встречал комбинацию версии и хэша коммита: <code>myapp:1.4.2-a3f8c1d</code>. На мой взгляд, это один из самых удобных вариантов: видно и релиз приложения, и конкретное состояние кода, из которого собрали образ.</p>
+<p>А вот <code>latest</code> для продакшна лучше не использовать. Сегодня этот тег может указывать на одну сборку, а после следующего деплоя — уже на другую. Потом начинается любимая игра: «а что вообще сейчас запущено?». Для локальной разработки и быстрых проверок <code>latest</code> ещё можно оставить, но в боевых окружениях лучше использовать неизменяемые теги.</p>
+<h3>.dockerignore: что туда писать</h3>
+<p>КРАТКО: Всё что не должно попасть в продакшн / в шаблон, который будет публиковаться для использование проекта другим человеком. Убирать стоит всё чувствительное и не нужное( к примеру readme.md, кеш, логи.) Docker при сборке отправляет демону всё содержимое контекста. Поэтому чем меньше лишних файлов попадёт туда, тем лучше.</p>
+<p>Обычно  .dockerignore выглядит примерно так:</p>
+<p>Обычно туда добавляют примерно такой набор:</p>
+<pre><code class="language-text">.git
+.gitignore
+.env
+.env.*
+node_modules
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.coverage
+dist
+build
+*.log
+README.md
+.DS_Store
+</code></pre>
+<p>Если не знаете, с чего начать, то минимум, который я бы рекомендовал добавить в любой проект, — это <code>.git</code>, <code>.env</code> и директории с зависимостями вроде <code>node_modules</code> или <code>__pycache__</code>. Репозиторий может занимать сотни мегабайт и только замедлять сборку, а файлам с секретами вроде <code>.env</code> в готовом образе делать попросту нечего.</p>
+<h3>Тома и Bind Mounts: что когда использовать</h3>
+<p>С этим всё проще, чем кажется. Для баз данных я обычно беру volume: Docker сам хранит данные, и не приходится разбираться, в какой каталог на хосте они попали.</p>
+<p>Bind mount использую в других случаях — когда нужно подключить конкретную папку с машины. Например, nginx-конфиг или директорию с проектом во время разработки.</p>
+<p>Поэтому правило у меня одно: данные самого сервиса — volume, всё, что нужно подцепить с хоста, — bind mount.</p>
+<pre><code class="language-bash">docker run -d -v pg-data:/var/lib/postgresql/data postgres
+docker run -d -v /home/user/configs:/etc/nginx/conf.d nginx
+</code></pre>
+<p>Есть ещё <code>tmpfs mount</code>, но встречается он редко: данные хранятся только в памяти и на диск не записываются.</p>
+<p>Таблица всех инструкций</p>
+<table>
+<thead>
+<tr>
+<th>Команда</th>
+<th>Что делает</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>FROM</code></td>
+<td>С какого образа начинаем сборку. Всегда первая строка</td>
+</tr>
+<tr>
+<td><code>WORKDIR</code></td>
+<td>Устанавливает рабочую папку внутри контейнера. Все следующие команды выполняются в ней</td>
+</tr>
+<tr>
+<td><code>COPY</code></td>
+<td>Копирует файлы с вашей машины в контейнер</td>
+</tr>
+<tr>
+<td><code>ADD</code></td>
+<td>То же, что COPY, но дополнительно умеет распаковывать архивы и скачивать файлы по URL</td>
+</tr>
+<tr>
+<td><code>RUN</code></td>
+<td>Выполняет команду во время сборки образа. Результат сохраняется в слой</td>
+</tr>
+<tr>
+<td><code>CMD</code></td>
+<td>Команда, которая запускается, когда вы делаете <code>docker run</code>. Можно переопределить</td>
+</tr>
+<tr>
+<td><code>ENTRYPOINT</code></td>
+<td>Как CMD, но сложнее переопределить, и обычно используется как фиксированная точка входа контейнера</td>
+</tr>
+<tr>
+<td><code>ENV</code></td>
+<td>Задаёт переменную окружения внутри контейнера. Приложение может её читать</td>
+</tr>
+<tr>
+<td><code>ARG</code></td>
+<td>Переменная только для сборки. В запущенный контейнер не попадает</td>
+</tr>
+<tr>
+<td><code>EXPOSE</code></td>
+<td>Просто документирует, на каком порту работает приложение. Порт не открывает — это делается через <code>-p</code> при запуске</td>
+</tr>
+<tr>
+<td><code>VOLUME</code></td>
+<td>Объявляет папку внутри контейнера как том. Данные в ней сохранятся после удаления контейнера (но не всегда)</td>
+</tr>
+<tr>
+<td><code>USER</code></td>
+<td>От имени какого пользователя запускать приложение. По умолчанию root — в продакшне так делать не стоит</td>
+</tr>
+<tr>
+<td><code>LABEL</code></td>
+<td>Добавляет метаданные к образу: автор, версия, описание. Ни на что не влияет, просто информация</td>
+</tr>
+<tr>
+<td><code>HEALTHCHECK</code></td>
+<td>Docker будет периодически проверять, живо ли приложение внутри контейнера, и помечать его как healthy или unhealthy</td>
+</tr>
+<tr>
+<td><code>SHELL</code></td>
+<td>Меняет оболочку, в которой выполняются команды RUN. По умолчанию <code>/bin/sh</code></td>
+</tr>
+<tr>
+<td><code>STOPSIGNAL</code></td>
+<td>Какой сигнал послать приложению, когда контейнер останавливают. По умолчанию SIGTERM</td>
+</tr>
+<tr>
+<td><code>ONBUILD</code></td>
+<td>Команда, которая выполнится не сейчас, а когда кто-то другой использует этот образ как базовый</td>
+</tr>
+</tbody></table>
+<h3>Частая путаница? CMD, ENTRYPOINT, ARG, ENV.</h3>
+<p>Эти 4 команды часто путают между собой (и по другим причинам) и задают вопросы на собеседованиях про их различие, поэтому стоит вкратце о них сказать и про их отличия.</p>
+<p><code>CMD</code> — команда, которая запускается по умолчанию, когда вы делаете <code>docker run</code>. Её можно переопределить прямо в команде запуска.</p>
+<p><code>ENTRYPOINT</code> — команда, которая выполняется всегда, независимо от того, что вы передаёте в <code>docker run</code>. Если указать CMD вместе с ENTRYPOINT, CMD становится аргументами по умолчанию для ENTRYPOINT.</p>
+<p>Когда использовать что: если контейнер всегда должен запускать одно конкретное приложение и вы хотите только менять аргументы, используйте <code>ENTRYPOINT</code>. Если хотите полную гибкость и возможность запустить внутри контейнера вообще что угодно используйте <code>CMD</code>.</p>
+<p><code>ARG</code> — переменная, которая существует только во время сборки образа. В запущенный контейнер она не попадает. Удобно, когда нужно параметризировать сборку, например, передать версию приложения или окружение.</p>
+<p><code>ENV</code> — переменная окружения, которая доступна и во время сборки, и в запущенном контейнере. Именно через неё приложение получает конфигурацию: порт, адрес базы данных, режим работы.</p>
+<p>Когда использовать что: всё, что нужно приложению во время работы — <code>ENV</code>. Всё, что нужно только во время сборки образа — <code>ARG</code>.</p>
+<h3>Кэш слоёв</h3>
+<p>Docker кэширует все слои и инвалидируется каскадно, т. е. изменился один слой — все последующие пересобираются заново. Зачем это знать? На практике, если взять активную разработку, то образ постоянно пересобирается, если кэш не работает, то каждая сборка занимает ~минуты. Поэтому порядок <code>pip install</code> можно сделать по такому принципу: сначала то, что меняется редко, потом то, что меняется часто. Зависимости меняются раз в несколько дней, код — несколько раз в час. Поэтому зависимости копируем и устанавливаем первыми, код копируем в самом конце.</p>
+<p>Плохой порядок — <code>pip install</code> запускается при каждом изменении кода:</p>
+<pre><code class="language-bash">COPY . .
+RUN pip install -r requirements.txt
+</code></pre>
+<p>Хороший порядок — <code>pip install</code> кэшируется отдельно от кода:</p>
+<pre><code class="language-bash">COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+</code></pre>
+<h3>RUN и слои</h3>
+<p>Когда используется <code>RUN</code>, он создаёт отдельный слой, из-за чего каждый слой увеличит размер образа. Это критично при работе с пакетными менеджерами по типу <code>apt</code>. <code>apt</code> — он оставляет кэш на диске. Если удалить этот кэш в следующем <code>RUN</code> — он уже зафиксирован в предыдущем слое и никуда не денется. Образ будет весить больше. Поэтому установка и очистка должны быть в одной команде — только тогда кэш не попадёт в образ.</p>
+<pre><code class="language-bash"># Плохо — три слоя, кэш apt остаётся в образе навсегда
+RUN apt-get update
+RUN apt-get install -y curl git
+RUN rm -rf /var/lib/apt/lists/*
+
+# Хорошо — один слой, кэш удалён в той же команде
+RUN apt-get update &amp;&amp; \
+    apt-get install -y curl git &amp;&amp; \
+    rm -rf /var/lib/apt/lists/*
+</code></pre>
+<h3>USER: не стоит запускать от root</h3>
+<p>Обычно Docker запускает все процессы от имени root. Для локальной разработки, домашней лаборатории или сервера это удобно, так как не нужно заботиться о правах доступа. Однако в продакшне или при наличии нескольких пользователей это создаёт риски. Лучше ограничивать запуск обычным пользователем, поскольку это существенно сужает возможности атакующего.</p>
+<p><strong>Как тогда это сделать?</strong> Тут всё зависит от вашего сценария (того, как выглядит инфраструктура), можно создать пользователя в Dockerfile, например, на Ubuntu:</p>
+<pre><code class="language-bash">RUN groupadd -r appgroup &amp;&amp; useradd -r -g appgroup appuser
+USER appuser
+# После USER все последующие команды в Dockerfile и сам процесс контейнера будут выполняться от этого пользователя.
+</code></pre>
+<p>Или взять <strong>Rootless-режим Docker</strong> — это решение запустит сам Docker daemon не от root, а от обычного пользователя. Обычно после установки Docker с помощью <code>curl -fsSL https://get.docker.com | sh</code> у вас появится окно с предложением настроить rootless-режим одной командой: <code>dockerd-rootless-setuptool.sh install</code>. Подробнее в <a href="https://docs.docker.com/go/rootless/">официальной документации</a>.</p>
+<blockquote>
+<p>Rootless-режим имеет ряд ограничений, поэтому изучите, нужен он вам или нет. Ниже то самое «окно».</p>
+</blockquote>
+<pre><code class="language-bash">================================================================================
+
+To run Docker as a non-privileged user, consider setting up the
+Docker daemon in rootless mode for your user:
+
+    dockerd-rootless-setuptool.sh install
+
+Visit https://docs.docker.com/go/rootless/ to learn about rootless mode.
+
+
+To run the Docker daemon as a fully privileged service, but granting non-root
+users access, refer to https://docs.docker.com/go/daemon-access/
+
+WARNING: Access to the remote API on a privileged Docker daemon is equivalent
+         to root access on the host. Refer to the &#39;Docker daemon attack surface&#39;
+         documentation for details: https://docs.docker.com/go/attack-surface/
+
+================================================================================
+</code></pre>
+<h3>HEALTHCHECK</h3>
+<p>По умолчанию Docker считает контейнер живым, если процесс внутри него запущен. Но процесс может работать, а приложение при этом зависнуть, уйти в дедлок (мёртвая блокировка — ситуация, когда два или больше процесса/потока бесконечно ждут друг друга и никто из них не может продолжить работу.) или перестать отвечать на запросы. Docker об этом не узнает и продолжит спокойно считать контейнер здоровым. Поэтому с помощью <code>HEALTHCHECK</code> Docker периодически выполняет указанную команду и по её результату помечает контейнер как <code>healthy</code> или <code>unhealthy</code>. Из практики могу выделить три важных момента, которые часто встречались.</p>
+<ol>
+<li><p>Сам Docker Daemon никогда не перезапускает контейнер автоматически, если тот стал <code>unhealthy</code>. Он просто меняет статус. Чтобы контейнер перезапускался по этому статусу — нужен оркестратор (Docker Swarm, если мы говорим только про Docker) или сторонние решения. Зато в Docker Compose <code>depends_on</code> с условием <code>service_healthy</code> будет ждать именно этого статуса перед запуском зависимых сервисов — и это уже очень полезно.</p>
+</li>
+<li><p><strong>Отключение проверки.</strong> Если вы берёте чужой образ, в котором уже прописан <code>HEALTHCHECK</code> (например, официальный <code>postgres</code>), ваш дочерний образ унаследует эту проверку. Если она мешает — отключается одной строкой: <code>HEALTHCHECK NONE</code></p>
+</li>
+<li><p><strong>Не делайте проверку тяжёлой.</strong> Каждый <code>HEALTHCHECK</code> — это запуск нового процесса внутри контейнера. Если поставить маленький <code>--interval</code> и написать сложный скрипт с запросами к базе — это будет постоянно есть CPU. Проверка должна быть максимально лёгкой и быстрой: простой HTTP-запрос на <code>/health</code>, который отвечает <code>200 OK</code>, — идеальный вариант.</p>
+</li>
+</ol>
+<p>Из полезных команд я бы отметил <code>docker ps</code> для колонки STATUS, чтобы посмотреть healthy/unhealthy, и <code>docker inspect &lt;имя контейнера&gt;</code> — там будет полная история последних проверок.</p>
+<p>Более подробно в <a href="https://docs.docker.com/reference/dockerfile/#healthcheck">документации Docker</a>.</p>
+<h3>Основные команды (шпаргалка)</h3>
+<p>Для базового понимания стоит разобраться в основных командах. В таблице вы можете увидеть часто используемые команды. Вместо примера <code>nginx</code> вы пишете другой контейнер.</p>
+<table>
+<thead>
+<tr>
+<th>Категория</th>
+<th>Команда</th>
+<th>Назначение</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Контейнеры</td>
+<td><code>docker run nginx</code></td>
+<td>Создать и запустить контейнер из образа nginx</td>
+</tr>
+<tr>
+<td>Контейнеры</td>
+<td><code>docker run -d nginx</code></td>
+<td>Запустить контейнер в фоне</td>
+</tr>
+<tr>
+<td>Контейнеры</td>
+<td><code>docker run -d --name my-nginx -p 8080:80 nginx</code></td>
+<td>Запустить контейнер с именем и пробросом порта</td>
+</tr>
+<tr>
+<td>Контейнеры</td>
+<td><code>docker run -it ubuntu bash</code></td>
+<td>Запустить контейнер и открыть терминал</td>
+</tr>
+<tr>
+<td>Контейнеры</td>
+<td><code>docker run --rm alpine echo &quot;hello&quot;</code></td>
+<td>Запустить контейнер и автоматически удалить после завершения</td>
+</tr>
+<tr>
+<td>Контейнеры</td>
+<td><code>docker run -d --restart unless-stopped nginx</code></td>
+<td>Запустить контейнер с политикой перезапуска</td>
+</tr>
+<tr>
+<td>Контейнеры</td>
+<td><code>docker run -d -e KEY=value myapp</code></td>
+<td>Передать переменную окружения при запуске</td>
+</tr>
+<tr>
+<td>Контейнеры</td>
+<td><code>docker run -d --env-file .env myapp</code></td>
+<td>Передать переменные окружения из файла</td>
+</tr>
+<tr>
+<td>Контейнеры</td>
+<td><code>docker ps</code></td>
+<td>Показать запущенные контейнеры</td>
+</tr>
+<tr>
+<td>Контейнеры</td>
+<td><code>docker ps -a</code></td>
+<td>Показать все контейнеры</td>
+</tr>
+<tr>
+<td>Контейнеры</td>
+<td><code>docker stop my-nginx</code></td>
+<td>Остановить контейнер</td>
+</tr>
+<tr>
+<td>Контейнеры</td>
+<td><code>docker start my-nginx</code></td>
+<td>Запустить остановленный контейнер</td>
+</tr>
+<tr>
+<td>Контейнеры</td>
+<td><code>docker restart my-nginx</code></td>
+<td>Перезапустить контейнер</td>
+</tr>
+<tr>
+<td>Контейнеры</td>
+<td><code>docker rm my-nginx</code></td>
+<td>Удалить контейнер</td>
+</tr>
+<tr>
+<td>Контейнеры</td>
+<td><code>docker rm -f my-nginx</code></td>
+<td>Принудительно удалить контейнер</td>
+</tr>
+<tr>
+<td>Контейнеры</td>
+<td><code>docker rm $(docker ps -a -q)</code></td>
+<td>Удалить все контейнеры</td>
+</tr>
+<tr>
+<td>Логи и отладка</td>
+<td><code>docker logs my-nginx</code></td>
+<td>Показать логи</td>
+</tr>
+<tr>
+<td>Логи и отладка</td>
+<td><code>docker logs -f my-nginx</code></td>
+<td>Смотреть логи в реальном времени</td>
+</tr>
+<tr>
+<td>Логи и отладка</td>
+<td><code>docker logs -t my-nginx</code></td>
+<td>Логи с временными метками</td>
+</tr>
+<tr>
+<td>Логи и отладка</td>
+<td><code>docker logs --tail 100 my-nginx</code></td>
+<td>Последние 100 строк логов</td>
+</tr>
+<tr>
+<td>Логи и отладка</td>
+<td><code>docker exec -it my-nginx bash</code></td>
+<td>Войти в контейнер через Bash</td>
+</tr>
+<tr>
+<td>Логи и отладка</td>
+<td><code>docker exec -it my-nginx sh</code></td>
+<td>Войти в контейнер через SH</td>
+</tr>
+<tr>
+<td>Логи и отладка</td>
+<td><code>docker inspect my-nginx</code></td>
+<td>Полная информация о контейнере</td>
+</tr>
+<tr>
+<td>Логи и отладка</td>
+<td><code>docker stats my-nginx</code></td>
+<td>Использование ресурсов</td>
+</tr>
+<tr>
+<td>Логи и отладка</td>
+<td><code>docker cp nginx.conf my-nginx:/etc/nginx/nginx.conf</code></td>
+<td>Копировать файл в контейнер</td>
+</tr>
+<tr>
+<td>Логи и отладка</td>
+<td><code>docker cp my-nginx:/var/log/nginx/access.log ./access.log</code></td>
+<td>Копировать файл из контейнера</td>
+</tr>
+<tr>
+<td>Образы</td>
+<td><code>docker pull nginx:1.25</code></td>
+<td>Скачать образ</td>
+</tr>
+<tr>
+<td>Образы</td>
+<td><code>docker images</code></td>
+<td>Список образов</td>
+</tr>
+<tr>
+<td>Образы</td>
+<td><code>docker rmi nginx:1.25</code></td>
+<td>Удалить образ</td>
+</tr>
+<tr>
+<td>Образы</td>
+<td><code>docker history nginx:1.25</code></td>
+<td>Посмотреть слои образа</td>
+</tr>
+<tr>
+<td>Образы</td>
+<td><code>docker image prune -a</code></td>
+<td>Удалить неиспользуемые образы</td>
+</tr>
+<tr>
+<td>Сборка</td>
+<td><code>docker build -t myapp:1.0 .</code></td>
+<td>Собрать образ</td>
+</tr>
+<tr>
+<td>Сборка</td>
+<td><code>docker build --no-cache -t myapp:1.0 .</code></td>
+<td>Собрать без кэша</td>
+</tr>
+<tr>
+<td>Сборка</td>
+<td><code>docker build --build-arg VERSION=2.0 -t myapp:2.0 .</code></td>
+<td>Передать ARG-переменную</td>
+</tr>
+<tr>
+<td>Docker Hub</td>
+<td><code>docker login</code></td>
+<td>Авторизация</td>
+</tr>
+<tr>
+<td>Docker Hub</td>
+<td><code>docker tag myapp:1.0 username/myapp:1.0</code></td>
+<td>Добавить тег</td>
+</tr>
+<tr>
+<td>Docker Hub</td>
+<td><code>docker push username/myapp:1.0</code></td>
+<td>Загрузить образ</td>
+</tr>
+<tr>
+<td>Docker Hub</td>
+<td><code>docker pull username/myapp:1.0</code></td>
+<td>Скачать образ</td>
+</tr>
+<tr>
+<td>Сети</td>
+<td><code>docker network ls</code></td>
+<td>Список сетей</td>
+</tr>
+<tr>
+<td>Сети</td>
+<td><code>docker network create my-network</code></td>
+<td>Создать сеть</td>
+</tr>
+<tr>
+<td>Сети</td>
+<td><code>docker run -d --network my-network myapp</code></td>
+<td>Запустить контейнер в сети</td>
+</tr>
+<tr>
+<td>Сети</td>
+<td><code>docker network connect my-network my-nginx</code></td>
+<td>Подключить контейнер к сети</td>
+</tr>
+<tr>
+<td>Тома</td>
+<td><code>docker volume ls</code></td>
+<td>Список томов</td>
+</tr>
+<tr>
+<td>Тома</td>
+<td><code>docker volume create pg-data</code></td>
+<td>Создать том</td>
+</tr>
+<tr>
+<td>Тома</td>
+<td><code>docker run -d -v pg-data:/var/lib/postgresql/data postgres</code></td>
+<td>Запустить контейнер с томом</td>
+</tr>
+<tr>
+<td>Тома</td>
+<td><code>docker volume prune</code></td>
+<td>Удалить неиспользуемые тома</td>
+</tr>
+<tr>
+<td>Очистка</td>
+<td><code>docker system prune</code></td>
+<td>Базовая очистка</td>
+</tr>
+<tr>
+<td>Очистка</td>
+<td><code>docker system prune -a --volumes</code></td>
+<td>Полная очистка Docker</td>
+</tr>
+</tbody></table>
+<h3>Политики перезапуска (<code>--restart</code>)</h3>
+<p>По умолчанию, если контейнер упал, он так и остаётся остановленным. Для продакшна это неприемлемо. Docker умеет перезапускать контейнеры автоматически через флаг <code>--restart</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Политика</th>
+<th>Поведение</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>no</code></td>
+<td>Не перезапускать никогда (по умолчанию)</td>
+</tr>
+<tr>
+<td><code>always</code></td>
+<td>Перезапускать всегда, в том числе при старте демона Docker</td>
+</tr>
+<tr>
+<td><code>unless-stopped</code></td>
+<td>Как <code>always</code>, но не перезапускает, если контейнер был остановлен вручную через <code>docker stop</code></td>
+</tr>
+<tr>
+<td><code>on-failure</code></td>
+<td>Перезапускать только если контейнер завершился с ненулевым кодом</td>
+</tr>
+</tbody></table>
+<pre><code class="language-bash">docker run -d --restart unless-stopped nginx
+</code></pre>
+<p>Для большинства сервисов на одиночном сервере оптимальный выбор может быть <code>unless-stopped</code>: контейнер поднимется после перезагрузки сервера, но не будет назойливо рестартовать, если вы сами его остановили.</p>
+<h3>Заключение и где искать практику и знания?</h3>
+<p>Изучать Docker можно по-разному. Лично я рекомендую установить Docker на ваш компьютер и работать с ним через терминал. Если не знаете, что придумать, или нужно больше знаний — обращайтесь к документации Docker!</p>
+<ol>
+<li><a href="https://docs.docker.com/guides/">Практика под разные сценарии</a></li>
+<li><a href="https://docs.docker.com/">Документация Docker</a></li>
+</ol>
+<p>На этом базовое знакомство с Docker можно считать завершённым. В этой статье мы разобрали, зачем нужен Docker, какие проблемы он решает, как устроены контейнеры и образы, что такое Dockerfile, слои, кэширование, multi-stage builds, HEALTHCHECK и <code>.dockerignore</code>, а также рассмотрели основные команды, политики перезапуска и передачу переменных окружения. В серии статей по Docker от opensophy мы также рассмотрим следующие темы:</p>
+</article> </main> </noscript> <astro-island uid="2wuy9v" component-url="/assets/DocContent.CoKfap2Q.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{&quot;doc&quot;:[0,{&quot;id&quot;:[0,&quot;article/docker/theory-and-basic-operation&quot;],&quot;title&quot;:[0,&quot;Docker Fundamentals: теория и базовая эксплуатация&quot;],&quot;slug&quot;:[0,&quot;article/docker/theory-and-basic-operation&quot;],&quot;description&quot;:[0,&quot;1 часть серии статей по Docker. Базовая теория по Docker для новичков и практиков — контейнеры, образы, Dockerfile, слои, HEALTHCHECK, multi-stage builds и шпаргалка по командам.&quot;],&quot;content&quot;:[0,&quot;&lt;h2&gt;Введение&lt;/h2&gt;\n&lt;p&gt;Я очень рад, что существует такая технология, как Docker, и внедряю её в проекты и инфраструктуру клиентов. Однако есть одно «но»: многие не понимают, что это и зачем оно нужно, а объяснять иногда достаточно сложно (особенно повторять каждый раз каждому человеку, да и есть шанс что-то упустить). В этой статье вы узнаете базу по Docker, где найти практику и актуальные знания. Технология будет полезна многим: от специалистов по безопасности до разработчиков. А сама статья будет познавательна для тех, кто только изучает работу Docker и хочет узнать ответы на вопросы, которые часто задаются на собеседованиях, где требуется Docker. Приступим!&lt;/p&gt;\n&lt;blockquote&gt;\n&lt;p&gt;1 серия статей по Docker. Docker Fundamentals: теория и базовая эксплуатация&lt;/p&gt;\n&lt;/blockquote&gt;\n&lt;h2&gt;Часть 1: Вводная информация&lt;/h2&gt;\n&lt;h3&gt;Docker — что это и зачем он нужен.&lt;/h3&gt;\n&lt;p&gt;Кратко: Docker — это программная платформа для разработки, доставки и запуска приложений в изолированных средах — контейнерах. Она нужна для изоляции и стабильности. А теперь попробую объяснить.&lt;/p&gt;\n&lt;ol&gt;\n&lt;li&gt;Стабильность&lt;/li&gt;\n&lt;/ol&gt;\n&lt;p&gt;Представим, что у вас есть веб-приложение: зависимости, конфиги и важные настройки. На вашей машине всё работает идеально, но вы отправляете проект другу, и через некоторое время при попытке развернуть его друг пишет: «У меня не работает». Или другая ситуация: вы сами разворачиваете то же приложение через полгода, и что-то ломается. Обновилась версия библиотеки, поменялся пакет в репозитории, изменилась конфигурация системы. Код тот же, а результат другой.&lt;/p&gt;\n&lt;p&gt;Как же Docker решает эти проблемы? Он упаковывает приложение вместе со всем окружением в единый артефакт, который называется образ (англ. image). Внутри образа зафиксировано всё: само приложение, зависимости, конфиги и все настройки, необходимые для работы сервиса. Если в образе используется Python 3.9, то именно эта версия и будет запускаться независимо от обновлений хостовой системы. Этот образ запускается одинаково везде и всегда: на вашей машине, у друга, на сервере.&lt;/p&gt;\n&lt;ol start=\&quot;2\&quot;&gt;\n&lt;li&gt;Изоляция&lt;/li&gt;\n&lt;/ol&gt;\n&lt;p&gt;Представим, что на одном сервере нужно запустить несколько сервисов: один на Python 3.9, другой на Python 3.11, третий требует PostgreSQL 14, четвёртый — PostgreSQL 16. Без Docker версии конфликтуют, библиотеки перетирают друг друга, один сервис может сломать другой. В Docker каждый контейнер живёт в своём окружении: своя файловая система, своя сеть, свои процессы и библиотеки. Они не знают о существовании друг друга и не конфликтуют.&lt;/p&gt;\n&lt;p&gt;Помимо этого, можно явно ограничить ресурсы каждого контейнера, например, разрешить использовать не более 512 МБ памяти и половину ядра процессора. Если контейнер попытается выйти за лимит, Docker его ограничит. Один «прожорливый» сервис не положит остальные.&lt;/p&gt;\n&lt;p&gt;&lt;em&gt;Это основные преимущества, за которые я рекомендую вам Docker.&lt;/em&gt;&lt;/p&gt;\n&lt;h3&gt;Сколько ресурсов нужно, чтобы запустить Docker?&lt;/h3&gt;\n&lt;p&gt;Docker работает на Linux, Windows и macOS. &lt;strong&gt;Я предпочитаю и рекомендую Linux.&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;На Linux Docker работает напрямую через ядро системы, фоновый демон потребляет от ~50 до ~100 МБ ОЗУ. На Windows и macOS запускается Docker Desktop, которому в режиме виртуальной машины нужно около 2–4 ГБ ОЗУ. Есть альтернатива: на Windows можно использовать WSL 2 + Docker Engine, потребление памяти будет поменьше, но настройка чуть сложнее.&lt;/p&gt;\n&lt;p&gt;Если встанет вопрос с обучением, например, у вас слабая машина, то рекомендую опять же перейти на Linux, чтобы сэкономить ресурсы. Для обучения (как я использовал раньше, когда у меня был слабый ноутбук) достаточно 6 ГБ оперативной памяти и 70 ГБ свободного места на диске.&lt;/p&gt;\n&lt;h3&gt;Установка Docker.&lt;/h3&gt;\n&lt;p&gt;Здесь лучше изучить установку самостоятельно (да и в документации Docker всё расписано подробнее). &lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;Скачать на &lt;a href=\&quot;https://docs.docker.com/desktop/setup/install/mac-install/\&quot;&gt;macOS&lt;/a&gt;&lt;/li&gt;\n&lt;li&gt;Скачать на &lt;a href=\&quot;https://docs.docker.com/desktop/setup/install/windows-install/\&quot;&gt;Windows&lt;/a&gt;&lt;/li&gt;\n&lt;/ul&gt;\n&lt;blockquote&gt;\n&lt;p&gt;Это скачает Docker с GUI. В Windows и macOS рекомендую ещё посмотреть permission requirements под вашу ОС.&lt;/p&gt;\n&lt;/blockquote&gt;\n&lt;ul&gt;\n&lt;li&gt;Скачать на &lt;a href=\&quot;https://docs.docker.com/engine/install/\&quot;&gt;Linux&lt;/a&gt;&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;Пример установки под Ubuntu&lt;/strong&gt;&lt;/p&gt;\n&lt;ol&gt;\n&lt;li&gt;Смена фаерволла. По умолчанию используется в Ubuntu &lt;code&gt;UFW&lt;/code&gt;, но Docker совместим с iptables-nft и iptables-legacy. (Поэтому скачайте iptables, если не скачан.) Более опытные пользователи могут сказать, что Docker можно будет подружить с ufw (я с этим согласен), но всё же давайте будем придерживаться того, что поддерживается.&lt;/li&gt;\n&lt;/ol&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;sudo apt install iptables\n&lt;/code&gt;&lt;/pre&gt;\n&lt;ol start=\&quot;2\&quot;&gt;\n&lt;li&gt;Установка. Если документация показалась сложной для установки Docker, вы можете быстро скачать через скрипт: &lt;code&gt;curl -fsSL https://get.docker.com | sh&lt;/code&gt;&lt;/li&gt;\n&lt;/ol&gt;\n&lt;blockquote&gt;\n&lt;p&gt;Установку вручную я всё же рекомендую научиться делать без скрипта.&lt;/p&gt;\n&lt;/blockquote&gt;\n&lt;p&gt;После этого можете посмотреть &lt;code&gt;docker version&lt;/code&gt; или &lt;code&gt;docker --help&lt;/code&gt;, чтобы убедиться, что Docker скачан.&lt;/p&gt;\n&lt;h2&gt;Часть 2: База теории по Docker&lt;/h2&gt;\n&lt;h3&gt;Начнём с терминологии&lt;/h3&gt;\n&lt;p&gt;&lt;strong&gt;★ Контейнер (англ. Container)&lt;/strong&gt; — изолированный процесс на вашей машине со своей файловой системой, сетью и переменными окружения.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;★ Образ (англ. Image)&lt;/strong&gt; — шаблон, из которого создаётся контейнер. Содержит всё необходимое для запуска приложения.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;★ Слои (англ. Layers)&lt;/strong&gt; — составные части образа. Каждая инструкция в Dockerfile создаёт новый слой. Слои кэшируются и переиспользуются между образами.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;★ Теги (англ. Tags)&lt;/strong&gt; — метки версий образа. Формат: имя:тег, например nginx:1.25 или python:3.11-alpine. Подробнее о том, как версионировать свои образы, будет написано ниже.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;★ Реестр (англ. Registry)&lt;/strong&gt; — хранилище образов. Публичный пример — Docker Hub, откуда Docker скачивает образы по умолчанию.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;.Dockerignore&lt;/strong&gt; — файл, который указывает, что не нужно копировать в образ при сборке. Работает по тому же принципу, что и .gitignore. Создавайте .dockerignore всегда, даже для небольших проектов. Так вы сэкономите кучу времени, место на диске сервера и защитите себя от случайной утечки секретов (например, файла .env) в готовый публичный образ. Что обычно туда пишут? будет написано ниже.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;★ Тома (англ. Volumes)&lt;/strong&gt; — механизм хранения данных вне контейнера. Данные в томе сохраняются даже после удаления контейнера. Docker сам управляет расположением тома на хосте.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Монтирование директорий (англ. Bind Mounts)&lt;/strong&gt; — подключение папки с хостовой машины напрямую в контейнер. В отличие от томов, вы сами указываете путь на хосте. Подробнее о разнице между томами и bind mounts поговорим ниже.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;★ Сети (англ. Networks)&lt;/strong&gt; — механизм взаимодействия контейнеров между собой и с внешним миром. По умолчанию каждый контейнер получает свой IP-адрес внутри виртуальной сети Docker (bridge-сеть). Подробно сети будут разобраны в следующей части серии.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Демон Docker (англ. Docker Daemon, Dockerd)&lt;/strong&gt; — фоновый процесс, который управляет всем: создаёт, запускает и удаляет контейнеры. Когда вы вводите любую команду docker — она уходит именно к нему.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;★ Dockerfile&lt;/strong&gt; — текстовый файл с инструкциями, как собрать образ.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Docker Engine&lt;/strong&gt; — сам Docker: демон, CLI и API. То, что вы устанавливаете на Linux (или другую ОС), когда ставите Docker.&lt;br&gt;&lt;strong&gt;★ Docker Compose&lt;/strong&gt; — инструмент для запуска нескольких контейнеров одной командой через YAML-файл.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Контекст сборки (англ. Build Context)&lt;/strong&gt; — папка, которую Docker отправляет демону при сборке образа. Обычно это директория, где лежит Dockerfile.&lt;/p&gt;\n&lt;p&gt;С терминологией пока достаточно для начинающего уровня, будет ещё больше, когда поговорим про Docker Swarm и безопасность Docker в следующей статье серии. ★ отмечены самые частые термины/слова, которые вы будете встречать при обсуждении вопросов в чатах DevOps/Docker и т. д. или видеть их у себя в терминале. Переходим к объяснению, зачем вообще это знать. Знать команды и понимать, как они работают, полезно к тому же об этом могут спросить на собеседовании.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Контейнер.&lt;/strong&gt; Он живёт ровно столько, сколько живёт его основной процесс. Завершился процесс = завершился контейнер, аналогично с удалением контейнера: удалили = изменения внутри него пропали, но образ при этом останется нетронутым. Если описывать жизненный цикл контейнера, то он начинается с образа, из него командой &lt;code&gt;docker run&lt;/code&gt; создаётся и сразу запускается контейнер. После остановки командой &lt;code&gt;docker stop&lt;/code&gt; контейнер не исчезает, он переходит в остановленное состояние и его можно запустить снова через &lt;code&gt;docker start&lt;/code&gt;. Когда контейнер больше не нужен, он удаляется командой &lt;code&gt;docker rm&lt;/code&gt;. После удаления все изменения внутри него пропадают, образ при этом остаётся нетронутым.&lt;/p&gt;\n&lt;p&gt;Под капотом Docker использует два механизма ядра Linux:&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;&lt;strong&gt;Namespaces&lt;/strong&gt; — изолируют контейнер. Каждый контейнер видит только свои процессы, свою сеть и свою файловую систему.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;cgroups&lt;/strong&gt; — ограничивают ресурсы. Именно через них Docker позволяет задать лимиты на CPU и память для каждого контейнера.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;Образ.&lt;/strong&gt; Он состоит из слоёв, каждая «инструкция в Dockerfile» (это команды FROM, RUN и т. д.) создаёт свой слой. Например: первый слой — это Alpine Linux, второй — Python поверх него, третий — установленные зависимости, четвёртый — код вашего приложения. И все эти слои неизменяемы, но когда вы запускаете контейнер, Docker добавляет поверх всех этих слоёв образа ещё один — изменяемый (так называемый Copy-on-Write слой: файлы из образа не копируются заранее, а только в момент, когда контейнер пытается их изменить — тогда Docker копирует файл в этот слой и меняет уже там, оригинал в образе остаётся нетронутым). Всё, что происходит внутри контейнера: создаются файлы, пишутся логи, копится кэш — всё уходит в этот верхний слой. Сам образ не трогается. Поэтому из одного образа можно запустить десять контейнеров одновременно: у каждого свой изменяемый слой, а базовые слои общие.&lt;/p&gt;\n&lt;p&gt;Из этого вытекает ещё одно преимущество, которое мы обсудили: если у вас несколько образов на базе &lt;code&gt;python:3.11-alpine&lt;/code&gt; — слой с Python хранится на диске один раз, а не для каждого образа отдельно. Docker скачивает только те слои, которых ещё нет.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Dockerfile.&lt;/strong&gt; В терминологии уже разобрались, что это такое; добавлю ещё информацию о командах и то, что вы можете посмотреть примеры этих Dockerfile в open-source инструментах. (Если не можете найти: &lt;a href=\&quot;https://github.com/Dokploy/dokploy/blob/canary/Dockerfile\&quot;&gt;Dokploy&lt;/a&gt;) там же вы увидите и &lt;strong&gt;Multi-stage builds.&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;&lt;a href=\&quot;https://docs.docker.com/build/building/multi-stage/\&quot;&gt;Multi-stage builds&lt;/a&gt; — это подход, при котором в одном Dockerfile создаётся несколько этапов сборки. Например, в Dockerfile Dokploy есть этапы base, build и dokploy: сначала собирается приложение, а затем в финальный этап через COPY --from=build переносятся только нужные артефакты. Благодаря этому этапы сборки и запуска разделяются, а Dockerfile становится более гибким и удобным для сопровождения. Сначала Docker собирает всё необходимое в промежуточных этапах, а затем переносит в финальный образ только нужные артефакты. Такой подход делает Dockerfile более аккуратным, удобным для сопровождения и помогает не хранить в финальном образе лишние файлы, использовавшиеся только во время сборки.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Переменные окружения (ENV).&lt;/strong&gt; Используются для хранения настроек приложения: адресов баз данных, портов, токенов, паролей и других параметров, задать их можно по-разному. Лично я предпочитаю использовать файл &lt;code&gt;env&lt;/code&gt; где вы пишете, например, &lt;code&gt;DB_PASSWORD=qwerty&lt;/code&gt; и всё. Но можно задавать их и через ENV в Dockerfile, и через флаг -e при запуске контейнера &lt;code&gt;docker run -d -e DB_PASSWORD=secret myapp&lt;/code&gt;&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Тег &lt;code&gt;latest&lt;/code&gt; и почему его лучше не использовать в продакшне.&lt;/strong&gt; Если написать &lt;code&gt;docker pull nginx&lt;/code&gt; без указания версии, Docker скачает образ с тегом &lt;code&gt;latest&lt;/code&gt;. Удобно, вот только &lt;code&gt;latest&lt;/code&gt; меняется. Сегодня он может указывать на одну версию, а через месяц уже на другую.&lt;/p&gt;\n&lt;p&gt;Из-за этого один и тот же &lt;code&gt;docker-compose.yml&lt;/code&gt; при разных деплоях может поднять разные версии приложения. Это может привести к неожиданным изменениям в работе сервиса, проблемам с совместимостью или появлению новых уязвимостей. Поэтому в продакшне лучше всегда указывать конкретный тег, например &lt;code&gt;container:1.25.5&lt;/code&gt;.&lt;/p&gt;\n&lt;h3&gt;Теги: как версионировать свои образы&lt;/h3&gt;\n&lt;p&gt;Отдельно стоит сказать про теги образов. На собеседованиях про это спрашивают редко, а вот в реальной работе — постоянно. Единого правила нет: в одной компании используют версии, в другой — хэши коммитов, а где-то вообще смешивают несколько подходов.&lt;/p&gt;\n&lt;p&gt;Самый очевидный вариант — семантическое версионирование: &lt;code&gt;myapp:1.4.2&lt;/code&gt;. Если у вас есть релизы и changelog, по такому тегу сразу понятно, что перед вами за версия приложения.&lt;/p&gt;\n&lt;p&gt;Часто встречается и другой подход — тегировать образы хэшем коммита, например &lt;code&gt;myapp:a3f8c1d&lt;/code&gt;. Особенно это любят в CI/CD. У каждого коммита получается свой образ, поэтому потом не приходится гадать, какой именно код сейчас крутится на сервере. При необходимости можно быстро найти нужный коммит и откатиться.&lt;/p&gt;\n&lt;p&gt;Иногда в тег добавляют окружение: &lt;code&gt;myapp:staging&lt;/code&gt; или &lt;code&gt;myapp:production&lt;/code&gt;. Лично мне такой вариант нравится меньше, потому что возникает путаница: непонятно, что именно скрывается за этим тегом. Но если один и тот же образ последовательно проходит через несколько стендов, такой подход вполне имеет право на жизнь.&lt;/p&gt;\n&lt;p&gt;Сам я чаще встречал комбинацию версии и хэша коммита: &lt;code&gt;myapp:1.4.2-a3f8c1d&lt;/code&gt;. На мой взгляд, это один из самых удобных вариантов: видно и релиз приложения, и конкретное состояние кода, из которого собрали образ.&lt;/p&gt;\n&lt;p&gt;А вот &lt;code&gt;latest&lt;/code&gt; для продакшна лучше не использовать. Сегодня этот тег может указывать на одну сборку, а после следующего деплоя — уже на другую. Потом начинается любимая игра: «а что вообще сейчас запущено?». Для локальной разработки и быстрых проверок &lt;code&gt;latest&lt;/code&gt; ещё можно оставить, но в боевых окружениях лучше использовать неизменяемые теги.&lt;/p&gt;\n&lt;h3&gt;.dockerignore: что туда писать&lt;/h3&gt;\n&lt;p&gt;КРАТКО: Всё что не должно попасть в продакшн / в шаблон, который будет публиковаться для использование проекта другим человеком. Убирать стоит всё чувствительное и не нужное( к примеру readme.md, кеш, логи.) Docker при сборке отправляет демону всё содержимое контекста. Поэтому чем меньше лишних файлов попадёт туда, тем лучше.&lt;/p&gt;\n&lt;p&gt;Обычно  .dockerignore выглядит примерно так:&lt;/p&gt;\n&lt;p&gt;Обычно туда добавляют примерно такой набор:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-text\&quot;&gt;.git\n.gitignore\n.env\n.env.*\nnode_modules\n__pycache__\n*.pyc\n*.pyo\n.pytest_cache\n.coverage\ndist\nbuild\n*.log\nREADME.md\n.DS_Store\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Если не знаете, с чего начать, то минимум, который я бы рекомендовал добавить в любой проект, — это &lt;code&gt;.git&lt;/code&gt;, &lt;code&gt;.env&lt;/code&gt; и директории с зависимостями вроде &lt;code&gt;node_modules&lt;/code&gt; или &lt;code&gt;__pycache__&lt;/code&gt;. Репозиторий может занимать сотни мегабайт и только замедлять сборку, а файлам с секретами вроде &lt;code&gt;.env&lt;/code&gt; в готовом образе делать попросту нечего.&lt;/p&gt;\n&lt;h3&gt;Тома и Bind Mounts: что когда использовать&lt;/h3&gt;\n&lt;p&gt;С этим всё проще, чем кажется. Для баз данных я обычно беру volume: Docker сам хранит данные, и не приходится разбираться, в какой каталог на хосте они попали.&lt;/p&gt;\n&lt;p&gt;Bind mount использую в других случаях — когда нужно подключить конкретную папку с машины. Например, nginx-конфиг или директорию с проектом во время разработки.&lt;/p&gt;\n&lt;p&gt;Поэтому правило у меня одно: данные самого сервиса — volume, всё, что нужно подцепить с хоста, — bind mount.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;docker run -d -v pg-data:/var/lib/postgresql/data postgres\ndocker run -d -v /home/user/configs:/etc/nginx/conf.d nginx\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Есть ещё &lt;code&gt;tmpfs mount&lt;/code&gt;, но встречается он редко: данные хранятся только в памяти и на диск не записываются.&lt;/p&gt;\n&lt;p&gt;Таблица всех инструкций&lt;/p&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Команда&lt;/th&gt;\n&lt;th&gt;Что делает&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;FROM&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;С какого образа начинаем сборку. Всегда первая строка&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;WORKDIR&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Устанавливает рабочую папку внутри контейнера. Все следующие команды выполняются в ней&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;COPY&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Копирует файлы с вашей машины в контейнер&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;ADD&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;То же, что COPY, но дополнительно умеет распаковывать архивы и скачивать файлы по URL&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;RUN&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Выполняет команду во время сборки образа. Результат сохраняется в слой&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;CMD&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Команда, которая запускается, когда вы делаете &lt;code&gt;docker run&lt;/code&gt;. Можно переопределить&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;ENTRYPOINT&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Как CMD, но сложнее переопределить, и обычно используется как фиксированная точка входа контейнера&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;ENV&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Задаёт переменную окружения внутри контейнера. Приложение может её читать&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;ARG&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Переменная только для сборки. В запущенный контейнер не попадает&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;EXPOSE&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Просто документирует, на каком порту работает приложение. Порт не открывает — это делается через &lt;code&gt;-p&lt;/code&gt; при запуске&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;VOLUME&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Объявляет папку внутри контейнера как том. Данные в ней сохранятся после удаления контейнера (но не всегда)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;USER&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;От имени какого пользователя запускать приложение. По умолчанию root — в продакшне так делать не стоит&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;LABEL&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Добавляет метаданные к образу: автор, версия, описание. Ни на что не влияет, просто информация&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;HEALTHCHECK&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Docker будет периодически проверять, живо ли приложение внутри контейнера, и помечать его как healthy или unhealthy&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;SHELL&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Меняет оболочку, в которой выполняются команды RUN. По умолчанию &lt;code&gt;/bin/sh&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;STOPSIGNAL&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Какой сигнал послать приложению, когда контейнер останавливают. По умолчанию SIGTERM&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;ONBUILD&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Команда, которая выполнится не сейчас, а когда кто-то другой использует этот образ как базовый&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h3&gt;Частая путаница? CMD, ENTRYPOINT, ARG, ENV.&lt;/h3&gt;\n&lt;p&gt;Эти 4 команды часто путают между собой (и по другим причинам) и задают вопросы на собеседованиях про их различие, поэтому стоит вкратце о них сказать и про их отличия.&lt;/p&gt;\n&lt;p&gt;&lt;code&gt;CMD&lt;/code&gt; — команда, которая запускается по умолчанию, когда вы делаете &lt;code&gt;docker run&lt;/code&gt;. Её можно переопределить прямо в команде запуска.&lt;/p&gt;\n&lt;p&gt;&lt;code&gt;ENTRYPOINT&lt;/code&gt; — команда, которая выполняется всегда, независимо от того, что вы передаёте в &lt;code&gt;docker run&lt;/code&gt;. Если указать CMD вместе с ENTRYPOINT, CMD становится аргументами по умолчанию для ENTRYPOINT.&lt;/p&gt;\n&lt;p&gt;Когда использовать что: если контейнер всегда должен запускать одно конкретное приложение и вы хотите только менять аргументы, используйте &lt;code&gt;ENTRYPOINT&lt;/code&gt;. Если хотите полную гибкость и возможность запустить внутри контейнера вообще что угодно используйте &lt;code&gt;CMD&lt;/code&gt;.&lt;/p&gt;\n&lt;p&gt;&lt;code&gt;ARG&lt;/code&gt; — переменная, которая существует только во время сборки образа. В запущенный контейнер она не попадает. Удобно, когда нужно параметризировать сборку, например, передать версию приложения или окружение.&lt;/p&gt;\n&lt;p&gt;&lt;code&gt;ENV&lt;/code&gt; — переменная окружения, которая доступна и во время сборки, и в запущенном контейнере. Именно через неё приложение получает конфигурацию: порт, адрес базы данных, режим работы.&lt;/p&gt;\n&lt;p&gt;Когда использовать что: всё, что нужно приложению во время работы — &lt;code&gt;ENV&lt;/code&gt;. Всё, что нужно только во время сборки образа — &lt;code&gt;ARG&lt;/code&gt;.&lt;/p&gt;\n&lt;h3&gt;Кэш слоёв&lt;/h3&gt;\n&lt;p&gt;Docker кэширует все слои и инвалидируется каскадно, т. е. изменился один слой — все последующие пересобираются заново. Зачем это знать? На практике, если взять активную разработку, то образ постоянно пересобирается, если кэш не работает, то каждая сборка занимает ~минуты. Поэтому порядок &lt;code&gt;pip install&lt;/code&gt; можно сделать по такому принципу: сначала то, что меняется редко, потом то, что меняется часто. Зависимости меняются раз в несколько дней, код — несколько раз в час. Поэтому зависимости копируем и устанавливаем первыми, код копируем в самом конце.&lt;/p&gt;\n&lt;p&gt;Плохой порядок — &lt;code&gt;pip install&lt;/code&gt; запускается при каждом изменении кода:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;COPY . .\nRUN pip install -r requirements.txt\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Хороший порядок — &lt;code&gt;pip install&lt;/code&gt; кэшируется отдельно от кода:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;COPY requirements.txt .\nRUN pip install -r requirements.txt\nCOPY . .\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;RUN и слои&lt;/h3&gt;\n&lt;p&gt;Когда используется &lt;code&gt;RUN&lt;/code&gt;, он создаёт отдельный слой, из-за чего каждый слой увеличит размер образа. Это критично при работе с пакетными менеджерами по типу &lt;code&gt;apt&lt;/code&gt;. &lt;code&gt;apt&lt;/code&gt; — он оставляет кэш на диске. Если удалить этот кэш в следующем &lt;code&gt;RUN&lt;/code&gt; — он уже зафиксирован в предыдущем слое и никуда не денется. Образ будет весить больше. Поэтому установка и очистка должны быть в одной команде — только тогда кэш не попадёт в образ.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;# Плохо — три слоя, кэш apt остаётся в образе навсегда\nRUN apt-get update\nRUN apt-get install -y curl git\nRUN rm -rf /var/lib/apt/lists/*\n\n# Хорошо — один слой, кэш удалён в той же команде\nRUN apt-get update &amp;amp;&amp;amp; \\\n    apt-get install -y curl git &amp;amp;&amp;amp; \\\n    rm -rf /var/lib/apt/lists/*\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;USER: не стоит запускать от root&lt;/h3&gt;\n&lt;p&gt;Обычно Docker запускает все процессы от имени root. Для локальной разработки, домашней лаборатории или сервера это удобно, так как не нужно заботиться о правах доступа. Однако в продакшне или при наличии нескольких пользователей это создаёт риски. Лучше ограничивать запуск обычным пользователем, поскольку это существенно сужает возможности атакующего.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Как тогда это сделать?&lt;/strong&gt; Тут всё зависит от вашего сценария (того, как выглядит инфраструктура), можно создать пользователя в Dockerfile, например, на Ubuntu:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;RUN groupadd -r appgroup &amp;amp;&amp;amp; useradd -r -g appgroup appuser\nUSER appuser\n# После USER все последующие команды в Dockerfile и сам процесс контейнера будут выполняться от этого пользователя.\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Или взять &lt;strong&gt;Rootless-режим Docker&lt;/strong&gt; — это решение запустит сам Docker daemon не от root, а от обычного пользователя. Обычно после установки Docker с помощью &lt;code&gt;curl -fsSL https://get.docker.com | sh&lt;/code&gt; у вас появится окно с предложением настроить rootless-режим одной командой: &lt;code&gt;dockerd-rootless-setuptool.sh install&lt;/code&gt;. Подробнее в &lt;a href=\&quot;https://docs.docker.com/go/rootless/\&quot;&gt;официальной документации&lt;/a&gt;.&lt;/p&gt;\n&lt;blockquote&gt;\n&lt;p&gt;Rootless-режим имеет ряд ограничений, поэтому изучите, нужен он вам или нет. Ниже то самое «окно».&lt;/p&gt;\n&lt;/blockquote&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;================================================================================\n\nTo run Docker as a non-privileged user, consider setting up the\nDocker daemon in rootless mode for your user:\n\n    dockerd-rootless-setuptool.sh install\n\nVisit https://docs.docker.com/go/rootless/ to learn about rootless mode.\n\n\nTo run the Docker daemon as a fully privileged service, but granting non-root\nusers access, refer to https://docs.docker.com/go/daemon-access/\n\nWARNING: Access to the remote API on a privileged Docker daemon is equivalent\n         to root access on the host. Refer to the &amp;#39;Docker daemon attack surface&amp;#39;\n         documentation for details: https://docs.docker.com/go/attack-surface/\n\n================================================================================\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;HEALTHCHECK&lt;/h3&gt;\n&lt;p&gt;По умолчанию Docker считает контейнер живым, если процесс внутри него запущен. Но процесс может работать, а приложение при этом зависнуть, уйти в дедлок (мёртвая блокировка — ситуация, когда два или больше процесса/потока бесконечно ждут друг друга и никто из них не может продолжить работу.) или перестать отвечать на запросы. Docker об этом не узнает и продолжит спокойно считать контейнер здоровым. Поэтому с помощью &lt;code&gt;HEALTHCHECK&lt;/code&gt; Docker периодически выполняет указанную команду и по её результату помечает контейнер как &lt;code&gt;healthy&lt;/code&gt; или &lt;code&gt;unhealthy&lt;/code&gt;. Из практики могу выделить три важных момента, которые часто встречались.&lt;/p&gt;\n&lt;ol&gt;\n&lt;li&gt;&lt;p&gt;Сам Docker Daemon никогда не перезапускает контейнер автоматически, если тот стал &lt;code&gt;unhealthy&lt;/code&gt;. Он просто меняет статус. Чтобы контейнер перезапускался по этому статусу — нужен оркестратор (Docker Swarm, если мы говорим только про Docker) или сторонние решения. Зато в Docker Compose &lt;code&gt;depends_on&lt;/code&gt; с условием &lt;code&gt;service_healthy&lt;/code&gt; будет ждать именно этого статуса перед запуском зависимых сервисов — и это уже очень полезно.&lt;/p&gt;\n&lt;/li&gt;\n&lt;li&gt;&lt;p&gt;&lt;strong&gt;Отключение проверки.&lt;/strong&gt; Если вы берёте чужой образ, в котором уже прописан &lt;code&gt;HEALTHCHECK&lt;/code&gt; (например, официальный &lt;code&gt;postgres&lt;/code&gt;), ваш дочерний образ унаследует эту проверку. Если она мешает — отключается одной строкой: &lt;code&gt;HEALTHCHECK NONE&lt;/code&gt;&lt;/p&gt;\n&lt;/li&gt;\n&lt;li&gt;&lt;p&gt;&lt;strong&gt;Не делайте проверку тяжёлой.&lt;/strong&gt; Каждый &lt;code&gt;HEALTHCHECK&lt;/code&gt; — это запуск нового процесса внутри контейнера. Если поставить маленький &lt;code&gt;--interval&lt;/code&gt; и написать сложный скрипт с запросами к базе — это будет постоянно есть CPU. Проверка должна быть максимально лёгкой и быстрой: простой HTTP-запрос на &lt;code&gt;/health&lt;/code&gt;, который отвечает &lt;code&gt;200 OK&lt;/code&gt;, — идеальный вариант.&lt;/p&gt;\n&lt;/li&gt;\n&lt;/ol&gt;\n&lt;p&gt;Из полезных команд я бы отметил &lt;code&gt;docker ps&lt;/code&gt; для колонки STATUS, чтобы посмотреть healthy/unhealthy, и &lt;code&gt;docker inspect &amp;lt;имя контейнера&amp;gt;&lt;/code&gt; — там будет полная история последних проверок.&lt;/p&gt;\n&lt;p&gt;Более подробно в &lt;a href=\&quot;https://docs.docker.com/reference/dockerfile/#healthcheck\&quot;&gt;документации Docker&lt;/a&gt;.&lt;/p&gt;\n&lt;h3&gt;Основные команды (шпаргалка)&lt;/h3&gt;\n&lt;p&gt;Для базового понимания стоит разобраться в основных командах. В таблице вы можете увидеть часто используемые команды. Вместо примера &lt;code&gt;nginx&lt;/code&gt; вы пишете другой контейнер.&lt;/p&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Категория&lt;/th&gt;\n&lt;th&gt;Команда&lt;/th&gt;\n&lt;th&gt;Назначение&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;Контейнеры&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker run nginx&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Создать и запустить контейнер из образа nginx&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Контейнеры&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker run -d nginx&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Запустить контейнер в фоне&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Контейнеры&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker run -d --name my-nginx -p 8080:80 nginx&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Запустить контейнер с именем и пробросом порта&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Контейнеры&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker run -it ubuntu bash&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Запустить контейнер и открыть терминал&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Контейнеры&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker run --rm alpine echo &amp;quot;hello&amp;quot;&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Запустить контейнер и автоматически удалить после завершения&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Контейнеры&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker run -d --restart unless-stopped nginx&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Запустить контейнер с политикой перезапуска&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Контейнеры&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker run -d -e KEY=value myapp&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Передать переменную окружения при запуске&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Контейнеры&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker run -d --env-file .env myapp&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Передать переменные окружения из файла&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Контейнеры&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker ps&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Показать запущенные контейнеры&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Контейнеры&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker ps -a&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Показать все контейнеры&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Контейнеры&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker stop my-nginx&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Остановить контейнер&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Контейнеры&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker start my-nginx&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Запустить остановленный контейнер&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Контейнеры&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker restart my-nginx&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Перезапустить контейнер&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Контейнеры&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker rm my-nginx&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Удалить контейнер&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Контейнеры&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker rm -f my-nginx&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Принудительно удалить контейнер&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Контейнеры&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker rm $(docker ps -a -q)&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Удалить все контейнеры&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Логи и отладка&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker logs my-nginx&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Показать логи&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Логи и отладка&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker logs -f my-nginx&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Смотреть логи в реальном времени&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Логи и отладка&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker logs -t my-nginx&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Логи с временными метками&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Логи и отладка&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker logs --tail 100 my-nginx&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Последние 100 строк логов&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Логи и отладка&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker exec -it my-nginx bash&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Войти в контейнер через Bash&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Логи и отладка&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker exec -it my-nginx sh&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Войти в контейнер через SH&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Логи и отладка&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker inspect my-nginx&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Полная информация о контейнере&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Логи и отладка&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker stats my-nginx&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Использование ресурсов&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Логи и отладка&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker cp nginx.conf my-nginx:/etc/nginx/nginx.conf&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Копировать файл в контейнер&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Логи и отладка&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker cp my-nginx:/var/log/nginx/access.log ./access.log&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Копировать файл из контейнера&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Образы&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker pull nginx:1.25&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Скачать образ&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Образы&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker images&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Список образов&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Образы&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker rmi nginx:1.25&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Удалить образ&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Образы&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker history nginx:1.25&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Посмотреть слои образа&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Образы&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker image prune -a&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Удалить неиспользуемые образы&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Сборка&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker build -t myapp:1.0 .&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Собрать образ&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Сборка&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker build --no-cache -t myapp:1.0 .&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Собрать без кэша&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Сборка&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker build --build-arg VERSION=2.0 -t myapp:2.0 .&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Передать ARG-переменную&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Docker Hub&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker login&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Авторизация&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Docker Hub&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker tag myapp:1.0 username/myapp:1.0&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Добавить тег&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Docker Hub&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker push username/myapp:1.0&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Загрузить образ&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Docker Hub&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker pull username/myapp:1.0&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Скачать образ&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Сети&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker network ls&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Список сетей&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Сети&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker network create my-network&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Создать сеть&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Сети&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker run -d --network my-network myapp&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Запустить контейнер в сети&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Сети&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker network connect my-network my-nginx&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Подключить контейнер к сети&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Тома&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker volume ls&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Список томов&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Тома&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker volume create pg-data&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Создать том&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Тома&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker run -d -v pg-data:/var/lib/postgresql/data postgres&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Запустить контейнер с томом&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Тома&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker volume prune&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Удалить неиспользуемые тома&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Очистка&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker system prune&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Базовая очистка&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Очистка&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;docker system prune -a --volumes&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Полная очистка Docker&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h3&gt;Политики перезапуска (&lt;code&gt;--restart&lt;/code&gt;)&lt;/h3&gt;\n&lt;p&gt;По умолчанию, если контейнер упал, он так и остаётся остановленным. Для продакшна это неприемлемо. Docker умеет перезапускать контейнеры автоматически через флаг &lt;code&gt;--restart&lt;/code&gt;:&lt;/p&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Политика&lt;/th&gt;\n&lt;th&gt;Поведение&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;no&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Не перезапускать никогда (по умолчанию)&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;always&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Перезапускать всегда, в том числе при старте демона Docker&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;unless-stopped&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Как &lt;code&gt;always&lt;/code&gt;, но не перезапускает, если контейнер был остановлен вручную через &lt;code&gt;docker stop&lt;/code&gt;&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;on-failure&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Перезапускать только если контейнер завершился с ненулевым кодом&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;docker run -d --restart unless-stopped nginx\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Для большинства сервисов на одиночном сервере оптимальный выбор может быть &lt;code&gt;unless-stopped&lt;/code&gt;: контейнер поднимется после перезагрузки сервера, но не будет назойливо рестартовать, если вы сами его остановили.&lt;/p&gt;\n&lt;h3&gt;Заключение и где искать практику и знания?&lt;/h3&gt;\n&lt;p&gt;Изучать Docker можно по-разному. Лично я рекомендую установить Docker на ваш компьютер и работать с ним через терминал. Если не знаете, что придумать, или нужно больше знаний — обращайтесь к документации Docker!&lt;/p&gt;\n&lt;ol&gt;\n&lt;li&gt;&lt;a href=\&quot;https://docs.docker.com/guides/\&quot;&gt;Практика под разные сценарии&lt;/a&gt;&lt;/li&gt;\n&lt;li&gt;&lt;a href=\&quot;https://docs.docker.com/\&quot;&gt;Документация Docker&lt;/a&gt;&lt;/li&gt;\n&lt;/ol&gt;\n&lt;p&gt;На этом базовое знакомство с Docker можно считать завершённым. В этой статье мы разобрали, зачем нужен Docker, какие проблемы он решает, как устроены контейнеры и образы, что такое Dockerfile, слои, кэширование, multi-stage builds, HEALTHCHECK и &lt;code&gt;.dockerignore&lt;/code&gt;, а также рассмотрели основные команды, политики перезапуска и передачу переменных окружения. В серии статей по Docker от opensophy мы также рассмотрим следующие темы:&lt;/p&gt;\n&quot;],&quot;typename&quot;:[0,&quot;Докер&quot;],&quot;categoryPath&quot;:[1,[[0,{&quot;slug&quot;:[0,&quot;docker&quot;],&quot;title&quot;:[0,&quot;Докер&quot;],&quot;icon&quot;:[0,&quot;container&quot;]}]]],&quot;navSlug&quot;:[0,&quot;article&quot;],&quot;navTitle&quot;:[0,&quot;Статьи opensophy&quot;],&quot;navIcon&quot;:[0,&quot;brain&quot;],&quot;author&quot;:[0,&quot;&quot;],&quot;date&quot;:[0,&quot;2026-06-17&quot;],&quot;updated&quot;:[0,&quot;&quot;],&quot;tags&quot;:[1,[[0,&quot;devops&quot;],[0,&quot;docker&quot;]]],&quot;lang&quot;:[0,&quot;ru&quot;],&quot;keywords&quot;:[0,&quot;Docker, контейнеры, Dockerfile, Docker образы, Docker команды, HEALTHCHECK, multi-stage builds, Docker Compose, Docker для начинающих&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;icon&quot;:[0,&quot;sticky-note&quot;],&quot;priority&quot;:[0,0],&quot;custom&quot;:[0,&quot;&quot;],&quot;frontmatter&quot;:[0,{&quot;title&quot;:[0,&quot;Docker Fundamentals: теория и базовая эксплуатация&quot;],&quot;description&quot;:[0,&quot;1 часть серии статей по Docker. Базовая теория по Docker для новичков и практиков — контейнеры, образы, Dockerfile, слои, HEALTHCHECK, multi-stage builds и шпаргалка по командам.&quot;],&quot;date&quot;:[0,&quot;2026-06-17&quot;],&quot;tags&quot;:[0,&quot;devops, docker&quot;],&quot;keywords&quot;:[0,&quot;Docker, контейнеры, Dockerfile, Docker образы, Docker команды, HEALTHCHECK, multi-stage builds, Docker Compose, Docker для начинающих&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;lang&quot;:[0,&quot;ru&quot;],&quot;priority&quot;:[0,&quot;0&quot;]}]}]}" ssr client="only" opts="{&quot;name&quot;:&quot;DocContent&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island>   <astro-island uid="Z1Ix9sf" component-url="/assets/DevPanelLoader.6ELCzLIu.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{}" ssr client="only" opts="{&quot;name&quot;:&quot;DevPanelLoader&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island> <!-- Re-apply theme after SPA navigation --> <script>
+      document.addEventListener('astro:after-swap', function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      });
+    </script> </body> </html>

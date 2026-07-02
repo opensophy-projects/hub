@@ -1,0 +1,4 @@
+import{r as l,j as e}from"./vendor-react.DgFKySyv.js";import m from"./variable-proximity.CPTt2F_0.js";const f=({label:r="Наведи курсор",fromFontVariationSettings:s="'wght' 400, 'wdth' 100",toFontVariationSettings:o="'wght' 900, 'wdth' 125",radius:i=100,falloff:n="linear",className:a=""})=>{const t=l.useRef(null);return e.jsxs(e.Fragment,{children:[e.jsx("style",{children:`
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,75..125,100..900&display=swap');
+        .vp-container { font-family: 'Roboto Flex', sans-serif; }
+      `}),e.jsx("div",{ref:t,className:"vp-container",style:{padding:"3rem 2rem",textAlign:"center",cursor:"crosshair",userSelect:"none"},children:e.jsx(m,{label:r,fromFontVariationSettings:s,toFontVariationSettings:o,containerRef:t,radius:i,falloff:n,style:{fontSize:"clamp(2rem, 5vw, 4rem)",lineHeight:1.2,fontFamily:"'Roboto Flex', sans-serif"},className:a})})]})};export{f as default};

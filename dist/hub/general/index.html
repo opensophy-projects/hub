@@ -1,0 +1,181 @@
+<!DOCTYPE html><html lang="ru"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- Theme: runs before paint, prevents flash --><script>
+      (function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.add('js');
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      })();
+    </script><!-- Primary SEO --><title>Hub — Opensophy</title><meta name="description" content="Обзор проекта Hub: что это за платформа, из каких частей она состоит и для каких задач подходит."><meta name="keywords" content="opensophy, кибербезопасность, DevSecOps, linux, разработка, инструменты, туториалы, open source, mTLS, SAST, DAST, SCA, zero trust, CI/CD"><meta name="author" content="Opensophy"><meta name="robots" content="index, follow"><meta name="theme-color" content="#0a0a0a"><meta name="color-scheme" content="dark light"><link rel="canonical" href="https://opensophy.com/hub/general/"><!-- Sitemap discovery --><link rel="sitemap" type="application/xml" href="/sitemap.xml"><!-- Open Graph --><meta property="og:site_name" content="Opensophy"><meta property="og:title" content="Hub — Opensophy"><meta property="og:description" content="Обзор проекта Hub: что это за платформа, из каких частей она состоит и для каких задач подходит."><meta property="og:type" content="article"><meta property="og:url" content="https://opensophy.com/hub/general/"><meta property="og:image" content="https://opensophy.com/assets/image.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ru_RU"><!-- Twitter / X --><meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@opensophy"><meta name="twitter:title" content="Hub — Opensophy"><meta name="twitter:description" content="Обзор проекта Hub: что это за платформа, из каких частей она состоит и для каких задач подходит."><meta name="twitter:image" content="https://opensophy.com/assets/image.png"><!-- Article-specific --><meta property="article:published_time" content="2026-06-03T00:00:00.000Z"><meta property="article:modified_time" content="2026-06-03T00:00:00.000Z"><meta property="article:author" content="Opensophy"><!-- Favicon --><link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/favicon.png"><!-- Astro SPA transitions --><meta name="astro-view-transitions-enabled" content="true"><meta name="astro-view-transitions-fallback" content="animate"><script type="module" src="/assets/ClientRouter.astro_astro_type_script_index_0_lang.CAqDO0tx.js"></script><!-- Structured Data JSON-LD --><script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Hub","description":"Обзор проекта Hub: что это за платформа, из каких частей она состоит и для каких задач подходит.","url":"https://opensophy.com/hub/general/","image":"https://opensophy.com/assets/image.png","author":{"@type":"Person","name":"Opensophy"},"publisher":{"@type":"Organization","name":"Opensophy","url":"https://opensophy.com"},"datePublished":"2026-06-03T00:00:00.000Z","dateModified":"2026-06-03T00:00:00.000Z","inLanguage":"ru"}</script><link rel="stylesheet" href="/assets/Layout.BzjEPNLe.css"></head> <body> <style>astro-island,astro-slot,astro-static-slot{display:contents}</style><script>(()=>{var e=async t=>{await(await t())()};(self.Astro||(self.Astro={})).only=e;window.dispatchEvent(new Event("astro:only"));})();</script><script>(()=>{var g=Object.defineProperty;var w=(c,s,d)=>s in c?g(c,s,{enumerable:!0,configurable:!0,writable:!0,value:d}):c[s]=d;var l=(c,s,d)=>w(c,typeof s!="symbol"?s+"":s,d);var E=new Set(["__proto__","constructor","prototype"]);{let c={0:t=>y(t),1:t=>d(t),2:t=>new RegExp(t),3:t=>new Date(t),4:t=>new Map(d(t)),5:t=>new Set(d(t)),6:t=>BigInt(t),7:t=>new URL(t),8:t=>new Uint8Array(t),9:t=>new Uint16Array(t),10:t=>new Uint32Array(t),11:t=>Number.POSITIVE_INFINITY*t},s=t=>{let[p,e]=t;return p in c?c[p](e):void 0},d=t=>t.map(s),y=t=>typeof t!="object"||t===null?t:Object.fromEntries(Object.entries(t).map(([p,e])=>[p,s(e)]));class f extends HTMLElement{constructor(){super(...arguments);l(this,"Component");l(this,"hydrator");l(this,"hydrate",async()=>{var b;if(!this.hydrator||!this.isConnected)return;let e=(b=this.parentElement)==null?void 0:b.closest("astro-island[ssr]");if(e){e.addEventListener("astro:hydrate",this.hydrate,{once:!0});return}let n=this.querySelectorAll("astro-slot"),r={},i=this.querySelectorAll("template[data-astro-template]");for(let o of i){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("data-astro-template")||"default"]=o.innerHTML,o.remove())}for(let o of n){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("name")||"default"]=o.innerHTML)}let u;try{u=this.hasAttribute("props")?y(JSON.parse(this.getAttribute("props"))):{}}catch(o){let a=this.getAttribute("component-url")||"<unknown>",v=this.getAttribute("component-export");throw v&&(a+=` (export ${v})`),console.error(`[hydrate] Error parsing props for component ${a}`,this.getAttribute("props"),o),o}let h;await this.hydrator(this)(this.Component,u,r,{client:this.getAttribute("client")}),this.removeAttribute("ssr"),this.dispatchEvent(new CustomEvent("astro:hydrate"))});l(this,"unmount",()=>{this.isConnected||this.dispatchEvent(new CustomEvent("astro:unmount"))})}disconnectedCallback(){document.removeEventListener("astro:after-swap",this.unmount),document.addEventListener("astro:after-swap",this.unmount,{once:!0})}connectedCallback(){if(!this.hasAttribute("await-children")||document.readyState==="interactive"||document.readyState==="complete")this.childrenConnectedCallback();else{let e=()=>{document.removeEventListener("DOMContentLoaded",e),n.disconnect(),this.childrenConnectedCallback()},n=new MutationObserver(()=>{var r;((r=this.lastChild)==null?void 0:r.nodeType)===Node.COMMENT_NODE&&this.lastChild.nodeValue==="astro:end"&&(this.lastChild.remove(),e())});n.observe(this,{childList:!0}),document.addEventListener("DOMContentLoaded",e)}}async childrenConnectedCallback(){let e=this.getAttribute("before-hydration-url");e&&await import(e),this.start()}getRetryImportUrl(e){let n=new URL(e,document.baseURI),r=`astro-retry=${Date.now()}`,i=n.hash.replace(/^#/,"");return n.hash=i?`${i}&${r}`:r,n.toString()}async importWithRetry(e){try{return await import(e)}catch(n){return await new Promise(r=>setTimeout(r,1e3)),import(this.getRetryImportUrl(e))}}handleHydrationError(e){let n=this.getAttribute("component-url"),r=new CustomEvent("astro:hydration-error",{cancelable:!0,bubbles:!0,composed:!0,detail:{error:e,componentUrl:n}});this.dispatchEvent(r)&&console.error(`[astro-island] Error hydrating ${n}`,e)}async start(){let e=JSON.parse(this.getAttribute("opts")),n=this.getAttribute("client");if(Astro[n]===void 0){window.addEventListener(`astro:${n}`,()=>this.start(),{once:!0});return}try{await Astro[n](async()=>{let r=this.getAttribute("renderer-url");try{let[i,{default:u}]=await Promise.all([this.importWithRetry(this.getAttribute("component-url")),r?this.importWithRetry(r):Promise.resolve({default:()=>()=>{}})]),h=this.getAttribute("component-export")||"default";if(h.includes(".")){this.Component=i;for(let m of h.split(".")){if(E.has(m)||!this.Component||typeof this.Component!="object"&&typeof this.Component!="function"||!Object.hasOwn(this.Component,m))throw new Error(`Invalid component export path: ${h}`);this.Component=this.Component[m]}}else{if(E.has(h))throw new Error(`Invalid component export path: ${h}`);this.Component=i[h]}return this.hydrator=u,this.hydrate}catch(i){return this.handleHydrationError(i),()=>{}}},e,this)}catch(r){this.handleHydrationError(r)}}attributeChangedCallback(){this.hydrate()}}l(f,"observedAttributes",["props"]),customElements.get("astro-island")||customElements.define("astro-island",f)}})();</script>   <noscript> <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;"> <article><h1>Hub</h1>
+<p><strong>Hub</strong> — гибридная open-source платформа Opensophy для документации, публикации контента и демонстрации UI-компонентов. Проект объединяет статический сайт на Astro, расширенный Markdown-движок, навигацию на основе файловой структуры, поиск, интерактивные таблицы и библиотеку React-компонентов с живыми примерами — без отдельной CMS.</p>
+<p><a href="https://opensophy.com/docs/markdown-guide/">Демонстрация форматирования</a> — <a href="https://github.com/opensophy-projects/hub">GitHub репозиторий</a></p>
+<hr>
+<h2>Возможности платформы</h2>
+<div class="custom-cardgrid" data-cols="3"><div class="custom-card" data-color="" data-title="Мощь Таблиц" data-icon="table-2" data-image=""><p>Сортировка, мультиселект фильтры, поиск с подсветкой совпадений, скрытие колонок, fullscreen-режим, drag-to-scroll и HTML-контент в ячейках — всё из Markdown.</p>
+</div><div class="custom-card" data-color="" data-title="Богатые Markdown Блоки" data-icon="layout-template" data-image=""><p>Карточки, колонки, степпер, диаграммы, алерты и многое другое в чистом Markdown — без MDX и плагинов. Работает из коробки.</p>
+</div><div class="custom-card" data-color="" data-title="Live UI Components" data-icon="play" data-image=""><p>Интерактивный playground прямо в документации. Настраивайте scale, rotation, blur, gradient и скорость анимации для любого компонента в реальном времени.</p>
+</div><div class="custom-card" data-color="" data-title="Opensophy Style" data-icon="palette" data-image=""><p>Лаконичный и современный дизайн с поддержкой тёмной и светлой темы, плавными переходами и mobile-first навигацией через bottom bar.</p>
+</div><div class="custom-card" data-color="" data-title="Структура = Папки" data-icon="folder-tree" data-image=""><p>Папки в <code>Docs/</code> — это и есть навигация на сайте. Никакой настройки роутинга: сайдбар и breadcrumbs генерируются автоматически.</p>
+</div><div class="custom-card" data-color="" data-title="Ленивое заполнение" data-icon="feather" data-image=""><p>Сложные Markdown-блоки пишутся в разы короче. Изображения, алерты и компоненты — без лишнего кода.</p>
+</div></div>
+
+<hr>
+<h2>Для чего нужен Hub</h2>
+<ul>
+<li><strong>вести документацию проекта</strong> — архитектура, инструкции, гайды, справочники, changelog-страницы;</li>
+<li><strong>публиковать образовательные материалы</strong> — статьи по разработке, Linux, безопасности, DevSecOps и инструментам;</li>
+<li><strong>поддерживать UI-библиотеку</strong> — хранить компоненты, конфиги, демо и описание использования;</li>
+<li><strong>создавать сайт без CMS</strong> — всё управляется файлами, Git и сборочными скриптами;</li>
+<li><strong>объединять лендинг и документацию</strong> — главная страница может быть визуальным React-лендингом или обычным <code>welcome.md</code>;</li>
+<li><strong>ускорять работу с таблицами и кодом</strong> — таблицы получают фильтры, сортировку, поиск, полноэкранный режим и копирование.</li>
+</ul>
+<hr>
+<h2>Архитектура</h2>
+<p>Hub построен как Astro-приложение с React-островами. Astro отвечает за маршруты, сборку и статическую генерацию, React — за интерактивные части: навигацию, темы, документацию, таблицы, лендинг, панель администратора и UI-превью.</p>
+<table>
+<thead>
+<tr>
+<th>Слой</th>
+<th>Где находится</th>
+<th>За что отвечает</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Приложение</td>
+<td><code>src/app/</code></td>
+<td>Astro layout, главная страница, 404 и динамический маршрут документации.</td>
+</tr>
+<tr>
+<td>Документы</td>
+<td><code>Docs/</code></td>
+<td>Markdown-контент, структура разделов, категории и статьи.</td>
+</tr>
+<tr>
+<td>Генерация</td>
+<td><code>scripts/</code></td>
+<td>Сканирование Docs, сборка manifest, sitemap и подготовка данных для сайта.</td>
+</tr>
+<tr>
+<td>Документация</td>
+<td><code>src/features/docs/</code></td>
+<td>Отображение статьи, hero, оглавление, прогресс скролла и Ask AI-кнопка.</td>
+</tr>
+<tr>
+<td>Навигация</td>
+<td><code>src/features/navigation/</code></td>
+<td>Сайдбар, разделы, поиск, мобильная навигация и панель оглавления.</td>
+</tr>
+<tr>
+<td>UI-компоненты</td>
+<td><code>src/features/ui-components/</code></td>
+<td>Registry, loader, конфиги, компоненты и интерактивный viewer.</td>
+</tr>
+<tr>
+<td>Таблицы</td>
+<td><code>src/features/table/</code></td>
+<td>Фильтрация, сортировка, скрытие колонок, поиск, копирование и fullscreen.</td>
+</tr>
+<tr>
+<td>Общие элементы</td>
+<td><code>src/shared/</code></td>
+<td>Компоненты, контексты темы, стили, токены и вспомогательные библиотеки.</td>
+</tr>
+<tr>
+<td>Публичные данные</td>
+<td><code>public/data/</code></td>
+<td>Конфиг сайта и сгенерированный manifest документации.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Основная идея</h2>
+<p>Контент пишется как обычные <code>.md</code> файлы, но Hub добавляет несколько уровней поверх Markdown:</p>
+<ol>
+<li><strong>Frontmatter</strong> — метаданные страницы: title, description, date, author, tags, icon, lang и robots.</li>
+<li><strong>Система имён файлов</strong> — папки и файлы вида <code>[N]</code>, <code>[C]</code>, <code>[A]</code> задают разделы, категории, иконки и URL.</li>
+<li><strong>Генерация manifest.json</strong> — скрипт собирает все документы в единый индекс для навигации и поиска.</li>
+<li><strong>React-рендеринг документа</strong> — страница отображается через <code>DocContent</code> с темой, hero-блоком, оглавлением и расширениями.</li>
+<li><strong>Расширенный Markdown</strong> — карточки, колонки, шаги, алерты, детали, KaTeX, изображения и интерактивные таблицы.</li>
+</ol>
+<h3>Как работает документация</h3>
+<div class="custom-steps"><div class="custom-step" data-status="done" data-title="Автор создаёт файл" data-color=""><p>Файл размещается в <code>Docs/</code> и получает имя по схеме <code>[A][icon]Название{slug}.md</code>.</p>
+</div><div class="custom-step" data-status="done" data-title="Скрипт сканирует документы" data-color=""><p><code>npm run generate</code> запускает генерацию manifest и sitemap на основе файловой структуры и frontmatter.</p>
+</div><div class="custom-step" data-status="done" data-title="Hub строит маршрут" data-color=""><p>Динамический маршрут <code>src/app/pages/[...slug].astro</code> находит документ по slug и передаёт его в React-компонент документации.</p>
+</div><div class="custom-step" data-status="done" data-title="Пользователь читает страницу" data-color=""><p><code>DocContent</code> показывает hero, дату, автора, время чтения, оглавление, теги, Markdown-расширения и интерактивные блоки.</p>
+</div></div>
+
+<h3>Навигация и структура URL</h3>
+<p>Файловая структура напрямую определяет навигацию и URL:</p>
+<pre><code class="language-text">Docs/
+└── [N][book]Документация Hub{hub}/
+    ├── [A][boxes]Hub{general}.md
+    ├── [A][album]Полное руководство по форматированию Markdown в Hub{markdown-guide}.md
+    └── [A][layout-grid]Руководство по добавлению новых UI компонентов{component-guide}.md
+</code></pre>
+<ul>
+<li><code>[N]</code> создаёт верхнеуровневый раздел в навигации;</li>
+<li><code>[book]</code> задаёт иконку раздела;</li>
+<li><code>Документация Hub</code> — человекочитаемое название;</li>
+<li><code>{hub}</code> — URL-префикс раздела;</li>
+<li><code>[A]</code> обозначает статью;</li>
+<li><code>{general}</code> задаёт итоговый slug страницы: <code>/hub/general/</code>.</li>
+</ul>
+<hr>
+<h2>Главная страница</h2>
+<div class="custom-columns" data-layout="equal"><div class="custom-col"><h3>Лендинг</h3>
+<p>Когда <code>useLanding: true</code>, главная страница показывает React-лендинг Opensophy: hero-секцию, WebGL-визуал, блок о проекте, карточки направлений и экосистему Opensophy.</p>
+</div><div class="custom-col"><h3>welcome.md</h3>
+<p>Когда <code>useLanding: false</code>, главная страница рендерит <code>Docs/welcome.md</code> как обычную Markdown-страницу со всеми расширениями Hub.</p>
+</div></div>
+
+<p>Переключение хранится в <code>public/data/site-config.json</code>.</p>
+<hr>
+<h2>UI-библиотека</h2>
+<p>В V3.5 компонент добавляется как папка внутри категории <code>backgrounds</code>, <code>texts</code> или другой поддерживаемой категории. Registry автоматически ищет React-компоненты через <code>import.meta.glob</code>, выбирает <code>index</code>, preview-файл или основной файл компонента и подгружает исходники для вкладки «Код».</p>
+<pre><code class="language-text">src/features/ui-components/
+└── texts/
+    └── my-component/
+        ├── my-component.tsx
+        └── my-component-preview.tsx
+</code></pre>
+<p>Связь с документацией строится по slug: документ <code>{my-component}.md</code> открывает viewer для папки <code>my-component</code>. Подробности — в руководстве по UI библиотеке.</p>
+<hr>
+<h2>Технологический стек</h2>
+<ul>
+<li><strong>Astro</strong> — маршруты, layout, статическая генерация и островная архитектура;</li>
+<li><strong>React</strong> — интерактивные компоненты и сложные интерфейсные состояния;</li>
+<li><strong>TypeScript</strong> — типизация компонентов, конфигов и внутренних API;</li>
+<li><strong>Framer Motion / GSAP / Three / OGL</strong> — анимации и визуальные эффекты;</li>
+<li><strong>Marked и KaTeX</strong> — обработка Markdown и формул;</li>
+<li><strong>Lucide React</strong> — иконки для интерфейса и навигации;</li>
+<li><strong>Recharts</strong> — графики внутри контентных блоков;</li>
+<li><strong>Tailwind CSS и design tokens</strong> — базовые стили и консистентная тема.</li>
+</ul>
+<hr>
+<h2>Быстрый старт</h2>
+<pre><code class="language-bash">npm install
+npm run generate
+npm run dev
+</code></pre>
+<p>После запуска:</p>
+<ol>
+<li>Добавьте новую статью в <code>Docs/</code>.</li>
+<li>Заполните frontmatter, включая SEO-поля.</li>
+<li>Выберите иконку и стабильный slug в имени файла.</li>
+<li>Запустите <code>npm run generate</code>.</li>
+<li>Откройте страницу в браузере.</li>
+</ol>
+<p>Для деплоя используйте production build <code>npm run build</code>; отдельные инструкции для GitHub Pages, Vercel, Bolt.new и статического хостинга вынесены в Quickstart.</p>
+<hr>
+<h2>Создай свой Hub</h2>
+<p>Проект полностью open-source — берите, адаптируйте, публикуйте свой контент.</p>
+<p>Перед использованием ознакомьтесь с README и лицензией: <a href="https://github.com/opensophy-projects/hub">github.com/opensophy-projects/hub</a></p>
+</article> </main> </noscript> <astro-island uid="1IIIsQ" component-url="/assets/DocContent.CoKfap2Q.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{&quot;doc&quot;:[0,{&quot;id&quot;:[0,&quot;hub/general&quot;],&quot;title&quot;:[0,&quot;Hub&quot;],&quot;slug&quot;:[0,&quot;hub/general&quot;],&quot;description&quot;:[0,&quot;Обзор проекта Hub: что это за платформа, из каких частей она состоит и для каких задач подходит.&quot;],&quot;content&quot;:[0,&quot;&lt;h1&gt;Hub&lt;/h1&gt;\n&lt;p&gt;&lt;strong&gt;Hub&lt;/strong&gt; — гибридная open-source платформа Opensophy для документации, публикации контента и демонстрации UI-компонентов. Проект объединяет статический сайт на Astro, расширенный Markdown-движок, навигацию на основе файловой структуры, поиск, интерактивные таблицы и библиотеку React-компонентов с живыми примерами — без отдельной CMS.&lt;/p&gt;\n&lt;p&gt;&lt;a href=\&quot;https://opensophy.com/docs/markdown-guide/\&quot;&gt;Демонстрация форматирования&lt;/a&gt; — &lt;a href=\&quot;https://github.com/opensophy-projects/hub\&quot;&gt;GitHub репозиторий&lt;/a&gt;&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;Возможности платформы&lt;/h2&gt;\n&lt;div class=\&quot;custom-cardgrid\&quot; data-cols=\&quot;3\&quot;&gt;&lt;div class=\&quot;custom-card\&quot; data-color=\&quot;\&quot; data-title=\&quot;Мощь Таблиц\&quot; data-icon=\&quot;table-2\&quot; data-image=\&quot;\&quot;&gt;&lt;p&gt;Сортировка, мультиселект фильтры, поиск с подсветкой совпадений, скрытие колонок, fullscreen-режим, drag-to-scroll и HTML-контент в ячейках — всё из Markdown.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-card\&quot; data-color=\&quot;\&quot; data-title=\&quot;Богатые Markdown Блоки\&quot; data-icon=\&quot;layout-template\&quot; data-image=\&quot;\&quot;&gt;&lt;p&gt;Карточки, колонки, степпер, диаграммы, алерты и многое другое в чистом Markdown — без MDX и плагинов. Работает из коробки.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-card\&quot; data-color=\&quot;\&quot; data-title=\&quot;Live UI Components\&quot; data-icon=\&quot;play\&quot; data-image=\&quot;\&quot;&gt;&lt;p&gt;Интерактивный playground прямо в документации. Настраивайте scale, rotation, blur, gradient и скорость анимации для любого компонента в реальном времени.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-card\&quot; data-color=\&quot;\&quot; data-title=\&quot;Opensophy Style\&quot; data-icon=\&quot;palette\&quot; data-image=\&quot;\&quot;&gt;&lt;p&gt;Лаконичный и современный дизайн с поддержкой тёмной и светлой темы, плавными переходами и mobile-first навигацией через bottom bar.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-card\&quot; data-color=\&quot;\&quot; data-title=\&quot;Структура = Папки\&quot; data-icon=\&quot;folder-tree\&quot; data-image=\&quot;\&quot;&gt;&lt;p&gt;Папки в &lt;code&gt;Docs/&lt;/code&gt; — это и есть навигация на сайте. Никакой настройки роутинга: сайдбар и breadcrumbs генерируются автоматически.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-card\&quot; data-color=\&quot;\&quot; data-title=\&quot;Ленивое заполнение\&quot; data-icon=\&quot;feather\&quot; data-image=\&quot;\&quot;&gt;&lt;p&gt;Сложные Markdown-блоки пишутся в разы короче. Изображения, алерты и компоненты — без лишнего кода.&lt;/p&gt;\n&lt;/div&gt;&lt;/div&gt;\n\n&lt;hr&gt;\n&lt;h2&gt;Для чего нужен Hub&lt;/h2&gt;\n&lt;ul&gt;\n&lt;li&gt;&lt;strong&gt;вести документацию проекта&lt;/strong&gt; — архитектура, инструкции, гайды, справочники, changelog-страницы;&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;публиковать образовательные материалы&lt;/strong&gt; — статьи по разработке, Linux, безопасности, DevSecOps и инструментам;&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;поддерживать UI-библиотеку&lt;/strong&gt; — хранить компоненты, конфиги, демо и описание использования;&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;создавать сайт без CMS&lt;/strong&gt; — всё управляется файлами, Git и сборочными скриптами;&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;объединять лендинг и документацию&lt;/strong&gt; — главная страница может быть визуальным React-лендингом или обычным &lt;code&gt;welcome.md&lt;/code&gt;;&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;ускорять работу с таблицами и кодом&lt;/strong&gt; — таблицы получают фильтры, сортировку, поиск, полноэкранный режим и копирование.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;hr&gt;\n&lt;h2&gt;Архитектура&lt;/h2&gt;\n&lt;p&gt;Hub построен как Astro-приложение с React-островами. Astro отвечает за маршруты, сборку и статическую генерацию, React — за интерактивные части: навигацию, темы, документацию, таблицы, лендинг, панель администратора и UI-превью.&lt;/p&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Слой&lt;/th&gt;\n&lt;th&gt;Где находится&lt;/th&gt;\n&lt;th&gt;За что отвечает&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;Приложение&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;src/app/&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Astro layout, главная страница, 404 и динамический маршрут документации.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Документы&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;Docs/&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Markdown-контент, структура разделов, категории и статьи.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Генерация&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;scripts/&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Сканирование Docs, сборка manifest, sitemap и подготовка данных для сайта.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Документация&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;src/features/docs/&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Отображение статьи, hero, оглавление, прогресс скролла и Ask AI-кнопка.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Навигация&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;src/features/navigation/&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Сайдбар, разделы, поиск, мобильная навигация и панель оглавления.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;UI-компоненты&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;src/features/ui-components/&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Registry, loader, конфиги, компоненты и интерактивный viewer.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Таблицы&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;src/features/table/&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Фильтрация, сортировка, скрытие колонок, поиск, копирование и fullscreen.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Общие элементы&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;src/shared/&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Компоненты, контексты темы, стили, токены и вспомогательные библиотеки.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Публичные данные&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;public/data/&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Конфиг сайта и сгенерированный manifest документации.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;hr&gt;\n&lt;h2&gt;Основная идея&lt;/h2&gt;\n&lt;p&gt;Контент пишется как обычные &lt;code&gt;.md&lt;/code&gt; файлы, но Hub добавляет несколько уровней поверх Markdown:&lt;/p&gt;\n&lt;ol&gt;\n&lt;li&gt;&lt;strong&gt;Frontmatter&lt;/strong&gt; — метаданные страницы: title, description, date, author, tags, icon, lang и robots.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Система имён файлов&lt;/strong&gt; — папки и файлы вида &lt;code&gt;[N]&lt;/code&gt;, &lt;code&gt;[C]&lt;/code&gt;, &lt;code&gt;[A]&lt;/code&gt; задают разделы, категории, иконки и URL.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Генерация manifest.json&lt;/strong&gt; — скрипт собирает все документы в единый индекс для навигации и поиска.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;React-рендеринг документа&lt;/strong&gt; — страница отображается через &lt;code&gt;DocContent&lt;/code&gt; с темой, hero-блоком, оглавлением и расширениями.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Расширенный Markdown&lt;/strong&gt; — карточки, колонки, шаги, алерты, детали, KaTeX, изображения и интерактивные таблицы.&lt;/li&gt;\n&lt;/ol&gt;\n&lt;h3&gt;Как работает документация&lt;/h3&gt;\n&lt;div class=\&quot;custom-steps\&quot;&gt;&lt;div class=\&quot;custom-step\&quot; data-status=\&quot;done\&quot; data-title=\&quot;Автор создаёт файл\&quot; data-color=\&quot;\&quot;&gt;&lt;p&gt;Файл размещается в &lt;code&gt;Docs/&lt;/code&gt; и получает имя по схеме &lt;code&gt;[A][icon]Название{slug}.md&lt;/code&gt;.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-step\&quot; data-status=\&quot;done\&quot; data-title=\&quot;Скрипт сканирует документы\&quot; data-color=\&quot;\&quot;&gt;&lt;p&gt;&lt;code&gt;npm run generate&lt;/code&gt; запускает генерацию manifest и sitemap на основе файловой структуры и frontmatter.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-step\&quot; data-status=\&quot;done\&quot; data-title=\&quot;Hub строит маршрут\&quot; data-color=\&quot;\&quot;&gt;&lt;p&gt;Динамический маршрут &lt;code&gt;src/app/pages/[...slug].astro&lt;/code&gt; находит документ по slug и передаёт его в React-компонент документации.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-step\&quot; data-status=\&quot;done\&quot; data-title=\&quot;Пользователь читает страницу\&quot; data-color=\&quot;\&quot;&gt;&lt;p&gt;&lt;code&gt;DocContent&lt;/code&gt; показывает hero, дату, автора, время чтения, оглавление, теги, Markdown-расширения и интерактивные блоки.&lt;/p&gt;\n&lt;/div&gt;&lt;/div&gt;\n\n&lt;h3&gt;Навигация и структура URL&lt;/h3&gt;\n&lt;p&gt;Файловая структура напрямую определяет навигацию и URL:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-text\&quot;&gt;Docs/\n└── [N][book]Документация Hub{hub}/\n    ├── [A][boxes]Hub{general}.md\n    ├── [A][album]Полное руководство по форматированию Markdown в Hub{markdown-guide}.md\n    └── [A][layout-grid]Руководство по добавлению новых UI компонентов{component-guide}.md\n&lt;/code&gt;&lt;/pre&gt;\n&lt;ul&gt;\n&lt;li&gt;&lt;code&gt;[N]&lt;/code&gt; создаёт верхнеуровневый раздел в навигации;&lt;/li&gt;\n&lt;li&gt;&lt;code&gt;[book]&lt;/code&gt; задаёт иконку раздела;&lt;/li&gt;\n&lt;li&gt;&lt;code&gt;Документация Hub&lt;/code&gt; — человекочитаемое название;&lt;/li&gt;\n&lt;li&gt;&lt;code&gt;{hub}&lt;/code&gt; — URL-префикс раздела;&lt;/li&gt;\n&lt;li&gt;&lt;code&gt;[A]&lt;/code&gt; обозначает статью;&lt;/li&gt;\n&lt;li&gt;&lt;code&gt;{general}&lt;/code&gt; задаёт итоговый slug страницы: &lt;code&gt;/hub/general/&lt;/code&gt;.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;hr&gt;\n&lt;h2&gt;Главная страница&lt;/h2&gt;\n&lt;div class=\&quot;custom-columns\&quot; data-layout=\&quot;equal\&quot;&gt;&lt;div class=\&quot;custom-col\&quot;&gt;&lt;h3&gt;Лендинг&lt;/h3&gt;\n&lt;p&gt;Когда &lt;code&gt;useLanding: true&lt;/code&gt;, главная страница показывает React-лендинг Opensophy: hero-секцию, WebGL-визуал, блок о проекте, карточки направлений и экосистему Opensophy.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-col\&quot;&gt;&lt;h3&gt;welcome.md&lt;/h3&gt;\n&lt;p&gt;Когда &lt;code&gt;useLanding: false&lt;/code&gt;, главная страница рендерит &lt;code&gt;Docs/welcome.md&lt;/code&gt; как обычную Markdown-страницу со всеми расширениями Hub.&lt;/p&gt;\n&lt;/div&gt;&lt;/div&gt;\n\n&lt;p&gt;Переключение хранится в &lt;code&gt;public/data/site-config.json&lt;/code&gt;.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;UI-библиотека&lt;/h2&gt;\n&lt;p&gt;В V3.5 компонент добавляется как папка внутри категории &lt;code&gt;backgrounds&lt;/code&gt;, &lt;code&gt;texts&lt;/code&gt; или другой поддерживаемой категории. Registry автоматически ищет React-компоненты через &lt;code&gt;import.meta.glob&lt;/code&gt;, выбирает &lt;code&gt;index&lt;/code&gt;, preview-файл или основной файл компонента и подгружает исходники для вкладки «Код».&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-text\&quot;&gt;src/features/ui-components/\n└── texts/\n    └── my-component/\n        ├── my-component.tsx\n        └── my-component-preview.tsx\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Связь с документацией строится по slug: документ &lt;code&gt;{my-component}.md&lt;/code&gt; открывает viewer для папки &lt;code&gt;my-component&lt;/code&gt;. Подробности — в руководстве по UI библиотеке.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;Технологический стек&lt;/h2&gt;\n&lt;ul&gt;\n&lt;li&gt;&lt;strong&gt;Astro&lt;/strong&gt; — маршруты, layout, статическая генерация и островная архитектура;&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;React&lt;/strong&gt; — интерактивные компоненты и сложные интерфейсные состояния;&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;TypeScript&lt;/strong&gt; — типизация компонентов, конфигов и внутренних API;&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Framer Motion / GSAP / Three / OGL&lt;/strong&gt; — анимации и визуальные эффекты;&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Marked и KaTeX&lt;/strong&gt; — обработка Markdown и формул;&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Lucide React&lt;/strong&gt; — иконки для интерфейса и навигации;&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Recharts&lt;/strong&gt; — графики внутри контентных блоков;&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Tailwind CSS и design tokens&lt;/strong&gt; — базовые стили и консистентная тема.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;hr&gt;\n&lt;h2&gt;Быстрый старт&lt;/h2&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-bash\&quot;&gt;npm install\nnpm run generate\nnpm run dev\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;После запуска:&lt;/p&gt;\n&lt;ol&gt;\n&lt;li&gt;Добавьте новую статью в &lt;code&gt;Docs/&lt;/code&gt;.&lt;/li&gt;\n&lt;li&gt;Заполните frontmatter, включая SEO-поля.&lt;/li&gt;\n&lt;li&gt;Выберите иконку и стабильный slug в имени файла.&lt;/li&gt;\n&lt;li&gt;Запустите &lt;code&gt;npm run generate&lt;/code&gt;.&lt;/li&gt;\n&lt;li&gt;Откройте страницу в браузере.&lt;/li&gt;\n&lt;/ol&gt;\n&lt;p&gt;Для деплоя используйте production build &lt;code&gt;npm run build&lt;/code&gt;; отдельные инструкции для GitHub Pages, Vercel, Bolt.new и статического хостинга вынесены в Quickstart.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;Создай свой Hub&lt;/h2&gt;\n&lt;p&gt;Проект полностью open-source — берите, адаптируйте, публикуйте свой контент.&lt;/p&gt;\n&lt;p&gt;Перед использованием ознакомьтесь с README и лицензией: &lt;a href=\&quot;https://github.com/opensophy-projects/hub\&quot;&gt;github.com/opensophy-projects/hub&lt;/a&gt;&lt;/p&gt;\n&quot;],&quot;typename&quot;:[0,&quot;&quot;],&quot;categoryPath&quot;:[1,[]],&quot;navSlug&quot;:[0,&quot;hub&quot;],&quot;navTitle&quot;:[0,&quot;Документация Hub&quot;],&quot;navIcon&quot;:[0,&quot;book-open&quot;],&quot;author&quot;:[0,&quot;&quot;],&quot;date&quot;:[0,&quot;2026-06-03&quot;],&quot;updated&quot;:[0,&quot;2026-06-16&quot;],&quot;tags&quot;:[1,[[0,&quot;hub&quot;],[0,&quot;opensophy&quot;],[0,&quot;документация&quot;],[0,&quot;платформа&quot;],[0,&quot;markdown&quot;],[0,&quot;ui&quot;],[0,&quot;astro&quot;],[0,&quot;react&quot;]]],&quot;lang&quot;:[0,&quot;ru&quot;],&quot;keywords&quot;:[0,&quot;&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;icon&quot;:[0,&quot;boxes&quot;],&quot;priority&quot;:[0,0],&quot;custom&quot;:[0,&quot;&quot;],&quot;frontmatter&quot;:[0,{&quot;title&quot;:[0,&quot;Hub&quot;],&quot;description&quot;:[0,&quot;Обзор проекта Hub: что это за платформа, из каких частей она состоит и для каких задач подходит.&quot;],&quot;date&quot;:[0,&quot;2026-06-03&quot;],&quot;updated&quot;:[0,&quot;2026-06-16&quot;],&quot;tags&quot;:[0,&quot;hub, opensophy, документация, платформа, markdown, ui, astro, react&quot;],&quot;icon&quot;:[0,&quot;boxes&quot;],&quot;lang&quot;:[0,&quot;ru&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;priority&quot;:[0,&quot;0&quot;]}]}]}" ssr client="only" opts="{&quot;name&quot;:&quot;DocContent&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island>   <astro-island uid="Z1Ix9sf" component-url="/assets/DevPanelLoader.6ELCzLIu.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{}" ssr client="only" opts="{&quot;name&quot;:&quot;DevPanelLoader&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island> <!-- Re-apply theme after SPA navigation --> <script>
+      document.addEventListener('astro:after-swap', function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      });
+    </script> </body> </html>

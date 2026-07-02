@@ -1,0 +1,311 @@
+<!DOCTYPE html><html lang="ru"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- Theme: runs before paint, prevents flash --><script>
+      (function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.add('js');
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      })();
+    </script><!-- Primary SEO --><title>Полное руководство по Frontmatter и системе наименований в Hub V3.5 — Opensophy</title><meta name="description" content="Актуальный справочник V3.5 по frontmatter, slug-системе [N]/[C]/[A], категориям, custom-страницам, SEO-полям, приоритетам и генерации manifest/sitemap."><meta name="keywords" content="Hub frontmatter, Opensophy Hub, markdown документация, SEO поля, custom pages, sitemap, manifest"><meta name="author" content="Opensophy"><meta name="robots" content="index, follow"><meta name="theme-color" content="#0a0a0a"><meta name="color-scheme" content="dark light"><link rel="canonical" href="https://opensophy.com/hub/frontmatter-guide/"><!-- Sitemap discovery --><link rel="sitemap" type="application/xml" href="/sitemap.xml"><!-- Open Graph --><meta property="og:site_name" content="Opensophy"><meta property="og:title" content="Полное руководство по Frontmatter и системе наименований в Hub V3.5 — Opensophy"><meta property="og:description" content="Актуальный справочник V3.5 по frontmatter, slug-системе [N]/[C]/[A], категориям, custom-страницам, SEO-полям, приоритетам и генерации manifest/sitemap."><meta property="og:type" content="article"><meta property="og:url" content="https://opensophy.com/hub/frontmatter-guide/"><meta property="og:image" content="https://opensophy.com/assets/image.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="ru_RU"><!-- Twitter / X --><meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@opensophy"><meta name="twitter:title" content="Полное руководство по Frontmatter и системе наименований в Hub V3.5 — Opensophy"><meta name="twitter:description" content="Актуальный справочник V3.5 по frontmatter, slug-системе [N]/[C]/[A], категориям, custom-страницам, SEO-полям, приоритетам и генерации manifest/sitemap."><meta name="twitter:image" content="https://opensophy.com/assets/image.png"><!-- Article-specific --><meta property="article:published_time" content="2026-03-07T00:00:00.000Z"><meta property="article:modified_time" content="2026-03-07T00:00:00.000Z"><meta property="article:author" content="Opensophy"><!-- Favicon --><link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/favicon.png"><!-- Astro SPA transitions --><meta name="astro-view-transitions-enabled" content="true"><meta name="astro-view-transitions-fallback" content="animate"><script type="module" src="/assets/ClientRouter.astro_astro_type_script_index_0_lang.CAqDO0tx.js"></script><!-- Structured Data JSON-LD --><script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Полное руководство по Frontmatter и системе наименований в Hub V3.5","description":"Актуальный справочник V3.5 по frontmatter, slug-системе [N]/[C]/[A], категориям, custom-страницам, SEO-полям, приоритетам и генерации manifest/sitemap.","url":"https://opensophy.com/hub/frontmatter-guide/","image":"https://opensophy.com/assets/image.png","author":{"@type":"Person","name":"Opensophy"},"publisher":{"@type":"Organization","name":"Opensophy","url":"https://opensophy.com"},"datePublished":"2026-03-07T00:00:00.000Z","dateModified":"2026-03-07T00:00:00.000Z","inLanguage":"ru"}</script><link rel="stylesheet" href="/assets/Layout.BzjEPNLe.css"></head> <body> <style>astro-island,astro-slot,astro-static-slot{display:contents}</style><script>(()=>{var e=async t=>{await(await t())()};(self.Astro||(self.Astro={})).only=e;window.dispatchEvent(new Event("astro:only"));})();</script><script>(()=>{var g=Object.defineProperty;var w=(c,s,d)=>s in c?g(c,s,{enumerable:!0,configurable:!0,writable:!0,value:d}):c[s]=d;var l=(c,s,d)=>w(c,typeof s!="symbol"?s+"":s,d);var E=new Set(["__proto__","constructor","prototype"]);{let c={0:t=>y(t),1:t=>d(t),2:t=>new RegExp(t),3:t=>new Date(t),4:t=>new Map(d(t)),5:t=>new Set(d(t)),6:t=>BigInt(t),7:t=>new URL(t),8:t=>new Uint8Array(t),9:t=>new Uint16Array(t),10:t=>new Uint32Array(t),11:t=>Number.POSITIVE_INFINITY*t},s=t=>{let[p,e]=t;return p in c?c[p](e):void 0},d=t=>t.map(s),y=t=>typeof t!="object"||t===null?t:Object.fromEntries(Object.entries(t).map(([p,e])=>[p,s(e)]));class f extends HTMLElement{constructor(){super(...arguments);l(this,"Component");l(this,"hydrator");l(this,"hydrate",async()=>{var b;if(!this.hydrator||!this.isConnected)return;let e=(b=this.parentElement)==null?void 0:b.closest("astro-island[ssr]");if(e){e.addEventListener("astro:hydrate",this.hydrate,{once:!0});return}let n=this.querySelectorAll("astro-slot"),r={},i=this.querySelectorAll("template[data-astro-template]");for(let o of i){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("data-astro-template")||"default"]=o.innerHTML,o.remove())}for(let o of n){let a=o.closest(this.tagName);a!=null&&a.isSameNode(this)&&(r[o.getAttribute("name")||"default"]=o.innerHTML)}let u;try{u=this.hasAttribute("props")?y(JSON.parse(this.getAttribute("props"))):{}}catch(o){let a=this.getAttribute("component-url")||"<unknown>",v=this.getAttribute("component-export");throw v&&(a+=` (export ${v})`),console.error(`[hydrate] Error parsing props for component ${a}`,this.getAttribute("props"),o),o}let h;await this.hydrator(this)(this.Component,u,r,{client:this.getAttribute("client")}),this.removeAttribute("ssr"),this.dispatchEvent(new CustomEvent("astro:hydrate"))});l(this,"unmount",()=>{this.isConnected||this.dispatchEvent(new CustomEvent("astro:unmount"))})}disconnectedCallback(){document.removeEventListener("astro:after-swap",this.unmount),document.addEventListener("astro:after-swap",this.unmount,{once:!0})}connectedCallback(){if(!this.hasAttribute("await-children")||document.readyState==="interactive"||document.readyState==="complete")this.childrenConnectedCallback();else{let e=()=>{document.removeEventListener("DOMContentLoaded",e),n.disconnect(),this.childrenConnectedCallback()},n=new MutationObserver(()=>{var r;((r=this.lastChild)==null?void 0:r.nodeType)===Node.COMMENT_NODE&&this.lastChild.nodeValue==="astro:end"&&(this.lastChild.remove(),e())});n.observe(this,{childList:!0}),document.addEventListener("DOMContentLoaded",e)}}async childrenConnectedCallback(){let e=this.getAttribute("before-hydration-url");e&&await import(e),this.start()}getRetryImportUrl(e){let n=new URL(e,document.baseURI),r=`astro-retry=${Date.now()}`,i=n.hash.replace(/^#/,"");return n.hash=i?`${i}&${r}`:r,n.toString()}async importWithRetry(e){try{return await import(e)}catch(n){return await new Promise(r=>setTimeout(r,1e3)),import(this.getRetryImportUrl(e))}}handleHydrationError(e){let n=this.getAttribute("component-url"),r=new CustomEvent("astro:hydration-error",{cancelable:!0,bubbles:!0,composed:!0,detail:{error:e,componentUrl:n}});this.dispatchEvent(r)&&console.error(`[astro-island] Error hydrating ${n}`,e)}async start(){let e=JSON.parse(this.getAttribute("opts")),n=this.getAttribute("client");if(Astro[n]===void 0){window.addEventListener(`astro:${n}`,()=>this.start(),{once:!0});return}try{await Astro[n](async()=>{let r=this.getAttribute("renderer-url");try{let[i,{default:u}]=await Promise.all([this.importWithRetry(this.getAttribute("component-url")),r?this.importWithRetry(r):Promise.resolve({default:()=>()=>{}})]),h=this.getAttribute("component-export")||"default";if(h.includes(".")){this.Component=i;for(let m of h.split(".")){if(E.has(m)||!this.Component||typeof this.Component!="object"&&typeof this.Component!="function"||!Object.hasOwn(this.Component,m))throw new Error(`Invalid component export path: ${h}`);this.Component=this.Component[m]}}else{if(E.has(h))throw new Error(`Invalid component export path: ${h}`);this.Component=i[h]}return this.hydrator=u,this.hydrate}catch(i){return this.handleHydrationError(i),()=>{}}},e,this)}catch(r){this.handleHydrationError(r)}}attributeChangedCallback(){this.hydrate()}}l(f,"observedAttributes",["props"]),customElements.get("astro-island")||customElements.define("astro-island",f)}})();</script>   <noscript> <main style="max-width: 980px; margin: 0 auto; padding: 2rem 1rem;"> <article><h1>Frontmatter и имена файлов в Hub V3.5</h1>
+<p>В V3.5 структура <code>Docs/</code> стала главным источником правды для навигации, URL, поиска, sitemap, карточек категорий и SEO. Документ можно описать двумя слоями:</p>
+<ol>
+<li><strong>Имя папки/файла</strong> — задаёт тип элемента, иконку, человекочитаемое имя и slug.</li>
+<li><strong>Frontmatter</strong> — уточняет SEO, описание, даты, сортировку, теги и поведение страницы.</li>
+</ol>
+<pre><code class="language-txt">Docs/
+├── welcome.md
+├── resume.md
+└── [N][book-open]Документация Hub{hub}/
+    ├── [A][boxes]Hub{general}.md
+    ├── [A][rocket]Быстрый старт{quickstart}.md
+    └── [C][folder-code]Раздел{section}/
+        └── [A][file-text]Статья{article}.md
+</code></pre>
+<hr>
+<h2>Система имён <code>[N]</code>, <code>[C]</code>, <code>[A]</code></h2>
+<pre><code class="language-txt">[ТИП][lucide-icon]Название{slug}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Часть</th>
+<th align="right">Обязательно</th>
+<th>Пример</th>
+<th>Зачем нужна</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>[ТИП]</code></td>
+<td align="right">✅</td>
+<td><code>[N]</code>, <code>[C]</code>, <code>[A]</code></td>
+<td>Определяет роль элемента.</td>
+</tr>
+<tr>
+<td><code>[lucide-icon]</code></td>
+<td align="right">Нет</td>
+<td><code>[book-open]</code></td>
+<td>Иконка из Lucide Icons.</td>
+</tr>
+<tr>
+<td><code>Название</code></td>
+<td align="right">✅</td>
+<td><code>Документация Hub</code></td>
+<td>Текст в навигации, breadcrumbs и fallback title.</td>
+</tr>
+<tr>
+<td><code>{slug}</code></td>
+<td align="right">Желательно</td>
+<td><code>{hub}</code></td>
+<td>Стабильная URL-часть.</td>
+</tr>
+</tbody></table>
+<h3><code>[N]</code> — верхний nav-раздел</h3>
+<p>Папка первого уровня. Создаёт верхнеуровневый раздел навигации.</p>
+<pre><code class="language-txt">[N][brain]Статьи opensophy{article}/
+</code></pre>
+<p>URL всех вложенных документов начнётся с <code>/article/...</code>.</p>
+<h3><code>[C]</code> — категория</h3>
+<p>Папка внутри nav-раздела. В V3.5 категория создаёт не только группу в сайдбаре, но и отдельную <strong>страницу категории</strong> со списком вложенных документов.</p>
+<pre><code class="language-txt">[C][shield]Кибербезопасность{security}/
+</code></pre>
+<p>Итоговая страница категории: <code>/article/security/</code>.</p>
+<h3><code>[A]</code> — статья</h3>
+<p>Markdown-файл. Создаёт страницу документа.</p>
+<pre><code class="language-txt">[A][siren]CVSS: как правильно оценивать критичность уязвимостей{cvss-guide}.md
+</code></pre>
+<p>Итоговый URL: <code>/article/security/cvss-guide/</code>.</p>
+<h3><code>welcome.md</code> и одиночные файлы в корне <code>Docs/</code></h3>
+<ul>
+<li><code>Docs/welcome.md</code> — контент главной страницы, когда <code>useLanding: false</code>, или SEO/контентный fallback для <code>/</code>.</li>
+<li>Файлы в корне без папок получают URL из имени файла: <code>Docs/resume.md</code> → <code>/resume/</code>.</li>
+<li>Если у Markdown-документа указан <code>custom</code>, контент файла используется как метаданные/маршрут, а тело страницы рендерит React-страница из <code>src/custom/</code>.</li>
+</ul>
+<hr>
+<h2>Как строится URL</h2>
+<pre><code class="language-txt">Docs/[N][component]UI Библиотека{ui}/[C][maximize]Фон{background}/[A][stars]Аурора{aurora}.md
+</code></pre>
+<p>Результат:</p>
+<pre><code class="language-txt">/ui/background/aurora/
+</code></pre>
+<p>Правила:</p>
+<ul>
+<li>slug лучше всегда задавать явно в <code>{}</code>;</li>
+<li>используйте латиницу, цифры и дефисы: <code>quickstart</code>, <code>seo-guide</code>, <code>tools-and-services</code>;</li>
+<li>не меняйте slug после публикации без редиректа, иначе сломаются ссылки и SEO;</li>
+<li>избегайте дублей: при конфликте генератор пропустит повторный slug и выведет warning.</li>
+</ul>
+<hr>
+<h2>Frontmatter: полный справочник V3.5</h2>
+<p>Frontmatter находится в начале <code>.md</code> файла между <code>---</code>.</p>
+<pre><code class="language-yaml">---
+title: &quot;Название страницы&quot;
+description: &quot;Краткое описание для карточек, поиска и SEO.&quot;
+date: 2026-06-16
+---
+</code></pre>
+<h3>Основные поля</h3>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Тип</th>
+<th align="right">Обязательно</th>
+<th>Где используется</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>title</code></td>
+<td>string</td>
+<td align="right">Желательно</td>
+<td>Заголовок страницы, <code>&lt;title&gt;</code>, OG/Twitter title, карточки, поиск.</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>string</td>
+<td align="right">Желательно</td>
+<td>Hero, карточки категорий, поиск, meta description, OG/Twitter description.</td>
+</tr>
+<tr>
+<td><code>author</code></td>
+<td>string</td>
+<td align="right">Нет</td>
+<td>Шапка статьи, meta author, JSON-LD Article author.</td>
+</tr>
+<tr>
+<td><code>date</code></td>
+<td><code>YYYY-MM-DD</code></td>
+<td align="right">Нет</td>
+<td>Дата публикации, sitemap, article published_time, JSON-LD.</td>
+</tr>
+<tr>
+<td><code>updated</code></td>
+<td><code>YYYY-MM-DD</code></td>
+<td align="right">Нет</td>
+<td>Дата обновления, article modified_time, JSON-LD dateModified.</td>
+</tr>
+<tr>
+<td><code>tags</code></td>
+<td>string через запятую</td>
+<td align="right">Нет</td>
+<td>Поиск, карточки, тематическая группировка.</td>
+</tr>
+<tr>
+<td><code>icon</code></td>
+<td>string</td>
+<td align="right">Нет</td>
+<td>Иконка документа; имеет приоритет над иконкой из имени файла.</td>
+</tr>
+<tr>
+<td><code>typename</code></td>
+<td>string</td>
+<td align="right">Нет</td>
+<td>Тип/бейдж документа; по умолчанию берётся последняя категория.</td>
+</tr>
+<tr>
+<td><code>priority</code></td>
+<td>number</td>
+<td align="right">Нет</td>
+<td>Сортировка в навигации/manifest: меньше — выше. По умолчанию <code>999</code>.</td>
+</tr>
+</tbody></table>
+<h3>SEO-поля</h3>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Тип</th>
+<th>По умолчанию</th>
+<th>Назначение</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>keywords</code></td>
+<td>string</td>
+<td>глобальные keywords layout или пусто</td>
+<td><code>&lt;meta name=&quot;keywords&quot;&gt;</code>.</td>
+</tr>
+<tr>
+<td><code>robots</code></td>
+<td>string</td>
+<td><code>index, follow</code></td>
+<td>Управляет индексацией: <code>index, follow</code>, <code>noindex, follow</code>, <code>noindex, nofollow</code>.</td>
+</tr>
+<tr>
+<td><code>lang</code></td>
+<td>string</td>
+<td><code>ru</code></td>
+<td>Атрибут <code>&lt;html lang&gt;</code>, JSON-LD <code>inLanguage</code>.</td>
+</tr>
+<tr>
+<td><code>image</code></td>
+<td>string</td>
+<td><code>/og-image.png</code> из Layout</td>
+<td>OG/Twitter image и JSON-LD image.</td>
+</tr>
+</tbody></table>
+<h3>Поведенческие поля</h3>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Тип</th>
+<th>Что делает</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>custom</code></td>
+<td>string</td>
+<td>Подключает React-страницу из <code>src/custom/&lt;name&gt;{slug}/</code> вместо обычного Markdown-рендера.</td>
+</tr>
+</tbody></table>
+<p>Пример Markdown-страницы, которая использует кастомный React-рендер:</p>
+<pre><code class="language-yaml">---
+title: &quot;Resume&quot;
+description: &quot;Интерактивное резюме.&quot;
+custom: resume
+robots: &quot;index, follow&quot;
+priority: 10
+---
+</code></pre>
+<p>Если существует <code>src/custom/resume{resume}/Page.tsx</code>, маршрут <code>/resume/</code> будет создан из Markdown-файла, но тело страницы отрендерит React-компонент.</p>
+<hr>
+<h2>Рекомендуемый шаблон статьи</h2>
+<pre><code class="language-yaml">---
+title: &quot;Понятное название страницы&quot;
+description: &quot;Одно-два предложения: что пользователь получит на странице.&quot;
+author: opensophy
+date: 2026-06-16
+updated: 2026-06-16
+tags: &quot;hub, документация, quickstart&quot;
+keywords: &quot;Hub, Opensophy, документация, Astro, React&quot;
+icon: rocket
+lang: ru
+robots: &quot;index, follow&quot;
+priority: 20 // на ваш выбор как он должен распологаться в навигации
+---
+</code></pre>
+<hr>
+<h2>Как генерация использует frontmatter</h2>
+<p><code>npm run generate</code> запускает сборку данных:</p>
+<ol>
+<li>сканирует все <code>.md</code> в <code>Docs/</code>;</li>
+<li>парсит frontmatter;</li>
+<li>строит slug из <code>[N]</code>, <code>[C]</code>, <code>[A]</code> и <code>{slug}</code>;</li>
+<li>генерирует <code>public/data/docs/manifest.json</code> для навигации и поиска;</li>
+<li>генерирует <code>public/sitemap.xml</code>;</li>
+<li>обновляет <code>public/llm.txt</code> для LLM/AI-потребителей.</li>
+</ol>
+<p>Динамический маршрут <code>src/app/pages/[...slug].astro</code> умеет отдавать три типа страниц:</p>
+<ul>
+<li>обычный Markdown-документ;</li>
+<li>страницу категории;</li>
+<li>кастомную React-страницу.</li>
+</ul>
+<hr>
+<h2>Best practices</h2>
+<div class="custom-cardgrid" data-cols="2"><div class="custom-card" data-color="" data-title="Для SEO" data-icon="search" data-image=""><p>Всегда заполняйте <code>title</code>, <code>description</code>, <code>date</code>, <code>updated</code>, <code>robots</code>, <code>lang</code>, <code>keywords</code> и при необходимости <code>image</code>.</p>
+</div><div class="custom-card" data-color="" data-title="Для навигации" data-icon="list-tree" data-image=""><p>Используйте <code>priority</code> на страницах и явные <code>{slug}</code> для стабильных URL.</p>
+</div><div class="custom-card" data-color="" data-title="Для категорий" data-icon="folder-open" data-image=""><p>Не кладите слишком много документов в одну категорию: в V3.5 у категорий есть отдельные карточные страницы.</p>
+</div><div class="custom-card" data-color="" data-title="Для custom pages" data-icon="blocks" data-image=""><p>Используйте <code>custom</code>, когда нужен полноценный React-экран, но маршрут и SEO удобнее держать в <code>Docs/</code>.</p>
+</div></div>
+
+<hr>
+<h2>Частые ошибки</h2>
+<table>
+<thead>
+<tr>
+<th>Ошибка</th>
+<th>Как исправить</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Русский slug без <code>{}</code></td>
+<td>Задайте явный латинский slug: <code>{quickstart}</code>.</td>
+</tr>
+<tr>
+<td>Дубликат slug</td>
+<td>Проверьте путь и <code>custom</code>-страницы; slug должен быть уникален.</td>
+</tr>
+<tr>
+<td>Нет описания</td>
+<td>Добавьте <code>description</code>, иначе будет взят первый абзац.</td>
+</tr>
+<tr>
+<td>Страница не появилась</td>
+<td>Запустите <code>npm run generate</code> и проверьте имя файла.</td>
+</tr>
+<tr>
+<td><code>custom</code> не работает</td>
+<td>Убедитесь, что есть <code>src/custom/&lt;folder&gt;{slug}/Page.tsx</code> или <code>Page.jsx</code>.</td>
+</tr>
+</tbody></table>
+</article> </main> </noscript> <astro-island uid="ZSQwoj" component-url="/assets/DocContent.CoKfap2Q.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{&quot;doc&quot;:[0,{&quot;id&quot;:[0,&quot;hub/frontmatter-guide&quot;],&quot;title&quot;:[0,&quot;Полное руководство по Frontmatter и системе наименований в Hub V3.5&quot;],&quot;slug&quot;:[0,&quot;hub/frontmatter-guide&quot;],&quot;description&quot;:[0,&quot;Актуальный справочник V3.5 по frontmatter, slug-системе [N]/[C]/[A], категориям, custom-страницам, SEO-полям, приоритетам и генерации manifest/sitemap.&quot;],&quot;content&quot;:[0,&quot;&lt;h1&gt;Frontmatter и имена файлов в Hub V3.5&lt;/h1&gt;\n&lt;p&gt;В V3.5 структура &lt;code&gt;Docs/&lt;/code&gt; стала главным источником правды для навигации, URL, поиска, sitemap, карточек категорий и SEO. Документ можно описать двумя слоями:&lt;/p&gt;\n&lt;ol&gt;\n&lt;li&gt;&lt;strong&gt;Имя папки/файла&lt;/strong&gt; — задаёт тип элемента, иконку, человекочитаемое имя и slug.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Frontmatter&lt;/strong&gt; — уточняет SEO, описание, даты, сортировку, теги и поведение страницы.&lt;/li&gt;\n&lt;/ol&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-txt\&quot;&gt;Docs/\n├── welcome.md\n├── resume.md\n└── [N][book-open]Документация Hub{hub}/\n    ├── [A][boxes]Hub{general}.md\n    ├── [A][rocket]Быстрый старт{quickstart}.md\n    └── [C][folder-code]Раздел{section}/\n        └── [A][file-text]Статья{article}.md\n&lt;/code&gt;&lt;/pre&gt;\n&lt;hr&gt;\n&lt;h2&gt;Система имён &lt;code&gt;[N]&lt;/code&gt;, &lt;code&gt;[C]&lt;/code&gt;, &lt;code&gt;[A]&lt;/code&gt;&lt;/h2&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-txt\&quot;&gt;[ТИП][lucide-icon]Название{slug}\n&lt;/code&gt;&lt;/pre&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Часть&lt;/th&gt;\n&lt;th align=\&quot;right\&quot;&gt;Обязательно&lt;/th&gt;\n&lt;th&gt;Пример&lt;/th&gt;\n&lt;th&gt;Зачем нужна&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;[ТИП]&lt;/code&gt;&lt;/td&gt;\n&lt;td align=\&quot;right\&quot;&gt;✅&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;[N]&lt;/code&gt;, &lt;code&gt;[C]&lt;/code&gt;, &lt;code&gt;[A]&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Определяет роль элемента.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;[lucide-icon]&lt;/code&gt;&lt;/td&gt;\n&lt;td align=\&quot;right\&quot;&gt;Нет&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;[book-open]&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Иконка из Lucide Icons.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;Название&lt;/code&gt;&lt;/td&gt;\n&lt;td align=\&quot;right\&quot;&gt;✅&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;Документация Hub&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Текст в навигации, breadcrumbs и fallback title.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;{slug}&lt;/code&gt;&lt;/td&gt;\n&lt;td align=\&quot;right\&quot;&gt;Желательно&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;{hub}&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Стабильная URL-часть.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h3&gt;&lt;code&gt;[N]&lt;/code&gt; — верхний nav-раздел&lt;/h3&gt;\n&lt;p&gt;Папка первого уровня. Создаёт верхнеуровневый раздел навигации.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-txt\&quot;&gt;[N][brain]Статьи opensophy{article}/\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;URL всех вложенных документов начнётся с &lt;code&gt;/article/...&lt;/code&gt;.&lt;/p&gt;\n&lt;h3&gt;&lt;code&gt;[C]&lt;/code&gt; — категория&lt;/h3&gt;\n&lt;p&gt;Папка внутри nav-раздела. В V3.5 категория создаёт не только группу в сайдбаре, но и отдельную &lt;strong&gt;страницу категории&lt;/strong&gt; со списком вложенных документов.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-txt\&quot;&gt;[C][shield]Кибербезопасность{security}/\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Итоговая страница категории: &lt;code&gt;/article/security/&lt;/code&gt;.&lt;/p&gt;\n&lt;h3&gt;&lt;code&gt;[A]&lt;/code&gt; — статья&lt;/h3&gt;\n&lt;p&gt;Markdown-файл. Создаёт страницу документа.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-txt\&quot;&gt;[A][siren]CVSS: как правильно оценивать критичность уязвимостей{cvss-guide}.md\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Итоговый URL: &lt;code&gt;/article/security/cvss-guide/&lt;/code&gt;.&lt;/p&gt;\n&lt;h3&gt;&lt;code&gt;welcome.md&lt;/code&gt; и одиночные файлы в корне &lt;code&gt;Docs/&lt;/code&gt;&lt;/h3&gt;\n&lt;ul&gt;\n&lt;li&gt;&lt;code&gt;Docs/welcome.md&lt;/code&gt; — контент главной страницы, когда &lt;code&gt;useLanding: false&lt;/code&gt;, или SEO/контентный fallback для &lt;code&gt;/&lt;/code&gt;.&lt;/li&gt;\n&lt;li&gt;Файлы в корне без папок получают URL из имени файла: &lt;code&gt;Docs/resume.md&lt;/code&gt; → &lt;code&gt;/resume/&lt;/code&gt;.&lt;/li&gt;\n&lt;li&gt;Если у Markdown-документа указан &lt;code&gt;custom&lt;/code&gt;, контент файла используется как метаданные/маршрут, а тело страницы рендерит React-страница из &lt;code&gt;src/custom/&lt;/code&gt;.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;hr&gt;\n&lt;h2&gt;Как строится URL&lt;/h2&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-txt\&quot;&gt;Docs/[N][component]UI Библиотека{ui}/[C][maximize]Фон{background}/[A][stars]Аурора{aurora}.md\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Результат:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-txt\&quot;&gt;/ui/background/aurora/\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Правила:&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;slug лучше всегда задавать явно в &lt;code&gt;{}&lt;/code&gt;;&lt;/li&gt;\n&lt;li&gt;используйте латиницу, цифры и дефисы: &lt;code&gt;quickstart&lt;/code&gt;, &lt;code&gt;seo-guide&lt;/code&gt;, &lt;code&gt;tools-and-services&lt;/code&gt;;&lt;/li&gt;\n&lt;li&gt;не меняйте slug после публикации без редиректа, иначе сломаются ссылки и SEO;&lt;/li&gt;\n&lt;li&gt;избегайте дублей: при конфликте генератор пропустит повторный slug и выведет warning.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;hr&gt;\n&lt;h2&gt;Frontmatter: полный справочник V3.5&lt;/h2&gt;\n&lt;p&gt;Frontmatter находится в начале &lt;code&gt;.md&lt;/code&gt; файла между &lt;code&gt;---&lt;/code&gt;.&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-yaml\&quot;&gt;---\ntitle: &amp;quot;Название страницы&amp;quot;\ndescription: &amp;quot;Краткое описание для карточек, поиска и SEO.&amp;quot;\ndate: 2026-06-16\n---\n&lt;/code&gt;&lt;/pre&gt;\n&lt;h3&gt;Основные поля&lt;/h3&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Поле&lt;/th&gt;\n&lt;th&gt;Тип&lt;/th&gt;\n&lt;th align=\&quot;right\&quot;&gt;Обязательно&lt;/th&gt;\n&lt;th&gt;Где используется&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;title&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;string&lt;/td&gt;\n&lt;td align=\&quot;right\&quot;&gt;Желательно&lt;/td&gt;\n&lt;td&gt;Заголовок страницы, &lt;code&gt;&amp;lt;title&amp;gt;&lt;/code&gt;, OG/Twitter title, карточки, поиск.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;description&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;string&lt;/td&gt;\n&lt;td align=\&quot;right\&quot;&gt;Желательно&lt;/td&gt;\n&lt;td&gt;Hero, карточки категорий, поиск, meta description, OG/Twitter description.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;author&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;string&lt;/td&gt;\n&lt;td align=\&quot;right\&quot;&gt;Нет&lt;/td&gt;\n&lt;td&gt;Шапка статьи, meta author, JSON-LD Article author.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;date&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;YYYY-MM-DD&lt;/code&gt;&lt;/td&gt;\n&lt;td align=\&quot;right\&quot;&gt;Нет&lt;/td&gt;\n&lt;td&gt;Дата публикации, sitemap, article published_time, JSON-LD.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;updated&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;YYYY-MM-DD&lt;/code&gt;&lt;/td&gt;\n&lt;td align=\&quot;right\&quot;&gt;Нет&lt;/td&gt;\n&lt;td&gt;Дата обновления, article modified_time, JSON-LD dateModified.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;tags&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;string через запятую&lt;/td&gt;\n&lt;td align=\&quot;right\&quot;&gt;Нет&lt;/td&gt;\n&lt;td&gt;Поиск, карточки, тематическая группировка.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;icon&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;string&lt;/td&gt;\n&lt;td align=\&quot;right\&quot;&gt;Нет&lt;/td&gt;\n&lt;td&gt;Иконка документа; имеет приоритет над иконкой из имени файла.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;typename&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;string&lt;/td&gt;\n&lt;td align=\&quot;right\&quot;&gt;Нет&lt;/td&gt;\n&lt;td&gt;Тип/бейдж документа; по умолчанию берётся последняя категория.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;priority&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;number&lt;/td&gt;\n&lt;td align=\&quot;right\&quot;&gt;Нет&lt;/td&gt;\n&lt;td&gt;Сортировка в навигации/manifest: меньше — выше. По умолчанию &lt;code&gt;999&lt;/code&gt;.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h3&gt;SEO-поля&lt;/h3&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Поле&lt;/th&gt;\n&lt;th&gt;Тип&lt;/th&gt;\n&lt;th&gt;По умолчанию&lt;/th&gt;\n&lt;th&gt;Назначение&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;keywords&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;string&lt;/td&gt;\n&lt;td&gt;глобальные keywords layout или пусто&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;&amp;lt;meta name=&amp;quot;keywords&amp;quot;&amp;gt;&lt;/code&gt;.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;robots&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;string&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;index, follow&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Управляет индексацией: &lt;code&gt;index, follow&lt;/code&gt;, &lt;code&gt;noindex, follow&lt;/code&gt;, &lt;code&gt;noindex, nofollow&lt;/code&gt;.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;lang&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;string&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;ru&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Атрибут &lt;code&gt;&amp;lt;html lang&amp;gt;&lt;/code&gt;, JSON-LD &lt;code&gt;inLanguage&lt;/code&gt;.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;image&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;string&lt;/td&gt;\n&lt;td&gt;&lt;code&gt;/og-image.png&lt;/code&gt; из Layout&lt;/td&gt;\n&lt;td&gt;OG/Twitter image и JSON-LD image.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;h3&gt;Поведенческие поля&lt;/h3&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Поле&lt;/th&gt;\n&lt;th&gt;Тип&lt;/th&gt;\n&lt;th&gt;Что делает&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;custom&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;string&lt;/td&gt;\n&lt;td&gt;Подключает React-страницу из &lt;code&gt;src/custom/&amp;lt;name&amp;gt;{slug}/&lt;/code&gt; вместо обычного Markdown-рендера.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&lt;p&gt;Пример Markdown-страницы, которая использует кастомный React-рендер:&lt;/p&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-yaml\&quot;&gt;---\ntitle: &amp;quot;Resume&amp;quot;\ndescription: &amp;quot;Интерактивное резюме.&amp;quot;\ncustom: resume\nrobots: &amp;quot;index, follow&amp;quot;\npriority: 10\n---\n&lt;/code&gt;&lt;/pre&gt;\n&lt;p&gt;Если существует &lt;code&gt;src/custom/resume{resume}/Page.tsx&lt;/code&gt;, маршрут &lt;code&gt;/resume/&lt;/code&gt; будет создан из Markdown-файла, но тело страницы отрендерит React-компонент.&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;Рекомендуемый шаблон статьи&lt;/h2&gt;\n&lt;pre&gt;&lt;code class=\&quot;language-yaml\&quot;&gt;---\ntitle: &amp;quot;Понятное название страницы&amp;quot;\ndescription: &amp;quot;Одно-два предложения: что пользователь получит на странице.&amp;quot;\nauthor: opensophy\ndate: 2026-06-16\nupdated: 2026-06-16\ntags: &amp;quot;hub, документация, quickstart&amp;quot;\nkeywords: &amp;quot;Hub, Opensophy, документация, Astro, React&amp;quot;\nicon: rocket\nlang: ru\nrobots: &amp;quot;index, follow&amp;quot;\npriority: 20 // на ваш выбор как он должен распологаться в навигации\n---\n&lt;/code&gt;&lt;/pre&gt;\n&lt;hr&gt;\n&lt;h2&gt;Как генерация использует frontmatter&lt;/h2&gt;\n&lt;p&gt;&lt;code&gt;npm run generate&lt;/code&gt; запускает сборку данных:&lt;/p&gt;\n&lt;ol&gt;\n&lt;li&gt;сканирует все &lt;code&gt;.md&lt;/code&gt; в &lt;code&gt;Docs/&lt;/code&gt;;&lt;/li&gt;\n&lt;li&gt;парсит frontmatter;&lt;/li&gt;\n&lt;li&gt;строит slug из &lt;code&gt;[N]&lt;/code&gt;, &lt;code&gt;[C]&lt;/code&gt;, &lt;code&gt;[A]&lt;/code&gt; и &lt;code&gt;{slug}&lt;/code&gt;;&lt;/li&gt;\n&lt;li&gt;генерирует &lt;code&gt;public/data/docs/manifest.json&lt;/code&gt; для навигации и поиска;&lt;/li&gt;\n&lt;li&gt;генерирует &lt;code&gt;public/sitemap.xml&lt;/code&gt;;&lt;/li&gt;\n&lt;li&gt;обновляет &lt;code&gt;public/llm.txt&lt;/code&gt; для LLM/AI-потребителей.&lt;/li&gt;\n&lt;/ol&gt;\n&lt;p&gt;Динамический маршрут &lt;code&gt;src/app/pages/[...slug].astro&lt;/code&gt; умеет отдавать три типа страниц:&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;обычный Markdown-документ;&lt;/li&gt;\n&lt;li&gt;страницу категории;&lt;/li&gt;\n&lt;li&gt;кастомную React-страницу.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;hr&gt;\n&lt;h2&gt;Best practices&lt;/h2&gt;\n&lt;div class=\&quot;custom-cardgrid\&quot; data-cols=\&quot;2\&quot;&gt;&lt;div class=\&quot;custom-card\&quot; data-color=\&quot;\&quot; data-title=\&quot;Для SEO\&quot; data-icon=\&quot;search\&quot; data-image=\&quot;\&quot;&gt;&lt;p&gt;Всегда заполняйте &lt;code&gt;title&lt;/code&gt;, &lt;code&gt;description&lt;/code&gt;, &lt;code&gt;date&lt;/code&gt;, &lt;code&gt;updated&lt;/code&gt;, &lt;code&gt;robots&lt;/code&gt;, &lt;code&gt;lang&lt;/code&gt;, &lt;code&gt;keywords&lt;/code&gt; и при необходимости &lt;code&gt;image&lt;/code&gt;.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-card\&quot; data-color=\&quot;\&quot; data-title=\&quot;Для навигации\&quot; data-icon=\&quot;list-tree\&quot; data-image=\&quot;\&quot;&gt;&lt;p&gt;Используйте &lt;code&gt;priority&lt;/code&gt; на страницах и явные &lt;code&gt;{slug}&lt;/code&gt; для стабильных URL.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-card\&quot; data-color=\&quot;\&quot; data-title=\&quot;Для категорий\&quot; data-icon=\&quot;folder-open\&quot; data-image=\&quot;\&quot;&gt;&lt;p&gt;Не кладите слишком много документов в одну категорию: в V3.5 у категорий есть отдельные карточные страницы.&lt;/p&gt;\n&lt;/div&gt;&lt;div class=\&quot;custom-card\&quot; data-color=\&quot;\&quot; data-title=\&quot;Для custom pages\&quot; data-icon=\&quot;blocks\&quot; data-image=\&quot;\&quot;&gt;&lt;p&gt;Используйте &lt;code&gt;custom&lt;/code&gt;, когда нужен полноценный React-экран, но маршрут и SEO удобнее держать в &lt;code&gt;Docs/&lt;/code&gt;.&lt;/p&gt;\n&lt;/div&gt;&lt;/div&gt;\n\n&lt;hr&gt;\n&lt;h2&gt;Частые ошибки&lt;/h2&gt;\n&lt;table&gt;\n&lt;thead&gt;\n&lt;tr&gt;\n&lt;th&gt;Ошибка&lt;/th&gt;\n&lt;th&gt;Как исправить&lt;/th&gt;\n&lt;/tr&gt;\n&lt;/thead&gt;\n&lt;tbody&gt;&lt;tr&gt;\n&lt;td&gt;Русский slug без &lt;code&gt;{}&lt;/code&gt;&lt;/td&gt;\n&lt;td&gt;Задайте явный латинский slug: &lt;code&gt;{quickstart}&lt;/code&gt;.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Дубликат slug&lt;/td&gt;\n&lt;td&gt;Проверьте путь и &lt;code&gt;custom&lt;/code&gt;-страницы; slug должен быть уникален.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Нет описания&lt;/td&gt;\n&lt;td&gt;Добавьте &lt;code&gt;description&lt;/code&gt;, иначе будет взят первый абзац.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;Страница не появилась&lt;/td&gt;\n&lt;td&gt;Запустите &lt;code&gt;npm run generate&lt;/code&gt; и проверьте имя файла.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;tr&gt;\n&lt;td&gt;&lt;code&gt;custom&lt;/code&gt; не работает&lt;/td&gt;\n&lt;td&gt;Убедитесь, что есть &lt;code&gt;src/custom/&amp;lt;folder&amp;gt;{slug}/Page.tsx&lt;/code&gt; или &lt;code&gt;Page.jsx&lt;/code&gt;.&lt;/td&gt;\n&lt;/tr&gt;\n&lt;/tbody&gt;&lt;/table&gt;\n&quot;],&quot;typename&quot;:[0,&quot;&quot;],&quot;categoryPath&quot;:[1,[]],&quot;navSlug&quot;:[0,&quot;hub&quot;],&quot;navTitle&quot;:[0,&quot;Документация Hub&quot;],&quot;navIcon&quot;:[0,&quot;book-open&quot;],&quot;author&quot;:[0,&quot;&quot;],&quot;date&quot;:[0,&quot;2026-03-07&quot;],&quot;updated&quot;:[0,&quot;2026-06-16&quot;],&quot;tags&quot;:[1,[[0,&quot;frontmatter&quot;],[0,&quot;документация&quot;],[0,&quot;markdown&quot;],[0,&quot;руководство&quot;],[0,&quot;наименование&quot;],[0,&quot;seo&quot;],[0,&quot;custom pages&quot;],[0,&quot;v3.5&quot;]]],&quot;lang&quot;:[0,&quot;ru&quot;],&quot;keywords&quot;:[0,&quot;Hub frontmatter, Opensophy Hub, markdown документация, SEO поля, custom pages, sitemap, manifest&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;icon&quot;:[0,&quot;chart-no-axes-column&quot;],&quot;priority&quot;:[0,1],&quot;custom&quot;:[0,&quot;&quot;],&quot;frontmatter&quot;:[0,{&quot;title&quot;:[0,&quot;Полное руководство по Frontmatter и системе наименований в Hub V3.5&quot;],&quot;description&quot;:[0,&quot;Актуальный справочник V3.5 по frontmatter, slug-системе [N]/[C]/[A], категориям, custom-страницам, SEO-полям, приоритетам и генерации manifest/sitemap.&quot;],&quot;date&quot;:[0,&quot;2026-03-07&quot;],&quot;updated&quot;:[0,&quot;2026-06-16&quot;],&quot;tags&quot;:[0,&quot;frontmatter, документация, markdown, руководство, наименование, seo, custom pages, v3.5&quot;],&quot;keywords&quot;:[0,&quot;Hub frontmatter, Opensophy Hub, markdown документация, SEO поля, custom pages, sitemap, manifest&quot;],&quot;icon&quot;:[0,&quot;chart-no-axes-column&quot;],&quot;lang&quot;:[0,&quot;ru&quot;],&quot;robots&quot;:[0,&quot;index, follow&quot;],&quot;priority&quot;:[0,&quot;1&quot;]}]}]}" ssr client="only" opts="{&quot;name&quot;:&quot;DocContent&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island>   <astro-island uid="Z1Ix9sf" component-url="/assets/DevPanelLoader.6ELCzLIu.js" component-export="default" renderer-url="/assets/client.B5AwLhz3.js" props="{}" ssr client="only" opts="{&quot;name&quot;:&quot;DevPanelLoader&quot;,&quot;value&quot;:&quot;react&quot;}"></astro-island> <!-- Re-apply theme after SPA navigation --> <script>
+      document.addEventListener('astro:after-swap', function () {
+        var t = localStorage.getItem('theme') || 'dark';
+        var d = t !== 'light';
+        document.documentElement.classList.toggle('dark', d);
+        document.documentElement.style.colorScheme = d ? 'dark' : 'light';
+        document.documentElement.style.backgroundColor = d ? '#0a0a0a' : '#E8E7E3';
+      });
+    </script> </body> </html>
